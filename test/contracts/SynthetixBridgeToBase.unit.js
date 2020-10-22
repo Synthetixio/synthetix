@@ -4,18 +4,18 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 const { mockGenericContractFnc } = require('./setup');
 const BN = require('bn.js');
 
-const SynthetixL1ToL2Bridge = artifacts.require('SynthetixL1ToL2Bridge');
-const SynthetixL2ToL1Bridge = artifacts.require('SynthetixL2ToL1Bridge');
-const FakeSynthetixL2ToL1Bridge = artifacts.require('FakeSynthetixL2ToL1Bridge');
+const SynthetixBridgeToOptimism = artifacts.require('SynthetixBridgeToOptimism');
+const SynthetixBridgeToBase = artifacts.require('SynthetixBridgeToBase');
+const FakeSynthetixBridgeToBase = artifacts.require('FakeSynthetixBridgeToBase');
 
-contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
+contract('SynthetixBridgeToBase (unit tests)', accounts => {
 	const [owner, bridge, account1] = accounts;
 
 	const mockAddress = '0x0000000000000000000000000000000000000001';
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: SynthetixL2ToL1Bridge.abi,
+			abi: SynthetixBridgeToBase.abi,
 			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
 			expected: ['initiateWithdrawal', 'mintSecondaryFromDeposit'],
 		});
@@ -41,9 +41,9 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 				assert.notEqual(this.mintableSynthetixMock.address, 0);
 			});
 
-			describe('when a SynthetixL2ToL1Bridge contract is deployed', () => {
+			describe('when a SynthetixBridgeToBase contract is deployed', () => {
 				before('deploy bridge contract', async () => {
-					this.synthetixL2ToL1Bridge = await FakeSynthetixL2ToL1Bridge.new(
+					this.synthetixBridgeToBase = await FakeSynthetixBridgeToBase.new(
 						owner,
 						this.resolverMock.address,
 						this.mintableSynthetixMock.address,
@@ -56,14 +56,14 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 
 				before('connect to CrossDomainMessengerMock', async () => {
 					const crossDomainMessengerMock = await artifacts.require('MockCrossDomainMessenger');
-					const currentAddress = await this.synthetixL2ToL1Bridge.crossDomainMessengerMock();
+					const currentAddress = await this.synthetixBridgeToBase.crossDomainMessengerMock();
 					this.messengerMock = await crossDomainMessengerMock.at(currentAddress);
 				});
 
 				it('has the expected parameters', async () => {
-					assert.equal(await this.synthetixL2ToL1Bridge.owner(), owner);
-					assert.equal(await this.synthetixL2ToL1Bridge.resolver(), this.resolverMock.address);
-					assert.equal(await this.synthetixL2ToL1Bridge.xChainBridge(), bridge);
+					assert.equal(await this.synthetixBridgeToBase.owner(), owner);
+					assert.equal(await this.synthetixBridgeToBase.resolver(), this.resolverMock.address);
+					assert.equal(await this.synthetixBridgeToBase.xChainBridge(), bridge);
 				});
 
 				describe('a user initiates a withdrawal', () => {
@@ -71,7 +71,7 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 					const amount = 100;
 					const gasLimit = 3e6;
 					before('user tries to withdraw 100 tokens', async () => {
-						withdrawalTx = await this.synthetixL2ToL1Bridge.initiateWithdrawal(amount, {
+						withdrawalTx = await this.synthetixBridgeToBase.initiateWithdrawal(amount, {
 							from: account1,
 						});
 					});
@@ -91,7 +91,7 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 					it('called sendMessage with the expected target address', async () => {
 						assert.equal(
 							await this.messengerMock.sendMessageCallTarget(),
-							await this.synthetixL2ToL1Bridge.xChainBridge()
+							await this.synthetixBridgeToBase.xChainBridge()
 						);
 					});
 
@@ -100,13 +100,13 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 					});
 
 					it('called sendMessage with the expected message', async () => {
-						const synthetixL1ToL2Bridge = await SynthetixL1ToL2Bridge.new(
+						const synthetixBridgeToOptimism = await SynthetixBridgeToOptimism.new(
 							owner,
 							this.resolverMock.address
 						);
 						assert.equal(
 							await this.messengerMock.sendMessageCallMessage(),
-							synthetixL1ToL2Bridge.contract.methods
+							synthetixBridgeToOptimism.contract.methods
 								.completeWithdrawal(account1, amount)
 								.encodeABI()
 						);
@@ -119,7 +119,7 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 
 					before('mintSecondaryFromDeposit is called', async () => {
 						mintSecondaryTx = await this.messengerMock.mintSecondaryFromDeposit(
-							this.synthetixL2ToL1Bridge.address,
+							this.synthetixBridgeToBase.address,
 							account1,
 							mintSecondaryAmount
 						);
@@ -144,7 +144,7 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 				describe('modifiers and access permissions', async () => {
 					it('should only allow the relayer to call mintSecondaryFromDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: this.synthetixL2ToL1Bridge.mintSecondaryFromDeposit,
+							fnc: this.synthetixBridgeToBase.mintSecondaryFromDeposit,
 							args: [account1, 100],
 							accounts,
 							reason: 'Only the relayer can call this',
@@ -159,7 +159,7 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 						it('should revert when the original msg sender is not the right bridge ', async () => {
 							await assert.revert(
 								crossDomainMessengerMock.mintSecondaryFromDeposit(
-									this.synthetixL2ToL1Bridge.address,
+									this.synthetixBridgeToBase.address,
 									account1,
 									100
 								),

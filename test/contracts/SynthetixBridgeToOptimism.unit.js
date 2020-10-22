@@ -6,11 +6,11 @@ const { mockToken, mockGenericContractFnc } = require('./setup');
 const { toWei } = web3.utils;
 const BN = require('bn.js');
 
-const SynthetixL1ToL2Bridge = artifacts.require('SynthetixL1ToL2Bridge');
-const SynthetixL2ToL1Bridge = artifacts.require('SynthetixL2ToL1Bridge');
-const FakeSynthetixL1ToL2Bridge = artifacts.require('FakeSynthetixL1ToL2Bridge');
+const SynthetixBridgeToOptimism = artifacts.require('SynthetixBridgeToOptimism');
+const SynthetixBridgeToBase = artifacts.require('SynthetixBridgeToBase');
+const FakeSynthetixBridgeToOptimism = artifacts.require('FakeSynthetixBridgeToOptimism');
 
-contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
+contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 	const [deployerAccount, owner, bridge, migratedBridge, account1, account2] = accounts;
 
 	const mockTokenTotalSupply = '1000000';
@@ -19,7 +19,7 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: SynthetixL1ToL2Bridge.abi,
+			abi: SynthetixBridgeToOptimism.abi,
 			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
 			expected: ['deposit', 'completeWithdrawal', 'migrateBridge'],
 		});
@@ -75,9 +75,9 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 				assert.notEqual(this.resolverMock.address, this.issuerMock.address);
 			});
 
-			describe('when a FakeSynthetixL1ToL2Bridge contract is deployed', () => {
+			describe('when a FakeSynthetixBridgeToOptimism contract is deployed', () => {
 				before('deploy bridge contract', async () => {
-					this.synthetixL1ToL2Bridge = await FakeSynthetixL1ToL2Bridge.new(
+					this.synthetixBridgeToOptimism = await FakeSynthetixBridgeToOptimism.new(
 						owner,
 						this.resolverMock.address,
 						this.token.address,
@@ -92,16 +92,16 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 
 				before('connect to MockCrossDomainMessenger', async () => {
 					const crossDomainMessengerMock = await artifacts.require('MockCrossDomainMessenger');
-					const currentAddress = await this.synthetixL1ToL2Bridge.crossDomainMessengerMock();
+					const currentAddress = await this.synthetixBridgeToOptimism.crossDomainMessengerMock();
 					this.messengerMock = await crossDomainMessengerMock.at(currentAddress);
 				});
 
 				it('has the expected parameters', async () => {
-					assert.bnEqual(await this.synthetixL1ToL2Bridge.maximumDeposit(), maxDeposit);
-					assert.equal(await this.synthetixL1ToL2Bridge.activated(), true);
-					assert.equal(await this.synthetixL1ToL2Bridge.owner(), owner);
-					assert.equal(await this.synthetixL1ToL2Bridge.resolver(), this.resolverMock.address);
-					assert.equal(await this.synthetixL1ToL2Bridge.xChainBridge(), bridge);
+					assert.bnEqual(await this.synthetixBridgeToOptimism.maximumDeposit(), maxDeposit);
+					assert.equal(await this.synthetixBridgeToOptimism.activated(), true);
+					assert.equal(await this.synthetixBridgeToOptimism.owner(), owner);
+					assert.equal(await this.synthetixBridgeToOptimism.resolver(), this.resolverMock.address);
+					assert.equal(await this.synthetixBridgeToOptimism.xChainBridge(), bridge);
 				});
 
 				describe('bridge calling CrossDomainMessenger.sendMessage via deposit()', () => {
@@ -110,16 +110,16 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 					const amount = 100;
 					const gasLimit = 3e6;
 					before('make a deposit', async () => {
-						await this.token.approve(this.synthetixL1ToL2Bridge.address, amount, {
+						await this.token.approve(this.synthetixBridgeToOptimism.address, amount, {
 							from: account1,
 						});
-						await this.synthetixL1ToL2Bridge.deposit(amount, { from: account1 });
+						await this.synthetixBridgeToOptimism.deposit(amount, { from: account1 });
 					});
 
 					it('called sendMessage with the expected target address', async () => {
 						assert.equal(
 							await this.messengerMock.sendMessageCallTarget(),
-							await this.synthetixL1ToL2Bridge.xChainBridge()
+							await this.synthetixBridgeToOptimism.xChainBridge()
 						);
 					});
 
@@ -128,13 +128,13 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 					});
 
 					it('called sendMessage with the expected message', async () => {
-						const synthetixL2ToL1Bridge = await SynthetixL2ToL1Bridge.new(
+						const synthetixBridgeToOptimism = await SynthetixBridgeToBase.new(
 							owner,
 							this.resolverMock.address
 						);
 						assert.equal(
 							await this.messengerMock.sendMessageCallMessage(),
-							synthetixL2ToL1Bridge.contract.methods
+							synthetixBridgeToOptimism.contract.methods
 								.mintSecondaryFromDeposit(account1, amount)
 								.encodeABI()
 						);
@@ -143,18 +143,18 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 
 				describe('a user tries to deposit an amount above the max limit', () => {
 					it('should revert', async () => {
-						const exceedMaxDeposit = (await this.synthetixL1ToL2Bridge.maximumDeposit()).add(
+						const exceedMaxDeposit = (await this.synthetixBridgeToOptimism.maximumDeposit()).add(
 							new BN(1)
 						);
 						await assert.revert(
-							this.synthetixL1ToL2Bridge.deposit(exceedMaxDeposit, { from: owner }),
+							this.synthetixBridgeToOptimism.deposit(exceedMaxDeposit, { from: owner }),
 							'Cannot deposit more than the max'
 						);
 					});
 				});
 
 				describe('a user tries to deposit but has non-zero debt', () => {
-					let synthetixL1ToL2Bridge;
+					let synthetixBridgeToOptimism;
 					before('deploy new bridge contract', async () => {
 						const issuerMock = await artifacts.require('GenericMock').new();
 
@@ -166,7 +166,7 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 							returns: [1],
 						});
 
-						synthetixL1ToL2Bridge = await FakeSynthetixL1ToL2Bridge.new(
+						synthetixBridgeToOptimism = await FakeSynthetixBridgeToOptimism.new(
 							owner,
 							this.resolverMock.address,
 							this.token.address,
@@ -181,7 +181,7 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 
 					it('should revert', async () => {
 						await assert.revert(
-							synthetixL1ToL2Bridge.deposit(100, { from: account1 }),
+							synthetixBridgeToOptimism.deposit(100, { from: account1 }),
 							'Cannot deposit with debt'
 						);
 					});
@@ -191,12 +191,14 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 					let depositTx;
 
 					before('user approves and deposits 100 tokens', async () => {
-						await this.token.approve(this.synthetixL1ToL2Bridge.address, 100, { from: account1 });
-						depositTx = await this.synthetixL1ToL2Bridge.deposit(100, { from: account1 });
+						await this.token.approve(this.synthetixBridgeToOptimism.address, 100, {
+							from: account1,
+						});
+						depositTx = await this.synthetixBridgeToOptimism.deposit(100, { from: account1 });
 					});
 
 					it('tranfers the tokens to the bridge contract', async () => {
-						assert.equal(await this.token.balanceOf(this.synthetixL1ToL2Bridge.address), 100);
+						assert.equal(await this.token.balanceOf(this.synthetixBridgeToOptimism.address), 100);
 						assert.equal(await this.token.balanceOf(account1), 0);
 					});
 
@@ -208,17 +210,19 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 					});
 				});
 
-				describe('when completeWithdrawal() is invoked by the right bridge (alt:SynthetixOptimisticBridge)', async () => {
+				describe('when completeWithdrawal() is invoked by the right bridge (ovm:SynthetixBridgeToBase)', async () => {
 					let completeWithdrawalTx;
 					const withdrawalAmount = 100;
 
 					before('user has deposited before withdrawing', async () => {
 						await this.token.transfer(account2, 100, { from: owner });
-						await this.token.approve(this.synthetixL1ToL2Bridge.address, 100, { from: account2 });
-						this.synthetixL1ToL2Bridge.deposit(100, { from: account2 });
+						await this.token.approve(this.synthetixBridgeToOptimism.address, 100, {
+							from: account2,
+						});
+						this.synthetixBridgeToOptimism.deposit(100, { from: account2 });
 
 						completeWithdrawalTx = await this.messengerMock.completeWithdrawal(
-							this.synthetixL1ToL2Bridge.address,
+							this.synthetixBridgeToOptimism.address,
 							account2,
 							withdrawalAmount
 						);
@@ -240,27 +244,27 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 					let migrateBridgeTx;
 
 					before('migrateBridge is called', async () => {
-						migrateBridgeTx = await this.synthetixL1ToL2Bridge.migrateBridge(migratedBridge, {
+						migrateBridgeTx = await this.synthetixBridgeToOptimism.migrateBridge(migratedBridge, {
 							from: owner,
 						});
 					});
 
 					it('should update the token balances', async () => {
-						assert.equal(await this.token.balanceOf(this.synthetixL1ToL2Bridge.address), 0);
+						assert.equal(await this.token.balanceOf(this.synthetixBridgeToOptimism.address), 0);
 						assert.equal(await this.token.balanceOf(migratedBridge), 100);
 					});
 
 					it('should deactivate the deposit functionality', async () => {
-						assert.equal(await this.synthetixL1ToL2Bridge.activated(), false);
+						assert.equal(await this.synthetixBridgeToOptimism.activated(), false);
 						await assert.revert(
-							this.synthetixL1ToL2Bridge.deposit(100, { from: account1 }),
+							this.synthetixBridgeToOptimism.deposit(100, { from: account1 }),
 							'Function deactivated'
 						);
 					});
 
 					it('should emit a BridgeMigrated event', async () => {
 						assert.eventEqual(migrateBridgeTx, 'BridgeMigrated', {
-							oldBridge: this.synthetixL1ToL2Bridge.address,
+							oldBridge: this.synthetixBridgeToOptimism.address,
 							newBridge: migratedBridge,
 							amount: 100,
 						});
@@ -270,7 +274,7 @@ contract('SynthetixL1ToL2Bridge (unit tests)', accounts => {
 				describe('modifiers and access permissions', async () => {
 					it('should only allow the onwer to call migrateBridge()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: this.synthetixL1ToL2Bridge.migrateBridge,
+							fnc: this.synthetixBridgeToOptimism.migrateBridge,
 							args: [account1],
 							address: owner,
 							accounts,

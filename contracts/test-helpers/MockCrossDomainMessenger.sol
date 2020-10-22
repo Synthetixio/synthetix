@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
-import "../interfaces/ISynthetixL1ToL2Bridge.sol";
-import "../interfaces/ISynthetixL2ToL1Bridge.sol";
+import "../interfaces/ISynthetixBridgeToOptimism.sol";
+import "../interfaces/ISynthetixBridgeToBase.sol";
 
 
 contract MockCrossDomainMessenger {
@@ -20,7 +20,7 @@ contract MockCrossDomainMessenger {
         address account,
         uint amount
     ) external {
-        ISynthetixL2ToL1Bridge(target).mintSecondaryFromDeposit(account, amount);
+        ISynthetixBridgeToBase(target).mintSecondaryFromDeposit(account, amount);
     }
 
     function completeWithdrawal(
@@ -28,7 +28,7 @@ contract MockCrossDomainMessenger {
         address account,
         uint amount
     ) external {
-        ISynthetixL1ToL2Bridge(target).completeWithdrawal(account, amount);
+        ISynthetixBridgeToOptimism(target).completeWithdrawal(account, amount);
     }
 
     // mock sendMessage()

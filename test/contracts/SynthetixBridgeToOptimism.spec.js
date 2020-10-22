@@ -3,16 +3,16 @@ const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const { toBN } = web3.utils;
 
-contract('SynthetixL1ToL2Bridge (spec tests)', accounts => {
+contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 	const [, owner] = accounts;
 
-	let synthetix, synthetixL1ToL2Bridge, systemSettings;
+	let synthetix, synthetixBridgeToOptimism, systemSettings;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: synthetix,
-				SynthetixL1ToL2Bridge: synthetixL1ToL2Bridge,
+				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
 				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
@@ -20,7 +20,7 @@ contract('SynthetixL1ToL2Bridge (spec tests)', accounts => {
 					'Synthetix',
 					'Issuer',
 					'RewardEscrow',
-					'SynthetixL1ToL2Bridge',
+					'SynthetixBridgeToOptimism',
 					'SystemSettings',
 				],
 			}));
@@ -36,8 +36,8 @@ contract('SynthetixL1ToL2Bridge (spec tests)', accounts => {
 			describe('when a user has provided allowance to the bridge contract', () => {
 				const amountToDeposit = 1;
 
-				before('approve SynthetixL1ToL2Bridge', async () => {
-					await synthetix.approve(synthetixL1ToL2Bridge.address, 1, {
+				before('approve SynthetixBridgeToOptimism', async () => {
+					await synthetix.approve(synthetixBridgeToOptimism.address, 1, {
 						from: owner,
 					});
 				});
@@ -50,7 +50,7 @@ contract('SynthetixL1ToL2Bridge (spec tests)', accounts => {
 					});
 
 					before('perform a deposit', async () => {
-						await synthetixL1ToL2Bridge.deposit(amountToDeposit, {
+						await synthetixBridgeToOptimism.deposit(amountToDeposit, {
 							from: owner,
 						});
 					});

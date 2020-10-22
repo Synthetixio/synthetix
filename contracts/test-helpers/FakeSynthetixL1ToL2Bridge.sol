@@ -1,11 +1,11 @@
 pragma solidity ^0.5.16;
 
 import "./MockCrossDomainMessenger.sol";
-import "../SynthetixL1ToL2Bridge.sol";
+import "../SynthetixBridgeToOptimism.sol";
 import "../interfaces/IIssuer.sol";
 
 
-contract FakeSynthetixL1ToL2Bridge is SynthetixL1ToL2Bridge {
+contract FakeSynthetixBridgeToOptimism is SynthetixBridgeToOptimism {
     IERC20 public mockSynthetixToken;
     IIssuer public mockIssuer;
     ISynthetix public mintableSynthetix;
@@ -19,7 +19,7 @@ contract FakeSynthetixL1ToL2Bridge is SynthetixL1ToL2Bridge {
         address _mockMintableSynthetix,
         address _mockIssuer,
         address _bridge
-    ) public SynthetixL1ToL2Bridge(_owner, _resolver) {
+    ) public SynthetixBridgeToOptimism(_owner, _resolver) {
         mockSynthetixToken = IERC20(_mockSynthetixToken);
         mockIssuer = IIssuer(_mockIssuer);
         mintableSynthetix = ISynthetix(_mockMintableSynthetix);
@@ -45,7 +45,7 @@ contract FakeSynthetixL1ToL2Bridge is SynthetixL1ToL2Bridge {
         return ICrossDomainMessenger(crossDomainMessengerMock);
     }
 
-    function synthetixBridge() internal view returns (address) {
+    function synthetixBridgeToBase() internal view returns (address) {
         return xChainBridge;
     }
 

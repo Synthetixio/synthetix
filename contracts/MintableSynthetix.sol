@@ -5,7 +5,7 @@ import "./Synthetix.sol";
 
 
 contract MintableSynthetix is Synthetix {
-    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE = "SynthetixL2ToL1Bridge";
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE = "SynthetixBridgeToBase";
 
     constructor(
         address payable _proxy,
@@ -20,13 +20,13 @@ contract MintableSynthetix is Synthetix {
     /* ========== VIEWS ======================= */
 
     function synthetixBridge() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixL2ToL1Bridge address");
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixBridgeToBase address");
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function mintSecondary(address account, uint amount) external {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixL2ToL1Bridge contract");
+        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixBridgeToBase contract");
 
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         emitTransfer(address(this), account, amount);
@@ -34,7 +34,7 @@ contract MintableSynthetix is Synthetix {
     }
 
     function burnSecondary(address account, uint amount) external {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixL2ToL1Bridge contract");
+        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixBridgeToBase contract");
 
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         emitTransfer(account, address(0), amount);

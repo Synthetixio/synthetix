@@ -3,19 +3,19 @@ const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const { toBN } = web3.utils;
 
-contract('SynthetixL2ToL1Bridge (spec tests)', accounts => {
+contract('SynthetixBridgeToBase (spec tests)', accounts => {
 	const [, owner] = accounts;
 
-	let mintableSynthetix, synthetixL2ToL1Bridge;
+	let mintableSynthetix, synthetixBridgeToBase;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: mintableSynthetix, // we request Synthetix instead of MintableSynthetix because it is renamed in setup.js
-				SynthetixL2ToL1Bridge: synthetixL2ToL1Bridge,
+				SynthetixBridgeToBase: synthetixBridgeToBase,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['MintableSynthetix', 'SynthetixL2ToL1Bridge'],
+				contracts: ['MintableSynthetix', 'SynthetixBridgeToBase'],
 			}));
 		});
 
@@ -32,7 +32,7 @@ contract('SynthetixL2ToL1Bridge (spec tests)', accounts => {
 				});
 
 				before('inititate a withdrawal', async () => {
-					await synthetixL2ToL1Bridge.initiateWithdrawal(amountToWithdraw, {
+					await synthetixBridgeToBase.initiateWithdrawal(amountToWithdraw, {
 						from: owner,
 					});
 				});

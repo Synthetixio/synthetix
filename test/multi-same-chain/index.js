@@ -82,11 +82,11 @@ describe('deploy multiple instances', () => {
 		});
 		// adjust deployment indicators and update config file
 		if (deployL1ToL2Bridge) {
-			delete config['SynthetixL2ToL1Bridge'];
-			config['SynthetixL1ToL2Bridge'] = { deploy: true };
+			delete config['SynthetixBridgeToBase'];
+			config['SynthetixBridgeToOptimism'] = { deploy: true };
 		} else {
-			delete config['SynthetixL1ToL2Bridge'];
-			config['SynthetixL2ToL1Bridge'] = { deploy: true };
+			delete config['SynthetixBridgeToOptimism'];
+			config['SynthetixBridgeToBase'] = { deploy: true };
 		}
 
 		fs.writeFileSync(configFile, JSON.stringify(config));
@@ -108,7 +108,7 @@ describe('deploy multiple instances', () => {
 
 	before('deploy instance 1', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
-		// ensure that only SynthetixL1ToL2Bridge is deployed on L1
+		// ensure that only SynthetixBridgeToOptimism is deployed on L1
 		switchL2Deployment(network, deploymentPaths[0], true);
 		await commands.deploy({
 			network,
@@ -128,7 +128,7 @@ describe('deploy multiple instances', () => {
 
 	before('deploy instance 2', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
-		// ensure that only SynthetixL2ToL1Bridge is deployed on L2
+		// ensure that only SynthetixBridgeToBase is deployed on L2
 		switchL2Deployment(network, deploymentPaths[1], false);
 		await commands.deploy({
 			network,
@@ -151,17 +151,17 @@ describe('deploy multiple instances', () => {
 			let contract;
 			let bridgeAlt;
 			if (i) {
-				contract = fetchContract({ contract: 'SynthetixL2ToL1Bridge', instance: i });
-				bridgeAlt = fetchContract({ contract: 'SynthetixL1ToL2Bridge', instance: 1 - i });
+				contract = fetchContract({ contract: 'SynthetixBridgeToBase', instance: i });
+				bridgeAlt = fetchContract({ contract: 'SynthetixBridgeToOptimism', instance: 1 - i });
 				await resolver.importAddresses(
-					[toBytes32('alt:SynthetixOptimisticBridge')],
+					[toBytes32('base:SynthetixBridgeToOptimism')],
 					[bridgeAlt.address]
 				);
 			} else {
-				contract = fetchContract({ contract: 'SynthetixL1ToL2Bridge', instance: i });
-				bridgeAlt = fetchContract({ contract: 'SynthetixL2ToL1Bridge', instance: 1 - i });
+				contract = fetchContract({ contract: 'SynthetixBridgeToOptimism', instance: i });
+				bridgeAlt = fetchContract({ contract: 'SynthetixBridgeToBase', instance: 1 - i });
 				await resolver.importAddresses(
-					[toBytes32('alt:SynthetixOptimisticBridge')],
+					[toBytes32('ovm:SynthetixBridgeToBase')],
 					[bridgeAlt.address]
 				);
 			}
@@ -191,7 +191,7 @@ describe('deploy multiple instances', () => {
 				source: 'MintableSynthetix',
 				instance: 1,
 			});
-			l1ToL2Bridge = fetchContract({ contract: 'SynthetixL1ToL2Bridge', instance: 0, user });
+			l1ToL2Bridge = fetchContract({ contract: 'SynthetixBridgeToOptimism', instance: 0, user });
 			await (await synthetix.transfer(user.address, parseEther('1000'), overrides)).wait();
 			const originalL1Balance = await synthetix.balanceOf(user.address);
 			const originalL2Balance = await synthetixAlt.balanceOf(user.address);
@@ -203,7 +203,7 @@ describe('deploy multiple instances', () => {
 		});
 
 		before('when the user approves the l1ToL2Bridge contract to spend her SNX', async () => {
-			// user must approve SynthetixL1ToL2Bridge to transfer SNX on their behalf
+			// user must approve SynthetixBridgeToOptimism to transfer SNX on their behalf
 			await (
 				await fetchContract({ contract: 'Synthetix', instance: 0, user }).approve(
 					l1ToL2Bridge.address,

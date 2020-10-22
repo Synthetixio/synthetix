@@ -1094,7 +1094,7 @@ const deploy = async ({
 			args: [],
 		});
 		await deployer.deployContract({
-			name: 'SynthetixL2ToL1Bridge',
+			name: 'SynthetixBridgeToBase',
 			args: [account, resolverAddress],
 		});
 	} else {
@@ -1109,8 +1109,7 @@ const deploy = async ({
 			args: [account, resolverAddress],
 		});
 		await deployer.deployContract({
-			name: 'SynthetixL1ToL2Bridge',
-
+			name: 'SynthetixBridgeToOptimism',
 			args: [account, resolverAddress],
 		});
 	}

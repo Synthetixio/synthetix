@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
-import "./interfaces/ISynthetixL1ToL2Bridge.sol";
+import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
@@ -16,7 +16,7 @@ import "./interfaces/IIssuer.sol";
 import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
 
-contract SynthetixL1ToL2Bridge is Owned, MixinResolver, MixinSystemSettings, ISynthetixL1ToL2Bridge {
+contract SynthetixBridgeToOptimism is Owned, MixinResolver, MixinSystemSettings, ISynthetixBridgeToOptimism {
     uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: verify value, uint32 to uint in new version
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -24,14 +24,14 @@ contract SynthetixL1ToL2Bridge is Owned, MixinResolver, MixinSystemSettings, ISy
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     // bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
-    bytes32 private constant CONTRACT_ALT_SYNTHETIX_BRIDGE = "alt:SynthetixOptimisticBridge";
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_TO_BASE = "ovm:SynthetixBridgeToBase";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_EXT_MESSENGER,
         CONTRACT_SYNTHETIX,
         CONTRACT_ISSUER,
         // CONTRACT_REWARDESCROW,
-        CONTRACT_ALT_SYNTHETIX_BRIDGE
+        CONTRACT_SYNTHETIX_BRIDGE_TO_BASE
     ];
 
     bool public activated;
@@ -71,8 +71,8 @@ contract SynthetixL1ToL2Bridge is Owned, MixinResolver, MixinSystemSettings, ISy
     //     return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     // }
 
-    function synthetixBridge() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_ALT_SYNTHETIX_BRIDGE, "Missing Bridge address");
+    function synthetixBridgeToBase() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_TO_BASE, "Missing Bridge address");
     }
 
     /// ========= VIEWS =================
@@ -101,19 +101,19 @@ contract SynthetixL1ToL2Bridge is Owned, MixinResolver, MixinSystemSettings, ISy
         // create message payload for L2
         bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
 
-        // relay the message to this contract on L2 via Messenger1
-        messenger().sendMessage(synthetixBridge(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
 
         emit Deposit(msg.sender, amount);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    // invoked by Messenger1 on L1 after L2 waiting period elapses
+    // invoked by Messenger on L1 after L2 waiting period elapses
     function completeWithdrawal(address account, uint amount) external {
         // ensure function only callable from L2 Bridge via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
-        require(messenger().xDomainMessageSender() == synthetixBridge(), "Only the L2 bridge can invoke");
+        require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
 
         // transfer amount back to user
         synthetixERC20().transfer(account, amount);

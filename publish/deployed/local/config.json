@@ -2,12 +2,6 @@
 	"SystemSettings": {
 		"deploy": true
 	},
-	"SynthetixL1ToL2Bridge": {
-		"deploy": true
-	},
-	"SynthetixL2ToL1Bridge": {
-		"deploy": true
-	},
 	"AddressResolver": {
 		"deploy": true
 	},
