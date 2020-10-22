@@ -24,7 +24,7 @@
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:ovm": "buidler test --ovm --optimizer",
 		"test:prod": "buidler test:prod --network localhost",
-		"test:prod:gas": "buidler test:prod --gas --network localhost --gas-output-file test-gas-used-prod.log || cat test-gas-used-prod.log",
+		"test:prod:gas": "buidler test:prod --gas --network localhost --gas-output-file test-gas-used-prod.log",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",
 		"test:local": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && node test/testnet --network local --yes\"",

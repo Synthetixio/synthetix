@@ -7,3 +7,5 @@ steps:
       network: << parameters.network >>
       reset: true
   - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
+  - store_artifacts:
+      path: test-gas-used-prod.log
