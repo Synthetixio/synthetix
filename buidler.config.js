@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { red, gray, yellow } = require('chalk');
 
-const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
+const { usePlugin, task, internalTask, extendEnvironment } = require('@nomiclabs/buidler/config');
 
 const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants');
 
@@ -203,12 +203,12 @@ internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => 
 
 		// Iterate over the dependency graph, and check if an ignored contract
 		// is listed as a dependency of another contract.
-		for (let entry of graph.dependenciesPerFile.entries()) {
+		for (const entry of graph.dependenciesPerFile.entries()) {
 			const source = entry[0];
 			const sourceFilename = path.basename(source.globalName, '.sol');
 
 			const dependencies = entry[1];
-			for (let dependency of dependencies.keys()) {
+			for (const dependency of dependencies.keys()) {
 				const filename = path.basename(dependency.globalName, '.sol');
 
 				const offender = ovmIgnored.find(ignored => filename === ignored.name);

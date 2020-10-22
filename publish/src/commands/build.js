@@ -43,7 +43,7 @@ const build = async ({
 	// if there's a naming clash our code wins.
 	console.log(gray('Finding .sol files...'));
 	const libraries = findSolFiles({ sourcePath: 'node_modules' });
-	let contracts = findSolFiles({
+	const contracts = findSolFiles({
 		sourcePath: CONTRACTS_FOLDER,
 		ignore: [].concat(!testHelpers ? /^test-helpers\// : []),
 	});
