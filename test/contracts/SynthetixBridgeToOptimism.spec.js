@@ -26,40 +26,32 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 			}));
 		});
 
-		describe('when setting a maximumDeposit', () => {
-			before('set maximumDeposit', async () => {
-				await systemSettings.setMaximumDeposit(100, {
+		describe('when a user has provided allowance to the bridge contract', () => {
+			const amountToDeposit = 1;
+
+			before('approve SynthetixBridgeToOptimism', async () => {
+				await synthetix.approve(synthetixBridgeToOptimism.address, 1, {
 					from: owner,
 				});
 			});
 
-			describe('when a user has provided allowance to the bridge contract', () => {
-				const amountToDeposit = 1;
+			describe('when performing a deposit', () => {
+				let userBalanceBefore;
 
-				before('approve SynthetixBridgeToOptimism', async () => {
-					await synthetix.approve(synthetixBridgeToOptimism.address, 1, {
+				before('record balance before', async () => {
+					userBalanceBefore = await synthetix.balanceOf(owner);
+				});
+
+				before('perform a deposit', async () => {
+					await synthetixBridgeToOptimism.deposit(amountToDeposit, {
 						from: owner,
 					});
 				});
 
-				describe('when performing a deposit', () => {
-					let userBalanceBefore;
+				it('reduces the user balance', async () => {
+					const userBalanceAfter = await synthetix.balanceOf(owner);
 
-					before('record balance before', async () => {
-						userBalanceBefore = await synthetix.balanceOf(owner);
-					});
-
-					before('perform a deposit', async () => {
-						await synthetixBridgeToOptimism.deposit(amountToDeposit, {
-							from: owner,
-						});
-					});
-
-					it('reduces the user balance', async () => {
-						const userBalanceAfter = await synthetix.balanceOf(owner);
-
-						assert.bnEqual(userBalanceBefore.sub(toBN(amountToDeposit)), userBalanceAfter);
-					});
+					assert.bnEqual(userBalanceBefore.sub(toBN(amountToDeposit)), userBalanceAfter);
 				});
 			});
 		});

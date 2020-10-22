@@ -1628,16 +1628,6 @@ const deploy = async ({
 			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
 		});
 
-		const maximumDeposit = await getDeployParameter('MAXIMUM_DEPOSIT');
-		await runStep({
-			contract: 'SystemSettings',
-			target: systemSettings,
-			read: 'maximumDeposit',
-			expected: input => input !== '0' || (maximumDeposit === '0' && input === '0'), // only change if zero and if maximumDeposit and existing value are non-zero
-			write: 'setMaximumDeposit',
-			writeArg: maximumDeposit,
-		});
-
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
