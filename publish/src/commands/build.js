@@ -43,10 +43,28 @@ const build = async ({
 	// if there's a naming clash our code wins.
 	console.log(gray('Finding .sol files...'));
 	const libraries = findSolFiles({ sourcePath: 'node_modules' });
-	const contracts = findSolFiles({
+	let contracts = findSolFiles({
 		sourcePath: CONTRACTS_FOLDER,
 		ignore: [].concat(!testHelpers ? /^test-helpers\// : []),
 	});
+
+	if (useOVM) {
+		const ovmIgnored = JSON.parse(fs.readFileSync('publish/ovm-ignore.json'));
+
+		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
+
+		const contractPaths = Object.keys(contracts);
+		contractPaths.map(contractPath => {
+			const filename = path.basename(contractPath, '.sol');
+			const isIgnored = ovmIgnored.some(ignored => filename === ignored.name);
+
+			if (isIgnored) {
+				console.log(gray(`    > ${filename}`));
+
+				delete contracts[contractPath];
+			}
+		});
+	}
 
 	const allSolFiles = { ...libraries, ...contracts };
 	console.log(
