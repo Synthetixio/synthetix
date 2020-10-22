@@ -58,7 +58,7 @@ contract('ExternStateToken', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: instance.abi,
-			ignoreParents: ['SelfDestructible', 'Proxyable'],
+			ignoreParents: ['Proxyable'],
 			expected: ['setTokenState', 'approve'],
 		});
 	});
