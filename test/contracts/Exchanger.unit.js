@@ -1,12 +1,8 @@
 'use strict';
 
-const {
-	artifacts,
-	contract,
-	// web3, legacy, network
-} = require('@nomiclabs/buidler');
+const { artifacts, contract, web3, legacy, network } = require('@nomiclabs/buidler');
 
-// const { smockit } = require('@eth-optimism/smock');
+const { smockit } = require('@eth-optimism/smock');
 
 // const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -25,10 +21,10 @@ const {
 	// 	convertToAggregatorPrice,
 } = require('./helpers');
 
-// const {
-// 	toBytes32,
-// 	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
-// } = require('../..');
+const {
+	toBytes32,
+	// 	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
+} = require('../..');
 
 const Exchanger = artifacts.require('Exchanger');
 
@@ -73,19 +69,18 @@ contract('Exchanger (unit tests)', async accounts => {
 		});
 	});
 
-	// describe('when a fake is instantiated', () => {
-	// 	let exchanger;
+	describe('when a contract is instantiated', () => {
+		it.only('test mocking', async () => {
+			const ExRates = await smockit(artifacts.require('ExchangeRates').abi);
 
-	// 	it.only('test', async () => {
-	// 		await network.provider._init();
+			ExRates.smocked.rateForCurrency.will.return.with(arg =>
+				arg === toBytes32('sETH') ? '111' : '999'
+			);
 
-	// 		const ExRates = smockit(artifacts.require('ExchangeRates').abi);
+			// const tester = await artifacts.require('TestMe').new(ExRates.address);
 
-	// 		console.log(ExRates.address);
-
-	// 		console.log(ExRates);
-
-	// 		// console.log(ExRates.abi);
-	// 	});
-	// });
+			// console.log('With sETH', (await tester.showMe(toBytes32('sETH'))).toString());
+			// console.log('Otherwise', (await tester.showMe(toBytes32('SNX'))).toString());
+		});
+	});
 });
