@@ -1,71 +1,71 @@
 jobs:
-  - prepare:
+  - job-prepare:
       filters:
         branches:
           only: develop
   # ~~~~~~~~~~~~~~~ MAINNET ~~~~~~~~~~~~~~~ #
-  - fork-prepare-deploy:
-      name: fork-prepare-deploy-mainnet
+  - job-fork-prepare-deploy:
+      name: job-fork-prepare-deploy-mainnet
       network: mainnet
       requires:
-        - prepare
-  - fork-deploy:
-      name: fork-deploy-mainnet
+        - job-prepare
+  - job-fork-deploy:
+      name: job-fork-deploy-mainnet
       network: mainnet
       requires:
-        - fork-prepare-deploy-mainnet
-  - fork-test-prod:
-      name: fork-test-prod-mainnet
+        - job-fork-prepare-deploy-mainnet
+  - job-fork-test-prod:
+      name: job-fork-test-prod-mainnet
       network: mainnet
       requires:
-        - fork-deploy-mainnet
+        - job-fork-deploy-mainnet
   # ~~~~~~~~~~~~~~~ RINKEBY ~~~~~~~~~~~~~~~ #
-  - fork-prepare-deploy:
-      name: fork-prepare-deploy-rinkeby
+  - job-fork-prepare-deploy:
+      name: job-fork-prepare-deploy-rinkeby
       network: rinkeby
       requires:
-        - prepare
+        - job-prepare
       filters:
         branches:
           only: develop
-  - fork-deploy:
-      name: fork-deploy-rinkeby
+  - job-fork-deploy:
+      name: job-fork-deploy-rinkeby
       network: rinkeby
       requires:
-        - fork-prepare-deploy-rinkeby
+        - job-fork-prepare-deploy-rinkeby
       filters:
         branches:
           only: develop
-  - fork-test-prod:
-      name: fork-test-prod-rinkeby
+  - job-fork-test-prod:
+      name: job-fork-test-prod-rinkeby
       network: rinkeby
       requires:
-        - fork-deploy-rinkeby
+        - job-fork-deploy-rinkeby
       filters:
         branches:
           only: develop
   # ~~~~~~~~~~~~~~~ KOVAN ~~~~~~~~~~~~~~~ #
-  - fork-prepare-deploy:
-      name: fork-prepare-deploy-kovan
+  - job-fork-prepare-deploy:
+      name: job-fork-prepare-deploy-kovan
       network: rinkeby
       requires:
-        - prepare
+        - job-prepare
       filters:
         branches:
           only: develop
-  - fork-deploy:
-      name: fork-deploy-kovan
+  - job-fork-deploy:
+      name: job-fork-deploy-kovan
       network: rinkeby
       requires:
-        - fork-prepare-deploy-kovan
+        - job-fork-prepare-deploy-kovan
       filters:
         branches:
           only: develop
-  - fork-test-prod:
-      name: fork-test-prod-kovan
+  - job-fork-test-prod:
+      name: job-fork-test-prod-kovan
       network: rinkeby
       requires:
-        - fork-deploy-kovan
+        - job-fork-deploy-kovan
       filters:
         branches:
           only: develop
