@@ -360,6 +360,10 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         revert("Cannot be run on this layer");
     }
 
+    function mintSecondaryRewards(uint) external {
+        revert("Cannot be run on this layer");
+    }
+
     function burnSecondary(address, uint) external {
         revert("Cannot be run on this layer");
     }
