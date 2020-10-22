@@ -1765,7 +1765,9 @@ const deploy = async ({
 		}
 	} else {
 		console.log(
-			gray('Addresses are not set up, owner actions must be performed before continuing.')
+			gray(
+				'Addresses are not set up, owner actions must be performed before re-running the script.'
+			)
 		);
 	}
 
