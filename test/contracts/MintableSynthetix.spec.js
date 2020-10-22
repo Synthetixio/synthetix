@@ -10,7 +10,7 @@ const MintableSynthetix = artifacts.require('MintableSynthetix');
 const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
 contract('MintableSynthetix (spec tests)', accounts => {
-	const [, owner, SynthetixL2ToL1Bridge, account1] = accounts;
+	const [, owner, synthetixBridgeToBase, account1] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -33,8 +33,8 @@ contract('MintableSynthetix (spec tests)', accounts => {
 			}));
 			// update resolver
 			await addressResolver.importAddresses(
-				[toBytes32('SynthetixL2ToL1Bridge')],
-				[SynthetixL2ToL1Bridge],
+				[toBytes32('SynthetixBridgeToBase')],
+				[synthetixBridgeToBase],
 				{
 					from: owner,
 				}
@@ -44,23 +44,23 @@ contract('MintableSynthetix (spec tests)', accounts => {
 		});
 
 		describe('access permissions', async () => {
-			it('should only allow SynthetixL2ToL1Bridge to call mintSecondary()', async () => {
+			it('should only allow SynthetixBridgeToBase to call mintSecondary()', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: mintableSynthetix.mintSecondary,
 					args: [account1, 100],
-					address: SynthetixL2ToL1Bridge,
+					address: synthetixBridgeToBase,
 					accounts,
-					reason: 'Can only be invoked by the SynthetixL2ToL1Bridge contract',
+					reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
 				});
 			});
 
-			it('should only allow SynthetixL2ToL1Bridge to call burnSecondary()', async () => {
+			it('should only allow SynthetixBridgeToBase to call burnSecondary()', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: mintableSynthetix.burnSecondary,
 					args: [account1, 100],
-					address: SynthetixL2ToL1Bridge,
+					address: synthetixBridgeToBase,
 					accounts,
-					reason: 'Can only be invoked by the SynthetixL2ToL1Bridge contract',
+					reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
 				});
 			});
 		});
@@ -68,9 +68,9 @@ contract('MintableSynthetix (spec tests)', accounts => {
 		describe('mintSecondary()', async () => {
 			let mintSecondaryTx;
 			const amount = 100;
-			before('when SynthetixL2ToL1Bridge calls mintSecondary()', async () => {
+			before('when SynthetixBridgeToBase calls mintSecondary()', async () => {
 				mintSecondaryTx = await mintableSynthetix.mintSecondary(account1, amount, {
-					from: SynthetixL2ToL1Bridge,
+					from: synthetixBridgeToBase,
 				});
 			});
 
@@ -95,9 +95,9 @@ contract('MintableSynthetix (spec tests)', accounts => {
 		describe('burnSecondary()', async () => {
 			let burnSecondaryTx;
 			const amount = 100;
-			before('when SynthetixL2ToL1Bridge calls burnSecondary()', async () => {
+			before('when SynthetixBridgeToBase calls burnSecondary()', async () => {
 				burnSecondaryTx = await mintableSynthetix.burnSecondary(account1, amount, {
-					from: SynthetixL2ToL1Bridge,
+					from: synthetixBridgeToBase,
 				});
 			});
 			it('should tranfer the tokens to the right account', async () => {
