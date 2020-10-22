@@ -1,24 +1,15 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { onlyGivenAddressCanInvoke } = require('./helpers');
 const { setupAllContracts } = require('./setup');
 const { toWei } = web3.utils;
 const { toBytes32 } = require('../..');
 const BN = require('bn.js');
 
-const MintableSynthetix = artifacts.require('MintableSynthetix');
 const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
 contract('MintableSynthetix (spec tests)', accounts => {
 	const [, owner, synthetixBridgeToBase, account1] = accounts;
-
-	it('ensure only known functions are mutative', () => {
-		ensureOnlyExpectedMutativeFunctions({
-			abi: MintableSynthetix.abi,
-			ignoreParents: ['Synthetix'],
-			expected: ['mintSecondary', 'burnSecondary'],
-		});
-	});
 
 	let mintableSynthetix;
 	let addressResolver;

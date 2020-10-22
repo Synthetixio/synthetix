@@ -20,7 +20,13 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToOptimism.abi,
 			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
-			expected: ['deposit', 'completeWithdrawal', 'migrateBridge'],
+			expected: [
+				'completeWithdrawal',
+				'deposit',
+				'migrateBridge',
+				'notifyRewardAmount',
+				'rewardDeposit',
+			],
 		});
 	});
 

@@ -99,6 +99,7 @@ contract('Synthetix', async accounts => {
 				'issueSynthsOnBehalf',
 				'mint',
 				'mintSecondary',
+				'mintSecondaryRewards',
 				'settle',
 				'transfer',
 				'transferFrom',

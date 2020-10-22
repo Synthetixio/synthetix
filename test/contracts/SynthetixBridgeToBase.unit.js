@@ -17,7 +17,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToBase.abi,
 			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
-			expected: ['initiateWithdrawal', 'mintSecondaryFromDeposit'],
+			expected: [
+				'initiateWithdrawal',
+				'mintSecondaryFromDeposit',
+				'mintSecondaryFromDepositForRewards',
+			],
 		});
 	});
 

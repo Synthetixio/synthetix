@@ -18,13 +18,11 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_EXT_MESSENGER,
         CONTRACT_SYNTHETIX,
-        CONTRACT_FEEPOOL,
         CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM
     ];
 
