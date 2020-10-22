@@ -14,7 +14,6 @@ const {
 	decodedEventEqual,
 	timeIsClose,
 	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
 	convertToAggregatorPrice,
 } = require('./helpers');
