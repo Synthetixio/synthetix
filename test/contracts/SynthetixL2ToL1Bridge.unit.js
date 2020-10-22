@@ -154,7 +154,7 @@ contract('SynthetixL2ToL1Bridge (unit tests)', accounts => {
 					it('should only allow the  bridge to invoke mintSecondaryFromDeposit()', async () => {
 						// create a messenger mock with a random address as the bridge on L1
 						const crossDomainMessengerMock = await artifacts
-							.require('CrossDomainMessengerMock')
+							.require('MockCrossDomainMessenger')
 							.new(mockAddress);
 						it('should revert when the original msg sender is not the right bridge ', async () => {
 							await assert.revert(
