@@ -698,7 +698,7 @@ const deploy = async ({
 
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
-		deps: ['AddressResolver', 'DebtCache'],
+		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
 	});
 
@@ -760,7 +760,7 @@ const deploy = async ({
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
-		deps: ['AddressResolver', 'DebtCache'],
+		deps: ['AddressResolver'],
 		args: [account, addressOf(addressResolver)],
 	});
 
