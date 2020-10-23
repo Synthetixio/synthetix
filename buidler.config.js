@@ -168,7 +168,7 @@ const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 
 // This overrides a buidler internal task, which is part of its compile task's lifecycle.
 // This allows us to filter out non OVM compatible contracts from the compilation list,
-// which are entries in publish/deployed/ovm-ignore.json.
+// which are entries in publish/ovm-ignore.json.
 internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
 	let filePaths = await runSuper();
 
