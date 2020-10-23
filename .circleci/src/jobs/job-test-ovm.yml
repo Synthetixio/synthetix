@@ -8,4 +8,4 @@ steps:
   - run:
       name: Run unit tests on OVM compiled output (TODO enable tests)
       command: |
-        npx buidler compile --ovm --optimizer
+        npx buidler compile --use-ovm --optimizer
