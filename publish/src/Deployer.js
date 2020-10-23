@@ -5,12 +5,8 @@ const Web3 = require('web3');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
 const { getUsers } = require('../../index.js');
+const { stringify, getEtherscanLinkPrefix } = require('./util');
 
-const { stringify } = require('./util');
-
-/**
- *
- */
 class Deployer {
 	/**
 	 *
@@ -191,7 +187,7 @@ class Deployer {
 			name,
 			address,
 			source,
-			link: `https://${this.network !== 'mainnet' ? this.network + '.' : ''}etherscan.io/address/${
+			link: `${getEtherscanLinkPrefix(this.network)}/address/${
 				this.deployedContracts[name].options.address
 			}`,
 			timestamp,
@@ -256,6 +252,12 @@ class Deployer {
 
 	getContract({ abi, address }) {
 		return new this.web3.eth.Contract(abi, address);
+	}
+
+	getContractByName({ contract }) {
+		const { address, source } = this.deployment.targets[contract];
+		const { abi } = this.deployment.sources[source];
+		return this.getContract({ abi, address });
 	}
 }
 

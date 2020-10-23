@@ -31,7 +31,6 @@
 		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 90000\"",
 		"test:multi": "mocha test/multi --timeout 9000000",
 		"test:multi-same-chain": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/multi-same-chain --timeout 90000\"",
-		"deploy:messengers": "node test/multi-helper/deployMessengers.js",
 		"test:testnet": "node test/testnet"
 	},
 	"husky": {
