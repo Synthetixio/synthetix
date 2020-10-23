@@ -98,10 +98,6 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_KEEPER_FEE);
     }
 
-    function getMaximumDeposit() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MAXIMUM_DEPOSIT);
-    }
-
     function getDebtSnapshotStaleTime() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME);
     }

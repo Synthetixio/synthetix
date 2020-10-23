@@ -261,11 +261,6 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit KeeperFeeUpdated(_keeperFee);
     }
 
-    function setMaximumDeposit(uint _maxDeposit) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MAXIMUM_DEPOSIT, _maxDeposit);
-        emit MaximumDepositUpdated(_maxDeposit);
-    }
-
     // ========== EVENTS ==========
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
