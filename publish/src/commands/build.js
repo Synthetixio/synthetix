@@ -56,7 +56,7 @@ const build = async ({
 		const contractPaths = Object.keys(contracts);
 		contractPaths.map(contractPath => {
 			const filename = path.basename(contractPath, '.sol');
-			const isIgnored = ovmIgnored.some(ignored => filename === ignored.name);
+			const isIgnored = ovmIgnored.some(ignored => filename === ignored);
 
 			if (isIgnored) {
 				console.log(gray(`    > ${filename}`));

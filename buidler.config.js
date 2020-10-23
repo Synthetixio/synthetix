@@ -178,7 +178,7 @@ internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
 		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
 		filePaths = filePaths.filter(filePath => {
 			const filename = path.basename(filePath, '.sol');
-			const isIgnored = ovmIgnored.some(ignored => filename === ignored.name);
+			const isIgnored = ovmIgnored.some(ignored => filename === ignored);
 			if (isIgnored) {
 				console.log(gray(`    > ${filename}`));
 			}
@@ -211,11 +211,11 @@ internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => 
 			for (const dependency of dependencies.keys()) {
 				const filename = path.basename(dependency.globalName, '.sol');
 
-				const offender = ovmIgnored.find(ignored => filename === ignored.name);
+				const offender = ovmIgnored.find(ignored => filename === ignored);
 				if (offender) {
 					throw new Error(
 						red(
-							`Ignored source ${offender.name} is in the dependency graph because ${sourceFilename} imports it.`
+							`Ignored source ${offender} is in the dependency graph because ${sourceFilename} imports it.`
 						)
 					);
 				}
