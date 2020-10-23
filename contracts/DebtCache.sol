@@ -19,7 +19,7 @@ import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IERC20.sol";
 
 
-// https://docs.synthetix.io/contracts/DebtCache
+// https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

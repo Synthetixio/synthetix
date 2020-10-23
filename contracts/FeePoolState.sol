@@ -12,7 +12,7 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/IFeePool.sol";
 
 
-// https://docs.synthetix.io/contracts/FeePoolState
+// https://docs.synthetix.io/contracts/source/contracts/feepoolstate
 contract FeePoolState is Owned, SelfDestructible, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

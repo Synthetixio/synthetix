@@ -12,7 +12,7 @@ import "./SafeDecimalMath.sol";
 import "./TokenState.sol";
 
 
-// https://docs.synthetix.io/contracts/ExternStateToken
+// https://docs.synthetix.io/contracts/source/contracts/externstatetoken
 contract ExternStateToken is Owned, SelfDestructible, Proxyable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

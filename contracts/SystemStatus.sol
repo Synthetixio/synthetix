@@ -5,7 +5,7 @@ import "./Owned.sol";
 import "./interfaces/ISystemStatus.sol";
 
 
-// https://docs.synthetix.io/contracts/SystemStatus
+// https://docs.synthetix.io/contracts/source/contracts/systemstatus
 contract SystemStatus is Owned, ISystemStatus {
     mapping(bytes32 => mapping(address => Status)) public accessControl;
 

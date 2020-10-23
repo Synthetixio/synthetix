@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/isecondarydeposit
 interface ISecondaryDeposit {
     // invoked by users on the primary (L1)
     function deposit(uint amount) external;

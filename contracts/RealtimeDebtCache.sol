@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./DebtCache.sol";
 
 
-// https://docs.synthetix.io/contracts/RealtimeDebtCache
+// https://docs.synthetix.io/contracts/source/contracts/realtimedebtcache
 contract RealtimeDebtCache is DebtCache {
     constructor(address _owner, address _resolver) public DebtCache(_owner, _resolver) {}
 

@@ -60,7 +60,7 @@ interface IExchangerInternalDebtCache {
 }
 
 
-// https://docs.synthetix.io/contracts/Exchanger
+// https://docs.synthetix.io/contracts/source/contracts/exchanger
 contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

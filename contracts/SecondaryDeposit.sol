@@ -16,6 +16,7 @@ import "./interfaces/IRewardEscrow.sol";
 import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
 
 
+// https://docs.synthetix.io/contracts/source/contracts/secondarydeposit
 contract SecondaryDeposit is Owned, MixinResolver, MixinSystemSettings, ISecondaryDeposit {
     bool public activated;
 
