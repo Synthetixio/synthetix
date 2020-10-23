@@ -252,15 +252,33 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
     }
 
     function migrateVestingSchedule(address _addressToMigrate) external {
-        // require(totalEscrowedAccountBalance[_addressToMigrate] > 0, "Address escrow balance is 0");
+        require(totalEscrowedAccountBalance[_addressToMigrate] > 0, "Address escrow balance is 0");
 
         uint numEntries = oldRewardEscrow.numVestingEntries(_addressToMigrate);
-        uint totalVested;
+
         // Calculate entries that can be vested and total vested to deduct from totalEscrowedAccountBalance
-        for (uint i = 0; i < numEntries; i++) {
+        (uint vestedEntries, uint totalVested) = _getVestedEntriesAndAmount(_addressToMigrate, numEntries);
+
+        uint remainingEntries = numEntries - vestedEntries;
+        for (uint i = 0; i < remainingEntries; i++) {
+            // vestingSchedules[_addressToMigrate].push([vestingSchedule[0], vestingSchedule[1]]);
+        }
+    }
+
+    function _getVestedEntriesAndAmount(address _account, uint _numEntries) internal view returns (uint vestedEntries, uint totalVestedAmount) {
+        for (uint i = 0; i < _numEntries; i++) {
             // get existing vesting entry [time, quantity]
-            uint[2] memory vestingSchedule = oldRewardEscrow.getVestingScheduleEntry(_addressToMigrate, i);
-            vestingSchedules[_addressToMigrate].push([vestingSchedule[0], vestingSchedule[1]]);
+            uint[2] memory vestingSchedule = oldRewardEscrow.getVestingScheduleEntry(_account, i);
+            /* The list is sorted on the old RewardEscrow; when we reach the first future time, bail out. */
+            uint time = vestingSchedule[0];
+            if (time > now) {
+                break;
+            }
+            uint qty = vestingSchedule[1];
+            if (qty > 0) {
+                vestedEntries++;
+                totalVestedAmount = totalVestedAmount.add(qty);
+            }
         }
     }
 
