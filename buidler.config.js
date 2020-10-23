@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const path = require('path');
 const { red, gray, yellow } = require('chalk');
 
@@ -19,6 +18,7 @@ usePlugin('buidler-gas-reporter');
 const { logContractSizes } = require('./publish/src/contract-size');
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
+	ovmIgnored,
 } = require('.');
 
 const {
@@ -168,17 +168,15 @@ const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 
 // This overrides a buidler internal task, which is part of its compile task's lifecycle.
 // This allows us to filter out non OVM compatible contracts from the compilation list,
-// which are entries in publish/deployed/ovm-ignore.json.
+// which are entries in publish/ovm-ignore.json.
 internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
 	let filePaths = await runSuper();
 
 	if (config.ignoreNonOvmContracts) {
-		const ovmIgnored = JSON.parse(fs.readFileSync('publish/ovm-ignore.json'));
-
 		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
 		filePaths = filePaths.filter(filePath => {
 			const filename = path.basename(filePath, '.sol');
-			const isIgnored = ovmIgnored.some(ignored => filename === ignored.name);
+			const isIgnored = ovmIgnored.some(ignored => filename === ignored);
 			if (isIgnored) {
 				console.log(gray(`    > ${filename}`));
 			}
@@ -199,8 +197,6 @@ internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => 
 	const graph = await runSuper();
 
 	if (config.ignoreNonOvmContracts) {
-		const ovmIgnored = JSON.parse(fs.readFileSync('publish/ovm-ignore.json'));
-
 		// Iterate over the dependency graph, and check if an ignored contract
 		// is listed as a dependency of another contract.
 		for (const entry of graph.dependenciesPerFile.entries()) {
@@ -211,11 +207,11 @@ internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => 
 			for (const dependency of dependencies.keys()) {
 				const filename = path.basename(dependency.globalName, '.sol');
 
-				const offender = ovmIgnored.find(ignored => filename === ignored.name);
+				const offender = ovmIgnored.find(ignored => filename === ignored);
 				if (offender) {
 					throw new Error(
 						red(
-							`Ignored source ${offender.name} is in the dependency graph because ${sourceFilename} imports it.`
+							`Ignored source ${offender} is in the dependency graph because ${sourceFilename} imports it.`
 						)
 					);
 				}
@@ -230,10 +226,10 @@ task('compile')
 	.addFlag('showsize', 'Show size of compiled contracts')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('failOversize', 'Fail if any contract is oversize')
-	.addFlag('ovm', 'Compile with the OVM Solidity compiler')
+	.addFlag('useOvm', 'Compile with the OVM Solidity compiler')
 	.addFlag('native', 'Compile with the native solc compiler')
 	.setAction(async (taskArguments, bre, runSuper) => {
-		if (taskArguments.ovm) {
+		if (taskArguments.useOvm) {
 			console.log(gray('Compiling with OVM Solidity compiler...'));
 
 			bre.config.ignoreNonOvmContracts = true;

@@ -14,6 +14,7 @@ const data = {
 };
 
 const assets = require('./publish/assets.json');
+const ovmIgnored = require('./publish/ovm-ignore.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
@@ -40,6 +41,7 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
+	OVM_IGNORE_FILENAME: 'ovm-ignore.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -79,7 +81,6 @@ const defaults = {
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
-	MAXIMUM_DEPOSIT: w3utils.toWei(`5000`),
 };
 
 /**
@@ -498,4 +499,5 @@ module.exports = {
 	networkToChainId,
 	toBytes32,
 	wrap,
+	ovmIgnored,
 };
