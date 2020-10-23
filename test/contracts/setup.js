@@ -133,7 +133,8 @@ const setupContract = async ({
 
 	const defaultArgs = {
 		GenericMock: [],
-		SecondaryDeposit: [owner, tryGetAddressOf('AddressResolver')],
+		SynthetixBridgeToOptimism: [owner, tryGetAddressOf('AddressResolver')],
+		SynthetixBridgeToBase: [owner, tryGetAddressOf('AddressResolver')],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
@@ -599,14 +600,19 @@ const setupAllContracts = async ({
 				'SynthetixState',
 				'SystemStatus',
 				'ExchangeRates',
-				'SecondaryDeposit',
+				'SynthetixBridgeToBase',
 			],
 			deps: ['Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState'],
 		},
 		{
-			contract: 'SecondaryDeposit',
-			mocks: ['ext:Messenger', 'alt:SecondaryDeposit'],
+			contract: 'SynthetixBridgeToOptimism',
+			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase'],
 			deps: ['AddressResolver', 'Issuer', 'RewardEscrow'],
+		},
+		{
+			contract: 'SynthetixBridgeToBase',
+			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism'],
+			deps: ['AddressResolver'],
 		},
 		{ contract: 'TradingRewards', deps: ['AddressResolver', 'Synthetix'] },
 		{
@@ -703,7 +709,12 @@ const setupAllContracts = async ({
 		const forContractName = forContract || '';
 
 		// deploy the contract
-		returnObj[contract + forContractName] = await setupContract({
+		// HACK: if MintableSynthetix is deployed then rename it
+		let contractRegistered = contract;
+		if (contract === 'MintableSynthetix') {
+			contractRegistered = 'Synthetix';
+		}
+		returnObj[contractRegistered + forContractName] = await setupContract({
 			accounts,
 			contract,
 			forContract,
