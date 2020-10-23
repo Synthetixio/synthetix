@@ -276,7 +276,7 @@ jobs:
                 at: .
             - run:
                 command: |
-                    npx buidler compile --ovm --optimizer
+                    npx buidler compile --use-ovm --optimizer
                 name: Compile in OVM, enforcing size limit
         working_directory: ~/repo
     job-test-publish:
