@@ -84,7 +84,7 @@ jobs:
             - attach_workspace:
                 at: .
             - run: npx buidler compile --optimizer --fail-oversize
-            - run: npx buidler compile --ovm --optimizer --fail-oversize
+            - run: npx buidler compile --use-ovm --optimizer --fail-oversize
         working_directory: ~/repo
     job-coverage-report:
         docker:
@@ -286,7 +286,7 @@ jobs:
                 at: .
             - run:
                 command: |
-                    npx buidler compile --ovm --optimizer
+                    npx buidler compile --use-ovm --optimizer
                 name: Run unit tests on OVM compiled output (TODO enable tests)
         working_directory: ~/repo
     job-test-publish:
