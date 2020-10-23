@@ -229,10 +229,10 @@ internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => 
 task('compile')
 	.addFlag('showsize', 'Show size of compiled contracts')
 	.addFlag('optimizer', 'Compile with the optimizer')
-	.addFlag('ovm', 'Compile with the OVM Solidity compiler')
+	.addFlag('useOvm', 'Compile with the OVM Solidity compiler')
 	.addFlag('native', 'Compile with the native solc compiler')
 	.setAction(async (taskArguments, bre, runSuper) => {
-		if (taskArguments.ovm) {
+		if (taskArguments.useOvm) {
 			console.log(gray('Compiling with OVM Solidity compiler...'));
 
 			bre.config.ignoreNonOvmContracts = true;
