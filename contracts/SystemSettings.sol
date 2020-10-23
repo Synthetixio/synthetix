@@ -135,10 +135,6 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         return getTradingRewardsEnabled();
     }
 
-    function maximumDeposit() external view returns (uint) {
-        return getMaximumDeposit();
-    }
-
     // ========== RESTRICTED ==========
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
