@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const path = require('path');
 const { red, gray, yellow } = require('chalk');
 
@@ -19,6 +18,7 @@ usePlugin('buidler-gas-reporter');
 const { logContractSizes } = require('./publish/src/contract-size');
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
+	ovmIgnored,
 } = require('.');
 
 const {
@@ -173,8 +173,6 @@ internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
 	let filePaths = await runSuper();
 
 	if (config.ignoreNonOvmContracts) {
-		const ovmIgnored = JSON.parse(fs.readFileSync('publish/ovm-ignore.json'));
-
 		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
 		filePaths = filePaths.filter(filePath => {
 			const filename = path.basename(filePath, '.sol');
@@ -199,8 +197,6 @@ internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => 
 	const graph = await runSuper();
 
 	if (config.ignoreNonOvmContracts) {
-		const ovmIgnored = JSON.parse(fs.readFileSync('publish/ovm-ignore.json'));
-
 		// Iterate over the dependency graph, and check if an ignored contract
 		// is listed as a dependency of another contract.
 		for (const entry of graph.dependenciesPerFile.entries()) {

@@ -8,6 +8,7 @@ const { findSolFiles, flatten, compile } = require('../solidity');
 
 const {
 	constants: { COMPILED_FOLDER, CONTRACTS_FOLDER, FLATTENED_FOLDER, BUILD_FOLDER },
+	ovmIgnored,
 } = require('../../..');
 
 const { stringify } = require('../util');
@@ -49,8 +50,6 @@ const build = async ({
 	});
 
 	if (useOvm) {
-		const ovmIgnored = JSON.parse(fs.readFileSync('publish/ovm-ignore.json'));
-
 		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
 
 		const contractPaths = Object.keys(contracts);
