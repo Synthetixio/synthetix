@@ -5,7 +5,6 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - testnet_pvt:
-      network: kovan
-  - etherscan_check:
-      network: kovan
+  # - run: No PVT for mainnet just yet
+  - cmd-etherscan-check:
+      network: mainnet

@@ -96,5 +96,4 @@ contract MixinSystemSettings is MixinResolver {
     function getDebtSnapshotStaleTime() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME);
     }
-
 }

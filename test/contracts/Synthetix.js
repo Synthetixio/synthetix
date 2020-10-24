@@ -80,6 +80,7 @@ contract('Synthetix', async accounts => {
 			abi: synthetix.abi,
 			ignoreParents: ['ExternStateToken', 'MixinResolver'],
 			expected: [
+				'burnSecondary',
 				'burnSynths',
 				'burnSynthsOnBehalf',
 				'burnSynthsToTarget',
@@ -97,6 +98,7 @@ contract('Synthetix', async accounts => {
 				'issueSynths',
 				'issueSynthsOnBehalf',
 				'mint',
+				'mintSecondary',
 				'settle',
 				'transfer',
 				'transferFrom',

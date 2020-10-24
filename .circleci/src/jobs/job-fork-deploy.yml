@@ -8,5 +8,5 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - fork_prepare_deploy:
+  - cmd-fork-deploy:
       network: << parameters.network >>

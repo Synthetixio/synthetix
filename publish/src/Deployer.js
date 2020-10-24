@@ -5,12 +5,8 @@ const Web3 = require('web3');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
 const { getUsers } = require('../../index.js');
+const { stringify, getEtherscanLinkPrefix } = require('./util');
 
-const { stringify } = require('./util');
-
-/**
- *
- */
 class Deployer {
 	/**
 	 *
@@ -32,6 +28,7 @@ class Deployer {
 		providerUrl,
 		privateKey,
 		useFork,
+		nonceManager,
 	}) {
 		this.compiled = compiled;
 		this.config = config;
@@ -43,6 +40,7 @@ class Deployer {
 		this.methodCallGasLimit = methodCallGasLimit;
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
+		this.nonceManager = nonceManager;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -64,12 +62,18 @@ class Deployer {
 		this.newContractsDeployed = [];
 	}
 
-	sendParameters(type = 'method-call') {
-		return {
+	async sendParameters(type = 'method-call') {
+		const params = {
 			from: this.account,
 			gas: type === 'method-call' ? this.methodCallGasLimit : this.contractDeploymentGasLimit,
 			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
 		};
+
+		if (this.nonceManager) {
+			params.nonce = await this.nonceManager.getNonce();
+		}
+
+		return params;
 	}
 
 	async _deploy({ name, source, args = [], deps = [], force = false, dryRun = this.dryRun }) {
@@ -139,8 +143,12 @@ class Deployer {
 						data: '0x' + bytecode,
 						arguments: args,
 					})
-					.send(this.sendParameters('contract-deployment'))
+					.send(await this.sendParameters('contract-deployment'))
 					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
+
+				if (this.nonceManager) {
+					this.nonceManager.incrementNonce();
+				}
 			}
 			deployedContract.options.deployed = true; // indicate a fresh deployment occurred
 			console.log(
@@ -179,7 +187,7 @@ class Deployer {
 			name,
 			address,
 			source,
-			link: `https://${this.network !== 'mainnet' ? this.network + '.' : ''}etherscan.io/address/${
+			link: `${getEtherscanLinkPrefix(this.network)}/address/${
 				this.deployedContracts[name].options.address
 			}`,
 			timestamp,
@@ -244,6 +252,12 @@ class Deployer {
 
 	getContract({ abi, address }) {
 		return new this.web3.eth.Contract(abi, address);
+	}
+
+	getContractByName({ contract }) {
+		const { address, source } = this.deployment.targets[contract];
+		const { abi } = this.deployment.sources[source];
+		return this.getContract({ abi, address });
 	}
 }
 

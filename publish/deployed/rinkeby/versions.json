@@ -2416,8 +2416,9 @@
 			},
 			"Exchanger": {
 				"address": "0x4c98d3277734f716B2d776DB148580079f88996F",
-				"status": "current",
-				"keccak256": "0x737fcda1e8b492524c2a643bca60667f28f6b8107f310b4d5a0f8e3056dddc73"
+				"status": "replaced",
+				"keccak256": "0x737fcda1e8b492524c2a643bca60667f28f6b8107f310b4d5a0f8e3056dddc73",
+				"replaced_in": "v2.30.0"
 			},
 			"Issuer": {
 				"address": "0x655dD565cc967270Bb31035D3C5078A4c9b7f9Aa",
@@ -2437,8 +2438,9 @@
 			},
 			"SystemSettings": {
 				"address": "0x62Fff452f6bD0D49635eC361038Ab428364aaFf4",
-				"status": "current",
-				"keccak256": "0x59393d6ea3c81732896d77b91ca890a4e69abe8ff8019bbdd3c09a2b1eb02eef"
+				"status": "replaced",
+				"keccak256": "0x59393d6ea3c81732896d77b91ca890a4e69abe8ff8019bbdd3c09a2b1eb02eef",
+				"replaced_in": "v2.30.0"
 			},
 			"TradingRewards": {
 				"address": "0x1ee9C5d45396051101FB530324A6228b1FfAF8De",
@@ -2457,8 +2459,9 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x68Ce67aE06ec627e550d1F8EE2f0491B64543926",
-				"status": "current",
-				"keccak256": "0x9b7626bb44a60f17f989367a27bbc71b7b86d63a03033c7ed5c7fb5d3eedc743"
+				"status": "replaced",
+				"keccak256": "0x9b7626bb44a60f17f989367a27bbc71b7b86d63a03033c7ed5c7fb5d3eedc743",
+				"replaced_in": "v2.30.0"
 			},
 			"FeePool": {
 				"address": "0x021386d58d13AA7Eb6e0321D70c257D0ff1A863f",
@@ -2472,13 +2475,44 @@
 			},
 			"Issuer": {
 				"address": "0x54C88Ca6a6B811766daf1960ce54205729D9ffE3",
-				"status": "current",
-				"keccak256": "0xf6b38cc555bf11c4c5a5b13316a65f4ec59230524ca1b8c969fcdcbc20c2c922"
+				"status": "replaced",
+				"keccak256": "0xf6b38cc555bf11c4c5a5b13316a65f4ec59230524ca1b8c969fcdcbc20c2c922",
+				"replaced_in": "v2.30.0"
 			},
 			"EtherCollateralsUSD": {
 				"address": "0xBF893F0010b8fd8E45369C4E35eE73237DD421bf",
 				"status": "current",
 				"keccak256": "0x85918fcd0515828e0a6698e27e43151d5e0333d936ea6b5a9f6f9341a9b68266"
+			}
+		}
+	},
+	"v2.30.0": {
+		"tag": "v2.30.0",
+		"fulltag": "v2.30.0",
+		"release": "Deneb",
+		"network": "rinkeby",
+		"date": "2020-10-08T19:34:02+11:00",
+		"commit": "6e6b68ae14eee0c6246b5bbe6bdd0b181ba7df94",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xb8f1aDdCf91E5ade0ad20cc50843d08BaA4FB6a9",
+				"status": "current",
+				"keccak256": "0xecc746e9363b1e4d2cda6b3bd5773268540a790a4f1f14909b2eaf441acaf6c4"
+			},
+			"Exchanger": {
+				"address": "0xD90Fa2C12a34448090f0f313EA40e1f662C56B22",
+				"status": "current",
+				"keccak256": "0x5d6e11d4c9e1a785a435f44c861da9ed9ef4889db9151265145624a1cf64e512"
+			},
+			"Issuer": {
+				"address": "0xa27a8e30eD268959Ea969855F438478e4E7eb2a2",
+				"status": "current",
+				"keccak256": "0xd75e68a23fef19a0e8604bebe92baa040bfb590ae5259333aeb63ac413c94da1"
+			},
+			"SystemSettings": {
+				"address": "0xF220fC805602b3dA6B2c0C4C52aCb225b2E7933F",
+				"status": "current",
+				"keccak256": "0x0119b6d98214114e4c7c41b10e0cd5b58903143e6556156917772b4019c44335"
 			}
 		}
 	}

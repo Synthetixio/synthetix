@@ -5,4 +5,7 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npm run test:gas && npx codechecks
+  - cmd-testnet-pvt:
+      network: kovan
+  - cmd-etherscan-check:
+      network: kovan

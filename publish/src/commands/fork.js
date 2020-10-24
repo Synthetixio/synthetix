@@ -40,7 +40,7 @@ const forkChain = async ({ network, reset, providerUrl: specifiedProviderUrl }) 
 
 	const server = ganache.server({
 		fork: providerUrl,
-		gasLimit: 12e6,
+		gasLimit: 5e7,
 		mnemonic: 'ability air report ranch fiber derive impulse wheat design raccoon moon upset',
 		keepAliveTimeout: 0,
 		unlocked_accounts: pwnedAddresses,
