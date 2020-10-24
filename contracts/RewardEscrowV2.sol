@@ -259,8 +259,10 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
         // Calculate entries that can be vested and total vested to deduct from totalEscrowedAccountBalance
         (uint vestedEntries, uint totalVested) = _getVestedEntriesAndAmount(_addressToMigrate, numEntries);
 
+        // Vesting entries are sorted in order of oldest to newer entries.
+        // Vested entries 
         uint remainingEntries = numEntries - vestedEntries;
-        for (uint i = 0; i < remainingEntries; i++) {
+        for (uint i = vestedEntries - 1; i < remainingEntries; i++) {
             // vestingSchedules[_addressToMigrate].push([vestingSchedule[0], vestingSchedule[1]]);
         }
     }
