@@ -189,8 +189,17 @@ const deploy = async ({
 
 	const { account } = deployer;
 
-	const getExistingContract = ({ contract }) => {
-		const { address, source } = deployment.targets[contract];
+	const getExistingContract = ({ contract, network }) => {
+		let address;
+		if (network === 'local') {
+			address = deployment.targets[contract].address;
+		} else {
+			const contractVersion = getVersions({ network, byContract: true })[contract];
+			const lastEntry = contractVersion.slice(-1)[0];
+			address = lastEntry.address;
+		}
+
+		const { source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
 
 		return deployer.getContract({
@@ -208,7 +217,7 @@ const deploy = async ({
 	let systemSuspendedReason;
 
 	try {
-		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
+		const oldSynthetix = getExistingContract({ contract: 'Synthetix', network });
 		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 
 		// inflationSupplyToDate = total supply - 100m
@@ -248,7 +257,7 @@ const deploy = async ({
 	}
 
 	try {
-		oldExrates = getExistingContract({ contract: 'ExchangeRates' });
+		oldExrates = getExistingContract({ contract: 'ExchangeRates', network });
 		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
 		if (!oracleExrates) {
 			oracleExrates = await oldExrates.methods.oracle().call();
@@ -270,7 +279,7 @@ const deploy = async ({
 	}
 
 	try {
-		const oldSystemStatus = getExistingContract({ contract: 'SystemStatus' });
+		const oldSystemStatus = getExistingContract({ contract: 'SystemStatus', network });
 
 		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
 
@@ -908,7 +917,7 @@ const deploy = async ({
 		let originalTotalSupply = 0;
 		if (synthConfig.deploy) {
 			try {
-				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
+				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}`, network });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
 				if (network !== 'local' && !freshDeploy) {
@@ -1266,34 +1275,6 @@ const deploy = async ({
 	// when the oldExrates exists - meaning there is a valid ExchangeRates in the existing deployment.json
 	// for this environment (true for all environments except the initial deploy in 'local' during those tests)
 
-	// Load previous ExchangeRates contract from versions.json
-	const exchangeRatesVersions = getVersions({ network, byContract: true }).ExchangeRates;
-	const lastEntry = exchangeRatesVersions.slice(-1)[0];
-
-	const { source } = deployment.targets['ExchangeRates'];
-	const { abi } = deployment.sources[source];
-
-	const oldExchangeRates = deployer.getContract({
-		abi,
-		address: lastEntry.address,
-	});
-
-	if (!yes) {
-		try {
-			await confirmAction(
-				yellow(
-					`⚠⚠⚠ Loading old exRates for inverse Pricing: Please confirm - ${network}:\n` +
-						`Old ExchangeRates is at ${etherscanLinkPrefix}/address/${lastEntry.address} \n`
-				) +
-					gray('-'.repeat(50)) +
-					'\nDo you want to continue? (y/n) '
-			);
-		} catch (err) {
-			console.log(gray('Operation cancelled'));
-			return;
-		}
-	}
-
 	for (const { name: currencyKey, inverted } of synths) {
 		if (inverted) {
 			const { entryPoint, upperLimit, lowerLimit } = inverted;
@@ -1314,7 +1295,7 @@ const deploy = async ({
 					],
 				});
 
-			if (oldExchangeRates) {
+			if (oldExrates) {
 				// get inverse synth's params from the old exrates, if any exist
 				const {
 					entryPoint: oldEntryPoint,
@@ -1322,11 +1303,11 @@ const deploy = async ({
 					lowerLimit: oldLowerLimit,
 					frozenAtUpperLimit: currentRateIsFrozenUpper,
 					frozenAtLowerLimit: currentRateIsFrozenLower,
-				} = await oldExchangeRates.methods.inversePricing(toBytes32(currencyKey)).call();
+				} = await oldExrates.methods.inversePricing(toBytes32(currencyKey)).call();
 
 				const currentRateIsFrozen = currentRateIsFrozenUpper || currentRateIsFrozenLower;
 				// and the last rate if any exists
-				const currentRateForCurrency = await oldExchangeRates.methods
+				const currentRateForCurrency = await oldExrates.methods
 					.rateForCurrency(toBytes32(currencyKey))
 					.call();
 
@@ -1341,7 +1322,7 @@ const deploy = async ({
 					upperLimit === +w3utils.fromWei(oldUpperLimit) &&
 					lowerLimit === +w3utils.fromWei(oldLowerLimit)
 				) {
-					if (oldExchangeRates.options.address !== addressOf(exchangeRates)) {
+					if (oldExrates.options.address !== addressOf(exchangeRates)) {
 						const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
 						const freezeAtLowerLimit = +w3utils.fromWei(currentRateForCurrency) === lowerLimit;
 						console.log(
