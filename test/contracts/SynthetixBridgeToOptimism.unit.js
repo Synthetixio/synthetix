@@ -215,6 +215,51 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 			});
+
+			describe('migrateBridge', () => {
+				describe('failure modes', () => {
+					it('does not work when not invoked by the owner', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: instance.migrateBridge,
+							args: [accounts[7]],
+							accounts,
+							reason: 'Only the contract owner may perform this action',
+							address: owner,
+						});
+					});
+				});
+
+				it('initially activated is true', async () => {
+					assert.equal(await instance.activated(), true);
+				});
+
+				describe('when invoked by the owner', () => {
+					let txn;
+					let newAccount;
+					let amount;
+					beforeEach(async () => {
+						newAccount = accounts[7];
+						amount = '999';
+						synthetix.smocked.balanceOf.will.return.with(address =>
+							address === instance.address ? amount : '0'
+						);
+						txn = await instance.migrateBridge(newAccount, { from: owner });
+					});
+
+					it('then all of the contracts SNX is transferred to the new account', async () => {
+						assert.equal(synthetix.smocked.transfer.calls[0][0], newAccount);
+						assert.equal(synthetix.smocked.transfer.calls[0][1].toString(), amount);
+					});
+
+					it('and activated is false', async () => {
+						assert.equal(await instance.activated(), false);
+					});
+
+					it('and a BridgeMigrated event is emitted', async () => {
+						assert.eventEqual(txn, 'BridgeMigrated', [instance.address, newAccount, amount]);
+					});
+				});
+			});
 		});
 	});
 });
