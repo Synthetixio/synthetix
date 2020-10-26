@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
+const { table } = require('table');
 const w3utils = require('web3-utils');
 
 const {
@@ -107,6 +108,10 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	};
 };
 
+const getEtherscanLinkPrefix = network => {
+	return `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+};
+
 const loadConnections = ({ network, useFork, specifiedProviderUrl }) => {
 	if (!specifiedProviderUrl && network !== 'local' && !process.env.PROVIDER_URL) {
 		throw Error('Missing .env key of PROVIDER_URL. Please add and retry.');
@@ -131,7 +136,7 @@ const loadConnections = ({ network, useFork, specifiedProviderUrl }) => {
 			? 'https://api.etherscan.io/api'
 			: `https://api-${network}.etherscan.io/api`;
 
-	const etherscanLinkPrefix = `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+	const etherscanLinkPrefix = getEtherscanLinkPrefix(network);
 	return { providerUrl, privateKey, etherscanUrl, etherscanLinkPrefix };
 };
 
@@ -206,7 +211,7 @@ const performTransactionalStep = async ({
 			return;
 		}
 	}
-	// otherwuse check the owner
+	// otherwise check the owner
 	const owner = await target.methods.owner().call();
 	if (owner === account) {
 		// perform action
@@ -301,15 +306,36 @@ const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
 };
 
+function reportDeployedContracts({ deployer }) {
+	console.log(
+		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
+	);
+
+	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
+		name,
+		address,
+		deployer.deployment.targets[name].link,
+	]);
+	console.log();
+	if (tableData.length) {
+		console.log(gray(`All contracts deployed on "${deployer.network}" network:`));
+		console.log(table(tableData));
+	} else {
+		console.log(gray('Note: No new contracts deployed.'));
+	}
+}
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
+	getEtherscanLinkPrefix,
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,
 	performTransactionalStep,
 	parameterNotice,
+	reportDeployedContracts,
 };
