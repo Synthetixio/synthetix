@@ -225,6 +225,7 @@ internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => 
 task('compile')
 	.addFlag('showsize', 'Show size of compiled contracts')
 	.addFlag('optimizer', 'Compile with the optimizer')
+	.addFlag('failOversize', 'Fail if any contract is oversize')
 	.addFlag('useOvm', 'Compile with the OVM Solidity compiler')
 	.addFlag('native', 'Compile with the native solc compiler')
 	.setAction(async (taskArguments, bre, runSuper) => {
@@ -246,7 +247,7 @@ task('compile')
 
 		await runSuper(taskArguments);
 
-		if (taskArguments.showsize) {
+		if (taskArguments.showsize || taskArguments.failOversize) {
 			const compiled = require(path.resolve(
 				__dirname,
 				BUILD_FOLDER,
@@ -271,7 +272,21 @@ task('compile')
 				{}
 			);
 
-			logContractSizes({ contractToObjectMap });
+			const sizes = logContractSizes({ contractToObjectMap });
+
+			if (taskArguments.failOversize) {
+				const offenders = sizes.filter(entry => +entry.pcent.split('%')[0] > 100);
+
+				if (offenders.length > 0) {
+					const names = offenders.map(o => o.file);
+
+					console.log(red('Oversized contracts:'), yellow(`[${names}]`));
+
+					throw new Error(
+						'Compilation failed, because some contracts are too big to be deployed. See above.'
+					);
+				}
+			}
 		}
 	});
 
