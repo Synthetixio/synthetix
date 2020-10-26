@@ -34,28 +34,6 @@ contract('MintableSynthetix (spec tests)', accounts => {
 			await mintableSynthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		});
 
-		describe('access permissions', async () => {
-			it('should only allow SynthetixBridgeToBase to call mintSecondary()', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: mintableSynthetix.mintSecondary,
-					args: [account1, 100],
-					address: synthetixBridgeToBase,
-					accounts,
-					reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
-				});
-			});
-
-			it('should only allow SynthetixBridgeToBase to call burnSecondary()', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: mintableSynthetix.burnSecondary,
-					args: [account1, 100],
-					address: synthetixBridgeToBase,
-					accounts,
-					reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
-				});
-			});
-		});
-
 		describe('mintSecondary()', async () => {
 			let mintSecondaryTx;
 			const amount = 100;
