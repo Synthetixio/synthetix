@@ -7,4 +7,7 @@ interface ISynthetixBridgeToBase {
 
     // invoked by the xDomain messenger on L2
     function mintSecondaryFromDeposit(address account, uint amount) external;
+
+    // invoked by the xDomain messenger on L2
+    function mintSecondaryFromDepositForRewards(uint amount) external;
 }
