@@ -15,7 +15,7 @@ const {
 	// 	getDecodedLogs,
 	// 	decodedEventEqual,
 	// 	timeIsClose,
-	// 	onlyGivenAddressCanInvoke,
+	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	// 	setStatus,
 	// 	convertToAggregatorPrice,
@@ -28,29 +28,36 @@ const {
 
 const Exchanger = artifacts.require('Exchanger');
 
+const prepareMocks = async ({ contracts, owner }) => {
+	const mocks = {};
+	for (const contract of contracts) {
+		mocks[contract] = await smockit(artifacts.require(contract).abi);
+	}
+
+	const resolver = await artifacts.require('AddressResolver').new(owner);
+	await resolver.importAddresses(
+		Object.keys(mocks).map(contract => toBytes32(contract)),
+		Object.values(mocks).map(mock => mock.address),
+		{ from: owner }
+	);
+	return { mocks, resolver };
+};
+
+const steps = {
+	whenMockedToAllowInvocations({ byAnyone }, cb) {
+		describe('when mocked to allow anyone to invoke', () => {
+			beforeEach(async () => {
+				this.mocks.Synthetix.smocked.synthsByAddress.will.return.with(() =>
+					byAnyone ? toBytes32('sUSD') : toBytes32()
+				);
+			});
+			cb();
+		});
+	},
+};
+
 contract('Exchanger (unit tests)', async accounts => {
-	// addSnapshotBeforeRestoreAfterEach();
-
-	// beforeEach(async () => {
-	// 	timestamp = await currentTime();
-	// 	await exchangeRates.updateRates(
-	// 		[sAUD, sEUR, SNX, sETH, sBTC, iBTC],
-	// 		['0.5', '2', '1', '100', '5000', '5000'].map(toUnit),
-	// 		timestamp,
-	// 		{
-	// 			from: oracle,
-	// 		}
-	// 	);
-
-	// 	// set a 0.5% exchange fee rate (1/200)
-	// 	exchangeFeeRate = toUnit('0.005');
-	// 	await setExchangeFeeRateForSynths({
-	// 		owner,
-	// 		systemSettings,
-	// 		synthKeys,
-	// 		exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
-	// 	});
-	// });
+	const [, owner, user1] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -70,17 +77,91 @@ contract('Exchanger (unit tests)', async accounts => {
 	});
 
 	describe('when a contract is instantiated', () => {
-		it.only('test mocking', async () => {
-			const ExRates = await smockit(artifacts.require('ExchangeRates').abi);
+		let instance;
 
-			ExRates.smocked.rateForCurrency.will.return.with(arg =>
-				arg === toBytes32('sETH') ? '111' : '999'
-			);
+		before(async () => {
+			Exchanger.link(await artifacts.require('SafeDecimalMath').new());
+		});
 
+		beforeEach(async () => {
+			({ mocks: this.mocks, resolver: this.resolver } = await prepareMocks({
+				owner,
+				contracts: [
+					'SystemStatus',
+					'ExchangeState',
+					'ExchangeRates',
+					'Synthetix',
+					'FeePool',
+					'TradingRewards',
+					'DelegateApprovals',
+					'Issuer',
+					'FlexibleStorage',
+				],
+			}));
+
+			// stub system setting if need be
+			// mocks.FlexibleStorage.smocked.getUIntValue.will.return.with((contract, record) =>
+			// 	contract === toBytes32('SystemSettings') && record === toBytes32('waitingPeriodSecs')
+			// 		? '60'
+			// 		: '0'
+			// );
+
+			// mocks.Synthetix.mock.
+			// synthetix.smocked.transferFrom.will.return.with(() => true);
+			// synthetix.smocked.balanceOf.will.return.with(() => web3.utils.toWei('1'));
+			// synthetix.smocked.transfer.will.return.with(() => true);
+			// messenger.smocked.sendMessage.will.return.with(() => {});
+		});
+
+		beforeEach(async () => {
+			instance = await Exchanger.new(owner, this.resolver.address);
+			await instance.setResolverAndSyncCache(this.resolver.address, { from: owner });
+		});
+
+		it('test mocking', async () => {
+			// console.log('waiting period secs', (await instance.waitingPeriodSecs()).toString());
 			// const tester = await artifacts.require('TestMe').new(ExRates.address);
-
 			// console.log('With sETH', (await tester.showMe(toBytes32('sETH'))).toString());
 			// console.log('Otherwise', (await tester.showMe(toBytes32('SNX'))).toString());
+		});
+
+		describe('exchanging', () => {
+			describe('failure modes', () => {
+				const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner];
+				steps.whenMockedToAllowInvocations({ byAnyone: false }, () => {
+					it('it reverts when called by regular accounts', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: instance.exchangeWithVirtual,
+							args,
+							accounts,
+							reason: 'Exchanger: Only synthetix or a synth contract can perform this action',
+						});
+					});
+				});
+
+				steps.whenMockedToAllowInvocations({ byAnyone: true }, () => {
+					it('it reverts when either rate is invalid', async () => {
+						// allow anyone to call onlySynthetixOrSynth() modifier
+						// mocks.Synthetix.smocked.synthsByAddress.will.return.with(() => toBytes32('sUSD'));
+					});
+				});
+			});
+			beforeEach(async () => {
+				// allow anyone to call onlySynthetixOrSynth() modifier
+				this.mocks.Synthetix.smocked.synthsByAddress.will.return.with(() => toBytes32('sUSD'));
+			});
+			describe('exchangeWithVirtual()', () => {
+				it('trying something', async () => {
+					const txn = await instance.exchangeWithVirtual(
+						owner,
+						toBytes32('sUSD'),
+						'100',
+						toBytes32('sETH'),
+						owner
+						// { from: owner }
+					);
+				});
+			});
 		});
 	});
 });
