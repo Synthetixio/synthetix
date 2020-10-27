@@ -3,6 +3,9 @@ jobs:
   - job-lint:
       requires:
         - job-prepare
+  - job-compile:
+      requires:
+        - job-prepare
   - job-test-contracts:
       requires:
         - job-prepare
