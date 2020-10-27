@@ -11,12 +11,12 @@ const { smockit } = require('@eth-optimism/smock');
 const SynthetixBridgeToOptimism = artifacts.require('SynthetixBridgeToOptimism');
 
 contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
-	const [, owner, user1] = accounts;
+	const [owner, user1] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToOptimism.abi,
-			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'completeWithdrawal',
 				'deposit',
@@ -111,7 +111,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						txn = await instance.deposit(amount, { from: user1 });
 					});
 
-					it('then SNX is transferred from the account to the user', async () => {
+					it('then SNX is transferred from the user to the deposit contract', async () => {
 						assert.equal(synthetix.smocked.transferFrom.calls[0][0], user1);
 						assert.equal(synthetix.smocked.transferFrom.calls[0][1], instance.address);
 						assert.equal(synthetix.smocked.transferFrom.calls[0][2].toString(), amount);

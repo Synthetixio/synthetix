@@ -23,6 +23,10 @@ contract MockCrossDomainMessenger {
         ISynthetixBridgeToBase(target).mintSecondaryFromDeposit(account, amount);
     }
 
+    function mintSecondaryFromDepositForRewards(address target, uint amount) external {
+        ISynthetixBridgeToBase(target).mintSecondaryFromDepositForRewards(amount);
+    }
+
     function completeWithdrawal(
         address target,
         address account,
@@ -43,11 +47,10 @@ contract MockCrossDomainMessenger {
     }
 
     // mock xDomainMessageSender()
-    function xDomainMessageSender() external view returns (address) {
-        return xDomainMsgSender;
-    }
+    function xDomainMessageSender() external view returns (address) {}
 
     // Events
     event MintedSecondary(address indexed account, uint amount);
     event WithdrawalCompleted(address indexed account, uint amount);
+    event MintedSecondaryRewards(uint amount);
 }
