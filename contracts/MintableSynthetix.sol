@@ -20,8 +20,6 @@ contract MintableSynthetix is Synthetix {
     /* ========== INTERNALS =================== */
 
     function _mintSecondary(address account, uint amount) internal {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixBridgeToBase contract");
-
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         emitTransfer(address(this), account, amount);
         totalSupply = totalSupply.add(amount);
