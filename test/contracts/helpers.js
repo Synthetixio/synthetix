@@ -1,5 +1,7 @@
 const { artifacts, web3 } = require('@nomiclabs/buidler');
 
+const { smockit } = require('@eth-optimism/smock');
+
 const abiDecoder = require('abi-decoder');
 
 const { assert } = require('./common');
@@ -234,5 +236,28 @@ module.exports = {
 		} else {
 			throw Error(`Section: ${section} unsupported`);
 		}
+	},
+
+	async prepareSmocks({ contracts, owner, accounts = [] }) {
+		const mocks = {};
+		for (const [i, contract] of Object.entries(contracts)) {
+			mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
+		}
+
+		const resolver = await artifacts.require('AddressResolver').new(owner);
+		await resolver.importAddresses(
+			Object.keys(mocks).map(contract => toBytes32(contract)),
+			Object.values(mocks).map(mock => mock.address),
+			{ from: owner }
+		);
+		return { mocks, resolver };
+	},
+
+	bindAll({ input }) {
+		// ensure all of the input are bound to "this" for sharing test state
+		return Object.keys(input).reduce((memo, cur) => {
+			memo[cur] = input[cur].bind(this);
+			return memo;
+		}, {});
 	},
 };

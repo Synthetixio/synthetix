@@ -2,113 +2,20 @@
 
 const { artifacts, contract } = require('@nomiclabs/buidler');
 
-const { smockit } = require('@eth-optimism/smock');
-
 const { assert } = require('./common');
 
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+	prepareSmocks,
+	bindAll,
+} = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
+let behaviors = require('./Exchanger.behaviors');
+
 const Exchanger = artifacts.require('Exchanger');
-
-const prepareMocks = async ({ contracts, owner, accounts = [] }) => {
-	const mocks = {};
-	for (const [i, contract] of Object.entries(contracts)) {
-		mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
-	}
-
-	const resolver = await artifacts.require('AddressResolver').new(owner);
-	await resolver.importAddresses(
-		Object.keys(mocks).map(contract => toBytes32(contract)),
-		Object.values(mocks).map(mock => mock.address),
-		{ from: owner }
-	);
-	return { mocks, resolver };
-};
-
-let steps = {
-	whenMockedToAllowChecks(cb) {
-		describe(`when mocked to allow invocation checks`, () => {
-			beforeEach(async () => {
-				this.mocks.Synthetix.smocked.synthsByAddress.will.return.with(toBytes32());
-			});
-			cb();
-		});
-	},
-	whenMockedWithExchangeRatesValidity({ valid = true }, cb) {
-		describe(`when mocked with valid exchange rates`, () => {
-			beforeEach(async () => {
-				this.mocks.ExchangeRates.smocked.anyRateIsInvalid.will.return.with(!valid);
-			});
-			cb();
-		});
-	},
-	whenMockedWithNoPriorExchangesToSettle(cb) {
-		describe(`when mocked with no prior exchanges to settle`, () => {
-			beforeEach(async () => {
-				this.mocks.ExchangeState.smocked.getMaxTimestamp.will.return.with('0');
-				this.mocks.ExchangeState.smocked.getLengthOfEntries.will.return.with('0');
-			});
-			cb();
-		});
-	},
-	whenMockedWithUintSystemSetting({ setting, value }, cb) {
-		describe(`when SystemSetting.${setting} is mocked to ${value}`, () => {
-			beforeEach(async () => {
-				this.mocks.FlexibleStorage.smocked.getUIntValue.will.return.with((contract, record) =>
-					contract === toBytes32('SystemSettings') && record === toBytes32(setting) ? value : '0'
-				);
-			});
-			cb();
-		});
-	},
-	whenMockedEffectiveRateAsEqual(cb) {
-		describe(`when mocked with exchange rates giving an effective value of 1:1`, () => {
-			beforeEach(async () => {
-				this.mocks.ExchangeRates.smocked.effectiveValueAndRates.will.return.with(
-					(srcKey, amount, destKey) => [amount, (1e18).toString(), (1e18).toString()]
-				);
-			});
-			cb();
-		});
-	},
-	whenMockedLastNRates(cb) {
-		describe(`when mocked 1e18 as last n rates`, () => {
-			beforeEach(async () => {
-				this.mocks.ExchangeRates.smocked.ratesAndUpdatedTimeForCurrencyLastNRounds.will.return.with(
-					[[], []]
-				);
-			});
-			cb();
-		});
-	},
-	whenMockedASynthToIssueAmdBurn(cb) {
-		describe(`when mocked a synth to burn`, () => {
-			beforeEach(async () => {
-				// create and share the one synth for all Issuer.synths() calls
-				this.synth = await smockit(artifacts.require('ISynth').abi);
-				this.synth.smocked.burn.will.return();
-				this.synth.smocked.issue.will.return();
-				this.mocks.Issuer.smocked.synths.will.return.with(currencyKey => {
-					// but when currency
-					this.synth.smocked.currencyKey.will.return.with(currencyKey);
-					return this.synth.address;
-				});
-			});
-			cb();
-		});
-	},
-	whenMockedExchangeStatePersistance(cb) {
-		describe(`when mocking exchange state persistance`, () => {
-			beforeEach(async () => {
-				this.mocks.ExchangeRates.smocked.getCurrentRoundId.will.return.with('0');
-				this.mocks.ExchangeState.smocked.appendExchangeEntry.will.return();
-			});
-			cb();
-		});
-	},
-};
 
 contract('Exchanger (unit tests)', async accounts => {
 	const [, owner] = accounts;
@@ -133,18 +40,15 @@ contract('Exchanger (unit tests)', async accounts => {
 	describe('when a contract is instantiated', () => {
 		let instance;
 
-		// ensure all of the steps are bound to "this" for sharing test state
-		steps = Object.keys(steps).reduce((memo, cur) => {
-			memo[cur] = steps[cur].bind(this);
-			return memo;
-		}, {});
+		// ensure all of the behaviors are bound to "this" for sharing test state
+		behaviors = bindAll.call(this, { input: behaviors });
 
 		before(async () => {
 			Exchanger.link(await artifacts.require('SafeDecimalMath').new());
 		});
 
 		beforeEach(async () => {
-			({ mocks: this.mocks, resolver: this.resolver } = await prepareMocks({
+			({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 				owner,
 				contracts: [
 					'SystemStatus',
@@ -172,7 +76,7 @@ contract('Exchanger (unit tests)', async accounts => {
 					const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner];
 
 					// as we aren't calling as Synthetix, we need to mock the check for synths
-					steps.whenMockedToAllowChecks(() => {
+					behaviors.whenMockedToAllowChecks(() => {
 						it('it reverts when called by regular accounts', async () => {
 							await onlyGivenAddressCanInvoke({
 								fnc: instance.exchangeWithVirtual,
@@ -184,7 +88,7 @@ contract('Exchanger (unit tests)', async accounts => {
 						});
 					});
 
-					steps.whenMockedWithExchangeRatesValidity({ valid: false }, () => {
+					behaviors.whenMockedWithExchangeRatesValidity({ valid: false }, () => {
 						it('it reverts when either rate is invalid', async () => {
 							await assert.revert(
 								instance.exchangeWithVirtual(
@@ -196,15 +100,15 @@ contract('Exchanger (unit tests)', async accounts => {
 					});
 				});
 
-				steps.whenMockedWithExchangeRatesValidity({ valid: true }, () => {
-					steps.whenMockedWithNoPriorExchangesToSettle(() => {
-						steps.whenMockedWithUintSystemSetting(
+				behaviors.whenMockedWithExchangeRatesValidity({ valid: true }, () => {
+					behaviors.whenMockedWithNoPriorExchangesToSettle(() => {
+						behaviors.whenMockedWithUintSystemSetting(
 							{ setting: 'waitingPeriodSecs', value: '0' },
 							() => {
-								steps.whenMockedEffectiveRateAsEqual(() => {
-									steps.whenMockedLastNRates(() => {
-										steps.whenMockedASynthToIssueAmdBurn(() => {
-											steps.whenMockedExchangeStatePersistance(() => {
+								behaviors.whenMockedEffectiveRateAsEqual(() => {
+									behaviors.whenMockedLastNRates(() => {
+										behaviors.whenMockedASynthToIssueAmdBurn(() => {
+											behaviors.whenMockedExchangeStatePersistance(() => {
 												describe('when invoked', () => {
 													let txn;
 													const amount = '101';
