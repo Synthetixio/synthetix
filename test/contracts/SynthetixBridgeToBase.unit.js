@@ -8,7 +8,7 @@ const { smockit } = require('@eth-optimism/smock');
 const SynthetixBridgeToBase = artifacts.require('SynthetixBridgeToBase');
 
 contract('SynthetixBridgeToBase (unit tests)', accounts => {
-	const [owner, user1, snxBridgeToOptimism, smockedMessenger] = accounts;
+	const [owner, user1, snxBridgeToOptimism, smockedMessenger, randomAddress] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -110,6 +110,17 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 							reason: 'Only the relayer can call this',
 						});
 					});
+
+					it('should only allow the L1 bridge to invoke mintSecondaryFromDeposit() via the messenger', async () => {
+						// 'smock' the messenger to return a random msg sender
+						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						await assert.revert(
+							instance.mintSecondaryFromDeposit(user1, 100, {
+								from: smockedMessenger,
+							}),
+							'Only the L1 bridge can invoke'
+						);
+					});
 				});
 
 				describe('when invoked by the messenger (aka relayer)', async () => {
@@ -149,6 +160,17 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 							address: smockedMessenger,
 							reason: 'Only the relayer can call this',
 						});
+					});
+
+					it('should only allow the L1 bridge to invoke mintSecondaryFromDepositForRewards() via the messenger', async () => {
+						// 'smock' the messenger to return a random msg sender
+						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						await assert.revert(
+							instance.mintSecondaryFromDeposit(user1, 100, {
+								from: smockedMessenger,
+							}),
+							'Only the L1 bridge can invoke'
+						);
 					});
 				});
 
