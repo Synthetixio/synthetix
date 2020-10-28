@@ -2,7 +2,7 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
-const { red, gray, green, yellow } = require('chalk');
+const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
 const { getUsers } = require('../../index.js');
 const { stringify, getEtherscanLinkPrefix } = require('./util');
