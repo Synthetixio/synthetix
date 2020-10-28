@@ -576,6 +576,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         ISynth dest = issuer().synths(destinationCurrencyKey);
 
         if (virtualSynth) {
+            // Note: should actually pass ReadProxyAddressResolver here to future-proof this vSynth,
+            // but we don't have it currently in the AddressResolver...
             vSynth = new VirtualSynth(dest, resolver, recipient, amountReceived);
             IERC20 vSynthAsERC20 = IERC20(address(vSynth));
             dest.issue(address(vSynth), amountReceived);

@@ -51,13 +51,18 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     }
 
     function balanceUnderlying(address account) internal view returns (uint) {
-        uint totalBalance = IERC20(address(synth)).balanceOf(address(this));
+        uint synthBalance = IERC20(address(synth)).balanceOf(address(this));
 
         uint vBalanceOfAccount = balanceOf(account);
 
-        return vBalanceOfAccount.divideDecimalRound(totalSupply()).multiplyDecimalRound(totalBalance);
+        uint _totalSupply = totalSupply();
 
-        // NOTE: does not account for settlement
+        if (_totalSupply == 0) {
+            return 0;
+        }
+
+        // NOTE: does not account for any pending settlement
+        return vBalanceOfAccount.divideDecimalRound(_totalSupply).multiplyDecimalRound(synthBalance);
     }
 
     function internalSettle() internal {
@@ -83,6 +88,28 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
     function decimals() external pure returns (uint8) {
         return DECIMALS;
+    }
+
+    // get the rate of the vSynth to the synth.
+    // Note: once all supply has been settled, this will return 0
+    function rate() external view returns (uint) {
+        uint _totalSupply = totalSupply();
+
+        if (_totalSupply == 0) {
+            return 0;
+        }
+
+        uint synthBalance = IERC20(address(synth)).balanceOf(address(this));
+
+        (uint reclaim, uint rebate, ) = exchanger().settlementOwing(address(this), synth.currencyKey());
+
+        if (reclaim > 0) {
+            synthBalance = synthBalance.sub(reclaim);
+        } else if (rebate > 0) {
+            synthBalance = synthBalance.add(rebate);
+        }
+
+        return _totalSupply.divideDecimalRound(synthBalance);
     }
 
     // show the balance of the underlying synth that the given address has, given

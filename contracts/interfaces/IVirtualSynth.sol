@@ -5,12 +5,15 @@ import "./ISynth.sol";
 
 interface IVirtualSynth {
     // Views
+    function balanceOfUnderlying(address account) external view returns (uint);
 
-    function synth() external view returns (ISynth);
+    function rate() external view returns (uint);
 
     function readyToSettle() external view returns (bool);
 
     function settled() external view returns (bool);
+
+    function synth() external view returns (ISynth);
 
     // Mutative functions
     function settle(address account) external;
