@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./SelfDestructible.sol";
 import "./Pausable.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./MixinResolver.sol";
@@ -17,7 +16,7 @@ import "./interfaces/IExchangeRates.sol";
 
 
 // https://docs.synthetix.io/contracts/Depot
-contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResolver, IDepot {
+contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -86,7 +85,7 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
         address _owner,
         address payable _fundsWallet,
         address _resolver
-    ) public Owned(_owner) SelfDestructible() Pausable() MixinResolver(_resolver, addressesToCache) {
+    ) public Owned(_owner) Pausable() MixinResolver(_resolver, addressesToCache) {
         fundsWallet = _fundsWallet;
     }
 

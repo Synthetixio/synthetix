@@ -139,7 +139,7 @@ contract('FeePool', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: feePool.abi,
-			ignoreParents: ['Proxyable', 'SelfDestructible', 'LimitedSetup', 'MixinResolver'],
+			ignoreParents: ['Proxyable', 'LimitedSetup', 'MixinResolver'],
 			expected: [
 				'appendAccountIssuanceRecord',
 				'recordFeePaid',

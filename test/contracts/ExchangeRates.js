@@ -102,7 +102,7 @@ contract('Exchange Rates', async accounts => {
 	it('only expected functions should be mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: instance.abi,
-			ignoreParents: ['SelfDestructible', 'MixinResolver'],
+			ignoreParents: ['MixinResolver'],
 			expected: [
 				'addAggregator',
 				'deleteRate',
@@ -119,7 +119,6 @@ contract('Exchange Rates', async accounts => {
 	describe('constructor', () => {
 		it('should set constructor params on deployment', async () => {
 			assert.equal(await instance.owner(), owner);
-			assert.equal(await instance.selfDestructBeneficiary(), owner);
 			assert.equal(await instance.oracle(), oracle);
 
 			assert.etherEqual(await instance.rateForCurrency(sUSD), '1');
@@ -926,20 +925,6 @@ contract('Exchange Rates', async accounts => {
 					});
 				});
 			});
-		});
-	});
-
-	describe('is SelfDestructible', () => {
-		it('should be destructable', async () => {
-			// Check if the instance adheres to the destructable interface
-			assert.exists(instance.initiateSelfDestruct);
-			assert.exists(instance.setSelfDestructBeneficiary);
-			assert.exists(instance.terminateSelfDestruct);
-			assert.exists(instance.selfDestruct);
-
-			assert.exists(instance.initiationTime);
-			assert.exists(instance.selfDestructInitiated);
-			assert.exists(instance.selfDestructBeneficiary);
 		});
 	});
 

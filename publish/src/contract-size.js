@@ -111,6 +111,8 @@ module.exports = {
 			})
 		);
 		console.log(table(tableData, config));
+
+		return entries;
 	},
 	sizeOfContracts,
 
