@@ -4,15 +4,13 @@ const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert } = require('./common');
 
-const { bindAll, ensureOnlyExpectedMutativeFunctions, prepareSmocks } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
 const { divideDecimal } = require('../utils')();
-
-let behaviors = require('./VirtualSynth.behaviors');
 
 const trimUtf8EscapeChars = input => web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
 
@@ -31,19 +29,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 
 	describe('with common setup', () => {
 		// ensure all of the behaviors are bound to "this" for sharing test state
-		behaviors = bindAll.call(this, { input: behaviors });
-
-		before(async () => {
-			// VirtualSynth.link(await artifacts.require('SafeDecimalMath').new());
-		});
-
-		beforeEach(async () => {
-			({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
-				owner,
-				contracts: ['Synth', 'Exchanger'],
-				accounts: accounts.slice(3), // mock using accounts after the first few
-			}));
-		});
+		const behaviors = require('./VirtualSynth.behaviors').call(this, { accounts });
 
 		describe('constructor', () => {
 			const amount = '1001';
