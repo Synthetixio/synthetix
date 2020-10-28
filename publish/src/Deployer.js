@@ -2,7 +2,7 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
-const { gray, green, yellow } = require('chalk');
+const { red, gray, green, yellow } = require('chalk');
 const fs = require('fs');
 const { getUsers } = require('../../index.js');
 const { stringify, getEtherscanLinkPrefix } = require('./util');
@@ -28,6 +28,7 @@ class Deployer {
 		providerUrl,
 		privateKey,
 		useFork,
+		expectedCompilerVersion,
 		nonceManager,
 	}) {
 		this.compiled = compiled;
@@ -41,6 +42,7 @@ class Deployer {
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
 		this.nonceManager = nonceManager;
+		this.expectedCompilerVersion = expectedCompilerVersion;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -91,7 +93,14 @@ class Deployer {
 		if (this.config[name]) {
 			deploy = this.config[name].deploy;
 		}
+
 		const compiled = this.compiled[source];
+		if (compiled.metadata.compiler.version !== this.expectedCompilerVersion) {
+			throw new Error(
+				`You are deploying sources compiled with solc version ${compiled.metadata.compiler.version}, and the expected compiler version for this deploy is ${this.expectedCompilerVersion}. Please run 'node publish build' using the correct compiler, and then run the deployment script again.`
+			);
+		}
+
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
 			: '';

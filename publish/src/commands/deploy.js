@@ -8,6 +8,9 @@ const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
 
+const SOLC_VERSION = '0.5.16+commit.9c3226ce';
+const SOLC_OVM_VERSION = '0.5.16+commit.d3ce9476';
+
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -185,6 +188,7 @@ const deploy = async ({
 		providerUrl,
 		dryRun,
 		useFork,
+		expectedCompilerVersion: useOvm ? SOLC_OVM_VERSION : SOLC_VERSION,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
