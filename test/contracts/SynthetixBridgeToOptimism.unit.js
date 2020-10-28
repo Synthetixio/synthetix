@@ -11,7 +11,14 @@ const { smockit } = require('@eth-optimism/smock');
 const SynthetixBridgeToOptimism = artifacts.require('SynthetixBridgeToOptimism');
 
 contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
-	const [owner, user1] = accounts;
+	const [
+		owner,
+		user1,
+		smockedMessenger,
+		rewardsDistribution,
+		snxBridgeToBase,
+		randomAddress,
+	] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -37,17 +44,15 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let messenger;
 		let synthetix;
 		let issuer;
-		let rewardsDistribution;
 		let resolver;
-		let snxBridgeToBase;
 		beforeEach(async () => {
-			messenger = await smockit(artifacts.require('ICrossDomainMessenger').abi);
+			messenger = await smockit(artifacts.require('ICrossDomainMessenger').abi, {
+				address: smockedMessenger,
+			});
 
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);
 			issuer = await smockit(artifacts.require('IIssuer').abi);
-			rewardsDistribution = accounts[4];
-			snxBridgeToBase = accounts[5];
 
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
@@ -76,6 +81,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			synthetix.smocked.balanceOf.will.return.with(() => web3.utils.toWei('1'));
 			synthetix.smocked.transfer.will.return.with(() => true);
 			messenger.smocked.sendMessage.will.return.with(() => {});
+			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToBase);
 			issuer.smocked.debtBalanceOf.will.return.with(() => '0');
 		});
 
@@ -257,6 +263,61 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 					it('and a BridgeMigrated event is emitted', async () => {
 						assert.eventEqual(txn, 'BridgeMigrated', [instance.address, newAccount, amount]);
+					});
+				});
+			});
+
+			describe('completeWithdrawal', async () => {
+				describe('failure modes', () => {
+					it('should only allow the relayer (aka messenger) to call completeWithdrawal()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: instance.completeWithdrawal,
+							args: [user1, 100],
+							accounts,
+							address: smockedMessenger,
+							reason: 'Only the relayer can call this',
+						});
+					});
+
+					it('should only allow the L2 bridge to invoke completeWithdrawal() via the messenger', async () => {
+						// 'smock' the messenger to return a random msg sender
+						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						await assert.revert(
+							instance.completeWithdrawal(user1, 100, {
+								from: smockedMessenger,
+							}),
+							'Only the L2 bridge can invoke'
+						);
+					});
+				});
+
+				describe('when invoked by the messenger (aka relayer)', async () => {
+					let completeWithdrawalTx;
+					const completeWithdrawalAmount = 100;
+					beforeEach('completeWithdrawal is called', async () => {
+						completeWithdrawalTx = await instance.completeWithdrawal(
+							user1,
+							completeWithdrawalAmount,
+							{
+								from: smockedMessenger,
+							}
+						);
+					});
+
+					it('should emit a WithdrawalCompleted event', async () => {
+						assert.eventEqual(completeWithdrawalTx, 'WithdrawalCompleted', {
+							account: user1,
+							amount: completeWithdrawalAmount,
+						});
+					});
+
+					it('then SNX is minted via MintableSynthetix.completeWithdrawal', async () => {
+						assert.equal(synthetix.smocked.transfer.calls.length, 1);
+						assert.equal(synthetix.smocked.transfer.calls[0][0], user1);
+						assert.equal(
+							synthetix.smocked.transfer.calls[0][1].toString(),
+							completeWithdrawalAmount
+						);
 					});
 				});
 			});
