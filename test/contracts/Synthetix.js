@@ -142,6 +142,34 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
+	describe('secondary fucntions always revert on L1', () => {
+		const amount = 100;
+		it('should revert no matter who the caller is', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.mintSecondary,
+				accounts,
+				args: [account1, amount],
+				reason: 'Cannot be run on this layer',
+			});
+		});
+		it('should revert no matter who the caller is', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.mintSecondaryRewards,
+				accounts,
+				args: [amount],
+				reason: 'Cannot be run on this layer',
+			});
+		});
+		it('should revert no matter who the caller is', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.burnSecondary,
+				accounts,
+				args: [account1, amount],
+				reason: 'Cannot be run on this layer',
+			});
+		});
+	});
+
 	describe('only Exchanger can call emit event functions', () => {
 		it('emitExchangeTracking() cannot be invoked directly by any account', async () => {
 			await onlyGivenAddressCanInvoke({

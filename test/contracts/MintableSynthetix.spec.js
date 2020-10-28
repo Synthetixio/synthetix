@@ -1,6 +1,5 @@
 const { contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
-const { onlyGivenAddressCanInvoke } = require('./helpers');
 const { setupAllContracts } = require('./setup');
 const { toWei } = web3.utils;
 const { toBytes32 } = require('../..');
