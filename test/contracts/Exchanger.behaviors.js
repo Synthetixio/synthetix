@@ -64,13 +64,13 @@ module.exports = {
 		describe(`when mocked a synth to burn`, () => {
 			beforeEach(async () => {
 				// create and share the one synth for all Issuer.synths() calls
-				this.synth = await smockit(artifacts.require('ISynth').abi);
-				this.synth.smocked.burn.will.return();
-				this.synth.smocked.issue.will.return();
+				this.mocks.synth = await smockit(artifacts.require('ISynth').abi);
+				this.mocks.synth.smocked.burn.will.return();
+				this.mocks.synth.smocked.issue.will.return();
 				this.mocks.Issuer.smocked.synths.will.return.with(currencyKey => {
 					// but when currency
-					this.synth.smocked.currencyKey.will.return.with(currencyKey);
-					return this.synth.address;
+					this.mocks.synth.smocked.currencyKey.will.return.with(currencyKey);
+					return this.mocks.synth.address;
 				});
 			});
 			cb();
