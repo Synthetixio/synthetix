@@ -33,7 +33,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let mintableSynthetix;
 		let resolver;
 		beforeEach(async () => {
-			messenger = await smockit(artifacts.require('MockCrossDomainMessenger').abi, {
+			messenger = await smockit(artifacts.require('ICrossDomainMessenger').abi, {
 				address: smockedMessenger,
 			});
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
