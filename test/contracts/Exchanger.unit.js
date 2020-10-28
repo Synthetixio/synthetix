@@ -1,37 +1,21 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy, network } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { smockit } = require('@eth-optimism/smock');
 
 const { assert } = require('./common');
 
-const { currentTime, fastForward, multiplyDecimal, divideDecimal, toUnit } = require('../utils')();
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-// const { setupAllContracts } = require('./setup');
-
-const {
-	// 	setExchangeFeeRateForSynths,
-	// 	getDecodedLogs,
-	// 	decodedEventEqual,
-	// 	timeIsClose,
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-	// 	setStatus,
-	// 	convertToAggregatorPrice,
-} = require('./helpers');
-
-const {
-	toBytes32,
-	// 	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
-} = require('../..');
+const { toBytes32 } = require('../..');
 
 const Exchanger = artifacts.require('Exchanger');
 
-const prepareMocks = async ({ contracts, owner }) => {
+const prepareMocks = async ({ contracts, owner, accounts = [] }) => {
 	const mocks = {};
-	for (const contract of contracts) {
-		mocks[contract] = await smockit(artifacts.require(contract).abi);
+	for (const [i, contract] of Object.entries(contracts)) {
+		mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
 	}
 
 	const resolver = await artifacts.require('AddressResolver').new(owner);
@@ -44,12 +28,10 @@ const prepareMocks = async ({ contracts, owner }) => {
 };
 
 let steps = {
-	whenMockedToAllowInvocations({ byAnyone }, cb) {
-		describe(`when mocked to ${byAnyone ? 'allow' : 'disallow'} anyone to invoke`, () => {
+	whenMockedToAllowChecks(cb) {
+		describe(`when mocked to allow invocation checks`, () => {
 			beforeEach(async () => {
-				this.mocks.Synthetix.smocked.synthsByAddress.will.return.with(() =>
-					byAnyone ? toBytes32('sUSD') : toBytes32()
-				);
+				this.mocks.Synthetix.smocked.synthsByAddress.will.return.with(toBytes32());
 			});
 			cb();
 		});
@@ -175,6 +157,7 @@ contract('Exchanger (unit tests)', async accounts => {
 					'Issuer',
 					'FlexibleStorage',
 				],
+				accounts: accounts.slice(3), // mock using accounts after the first few
 			}));
 		});
 
@@ -188,65 +171,86 @@ contract('Exchanger (unit tests)', async accounts => {
 				describe('failure modes', () => {
 					const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner];
 
-					steps.whenMockedToAllowInvocations({ byAnyone: false }, () => {
+					// as we aren't calling as Synthetix, we need to mock the check for synths
+					steps.whenMockedToAllowChecks(() => {
 						it('it reverts when called by regular accounts', async () => {
 							await onlyGivenAddressCanInvoke({
 								fnc: instance.exchangeWithVirtual,
 								args,
-								accounts,
+								accounts: accounts.filter(a => a !== this.mocks.Synthetix.address),
 								reason: 'Exchanger: Only synthetix or a synth contract can perform this action',
+								// address: this.mocks.Synthetix.address (doesnt work as this reverts due to lack of mocking setup)
 							});
 						});
 					});
 
-					steps.whenMockedToAllowInvocations({ byAnyone: true }, () => {
-						steps.whenMockedWithExchangeRatesValidity({ valid: false }, () => {
-							it('it reverts when either rate is invalid', async () => {
-								await assert.revert(
-									instance.exchangeWithVirtual(...args.concat({ from: owner })),
-									'Src/dest rate invalid or not found'
-								);
-							});
+					steps.whenMockedWithExchangeRatesValidity({ valid: false }, () => {
+						it('it reverts when either rate is invalid', async () => {
+							await assert.revert(
+								instance.exchangeWithVirtual(
+									...args.concat({ from: this.mocks.Synthetix.address })
+								),
+								'Src/dest rate invalid or not found'
+							);
 						});
 					});
 				});
 
-				steps.whenMockedToAllowInvocations({ byAnyone: true }, () => {
-					steps.whenMockedWithExchangeRatesValidity({ valid: true }, () => {
-						steps.whenMockedWithNoPriorExchangesToSettle(() => {
-							steps.whenMockedWithUintSystemSetting(
-								{ setting: 'waitingPeriodSecs', value: '0' },
-								() => {
-									steps.whenMockedEffectiveRateAsEqual(() => {
-										steps.whenMockedLastNRates(() => {
-											steps.whenMockedASynthToIssueAmdBurn(() => {
-												steps.whenMockedExchangeStatePersistance(() => {
-													describe('when invoked', () => {
-														let txn;
-														beforeEach(async () => {
-															txn = await instance.exchangeWithVirtual(
-																owner,
-																toBytes32('sUSD'),
-																'100',
-																toBytes32('sETH'),
-																owner
-															);
+				steps.whenMockedWithExchangeRatesValidity({ valid: true }, () => {
+					steps.whenMockedWithNoPriorExchangesToSettle(() => {
+						steps.whenMockedWithUintSystemSetting(
+							{ setting: 'waitingPeriodSecs', value: '0' },
+							() => {
+								steps.whenMockedEffectiveRateAsEqual(() => {
+									steps.whenMockedLastNRates(() => {
+										steps.whenMockedASynthToIssueAmdBurn(() => {
+											steps.whenMockedExchangeStatePersistance(() => {
+												describe('when invoked', () => {
+													let txn;
+													const amount = '101';
+													beforeEach(async () => {
+														txn = await instance.exchangeWithVirtual(
+															owner,
+															toBytes32('sUSD'),
+															amount,
+															toBytes32('sETH'),
+															owner,
+															{ from: this.mocks.Synthetix.address }
+														);
+													});
+													it('emits a VirtualSynthCreated event with the correct underlying synth and amount', async () => {
+														assert.eventEqual(txn, 'VirtualSynthCreated', {
+															synth: this.synth.address,
+															currencyKey: toBytes32('sETH'),
+															amount,
 														});
-														it('emits a VirtualSynthCreated event with the correct underlying synth and amount', async () => {
-															assert.eventEqual(txn, 'VirtualSynthCreated', {
-																synth: this.synth.address,
-																currencyKey: toBytes32('sETH'),
-																amount: '100',
-															});
+													});
+													describe('when interrogating the Virtual Synths construction params', () => {
+														let vSynth;
+														beforeEach(async () => {
+															const { vSynth: vSynthAddress } = txn.logs.find(
+																({ event }) => event === 'VirtualSynthCreated'
+															).args;
+															vSynth = await artifacts.require('VirtualSynth').at(vSynthAddress);
+														});
+														it('the vSynth has the correct synth', async () => {
+															assert.equal(await vSynth.synth(), this.synth.address);
+														});
+														it('the vSynth has the correct resolver', async () => {
+															assert.equal(await vSynth.resolver(), this.resolver.address);
+														});
+														it('the vSynth has minted the correct amount to the user', async () => {
+															assert.equal(await vSynth.totalSupply(), amount);
+															assert.equal(await vSynth.balanceOf(owner), amount);
 														});
 													});
 												});
 											});
 										});
 									});
-								}
-							);
-						});
+								});
+							}
+						);
 					});
 				});
 			});
