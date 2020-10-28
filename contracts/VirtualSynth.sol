@@ -109,7 +109,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
             synthBalance = synthBalance.add(rebate);
         }
 
-        return _totalSupply.divideDecimalRound(synthBalance);
+        return synthBalance.divideDecimalRound(_totalSupply);
     }
 
     // show the balance of the underlying synth that the given address has, given

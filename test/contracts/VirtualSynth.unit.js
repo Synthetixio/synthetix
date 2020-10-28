@@ -7,9 +7,10 @@ const { assert } = require('./common');
 const { bindAll, ensureOnlyExpectedMutativeFunctions, prepareSmocks } = require('./helpers');
 
 const {
-	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
+
+const { divideDecimal } = require('../utils')();
 
 let behaviors = require('./VirtualSynth.behaviors');
 
@@ -46,10 +47,8 @@ contract('VirtualSynth (unit tests)', async accounts => {
 
 		describe('constructor', () => {
 			const amount = '1001';
-			behaviors.whenInstantiated({ amount, owner }, () => {
+			behaviors.whenInstantiated({ amount, user: owner, synth: 'sBTC' }, () => {
 				it('then each constructor arg is set correctly', async () => {
-					this.mocks.Synth.smocked.currencyKey.will.return.with(toBytes32('sBTC'));
-
 					assert.equal(trimUtf8EscapeChars(await this.instance.name()), 'Virtual Synth sBTC');
 					assert.equal(trimUtf8EscapeChars(await this.instance.symbol()), 'vsBTC');
 					assert.equal(await this.instance.decimals(), '18');
@@ -68,12 +67,16 @@ contract('VirtualSynth (unit tests)', async accounts => {
 					assert.equal(evt.args.to, owner);
 					assert.equal(evt.args.value.toString(), amount);
 				});
+
+				it('settled is false by default', async () => {
+					assert.equal(await this.instance.settled(), false);
+				});
 			});
 		});
 
 		describe('balanceOfUnderlying()', () => {
 			const amount = '1200';
-			behaviors.whenInstantiated({ amount, owner }, () => {
+			behaviors.whenInstantiated({ amount, user: owner }, () => {
 				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
 					it('then balance underlying must match the balance', async () => {
 						assert.equal(await this.instance.balanceOfUnderlying(owner), amount);
@@ -104,5 +107,53 @@ contract('VirtualSynth (unit tests)', async accounts => {
 				});
 			});
 		});
+
+		describe('rate()', () => {
+			const amount = '1200';
+			behaviors.whenInstantiated({ amount, user: owner }, () => {
+				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
+					describe('pre-settlement', () => {
+						behaviors.whenMockedSettlementOwing({}, () => {
+							it('then the rate must be even', async () => {
+								assert.equal(await this.instance.rate(), (1e18).toString());
+							});
+						});
+						behaviors.whenMockedSettlementOwing({ reclaim: 200 }, () => {
+							it('then the rate must be 10/12 (with 18 decimals)', async () => {
+								assert.bnEqual(await this.instance.rate(), divideDecimal(10, 12));
+							});
+						});
+						behaviors.whenMockedSettlementOwing({ rebate: 300 }, () => {
+							it('then the rate must be 15/12 (with 18 decimals)', async () => {
+								assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
+							});
+							behaviors.whenUserTransfersAwayTokens({ amount: '300', from: owner }, () => {
+								it('then the rate must still be 15/12 (with 18 decimals)', async () => {
+									assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
+								});
+								behaviors.whenSettlementCalled({ user: owner }, () => {
+									// Not working
+									xit('then the rate must still be 15/12 (with 18 decimals) as supply still exists', async () => {
+										assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
+									});
+								});
+							});
+						});
+					});
+
+					behaviors.whenSettlementCalled({ user: owner }, () => {
+						it('then the rate shows 0 as no more supply', async () => {
+							assert.equal(await this.instance.rate(), '0');
+						});
+					});
+				});
+			});
+		});
+
+		describe('secsLeftInWaitingPeriod()', () => {});
+
+		describe('readyToSettle()', () => {});
+
+		describe('settled()', () => {});
 	});
 });
