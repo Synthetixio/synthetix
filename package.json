@@ -105,7 +105,7 @@
 		"eslint-plugin-standard": "^4.0.0",
 		"ethers": "^5.0.14",
 		"fs-extra": "9.0.1",
-		"ganache-core": "2.11.3",
+		"ganache-core": "2.13.1",
 		"husky": "^4.3.0",
 		"lodash.clonedeep": "^4.5.0",
 		"mocha": "8.1.3",
