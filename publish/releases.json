@@ -48,7 +48,7 @@
 			"major": 2,
 			"minor": 31
 		},
-		"sources": ["SystemSettings", "Synthetix", "SecondaryDeposit"],
+		"sources": ["SystemSettings", "Synthetix", "SynthetixBridgeToOptimism", "SynthetixBridgeToBase"],
 		"sips": []
 	}
 ]
