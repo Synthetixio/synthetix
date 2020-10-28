@@ -17,7 +17,7 @@ contract FakeSynthetixBridgeToBase is SynthetixBridgeToBase {
     ) public SynthetixBridgeToBase(_owner, _resolver) {
         mintableSynthetix = ISynthetix(_mockMintableSynthetix);
         xChainBridge = _bridge;
-        crossDomainMessengerMock = address(new MockCrossDomainMessenger(_bridge));
+        crossDomainMessengerMock = address(new MockCrossDomainMessenger());
     }
 
     function synthetix() internal view returns (ISynthetix) {

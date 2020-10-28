@@ -5,15 +5,9 @@ import "../interfaces/ISynthetixBridgeToBase.sol";
 
 
 contract MockCrossDomainMessenger {
-    address public xDomainMsgSender;
-
     address public sendMessageCallTarget;
     bytes public sendMessageCallMessage;
     uint public sendMessageCallGasLimit;
-
-    constructor(address _xDomainMsgSender) public {
-        xDomainMsgSender = _xDomainMsgSender;
-    }
 
     function mintSecondaryFromDeposit(
         address target,
@@ -47,10 +41,7 @@ contract MockCrossDomainMessenger {
     }
 
     // mock xDomainMessageSender()
-    function xDomainMessageSender() external view returns (address) {}
-
-    // Events
-    event MintedSecondary(address indexed account, uint amount);
-    event WithdrawalCompleted(address indexed account, uint amount);
-    event MintedSecondaryRewards(uint amount);
+    function xDomainMessageSender() external view returns (address) {
+        return address(0);
+    }
 }
