@@ -48,7 +48,13 @@
 			"major": 2,
 			"minor": 31
 		},
-		"sources": ["SystemSettings", "Synthetix", "SecondaryDeposit"],
-		"sips": []
+		"sources": [
+			"SystemSettings",
+			"Synthetix",
+			"SecondaryDeposit",
+			"Issuer",
+			"DebtCache"
+		],
+		"sips": [91]
 	}
 ]
