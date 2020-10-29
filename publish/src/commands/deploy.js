@@ -9,9 +9,6 @@ const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
 const { getVersions } = require('../../..');
 
-const SOLC_VERSION = '0.5.16+commit.9c3226ce';
-const SOLC_OVM_VERSION = '0.5.16+commit.d3ce9476';
-
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -67,7 +64,7 @@ const deploy = async ({
 	manageNonces,
 } = {}) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
@@ -93,6 +90,16 @@ const deploy = async ({
 		deploymentPath,
 		network,
 	});
+
+	const isOvmPath = deploymentPath.includes('ovm');
+	const deploymentPathMismatch = useOvm && !isOvmPath || !useOvm && isOvmPath;
+	if (deploymentPathMismatch) {
+		if (useOvm) {
+			throw new Error(`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`);
+		} else {
+			throw new Error(`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`);
+		}
+	}
 
 	// Fresh deploy and deployment.json not empty?
 	if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
@@ -188,8 +195,8 @@ const deploy = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
+		useOvm,
 		useFork,
-		expectedCompilerVersion: useOvm ? SOLC_OVM_VERSION : SOLC_VERSION,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
@@ -200,7 +207,7 @@ const deploy = async ({
 		if (network === 'local') {
 			address = deployment.targets[contract].address;
 		} else {
-			const contractVersion = getVersions({ network, byContract: true })[contract];
+			const contractVersion = getVersions({ network, useOvm, byContract: true })[contract];
 			const lastEntry = contractVersion.slice(-1)[0];
 			address = lastEntry.address;
 		}

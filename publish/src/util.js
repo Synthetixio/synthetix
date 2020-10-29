@@ -37,9 +37,9 @@ const ensureNetwork = network => {
 	}
 };
 
-const getDeploymentPathForNetwork = network => {
+const getDeploymentPathForNetwork = ({ network, useOvm }) => {
 	console.log(gray('Loading default deployment for network'));
-	return getPathToNetwork({ network });
+	return getPathToNetwork({ network, useOvm });
 };
 
 const ensureDeploymentPath = deploymentPath => {

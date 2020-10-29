@@ -28,7 +28,7 @@ class Deployer {
 		providerUrl,
 		privateKey,
 		useFork,
-		expectedCompilerVersion,
+		useOvm,
 		nonceManager,
 	}) {
 		this.compiled = compiled;
@@ -42,7 +42,7 @@ class Deployer {
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
 		this.nonceManager = nonceManager;
-		this.expectedCompilerVersion = expectedCompilerVersion;
+		this.useOvm = useOvm;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -95,10 +95,16 @@ class Deployer {
 		}
 
 		const compiled = this.compiled[source];
-		if (compiled.metadata.compiler.version !== this.expectedCompilerVersion) {
-			throw new Error(
-				`You are deploying sources compiled with solc version ${compiled.metadata.compiler.version}, and the expected compiler version for this deploy is ${this.expectedCompilerVersion}. Please run 'node publish build' using the correct compiler, and then run the deployment script again.`
-			);
+
+		const compilerVersion = compiled.metadata.compiler.version;
+		const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
+		const compilerMismatch = this.useOvm && !compiledForOvm || !this.useOvm && compiledForOvm;
+		if (compilerMismatch) {
+			if (this.useOvm) {
+				throw new Error(`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`);
+			} else {
+				throw new Error(`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`);
+			}
 		}
 
 		const existingAddress = this.deployment.targets[name]
