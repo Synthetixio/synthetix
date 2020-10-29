@@ -24,7 +24,7 @@ const commands = {
 describe('deploy multiple instances', () => {
 	let deployer;
 
-	let loadLocalUsers, isCompileRequired, fastForward, setupProvider, getContract;
+	let loadLocalUsers, fastForward, setupProvider, getContract;
 
 	let wallet, provider;
 
@@ -96,29 +96,7 @@ describe('deploy multiple instances', () => {
 		messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
 	});
 
-	before('deploy ovm instance', async () => {
-		await commands.build({ showContractSize: true, testHelpers: true, useOvm: true });
-
-		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
-		// ensure that only SynthetixBridgeToBase is deployed on L2
-		switchL2Deployment(network, deploymentPaths[1], false);
-		await commands.deploy({
-			network,
-			freshDeploy: true,
-			yes: true,
-			privateKey: deployer.private,
-			useOvm: true,
-			ignorePathChecks: true,
-			deploymentPath: deploymentPaths[1],
-		});
-		// now set the external messenger contract
-		await fetchContract({ contract: 'AddressResolver', instance: 1 }).importAddresses(
-			[toBytes32('ext:Messenger')],
-			[messengers.l2CrossDomainMessenger.address]
-		);
-	});
-
-	before('deploy regular instance', async () => {
+	before('deploy instance 1', async () => {
 		await commands.build({ showContractSize: true, testHelpers: true });
 
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
@@ -138,6 +116,28 @@ describe('deploy multiple instances', () => {
 		await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l1CrossDomainMessenger.address]
+		);
+	});
+
+	before('deploy instance 2', async () => {
+		await commands.build({ showContractSize: true, testHelpers: true, useOvm: true });
+
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
+		// ensure that only SynthetixBridgeToBase is deployed on L2
+		switchL2Deployment(network, deploymentPaths[1], false);
+		await commands.deploy({
+			network,
+			freshDeploy: true,
+			yes: true,
+			privateKey: deployer.private,
+			useOvm: true,
+			ignorePathChecks: true,
+			deploymentPath: deploymentPaths[1],
+		});
+		// now set the external messenger contract
+		await fetchContract({ contract: 'AddressResolver', instance: 1 }).importAddresses(
+			[toBytes32('ext:Messenger')],
+			[messengers.l2CrossDomainMessenger.address]
 		);
 	});
 
