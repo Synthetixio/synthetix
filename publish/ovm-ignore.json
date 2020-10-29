@@ -1,0 +1,16 @@
+[
+	"Issuer",
+	"IssuerWithoutUpdatableCache",
+	"TradingRewards",
+	"FakeTradingRewards",
+	"EtherCollateral",
+	"EtherCollateralsUSD",
+	"BinaryOption",
+	"BinaryOptionMarket",
+	"MockBinaryOptionMarket",
+	"TestableBinaryOptionMarket",
+	"BinaryOptionMarketData",
+	"BinaryOptionMarketFactory",
+	"BinaryOptionMarketManager",
+	"MockBinaryOptionMarketManager"
+]

@@ -6,6 +6,6 @@ steps:
   - attach_workspace:
       at: .
   - run:
-      name: Compile in OVM, enforcing size limit
+      name: Run unit tests on OVM compiled output (TODO enable tests)
       command: |
-        npx buidler compile --ovm --optimizer
+        npx buidler compile --use-ovm --optimizer

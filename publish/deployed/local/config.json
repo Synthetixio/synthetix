@@ -2,9 +2,6 @@
 	"SystemSettings": {
 		"deploy": true
 	},
-	"SecondaryDeposit": {
-		"deploy": true
-	},
 	"AddressResolver": {
 		"deploy": true
 	},

@@ -1,9 +1,9 @@
 'use strict';
 
 const path = require('path');
-const { gray, yellow } = require('chalk');
+const { red, gray, yellow } = require('chalk');
 
-const { usePlugin, task, extendEnvironment } = require('@nomiclabs/buidler/config');
+const { usePlugin, task, internalTask, extendEnvironment } = require('@nomiclabs/buidler/config');
 
 const { SOLC_OUTPUT_FILENAME } = require('@nomiclabs/buidler/internal/constants');
 
@@ -18,6 +18,7 @@ usePlugin('buidler-gas-reporter');
 const { logContractSizes } = require('./publish/src/contract-size');
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
+	ovmIgnored,
 } = require('.');
 
 const {
@@ -165,14 +166,74 @@ const optimizeIfRequired = ({ bre, taskArguments: { optimizer } }) => {
 	bre.optimizer = !!optimizer;
 };
 
+// This overrides a buidler internal task, which is part of its compile task's lifecycle.
+// This allows us to filter out non OVM compatible contracts from the compilation list,
+// which are entries in publish/ovm-ignore.json.
+internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
+	let filePaths = await runSuper();
+
+	if (config.ignoreNonOvmContracts) {
+		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
+		filePaths = filePaths.filter(filePath => {
+			const filename = path.basename(filePath, '.sol');
+			const isIgnored = ovmIgnored.some(ignored => filename === ignored);
+			if (isIgnored) {
+				console.log(gray(`    > ${filename}`));
+			}
+
+			return !isIgnored;
+		});
+	}
+
+	return filePaths;
+});
+
+// See internalTask('compile:get-source-paths') first.
+// Filtering the right sources should be enough. However, knowing which are the right sources can be hard.
+// I.e. you may mark TradingRewards to be ignored, but it ends up in the compilation anyway
+// because test-helpers/FakeTradingRewards uses it.
+// We also override this task to more easily detect when this is happening.
+internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => {
+	const graph = await runSuper();
+
+	if (config.ignoreNonOvmContracts) {
+		// Iterate over the dependency graph, and check if an ignored contract
+		// is listed as a dependency of another contract.
+		for (const entry of graph.dependenciesPerFile.entries()) {
+			const source = entry[0];
+			const sourceFilename = path.basename(source.globalName, '.sol');
+
+			const dependencies = entry[1];
+			for (const dependency of dependencies.keys()) {
+				const filename = path.basename(dependency.globalName, '.sol');
+
+				const offender = ovmIgnored.find(ignored => filename === ignored);
+				if (offender) {
+					throw new Error(
+						red(
+							`Ignored source ${offender} is in the dependency graph because ${sourceFilename} imports it.`
+						)
+					);
+				}
+			}
+		}
+	}
+
+	return graph;
+});
+
 task('compile')
 	.addFlag('showsize', 'Show size of compiled contracts')
 	.addFlag('optimizer', 'Compile with the optimizer')
-	.addFlag('ovm', 'Compile with the OVM Solidity compiler')
+	.addFlag('failOversize', 'Fail if any contract is oversize')
+	.addFlag('useOvm', 'Compile with the OVM Solidity compiler')
 	.addFlag('native', 'Compile with the native solc compiler')
 	.setAction(async (taskArguments, bre, runSuper) => {
-		if (taskArguments.ovm) {
+		if (taskArguments.useOvm) {
 			console.log(gray('Compiling with OVM Solidity compiler...'));
+
+			bre.config.ignoreNonOvmContracts = true;
+
 			bre.config.solc = {
 				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc'),
 			};
@@ -186,7 +247,7 @@ task('compile')
 
 		await runSuper(taskArguments);
 
-		if (taskArguments.showsize) {
+		if (taskArguments.showsize || taskArguments.failOversize) {
 			const compiled = require(path.resolve(
 				__dirname,
 				BUILD_FOLDER,
@@ -211,7 +272,21 @@ task('compile')
 				{}
 			);
 
-			logContractSizes({ contractToObjectMap });
+			const sizes = logContractSizes({ contractToObjectMap });
+
+			if (taskArguments.failOversize) {
+				const offenders = sizes.filter(entry => +entry.pcent.split('%')[0] > 100);
+
+				if (offenders.length > 0) {
+					const names = offenders.map(o => o.file);
+
+					console.log(red('Oversized contracts:'), yellow(`[${names}]`));
+
+					throw new Error(
+						'Compilation failed, because some contracts are too big to be deployed. See above.'
+					);
+				}
+			}
 		}
 	});
 

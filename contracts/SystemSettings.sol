@@ -129,10 +129,6 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         return getTradingRewardsEnabled();
     }
 
-    function maximumDeposit() external view returns (uint) {
-        return getMaximumDeposit();
-    }
-
     // ========== RESTRICTED ==========
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
@@ -253,11 +249,6 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
-    function setMaximumDeposit(uint _maxDeposit) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MAXIMUM_DEPOSIT, _maxDeposit);
-        emit MaximumDepositUpdated(_maxDeposit);
-    }
-
     // ========== EVENTS ==========
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
@@ -273,5 +264,4 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
-    event MaximumDepositUpdated(uint maxDeposit);
 }
