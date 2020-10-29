@@ -46,7 +46,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let issuer;
 		let resolver;
 		beforeEach(async () => {
-			messenger = await smockit(artifacts.require('ICrossDomainMessenger').abi, {
+			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
 			});
 

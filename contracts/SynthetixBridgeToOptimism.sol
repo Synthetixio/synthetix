@@ -11,11 +11,11 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
 
 // solhint-disable indent
-import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
 
 contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOptimism {
-    uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: verify value, uint32 to uint in new version
+    uint private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: from constant to an updateable value
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -43,8 +43,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     //
     // ========== INTERNALS ============
 
-    function messenger() internal view returns (ICrossDomainMessenger) {
-        return ICrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
+    function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
+        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
     }
 
     function synthetix() internal view returns (ISynthetix) {

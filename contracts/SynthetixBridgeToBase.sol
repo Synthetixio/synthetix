@@ -9,11 +9,11 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 import "./interfaces/ISynthetix.sol";
 
 // solhint-disable indent
-import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
 
 contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
-    uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: verify value
+    uint private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: make this updateable
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -34,8 +34,8 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     //
     // ========== INTERNALS ============
 
-    function messenger() internal view returns (ICrossDomainMessenger) {
-        return ICrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
+    function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
+        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -48,7 +48,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     function onlyAllowFromOptimism() internal view {
         // ensure function only callable from the L2 bridge via messenger (aka relayer)
-        ICrossDomainMessenger _messenger = messenger();
+        iOVM_BaseCrossDomainMessenger _messenger = messenger();
         require(msg.sender == address(_messenger), "Only the relayer can call this");
         require(_messenger.xDomainMessageSender() == synthetixBridgeToOptimism(), "Only the L1 bridge can invoke");
     }
