@@ -997,11 +997,12 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 				.sort();
 
 			const createdMarkets = markets.map(m => m.address).sort();
-			let recordedMarkets = (await manager.activeMarkets(0, 100)).sort();
 
+			let recordedMarkets = await manager.activeMarkets(0, 100);
+			let sortedMarkets = recordedMarkets.sort();
 			assert.bnEqual(await manager.numActiveMarkets(), toBN(numMarkets));
-			assert.equal(createdMarkets.length, recordedMarkets.length);
-			createdMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
+			assert.equal(createdMarkets.length, sortedMarkets.length);
+			createdMarkets.forEach((p, i) => assert.equal(p, sortedMarkets[i]));
 
 			// Resolve all the even markets, ensuring they have been transferred.
 			await fastForward(expiryDuration + 1000);
@@ -1011,14 +1012,16 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 			await Promise.all(evenMarkets.map(m => manager.resolveMarket(m)));
 
 			assert.bnEqual(await manager.numActiveMarkets(), toBN(4));
-			recordedMarkets = (await manager.activeMarkets(0, 100)).sort();
-			assert.equal(oddMarkets.length, recordedMarkets.length);
-			oddMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
+			recordedMarkets = await manager.activeMarkets(0, 100);
+			sortedMarkets = recordedMarkets.sort();
+			assert.equal(oddMarkets.length, sortedMarkets.length);
+			oddMarkets.forEach((p, i) => assert.equal(p, sortedMarkets[i]));
 
 			assert.bnEqual(await manager.numMaturedMarkets(), toBN(4));
-			recordedMarkets = (await manager.maturedMarkets(0, 100)).sort();
-			assert.equal(evenMarkets.length, recordedMarkets.length);
-			evenMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
+			recordedMarkets = await manager.activeMarkets(0, 100);
+			sortedMarkets = recordedMarkets.sort();
+			assert.equal(evenMarkets.length, sortedMarkets.length);
+			evenMarkets.forEach((p, i) => assert.equal(p, sortedMarkets[i]));
 
 			// Destroy those markets
 			await manager.expireMarkets(evenMarkets);

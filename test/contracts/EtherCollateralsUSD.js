@@ -1608,8 +1608,9 @@ contract('EtherCollateralsUSD', async accounts => {
 		});
 
 		it('should revert if the loan does not exist', async () => {
+			const loanId = 2e10; // assign a big number as the loan id
 			await assert.revert(
-				etherCollateral.depositCollateral(alice, -1, { from: alice, value: oneETH }),
+				etherCollateral.depositCollateral(alice, loanId, { from: alice, value: oneETH }),
 				'Loan does not exist'
 			);
 		});
@@ -1669,8 +1670,9 @@ contract('EtherCollateralsUSD', async accounts => {
 		});
 
 		it('should revert if the loan does not exist', async () => {
+			const loanId = 2e10; // assign a big number as the loan id
 			await assert.revert(
-				etherCollateral.withdrawCollateral(-1, withdrawAmount, { from: alice }),
+				etherCollateral.withdrawCollateral(loanId, withdrawAmount, { from: alice }),
 				'Loan does not exist'
 			);
 		});
