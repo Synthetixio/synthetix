@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
-import "./SelfDestructible.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IBinaryOptionMarketManager.sol";
 
@@ -20,7 +19,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
 
-contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinResolver, IBinaryOptionMarketManager {
+contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOptionMarketManager {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -86,7 +85,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         uint _poolFee,
         uint _creatorFee,
         uint _refundFee
-    ) public Owned(_owner) Pausable() SelfDestructible() MixinResolver(_resolver, addressesToCache) {
+    ) public Owned(_owner) Pausable() MixinResolver(_resolver, addressesToCache) {
         // Temporarily change the owner so that the setters don't revert.
         owner = msg.sender;
         setExpiryDuration(_expiryDuration);

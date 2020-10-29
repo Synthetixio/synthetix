@@ -130,7 +130,7 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 		it('Only expected functions are mutative', async () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: manager.abi,
-				ignoreParents: ['Owned', 'Pausable', 'SelfDestructible', 'MixinResolver'],
+				ignoreParents: ['Owned', 'Pausable', 'MixinResolver'],
 				expected: [
 					'setMaxOraclePriceAge',
 					'setExpiryDuration',
@@ -368,7 +368,7 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 		it('Only expected functions are mutative.', async () => {
 			await ensureOnlyExpectedMutativeFunctions({
 				abi: factory.abi,
-				ignoreParents: ['Owned', 'SelfDestructible', 'MixinResolver'],
+				ignoreParents: ['Owned', 'MixinResolver'],
 				expected: ['createMarket'],
 			});
 		});
