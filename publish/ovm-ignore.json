@@ -1,4 +1,5 @@
 [
+	"ExchangerWithVirtualSynth",
 	"Issuer",
 	"IssuerWithoutUpdatableCache",
 	"TradingRewards",

@@ -13,16 +13,16 @@ const {
 
 const { toBytes32 } = require('../..');
 
-let behaviors = require('./Exchanger.behaviors');
+let behaviors = require('./ExchangerWithVirtualSynth.behaviors');
 
-const Exchanger = artifacts.require('Exchanger');
+const ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
 
-contract('Exchanger (unit tests)', async accounts => {
+contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 	const [, owner] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: Exchanger.abi,
+			abi: ExchangerWithVirtualSynth.abi,
 			ignoreParents: ['MixinResolver'],
 			expected: [
 				'exchange',
@@ -44,7 +44,7 @@ contract('Exchanger (unit tests)', async accounts => {
 		behaviors = bindAll.call(this, { input: behaviors });
 
 		before(async () => {
-			Exchanger.link(await artifacts.require('SafeDecimalMath').new());
+			ExchangerWithVirtualSynth.link(await artifacts.require('SafeDecimalMath').new());
 		});
 
 		beforeEach(async () => {
@@ -66,7 +66,7 @@ contract('Exchanger (unit tests)', async accounts => {
 		});
 
 		beforeEach(async () => {
-			instance = await Exchanger.new(owner, this.resolver.address);
+			instance = await ExchangerWithVirtualSynth.new(owner, this.resolver.address);
 			await instance.setResolverAndSyncCache(this.resolver.address, { from: owner });
 		});
 

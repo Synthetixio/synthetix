@@ -18,7 +18,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
-import "./VirtualSynth.sol";
+
 // Note: use OZ's IERC20 here as using ours will complain about conflicting names
 // during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
@@ -576,15 +576,19 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         ISynth dest = issuer().synths(destinationCurrencyKey);
 
         if (virtualSynth) {
-            // Note: should actually pass ReadProxyAddressResolver here to future-proof this vSynth,
-            // but we don't have it currently in the AddressResolver...
-            vSynth = new VirtualSynth(dest, resolver, recipient, amountReceived);
-            IERC20 vSynthAsERC20 = IERC20(address(vSynth));
+            vSynth = _createVirtualSynth(dest, recipient, amountReceived);
             dest.issue(address(vSynth), amountReceived);
-            emit VirtualSynthCreated(address(vSynth), address(dest), dest.currencyKey(), vSynthAsERC20.totalSupply());
         } else {
             dest.issue(recipient, amountReceived);
         }
+    }
+
+    function _createVirtualSynth(
+        ISynth,
+        address,
+        uint
+    ) internal returns (IVirtualSynth) {
+        revert("Not supported in this layer");
     }
 
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
@@ -920,6 +924,4 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint256 destRoundIdAtPeriodEnd,
         uint256 exchangeTimestamp
     );
-
-    event VirtualSynthCreated(address vSynth, address synth, bytes32 currencyKey, uint amount);
 }

@@ -678,6 +678,7 @@ const deploy = async ({
 
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
+		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
 		deps: ['AddressResolver'],
 		args: [account, resolverAddress],
 	});
