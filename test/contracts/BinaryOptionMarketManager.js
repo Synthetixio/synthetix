@@ -1000,7 +1000,6 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 
 			let recordedMarkets = await manager.activeMarkets(0, 100);
 			let recordedMarketsSorted = [...recordedMarkets].sort();
-			console.log(recordedMarketsSorted);
 			assert.bnEqual(await manager.numActiveMarkets(), toBN(numMarkets));
 			assert.equal(createdMarkets.length, recordedMarketsSorted.length);
 			createdMarkets.forEach((p, i) => assert.equal(p, recordedMarketsSorted[i]));
@@ -1015,14 +1014,12 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 			assert.bnEqual(await manager.numActiveMarkets(), toBN(4));
 			recordedMarkets = await manager.activeMarkets(0, 100);
 			recordedMarketsSorted = [...recordedMarkets].sort();
-			console.log(recordedMarketsSorted);
 			assert.equal(oddMarkets.length, recordedMarketsSorted.length);
 			oddMarkets.forEach((p, i) => assert.equal(p, recordedMarketsSorted[i]));
 
 			assert.bnEqual(await manager.numMaturedMarkets(), toBN(4));
 			recordedMarkets = await manager.maturedMarkets(0, 100);
 			recordedMarketsSorted = [...recordedMarkets].sort();
-			console.log(recordedMarkets);
 			assert.equal(evenMarkets.length, recordedMarkets.length);
 			evenMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
 
