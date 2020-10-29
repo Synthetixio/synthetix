@@ -98,12 +98,16 @@ class Deployer {
 
 		const compilerVersion = compiled.metadata.compiler.version;
 		const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
-		const compilerMismatch = this.useOvm && !compiledForOvm || !this.useOvm && compiledForOvm;
+		const compilerMismatch = (this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
 		if (compilerMismatch) {
 			if (this.useOvm) {
-				throw new Error(`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`);
+				throw new Error(
+					`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+				);
 			} else {
-				throw new Error(`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`);
+				throw new Error(
+					`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+				);
 			}
 		}
 

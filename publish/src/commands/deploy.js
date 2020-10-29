@@ -92,12 +92,16 @@ const deploy = async ({
 	});
 
 	const isOvmPath = deploymentPath.includes('ovm');
-	const deploymentPathMismatch = useOvm && !isOvmPath || !useOvm && isOvmPath;
+	const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
 	if (deploymentPathMismatch) {
 		if (useOvm) {
-			throw new Error(`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`);
+			throw new Error(
+				`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`
+			);
 		} else {
-			throw new Error(`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`);
+			throw new Error(
+				`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`
+			);
 		}
 	}
 
