@@ -8,7 +8,7 @@ import "./DebtCache.sol";
 contract RealtimeDebtCache is DebtCache {
     constructor(address _owner, address _resolver) public DebtCache(_owner, _resolver) {}
 
-    // Report the current debt values from all all cached debt functions
+    // Report the current debt values from all cached debt functions
 
     function cachedSynthDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory debtValues) {
         (uint[] memory debts, ) = _currentSynthDebts(currencyKeys);
