@@ -38,7 +38,7 @@ describe('deploy multiple instances', () => {
 	const deploymentPaths = [];
 
 	before('set up test utils', async () => {
-		({ loadLocalUsers, isCompileRequired, fastForward, setupProvider, getContract } = testUtils());
+		({ loadLocalUsers, fastForward, setupProvider, getContract } = testUtils());
 	});
 
 	before('connect to local chain with accounts', async () => {
@@ -48,16 +48,6 @@ describe('deploy multiple instances', () => {
 			providerUrl: 'http://127.0.0.1:8545',
 			privateKey: deployer.private,
 		}));
-	});
-
-	before('compile if needed', async () => {
-		if (isCompileRequired()) {
-			console.log('Found source file modified after build. Rebuilding...');
-
-			await commands.build({ showContractSize: true, testHelpers: true });
-		} else {
-			console.log('Skipping build as everything up to date');
-		}
 	});
 
 	const createTempLocalCopy = ({ prefix }) => {
@@ -106,27 +96,9 @@ describe('deploy multiple instances', () => {
 		messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
 	});
 
-	before('deploy instance 1', async () => {
-		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
-		// ensure that only SynthetixBridgeToOptimism is deployed on L1
-		switchL2Deployment(network, deploymentPaths[0], true);
-		await commands.deploy({
-			network,
-			freshDeploy: true,
-			yes: true,
-			privateKey: deployer.private,
-			deploymentPath: deploymentPaths[0],
-		});
-		// now set the external messenger contract
-		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
+	before('deploy ovm instance', async () => {
+		await commands.build({ showContractSize: true, testHelpers: true, useOvm: true });
 
-		await addressResolver.importAddresses(
-			[toBytes32('ext:Messenger')],
-			[messengers.l1CrossDomainMessenger.address]
-		);
-	});
-
-	before('deploy instance 2', async () => {
 		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
 		// ensure that only SynthetixBridgeToBase is deployed on L2
 		switchL2Deployment(network, deploymentPaths[1], false);
@@ -136,12 +108,36 @@ describe('deploy multiple instances', () => {
 			yes: true,
 			privateKey: deployer.private,
 			useOvm: true,
+			ignorePathChecks: true,
 			deploymentPath: deploymentPaths[1],
 		});
 		// now set the external messenger contract
 		await fetchContract({ contract: 'AddressResolver', instance: 1 }).importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l2CrossDomainMessenger.address]
+		);
+	});
+
+	before('deploy regular instance', async () => {
+		await commands.build({ showContractSize: true, testHelpers: true });
+
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
+		// ensure that only SynthetixBridgeToOptimism is deployed on L1
+		switchL2Deployment(network, deploymentPaths[0], true);
+		await commands.deploy({
+			network,
+			freshDeploy: true,
+			yes: true,
+			privateKey: deployer.private,
+			ignorePathChecks: true,
+			deploymentPath: deploymentPaths[0],
+		});
+		// now set the external messenger contract
+		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
+
+		await addressResolver.importAddresses(
+			[toBytes32('ext:Messenger')],
+			[messengers.l1CrossDomainMessenger.address]
 		);
 	});
 
