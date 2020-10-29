@@ -62,6 +62,7 @@ const deploy = async ({
 	useOvm,
 	freshDeploy,
 	manageNonces,
+	ignorePathChecks,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -91,17 +92,19 @@ const deploy = async ({
 		network,
 	});
 
-	const isOvmPath = deploymentPath.includes('ovm');
-	const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
-	if (deploymentPathMismatch) {
-		if (useOvm) {
-			throw new Error(
-				`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`
-			);
-		} else {
-			throw new Error(
-				`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`
-			);
+	if (!ignorePathChecks) {
+		const isOvmPath = deploymentPath.includes('ovm');
+		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
+		if (deploymentPathMismatch) {
+			if (useOvm) {
+				throw new Error(
+					`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`
+				);
+			} else {
+				throw new Error(
+					`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`
+				);
+			}
 		}
 	}
 
@@ -1810,6 +1813,7 @@ module.exports = {
 				'-h, --fresh-deploy',
 				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
 			)
+			.option('-i, --ignore-path-checks', 'Ignores some validations in paths', false)
 			.option(
 				'-k, --use-fork',
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
