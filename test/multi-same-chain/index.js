@@ -96,23 +96,29 @@ describe('deploy multiple instances', () => {
 		messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
 	});
 
-	before('deploy instance 1', async () => {
+	before('compile contracts', async () => {
+		// Note: Will use regular compilation for both instances
+		// since they will be run in a regular local chain.
 		await commands.build({ showContractSize: true, testHelpers: true });
+	});
 
-		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
+	before('deploy instance 1', async () => {
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-local-' }));
+
 		// ensure that only SynthetixBridgeToOptimism is deployed on L1
 		switchL2Deployment(network, deploymentPaths[0], true);
+
 		await commands.deploy({
 			network,
 			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
-			ignorePathChecks: true,
+			ignoreSafetyChecks: true,
 			deploymentPath: deploymentPaths[0],
 		});
+
 		// now set the external messenger contract
 		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
-
 		await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l1CrossDomainMessenger.address]
@@ -120,22 +126,24 @@ describe('deploy multiple instances', () => {
 	});
 
 	before('deploy instance 2', async () => {
-		await commands.build({ showContractSize: true, testHelpers: true, useOvm: true });
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-local-ovm-' }));
 
-		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
 		// ensure that only SynthetixBridgeToBase is deployed on L2
 		switchL2Deployment(network, deploymentPaths[1], false);
+
 		await commands.deploy({
 			network,
 			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
 			useOvm: true,
-			ignorePathChecks: true,
+			ignoreSafetyChecks: true,
 			deploymentPath: deploymentPaths[1],
 		});
+
 		// now set the external messenger contract
-		await fetchContract({ contract: 'AddressResolver', instance: 1 }).importAddresses(
+		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 1 });
+		await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l2CrossDomainMessenger.address]
 		);

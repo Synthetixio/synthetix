@@ -62,15 +62,11 @@ const deploy = async ({
 	useOvm,
 	freshDeploy,
 	manageNonces,
-	ignorePathChecks,
+	ignoreSafetyChecks,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
-
-	if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
-		throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
-	}
 
 	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
@@ -92,7 +88,14 @@ const deploy = async ({
 		network,
 	});
 
-	if (!ignorePathChecks) {
+	if (!ignoreSafetyChecks) {
+
+		// Using Goerli without manageNonces?
+		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
+			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+		}
+
+		// Deploying on OVM and not using an OVM deployment path?
 		const isOvmPath = deploymentPath.includes('ovm');
 		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
 		if (deploymentPathMismatch) {
@@ -106,13 +109,13 @@ const deploy = async ({
 				);
 			}
 		}
-	}
 
-	// Fresh deploy and deployment.json not empty?
-	if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
-		throw new Error(
-			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
-		);
+		// Fresh deploy and deployment.json not empty?
+		if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
+			throw new Error(
+				`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
+			);
+		}
 	}
 
 	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
@@ -204,6 +207,7 @@ const deploy = async ({
 		dryRun,
 		useOvm,
 		useFork,
+		ignoreSafetyChecks,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
@@ -1813,7 +1817,11 @@ module.exports = {
 				'-h, --fresh-deploy',
 				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
 			)
-			.option('-i, --ignore-path-checks', 'Ignores some validations in paths', false)
+			.option(
+				'-i, --ignore-safety-checks',
+				'Ignores some validations regarding paths, compiler versions, etc.',
+				false
+			)
 			.option(
 				'-k, --use-fork',
 				'Perform the deployment on a forked chain running on localhost (see fork command).',

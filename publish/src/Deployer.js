@@ -29,6 +29,7 @@ class Deployer {
 		privateKey,
 		useFork,
 		useOvm,
+		ignoreSafetyChecks,
 		nonceManager,
 	}) {
 		this.compiled = compiled;
@@ -43,6 +44,7 @@ class Deployer {
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
 		this.nonceManager = nonceManager;
 		this.useOvm = useOvm;
+		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -96,18 +98,20 @@ class Deployer {
 
 		const compiled = this.compiled[source];
 
-		const compilerVersion = compiled.metadata.compiler.version;
-		const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
-		const compilerMismatch = (this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
-		if (compilerMismatch) {
-			if (this.useOvm) {
-				throw new Error(
-					`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
-				);
-			} else {
-				throw new Error(
-					`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
-				);
+		if (!this.ignoreSafetyChecks) {
+			const compilerVersion = compiled.metadata.compiler.version;
+			const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
+			const compilerMismatch = (this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
+			if (compilerMismatch) {
+				if (this.useOvm) {
+					throw new Error(
+						`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				} else {
+					throw new Error(
+						`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				}
 			}
 		}
 
