@@ -89,7 +89,6 @@ const deploy = async ({
 	});
 
 	if (!ignoreSafetyChecks) {
-
 		// Using Goerli without manageNonces?
 		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
 			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
