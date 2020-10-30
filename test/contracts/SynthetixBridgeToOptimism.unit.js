@@ -201,7 +201,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by the rewardsDistribution', () => { 
+				describe('when invoked by the rewardsDistribution', () => {
 					let txn;
 					let amount;
 					beforeEach(async () => {
