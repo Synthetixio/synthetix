@@ -71,6 +71,16 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         require(activated, "Function deactivated");
     }
 
+    function _rewardDeposit(uint amount) internal {
+        // create message payload for L2
+        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", amount);
+
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+
+        emit RewardDeposit(msg.sender, amount);
+    }
+
     // ========== MODIFIERS ============
 
     modifier requireActive() {
@@ -104,14 +114,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     function rewardDeposit(uint amount) external requireActive {
         // move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), amount);
-
-        // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", amount);
-
-        // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-
-        emit RewardDepositByAccount(msg.sender, amount);
+        _rewardDeposit(amount);
+        
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
@@ -142,27 +146,17 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     }
 
     // invoked by RewardsDistribution on L1 (takes SNX)
-    function notifyRewardAmount(uint256 reward) external {
+    function notifyRewardAmount(uint256 amount) external requireActive {
         require(msg.sender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
         // to be here means I've been given an amount of SNX to distribute onto L2
-
-        // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", reward);
-
-        // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-
-        emit RewardDeposit(reward);
+        _rewardDeposit(amount);
     }
 
     // ========== EVENTS ==========
 
-    event Deposit(address indexed account, uint amount);
-    event RewardDepositByAccount(address indexed account, uint reward);
-
-    event RewardDeposit(uint reward);
-
     event BridgeMigrated(address oldBridge, address newBridge, uint amount);
+    event Deposit(address indexed account, uint amount);
+    event RewardDeposit(address indexed account, uint amount);
     event WithdrawalCompleted(address indexed account, uint amount);
 }

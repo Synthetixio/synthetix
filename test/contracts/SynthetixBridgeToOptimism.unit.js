@@ -176,14 +176,20 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
-					it('and a RewardDepositByAccount event is emitted', async () => {
-						assert.eventEqual(txn, 'RewardDepositByAccount', [user1, amount]);
+					it('and a RewardDeposit event is emitted', async () => {
+						assert.eventEqual(txn, 'RewardDeposit', [user1, amount]);
 					});
 				});
 			});
 
 			describe('notifyRewardAmount', () => {
 				describe('failure modes', () => {
+					it('does not work when the contract has been deactivated', async () => {
+						await instance.migrateBridge(ZERO_ADDRESS, { from: owner });
+
+						await assert.revert(instance.deposit('1'), 'Function deactivated');
+					});
+
 					it('does not work when not invoked by the rewardDistribution address', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.notifyRewardAmount,
@@ -195,7 +201,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by the rewardsDistribution', () => {
+				describe('when invoked by the rewardsDistribution', () => { 
 					let txn;
 					let amount;
 					beforeEach(async () => {
@@ -216,8 +222,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
-					it('and a RewardDepositByAccount event is emitted', async () => {
-						assert.eventEqual(txn, 'RewardDeposit', [amount]);
+					it('and a RewardDeposit event is emitted', async () => {
+						assert.eventEqual(txn, 'RewardDeposit', [rewardsDistribution, amount]);
 					});
 				});
 			});
