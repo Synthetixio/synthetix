@@ -8,6 +8,7 @@ const { prepareSmocks } = require('./helpers');
 
 const VirtualSynth = artifacts.require('VirtualSynth');
 
+// note: cannot use fat-arrow here otherwise this function will be bound to this outer context
 module.exports = function({ accounts }) {
 	beforeEach(async () => {
 		({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
@@ -18,6 +19,7 @@ module.exports = function({ accounts }) {
 	});
 
 	return {
+		// note: use fat-arrow to persist context rather
 		whenInstantiated: ({ amount, user, synth = 'sETH' }, cb) => {
 			describe(`when instantiated for user ${user.slice(0, 7)}`, () => {
 				beforeEach(async () => {
@@ -68,9 +70,35 @@ module.exports = function({ accounts }) {
 		whenSettlementCalled: ({ user }, cb) => {
 			describe(`when settlement is invoked for user ${user.slice(0, 7)}`, () => {
 				beforeEach(async () => {
-					// return with no reclaim or rebates (not used)
-					this.mocks.Exchanger.smocked.settle.will.return.with([0, 0, 1]);
-					this.mocks.Synth.smocked.transfer.will.return.with(true);
+					// here we simulate how a settlement works with respect to a user's balance
+					// Note: this does not account for multiple users - it settles for any account given the exact same way
+
+					const [reclaim, rebate, numEntries] = this.mocks.Exchanger.smocked.settlementOwing.will
+						.returnValue || [0, 0, 1];
+
+					// now show the balanceOf the vSynth shows the amount after settlement
+					let balanceOf = +this.mocks.Synth.smocked.balanceOf.will.returnValue(
+						this.instance.address
+					);
+
+					this.mocks.Exchanger.smocked.settle.will.return.with(() => {
+						// update the balanceOf the underlying synth due to settlement
+						balanceOf = reclaim > 0 ? balanceOf - reclaim : balanceOf + rebate;
+						// ensure settlementOwing now shows nothing
+						this.mocks.Exchanger.smocked.settlementOwing.will.return.with([0, 0, 0]);
+						// return what was settled
+						return [reclaim, rebate, numEntries];
+					});
+
+					this.mocks.Synth.smocked.transfer.will.return.with((to, amount) => {
+						// ensure the vSynths settlement reduces how much balance
+						balanceOf = balanceOf - amount;
+						return true;
+					});
+
+					// use a closure to ensure the balance returned at time of request is the updated one
+					this.mocks.Synth.smocked.balanceOf.will.return.with(() => balanceOf);
+
 					await this.instance.settle(user);
 				});
 				cb();

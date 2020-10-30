@@ -118,8 +118,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 									assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
 								});
 								behaviors.whenSettlementCalled({ user: owner }, () => {
-									// Not working
-									xit('then the rate must still be 15/12 (with 18 decimals) as supply still exists', async () => {
+									it('then the rate must still be 15/12 (with 18 decimals) as supply still exists', async () => {
 										assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
 									});
 								});
