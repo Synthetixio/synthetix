@@ -4,7 +4,7 @@ const { assert } = require('./common');
 const { toBN } = web3.utils;
 
 contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
-	const [, owner] = accounts;
+	const [, owner, newBridge] = accounts;
 
 	let synthetix, synthetixBridgeToOptimism;
 
@@ -93,6 +93,27 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 							amountToDeposit * 2
 						);
 					});
+				});
+			});
+		});
+
+		describe('migrateBridge', () => {
+			describe('when the owner migrates the bridge', () => {
+				let bridgeBalance;
+
+				before('record balance', async () => {
+					bridgeBalance = await synthetix.balanceOf(synthetixBridgeToOptimism.address);
+				});
+
+				before('migrate the bridge', async () => {
+					await synthetixBridgeToOptimism.migrateBridge(newBridge, {
+						from: owner,
+					});
+				});
+
+				it('transfers the whoel balacne to the new bridge', async () => {
+					assert.bnEqual(await synthetix.balanceOf(synthetixBridgeToOptimism.address), 0);
+					assert.bnEqual(await synthetix.balanceOf(newBridge), bridgeBalance);
 				});
 			});
 		});
