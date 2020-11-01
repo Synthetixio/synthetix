@@ -51,7 +51,7 @@
 		"sources": [
 			"SystemSettings",
 			"Synthetix",
-			"SecondaryDeposit",
+			"SynthetixBridgeToOptimism",
 			"Issuer",
 			"DebtCache"
 		],
