@@ -3,22 +3,30 @@ jobs:
       filters:
         branches:
           only: develop
+      context:
+        - Docker Auth
   # ~~~~~~~~~~~~~~~ MAINNET ~~~~~~~~~~~~~~~ #
   - job-fork-prepare-deploy:
       name: job-fork-prepare-deploy-mainnet
       network: mainnet
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-fork-deploy:
       name: job-fork-deploy-mainnet
       network: mainnet
       requires:
         - job-fork-prepare-deploy-mainnet
+      context:
+        - Docker Auth
   - job-fork-test-prod:
       name: job-fork-test-prod-mainnet
       network: mainnet
       requires:
         - job-fork-deploy-mainnet
+      context:
+        - Docker Auth
   # ~~~~~~~~~~~~~~~ RINKEBY ~~~~~~~~~~~~~~~ #
   - job-fork-prepare-deploy:
       name: job-fork-prepare-deploy-rinkeby
@@ -28,6 +36,8 @@ jobs:
       filters:
         branches:
           only: develop
+      context:
+        - Docker Auth
   - job-fork-deploy:
       name: job-fork-deploy-rinkeby
       network: rinkeby
@@ -36,6 +46,8 @@ jobs:
       filters:
         branches:
           only: develop
+      context:
+        - Docker Auth
   - job-fork-test-prod:
       name: job-fork-test-prod-rinkeby
       network: rinkeby
@@ -44,6 +56,8 @@ jobs:
       filters:
         branches:
           only: develop
+      context:
+        - Docker Auth
   # ~~~~~~~~~~~~~~~ KOVAN ~~~~~~~~~~~~~~~ #
   - job-fork-prepare-deploy:
       name: job-fork-prepare-deploy-kovan
@@ -53,6 +67,8 @@ jobs:
       filters:
         branches:
           only: develop
+      context:
+        - Docker Auth
   - job-fork-deploy:
       name: job-fork-deploy-kovan
       network: rinkeby
@@ -61,6 +77,8 @@ jobs:
       filters:
         branches:
           only: develop
+      context:
+        - Docker Auth
   - job-fork-test-prod:
       name: job-fork-test-prod-kovan
       network: rinkeby
@@ -69,5 +87,7 @@ jobs:
       filters:
         branches:
           only: develop
+      context:
+        - Docker Auth
   # ~~~~~~~~~~~~~~~ ROPSTEN ~~~~~~~~~~~~~~~ #
   # Ropsten paused (see above).

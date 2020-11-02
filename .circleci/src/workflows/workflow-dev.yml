@@ -1,44 +1,72 @@
 jobs:
-  - job-prepare
+  - job-prepare:
+      context:
+        - Docker Auth
   - job-lint:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-compile:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-test-contracts:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-test-contracts-legacy:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-test-ovm:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-test-multi-same-chain:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-test-publish:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-test-deployments:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-test-local:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-pack:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-coverage-report:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-gas-report:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   - job-slither:
       requires:
         - job-prepare
+      context:
+        - Docker Auth
   # ~~~~~~~~~~~~~~~ KOVAN ~~~~~~~~~~~~~~~ #
   - job-test-kovan:
       requires:
@@ -46,6 +74,8 @@ jobs:
       filters:
         branches:
           only: staging
+      context:
+        - Docker Auth
   # ~~~~~~~~~~~~~~~ RINKEBY ~~~~~~~~~~~~~~~ #
   - job-test-rinkeby:
       requires:
@@ -53,6 +83,8 @@ jobs:
       filters:
         branches:
           only: staging
+      context:
+        - Docker Auth
   # ~~~~~~~~~~~~~~~ MAINNET ~~~~~~~~~~~~~~~ #
   - job-test-mainnet:
       requires:
@@ -60,5 +92,7 @@ jobs:
       filters:
         branches:
           only: master
+      context:
+        - Docker Auth
   # ~~~~~~~~~~~~~~~ ROPSTEN ~~~~~~~~~~~~~~~ #
   # Ropsten paused (see above).
