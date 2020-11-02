@@ -3,6 +3,7 @@ const { toBN, toWei } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toBytes32 } = require('../..');
+const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 const { toUnit, currentTime } = require('../utils')();
 
 const Keeper = artifacts.require('Keeper');
@@ -58,6 +59,23 @@ contract('GasTank', accounts => {
 			assert.equal(await gasTank.resolver(), addressResolver.address);
 			assert.bnEqual(await systemSettings.keeperFee(), keeperFeeDefault);
 		});
+
+		it('Only expected functions are mutative', async () => {
+			ensureOnlyExpectedMutativeFunctions({
+				abi: gasTank.abi,
+				ignoreParents: ['Owned', 'MixinResolver'],
+				expected: [
+					'approveContract',
+					'depositEtherOnBehalf',
+					'depositEther',
+					'withdrawEtherOnBehalf',
+					'withdrawEther',
+					'setMaxGasPriceOnBehalf',
+					'setMaxGasPrice',
+					'payGas',
+				],
+			});
+		});
 	});
 	describe('currentGasPrice', () => {
 		it('should return the current gas price from the ExchangeRates', async () => {
@@ -94,6 +112,17 @@ contract('GasTank', accounts => {
 		it('should return true after a contract has been approved', async () => {
 			await gasTank.approveContract(toBytes32('Keeper'), true, { from: owner });
 			assert.isTrue(await gasTank.approved(keeper.address));
+		});
+
+		it('approveContract cannot be invoked except by contract owner.', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: gasTank.approveContract,
+				args: [toBytes32('Keeper'), true],
+				accounts,
+				address: owner,
+				skipPassCheck: true,
+				reason: 'Only the contract owner may perform this action',
+			});
 		});
 	});
 
@@ -267,12 +296,13 @@ contract('GasTank', accounts => {
 
 	describe('payGas', () => {
 		it('should revert if contract has not been approved', async () => {
-			await assert.revert(
-				keeper.spendGas(accountTwo, {
-					from: accountOne,
-				}),
-				'Contract is not approved'
-			);
+			await onlyGivenAddressCanInvoke({
+				fnc: keeper.spendGas,
+				args: [accountTwo],
+				accounts,
+				skipPassCheck: true,
+				reason: 'Contract is not approved',
+			});
 		});
 		it('should revert if gasprice is too low', async () => {
 			await gasTank.approveContract(toBytes32('Keeper'), true, { from: owner });
@@ -305,6 +335,7 @@ contract('GasTank', accounts => {
 				'SafeMath: subtraction overflow'
 			);
 		});
+
 		it('should refund the keeper for the entire transaction plus a keeper fee', async () => {
 			const depositAmount = toUnit('20');
 			const keeperAccount = accountOne;

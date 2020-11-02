@@ -16,7 +16,6 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IGasTank.sol";
 
-
 contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings, IGasTank {
     /* ========== LIBRARIES ========== */
 
@@ -28,7 +27,7 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings, 
         This value matches the required gas to execute the SpendGas function. It is added to the total gas spent
         so keepers are fully refunded.
      */
-    uint public constant PAYGAS_COST = 115764;
+    uint public constant PAYGAS_COST = 116148;
     mapping(address => bool) public approved;
 
     bytes32 public constant CONTRACT_NAME = "GasTank";
@@ -91,7 +90,9 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings, 
     }
 
     function executionCost(uint _gas) public view returns (uint etherCost) {
-        return (_gas + PAYGAS_COST) * currentGasPrice() + getKeeperFee().divideDecimal(currentEtherPrice());
+        uint totalGasCost = (_gas.add(PAYGAS_COST)).mul(currentGasPrice());
+        uint keeperFeeCost = getKeeperFee().divideDecimal(currentEtherPrice());
+        return totalGasCost.add(keeperFeeCost);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
