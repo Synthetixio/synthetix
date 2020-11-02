@@ -11,6 +11,8 @@ interface IDelegateApprovals {
 
     function canExchangeFor(address authoriser, address delegate) external view returns (bool);
 
+    function canManageGasTankFor(address authoriser, address delegate) external view returns (bool);
+
     // Mutative
     function approveAllDelegatePowers(address delegate) external;
 
@@ -31,4 +33,8 @@ interface IDelegateApprovals {
     function approveExchangeOnBehalf(address delegate) external;
 
     function removeExchangeOnBehalf(address delegate) external;
+
+    function approveManageGasTankOnBehalf(address delegate) external;
+
+    function removeManageGasTankOnBehalf(address delegate) external;
 }

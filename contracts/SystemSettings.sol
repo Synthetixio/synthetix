@@ -9,7 +9,6 @@ import "./interfaces/ISystemSettings.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
-
 contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -37,6 +36,9 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
 
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
+
+    // Max USD value of ether to be awarded to keepers
+    uint public constant MAX_KEEPER_FEE = 10e18;
 
     bytes32[24] private addressesToCache = [bytes32(0)];
 
@@ -120,6 +122,10 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
 
     function aggregatorWarningFlags() external view returns (address) {
         return getAggregatorWarningFlags();
+    }
+
+    function keeperFee() external view returns (uint) {
+        return getKeeperFee();
     }
 
     // SIP-63 Trading incentives
@@ -248,6 +254,12 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
+    function setKeeperFee(uint _keeperFee) external onlyOwner {
+        require(_keeperFee <= MAX_KEEPER_FEE, "Max keeper fee exceeded");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_KEEPER_FEE, _keeperFee);
+        emit KeeperFeeUpdated(_keeperFee);
+    }
+
     // ========== EVENTS ==========
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
@@ -263,4 +275,6 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
+    event KeeperFeeUpdated(uint keeperFee);
+    event MaximumDepositUpdated(uint maxDeposit);
 }

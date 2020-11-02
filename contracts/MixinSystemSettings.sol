@@ -21,6 +21,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_EXCHANGE_FEE_RATE = "exchangeFeeRate";
     bytes32 internal constant SETTING_MINIMUM_STAKE_TIME = "minimumStakeTime";
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
+    bytes32 internal constant SETTING_KEEPER_FEE = "keeperFee";
     bytes32 internal constant SETTING_TRADING_REWARDS_ENABLED = "tradingRewardsEnabled";
     bytes32 internal constant SETTING_DEBT_SNAPSHOT_STALE_TIME = "debtSnapshotStaleTime";
 
@@ -91,6 +92,10 @@ contract MixinSystemSettings is MixinResolver {
 
     function getAggregatorWarningFlags() internal view returns (address) {
         return flexibleStorage().getAddressValue(SETTING_CONTRACT_NAME, SETTING_AGGREGATOR_WARNING_FLAGS);
+    }
+
+    function getKeeperFee() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_KEEPER_FEE);
     }
 
     function getDebtSnapshotStaleTime() internal view returns (uint) {

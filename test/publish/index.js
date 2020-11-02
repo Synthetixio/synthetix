@@ -46,6 +46,7 @@ const {
 		MINIMUM_STAKE_TIME,
 		TRADING_REWARDS_ENABLED,
 		DEBT_SNAPSHOT_STALE_TIME,
+		KEEPER_FEE,
 	},
 	wrap,
 } = snx;
@@ -164,6 +165,7 @@ describe('publish scripts', () => {
 			let SystemSettings;
 			let Liquidations;
 			let ExchangeRates;
+			let GasTank;
 			const aggregators = {};
 
 			const createMockAggregator = async () => {
@@ -253,10 +255,12 @@ describe('publish scripts', () => {
 					sources['ExchangeRates'].abi,
 					targets['ExchangeRates'].address
 				);
+				GasTank = new web3.eth.Contract(sources['GasTank'].abi, targets['GasTank'].address);
 			});
 
 			describe('default system settings', () => {
 				it('defaults are properly configured in a fresh deploy', async () => {
+					assert.strictEqual(await GasTank.methods.keeperFee().call(), KEEPER_FEE);
 					assert.strictEqual(
 						await Exchanger.methods.waitingPeriodSecs().call(),
 						WAITING_PERIOD_SECS

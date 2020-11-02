@@ -1068,6 +1068,12 @@ const deploy = async ({
 		args: [account, account, resolverAddress],
 	});
 
+	await deployer.deployContract({
+		name: 'GasTank',
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
+	});
+
 	if (useOvm) {
 		await deployer.deployContract({
 			// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
@@ -1636,6 +1642,15 @@ const deploy = async ({
 				expected: input => input !== '0', // only change if zero
 				write: 'setDebtSnapshotStaleTime',
 				writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
+			});
+
+			await runStep({
+				contract: 'SystemSettings',
+				target: systemSettings,
+				read: 'keeperFee',
+				expected: input => input !== '0', // only change if zero
+				write: 'setKeeperFee',
+				writeArg: await getDeployParameter('KEEPER_FEE'),
 			});
 
 			const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[

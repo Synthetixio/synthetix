@@ -47,6 +47,8 @@ contract('SystemSettings', async accounts => {
 				'setMinimumStakeTime',
 				'setAggregatorWarningFlags',
 				'setTradingRewardsEnabled',
+				'setKeeperFee',
+				'setMaximumDeposit',
 				'setDebtSnapshotStaleTime',
 			],
 		});
@@ -702,6 +704,40 @@ contract('SystemSettings', async accounts => {
 
 			it('and emits an AggregatorWarningFlagsUpdated event', async () => {
 				assert.eventEqual(txn, 'AggregatorWarningFlagsUpdated', [owner]);
+			});
+		});
+	});
+
+	describe('setKeeperFee()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setKeeperFee,
+				args: [toUnit('1')],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if keeperFee > MAX_KEEPER_FEE', async () => {
+			await assert.revert(
+				systemSettings.setKeeperFee(toUnit('11'), { from: owner }),
+				'Max keeper fee exceeded'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			const keeperFee = toUnit('1');
+			beforeEach(async () => {
+				txn = await systemSettings.setKeeperFee(keeperFee, { from: owner });
+			});
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.keeperFee(), keeperFee);
+			});
+
+			it('and emits a KeeperFeeUpdated event', async () => {
+				assert.eventEqual(txn, 'KeeperFeeUpdated', [keeperFee]);
 			});
 		});
 	});
