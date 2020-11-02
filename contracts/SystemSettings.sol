@@ -9,7 +9,6 @@ import "./interfaces/ISystemSettings.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
-
 contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -39,7 +38,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
     // Max USD value of ether to be awarded to keepers
-    uint public constant MAX_KEEPER_FEE = 1e18 * 10;
+    uint public constant MAX_KEEPER_FEE = 10e18;
 
     bytes32[24] private addressesToCache = [bytes32(0)];
 

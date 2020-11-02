@@ -6,7 +6,6 @@ import "../Owned.sol";
 import "../interfaces/ISynthetix.sol";
 import "../interfaces/IGasTank.sol";
 
-
 // Contract used to test the GasTank "payGas" function
 contract Keeper is Owned, MixinResolver {
     bytes32 public constant CONTRACT_GASTANK = "GasTank";
@@ -24,10 +23,10 @@ contract Keeper is Owned, MixinResolver {
     }
 
     function spendGas(address payable _account) public {
-        uint gasConsummed = gasleft();
+        uint gasConsumed = gasleft();
         //we call a random function to consume gas
         _synthetix().collateral(_account);
-        gasConsummed -= gasleft();
-        _gasTank().payGas(_account, msg.sender, gasConsummed);
+        gasConsumed -= gasleft();
+        _gasTank().payGas(_account, msg.sender, gasConsumed);
     }
 }

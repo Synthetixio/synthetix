@@ -20,6 +20,9 @@
 	"Depot": {
 		"deploy": true
 	},
+	"GasTank": {
+		"deploy": true
+	},
 	"TradingRewards": {
 		"deploy": true
 	},

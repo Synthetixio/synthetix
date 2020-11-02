@@ -79,6 +79,7 @@ const defaults = {
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
+	KEEPER_FEE: w3utils.toWei('10'), // $10 USD keeper fee
 };
 
 /**

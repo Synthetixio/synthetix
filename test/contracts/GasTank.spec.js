@@ -4,7 +4,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toBytes32 } = require('../..');
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
-const { toUnit, currentTime } = require('../utils')();
+const { toUnit, currentTime, divideDecimalRound } = require('../utils')();
 
 const Keeper = artifacts.require('Keeper');
 const GasTank = artifacts.require('GasTank');
@@ -351,8 +351,18 @@ contract('GasTank', accounts => {
 
 			const keeperAccountBalance = await web3.eth.getBalance(keeperAccount);
 
-			// the final balance should be greater than initial balance (tx refund + keeper fee)
-			assert.bnGt(toBN(keeperAccountBalance), toBN(keeperAccountInitialEthBalance));
+			const gasUsed = toBN(tx.receipt.gasUsed);
+			const gasRefund = gasUsed.mul(toBN(fastGasPriceDefault));
+			const keeperFee = divideDecimalRound(keeperFeeDefault, ethPriceDefault);
+
+			assert.bnClose(
+				keeperAccountBalance,
+				toBN(keeperAccountInitialEthBalance)
+					.add(gasRefund)
+					.add(keeperFee),
+				'10000000000000000'
+			);
+
 			const logs = GasTank.decodeLogs(tx.receipt.rawLogs);
 			assert.eventEqual(logs[0], 'EtherSpent', {
 				spender: accountTwo,

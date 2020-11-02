@@ -16,6 +16,7 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IGasTank.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/GasTank
 contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings, IGasTank {
     /* ========== LIBRARIES ========== */
 
@@ -69,6 +70,10 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings, 
 
     /* ---------- GasTank Information ---------- */
 
+    function keeperFee() external view returns (uint fee) {
+        return getKeeperFee();
+    }
+
     function _toPayable(address _address) internal pure returns (address payable) {
         return address(uint160(_address));
     }
@@ -90,7 +95,11 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings, 
     }
 
     function executionCost(uint _gas) public view returns (uint etherCost) {
-        uint totalGasCost = (_gas.add(PAYGAS_COST)).mul(currentGasPrice());
+        return _executionCost(_gas, currentGasPrice());
+    }
+
+    function _executionCost(uint _gas, uint _gasPrice) internal view returns (uint etherCost) {
+        uint totalGasCost = (_gas.add(PAYGAS_COST)).mul(_gasPrice);
         uint keeperFeeCost = getKeeperFee().divideDecimal(currentEtherPrice());
         return totalGasCost.add(keeperFeeCost);
     }
@@ -114,7 +123,8 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings, 
     ) internal nonReentrant {
         require(_amount > 0, "Withdrawal amount must be greater than 0");
         _setDepositBalance(_account, balanceOf(_account).sub(_amount));
-        _recipient.transfer(_amount);
+        (bool success, ) = _recipient.call.value(_amount)("");
+        require(success, "Withdrawal failed");
         emit EtherWithdrawn(_account, _recipient, _amount);
     }
 
@@ -167,13 +177,16 @@ contract GasTank is Owned, MixinResolver, ReentrancyGuard, MixinSystemSettings, 
         uint _gas
     ) external nonReentrant returns (uint) {
         require(approved[msg.sender], "Contract is not approved");
-        uint etherSpent = executionCost(_gas);
-        require(tx.gasprice >= currentGasPrice(), "Gas price is too low");
-        if (maxGasPriceOf(_spender) > 0) {
-            require(tx.gasprice <= maxGasPriceOf(_spender), "Spender gas price limit is reached");
+        uint gasPrice = currentGasPrice();
+        require(tx.gasprice >= gasPrice, "Gas price is too low");
+        uint etherSpent = _executionCost(_gas, gasPrice);
+        uint maxGasPriceForSpender = maxGasPriceOf(_spender);
+        if (maxGasPriceForSpender > 0) {
+            require(tx.gasprice <= maxGasPriceForSpender, "Spender gas price limit is reached");
         }
         _setDepositBalance(_spender, balanceOf(_spender).sub(etherSpent));
-        _recipient.transfer(etherSpent);
+        (bool success, ) = _recipient.call.value(etherSpent)("");
+        require(success, "Refund failed");
         emit EtherSpent(_spender, _recipient, etherSpent, tx.gasprice);
         return etherSpent;
     }

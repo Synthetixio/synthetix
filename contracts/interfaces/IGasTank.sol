@@ -1,7 +1,9 @@
 pragma solidity >=0.4.24;
 
-
+// https://docs.synthetix.io/contracts/source/interfaces/IGasTank
 interface IGasTank {
+    function keeperFee() external view returns (uint fee);
+
     function balanceOf(address _account) external view returns (uint balance);
 
     function maxGasPriceOf(address _account) external view returns (uint maxGasPriceWei);
