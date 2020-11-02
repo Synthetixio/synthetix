@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./interfaces/IRewardEscrow.sol";
+import "./MixinResolver.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -14,7 +15,7 @@ import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract RewardEscrowV2 is Owned, IRewardEscrow {
+contract RewardEscrowV2 is Owned, IRewardEscrow, MixinResolver {
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */
@@ -32,6 +33,9 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
     /* An account's total vested reward synthetix. */
     mapping(address => uint) public totalVestedAccountBalance;
 
+    /* An account's total escrowed synthetix balance to save recomputing this for fee extraction purposes. */
+    mapping(address => bool) public accountEscrowMigrated;
+
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalEscrowedBalance;
 
@@ -44,6 +48,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
 
     IRewardEscrow public oldRewardEscrow;
 
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE = "SynthetixBridgeToBase";
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -55,6 +61,12 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
         synthetix = _synthetix;
         feePool = _feePool;
         oldRewardEscrow = _oldRewardEscrow;
+    }
+
+    /* ========== VIEWS ======================= */
+
+    function synthetixBridge() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixBridgeToBase address");
     }
 
     /* ========== SETTERS ========== */
@@ -259,6 +271,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
         // Calculate entries that can be vested and total vested to deduct from totalEscrowedAccountBalance
         (uint vestedEntries, uint totalVested) = _getVestedEntriesAndAmount(_addressToMigrate, numEntries);
 
+        // totalVestedAccountBalance[msg.sender] vest increased
+
         // Vesting entries are sorted in order of oldest to newer entries.
         // Vested entries are not copied to new escrow
         uint remainingEntries = numEntries - vestedEntries;
@@ -288,6 +302,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
         }
     }
 
+    /* ========== MIGRATION OLD ESCROW ========== */
+
     function migrateAccountEscrowBalances(address[] calldata accounts, uint256[] calldata escrowBalances)
         external
         onlyOwner
@@ -296,7 +312,69 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
 
         for (uint i = 0; i < accounts.length; i++) {
             totalEscrowedAccountBalance[accounts[i]] = escrowBalances[i];
+
+            // should we migrate the totalVestedAccountBalance[msg.sender] data as well ?
         }
+    }
+
+    function burnForMigration(address account)
+        external
+        onlySynthetixBridge
+        returns (
+            uint64[52] memory,
+            uint256[52] memory,
+            uint256
+        )
+    {
+        // check if account's totalEscrowedAccountBalance > 0 and any vesting entries
+        // Check whether entries have been migrated, else read from old rewardEscrow
+
+        // burn the totalEscrowedAccountBalance for account
+        // transfer the SNX to the L2 bridge
+        // sub totalEscrowedBalance
+        // keep the totalVestedAccountBalance[account]
+        // Optional - delete the vesting entries to reclaim gas
+        uint256 escrowedAccountBalance = totalEscrowedAccountBalance[account];
+        uint64[52] memory vestingTimstamps;
+        uint256[52] memory vestingAmounts;
+
+        if (escrowedAccountBalance > 0) {
+            if (accountEscrowMigrated[account]) {
+                // read from current contract for vesting escrow
+                delete totalEscrowedAccountBalance[account];
+            } else {
+                // populate schedule from old escrow contract
+            }
+        }
+        // return timestamps and amounts for vesting
+        return (vestingTimstamps, vestingAmounts, escrowedAccountBalance);
+    }
+
+    /* ========== L2 MIGRATION ========== */
+
+    function importVestingEntries(
+        address account,
+        uint64[] calldata timestamps,
+        uint256[] calldata amounts
+    ) external onlySynthetixBridge {
+        require(amounts.length == timestamps.length, "Timestamps and amounts length don't match");
+
+        uint256 escrowedBalance;
+
+        for (uint i = 0; i < amounts.length; i++) {
+            vestingSchedules[account].push([timestamps[i], amounts[i]]);
+            escrowedBalance = escrowedBalance.add(amounts[i]);
+        }
+
+        // There must be enough balance in the contract to provide for the accountEscrowedBalance.
+        totalEscrowedBalance = totalEscrowedBalance.add(escrowedBalance);
+        require(
+            totalEscrowedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
+            "Insufficient balance in the contract to provide for account escrowed balance"
+        );
+
+        // Record accountEscrowedBalance
+        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedBalance);
     }
 
     /* ========== MODIFIERS ========== */
@@ -305,6 +383,11 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
         bool isFeePool = msg.sender == address(feePool);
 
         require(isFeePool, "Only the FeePool contracts can perform this action");
+        _;
+    }
+
+    modifier onlySynthetixBridge() {
+        require(msg.sender == synthetixBridge(), "Can only be invoked by SynthetixBridgeToBase contract");
         _;
     }
 
