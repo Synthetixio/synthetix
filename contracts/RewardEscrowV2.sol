@@ -49,7 +49,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
 
     IRewardEscrow public oldRewardEscrow;
 
-    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE = "SynthetixBridgeToBase";
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_BASE = "SynthetixBridgeToBase";
+    bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM = "SynthetixBridgeToOptimism";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -66,8 +67,12 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
 
     /* ========== VIEWS ======================= */
 
-    function synthetixBridge() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixBridgeToBase address");
+    function synthetixBridgeToBase() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_BASE, "Resolver is missing SynthetixBridgeToBase address");
+    }
+
+    function synthetixBridgeToOptimism() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM, "Resolver is missing SynthetixBridgeToOptimism address");
     }
 
     /* ========== SETTERS ========== */
@@ -332,8 +337,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
         // Check whether entries have been migrated, else read from old rewardEscrow
         // Vest any entries that can be vested already (More tha 12 months)
         // burn the totalEscrowedAccountBalance for account
-        // transfer the SNX to the L2 bridge
         // sub totalEscrowedBalance
+        // transfer the SNX to the L2 bridge
         // keep the totalVestedAccountBalance[account]
         // Optional - delete the vesting entries to reclaim gas
 
@@ -358,7 +363,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
         address account,
         uint64[] calldata timestamps,
         uint256[] calldata amounts
-    ) external onlySynthetixBridge {
+    ) external onlySynthetixBridgeToBase {
         require(amounts.length == timestamps.length, "Timestamps and amounts length don't match");
 
         uint256 escrowedBalance;
@@ -372,7 +377,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
         totalEscrowedBalance = totalEscrowedBalance.add(escrowedBalance);
         require(
             totalEscrowedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
-            "Insufficient balance in the contract to provide for account escrowed balance"
+            "Insufficient balance in the contract to provide for escrowed balance"
         );
 
         // Record escrowedBalance
@@ -389,7 +394,12 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
     }
 
     modifier onlySynthetixBridge() {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by SynthetixBridgeToBase contract");
+        require(msg.sender == synthetixBridgeToOptimism(), "Can only be invoked by SynthetixBridgeToOptimism contract");
+        _;
+    }
+
+    modifier onlySynthetixBridgeToBase() {
+        require(msg.sender == synthetixBridgeToBase(), "Can only be invoked by SynthetixBridgeToBase contract");
         _;
     }
 
