@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./SelfDestructible.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -19,7 +18,7 @@ import "./interfaces/IExchanger.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/ExchangeRates
-contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSettings, IExchangeRates {
+contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -60,7 +59,7 @@ contract ExchangeRates is Owned, SelfDestructible, MixinResolver, MixinSystemSet
         address _resolver,
         bytes32[] memory _currencyKeys,
         uint[] memory _newRates
-    ) public Owned(_owner) SelfDestructible() MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
+    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
         require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
 
         oracle = _oracle;

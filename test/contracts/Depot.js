@@ -98,7 +98,7 @@ contract('Depot @ovm-skip', async accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: depot.abi,
 				hasFallback: true,
-				ignoreParents: ['SelfDestructible', 'Pausable', 'ReentrancyGuard', 'MixinResolver'],
+				ignoreParents: ['Pausable', 'ReentrancyGuard', 'MixinResolver'],
 				expected: [
 					'depositSynths',
 					'exchangeEtherForSNX',
