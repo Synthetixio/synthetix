@@ -13,7 +13,7 @@ import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomain
 
 
 contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
-    uint private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: make this updateable
+    uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: make this updateable
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";

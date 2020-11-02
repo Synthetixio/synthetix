@@ -7,7 +7,7 @@ const { parseEther, parseUnits } = ethers.utils;
 
 const {
 	initCrossDomainMessengers,
-	waitForCrossDomainMessages,
+	relayL1ToL2Messages,
 } = require('@eth-optimism/ovm-toolchain');
 
 const { assert } = require('../contracts/common');
@@ -232,7 +232,7 @@ describe('deploy multiple instances', () => {
 			await fastForward(100);
 
 			// wait for message to be relayed
-			await waitForCrossDomainMessages(user);
+			await relayL1ToL2Messages(user);
 
 			const newL2Balance = await synthetixAlt.balanceOf(user.address);
 			assert.bnEqual(newL2Balance, parseEther('100'));
