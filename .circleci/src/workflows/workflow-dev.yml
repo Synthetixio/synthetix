@@ -15,9 +15,9 @@ jobs:
   - job-test-ovm:
       requires:
         - job-prepare
-  - job-test-multi-same-chain:
-      requires:
-        - job-prepare
+  # - job-test-multi-same-chain:
+  #     requires:
+  #       - job-prepare
   - job-test-publish:
       requires:
         - job-prepare
