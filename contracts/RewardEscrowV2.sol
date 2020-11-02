@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 import "./MixinResolver.sol";
 
 // Libraries
@@ -15,7 +16,7 @@ import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract RewardEscrowV2 is Owned, IRewardEscrow, MixinResolver {
+contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
     using SafeMath for uint;
 
     /* The corresponding Synthetix contract. */
@@ -317,24 +318,27 @@ contract RewardEscrowV2 is Owned, IRewardEscrow, MixinResolver {
         }
     }
 
+    /* ========== L2 MIGRATION ========== */
+
     function burnForMigration(address account)
         external
         onlySynthetixBridge
         returns (
             uint64[52] memory,
-            uint256[52] memory,
-            uint256
+            uint256[52] memory
         )
     {
         // check if account's totalEscrowedAccountBalance > 0 and any vesting entries
         // Check whether entries have been migrated, else read from old rewardEscrow
-
+        // Vest any entries that can be vested already (More tha 12 months)
         // burn the totalEscrowedAccountBalance for account
         // transfer the SNX to the L2 bridge
         // sub totalEscrowedBalance
         // keep the totalVestedAccountBalance[account]
         // Optional - delete the vesting entries to reclaim gas
+
         uint256 escrowedAccountBalance = totalEscrowedAccountBalance[account];
+
         uint64[52] memory vestingTimstamps;
         uint256[52] memory vestingAmounts;
 
@@ -347,10 +351,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrow, MixinResolver {
             }
         }
         // return timestamps and amounts for vesting
-        return (vestingTimstamps, vestingAmounts, escrowedAccountBalance);
+        return (vestingTimstamps, vestingAmounts);
     }
-
-    /* ========== L2 MIGRATION ========== */
 
     function importVestingEntries(
         address account,
@@ -366,14 +368,14 @@ contract RewardEscrowV2 is Owned, IRewardEscrow, MixinResolver {
             escrowedBalance = escrowedBalance.add(amounts[i]);
         }
 
-        // There must be enough balance in the contract to provide for the accountEscrowedBalance.
+        // There must be enough balance in the contract to provide for the escrowedBalance.
         totalEscrowedBalance = totalEscrowedBalance.add(escrowedBalance);
         require(
             totalEscrowedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
             "Insufficient balance in the contract to provide for account escrowed balance"
         );
 
-        // Record accountEscrowedBalance
+        // Record escrowedBalance
         totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedBalance);
     }
 
