@@ -3,7 +3,6 @@
 	"ETH": {"asset": "ETH"},
 	"COMP": {"asset": "COMP"},
 	"KNC": {"asset": "KNC"},
-	"LEND": {"asset": "LEND"},
 	"REN": {"asset": "REN"},
 	"EUR": {"asset": "EUR", "feed": "0xa28a03a00cEFE08d68025044FEfaC221cBEe8a55"},
 	"JPY": {"asset": "JPY", "feed": "0x795122664E4D4A3F7e66E8674953C97ADc60B17C"},

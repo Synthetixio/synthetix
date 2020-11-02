@@ -15,10 +15,6 @@
 		"asset": "KNC",
 		"feed": "0xf8fF43E991A81e6eC886a3D281A2C6cC19aE70Fc"
 	},
-	"LEND": {
-		"asset": "LEND",
-		"feed": "0x4aB81192BB75474Cf203B56c36D6a13623270A67"
-	},
 	"REN": {
 		"asset": "REN",
 		"feed": "0x0f59666EDE214281e956cb3b2D0d69415AfF4A01"
