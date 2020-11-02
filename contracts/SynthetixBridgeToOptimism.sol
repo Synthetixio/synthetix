@@ -115,13 +115,12 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         // move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), amount);
         _rewardDeposit(amount);
-        
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger on L1 after L2 waiting period elapses
-    function completeWithdrawal(address account, uint amount) external {
+    function completeWithdrawal(address account, uint amount) external requireActive {
         // ensure function only callable from L2 Bridge via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
         require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
@@ -134,7 +133,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     }
 
     // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
-    function migrateBridge(address newBridge) external onlyOwner {
+    function migrateBridge(address newBridge) external onlyOwner requireActive {
+        require(newBridge != address(0), "Cannot migrate to address 0");
         activated = false;
 
         IERC20 ERC20Synthetix = synthetixERC20();

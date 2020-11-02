@@ -26,7 +26,6 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
         CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM
     ];
 
-    //
     // ========== CONSTRUCTOR ==========
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
