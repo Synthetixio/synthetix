@@ -77,6 +77,9 @@ jobs:
     coverage-report:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         resource_class: xlarge
         steps:
             - checkout
@@ -88,6 +91,9 @@ jobs:
     fork-deploy:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         parameters:
             network:
                 type: string
@@ -101,6 +107,9 @@ jobs:
     fork-prepare-deploy:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         parameters:
             network:
                 type: string
@@ -114,6 +123,9 @@ jobs:
     fork-test-prod:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         parameters:
             network:
                 type: string
@@ -127,6 +139,9 @@ jobs:
     gas-report:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
@@ -136,6 +151,9 @@ jobs:
     lint:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
@@ -145,6 +163,9 @@ jobs:
     pack:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
@@ -156,6 +177,9 @@ jobs:
     prepare:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - restore_cache:
@@ -174,6 +198,9 @@ jobs:
     slither:
         docker:
             - image: trailofbits/eth-security-toolbox
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
@@ -187,6 +214,9 @@ jobs:
     test-contracts:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         resource_class: large
         steps:
             - checkout
@@ -206,6 +236,9 @@ jobs:
     test-contracts-legacy:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         resource_class: large
         steps:
             - checkout
@@ -217,6 +250,9 @@ jobs:
     test-deployments:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
@@ -226,6 +262,9 @@ jobs:
     test-kovan:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
@@ -238,6 +277,9 @@ jobs:
     test-local:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
@@ -247,6 +289,9 @@ jobs:
     test-mainnet:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
@@ -257,6 +302,9 @@ jobs:
     test-ovm:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
@@ -269,6 +317,9 @@ jobs:
     test-publish:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         resource_class: large
         steps:
             - checkout
@@ -292,6 +343,9 @@ jobs:
     test-rinkeby:
         docker:
             - image: circleci/node:12.18
+              auth:
+                username: $DOCKERHUB_USERNAME
+                password: $DOCKERHUB_TOKEN
         steps:
             - checkout
             - attach_workspace:
