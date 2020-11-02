@@ -1,12 +1,10 @@
 working_directory: ~/repo
 docker:
   - image: circleci/node:12.18
-parameters:
-  network:
-    type: string
 steps:
   - checkout
   - attach_workspace:
       at: .
-  - fork_deploy:
-      network: << parameters.network >>
+  - run: npm run test:gas && npx codechecks codechecks.unit.yml
+  - store_artifacts:
+      path: test-gas-used.log
