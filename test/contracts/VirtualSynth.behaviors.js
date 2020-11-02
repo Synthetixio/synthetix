@@ -104,5 +104,15 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
+		whenMockedWithMaxSecsLeft: ({ maxSecsLeft = '0' }, cb) => {
+			describe(`when mocked with ${maxSecsLeft} for settlement `, () => {
+				beforeEach(async () => {
+					this.mocks.Exchanger.smocked.maxSecsLeftInWaitingPeriod.will.return.with(
+						maxSecsLeft.toString()
+					);
+				});
+				cb();
+			});
+		},
 	};
 };

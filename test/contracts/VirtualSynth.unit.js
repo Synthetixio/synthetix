@@ -135,10 +135,54 @@ contract('VirtualSynth (unit tests)', async accounts => {
 			});
 		});
 
-		describe('secsLeftInWaitingPeriod()', () => {});
+		describe('secsLeftInWaitingPeriod()', () => {
+			behaviors.whenInstantiated({ amount: '1000', user: owner, synth: 'sBTC' }, () => {
+				behaviors.whenMockedWithMaxSecsLeft({ maxSecsLeft: 100 }, () => {
+					it('then secs left in waiting period returns 100', async () => {
+						assert.equal(await this.instance.secsLeftInWaitingPeriod(), '100');
+					});
+				});
+				behaviors.whenMockedWithMaxSecsLeft({ maxSecsLeft: 1 }, () => {
+					it('then secs left in waiting period returns 1', async () => {
+						assert.equal(await this.instance.secsLeftInWaitingPeriod(), '1');
+					});
+				});
+				behaviors.whenMockedWithMaxSecsLeft({ maxSecsLeft: 0 }, () => {
+					it('then secs left in waiting period returns 0', async () => {
+						assert.equal(await this.instance.secsLeftInWaitingPeriod(), '0');
+					});
+				});
+			});
+		});
 
-		describe('readyToSettle()', () => {});
+		describe('readyToSettle()', () => {
+			behaviors.whenInstantiated({ amount: '999', user: owner, synth: 'sBTC' }, () => {
+				behaviors.whenMockedWithMaxSecsLeft({ maxSecsLeft: 100 }, () => {
+					it('then ready to settle is false', async () => {
+						assert.equal(await this.instance.readyToSettle(), false);
+					});
+				});
+				behaviors.whenMockedWithMaxSecsLeft({ maxSecsLeft: 1 }, () => {
+					it('then ready to settle is false', async () => {
+						assert.equal(await this.instance.readyToSettle(), false);
+					});
+				});
+				behaviors.whenMockedWithMaxSecsLeft({ maxSecsLeft: 0 }, () => {
+					it('then ready to settle is false', async () => {
+						assert.equal(await this.instance.readyToSettle(), true);
+					});
+				});
+			});
+		});
 
-		describe('settled()', () => {});
+		describe('settlement', () => {
+			const amount = '999';
+			behaviors.whenInstantiated({ amount, user: owner, synth: 'sBTC' }, () => {
+				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
+					describe('settled()', () => {});
+					describe('settle()', () => {});
+				});
+			});
+		});
 	});
 });
