@@ -260,14 +260,18 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
         (uint vestedEntries, uint totalVested) = _getVestedEntriesAndAmount(_addressToMigrate, numEntries);
 
         // Vesting entries are sorted in order of oldest to newer entries.
-        // Vested entries 
+        // Vested entries are not copied to new escrow
         uint remainingEntries = numEntries - vestedEntries;
         for (uint i = vestedEntries - 1; i < remainingEntries; i++) {
             // vestingSchedules[_addressToMigrate].push([vestingSchedule[0], vestingSchedule[1]]);
         }
     }
 
-    function _getVestedEntriesAndAmount(address _account, uint _numEntries) internal view returns (uint vestedEntries, uint totalVestedAmount) {
+    function _getVestedEntriesAndAmount(address _account, uint _numEntries)
+        internal
+        view
+        returns (uint vestedEntries, uint totalVestedAmount)
+    {
         for (uint i = 0; i < _numEntries; i++) {
             // get existing vesting entry [time, quantity]
             uint[2] memory vestingSchedule = oldRewardEscrow.getVestingScheduleEntry(_account, i);
@@ -284,14 +288,16 @@ contract RewardEscrowV2 is Owned, IRewardEscrow {
         }
     }
 
-    // function migrateAccountEscrowBalances(address[] calldata _accounts, uint256[] calldata _escrowBalances)
-    //     external
-    //     onlyOwner
-    // {
-    //     require(_accounts.length == _escrowBalances.length, "Number of accounts and balances don't match");
+    function migrateAccountEscrowBalances(address[] calldata accounts, uint256[] calldata escrowBalances)
+        external
+        onlyOwner
+    {
+        require(accounts.length == escrowBalances.length, "Number of accounts and balances don't match");
 
-    //     for (uint i = 0; i < _accounts.length; i++) {}
-    // }
+        for (uint i = 0; i < accounts.length; i++) {
+            totalEscrowedAccountBalance[accounts[i]] = escrowBalances[i];
+        }
+    }
 
     /* ========== MODIFIERS ========== */
 
