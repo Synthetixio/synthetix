@@ -10,7 +10,6 @@ import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 
 import "./MultiCollateralState.sol";
-import "./MultiCollateralManager.sol";
 
 import "./interfaces/IMultiCollateral.sol";
 
@@ -123,10 +122,6 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
 
     function feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
-    }
-
-    function manager() internal view returns (MultiCollateralManager) {
-        return MultiCollateralManager(manager);
     }
 
     /* ---------- Public Views ---------- */
