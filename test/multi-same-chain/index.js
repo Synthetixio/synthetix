@@ -25,7 +25,7 @@ async function mineBlock(provider, timeLeap) {
 describe('deploy multiple instances', () => {
 	let deployer;
 
-	let loadLocalUsers, isCompileRequired, fastForward, setupProvider, getContract;
+	let loadLocalUsers, isCompileRequired, setupProvider, getContract;
 
 	let wallet, provider;
 
@@ -39,7 +39,7 @@ describe('deploy multiple instances', () => {
 	const deploymentPaths = [];
 
 	before('set up test utils', async () => {
-		({ loadLocalUsers, isCompileRequired, fastForward, setupProvider, getContract } = testUtils());
+		({ loadLocalUsers, isCompileRequired, setupProvider, getContract } = testUtils());
 	});
 
 	before('connect to local chain with accounts', async () => {
