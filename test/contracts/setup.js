@@ -583,6 +583,8 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'FlexibleStorage',
 				'EtherCollateralsUSD',
+				'MultiCollateralEth',
+				'MultiCollateralErc20',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
