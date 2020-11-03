@@ -26,6 +26,7 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
+import "./interfaces/IMultiCollateral.sol";
 
 
 // https://docs.synthetix.io/contracts/FeePool
@@ -72,6 +73,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
+    bytes32 private constant CONTRACT_MULTICOLLATERALETH = "MultiCollateralEth";
+    bytes32 private constant CONTRACT_MULTICOLLATERALERC20 = "MultiCollateralErc20";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
     bytes32[24] private addressesToCache = [
@@ -85,6 +88,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         CONTRACT_REWARDESCROW,
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ETH_COLLATERAL_SUSD,
+        CONTRACT_MULTICOLLATERALETH,
+        CONTRACT_MULTICOLLATERALERC20,
         CONTRACT_REWARDSDISTRIBUTION
     ];
 
@@ -138,6 +143,15 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
         return
             IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
+    }
+
+    function multiCollateralEth() internal view returns (IMultiCollateral) {
+        return
+            IMultiCollateral(requireAndGetAddress(CONTRACT_MULTICOLLATERALETH, "Missing MultiCollateralEth address"));
+    }
+
+    function multiCollateralErc20() internal view returns (IMultiCollateral) {
+        return IMultiCollateral(requireAndGetAddress(CONTRACT_MULTICOLLATERALERC20, "Missing MultiCollateralERC20 address"));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -737,8 +751,10 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
         bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
+        bool isMultiCollateralEth = msg.sender == address(multiCollateralEth());
+        bool isMultiCollateralErc20 = msg.sender == address(multiCollateralErc20());
 
-        require(isExchanger || isSynth || isEtherCollateralsUSD, "Only Internal Contracts");
+        require(isExchanger || isSynth || isEtherCollateralsUSD || isMultiCollateralEth || isMultiCollateralErc20, "Only Internal Contracts");
         _;
     }
 
