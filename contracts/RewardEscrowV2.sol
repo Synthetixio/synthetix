@@ -2,9 +2,10 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
+import "./MixinResolver.sol";
+import "./LimitedSetup.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IRewardEscrowV2.sol";
-import "./MixinResolver.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -16,7 +17,7 @@ import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
+contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinResolver {
     using SafeMath for uint;
 
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
@@ -260,29 +261,41 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
         }
 
         if (total != 0) {
-            totalEscrowedBalance = totalEscrowedBalance.sub(total);
-            totalEscrowedAccountBalance[msg.sender] = totalEscrowedAccountBalance[msg.sender].sub(total);
-            totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].add(total);
-            IERC20(address(synthetix())).transfer(msg.sender, total);
-            emit Vested(msg.sender, now, total);
+            _transferVestedTokens(msg.sender, total);
         }
     }
 
-    function migrateVestingSchedule(address _addressToMigrate) external {
-        require(totalEscrowedAccountBalance[_addressToMigrate] > 0, "Address escrow balance is 0");
+    function _transferVestedTokens(address _account, uint256 _amount) internal {
+        totalEscrowedBalance = totalEscrowedBalance.sub(_amount);
+        totalEscrowedAccountBalance[_account] = totalEscrowedAccountBalance[_account].sub(_amount);
+        totalVestedAccountBalance[_account] = totalVestedAccountBalance[_account].add(_amount);
+        IERC20(address(synthetix())).transfer(_account, _amount);
+        emit Vested(_account, now, _amount);
+    }
 
-        uint numEntries = oldRewardEscrow.numVestingEntries(_addressToMigrate);
+    /* ========== MIGRATION OLD ESCROW ========== */
+
+    /* Function to allow any address to migrate vesting entries from previous reward escrow */
+    function migrateVestingSchedule(address addressToMigrate) external {
+        require(totalEscrowedAccountBalance[addressToMigrate] > 0, "Address escrow balance is 0");
+
+        uint numEntries = oldRewardEscrow.numVestingEntries(addressToMigrate);
 
         // Calculate entries that can be vested and total vested to deduct from totalEscrowedAccountBalance
-        (uint vestedEntries, uint totalVested) = _getVestedEntriesAndAmount(_addressToMigrate, numEntries);
+        (uint vestedEntries, uint totalVested) = _getVestedEntriesAndAmount(addressToMigrate, numEntries);
 
-        // totalVestedAccountBalance[msg.sender] vest increased
+        // transfer vested tokens
+        if (totalVested != 0) {
+            _transferVestedTokens(addressToMigrate, totalVested);
+        }
 
         // Vesting entries are sorted in order of oldest to newer entries.
         // Vested entries are not copied to new escrow
+
+        // TODO - consider using appendVestingEntry for appending vesting schedules
         uint remainingEntries = numEntries - vestedEntries;
         for (uint i = vestedEntries - 1; i < remainingEntries; i++) {
-            // vestingSchedules[_addressToMigrate].push([vestingSchedule[0], vestingSchedule[1]]);
+            // vestingSchedules[addressToMigrate].push([vestingSchedule[0], vestingSchedule[1]]);
         }
     }
 
@@ -307,20 +320,22 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
         }
     }
 
-    /* ========== MIGRATION OLD ESCROW ========== */
-
     /* Migration for owner to migrate escrowed and vested account balances */
-    function migrateAccountEscrowBalances(address[] calldata accounts, uint256[] calldata escrowBalances, uint256[] calldata vestedBalances)
-        external
-        onlyOwner
-    {
+    function migrateAccountEscrowBalances(
+        address[] calldata accounts,
+        uint256[] calldata escrowBalances,
+        uint256[] calldata vestedBalances
+    ) external onlyOwner {
         require(accounts.length == escrowBalances.length, "Number of accounts and balances don't match");
         require(accounts.length == vestedBalances.length, "Number of accounts and vestedBalances don't match");
 
+        // TODO - consider adding checks that there is enough balance in contract to provide for the totalEscrowedAccountbalance
         for (uint i = 0; i < accounts.length; i++) {
             totalEscrowedAccountBalance[accounts[i]] = escrowBalances[i];
             totalVestedAccountBalance[accounts[i]] = vestedBalances[i];
         }
+
+        // TODO enable contract after migrating all account escrow balances, prevent adding vesting entries and vesting.
     }
 
     /* ========== L2 MIGRATION ========== */
@@ -366,6 +381,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
 
         uint256 escrowedBalance;
 
+        // TODO - consider using appendVestingEntry for appending vesting schedules
         for (uint i = 0; i < amounts.length; i++) {
             vestingSchedules[account].push([timestamps[i], amounts[i]]);
             escrowedBalance = escrowedBalance.add(amounts[i]);

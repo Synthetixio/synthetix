@@ -18,6 +18,12 @@ interface IRewardEscrowV2 {
 
     function migrateVestingSchedule(address _addressToMigrate) external;
 
+    function migrateAccountEscrowBalances(
+        address[] calldata accounts,
+        uint256[] calldata escrowBalances,
+        uint256[] calldata vestedBalances
+    ) external;
+
     // L2 Migration
     function importVestingEntries(
         address account,
