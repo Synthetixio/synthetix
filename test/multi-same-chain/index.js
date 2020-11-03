@@ -5,10 +5,7 @@ const ethers = require('ethers');
 
 const { parseEther, parseUnits } = ethers.utils;
 
-const {
-	initCrossDomainMessengers,
-	relayL1ToL2Messages,
-} = require('@eth-optimism/ovm-toolchain');
+const { initCrossDomainMessengers, relayL1ToL2Messages } = require('@eth-optimism/ovm-toolchain');
 
 const { assert } = require('../contracts/common');
 const testUtils = require('../utils');
@@ -21,6 +18,10 @@ const commands = {
 	deploy: require('../../publish/src/commands/deploy').deploy,
 };
 
+async function mineBlock(provider, timeLeap) {
+	const currentTimestamp = (await provider.getBlock(provider.getBlockNumber())).timestamp;
+	await provider.send('evm_mine', [currentTimestamp + timeLeap]);
+}
 describe('deploy multiple instances', () => {
 	let deployer;
 
@@ -228,8 +229,8 @@ describe('deploy multiple instances', () => {
 		});
 
 		it('and after a delay, the user has 100 SNX on L2', async () => {
-			// wait 100s
-			await fastForward(100);
+			// fast forward 100s
+			await mineBlock(provider, 100);
 
 			// wait for message to be relayed
 			await relayL1ToL2Messages(user);
