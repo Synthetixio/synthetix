@@ -46,7 +46,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let issuer;
 		let resolver;
 		beforeEach(async () => {
-			messenger = await smockit(artifacts.require('ICrossDomainMessenger').abi, {
+			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
 			});
 
@@ -98,7 +98,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			describe('deposit', () => {
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(ZERO_ADDRESS, { from: owner });
+						await instance.migrateBridge(randomAddress, { from: owner });
 
 						await assert.revert(instance.deposit('1'), 'Function deactivated');
 					});
@@ -144,7 +144,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			describe('rewardDeposit', () => {
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(ZERO_ADDRESS, { from: owner });
+						await instance.migrateBridge(randomAddress, { from: owner });
 
 						await assert.revert(instance.rewardDeposit('1'), 'Function deactivated');
 					});
@@ -176,14 +176,20 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
-					it('and a RewardDepositByAccount event is emitted', async () => {
-						assert.eventEqual(txn, 'RewardDepositByAccount', [user1, amount]);
+					it('and a RewardDeposit event is emitted', async () => {
+						assert.eventEqual(txn, 'RewardDeposit', [user1, amount]);
 					});
 				});
 			});
 
 			describe('notifyRewardAmount', () => {
 				describe('failure modes', () => {
+					it('does not work when the contract has been deactivated', async () => {
+						await instance.migrateBridge(randomAddress, { from: owner });
+
+						await assert.revert(instance.notifyRewardAmount('1'), 'Function deactivated');
+					});
+
 					it('does not work when not invoked by the rewardDistribution address', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.notifyRewardAmount,
@@ -216,14 +222,30 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
-					it('and a RewardDepositByAccount event is emitted', async () => {
-						assert.eventEqual(txn, 'RewardDeposit', [amount]);
+					it('and a RewardDeposit event is emitted', async () => {
+						assert.eventEqual(txn, 'RewardDeposit', [rewardsDistribution, amount]);
 					});
 				});
 			});
 
 			describe('migrateBridge', () => {
 				describe('failure modes', () => {
+					it('does not work when the contract has been deactivated', async () => {
+						await instance.migrateBridge(randomAddress, { from: owner });
+
+						await assert.revert(
+							instance.migrateBridge(randomAddress, { from: owner }),
+							'Function deactivated'
+						);
+					});
+
+					it('fails when the migration address is 0x0', async () => {
+						await assert.revert(
+							instance.migrateBridge(ZERO_ADDRESS, { from: owner }),
+							'Cannot migrate to address 0'
+						);
+					});
+
 					it('does not work when not invoked by the owner', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.migrateBridge,
@@ -269,6 +291,17 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 			describe('completeWithdrawal', async () => {
 				describe('failure modes', () => {
+					it('does not work when the contract has been deactivated', async () => {
+						await instance.migrateBridge(randomAddress, { from: owner });
+
+						await assert.revert(
+							instance.completeWithdrawal(user1, 100, {
+								from: smockedMessenger,
+							}),
+							'Function deactivated'
+						);
+					});
+
 					it('should only allow the relayer (aka messenger) to call completeWithdrawal()', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.completeWithdrawal,

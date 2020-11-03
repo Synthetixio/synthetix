@@ -11,11 +11,11 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
 
 // solhint-disable indent
-import "@eth-optimism/rollup-contracts/build/contracts/bridge/interfaces/CrossDomainMessenger.interface.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
 
 contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOptimism {
-    uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: verify value, uint32 to uint in new version
+    uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: from constant to an updateable value
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -43,8 +43,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     //
     // ========== INTERNALS ============
 
-    function messenger() internal view returns (ICrossDomainMessenger) {
-        return ICrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
+    function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
+        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -69,6 +69,16 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
 
     function isActive() internal view {
         require(activated, "Function deactivated");
+    }
+
+    function _rewardDeposit(uint amount) internal {
+        // create message payload for L2
+        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", amount);
+
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+
+        emit RewardDeposit(msg.sender, amount);
     }
 
     // ========== MODIFIERS ============
@@ -104,20 +114,13 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     function rewardDeposit(uint amount) external requireActive {
         // move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), amount);
-
-        // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", amount);
-
-        // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-
-        emit RewardDepositByAccount(msg.sender, amount);
+        _rewardDeposit(amount);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger on L1 after L2 waiting period elapses
-    function completeWithdrawal(address account, uint amount) external {
+    function completeWithdrawal(address account, uint amount) external requireActive {
         // ensure function only callable from L2 Bridge via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
         require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
@@ -130,7 +133,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     }
 
     // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
-    function migrateBridge(address newBridge) external onlyOwner {
+    function migrateBridge(address newBridge) external onlyOwner requireActive {
+        require(newBridge != address(0), "Cannot migrate to address 0");
         activated = false;
 
         IERC20 ERC20Synthetix = synthetixERC20();
@@ -142,27 +146,17 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     }
 
     // invoked by RewardsDistribution on L1 (takes SNX)
-    function notifyRewardAmount(uint256 reward) external {
+    function notifyRewardAmount(uint256 amount) external requireActive {
         require(msg.sender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
         // to be here means I've been given an amount of SNX to distribute onto L2
-
-        // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", reward);
-
-        // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-
-        emit RewardDeposit(reward);
+        _rewardDeposit(amount);
     }
 
     // ========== EVENTS ==========
 
-    event Deposit(address indexed account, uint amount);
-    event RewardDepositByAccount(address indexed account, uint reward);
-
-    event RewardDeposit(uint reward);
-
     event BridgeMigrated(address oldBridge, address newBridge, uint amount);
+    event Deposit(address indexed account, uint amount);
+    event RewardDeposit(address indexed account, uint amount);
     event WithdrawalCompleted(address indexed account, uint amount);
 }
