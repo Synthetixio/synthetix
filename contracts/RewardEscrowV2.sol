@@ -241,7 +241,9 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
     /**
      * @notice Allow a user to withdraw any SNX in their schedule that have vested.
      */
-    function vest() external {
+    function vest(address account) external {
+        require(accountEscrowMigrated[account], "Escrow migration pending");
+
         uint numEntries = _numVestingEntries(msg.sender);
         uint total;
         for (uint i = 0; i < numEntries; i++) {
@@ -307,16 +309,17 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
 
     /* ========== MIGRATION OLD ESCROW ========== */
 
-    function migrateAccountEscrowBalances(address[] calldata accounts, uint256[] calldata escrowBalances)
+    /* Migration for owner to migrate escrowed and vested account balances */
+    function migrateAccountEscrowBalances(address[] calldata accounts, uint256[] calldata escrowBalances, uint256[] calldata vestedBalances)
         external
         onlyOwner
     {
         require(accounts.length == escrowBalances.length, "Number of accounts and balances don't match");
+        require(accounts.length == vestedBalances.length, "Number of accounts and vestedBalances don't match");
 
         for (uint i = 0; i < accounts.length; i++) {
             totalEscrowedAccountBalance[accounts[i]] = escrowBalances[i];
-
-            // should we migrate the totalVestedAccountBalance[msg.sender] data as well ?
+            totalVestedAccountBalance[accounts[i]] = vestedBalances[i];
         }
     }
 
@@ -330,7 +333,9 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
         // sub totalEscrowedBalance
         // transfer the SNX to the L2 bridge
         // keep the totalVestedAccountBalance[account]
+        // flag account has migrated to Optimism L2
         // Optional - delete the vesting entries to reclaim gas
+        require(accountMigratedToOptimism[account] == false, "Account migrated already");
 
         uint256 escrowedAccountBalance = totalEscrowedAccountBalance[account];
 
@@ -345,6 +350,9 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
                 // populate schedule from old escrow contract
             }
         }
+
+        accountMigratedToOptimism[account] = true;
+
         // return timestamps and amounts for vesting
         return (vestingTimstamps, vestingAmounts);
     }
@@ -370,7 +378,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
             "Insufficient balance in the contract to provide for escrowed balance"
         );
 
-        // Record escrowedBalance
+        // Record account escrowed balance
         totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedBalance);
     }
 
