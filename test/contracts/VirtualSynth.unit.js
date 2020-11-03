@@ -7,6 +7,7 @@ const { assert } = require('./common');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const {
+	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
@@ -52,10 +53,6 @@ contract('VirtualSynth (unit tests)', async accounts => {
 					assert.equal(evt.args.from, ZERO_ADDRESS);
 					assert.equal(evt.args.to, owner);
 					assert.equal(evt.args.value.toString(), amount);
-				});
-
-				it('settled is false by default', async () => {
-					assert.equal(await this.instance.settled(), false);
 				});
 			});
 		});
@@ -179,8 +176,47 @@ contract('VirtualSynth (unit tests)', async accounts => {
 			const amount = '999';
 			behaviors.whenInstantiated({ amount, user: owner, synth: 'sBTC' }, () => {
 				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
-					describe('settled()', () => {});
-					describe('settle()', () => {});
+					describe('settled()', () => {
+						it('is false by default', async () => {
+							assert.equal(await this.instance.settled(), false);
+						});
+						behaviors.whenSettlementCalled({ user: owner }, () => {
+							it('is true', async () => {
+								assert.equal(await this.instance.settled(), true);
+							});
+						});
+					});
+					describe('settle()', () => {
+						behaviors.whenSettlementCalled({ user: owner }, () => {
+							it('then Exchanger.settle() is invoked with the correct params', async () => {
+								assert.equal(this.mocks.Exchanger.smocked.settle.calls.length, 1);
+								assert.equal(
+									this.mocks.Exchanger.smocked.settle.calls[0][0],
+									this.instance.address
+								);
+								assert.equal(this.mocks.Exchanger.smocked.settle.calls[0][1], toBytes32('sBTC'));
+							});
+							it('then Exchanger.settle() emits a Settled event with the supply and balance params', () => {
+								assert.eventEqual(this.txn, 'Settled', [amount, amount]);
+							});
+							it('then the balance of the users vSynth is 0', async () => {
+								assert.equal(await this.instance.balanceOf(owner), '0');
+							});
+							it('then the user is transferred the balance of the synth', async () => {
+								assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
+								assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
+								assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], amount);
+							});
+							behaviors.whenSettlementCalled({ user: owner }, () => {
+								it('then Exchanger.settle() does not emit another settlement', () => {
+									assert.equal(
+										this.txn.receipt.logs.find(({ event }) => event === 'Settled'),
+										undefined
+									);
+								});
+							});
+						});
+					});
 				});
 			});
 		});

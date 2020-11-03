@@ -99,7 +99,7 @@ module.exports = function({ accounts }) {
 					// use a closure to ensure the balance returned at time of request is the updated one
 					this.mocks.Synth.smocked.balanceOf.will.return.with(() => balanceOf);
 
-					await this.instance.settle(user);
+					this.txn = await this.instance.settle(user);
 				});
 				cb();
 			});
