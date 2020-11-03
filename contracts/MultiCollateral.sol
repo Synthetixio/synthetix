@@ -176,19 +176,19 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
 
      function getFundingRate(bytes32 synth) public view returns (uint256 fundingRate) {
 
-         // what is the risk here? if its ETH/sETH then we are safe
-        if (synth == collateralKey) {
-            return baseInterestRate;
-        } else if (synth == sUSD) {
-            // pay interest based on utilisation?
-            // return baseInterestRate + utilisation;
-        } else {
-            // here we are doing things that introduce skew.
+        // what is the risk here? if its ETH/sETH then we are safe
+        // if (synth == collateralKey) {
+        //     return baseInterestRate;
+        // } else if (synth == sUSD) {
+        //     // pay interest based on utilisation?
+        //     // return baseInterestRate + utilisation;
+        // } else {
+        //     // here we are doing things that introduce skew.
 
-            // this synth has a balance in the debt pool. we wish to charge
-            // the overweighted side 
-            // if (longs > shorts)
-        }
+        //     // this synth has a balance in the debt pool. we wish to charge
+        //     // the overweighted side 
+        //     // if (longs > shorts)
+        // }
 
         // Here I can do things like, read the maker rate. Check synth skew. CHeck debt pool.
 
