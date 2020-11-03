@@ -5,7 +5,11 @@ const ethers = require('ethers');
 
 const { parseEther, parseUnits } = ethers.utils;
 
-const { initCrossDomainMessengers, relayL1ToL2Messages } = require('@eth-optimism/ovm-toolchain');
+const {
+	initCrossDomainMessengers,
+	relayL1ToL2Messages,
+	relayL2ToL1Messages,
+} = require('@eth-optimism/ovm-toolchain');
 
 const { assert } = require('../contracts/common');
 const testUtils = require('../utils');
@@ -241,6 +245,32 @@ describe('deploy multiple instances', () => {
 
 		it('and the totalSupply on L2 has incremented by 100', async () => {
 			assert.bnEqual(await synthetixAlt.totalSupply(), l2InitialTotalSupply.add(parseEther('100')));
+		});
+
+		describe('when the user withdraws back to L1', () => {
+			let l2ToL1Bridge;
+			before('initiate withdrawal', async () => {
+				l2ToL1Bridge = fetchContract({ contract: 'SynthetixBridgeToBase', instance: 1, user });
+				// initiate withdrawal on L2
+				await l2ToL1Bridge.initiateWithdrawal(parseEther('100'), overrides);
+				// fast forward 1000s
+				await mineBlock(provider, 1000);
+				// wait for message to be relayed
+				await relayL2ToL1Messages(user);
+			});
+
+			it('the totalSupply on L2 decreases by 100', async () => {
+				assert.bnEqual(await synthetixAlt.totalSupply(), l2InitialTotalSupply);
+			});
+
+			it('the deposit contract has 0 balance', async () => {
+				assert.bnEqual(await synthetix.balanceOf(l1ToL2Bridge.address), 0);
+			});
+
+			it('then the user has again 1000 SNX on L1', async () => {
+				const newL1Balance = await synthetix.balanceOf(user.address);
+				assert.bnEqual(newL1Balance, parseEther('1000'));
+			});
 		});
 	});
 });
