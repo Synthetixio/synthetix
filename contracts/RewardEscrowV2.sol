@@ -19,11 +19,6 @@ import "./interfaces/ISynthetix.sol";
 contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
     using SafeMath for uint;
 
-    /* The corresponding Synthetix contract. */
-    ISynthetix public synthetix;
-
-    IFeePool public feePool;
-
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
      * These are the times at which each given quantity of SNX vests. */
     mapping(address => uint[2][]) public vestingSchedules;
@@ -34,8 +29,11 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
     /* An account's total vested reward synthetix. */
     mapping(address => uint) public totalVestedAccountBalance;
 
-    /* An account's total escrowed synthetix balance to save recomputing this for fee extraction purposes. */
+    /* Mapping of accounts that have migrated vesting entries from the old reward escrow to the new reward escrow  */
     mapping(address => bool) public accountEscrowMigrated;
+
+    /* Mapping of accounts that have migrated their escrowed snx to Optimism L2*/
+    mapping(address => bool) public accountMigratedToOptimism;
 
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalEscrowedBalance;
@@ -49,19 +47,23 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
 
     IRewardEscrow public oldRewardEscrow;
 
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_BASE = "SynthetixBridgeToBase";
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM = "SynthetixBridgeToOptimism";
+    bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+
+    bytes32[24] private addressesToCache = [
+        CONTRACT_SYNTHETIX_BRIDGE_BASE,
+        CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM,
+        CONTRACT_SYNTHETIX,
+        CONTRACT_FEEPOOL
+    ];
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(
-        address _owner,
-        ISynthetix _synthetix,
-        IFeePool _feePool,
-        IRewardEscrow _oldRewardEscrow
-    ) public Owned(_owner) {
-        synthetix = _synthetix;
-        feePool = _feePool;
+    constructor(address _owner, IRewardEscrow _oldRewardEscrow) public Owned(_owner) {
         oldRewardEscrow = _oldRewardEscrow;
     }
 
@@ -72,27 +74,22 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
     }
 
     function synthetixBridgeToOptimism() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM, "Resolver is missing SynthetixBridgeToOptimism address");
+        return
+            requireAndGetAddress(
+                CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM,
+                "Resolver is missing SynthetixBridgeToOptimism address"
+            );
+    }
+
+    function synthetix() internal view returns (ISynthetix) {
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function feePool() internal view returns (IFeePool) {
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
     /* ========== SETTERS ========== */
-
-    /**
-     * @notice set the synthetix contract address as we need to transfer SNX when the user vests
-     */
-    function setSynthetix(ISynthetix _synthetix) external onlyOwner {
-        synthetix = _synthetix;
-        emit SynthetixUpdated(address(_synthetix));
-    }
-
-    /**
-     * @notice set the FeePool contract as it is the only authority to be able to call
-     * appendVestingEntry with the onlyFeePool modifer
-     */
-    function setFeePool(IFeePool _feePool) external onlyOwner {
-        feePool = _feePool;
-        emit FeePoolUpdated(address(_feePool));
-    }
 
     /* ========== VIEW FUNCTIONS ========== */
 
@@ -200,7 +197,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
         require(
-            totalEscrowedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
+            totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 
@@ -264,7 +261,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
             totalEscrowedBalance = totalEscrowedBalance.sub(total);
             totalEscrowedAccountBalance[msg.sender] = totalEscrowedAccountBalance[msg.sender].sub(total);
             totalVestedAccountBalance[msg.sender] = totalVestedAccountBalance[msg.sender].add(total);
-            IERC20(address(synthetix)).transfer(msg.sender, total);
+            IERC20(address(synthetix())).transfer(msg.sender, total);
             emit Vested(msg.sender, now, total);
         }
     }
@@ -325,14 +322,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
 
     /* ========== L2 MIGRATION ========== */
 
-    function burnForMigration(address account)
-        external
-        onlySynthetixBridge
-        returns (
-            uint64[52] memory,
-            uint256[52] memory
-        )
-    {
+    function burnForMigration(address account) external onlySynthetixBridge returns (uint64[52] memory, uint256[52] memory) {
         // check if account's totalEscrowedAccountBalance > 0 and any vesting entries
         // Check whether entries have been migrated, else read from old rewardEscrow
         // Vest any entries that can be vested already (More tha 12 months)
@@ -373,10 +363,10 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
             escrowedBalance = escrowedBalance.add(amounts[i]);
         }
 
-        // There must be enough balance in the contract to provide for the escrowedBalance.
+        // There must be enough balance in the contract to provide for the escrowed balance.
         totalEscrowedBalance = totalEscrowedBalance.add(escrowedBalance);
         require(
-            totalEscrowedBalance <= IERC20(address(synthetix)).balanceOf(address(this)),
+            totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
             "Insufficient balance in the contract to provide for escrowed balance"
         );
 
@@ -387,9 +377,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
     /* ========== MODIFIERS ========== */
 
     modifier onlyFeePool() {
-        bool isFeePool = msg.sender == address(feePool);
-
-        require(isFeePool, "Only the FeePool contracts can perform this action");
+        require(msg.sender == address(feePool()), "Only the FeePool contracts can perform this action");
         _;
     }
 
@@ -404,11 +392,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, MixinResolver {
     }
 
     /* ========== EVENTS ========== */
-
-    event SynthetixUpdated(address newSynthetix);
-
-    event FeePoolUpdated(address newFeePool);
-
     event Vested(address indexed beneficiary, uint time, uint value);
 
     event VestingEntryCreated(address indexed beneficiary, uint time, uint value);
