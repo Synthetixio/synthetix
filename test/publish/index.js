@@ -166,6 +166,12 @@ describe('publish scripts', () => {
 			let ExchangeRates;
 			const aggregators = {};
 
+			const getContract = ({ target, source }) =>
+				new web3.eth.Contract(
+					(sources[source] || sources[targets[target].source]).abi,
+					targets[target].address
+				);
+
 			const createMockAggregator = async () => {
 				// get last build
 				const { compiled } = loadCompiledFiles({ buildPath });
@@ -231,28 +237,21 @@ describe('publish scripts', () => {
 				targets = getTarget();
 				synths = getSynths().filter(({ name }) => name !== 'sUSD');
 
-				Synthetix = new web3.eth.Contract(sources['Synthetix'].abi, targets['ProxyERC20'].address);
-				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
-				Exchanger = new web3.eth.Contract(sources['Exchanger'].abi, targets['Exchanger'].address);
-				Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
-				sUSDContract = new web3.eth.Contract(
-					sources['Synth'].abi,
-					targets['ProxyERC20sUSD'].address
-				);
-				sBTCContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysBTC'].address);
-				sETHContract = new web3.eth.Contract(sources['Synth'].abi, targets['ProxysETH'].address);
-				SystemSettings = new web3.eth.Contract(
-					sources['SystemSettings'].abi,
-					targets['SystemSettings'].address
-				);
-				Liquidations = new web3.eth.Contract(
-					sources['Liquidations'].abi,
-					targets['Liquidations'].address
-				);
-				ExchangeRates = new web3.eth.Contract(
-					sources['ExchangeRates'].abi,
-					targets['ExchangeRates'].address
-				);
+				Synthetix = getContract({ target: 'ProxyERC20', source: 'Synthetix' });
+				FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
+				Exchanger = getContract({ target: 'Exchanger' });
+
+				Issuer = getContract({ target: 'Issuer' });
+
+				sUSDContract = getContract({ target: 'ProxyERC20sUSD', source: 'Synth' });
+
+				sBTCContract = getContract({ target: 'ProxysBTC', source: 'Synth' });
+				sETHContract = getContract({ target: 'ProxysETH', source: 'Synth' });
+				SystemSettings = getContract({ target: 'SystemSettings' });
+
+				Liquidations = getContract({ target: 'Liquidations' });
+
+				ExchangeRates = getContract({ target: 'ExchangeRates' });
 			});
 
 			describe('default system settings', () => {
@@ -493,10 +492,7 @@ describe('publish scripts', () => {
 				it('script works as intended', async () => {
 					for (const { name, stakingToken, rewardsToken } of rewards) {
 						const stakingRewardsName = `StakingRewards${name}`;
-						const stakingRewardsContract = new web3.eth.Contract(
-							sources[targets[stakingRewardsName].source].abi,
-							targets[stakingRewardsName].address
-						);
+						const stakingRewardsContract = getContract({ target: stakingRewardsName });
 
 						// Test staking / rewards token address
 						const tokens = [
@@ -620,10 +616,8 @@ describe('publish scripts', () => {
 							describe('using the FeePoolNew', () => {
 								let FeePoolNew;
 								beforeEach(async () => {
-									FeePoolNew = new web3.eth.Contract(
-										sources['FeePool'].abi,
-										getTarget({ contract: 'FeePool' }).address
-									);
+									targets = getTarget();
+									FeePoolNew = getContract({ target: 'FeePool' });
 								});
 
 								describe('when the new FeePool is manually given fee periods', () => {
@@ -660,10 +654,8 @@ describe('publish scripts', () => {
 						describe('using the FeePoolNew', () => {
 							let FeePoolNew;
 							beforeEach(async () => {
-								FeePoolNew = new web3.eth.Contract(
-									sources['FeePool'].abi,
-									getTarget({ contract: 'FeePool' }).address
-								);
+								targets = getTarget();
+								FeePoolNew = getContract({ target: 'FeePool' });
 							});
 
 							describe('when import is called', () => {
@@ -947,10 +939,7 @@ describe('publish scripts', () => {
 							let SystemStatus;
 							describe('when one synth has a price well outside of range, triggering price deviation', () => {
 								beforeEach(async () => {
-									SystemStatus = new web3.eth.Contract(
-										sources['SystemStatus'].abi,
-										targets['SystemStatus'].address
-									);
+									SystemStatus = getContract({ target: 'SystemStatus' });
 									await setAggregatorAnswer({ asset: 'ETH', rate: 20 });
 								});
 								it('when exchange occurs into that synth, the synth is suspended', async () => {
@@ -1052,11 +1041,8 @@ describe('publish scripts', () => {
 													yes: true,
 													privateKey: accounts.deployer.private,
 												});
-
-												ExchangeRates = new web3.eth.Contract(
-													sources['ExchangeRates'].abi,
-													getTarget({ contract: 'ExchangeRates' }).address
-												);
+												targets = getTarget();
+												ExchangeRates = getContract({ target: 'ExchangeRates' });
 											});
 
 											// Test the properties of an inverted synth
@@ -1297,11 +1283,9 @@ describe('publish scripts', () => {
 								yes: true,
 								privateKey: accounts.deployer.private,
 							});
+							targets = getTarget();
 
-							ExchangeRates = new web3.eth.Contract(
-								sources['ExchangeRates'].abi,
-								getTarget({ contract: 'ExchangeRates' }).address
-							);
+							ExchangeRates = getContract({ target: 'ExchangeRates' });
 						});
 						it('then the aggregator must be set for the sEUR price', async () => {
 							const sEURAggregator = await callMethodWithRetry(
@@ -1381,14 +1365,11 @@ describe('publish scripts', () => {
 								yes: true,
 								privateKey: accounts.deployer.private,
 							});
-							AddressResolver = new web3.eth.Contract(
-								sources['AddressResolver'].abi,
-								getTarget({ contract: 'AddressResolver' }).address
-							);
+							targets = getTarget();
+
+							AddressResolver = getContract({ target: 'AddressResolver' });
 						});
 						it('then all contracts with a resolver() have the new one set', async () => {
-							const targets = getTarget();
-
 							const resolvers = await Promise.all(
 								Object.entries(targets)
 									// Note: SecondaryDeposit has ':' in its deps, instead of hardcoding the
@@ -1461,10 +1442,7 @@ describe('publish scripts', () => {
 					describe('when re-deployed', () => {
 						let AddressResolver;
 						beforeEach(async () => {
-							AddressResolver = new web3.eth.Contract(
-								sources['AddressResolver'].abi,
-								targets['AddressResolver'].address
-							);
+							AddressResolver = getContract({ target: 'AddressResolver' });
 
 							const existingExchanger = await callMethodWithRetry(
 								AddressResolver.methods.getAddress(snx.toBytes32('Exchanger'))
