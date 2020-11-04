@@ -16,13 +16,11 @@ const versionsUpdate = async ({ versionTag, release, useOvm }) => {
 	// prefix a "v" to the tag
 	versionTag = /^v/.test(versionTag) ? versionTag : 'v' + versionTag;
 
-	let applicableNetworks = networks;
-	if (useOvm) {
-		applicableNetworks = ['goerli'];
-	}
-
-	for (const network of applicableNetworks.filter(n => n !== 'local')) {
+	for (const network of networks.filter(n => n !== 'local')) {
 		const deploymentPath = getPathToNetwork({ network, path, useOvm });
+		if (!fs.existsSync(deploymentPath)) {
+			continue;
+		}
 
 		const { deployment, deploymentFile, versions, versionsFile } = loadAndCheckRequiredSources({
 			network,
