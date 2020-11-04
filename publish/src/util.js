@@ -112,20 +112,18 @@ const getEtherscanLinkPrefix = network => {
 	return `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
 };
 
-const loadConnections = ({ network, useFork, specifiedProviderUrl }) => {
-	if (!specifiedProviderUrl && network !== 'local' && !process.env.PROVIDER_URL) {
-		throw Error('Missing .env key of PROVIDER_URL. Please add and retry.');
-	}
-
+const loadConnections = ({ network, useFork }) => {
 	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
 	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	let providerUrl;
-	if (specifiedProviderUrl) {
-		providerUrl = specifiedProviderUrl;
-	} else if (network === 'local' || useFork) {
+	if (network === 'local' || useFork) {
 		providerUrl = 'http://127.0.0.1:8545';
 	} else {
-		providerUrl = process.env.PROVIDER_URL.replace('network', network);
+		if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
+			providerUrl = process.env.PROVIDER_URL_MAINNET;
+		} else {
+			providerUrl = process.env.PROVIDER_URL.replace('network', network);
+		}
 	}
 
 	const privateKey =
@@ -137,6 +135,7 @@ const loadConnections = ({ network, useFork, specifiedProviderUrl }) => {
 			: `https://api-${network}.etherscan.io/api`;
 
 	const etherscanLinkPrefix = getEtherscanLinkPrefix(network);
+
 	return { providerUrl, privateKey, etherscanUrl, etherscanLinkPrefix };
 };
 
