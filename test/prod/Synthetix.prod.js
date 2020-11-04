@@ -108,7 +108,7 @@ contract('Synthetix (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await writeSetting({ setting: 'setMinimumStakeTime', value: '60', owner });
+			await writeSetting({ setting: 'setMinimumStakeTime', value: '60', owner, network });
 		});
 
 		it('can issue sUSD', async () => {
