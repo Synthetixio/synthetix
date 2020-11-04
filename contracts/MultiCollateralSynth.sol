@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Synth.sol";
 
 
-// https://docs.synthetix.io/contracts/MultiCollateralSynth
+// https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
     bytes32 public multiCollateralKey;
 

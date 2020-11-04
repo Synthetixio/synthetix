@@ -16,6 +16,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 
 
+// https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarket
 contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ========== LIBRARIES ========== */
 
