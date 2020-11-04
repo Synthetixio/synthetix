@@ -7,6 +7,7 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
@@ -18,11 +19,13 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_EXT_MESSENGER,
         CONTRACT_SYNTHETIX,
+        CONTRACT_REWARDESCROW,
         CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM
     ];
 
@@ -39,6 +42,10 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function rewardEscrow() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
     function synthetixBridgeToOptimism() internal view returns (address) {
@@ -75,6 +82,15 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     // ========= RESTRICTED FUNCTIONS ==============
 
+    function importVestingEntries(
+        address account,
+        uint64[] calldata timestamps,
+        uint256[] calldata amounts
+    ) external onlyOptimismBridge {
+        rewardEscrow().importVestingEntries(account, timestamps, amounts);
+        emit ImportedVestingEntries(account, timestamps, amounts);
+    }
+
     // invoked by Messenger on L2
     function mintSecondaryFromDeposit(address account, uint amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
@@ -92,6 +108,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     }
 
     // ========== EVENTS ==========
+    event ImportedVestingEntries(address indexed account, uint64[] timestamps, uint256[] amounts);
     event MintedSecondary(address indexed account, uint amount);
     event MintedSecondaryRewards(uint amount);
     event WithdrawalInitiated(address indexed account, uint amount);

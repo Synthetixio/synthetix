@@ -9,6 +9,7 @@ import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
@@ -22,6 +23,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_OVM_SYNTHETIXBRIDGETOBASE = "ovm:SynthetixBridgeToBase";
 
     bytes32[24] private addressesToCache = [
@@ -29,6 +31,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         CONTRACT_SYNTHETIX,
         CONTRACT_ISSUER,
         CONTRACT_REWARDSDISTRIBUTION,
+        CONTRACT_REWARDESCROW,
         CONTRACT_OVM_SYNTHETIXBRIDGETOBASE
     ];
 
@@ -63,6 +66,10 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         return requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address");
     }
 
+    function rewardEscrow() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    }
+
     function synthetixBridgeToBase() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_OVM_SYNTHETIXBRIDGETOBASE, "Missing Bridge address");
     }
@@ -94,19 +101,29 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     function deposit(uint amount) external requireActive {
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
 
-        // now remove their reward escrow
+        // Burn their reward escrow first
         // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
-        // uint escrowSummary = rewardEscrow().burnForMigration(msg.sender);
+        uint64[52] memory vestingTimstamps;
+        uint256[52] memory vestingAmounts;
 
-        // move the SNX into this contract
-        synthetixERC20().transferFrom(msg.sender, address(this), amount);
-
+        (vestingTimstamps, vestingAmounts) = rewardEscrow().burnForMigration(msg.sender);
         // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
-
+        bytes memory messageData = abi.encodeWithSignature(
+            "importVestingEntries(address,uint64[],uint256[])",
+            msg.sender,
+            vestingTimstamps,
+            vestingAmounts
+        );
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
 
+        // Transfer SNX to L2
+        // move the SNX into this contract
+        synthetixERC20().transferFrom(msg.sender, address(this), amount);
+        // create message payload for L2
+        messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
         emit Deposit(msg.sender, amount);
     }
 

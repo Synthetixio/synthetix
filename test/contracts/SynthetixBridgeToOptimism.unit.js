@@ -20,6 +20,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		randomAddress,
 	] = accounts;
 
+	const zeroArray = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToOptimism.abi,
@@ -34,9 +36,9 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		});
 	});
 
-	const getDataOfEncodedFncCall = ({ fnc, args = [] }) =>
+	const getDataOfEncodedFncCall = ({ contract, fnc, args = [] }) =>
 		web3.eth.abi.encodeFunctionCall(
-			artifacts.require('SynthetixBridgeToBase').abi.find(({ name }) => name === fnc),
+			artifacts.require(contract).abi.find(({ name }) => name === fnc),
 			args
 		);
 
@@ -45,10 +47,13 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let synthetix;
 		let issuer;
 		let resolver;
+		let rewardEscrow;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
 			});
+
+			rewardEscrow = await smockit(artifacts.require('IRewardEscrowV2').abi);
 
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);
@@ -63,6 +68,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					'Issuer',
 					'RewardsDistribution',
 					'ovm:SynthetixBridgeToBase',
+					'RewardEscrowV2',
 				].map(toBytes32),
 				[
 					messenger.address,
@@ -70,6 +76,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					issuer.address,
 					rewardsDistribution,
 					snxBridgeToBase,
+					rewardEscrow.address,
 				],
 				{ from: owner }
 			);
@@ -83,6 +90,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			messenger.smocked.sendMessage.will.return.with(() => {});
 			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToBase);
 			issuer.smocked.debtBalanceOf.will.return.with(() => '0');
+			rewardEscrow.smocked.burnForMigration.will.return.with(() => [zeroArray, zeroArray]);
 		});
 
 		describe('when the target is deployed', () => {
@@ -117,22 +125,40 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						txn = await instance.deposit(amount, { from: user1 });
 					});
 
-					it('then SNX is transferred from the user to the deposit contract', async () => {
+					it('the L1 escrow is burned (via rewardEscrow.burnForMigration', async () => {
+						assert.equal(rewardEscrow.smocked.burnForMigration.calls[0][0], user1);
+					});
+
+					it('an importVestingEntries message is relayed', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 2);
+						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
+						const expectedData = getDataOfEncodedFncCall({
+							contract: 'IRewardEscrowV2',
+							fnc: 'importVestingEntries',
+							args: [user1, zeroArray, zeroArray],
+						});
+
+						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
+					});
+
+					it('SNX is transferred from the user to the deposit contract', async () => {
 						assert.equal(synthetix.smocked.transferFrom.calls[0][0], user1);
 						assert.equal(synthetix.smocked.transferFrom.calls[0][1], instance.address);
 						assert.equal(synthetix.smocked.transferFrom.calls[0][2].toString(), amount);
 					});
 
-					it('and the message is relayed', async () => {
-						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
-						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
+					it('a deposit message is relayed', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 2);
+						assert.equal(messenger.smocked.sendMessage.calls[1][0], snxBridgeToBase);
 						const expectedData = getDataOfEncodedFncCall({
+							contract: 'SynthetixBridgeToBase',
 							fnc: 'mintSecondaryFromDeposit',
 							args: [user1, amount],
 						});
 
-						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
-						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
+						assert.equal(messenger.smocked.sendMessage.calls[1][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[1][2], (3e6).toString());
 					});
 
 					it('and a Deposit event is emitted', async () => {
@@ -168,6 +194,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
 						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 						const expectedData = getDataOfEncodedFncCall({
+							contract: 'SynthetixBridgeToBase',
 							fnc: 'mintSecondaryFromDepositForRewards',
 							args: [amount],
 						});
@@ -214,6 +241,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 
 						const expectedData = getDataOfEncodedFncCall({
+							contract: 'SynthetixBridgeToBase',
 							fnc: 'mintSecondaryFromDepositForRewards',
 							args: [amount],
 						});
