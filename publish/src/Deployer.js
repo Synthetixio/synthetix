@@ -29,6 +29,8 @@ class Deployer {
 		providerUrl,
 		privateKey,
 		useFork,
+		useOvm,
+		ignoreSafetyChecks,
 		nonceManager,
 	}) {
 		this.compiled = compiled;
@@ -42,6 +44,8 @@ class Deployer {
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
 		this.nonceManager = nonceManager;
+		this.useOvm = useOvm;
+		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -92,7 +96,26 @@ class Deployer {
 		if (this.config[name]) {
 			deploy = this.config[name].deploy;
 		}
+
 		const compiled = this.compiled[source];
+
+		if (!this.ignoreSafetyChecks) {
+			const compilerVersion = compiled.metadata.compiler.version;
+			const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
+			const compilerMismatch = (this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
+			if (compilerMismatch) {
+				if (this.useOvm) {
+					throw new Error(
+						`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				} else {
+					throw new Error(
+						`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				}
+			}
+		}
+
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
 			: '';
@@ -260,7 +283,11 @@ class Deployer {
 		if (this.network === 'local') {
 			address = this.deployment.targets[contract].address;
 		} else {
-			const contractVersion = getVersions({ network: this.network, byContract: true })[contract];
+			const contractVersion = getVersions({
+				network: this.network,
+				useOvm: this.useOvm,
+				byContract: true,
+			})[contract];
 			const lastEntry = contractVersion.slice(-1)[0];
 			address = lastEntry.address;
 		}
