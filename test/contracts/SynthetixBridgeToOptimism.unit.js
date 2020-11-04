@@ -19,9 +19,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		snxBridgeToBase,
 		randomAddress,
 	] = accounts;
-
-	const zeroArray = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
+	  
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToOptimism.abi,
@@ -48,6 +46,12 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let issuer;
 		let resolver;
 		let rewardEscrow;
+		const zeroArray = [];
+
+		for (let i = 0; i < 52; i++) {
+			zeroArray.push(0);
+		}
+
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
