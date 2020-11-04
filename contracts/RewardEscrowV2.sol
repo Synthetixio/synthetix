@@ -48,6 +48,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalEscrowedBalance;
 
+    uint public accountMergingDuration = 24 hours;
+
     uint public accountMergingEndTime;
 
     uint internal constant TIME_INDEX = 0;
@@ -284,6 +286,34 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
         totalVestedAccountBalance[_account] = totalVestedAccountBalance[_account].add(_amount);
         IERC20(address(synthetix())).transfer(_account, _amount);
         emit Vested(_account, now, _amount);
+    }
+
+    /* ========== ACCOUNT MERGING ========== */
+
+    function startMergingWindow() external onlyOwner {
+        accountMergingEndTime = now.add(accountMergingDuration);
+
+        // emit account merging window start
+    }
+
+    function setAccountMergingDuration(uint duration) external onlyOwner {
+        // some checks to ensure not above max
+
+        accountMergingDuration = duration;
+        // emit account merging duration updated
+    }
+
+    function nominateAccountToMerge(address account) external {
+        require(accountMergingEndTime < now, "Account merging has ended");
+        require(totalEscrowedAccountBalance[msg.sender] > 0, "Address escrow balance is 0");
+
+        nominatedReciever[msg.sender] = account;
+
+        // emit account nominated as reciever
+    }
+
+    function acceptAccountMerging(address accountToMerge) external {
+
     }
 
     /* ========== MIGRATION OLD ESCROW ========== */
