@@ -58,7 +58,7 @@ const deploy = async ({
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
 	useFork,
-	providerUrl: specifiedProviderUrl,
+	providerUrl,
 	useOvm,
 	freshDeploy,
 	manageNonces,
@@ -159,11 +159,22 @@ const deploy = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const {
+		providerUrl: envProviderUrl,
+		privateKey: envPrivateKey,
+		etherscanLinkPrefix,
+	} = loadConnections({
 		network,
 		useFork,
-		specifiedProviderUrl,
 	});
+
+	if (!providerUrl) {
+		if (!envProviderUrl) {
+			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
+		}
+
+		providerUrl = envProviderUrl;
+	}
 
 	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
 	if (network !== 'local' || !privateKey) {
