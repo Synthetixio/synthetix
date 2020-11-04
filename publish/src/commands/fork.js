@@ -1,6 +1,6 @@
 'use strict';
 
-const { ensureNetwork } = require('../util');
+const { ensureNetwork, loadConnections } = require('../util');
 const { getUsers, networkToChainId } = require('../../..');
 const ganache = require('ganache-core');
 const { red, green, gray, yellow } = require('chalk');
@@ -9,12 +9,7 @@ const fs = require('fs');
 
 const dbPath = '.db/';
 
-const forkChain = async ({
-	network,
-	reset,
-	providerUrl: specifiedProviderUrl,
-	unlockAccounts = [],
-}) => {
+const forkChain = async ({ network, reset, providerUrl, unlockAccounts = [] }) => {
 	ensureNetwork(network);
 
 	const dbNetworkPath = path.join(dbPath, network);
@@ -39,10 +34,15 @@ const forkChain = async ({
 		.filter(address => address !== zero.address)
 		.concat(unlockAccounts);
 
-	const providerUrl =
-		specifiedProviderUrl !== undefined
-			? specifiedProviderUrl
-			: process.env.PROVIDER_URL.replace('network', network);
+	const { providerUrl: envProviderUrl } = loadConnections({ network });
+
+	if (!providerUrl) {
+		if (!envProviderUrl) {
+			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
+		}
+
+		providerUrl = envProviderUrl;
+	}
 
 	const server = ganache.server({
 		fork: providerUrl,
