@@ -119,7 +119,7 @@ const loadConnections = ({ network, useFork }) => {
 	if (network === 'local' || useFork) {
 		providerUrl = 'http://127.0.0.1:8545';
 	} else {
-		if (process.env.PROVIDER_URL_MAINNET) {
+		if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
 			providerUrl = process.env.PROVIDER_URL_MAINNET;
 		} else {
 			providerUrl = process.env.PROVIDER_URL.replace('network', network);
