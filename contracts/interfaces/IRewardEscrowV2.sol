@@ -33,5 +33,5 @@ interface IRewardEscrowV2 {
 
     function burnForMigration(address account) external returns (uint64[52] memory, uint256[52] memory);
 
-    function vest() external;
+    function vest(address account) external;
 }

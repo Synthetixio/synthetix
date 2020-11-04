@@ -20,6 +20,12 @@ import "./interfaces/ISynthetix.sol";
 contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinResolver {
     using SafeMath for uint;
 
+    /* Mapping of account to unique key that owns the vesting entries
+     * Enables account merging without reassigning all vestingSchedules to new address */
+    mapping(address => uint) internal vestingSchedulesOwnerKey;
+
+    // TODO - update account directly mapped to vestingSchedules to be an unique key that owns vesting schedules
+
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
      * These are the times at which each given quantity of SNX vests. */
     mapping(address => uint[2][]) public vestingSchedules;
@@ -36,8 +42,13 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
     /* Mapping of accounts that have migrated their escrowed snx to Optimism L2*/
     mapping(address => bool) public accountMigratedToOptimism;
 
+    /* Mapping of nominated address to recieve account merging */
+    mapping(address => address) public nominatedReciever;
+
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalEscrowedBalance;
+
+    uint public accountMergingEndTime;
 
     uint internal constant TIME_INDEX = 0;
     uint internal constant QUANTITY_INDEX = 1;
@@ -238,6 +249,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
     function appendVestingEntry(address account, uint quantity) external onlyFeePool {
         _appendVestingEntry(account, quantity);
     }
+
+    // TODO - Vesting no longer assumes that the vestingSchedules list is sorted, requires index to be passed in to vest.
 
     /**
      * @notice Allow a user to withdraw any SNX in their schedule that have vested.
