@@ -8,6 +8,9 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
+	"DebtCache": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},
