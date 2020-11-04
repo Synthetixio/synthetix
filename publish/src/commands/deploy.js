@@ -7,7 +7,6 @@ const Deployer = require('../Deployer');
 const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
-const { getVersions } = require('../../..');
 
 const {
 	ensureNetwork,
@@ -201,26 +200,6 @@ const deploy = async ({
 	});
 
 	const { account } = deployer;
-
-	const getExistingContract = ({ contract, network }) => {
-		let address;
-		if (network === 'local') {
-			address = deployment.targets[contract].address;
-		} else {
-			const contractVersion = getVersions({ network, byContract: true })[contract];
-			const lastEntry = contractVersion.slice(-1)[0];
-			address = lastEntry.address;
-		}
-
-		const { source } = deployment.targets[contract];
-		const { abi } = deployment.sources[source];
-
-		return deployer.getContract({
-			address,
-			abi,
-		});
-	};
-
 	nonceManager.web3 = deployer.web3;
 	nonceManager.account = account;
 
@@ -233,7 +212,7 @@ const deploy = async ({
 	let systemSuspendedReason;
 
 	try {
-		const oldSynthetix = getExistingContract({ contract: 'Synthetix', network });
+		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 
 		// inflationSupplyToDate = total supply - 100m
@@ -273,7 +252,7 @@ const deploy = async ({
 	}
 
 	try {
-		oldExrates = getExistingContract({ contract: 'ExchangeRates', network });
+		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
 		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
 		if (!oracleExrates) {
 			oracleExrates = await oldExrates.methods.oracle().call();
@@ -295,7 +274,7 @@ const deploy = async ({
 	}
 
 	try {
-		const oldSystemStatus = getExistingContract({ contract: 'SystemStatus', network });
+		const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
 
 		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
 
@@ -954,7 +933,7 @@ const deploy = async ({
 		let originalTotalSupply = 0;
 		if (synthConfig.deploy) {
 			try {
-				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}`, network });
+				const oldSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
 				if (!freshDeploy) {

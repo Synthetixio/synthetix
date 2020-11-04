@@ -53,6 +53,7 @@
 			"Synthetix",
 			"SynthetixBridgeToOptimism",
 			"Issuer",
+			"Exchanger",
 			"DebtCache"
 		],
 		"sips": [91]
