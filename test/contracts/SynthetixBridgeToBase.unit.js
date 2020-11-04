@@ -18,6 +18,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				'initiateWithdrawal',
 				'mintSecondaryFromDeposit',
 				'mintSecondaryFromDepositForRewards',
+				'importVestingEntries',
 			],
 		});
 	});
@@ -32,17 +33,23 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let messenger;
 		let mintableSynthetix;
 		let resolver;
+		let rewardEscrow;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
 			});
+
+			rewardEscrow = await smockit(artifacts.require('IRewardEscrowV2').abi);
+
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
 
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
-				['ext:Messenger', 'Synthetix', 'base:SynthetixBridgeToOptimism'].map(toBytes32),
-				[messenger.address, mintableSynthetix.address, snxBridgeToOptimism],
+				['ext:Messenger', 'Synthetix', 'base:SynthetixBridgeToOptimism', 'RewardEscrowV2'].map(
+					toBytes32
+				),
+				[messenger.address, mintableSynthetix.address, snxBridgeToOptimism, rewardEscrow.address],
 				{ from: owner }
 			);
 		});
@@ -54,6 +61,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			mintableSynthetix.smocked.balanceOf.will.return.with(() => web3.utils.toWei('1'));
 			messenger.smocked.sendMessage.will.return.with(() => {});
 			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToOptimism);
+			rewardEscrow.smocked.importVestingEntries.will.return.with(() => {});
 		});
 
 		describe('when the target is deployed', () => {
@@ -61,6 +69,56 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			beforeEach(async () => {
 				instance = await artifacts.require('SynthetixBridgeToBase').new(owner, resolver.address);
 				await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+			});
+
+			describe('importVestingEntries', async () => {
+				const zeroArray = [];
+				for (let i = 0; i < 52; i++) {
+					zeroArray.push(0);
+				}
+
+				describe('failure modes', () => {
+					it('should only allow the relayer (aka messenger) to call importVestingEntries()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: instance.importVestingEntries,
+							args: [user1, zeroArray, zeroArray],
+							accounts,
+							address: smockedMessenger,
+							reason: 'Only the relayer can call this',
+						});
+					});
+
+					it('should only allow the L1 bridge to invoke importVestingEntries() via the messenger', async () => {
+						// 'smock' the messenger to return a random msg sender
+						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						await assert.revert(
+							instance.importVestingEntries(user1, zeroArray, zeroArray, {
+								from: smockedMessenger,
+							}),
+							'Only the L1 bridge can invoke'
+						);
+					});
+				});
+
+				describe('when invoked by the messenger (aka relayer)', async () => {
+					let importVestingEntriesTx;
+					beforeEach('importVestingEntries is called', async () => {
+						importVestingEntriesTx = await instance.importVestingEntries(
+							user1,
+							zeroArray,
+							zeroArray,
+							{
+								from: smockedMessenger,
+							}
+						);
+					});
+
+					it('should emit a ImportedVestingEntries event', async () => {
+						assert.eventEqual(importVestingEntriesTx, 'ImportedVestingEntries', {
+							account: user1,
+						});
+					});
+				});
 			});
 
 			describe('initiateWithdrawal', () => {
