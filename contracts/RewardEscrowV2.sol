@@ -312,8 +312,10 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
         // emit account nominated as reciever
     }
 
-    function acceptAccountMerging(address accountToMerge) external {
+    function mergeAccount(address accountToMerge) external {
 
+        // delete totalEscrowedAccountBalance for merged account
+        // delete totalVestedAccountBalance for merged acctoun
     }
 
     /* ========== MIGRATION OLD ESCROW ========== */
