@@ -39,9 +39,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
     /* Mapping of accounts that have migrated vesting entries from the old reward escrow to the new reward escrow  */
     mapping(address => bool) public accountEscrowMigrated;
 
-    /* Mapping of accounts that have migrated their escrowed snx to Optimism L2*/
-    mapping(address => bool) public accountMigratedToOptimism;
-
     /* Mapping of nominated address to recieve account merging */
     mapping(address => address) public nominatedReciever;
 
@@ -313,9 +310,13 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
     }
 
     function mergeAccount(address accountToMerge) external {
+        require(accountMergingEndTime < now, "Account merging has ended");
+        require(accountMergingEndTime < now, "Account merging has ended");
+        require(nominatedReciever[accountToMerge] == msg.sender, "Address is not nominated to merge");
 
         // delete totalEscrowedAccountBalance for merged account
         // delete totalVestedAccountBalance for merged acctoun
+        // delete nominatedReciever once merged
     }
 
     /* ========== MIGRATION OLD ESCROW ========== */
@@ -380,22 +381,30 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
             totalVestedAccountBalance[accounts[i]] = vestedBalances[i];
         }
 
-        // TODO enable contract after migrating all account escrow balances, prevent adding vesting entries and vesting.
+        // TODO enable contract after migrating all account escrow balances, prevent adding vesting entries and vesting until migrated.
     }
 
     /* ========== L2 MIGRATION ========== */
 
-    function burnForMigration(address account) external onlySynthetixBridge returns (uint64[52] memory, uint256[52] memory) {
+    function burnForMigration(address account)
+        external
+        onlySynthetixBridge
+        returns (
+            uint256,
+            uint64[52] memory,
+            uint256[52] memory
+        )
+    {
         // check if account's totalEscrowedAccountBalance > 0 and any vesting entries
         // Check whether entries have been migrated, else read from old rewardEscrow
         // Vest any entries that can be vested already (More tha 12 months)
+
         // burn the totalEscrowedAccountBalance for account
         // sub totalEscrowedBalance
         // transfer the SNX to the L2 bridge
         // keep the totalVestedAccountBalance[account]
         // flag account has migrated to Optimism L2
         // Optional - delete the vesting entries to reclaim gas
-        require(accountMigratedToOptimism[account] == false, "Account migrated already");
 
         uint256 escrowedAccountBalance = totalEscrowedAccountBalance[account];
 
@@ -411,10 +420,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
             }
         }
 
-        accountMigratedToOptimism[account] = true;
-
         // return timestamps and amounts for vesting
-        return (vestingTimstamps, vestingAmounts);
+        return (escrowedAccountBalance, vestingTimstamps, vestingAmounts);
     }
 
     function importVestingEntries(
