@@ -393,7 +393,7 @@ workflows:
             - job-validate-deployments:
                 filters:
                     branches:
-                        only: /.*(master).*/
+                        only: /.*(staging|master).*/
                 name: job-validate-deployments-mainnet
                 network: mainnet
                 requires:
@@ -401,7 +401,7 @@ workflows:
             - job-validate-deployments:
                 filters:
                     branches:
-                        only: /.*(master).*/
+                        only: /.*(staging|master).*/
                 name: job-validate-deployments-rinkeby
                 network: rinkeby
                 requires:
@@ -409,7 +409,7 @@ workflows:
             - job-validate-deployments:
                 filters:
                     branches:
-                        only: /.*(master).*/
+                        only: /.*(staging|master).*/
                 name: job-validate-deployments-kovan
                 network: kovan
                 requires:
