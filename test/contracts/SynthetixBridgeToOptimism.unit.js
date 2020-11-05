@@ -125,7 +125,24 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by a user', () => {
+				describe('when invoked by a user who has 0 escrow', () => {
+					let txn;
+					const amount = 100;
+					beforeEach(async () => {
+						rewardEscrow.smocked.burnForMigration.will.return.with(() => [0, zeroArray, zeroArray]);
+						txn = await instance.deposit(amount, { from: user1 });
+					});
+
+					it('only one event is emitted (Deposit)', async () => {
+						assert.eventEqual(txn, 'Deposit', [user1, amount]);
+					});
+
+					it('only one message is sent', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+					});
+				});
+
+				describe('when invoked by a user who has non-zero escrow', () => {
 					let txn;
 					let amount;
 					beforeEach(async () => {

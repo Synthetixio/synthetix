@@ -181,7 +181,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by the messenger (aka relayer)', async () => {
+				describe('when invoked by the messenger (aka relayer) with 0 escrow amount', async () => {
 					let mintSecondaryTx;
 					const mintSecondaryAmount = 100;
 					const escrowAmount = 0;
@@ -209,6 +209,47 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.equal(
 							mintableSynthetix.smocked.mintSecondary.calls[0][1].toString(),
 							mintSecondaryAmount
+						);
+					});
+				});
+
+				describe('when invoked by the messenger (aka relayer) and non-zero escrow amount', async () => {
+					let mintSecondaryTx;
+					const mintSecondaryAmount = 100;
+					const escrowAmount = 100;
+					beforeEach('mintSecondaryFromDeposit is called', async () => {
+						mintSecondaryTx = await instance.mintSecondaryFromDeposit(
+							user1,
+							mintSecondaryAmount,
+							escrowAmount,
+							{
+								from: smockedMessenger,
+							}
+						);
+					});
+
+					it('should emit two MintedSecondary events', async () => {
+						assert.eventEqual(mintSecondaryTx.logs[0], 'MintedSecondary', [
+							user1,
+							mintSecondaryAmount,
+						]);
+						assert.eventEqual(mintSecondaryTx.logs[1], 'MintedSecondary', [
+							rewardEscrow.address,
+							escrowAmount,
+						]);
+					});
+
+					it('then SNX is minted via MintableSynthetix.mintSecondary to both the sue and the rewardEscrow contract', async () => {
+						assert.equal(mintableSynthetix.smocked.mintSecondary.calls.length, 2);
+						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[0][0], user1);
+						assert.equal(
+							mintableSynthetix.smocked.mintSecondary.calls[0][1].toString(),
+							mintSecondaryAmount
+						);
+						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[1][0], rewardEscrow.address);
+						assert.equal(
+							mintableSynthetix.smocked.mintSecondary.calls[1][1].toString(),
+							escrowAmount
 						);
 					});
 				});
