@@ -1,6 +1,7 @@
 const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const abiDecoder = require('abi-decoder');
+const { smockit } = require('@eth-optimism/smock');
 
 const { assert } = require('./common');
 
@@ -237,7 +238,6 @@ module.exports = {
 	},
 
 	async prepareSmocks({ contracts, owner, accounts = [] }) {
-		const { smockit } = require('@eth-optimism/smock');
 		const mocks = {};
 		for (const [i, contract] of Object.entries(contracts)) {
 			mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
