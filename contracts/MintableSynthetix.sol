@@ -18,6 +18,25 @@ contract MintableSynthetix is Synthetix {
         appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE);
     }
 
+    /* ========== INTERNALS =================== */
+
+    function _mintSecondary(address account, uint amount) internal {
+        tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
+        emitTransfer(address(this), account, amount);
+        totalSupply = totalSupply.add(amount);
+    }
+
+    function onlyAllowFromBridge() internal view {
+        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixBridgeToBase contract");
+    }
+
+    /* ========== MODIFIERS =================== */
+
+    modifier onlyBridge() {
+        onlyAllowFromBridge();
+        _;
+    }
+
     /* ========== VIEWS ======================= */
 
     function synthetixBridge() internal view returns (address) {
@@ -26,17 +45,17 @@ contract MintableSynthetix is Synthetix {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function mintSecondary(address account, uint amount) external {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixBridgeToBase contract");
-
-        tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
-        emitTransfer(address(this), account, amount);
-        totalSupply = totalSupply.add(amount);
+    function mintSecondary(address account, uint amount) external onlyBridge {
+        _mintSecondary(account, amount);
     }
 
-    function burnSecondary(address account, uint amount) external {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixBridgeToBase contract");
+    function mintSecondaryRewards(uint amount) external onlyBridge {
+        IRewardsDistribution _rewardsDistribution = rewardsDistribution();
+        _mintSecondary(address(_rewardsDistribution), amount);
+        _rewardsDistribution.distributeRewards(amount);
+    }
 
+    function burnSecondary(address account, uint amount) external onlyBridge {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         emitTransfer(account, address(0), amount);
         totalSupply = totalSupply.sub(amount);
