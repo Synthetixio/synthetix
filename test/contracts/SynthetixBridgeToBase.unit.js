@@ -162,7 +162,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					it('should only allow the relayer (aka messenger) to call mintSecondaryFromDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.mintSecondaryFromDeposit,
-							args: [user1, 100],
+							args: [user1, 100, 1],
 							accounts,
 							address: smockedMessenger,
 							reason: 'Only the relayer can call this',
@@ -173,7 +173,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.mintSecondaryFromDeposit(user1, 100, {
+							instance.mintSecondaryFromDeposit(user1, 100, 1, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -184,10 +184,16 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				describe('when invoked by the messenger (aka relayer)', async () => {
 					let mintSecondaryTx;
 					const mintSecondaryAmount = 100;
+					const escrowAmount = 0;
 					beforeEach('mintSecondaryFromDeposit is called', async () => {
-						mintSecondaryTx = await instance.mintSecondaryFromDeposit(user1, mintSecondaryAmount, {
-							from: smockedMessenger,
-						});
+						mintSecondaryTx = await instance.mintSecondaryFromDeposit(
+							user1,
+							mintSecondaryAmount,
+							escrowAmount,
+							{
+								from: smockedMessenger,
+							}
+						);
 					});
 
 					it('should emit a MintedSecondary event', async () => {
@@ -224,7 +230,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.mintSecondaryFromDeposit(user1, 100, {
+							instance.mintSecondaryFromDepositForRewards(100, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
