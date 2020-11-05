@@ -40,7 +40,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			args
 		);
 
-	describe('when all the deps are mocked', () => {
+	describe('when all the deps are mocked @cov-skip', () => {
 		let messenger;
 		let synthetix;
 		let issuer;
