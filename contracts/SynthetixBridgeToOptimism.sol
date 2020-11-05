@@ -128,7 +128,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         synthetixERC20().transferFrom(msg.sender, address(this), depositAmount);
         // create message payload for L2
         messageData = abi.encodeWithSignature(
-            "mintSecondaryFromDeposit(address,uint256)",
+            "mintSecondaryFromDeposit(address,uint256,uint256)",
             msg.sender,
             depositAmount,
             escrowAmount
