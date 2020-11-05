@@ -4,6 +4,7 @@ const assert = require('assert');
 
 const { isAddress } = require('web3-utils');
 const Web3 = require('web3');
+const w3utils = require('web3-utils');
 
 const { loadCompiledFiles } = require('../../publish/src/solidity');
 
@@ -300,13 +301,17 @@ describe('publish scripts', () => {
 					);
 					assert.strictEqual(await Issuer.methods.minimumStakeTime().call(), MINIMUM_STAKE_TIME);
 					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
+						let rateToCheck = rate;
 						// take the first synth we can find from that category
 						const synth = synths.find(({ category: c }) => c === category);
+						if (['sETH', 'iETH', 'sBTC', 'iBTC'].includes(synth.name)) {
+							rateToCheck = w3utils.toWei('0.003');
+						}
 						assert.strictEqual(
 							await Exchanger.methods
 								.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
 								.call(),
-							rate
+							rateToCheck
 						);
 					}
 				});
