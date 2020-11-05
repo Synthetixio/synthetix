@@ -31,6 +31,7 @@ interface IRewardEscrowV2 {
         uint256[] calldata amounts
     ) external;
 
+    // Return amount of SNX transfered to SynthetixBridgeToOptimism deposit contract
     function burnForMigration(address account) external returns (uint256, uint64[52] memory, uint256[52] memory);
 
     function vest(address account) external;

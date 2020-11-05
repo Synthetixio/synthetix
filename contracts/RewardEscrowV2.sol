@@ -20,12 +20,6 @@ import "./interfaces/ISynthetix.sol";
 contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinResolver {
     using SafeMath for uint;
 
-    /* Mapping of account to unique key that owns the vesting entries
-     * Enables account merging without reassigning all vestingSchedules to new address */
-    mapping(address => uint) internal vestingSchedulesOwnerKey;
-
-    // TODO - update account directly mapped to vestingSchedules to be an unique key that owns vesting schedules
-
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
      * These are the times at which each given quantity of SNX vests. */
     mapping(address => uint[2][]) public vestingSchedules;
@@ -397,10 +391,10 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
     {
         // check if account's totalEscrowedAccountBalance > 0 and any vesting entries
         // Check whether entries have been migrated, else read from old rewardEscrow
-        // Vest any entries that can be vested already (More tha 12 months)
 
-        // burn the totalEscrowedAccountBalance for account
+        // sub totalEscrowedAccountBalance migrated
         // sub totalEscrowedBalance
+
         // transfer the SNX to the L2 bridge
         // keep the totalVestedAccountBalance[account]
         // flag account has migrated to Optimism L2
@@ -408,12 +402,20 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
 
         uint256 escrowedAccountBalance = totalEscrowedAccountBalance[account];
 
+        uint LENGHT_TO_MIGRATE = 52;
         uint64[52] memory vestingTimstamps;
         uint256[52] memory vestingAmounts;
 
         if (escrowedAccountBalance > 0) {
             if (accountEscrowMigrated[account]) {
-                // read from current contract for vesting escrow
+                uint numEntries = _numVestingEntries(account);
+
+                // Iterate lastest 52 records
+                for (uint i = numEntries - 1; i < LENGHT_TO_MIGRATE; i--) {
+                    uint[2] memory entry = getVestingScheduleEntry(account, i);
+                    vestingTimstamps[i] = uint64(entry[TIME_INDEX]);
+                    vestingAmounts[i] = entry[QUANTITY_INDEX];
+                }
                 delete totalEscrowedAccountBalance[account];
             } else {
                 // populate schedule from old escrow contract
