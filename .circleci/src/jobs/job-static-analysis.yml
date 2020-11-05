@@ -1,3 +1,4 @@
+# Runs all static analysis checks
 docker:
   - image: trailofbits/eth-security-toolbox
 steps:

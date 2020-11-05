@@ -1,6 +1,22 @@
 jobs:
   - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
   - job-validate-deployments:
       <<: *filter-master
+      network: mainnet
       requires:
         - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on RINKEBY ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      <<: *filter-master
+      network: rinkeby
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on KOVAN ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      <<: *filter-master
+      network: kovan
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on ROPSTEN ~~~~~~~~~~~~~
+  # Disabled because of recent attack to ropsten.

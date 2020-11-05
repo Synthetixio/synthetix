@@ -1,3 +1,4 @@
+# Restarts a forked chain, and runs production tests with gas reports against it
 working_directory: ~/repo
 docker:
   - image: circleci/node:12.18

@@ -20,3 +20,11 @@ jobs:
       <<: *filter-develop
       requires:
         - job-prepare
+  - job-test-ovm-bridge:
+      <<: *filter-develop
+      requires:
+        - job-prepare
+  - job-unit-tests-ovm:
+      <<: *filter-develop
+      requires:
+        - job-prepare

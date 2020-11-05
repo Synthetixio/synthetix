@@ -1,3 +1,4 @@
+# Validates deployment json data against on-chain data, and that sources have been verified in etherscan
 working_directory: ~/repo
 docker:
   - image: circleci/node:12.18
@@ -6,3 +7,5 @@ steps:
   - attach_workspace:
       at: .
   - run: npm run test:deployments
+  - cmd-etherscan-check:
+      network: << parameters.network >>

@@ -1,4 +1,4 @@
-description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork based on releases.json
+# Compiles contracts and runs prepare-deploy, enabling latest release contracts for deployment
 parameters:
   network:
     type: string

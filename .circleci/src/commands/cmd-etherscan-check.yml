@@ -1,3 +1,4 @@
+# Makes sure all deployed contracts are verified in Etherscan
 description: Run etherscan ABI check
 parameters:
   network:
