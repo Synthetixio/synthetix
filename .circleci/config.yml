@@ -6,7 +6,20 @@ commands:
         type: string
     steps:
       - run: npm run test:etherscan --  --network << parameters.network >>
-  cmd-fork-deploy:
+  cmd-fork-start:
+    description: Starts a local ganache fork on the specified network
+    parameters:
+      network:
+        type: string
+      reset:
+        default: false
+        type: boolean
+    steps:
+      - run:
+          background: true
+          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
+      - cmd-wait-for-rpc
+  cmd-forked-deploy:
     description: Performs a deployment using a fork
     parameters:
       network:
@@ -21,8 +34,7 @@ commands:
             - publish/deployed
             - .db
           root: .
-  cmd-fork-prepare-deploy:
-    description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork based on releases.json
+  cmd-prepare-deploy:
     parameters:
       network:
         type: string
@@ -34,20 +46,7 @@ commands:
             - build
             - publish/deployed
           root: .
-  cmd-fork-start:
-    description: Starts a local ganache fork on the specified network
-    parameters:
-      network:
-        type: string
-      reset:
-        default: false
-        type: boolean
-    steps:
-      - run:
-          background: true
-          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
-      - cmd-wait-for-rpc
-  cmd-fork-test-prod:
+  cmd-production-tests:
     description: Runs prod tests on a fork
     parameters:
       network:
@@ -55,19 +54,10 @@ commands:
     steps:
       - cmd-fork-start:
           network: << parameters.network >>
-          reset: true
       - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
-  cmd-testnet-pvt:
-    description: Run testnet PVT
-    parameters:
-      network:
-        type: string
-    steps:
-      - run: npm run test:testnet --  --yes --network << parameters.network >>
   cmd-wait-for-rpc:
-    description: Wait until a connection is established with http://localhost:8545
     steps:
       - run: sleep 5
       - run:
@@ -86,18 +76,7 @@ jobs:
       - run: npx buidler compile --optimizer --fail-oversize
       - run: npx buidler compile --use-ovm --optimizer --fail-oversize
     working_directory: ~/repo
-  job-coverage-report:
-    docker:
-      - image: circleci/node:12.18
-    resource_class: xlarge
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
-      - run: bash <(curl -s https://codecov.io/bash)
-    working_directory: ~/repo
-  job-fork-deploy:
+  job-forked-deploy:
     docker:
       - image: circleci/node:12.18
     parameters:
@@ -107,45 +86,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - cmd-fork-deploy:
+      - cmd-forked-deploy:
           network: << parameters.network >>
-    working_directory: ~/repo
-  job-fork-prepare-deploy:
-    docker:
-      - image: circleci/node:12.18
-    parameters:
-      network:
-        type: string
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - cmd-fork-prepare-deploy:
-          network: << parameters.network >>
-    working_directory: ~/repo
-  job-fork-test-prod:
-    docker:
-      - image: circleci/node:12.18
-    parameters:
-      network:
-        type: string
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - cmd-fork-test-prod:
-          network: << parameters.network >>
-    working_directory: ~/repo
-  job-gas-report:
-    docker:
-      - image: circleci/node:12.18
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npm run test:gas && npx codechecks codechecks.unit.yml
-      - store_artifacts:
-          path: test-gas-used.log
     working_directory: ~/repo
   job-lint:
     docker:
@@ -156,7 +98,7 @@ jobs:
           at: .
       - run: npm run lint
     working_directory: ~/repo
-  job-pack:
+  job-pack-browser:
     docker:
       - image: circleci/node:12.18
     steps:
@@ -185,7 +127,33 @@ jobs:
             - node_modules
           root: .
     working_directory: ~/repo
-  job-slither:
+  job-prepare-deploy:
+    docker:
+      - image: circleci/node:12.18
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - cmd-prepare-deploy:
+          network: << parameters.network >>
+    working_directory: ~/repo
+  job-production-tests:
+    docker:
+      - image: circleci/node:12.18
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - cmd-production-tests:
+          network: << parameters.network >>
+    working_directory: ~/repo
+  job-static-analysis:
     docker:
       - image: trailofbits/eth-security-toolbox
     steps:
@@ -198,98 +166,7 @@ jobs:
             slither .
             exit 0
           name: Show Slither output
-  job-test-contracts:
-    docker:
-      - image: circleci/node:12.18
-    resource_class: large
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npx buidler compile --showsize --optimizer
-      - run:
-          command: |
-            set +e
-            npm test
-            EXIT_CODE=$?
-            cat test-gas-used.log
-            printf "\\n"
-            exit $EXIT_CODE
-          name: Test and output gas used
-    working_directory: ~/repo
-  job-test-contracts-legacy:
-    docker:
-      - image: circleci/node:12.18
-    resource_class: large
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npm run compile:legacy
-      - run: npx buidler test:legacy
-    working_directory: ~/repo
-  job-test-deployments:
-    docker:
-      - image: circleci/node:12.18
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npm run test:deployments
-    working_directory: ~/repo
-  job-test-kovan:
-    docker:
-      - image: circleci/node:12.18
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - cmd-testnet-pvt:
-          network: kovan
-      - cmd-etherscan-check:
-          network: kovan
-    working_directory: ~/repo
-  job-test-local:
-    docker:
-      - image: circleci/node:12.18
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npm run test:local
-    working_directory: ~/repo
-  job-test-mainnet:
-    docker:
-      - image: circleci/node:12.18
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - cmd-etherscan-check:
-          network: mainnet
-    working_directory: ~/repo
-  job-test-multi-same-chain:
-    docker:
-      - image: circleci/node:12.18
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npm run test:multi-same-chain
-    working_directory: ~/repo
-  job-test-ovm:
-    docker:
-      - image: circleci/node:12.18
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          command: |
-            npx buidler compile --use-ovm --optimizer
-          name: Run unit tests on OVM compiled output (TODO enable tests)
-    working_directory: ~/repo
-  job-test-publish:
+  job-test-deploy-script:
     docker:
       - image: circleci/node:12.18
     resource_class: large
@@ -312,22 +189,107 @@ jobs:
           destination: test-log.html
           path: test/publish/test-log.html
     working_directory: ~/repo
-  job-test-rinkeby:
+  job-test-ovm-bridge:
     docker:
       - image: circleci/node:12.18
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - cmd-testnet-pvt:
-          network: rinkeby
+      - run: npm run test:multi-same-chain
+    working_directory: ~/repo
+  job-unit-tests:
+    docker:
+      - image: circleci/node:12.18
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npx buidler compile --showsize --optimizer
+      - run:
+          command: |
+            set +e
+            npm test
+            EXIT_CODE=$?
+            cat test-gas-used.log
+            printf "\\n"
+            exit $EXIT_CODE
+          name: Test and output gas used
+    working_directory: ~/repo
+  job-unit-tests-coverage:
+    docker:
+      - image: circleci/node:12.18
+    resource_class: xlarge
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
+      - run: bash <(curl -s https://codecov.io/bash)
+    working_directory: ~/repo
+  job-unit-tests-gas-report:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:gas && npx codechecks codechecks.unit.yml
+      - store_artifacts:
+          path: test-gas-used.log
+    working_directory: ~/repo
+  job-unit-tests-legacy:
+    docker:
+      - image: circleci/node:12.18
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run compile:legacy
+      - run: npx buidler test:legacy
+    working_directory: ~/repo
+  job-unit-tests-ovm:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: |
+            npx buidler compile --use-ovm --optimizer
+    working_directory: ~/repo
+  job-validate-deployments:
+    docker:
+      - image: circleci/node:12.18
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:deployments
+    working_directory: ~/repo
+  job-validate-etherscan:
+    docker:
+      - image: circleci/node:12.18
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
       - cmd-etherscan-check:
-          network: rinkeby
+          network: << parameters.network >>
     working_directory: ~/repo
 version: 2.1
 workflows:
   version: 2
-  workflow-dev:
+  workflow-any:
     jobs:
       - job-prepare
       - job-lint:
@@ -336,123 +298,200 @@ workflows:
       - job-compile:
           requires:
             - job-prepare
-      - job-test-contracts:
+      - job-static-analysis:
           requires:
             - job-prepare
-      - job-test-contracts-legacy:
-          requires:
-            - job-prepare
-      - job-test-ovm:
-          requires:
-            - job-prepare
-      - job-test-multi-same-chain:
-          requires:
-            - job-prepare
-      - job-test-publish:
-          requires:
-            - job-prepare
-      - job-test-deployments:
-          requires:
-            - job-prepare
-      - job-test-local:
-          requires:
-            - job-prepare
-      - job-pack:
-          requires:
-            - job-prepare
-      - job-coverage-report:
-          requires:
-            - job-prepare
-      - job-gas-report:
-          requires:
-            - job-prepare
-      - job-slither:
-          requires:
-            - job-prepare
-      - job-test-kovan:
-          filters:
-            branches:
-              only: staging
-          requires:
-            - job-prepare
-      - job-test-rinkeby:
-          filters:
-            branches:
-              only: staging
-          requires:
-            - job-prepare
-      - job-test-mainnet:
-          filters:
-            branches:
-              only: master
-          requires:
-            - job-prepare
-  workflow-prod:
+  workflow-develop:
     jobs:
       - job-prepare:
           filters:
             branches:
-              only: develop
-      - job-fork-prepare-deploy:
-          name: job-fork-prepare-deploy-mainnet
+              only: /.*(develop|staging|master).*/
+      - job-unit-tests:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-coverage:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-gas-report:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-legacy:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-test-deploy-script:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-test-ovm-bridge:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-ovm:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+  workflow-master:
+    jobs:
+      - job-prepare:
+          filters:
+            branches:
+              only: /.*(master).*/
+      - job-validate-etherscan:
+          filters:
+            branches:
+              only: /.*(master).*/
+          name: job-validate-etherscan-mainnet
           network: mainnet
           requires:
             - job-prepare
-      - job-fork-deploy:
-          name: job-fork-deploy-mainnet
-          network: mainnet
-          requires:
-            - job-fork-prepare-deploy-mainnet
-      - job-fork-test-prod:
-          name: job-fork-test-prod-mainnet
-          network: mainnet
-          requires:
-            - job-fork-deploy-mainnet
-      - job-fork-prepare-deploy:
+      - job-validate-etherscan:
           filters:
             branches:
-              only: develop
-          name: job-fork-prepare-deploy-rinkeby
+              only: /.*(master).*/
+          name: job-validate-etherscan-rinkeby
           network: rinkeby
           requires:
             - job-prepare
-      - job-fork-deploy:
+      - job-validate-etherscan:
           filters:
             branches:
-              only: develop
-          name: job-fork-deploy-rinkeby
-          network: rinkeby
+              only: /.*(master).*/
+          name: job-validate-etherscan-kovan
+          network: kovan
           requires:
-            - job-fork-prepare-deploy-rinkeby
-      - job-fork-test-prod:
+            - job-prepare
+      - job-validate-etherscan:
           filters:
             branches:
-              only: develop
-          name: job-fork-test-prod-rinkeby
-          network: rinkeby
+              only: /.*(master).*/
+          name: job-validate-etherscan-ropsten
+          network: ropsten
           requires:
-            - job-fork-deploy-rinkeby
-      - job-fork-prepare-deploy:
+            - job-prepare
+  workflow-staging:
+    jobs:
+      - job-prepare:
           filters:
             branches:
-              only: develop
-          name: job-fork-prepare-deploy-kovan
+              only: /.*(staging|master).*/
+      - job-pack-browser:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-validate-deployments:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-validate-deployments-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-validate-deployments:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-validate-deployments-rinkeby
           network: rinkeby
           requires:
             - job-prepare
-      - job-fork-deploy:
+      - job-validate-deployments:
           filters:
             branches:
-              only: develop
-          name: job-fork-deploy-kovan
-          network: rinkeby
+              only: /.*(staging|master).*/
+          name: job-validate-deployments-kovan
+          network: kovan
           requires:
-            - job-fork-prepare-deploy-kovan
-      - job-fork-test-prod:
+            - job-prepare
+      - job-prepare-deploy:
           filters:
             branches:
-              only: develop
-          name: job-fork-test-prod-kovan
+              only: /.*(staging|master).*/
+          name: job-prepare-deploy-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-forked-deploy:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-forked-deploy-mainnet
+          network: mainnet
+          requires:
+            - job-prepare-deploy-mainnet
+      - job-production-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-production-tests-mainnet
+          network: mainnet
+          requires:
+            - job-forked-deploy-mainnet
+      - job-prepare-deploy:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-prepare-deploy-rinkeby
           network: rinkeby
           requires:
-            - job-fork-deploy-kovan
+            - job-prepare
+      - job-forked-deploy:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-forked-deploy-rinkeby
+          network: rinkeby
+          requires:
+            - job-prepare-deploy-rinkeby
+      - job-production-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-production-tests-rinkeby
+          network: rinkeby
+          requires:
+            - job-forked-deploy-rinkeby
+      - job-prepare-deploy:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-prepare-deploy-kovan
+          network: kovan
+          requires:
+            - job-prepare
+      - job-forked-deploy:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-forked-deploy-kovan
+          network: kovan
+          requires:
+            - job-prepare-deploy-kovan
+      - job-production-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-production-tests-kovan
+          network: kovan
+          requires:
+            - job-forked-deploy-kovan

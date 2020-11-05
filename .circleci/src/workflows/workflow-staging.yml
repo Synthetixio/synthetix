@@ -1,0 +1,118 @@
+jobs:
+  - job-prepare:
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+  - job-pack-browser:
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      name: job-validate-deployments-mainnet
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: mainnet
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on RINKEBY ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      name: job-validate-deployments-rinkeby
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: rinkeby
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on KOVAN ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      name: job-validate-deployments-kovan
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: kovan
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on ROPSTEN ~~~~~~~~~~~~~
+  # Disabled because of recent attack to ropsten.
+
+  # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
+  - job-prepare-deploy:
+      name: job-prepare-deploy-mainnet
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: mainnet
+      requires:
+        - job-prepare
+  - job-forked-deploy:
+      name: job-forked-deploy-mainnet
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: mainnet
+      requires:
+        - job-prepare-deploy-mainnet
+  - job-production-tests:
+      name: job-production-tests-mainnet
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: mainnet
+      requires:
+        - job-forked-deploy-mainnet
+  # ~~~~~~~~~~~~ Production tests on RINKEBY ~~~~~~~~~~~~~
+  - job-prepare-deploy:
+      name: job-prepare-deploy-rinkeby
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: rinkeby
+      requires:
+        - job-prepare
+  - job-forked-deploy:
+      name: job-forked-deploy-rinkeby
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: rinkeby
+      requires:
+        - job-prepare-deploy-rinkeby
+  - job-production-tests:
+      name: job-production-tests-rinkeby
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: rinkeby
+      requires:
+        - job-forked-deploy-rinkeby
+  # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
+  - job-prepare-deploy:
+      name: job-prepare-deploy-kovan
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: kovan
+      requires:
+        - job-prepare
+  - job-forked-deploy:
+      name: job-forked-deploy-kovan
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: kovan
+      requires:
+        - job-prepare-deploy-kovan
+  - job-production-tests:
+      name: job-production-tests-kovan
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: kovan
+      requires:
+        - job-forked-deploy-kovan
+  # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
+  # Disabled because of recent attack to ropsten.
