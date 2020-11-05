@@ -1530,6 +1530,7 @@ const deploy = async ({
 					Object.assign(
 						{
 							currentRate: w3utils.fromWei(synthRates[i] || '0'),
+							currentRateWei: synthRates[i],
 							targetRate:
 								synth.name in synthExchangeRateOverride
 									? synthExchangeRateOverride[synth.name]
@@ -1538,7 +1539,7 @@ const deploy = async ({
 						synth
 					)
 				)
-				.filter(({ currentRate }) => currentRate === '0');
+				.filter(({ currentRateWei, targetRate }) => currentRateWei !== targetRate);
 
 			console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
 
