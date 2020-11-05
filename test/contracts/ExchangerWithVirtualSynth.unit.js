@@ -37,7 +37,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 		});
 	});
 
-	describe('when a contract is instantiated', () => {
+	describe('when a contract is instantiated @cov-skip', () => {
 		let instance;
 
 		// ensure all of the behaviors are bound to "this" for sharing test state

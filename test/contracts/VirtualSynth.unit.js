@@ -28,7 +28,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 		});
 	});
 
-	describe('with common setup', () => {
+	describe('with common setup @cov-skip', () => {
 		// ensure all of the behaviors are bound to "this" for sharing test state
 		const behaviors = require('./VirtualSynth.behaviors').call(this, { accounts });
 
