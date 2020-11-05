@@ -4,7 +4,7 @@ jobs:
   - job-validate-deployments:
       filters:
         branches:
-          only: /(master).*/
+          only: /.*(master).*/
       network: mainnet
       requires:
         - job-prepare
@@ -12,7 +12,7 @@ jobs:
   - job-validate-deployments:
       filters:
         branches:
-          only: /(master).*/
+          only: /.*(master).*/
       network: rinkeby
       requires:
         - job-prepare
@@ -20,7 +20,7 @@ jobs:
   - job-validate-deployments:
       filters:
         branches:
-          only: /(master).*/
+          only: /.*(master).*/
       network: kovan
       requires:
         - job-prepare

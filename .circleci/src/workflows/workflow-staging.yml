@@ -3,14 +3,14 @@ jobs:
   - job-pack-browser:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       requires:
         - job-prepare
   # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
   - job-prepare-deploy:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       name: job-prepare-deploy-mainnet
       network: mainnet
       requires:
@@ -18,7 +18,7 @@ jobs:
   - job-forked-deploy:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       name: job-forked-deploy-mainnet
       network: mainnet
       requires:
@@ -26,7 +26,7 @@ jobs:
   - job-production-tests:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       name: job-production-tests-mainnet
       network: mainnet
       requires:
@@ -35,7 +35,7 @@ jobs:
   - job-prepare-deploy:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       name: job-prepare-deploy-rinkeby
       network: rinkeby
       requires:
@@ -43,7 +43,7 @@ jobs:
   - job-forked-deploy:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       name: job-forked-deploy-rinkeby
       network: rinkeby
       requires:
@@ -51,7 +51,7 @@ jobs:
   - job-production-tests:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       name: job-production-tests-rinkeby
       network: rinkeby
       requires:
@@ -60,7 +60,7 @@ jobs:
   - job-prepare-deploy:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       name: job-prepare-deploy-kovan
       network: kovan
       requires:
@@ -68,7 +68,7 @@ jobs:
   - job-forked-deploy:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       name: job-forked-deploy-kovan
       network: kovan
       requires:
@@ -76,7 +76,7 @@ jobs:
   - job-production-tests:
       filters:
         branches:
-          only: /(develop|staging).*/
+          only: /.*(develop|staging).*/
       name: job-production-tests-kovan
       network: kovan
       requires:

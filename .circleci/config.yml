@@ -297,43 +297,43 @@ workflows:
             - job-unit-tests:
                 filters:
                     branches:
-                        only: /(develop|staging|master).*/
+                        only: /.*(develop|staging|master).*/
                 requires:
                     - job-prepare
             - job-unit-tests-coverage:
                 filters:
                     branches:
-                        only: /(develop|staging|master).*/
+                        only: /.*(develop|staging|master).*/
                 requires:
                     - job-prepare
             - job-unit-tests-gas-report:
                 filters:
                     branches:
-                        only: /(develop|staging|master).*/
+                        only: /.*(develop|staging|master).*/
                 requires:
                     - job-prepare
             - job-unit-tests-legacy:
                 filters:
                     branches:
-                        only: /(develop|staging|master).*/
+                        only: /.*(develop|staging|master).*/
                 requires:
                     - job-prepare
             - job-test-deploy-script:
                 filters:
                     branches:
-                        only: /(develop|staging|master).*/
+                        only: /.*(develop|staging|master).*/
                 requires:
                     - job-prepare
             - job-test-ovm-bridge:
                 filters:
                     branches:
-                        only: /(develop|staging|master).*/
+                        only: /.*(develop|staging|master).*/
                 requires:
                     - job-prepare
             - job-unit-tests-ovm:
                 filters:
                     branches:
-                        only: /(develop|staging|master).*/
+                        only: /.*(develop|staging|master).*/
                 requires:
                     - job-prepare
     workflow-master:
@@ -342,21 +342,21 @@ workflows:
             - job-validate-deployments:
                 filters:
                     branches:
-                        only: /(master).*/
+                        only: /.*(master).*/
                 network: mainnet
                 requires:
                     - job-prepare
             - job-validate-deployments:
                 filters:
                     branches:
-                        only: /(master).*/
+                        only: /.*(master).*/
                 network: rinkeby
                 requires:
                     - job-prepare
             - job-validate-deployments:
                 filters:
                     branches:
-                        only: /(master).*/
+                        only: /.*(master).*/
                 network: kovan
                 requires:
                     - job-prepare
@@ -366,13 +366,13 @@ workflows:
             - job-pack-browser:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 requires:
                     - job-prepare
             - job-prepare-deploy:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 name: job-prepare-deploy-mainnet
                 network: mainnet
                 requires:
@@ -380,7 +380,7 @@ workflows:
             - job-forked-deploy:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 name: job-forked-deploy-mainnet
                 network: mainnet
                 requires:
@@ -388,7 +388,7 @@ workflows:
             - job-production-tests:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 name: job-production-tests-mainnet
                 network: mainnet
                 requires:
@@ -396,7 +396,7 @@ workflows:
             - job-prepare-deploy:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 name: job-prepare-deploy-rinkeby
                 network: rinkeby
                 requires:
@@ -404,7 +404,7 @@ workflows:
             - job-forked-deploy:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 name: job-forked-deploy-rinkeby
                 network: rinkeby
                 requires:
@@ -412,7 +412,7 @@ workflows:
             - job-production-tests:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 name: job-production-tests-rinkeby
                 network: rinkeby
                 requires:
@@ -420,7 +420,7 @@ workflows:
             - job-prepare-deploy:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 name: job-prepare-deploy-kovan
                 network: kovan
                 requires:
@@ -428,7 +428,7 @@ workflows:
             - job-forked-deploy:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 name: job-forked-deploy-kovan
                 network: kovan
                 requires:
@@ -436,7 +436,7 @@ workflows:
             - job-production-tests:
                 filters:
                     branches:
-                        only: /(develop|staging).*/
+                        only: /.*(develop|staging).*/
                 name: job-production-tests-kovan
                 network: kovan
                 requires:
