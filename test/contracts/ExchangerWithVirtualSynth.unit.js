@@ -51,15 +51,16 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 			({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 				owner,
 				contracts: [
-					'SystemStatus',
-					'ExchangeState',
-					'ExchangeRates',
-					'Synthetix',
-					'FeePool',
-					'TradingRewards',
+					'DebtCache',
 					'DelegateApprovals',
-					'Issuer',
+					'ExchangeRates',
+					'ExchangeState',
+					'FeePool',
 					'FlexibleStorage',
+					'Issuer',
+					'Synthetix',
+					'SystemStatus',
+					'TradingRewards',
 				],
 				accounts: accounts.slice(3), // mock using accounts after the first few
 			}));
