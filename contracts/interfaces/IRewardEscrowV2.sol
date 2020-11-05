@@ -34,8 +34,8 @@ interface IRewardEscrowV2 {
     // L2 Migration
     function importVestingEntries(
         address account,
-        uint64[] calldata timestamps,
-        uint256[] calldata amounts
+        uint64[52] calldata timestamps,
+        uint256[52] calldata amounts
     ) external;
 
     // Return amount of SNX transfered to SynthetixBridgeToOptimism deposit contract

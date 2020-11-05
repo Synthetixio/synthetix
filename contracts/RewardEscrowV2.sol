@@ -435,28 +435,26 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
     function importVestingEntries(
         address account,
-        uint64[] calldata timestamps,
-        uint256[] calldata amounts
+        uint64[52] calldata timestamps,
+        uint256[52] calldata amounts
     ) external onlySynthetixBridgeToBase {
-        require(amounts.length == timestamps.length, "Timestamps and amounts length don't match");
-
-        uint256 escrowedBalance;
+        uint256 accountEscrowedBalance;
 
         // TODO - consider using appendVestingEntry for appending vesting schedules
         for (uint i = 0; i < amounts.length; i++) {
             vestingSchedules[account].push([timestamps[i], amounts[i]]);
-            escrowedBalance = escrowedBalance.add(amounts[i]);
+            accountEscrowedBalance = accountEscrowedBalance.add(amounts[i]);
         }
 
         // There must be enough balance in the contract to provide for the escrowed balance.
-        totalEscrowedBalance = totalEscrowedBalance.add(escrowedBalance);
+        totalEscrowedBalance = totalEscrowedBalance.add(accountEscrowedBalance);
         require(
             totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
             "Insufficient balance in the contract to provide for escrowed balance"
         );
 
         // Record account escrowed balance
-        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedBalance);
+        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(accountEscrowedBalance);
     }
 
     /* ========== MODIFIERS ========== */
