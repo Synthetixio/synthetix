@@ -1,0 +1,6 @@
+jobs:
+  - job-prepare
+  - job-validate-deployments:
+      <<: *filter-master
+      requires:
+        - job-prepare
