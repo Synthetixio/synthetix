@@ -61,14 +61,11 @@ const deploy = async ({
 	useOvm,
 	freshDeploy,
 	manageNonces,
+	ignoreSafetyChecks,
 } = {}) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
-
-	if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
-		throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
-	}
 
 	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
@@ -90,11 +87,33 @@ const deploy = async ({
 		network,
 	});
 
-	// Fresh deploy and deployment.json not empty?
-	if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
-		throw new Error(
-			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
-		);
+	if (!ignoreSafetyChecks) {
+		// Using Goerli without manageNonces?
+		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
+			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+		}
+
+		// Deploying on OVM and not using an OVM deployment path?
+		const isOvmPath = deploymentPath.includes('ovm');
+		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
+		if (deploymentPathMismatch) {
+			if (useOvm) {
+				throw new Error(
+					`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`
+				);
+			} else {
+				throw new Error(
+					`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`
+				);
+			}
+		}
+
+		// Fresh deploy and deployment.json not empty?
+		if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
+			throw new Error(
+				`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
+			);
+		}
 	}
 
 	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
@@ -195,11 +214,14 @@ const deploy = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
+		useOvm,
 		useFork,
+		ignoreSafetyChecks,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
 	const { account } = deployer;
+
 	nonceManager.web3 = deployer.web3;
 	nonceManager.account = account;
 
@@ -1812,6 +1834,11 @@ module.exports = {
 			.option(
 				'-h, --fresh-deploy',
 				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
+			)
+			.option(
+				'-i, --ignore-safety-checks',
+				'Ignores some validations regarding paths, compiler versions, etc.',
+				false
 			)
 			.option(
 				'-k, --use-fork',
