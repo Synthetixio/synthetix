@@ -2,7 +2,7 @@ jobs:
   - job-prepare:
       filters:
         branches:
-          only: /.*(master).*/
+          only: /.*(develop|staging|master).*/
   - job-unit-tests:
       filters:
         branches:

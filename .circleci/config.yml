@@ -306,7 +306,7 @@ workflows:
       - job-prepare:
           filters:
             branches:
-              only: /.*(master).*/
+              only: /.*(develop|staging|master).*/
       - job-unit-tests:
           filters:
             branches:
@@ -392,7 +392,7 @@ workflows:
       - job-prepare:
           filters:
             branches:
-              only: /.*(master).*/
+              only: /.*(staging|master).*/
       - job-pack-browser:
           filters:
             branches:
