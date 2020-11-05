@@ -24,6 +24,11 @@ interface IRewardEscrowV2 {
         uint256[] calldata vestedBalances
     ) external;
 
+    // Account Merging
+    function startMergingWindow() external;
+
+    function nominateAccountToMerge(address account) external;
+
     // L2 Migration
     function importVestingEntries(
         address account,

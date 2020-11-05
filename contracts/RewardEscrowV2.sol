@@ -17,7 +17,7 @@ import "./interfaces/ISynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinResolver {
+contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
     using SafeMath for uint;
 
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
@@ -30,8 +30,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
     /* An account's total vested reward synthetix. */
     mapping(address => uint) public totalVestedAccountBalance;
 
-    /* Mapping of accounts that have migrated vesting entries from the old reward escrow to the new reward escrow  */
-    mapping(address => bool) public accountEscrowMigrated;
+    /* Mapping of accounts that are pending to migrate vesting entries from the old reward escrow to the new reward escrow */
+    mapping(address => bool) public accountEscrowMigrationPending;
 
     /* Mapping of nominated address to recieve account merging */
     mapping(address => address) public nominatedReciever;
@@ -249,7 +249,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
      * @notice Allow a user to withdraw any SNX in their schedule that have vested.
      */
     function vest(address account) external {
-        require(accountEscrowMigrated[account], "Escrow migration pending");
+        require(!accountEscrowMigrationPending[account], "Escrow migration pending");
 
         uint numEntries = _numVestingEntries(msg.sender);
         uint total;
@@ -297,6 +297,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
     function nominateAccountToMerge(address account) external {
         require(accountMergingEndTime < now, "Account merging has ended");
         require(totalEscrowedAccountBalance[msg.sender] > 0, "Address escrow balance is 0");
+        require(!accountEscrowMigrationPending[account], "Escrow migration pending");
 
         nominatedReciever[msg.sender] = account;
 
@@ -337,6 +338,9 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
         for (uint i = vestedEntries - 1; i < remainingEntries; i++) {
             // vestingSchedules[addressToMigrate].push([vestingSchedule[0], vestingSchedule[1]]);
         }
+
+        delete accountEscrowMigrationPending[addressToMigrate];
+        // emit event account has migrated vesting entries across
     }
 
     function _getVestedEntriesAndAmount(address _account, uint _numEntries)
@@ -373,9 +377,10 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
         for (uint i = 0; i < accounts.length; i++) {
             totalEscrowedAccountBalance[accounts[i]] = escrowBalances[i];
             totalVestedAccountBalance[accounts[i]] = vestedBalances[i];
+            accountEscrowMigrationPending[accounts[i]] = true;
         }
 
-        // TODO enable contract after migrating all account escrow balances, prevent adding vesting entries and vesting until migrated.
+        // TODO enable contract after migrating all account escrow balances, prevent adding vesting entries and vesting until all account escrow balances migrated.
     }
 
     /* ========== L2 MIGRATION ========== */
@@ -407,7 +412,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(2 weeks), MixinR
         uint256[52] memory vestingAmounts;
 
         if (escrowedAccountBalance > 0) {
-            if (accountEscrowMigrated[account]) {
+            if (!accountEscrowMigrationPending[account]) {
                 uint numEntries = _numVestingEntries(account);
 
                 // Iterate lastest 52 records
