@@ -496,8 +496,5 @@
 	},
 	"EtherCollateralsUSD": {
 		"deploy": false
-	},
-	"SynthetixBridgeToOptimism": {
-		"deploy": false
 	}
 }
