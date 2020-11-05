@@ -1,5 +1,8 @@
 jobs:
-  - job-prepare
+  - job-prepare:
+      filters:
+        branches:
+          only: /.*(master).*/
   # ~~~~~~~~~~~~ Etherscan validation on MAINNET ~~~~~~~~~~~~~
   - job-validate-etherscan:
       name: job-validate-etherscan-mainnet
