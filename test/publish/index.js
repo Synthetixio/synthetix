@@ -1393,10 +1393,14 @@ describe('publish scripts', () => {
 
 							const resolvers = await Promise.all(
 								Object.entries(targets)
-									// Note: SecondaryDeposit has ':' in its deps, instead of hardcoding the
+									// Note: SynthetixBridgeToOptimism and SynthetixBridgeToBase  have ':' in their deps, instead of hardcoding the
 									// address here we should look up all required contracts and ignore any that have
 									// ':' in it
-									.filter(([contract]) => contract !== 'SecondaryDeposit')
+									.filter(
+										([contract]) =>
+											contract !== 'SynthetixBridgeToOptimism' &&
+											contract !== 'SynthetixBridgeToBase'
+									)
 									.filter(([, { source }]) =>
 										sources[source].abi.find(({ name }) => name === 'resolver')
 									)

@@ -7,7 +7,8 @@ const { parseEther, parseUnits } = ethers.utils;
 
 const {
 	initCrossDomainMessengers,
-	waitForCrossDomainMessages,
+	relayL1ToL2Messages,
+	relayL2ToL1Messages,
 } = require('@eth-optimism/ovm-toolchain');
 
 const { assert } = require('../contracts/common');
@@ -21,10 +22,14 @@ const commands = {
 	deploy: require('../../publish/src/commands/deploy').deploy,
 };
 
+async function mineBlock(provider, timeLeap) {
+	const currentTimestamp = (await provider.getBlock(provider.getBlockNumber())).timestamp;
+	await provider.send('evm_mine', [currentTimestamp + timeLeap]);
+}
 describe('deploy multiple instances', () => {
 	let deployer;
 
-	let loadLocalUsers, fastForward, setupProvider, getContract;
+	let loadLocalUsers, setupProvider, getContract;
 
 	let wallet, provider;
 
@@ -38,7 +43,7 @@ describe('deploy multiple instances', () => {
 	const deploymentPaths = [];
 
 	before('set up test utils', async () => {
-		({ loadLocalUsers, fastForward, setupProvider, getContract } = testUtils());
+		({ loadLocalUsers, setupProvider, getContract } = testUtils());
 	});
 
 	before('connect to local chain with accounts', async () => {
@@ -232,11 +237,11 @@ describe('deploy multiple instances', () => {
 		});
 
 		it('and after a delay, the user has 100 SNX on L2', async () => {
-			// wait 100s
-			await fastForward(100);
+			// fast forward 100s
+			await mineBlock(provider, 100);
 
 			// wait for message to be relayed
-			await waitForCrossDomainMessages(user);
+			await relayL1ToL2Messages(user);
 
 			const newL2Balance = await synthetixAlt.balanceOf(user.address);
 			assert.bnEqual(newL2Balance, parseEther('100'));
@@ -244,6 +249,32 @@ describe('deploy multiple instances', () => {
 
 		it('and the totalSupply on L2 has incremented by 100', async () => {
 			assert.bnEqual(await synthetixAlt.totalSupply(), l2InitialTotalSupply.add(parseEther('100')));
+		});
+
+		describe('when the user withdraws back to L1', () => {
+			let l2ToL1Bridge;
+			before('initiate withdrawal', async () => {
+				l2ToL1Bridge = fetchContract({ contract: 'SynthetixBridgeToBase', instance: 1, user });
+				// initiate withdrawal on L2
+				await l2ToL1Bridge.initiateWithdrawal(parseEther('100'), overrides);
+				// fast forward 1000s
+				await mineBlock(provider, 1000);
+				// wait for message to be relayed
+				await relayL2ToL1Messages(user);
+			});
+
+			it('the totalSupply on L2 decreases by 100', async () => {
+				assert.bnEqual(await synthetixAlt.totalSupply(), l2InitialTotalSupply);
+			});
+
+			it('the deposit contract has 0 balance', async () => {
+				assert.bnEqual(await synthetix.balanceOf(l1ToL2Bridge.address), 0);
+			});
+
+			it('then the user has again 1000 SNX on L1', async () => {
+				const newL1Balance = await synthetix.balanceOf(user.address);
+				assert.bnEqual(newL1Balance, parseEther('1000'));
+			});
 		});
 	});
 });
