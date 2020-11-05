@@ -249,7 +249,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
      * @notice Allow a user to withdraw any SNX in their schedule that have vested.
      */
     function vest(address account) external {
-        require(!accountEscrowMigrationPending[account], "Escrow migration pending");
+        require(!vestingScheduleMigrationPending(account), "Escrow migration pending");
 
         uint numEntries = _numVestingEntries(msg.sender);
         uint total;
@@ -297,7 +297,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     function nominateAccountToMerge(address account) external {
         require(accountMergingEndTime < now, "Account merging has ended");
         require(totalEscrowedAccountBalance[msg.sender] > 0, "Address escrow balance is 0");
-        require(!accountEscrowMigrationPending[account], "Escrow migration pending");
+        require(!vestingScheduleMigrationPending(account), "Escrow migration pending");
 
         nominatedReciever[msg.sender] = account;
 
@@ -339,7 +339,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
             // vestingSchedules[addressToMigrate].push([vestingSchedule[0], vestingSchedule[1]]);
         }
 
-        delete accountEscrowMigrationPending[addressToMigrate];
         // emit event account has migrated vesting entries across
     }
 
@@ -377,10 +376,13 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         for (uint i = 0; i < accounts.length; i++) {
             totalEscrowedAccountBalance[accounts[i]] = escrowBalances[i];
             totalVestedAccountBalance[accounts[i]] = vestedBalances[i];
-            accountEscrowMigrationPending[accounts[i]] = true;
         }
 
         // TODO enable contract after migrating all account escrow balances, prevent adding vesting entries and vesting until all account escrow balances migrated.
+    }
+
+    function vestingScheduleMigrationPending(address account) public view returns (bool) {
+        return totalEscrowedAccountBalance[account] > 0 && _numVestingEntries(account) == 0;
     }
 
     /* ========== L2 MIGRATION ========== */
@@ -412,7 +414,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         uint256[52] memory vestingAmounts;
 
         if (escrowedAccountBalance > 0) {
-            if (!accountEscrowMigrationPending[account]) {
+            if (!vestingScheduleMigrationPending(account)) {
                 uint numEntries = _numVestingEntries(account);
 
                 // Iterate lastest 52 records
