@@ -1,62 +1,82 @@
 jobs:
   - job-prepare
   - job-pack-browser:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       requires:
         - job-prepare
   # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
   - job-prepare-deploy:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       name: job-prepare-deploy-mainnet
       network: mainnet
       requires:
         - job-prepare
   - job-forked-deploy:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       name: job-forked-deploy-mainnet
       network: mainnet
       requires:
         - job-prepare-deploy-mainnet
   - job-production-tests:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       name: job-production-tests-mainnet
       network: mainnet
       requires:
         - job-forked-deploy-mainnet
   # ~~~~~~~~~~~~ Production tests on RINKEBY ~~~~~~~~~~~~~
   - job-prepare-deploy:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       name: job-prepare-deploy-rinkeby
       network: rinkeby
       requires:
         - job-prepare
   - job-forked-deploy:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       name: job-forked-deploy-rinkeby
       network: rinkeby
       requires:
         - job-prepare-deploy-rinkeby
   - job-production-tests:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       name: job-production-tests-rinkeby
       network: rinkeby
       requires:
         - job-forked-deploy-rinkeby
   # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
   - job-prepare-deploy:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       name: job-prepare-deploy-kovan
       network: kovan
       requires:
         - job-prepare
   - job-forked-deploy:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       name: job-forked-deploy-kovan
       network: kovan
       requires:
         - job-prepare-deploy-kovan
   - job-production-tests:
-      <<: *filter-staging
+      filters:
+        branches:
+          only: /(develop|staging).*/
       name: job-production-tests-kovan
       network: kovan
       requires:

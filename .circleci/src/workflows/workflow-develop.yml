@@ -1,30 +1,44 @@
 jobs:
   - job-prepare
   - job-unit-tests:
-      <<: *filter-develop
+      filters:
+        branches:
+          only: /(develop|staging|master).*/
       requires:
         - job-prepare
   - job-unit-tests-coverage:
-      <<: *filter-develop
+      filters:
+        branches:
+          only: /(develop|staging|master).*/
       requires:
         - job-prepare
   - job-unit-tests-gas-report:
-      <<: *filter-develop
+      filters:
+        branches:
+          only: /(develop|staging|master).*/
       requires:
         - job-prepare
   - job-unit-tests-legacy:
-      <<: *filter-develop
+      filters:
+        branches:
+          only: /(develop|staging|master).*/
       requires:
         - job-prepare
-  - job-tests-deploy-script:
-      <<: *filter-develop
+  - job-test-deploy-script:
+      filters:
+        branches:
+          only: /(develop|staging|master).*/
       requires:
         - job-prepare
   - job-test-ovm-bridge:
-      <<: *filter-develop
+      filters:
+        branches:
+          only: /(develop|staging|master).*/
       requires:
         - job-prepare
   - job-unit-tests-ovm:
-      <<: *filter-develop
+      filters:
+        branches:
+          only: /(develop|staging|master).*/
       requires:
         - job-prepare

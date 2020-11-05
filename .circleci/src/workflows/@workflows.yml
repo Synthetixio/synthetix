@@ -1,14 +1,1 @@
 version: 2
-filter-develop: &filter-develop
-  filters:
-    branches:
-      only: /(develop|staging|master).*/
-filter-staging: &filter-staging
-  filters:
-    branches:
-      only: /(develop|staging).*/
-filter-master: &filter-master
-  filters:
-    branches:
-      only: /(master).*/
-
