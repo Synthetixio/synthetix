@@ -30,7 +30,7 @@ test-gas-used-prod.log
 coverage.json
 coverage
 browser.js
-.coverage*
+.coverage_*
 
 # Ganache local chain data
 .db

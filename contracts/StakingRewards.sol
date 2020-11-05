@@ -147,7 +147,8 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
     }
 
     function setRewardsDuration(uint256 _rewardsDuration) external onlyOwner {
-        require(block.timestamp > periodFinish,
+        require(
+            block.timestamp > periodFinish,
             "Previous rewards period must be complete before changing the duration for the new period"
         );
         rewardsDuration = _rewardsDuration;
