@@ -73,7 +73,7 @@ contract('Rewards Integration Tests', async accounts => {
 			}
 		);
 
-		await issuer.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 	};
 
 	const fastForwardAndCloseFeePeriod = async () => {
@@ -137,7 +137,7 @@ contract('Rewards Integration Tests', async accounts => {
 		synthetix,
 		exchangeRates,
 		exchanger,
-		issuer,
+		debtCache,
 		supplySchedule,
 		systemSettings,
 		rewardEscrow,
@@ -151,7 +151,7 @@ contract('Rewards Integration Tests', async accounts => {
 		({
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
-			Issuer: issuer,
+			DebtCache: debtCache,
 			FeePool: feePool,
 			RewardEscrow: rewardEscrow,
 			SupplySchedule: supplySchedule,
@@ -168,7 +168,7 @@ contract('Rewards Integration Tests', async accounts => {
 				'FeePool',
 				'FeePoolEternalStorage', // necessary to claimFees()
 				'FeePoolState', // necessary to claimFees()
-				'Issuer',
+				'DebtCache',
 				'RewardEscrow',
 				'RewardsDistribution', // required for Synthetix.mint()
 				'SupplySchedule',
@@ -612,7 +612,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
 				from: oracle,
 			});
-			await issuer.cacheSNXIssuedDebt();
+			await debtCache.takeDebtSnapshot();
 
 			// Account 3 (enters the system and) mints 10K sUSD (minus half of an exchange fee - to balance the fact
 			// that the other two holders have doubled their sBTC holdings) and should have 20% of the debt not 33.33%

@@ -10,7 +10,7 @@ import "./interfaces/ISynthetixState.sol";
 import "./SafeDecimalMath.sol";
 
 
-// https://docs.synthetix.io/contracts/SynthetixState
+// https://docs.synthetix.io/contracts/source/contracts/synthetixstate
 contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

@@ -20,7 +20,7 @@ const { stringify } = require('../util');
 const prepareDeploy = async ({ network = DEFAULTS.network }) => {
 	ensureNetwork(network);
 
-	const deploymentPath = getDeploymentPathForNetwork(network);
+	const deploymentPath = getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	// Get config.js

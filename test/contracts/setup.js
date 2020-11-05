@@ -165,6 +165,7 @@ const setupContract = async ({
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
 		SynthUtil: [tryGetAddressOf('AddressResolver')],
 		DappMaintenance: [owner],
+		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
@@ -553,6 +554,11 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemStatus'],
 		},
 		{
+			contract: 'DebtCache',
+			mocks: ['Issuer', 'Exchanger'],
+			deps: ['FlexibleStorage', 'ExchangeRates', 'SystemStatus'],
+		},
+		{
 			contract: 'Issuer',
 			mocks: [
 				'EtherCollateral',
@@ -564,7 +570,7 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'FlexibleStorage',
 			],
-			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage'],
+			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
 		},
 		{
 			contract: 'Exchanger',
@@ -576,6 +582,7 @@ const setupAllContracts = async ({
 				'ExchangeRates',
 				'ExchangeState',
 				'FlexibleStorage',
+				'DebtCache',
 			],
 		},
 		{
@@ -813,6 +820,7 @@ const setupAllContracts = async ({
 		if (returnObj['Synth']) {
 			returnObj['Issuer'].addSynth(returnObj['Synth'].address, { from: owner });
 		}
+
 		for (const synthAddress of synthsToAdd) {
 			await returnObj['Issuer'].addSynth(synthAddress, { from: owner });
 		}

@@ -29,7 +29,7 @@ async function mineBlock(provider, timeLeap) {
 describe('deploy multiple instances', () => {
 	let deployer;
 
-	let loadLocalUsers, isCompileRequired, setupProvider, getContract;
+	let loadLocalUsers, setupProvider, getContract;
 
 	let wallet, provider;
 
@@ -43,7 +43,7 @@ describe('deploy multiple instances', () => {
 	const deploymentPaths = [];
 
 	before('set up test utils', async () => {
-		({ loadLocalUsers, isCompileRequired, setupProvider, getContract } = testUtils());
+		({ loadLocalUsers, setupProvider, getContract } = testUtils());
 	});
 
 	before('connect to local chain with accounts', async () => {
@@ -53,16 +53,6 @@ describe('deploy multiple instances', () => {
 			providerUrl: 'http://127.0.0.1:8545',
 			privateKey: deployer.private,
 		}));
-	});
-
-	before('compile if needed', async () => {
-		if (isCompileRequired()) {
-			console.log('Found source file modified after build. Rebuilding...');
-
-			await commands.build({ showContractSize: true, testHelpers: true });
-		} else {
-			console.log('Skipping build as everything up to date');
-		}
 	});
 
 	const createTempLocalCopy = ({ prefix }) => {
@@ -111,20 +101,29 @@ describe('deploy multiple instances', () => {
 		messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
 	});
 
+	before('compile contracts', async () => {
+		// Note: Will use regular compilation for both instances
+		// since they will be run in a regular local chain.
+		await commands.build({ showContractSize: true, testHelpers: true });
+	});
+
 	before('deploy instance 1', async () => {
-		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-local-' }));
+
 		// ensure that only SynthetixBridgeToOptimism is deployed on L1
 		switchL2Deployment(network, deploymentPaths[0], true);
+
 		await commands.deploy({
 			network,
 			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
+			ignoreSafetyChecks: true,
 			deploymentPath: deploymentPaths[0],
 		});
+
 		// now set the external messenger contract
 		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
-
 		await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l1CrossDomainMessenger.address]
@@ -132,19 +131,24 @@ describe('deploy multiple instances', () => {
 	});
 
 	before('deploy instance 2', async () => {
-		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-local-ovm-' }));
+
 		// ensure that only SynthetixBridgeToBase is deployed on L2
 		switchL2Deployment(network, deploymentPaths[1], false);
+
 		await commands.deploy({
 			network,
 			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
 			useOvm: true,
+			ignoreSafetyChecks: true,
 			deploymentPath: deploymentPaths[1],
 		});
+
 		// now set the external messenger contract
-		await fetchContract({ contract: 'AddressResolver', instance: 1 }).importAddresses(
+		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 1 });
+		await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l2CrossDomainMessenger.address]
 		);

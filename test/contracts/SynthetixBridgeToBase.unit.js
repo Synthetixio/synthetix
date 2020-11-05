@@ -29,7 +29,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			args
 		);
 
-	describe('when all the deps are (s)mocked', () => {
+	describe('when all the deps are (s)mocked @cov-skip', () => {
 		let messenger;
 		let mintableSynthetix;
 		let resolver;
