@@ -37,6 +37,7 @@ contract('Liquidations', accounts => {
 		systemSettings,
 		systemStatus,
 		feePoolState,
+		debtCache,
 		issuer,
 		timestamp;
 
@@ -53,6 +54,7 @@ contract('Liquidations', accounts => {
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
 			FeePoolState: feePoolState,
+			DebtCache: debtCache,
 			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
@@ -63,6 +65,7 @@ contract('Liquidations', accounts => {
 				'Exchanger', // required for Synthetix to check if exchanger().hasWaitingPeriodOrSettlementOwing
 				'FeePool',
 				'FeePoolState', // required for checking issuance data appended
+				'DebtCache',
 				'Issuer',
 				'Liquidations',
 				'SystemStatus', // test system status controls
@@ -91,7 +94,7 @@ contract('Liquidations', accounts => {
 		await exchangeRates.updateRates([SNX], [rate].map(toUnit), timestamp, {
 			from: oracle,
 		});
-		await issuer.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 	};
 
 	it('ensure only known functions are mutative', () => {
@@ -532,7 +535,7 @@ contract('Liquidations', accounts => {
 								await sUSDContract.issue(bob, sUSD100, {
 									from: owner,
 								});
-								await issuer.cacheSNXIssuedDebt();
+								await debtCache.takeDebtSnapshot();
 
 								// Bob Liquidates Alice
 								await assert.revert(

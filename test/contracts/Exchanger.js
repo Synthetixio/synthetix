@@ -65,6 +65,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 		systemSettings,
 		systemStatus,
 		resolver,
+		debtCache,
 		issuer,
 		flexibleStorage;
 
@@ -85,6 +86,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 			SystemSettings: systemSettings,
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: resolver,
+			DebtCache: debtCache,
 			Issuer: issuer,
 			FlexibleStorage: flexibleStorage,
 		} = await setupAllContracts({
@@ -94,6 +96,7 @@ contract('Exchanger (via Synthetix)', async accounts => {
 				'Exchanger',
 				'ExchangeState',
 				'ExchangeRates',
+				'DebtCache',
 				'Issuer', // necessary for synthetix transfers to succeed
 				'FeePool',
 				'FeePoolEternalStorage',
@@ -686,7 +689,14 @@ contract('Exchanger (via Synthetix)', async accounts => {
 
 									const logs = await getDecodedLogs({
 										hash: exchangeTransaction.tx,
-										contracts: [synthetix, exchanger, sUSDContract, issuer, flexibleStorage],
+										contracts: [
+											synthetix,
+											exchanger,
+											sUSDContract,
+											issuer,
+											flexibleStorage,
+											debtCache,
+										],
 									});
 
 									// ExchangeEntryAppended is emitted for exchange

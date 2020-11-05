@@ -20,7 +20,7 @@ const {
 
 const nominate = async ({ network, newOwner, contracts, deploymentPath, gasPrice, gasLimit }) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	if (!newOwner) {

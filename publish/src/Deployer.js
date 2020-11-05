@@ -6,6 +6,7 @@ const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
 const { getUsers } = require('../../index.js');
 const { stringify, getEtherscanLinkPrefix } = require('./util');
+const { getVersions } = require('../..');
 
 class Deployer {
 	/**
@@ -28,6 +29,8 @@ class Deployer {
 		providerUrl,
 		privateKey,
 		useFork,
+		useOvm,
+		ignoreSafetyChecks,
 		nonceManager,
 	}) {
 		this.compiled = compiled;
@@ -41,6 +44,8 @@ class Deployer {
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
 		this.nonceManager = nonceManager;
+		this.useOvm = useOvm;
+		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -91,7 +96,26 @@ class Deployer {
 		if (this.config[name]) {
 			deploy = this.config[name].deploy;
 		}
+
 		const compiled = this.compiled[source];
+
+		if (!this.ignoreSafetyChecks) {
+			const compilerVersion = compiled.metadata.compiler.version;
+			const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
+			const compilerMismatch = (this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
+			if (compilerMismatch) {
+				if (this.useOvm) {
+					throw new Error(
+						`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				} else {
+					throw new Error(
+						`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				}
+			}
+		}
+
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
 			: '';
@@ -126,7 +150,7 @@ class Deployer {
 			if (dryRun) {
 				this._dryRunCounter++;
 				// use the existing version of a contract in a dry run
-				deployedContract = this.getContract({ abi: compiled.abi, address: existingAddress });
+				deployedContract = this.makeContract({ abi: compiled.abi, address: existingAddress });
 				const { account } = this;
 				// but stub out all method calls except owner because it is needed to
 				// determine which actions can be performed directly or need to be added to ownerActions
@@ -160,7 +184,7 @@ class Deployer {
 			);
 		} else if (existingAddress && existingABI) {
 			// get ABI from the deployment (not the compiled ABI which may be newer)
-			deployedContract = this.getContract({ abi: existingABI, address: existingAddress });
+			deployedContract = this.makeContract({ abi: existingABI, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
 		} else {
 			throw new Error(
@@ -250,14 +274,27 @@ class Deployer {
 		return deployedContract;
 	}
 
-	getContract({ abi, address }) {
+	makeContract({ abi, address }) {
 		return new this.web3.eth.Contract(abi, address);
 	}
 
-	getContractByName({ contract }) {
-		const { address, source } = this.deployment.targets[contract];
+	getExistingContract({ contract }) {
+		let address;
+		if (this.network === 'local') {
+			address = this.deployment.targets[contract].address;
+		} else {
+			const contractVersion = getVersions({
+				network: this.network,
+				useOvm: this.useOvm,
+				byContract: true,
+			})[contract];
+			const lastEntry = contractVersion.slice(-1)[0];
+			address = lastEntry.address;
+		}
+
+		const { source } = this.deployment.targets[contract];
 		const { abi } = this.deployment.sources[source];
-		return this.getContract({ abi, address });
+		return this.makeContract({ abi, address });
 	}
 }
 
