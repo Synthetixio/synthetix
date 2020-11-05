@@ -159,6 +159,7 @@ describe('publish scripts', () => {
 			let sBTCContract;
 			let sETHContract;
 			let FeePool;
+			let DebtCache;
 			let Exchanger;
 			let Issuer;
 			let SystemSettings;
@@ -206,7 +207,7 @@ describe('publish scripts', () => {
 						gasPrice,
 					});
 				// Cache the debt to make sure nothing's wrong/stale after the rate update.
-				await Issuer.methods.cacheSNXIssuedDebt().send({
+				await DebtCache.methods.takeDebtSnapshot().send({
 					from: accounts.deployer.public,
 					gas: gasLimit,
 					gasPrice,
@@ -240,6 +241,7 @@ describe('publish scripts', () => {
 				Synthetix = getContract({ target: 'ProxyERC20', source: 'Synthetix' });
 				FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
 				Exchanger = getContract({ target: 'Exchanger' });
+				DebtCache = getContract({ target: 'DebtCache' });
 
 				Issuer = getContract({ target: 'Issuer' });
 
@@ -292,7 +294,7 @@ describe('publish scripts', () => {
 						RATE_STALE_PERIOD
 					);
 					assert.strictEqual(
-						await Issuer.methods.debtSnapshotStaleTime().call(),
+						await DebtCache.methods.debtSnapshotStaleTime().call(),
 						DEBT_SNAPSHOT_STALE_TIME
 					);
 					assert.strictEqual(await Issuer.methods.minimumStakeTime().call(), MINIMUM_STAKE_TIME);
@@ -1406,6 +1408,7 @@ describe('publish scripts', () => {
 									'FeePool',
 									'FeePoolEternalStorage',
 									'FeePoolState',
+									'DebtCache',
 									'Issuer',
 									'RewardEscrow',
 									'RewardsDistribution',

@@ -29,7 +29,7 @@ contract('Synthetix', async accounts => {
 
 	let synthetix,
 		exchangeRates,
-		issuer,
+		debtCache,
 		systemSettings,
 		supplySchedule,
 		escrow,
@@ -44,7 +44,7 @@ contract('Synthetix', async accounts => {
 			Synthetix: synthetix,
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
-			Issuer: issuer,
+			DebtCache: debtCache,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			SynthetixEscrow: escrow,
@@ -62,6 +62,7 @@ contract('Synthetix', async accounts => {
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
+				'DebtCache',
 				'Issuer',
 				'Exchanger',
 				'RewardsDistribution',
@@ -194,7 +195,7 @@ contract('Synthetix', async accounts => {
 					timestamp,
 					{ from: oracle }
 				);
-				await issuer.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 			});
 			it('should still have stale rates', async () => {
 				assert.equal(await synthetix.anySynthOrSNXRateIsInvalid(), true);
@@ -240,7 +241,7 @@ contract('Synthetix', async accounts => {
 		});
 		describe('when a user has exchanged into sETH', () => {
 			beforeEach(async () => {
-				await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+				await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 
 				await synthetix.issueSynths(toUnit('100'), { from: owner });
 				await synthetix.exchange(sUSD, toUnit('10'), sETH, { from: owner });
@@ -292,7 +293,7 @@ contract('Synthetix', async accounts => {
 
 		beforeEach(async () => {
 			// Ensure all synths have rates to allow issuance
-			await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 		});
 
 		it('should transfer using the ERC20 transfer function @gasprofile', async () => {
@@ -478,7 +479,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
 						from: oracle,
 					});
-					await issuer.cacheSNXIssuedDebt();
+					await debtCache.takeDebtSnapshot();
 
 					await ensureTransferReverts();
 
@@ -486,7 +487,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
 						from: oracle,
 					});
-					await issuer.cacheSNXIssuedDebt();
+					await debtCache.takeDebtSnapshot();
 
 					await ensureTransferReverts();
 
@@ -511,7 +512,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([SNX], ['1'].map(toUnit), timestamp, {
 						from: oracle,
 					});
-					await issuer.cacheSNXIssuedDebt();
+					await debtCache.takeDebtSnapshot();
 
 					await ensureTransferReverts();
 
@@ -519,7 +520,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([sAUD, sEUR], ['0.5', '1.25'].map(toUnit), timestamp, {
 						from: oracle,
 					});
-					await issuer.cacheSNXIssuedDebt();
+					await debtCache.takeDebtSnapshot();
 
 					await ensureTransferReverts();
 
@@ -527,7 +528,7 @@ contract('Synthetix', async accounts => {
 					await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
 						from: oracle,
 					});
-					await issuer.cacheSNXIssuedDebt();
+					await debtCache.takeDebtSnapshot();
 
 					// now SNX transfer should work
 					await synthetix.transfer(account2, value, { from: account1 });
@@ -614,7 +615,7 @@ contract('Synthetix', async accounts => {
 			// Set sEUR for purposes of this test
 			const timestamp1 = await currentTime();
 			await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
-			await issuer.cacheSNXIssuedDebt();
+			await debtCache.takeDebtSnapshot();
 
 			const issuedSynthetixs = web3.utils.toBN('200000');
 			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
@@ -643,7 +644,7 @@ contract('Synthetix', async accounts => {
 			// Increase the value of sEUR relative to synthetix
 			const timestamp2 = await currentTime();
 			await exchangeRates.updateRates([sEUR], [toUnit('2.10')], timestamp2, { from: oracle });
-			await issuer.cacheSNXIssuedDebt();
+			await debtCache.takeDebtSnapshot();
 
 			// Ensure that the new synthetix account1 receives cannot be transferred out.
 			await synthetix.transfer(account1, toUnit('10000'), {
@@ -661,7 +662,7 @@ contract('Synthetix', async accounts => {
 			const aud2usdrate = toUnit('2');
 
 			await exchangeRates.updateRates([sAUD], [aud2usdrate], timestamp1, { from: oracle });
-			await issuer.cacheSNXIssuedDebt();
+			await debtCache.takeDebtSnapshot();
 
 			const issuedSynthetixs = web3.utils.toBN('200000');
 			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
@@ -685,7 +686,7 @@ contract('Synthetix', async accounts => {
 			const timestamp2 = await currentTime();
 			const newAUDExchangeRate = toUnit('1');
 			await exchangeRates.updateRates([sAUD], [newAUDExchangeRate], timestamp2, { from: oracle });
-			await issuer.cacheSNXIssuedDebt();
+			await debtCache.takeDebtSnapshot();
 
 			const transferable2 = await synthetix.transferableSynthetix(account1);
 			assert.equal(transferable2.gt(toUnit('1000')), true);
@@ -744,7 +745,7 @@ contract('Synthetix', async accounts => {
 				// ensure mint() can succeed by default
 				const week234 = INFLATION_START_DATE + WEEK * 234;
 				await fastForwardTo(new Date(week234 * 1000));
-				await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+				await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 			});
 			['System', 'Issuance'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
@@ -769,7 +770,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to end of inflation supply decay at week 234
 			const week234 = INFLATION_START_DATE + WEEK * 234;
 			await fastForwardTo(new Date(week234 * 1000));
-			await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 
 			const existingSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -805,7 +806,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in of the inflationary supply
 			const weekThree = INFLATION_START_DATE + WEEK * 2 + DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
-			await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 
 			const existingSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -842,7 +843,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 2 in Year 3 schedule starting at UNIX 1583971200+
 			const weekThirtyNine = INFLATION_START_DATE + WEEK * 39 + DAY;
 			await fastForwardTo(new Date(weekThirtyNine * 1000));
-			await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const currentRewardEscrowBalance = await synthetix.balanceOf(rewardEscrow.address);
@@ -869,7 +870,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to week 236
 			const september142023 = INFLATION_START_DATE + 236 * WEEK + DAY;
 			await fastForwardTo(new Date(september142023 * 1000));
-			await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -891,7 +892,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to week 236
 			const week573 = INFLATION_START_DATE + 572 * WEEK + DAY;
 			await fastForwardTo(new Date(week573 * 1000));
-			await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();
@@ -913,7 +914,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 in Year 2 schedule starting at UNIX 1553040000+
 			const weekThree = INFLATION_START_DATE + 2 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
-			await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 
 			let existingTotalSupply = await synthetix.totalSupply();
 			let mintableSupply = await supplySchedule.mintableSupply();
@@ -927,7 +928,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 4
 			const weekFour = weekThree + 1 * WEEK + 1 * DAY;
 			await fastForwardTo(new Date(weekFour * 1000));
-			await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 
 			existingTotalSupply = await synthetix.totalSupply();
 			mintableSupply = await supplySchedule.mintableSupply();
@@ -943,7 +944,7 @@ contract('Synthetix', async accounts => {
 			// fast forward EVM to Week 3 of inflation
 			const weekThree = INFLATION_START_DATE + 2 * WEEK + DAY;
 			await fastForwardTo(new Date(weekThree * 1000));
-			await updateRatesWithDefaults({ exchangeRates, oracle, issuer });
+			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
 
 			const existingTotalSupply = await synthetix.totalSupply();
 			const mintableSupply = await supplySchedule.mintableSupply();

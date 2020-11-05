@@ -14,6 +14,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 
 
+// https://docs.synthetix.io/contracts/source/contracts/synth
 contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== STATE VARIABLES ========== */
 

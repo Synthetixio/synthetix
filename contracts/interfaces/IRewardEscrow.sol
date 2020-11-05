@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/irewardescrow
 interface IRewardEscrow {
     // Views
     function balanceOf(address account) external view returns (uint);

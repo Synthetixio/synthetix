@@ -7,7 +7,6 @@ const Deployer = require('../Deployer');
 const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
-const { getVersions } = require('../../..');
 
 const {
 	ensureNetwork,
@@ -62,14 +61,11 @@ const deploy = async ({
 	useOvm,
 	freshDeploy,
 	manageNonces,
+	ignoreSafetyChecks,
 } = {}) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
-
-	if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
-		throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
-	}
 
 	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
@@ -91,11 +87,33 @@ const deploy = async ({
 		network,
 	});
 
-	// Fresh deploy and deployment.json not empty?
-	if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
-		throw new Error(
-			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
-		);
+	if (!ignoreSafetyChecks) {
+		// Using Goerli without manageNonces?
+		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
+			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+		}
+
+		// Deploying on OVM and not using an OVM deployment path?
+		const isOvmPath = deploymentPath.includes('ovm');
+		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
+		if (deploymentPathMismatch) {
+			if (useOvm) {
+				throw new Error(
+					`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`
+				);
+			} else {
+				throw new Error(
+					`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`
+				);
+			}
+		}
+
+		// Fresh deploy and deployment.json not empty?
+		if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
+			throw new Error(
+				`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
+			);
+		}
 	}
 
 	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
@@ -196,30 +214,13 @@ const deploy = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
+		useOvm,
 		useFork,
+		ignoreSafetyChecks,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
 	const { account } = deployer;
-
-	const getExistingContract = ({ contract, network }) => {
-		let address;
-		if (network === 'local') {
-			address = deployment.targets[contract].address;
-		} else {
-			const contractVersion = getVersions({ network, byContract: true })[contract];
-			const lastEntry = contractVersion.slice(-1)[0];
-			address = lastEntry.address;
-		}
-
-		const { source } = deployment.targets[contract];
-		const { abi } = deployment.sources[source];
-
-		return deployer.getContract({
-			address,
-			abi,
-		});
-	};
 
 	nonceManager.web3 = deployer.web3;
 	nonceManager.account = account;
@@ -233,7 +234,7 @@ const deploy = async ({
 	let systemSuspendedReason;
 
 	try {
-		const oldSynthetix = getExistingContract({ contract: 'Synthetix', network });
+		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 
 		// inflationSupplyToDate = total supply - 100m
@@ -273,7 +274,7 @@ const deploy = async ({
 	}
 
 	try {
-		oldExrates = getExistingContract({ contract: 'ExchangeRates', network });
+		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
 		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
 		if (!oracleExrates) {
 			oracleExrates = await oldExrates.methods.oracle().call();
@@ -295,7 +296,7 @@ const deploy = async ({
 	}
 
 	try {
-		const oldSystemStatus = getExistingContract({ contract: 'SystemStatus', network });
+		const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
 
 		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
 
@@ -687,6 +688,13 @@ const deploy = async ({
 		});
 	}
 
+	const debtCache = await deployer.deployContract({
+		name: 'DebtCache',
+		source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
+		deps: ['AddressResolver'],
+		args: [account, resolverAddress],
+	});
+
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
 		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
@@ -752,7 +760,6 @@ const deploy = async ({
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
-		source: useOvm ? 'IssuerWithoutUpdatableCache' : 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(addressResolver)],
 	});
@@ -949,7 +956,7 @@ const deploy = async ({
 		let originalTotalSupply = 0;
 		if (synthConfig.deploy) {
 			try {
-				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}`, network });
+				const oldSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
 				if (!freshDeploy) {
@@ -1350,15 +1357,34 @@ const deploy = async ({
 		console.log(gray(`\n------ ADD SYNTHS TO ISSUER ------\n`));
 
 		// Set up the connection to the Issuer for each Synth (requires FlexibleStorage to have been configured)
+
+		// First filter out all those synths which are already properly imported
+		console.log(gray('Filtering synths to add to the issuer.'));
+		const filteredSynths = [];
 		for (const synth of synthsToAdd) {
+			const issuerSynthAddress = await issuer.methods.synths(synth.currencyKeyInBytes).call();
+			const currentSynthAddress = addressOf(synth.synth);
+			if (issuerSynthAddress === currentSynthAddress) {
+				console.log(gray(`${currentSynthAddress} requires no action`));
+			} else {
+				console.log(gray(`${currentSynthAddress} will be added to the issuer.`));
+				filteredSynths.push(synth);
+			}
+		}
+
+		const synthChunkSize = 15;
+		for (let i = 0; i < filteredSynths.length; i += synthChunkSize) {
+			const chunk = filteredSynths.slice(i, i + synthChunkSize);
 			await runStep({
 				contract: 'Issuer',
 				target: issuer,
-				read: 'synths',
-				readArg: synth.currencyKeyInBytes,
-				expected: input => input === addressOf(synth.synth),
-				write: 'addSynth',
-				writeArg: addressOf(synth.synth),
+				read: 'synthAddresses',
+				readArg: [chunk.map(synth => synth.currencyKeyInBytes)],
+				expected: input =>
+					input.reduce((acc, cur, idx) => acc && cur === addressOf(chunk[idx].synth)),
+				write: 'addSynths',
+				writeArg: [chunk.map(synth => addressOf(synth.synth))],
+				gasLimit: 1e5 * synthChunkSize,
 			});
 		}
 
@@ -1674,9 +1700,9 @@ const deploy = async ({
 				console.log(yellow(`Refreshing debt snapshot...`));
 				await runStep({
 					gasLimit: 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
-					contract: 'Issuer',
-					target: issuer,
-					write: 'cacheSNXIssuedDebt',
+					contract: 'DebtCache',
+					target: debtCache,
+					write: 'takeDebtSnapshot',
 					writeArg: [],
 				});
 			} else if (!validityChanged) {
@@ -1687,16 +1713,19 @@ const deploy = async ({
 		};
 
 		const checkSnapshot = async () => {
-			const [cacheInfo, isStale, currentDebt] = await Promise.all([
-				issuer.methods.cachedSNXIssuedDebtInfo().call(),
-				issuer.methods.debtCacheIsStale().call(),
-				issuer.methods.currentSNXIssuedDebt().call(),
+			const [cacheInfo, currentDebt] = await Promise.all([
+				debtCache.methods.cacheInfo().call(),
+				debtCache.methods.currentDebt().call(),
 			]);
 
 			// Check if the snapshot is stale and can be fixed.
-			if (isStale && !currentDebt.anyRateIsInvalid) {
+			if (cacheInfo.isStale && !currentDebt.anyRateIsInvalid) {
 				console.log(yellow('Debt snapshot is stale, and can be refreshed.'));
-				await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, isStale);
+				await refreshSnapshotIfPossible(
+					cacheInfo.isInvalid,
+					currentDebt.anyRateIsInvalid,
+					cacheInfo.isStale
+				);
 				return true;
 			}
 
@@ -1708,12 +1737,12 @@ const deploy = async ({
 					await refreshSnapshotIfPossible(
 						cacheInfo.isInvalid,
 						currentDebt.anyRateIsInvalid,
-						isStale
+						cacheInfo.isStale
 					);
 					return true;
 				} else {
-					const cachedDebtEther = w3utils.fromWei(cacheInfo.cachedDebt);
-					const currentDebtEther = w3utils.fromWei(currentDebt.snxIssuedDebt);
+					const cachedDebtEther = w3utils.fromWei(cacheInfo.debt);
+					const currentDebtEther = w3utils.fromWei(currentDebt.debt);
 					const deviation =
 						(Number(currentDebtEther) - Number(cachedDebtEther)) / Number(cachedDebtEther);
 					const maxDeviation = DEFAULTS.debtSnapshotMaxDeviation;
@@ -1806,6 +1835,11 @@ module.exports = {
 			.option(
 				'-h, --fresh-deploy',
 				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
+			)
+			.option(
+				'-i, --ignore-safety-checks',
+				'Ignores some validations regarding paths, compiler versions, etc.',
+				false
 			)
 			.option(
 				'-k, --use-fork',

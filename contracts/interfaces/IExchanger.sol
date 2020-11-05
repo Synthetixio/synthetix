@@ -2,6 +2,7 @@ pragma solidity >=0.4.24;
 
 import "./IVirtualSynth.sol";
 
+// https://docs.synthetix.io/contracts/source/interfaces/iexchanger
 interface IExchanger {
     // Views
     function calculateAmountAfterSettlement(

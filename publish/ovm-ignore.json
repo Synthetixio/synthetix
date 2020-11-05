@@ -1,17 +1,17 @@
 [
-	"ExchangerWithVirtualSynth",
-	"Issuer",
-	"IssuerWithoutUpdatableCache",
-	"TradingRewards",
-	"FakeTradingRewards",
-	"EtherCollateral",
-	"EtherCollateralsUSD",
 	"BinaryOption",
 	"BinaryOptionMarket",
-	"MockBinaryOptionMarket",
-	"TestableBinaryOptionMarket",
 	"BinaryOptionMarketData",
 	"BinaryOptionMarketFactory",
 	"BinaryOptionMarketManager",
-	"MockBinaryOptionMarketManager"
+	"EtherCollateral",
+	"EtherCollateralsUSD",
+	"ExchangerWithVirtualSynth",
+	"FakeTradingRewards",
+	"Issuer",
+	"IssuerWithoutUpdatableCache",
+	"MockBinaryOptionMarket",
+	"MockBinaryOptionMarketManager",
+	"TestableBinaryOptionMarket",
+	"TradingRewards"
 ]
