@@ -11,6 +11,9 @@
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
+	"DebtCache": {
+		"deploy": false
+	},
 	"Depot": {
 		"deploy": false
 	},

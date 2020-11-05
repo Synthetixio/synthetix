@@ -8,7 +8,7 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./EternalStorage.sol";
 
 
-// https://docs.synthetix.io/contracts/DelegateApprovals
+// https://docs.synthetix.io/contracts/source/contracts/delegateapprovals
 contract DelegateApprovals is Owned, IDelegateApprovals {
     bytes32 public constant BURN_FOR_ADDRESS = "BurnForAddress";
     bytes32 public constant ISSUE_FOR_ADDRESS = "IssueForAddress";

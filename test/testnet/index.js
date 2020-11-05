@@ -166,7 +166,10 @@ program
 				targets['ExchangeRates'].address
 			);
 
-			const Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
+			const DebtCache = new web3.eth.Contract(
+				sources['DebtCache'].abi,
+				targets['DebtCache'].address
+			);
 
 			const SystemSettings = new web3.eth.Contract(
 				sources['SystemSettings'].abi,
@@ -278,7 +281,7 @@ program
 			// #0 - Ensure the debt snapshot is up to date.
 			console.log(gray(`Synchronising the debt snapshot`));
 			txns.push(
-				await Issuer.methods.cacheSNXIssuedDebt().send({
+				await DebtCache.methods.takeDebtSnapshot().send({
 					from: owner.address,
 					gas,
 					gasPrice,

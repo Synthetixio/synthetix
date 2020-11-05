@@ -10,7 +10,7 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/IExchangeRates.sol";
 
 
-// https://docs.synthetix.io/contracts/PurgeableSynth
+// https://docs.synthetix.io/contracts/source/contracts/purgeablesynth
 contract PurgeableSynth is Synth {
     using SafeDecimalMath for uint;
 

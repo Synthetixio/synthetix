@@ -10,6 +10,7 @@ import "./interfaces/ISystemSettings.sol";
 import "./SafeDecimalMath.sol";
 
 
+// https://docs.synthetix.io/contracts/source/contracts/systemsettings
 contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
