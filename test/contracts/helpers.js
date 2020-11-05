@@ -237,26 +237,23 @@ module.exports = {
 		}
 	},
 
-	async prepareSmocks({ contracts, owner, accounts = [] }) {
+	async prepareSmocks({ contracts, accounts = [] }) {
 		const mocks = {};
-		for (const [i, contract] of Object.entries(contracts)) {
+		for (const [i, contract] of Object.entries(contracts).concat([
+			[contracts.length, 'AddressResolver'],
+		])) {
+			if (mocks[contract]) {
+				continue; // prevent dupes
+			}
 			mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
 		}
 
-		const resolver = await artifacts.require('AddressResolver').new(owner);
-		await resolver.importAddresses(
-			Object.keys(mocks).map(contract => toBytes32(contract)),
-			Object.values(mocks).map(mock => mock.address),
-			{ from: owner }
-		);
-		return { mocks, resolver };
-	},
+		const resolver = mocks['AddressResolver'];
 
-	bindAll({ input }) {
-		// ensure all of the input are bound to "this" for sharing test state
-		return Object.keys(input).reduce((memo, cur) => {
-			memo[cur] = input[cur].bind(this);
-			return memo;
-		}, {});
+		const returnMockFromResolver = contract => mocks[web3.utils.hexToUtf8(contract)].address;
+		resolver.smocked.requireAndGetAddress.will.return.with(returnMockFromResolver);
+		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
+
+		return { mocks, resolver };
 	},
 };
