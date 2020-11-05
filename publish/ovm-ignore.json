@@ -1,6 +1,4 @@
 [
-	"Issuer",
-	"IssuerWithoutUpdatableCache",
 	"TradingRewards",
 	"FakeTradingRewards",
 	"EtherCollateral",

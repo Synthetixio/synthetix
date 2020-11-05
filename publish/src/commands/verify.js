@@ -28,7 +28,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 	const solc = require('solc');
 
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	const { config, deployment, deploymentFile } = loadAndCheckRequiredSources({
