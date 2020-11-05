@@ -2,7 +2,7 @@ jobs:
   - job-prepare:
       filters:
         branches:
-          only: /.*(master).*/
+          only: /.*(staging|master).*/
   - job-pack-browser:
       filters:
         branches:
