@@ -1,5 +1,8 @@
 jobs:
-  - job-prepare
+  - job-prepare:
+      filters:
+        branches:
+          only: /.*(master).*/
   - job-unit-tests:
       filters:
         branches:
