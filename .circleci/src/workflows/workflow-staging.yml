@@ -3,81 +3,81 @@ jobs:
   - job-pack-browser:
       filters:
         branches:
-          only: /.*(develop|staging).*/
+          only: /.*(staging|master).*/
       requires:
         - job-prepare
   # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
   - job-prepare-deploy:
+      name: job-prepare-deploy-mainnet
       filters:
         branches:
-          only: /.*(develop|staging).*/
-      name: job-prepare-deploy-mainnet
+          only: /.*(staging|master).*/
       network: mainnet
       requires:
         - job-prepare
   - job-forked-deploy:
+      name: job-forked-deploy-mainnet
       filters:
         branches:
-          only: /.*(develop|staging).*/
-      name: job-forked-deploy-mainnet
+          only: /.*(staging|master).*/
       network: mainnet
       requires:
         - job-prepare-deploy-mainnet
   - job-production-tests:
+      name: job-production-tests-mainnet
       filters:
         branches:
-          only: /.*(develop|staging).*/
-      name: job-production-tests-mainnet
+          only: /.*(staging|master).*/
       network: mainnet
       requires:
         - job-forked-deploy-mainnet
   # ~~~~~~~~~~~~ Production tests on RINKEBY ~~~~~~~~~~~~~
   - job-prepare-deploy:
+      name: job-prepare-deploy-rinkeby
       filters:
         branches:
-          only: /.*(develop|staging).*/
-      name: job-prepare-deploy-rinkeby
+          only: /.*(staging|master).*/
       network: rinkeby
       requires:
         - job-prepare
   - job-forked-deploy:
+      name: job-forked-deploy-rinkeby
       filters:
         branches:
-          only: /.*(develop|staging).*/
-      name: job-forked-deploy-rinkeby
+          only: /.*(staging|master).*/
       network: rinkeby
       requires:
         - job-prepare-deploy-rinkeby
   - job-production-tests:
+      name: job-production-tests-rinkeby
       filters:
         branches:
-          only: /.*(develop|staging).*/
-      name: job-production-tests-rinkeby
+          only: /.*(staging|master).*/
       network: rinkeby
       requires:
         - job-forked-deploy-rinkeby
   # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
   - job-prepare-deploy:
+      name: job-prepare-deploy-kovan
       filters:
         branches:
-          only: /.*(develop|staging).*/
-      name: job-prepare-deploy-kovan
+          only: /.*(staging|master).*/
       network: kovan
       requires:
         - job-prepare
   - job-forked-deploy:
+      name: job-forked-deploy-kovan
       filters:
         branches:
-          only: /.*(develop|staging).*/
-      name: job-forked-deploy-kovan
+          only: /.*(staging|master).*/
       network: kovan
       requires:
         - job-prepare-deploy-kovan
   - job-production-tests:
+      name: job-production-tests-kovan
       filters:
         branches:
-          only: /.*(develop|staging).*/
-      name: job-production-tests-kovan
+          only: /.*(staging|master).*/
       network: kovan
       requires:
         - job-forked-deploy-kovan
