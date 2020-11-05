@@ -1,31 +1,38 @@
 jobs:
   - job-prepare
-  # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
-  - job-validate-deployments:
-      name: job-validate-deployments-mainnet
+  # ~~~~~~~~~~~~ Etherscan validation on MAINNET ~~~~~~~~~~~~~
+  - job-validate-etherscan:
+      name: job-validate-etherscan-mainnet
       filters:
         branches:
           only: /.*(master).*/
       network: mainnet
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Deployment validation on RINKEBY ~~~~~~~~~~~~~
-  - job-validate-deployments:
-      name: job-validate-deployments-rinkeby
+  # ~~~~~~~~~~~~ Etherscan validation on RINKEBY ~~~~~~~~~~~~~
+  - job-validate-etherscan:
+      name: job-validate-etherscan-rinkeby
       filters:
         branches:
           only: /.*(master).*/
       network: rinkeby
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Deployment validation on KOVAN ~~~~~~~~~~~~~
-  - job-validate-deployments:
-      name: job-validate-deployments-kovan
+  # ~~~~~~~~~~~~ Etherscan validation on KOVAN ~~~~~~~~~~~~~
+  - job-validate-etherscan:
+      name: job-validate-etherscan-kovan
       filters:
         branches:
           only: /.*(master).*/
       network: kovan
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Deployment validation on ROPSTEN ~~~~~~~~~~~~~
-  # Disabled because of recent attack to ropsten.
+  # ~~~~~~~~~~~~ Etherscan validation on ROPSTEN ~~~~~~~~~~~~~
+  - job-validate-etherscan:
+      name: job-validate-etherscan-ropsten
+      filters:
+        branches:
+          only: /.*(master).*/
+      network: ropsten
+      requires:
+        - job-prepare

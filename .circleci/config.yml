@@ -272,6 +272,17 @@ jobs:
             - attach_workspace:
                 at: .
             - run: npm run test:deployments
+        working_directory: ~/repo
+    job-validate-etherscan:
+        docker:
+            - image: circleci/node:12.18
+        parameters:
+            network:
+                type: string
+        steps:
+            - checkout
+            - attach_workspace:
+                at: .
             - cmd-etherscan-check:
                 network: << parameters.network >>
         working_directory: ~/repo
@@ -338,6 +349,47 @@ workflows:
     workflow-master:
         jobs:
             - job-prepare
+            - job-validate-etherscan:
+                filters:
+                    branches:
+                        only: /.*(master).*/
+                name: job-validate-etherscan-mainnet
+                network: mainnet
+                requires:
+                    - job-prepare
+            - job-validate-etherscan:
+                filters:
+                    branches:
+                        only: /.*(master).*/
+                name: job-validate-etherscan-rinkeby
+                network: rinkeby
+                requires:
+                    - job-prepare
+            - job-validate-etherscan:
+                filters:
+                    branches:
+                        only: /.*(master).*/
+                name: job-validate-etherscan-kovan
+                network: kovan
+                requires:
+                    - job-prepare
+            - job-validate-etherscan:
+                filters:
+                    branches:
+                        only: /.*(master).*/
+                name: job-validate-etherscan-ropsten
+                network: ropsten
+                requires:
+                    - job-prepare
+    workflow-staging:
+        jobs:
+            - job-prepare
+            - job-pack-browser:
+                filters:
+                    branches:
+                        only: /.*(staging|master).*/
+                requires:
+                    - job-prepare
             - job-validate-deployments:
                 filters:
                     branches:
@@ -360,15 +412,6 @@ workflows:
                         only: /.*(master).*/
                 name: job-validate-deployments-kovan
                 network: kovan
-                requires:
-                    - job-prepare
-    workflow-staging:
-        jobs:
-            - job-prepare
-            - job-pack-browser:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
                 requires:
                     - job-prepare
             - job-prepare-deploy:
