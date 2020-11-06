@@ -1,29 +1,47 @@
-triggers:
-  - schedule:
-      cron: "* * * * *"
+jobs:
+  - job-prepare:
       filters:
         branches:
           only: /.*(develop|staging|master).*/
-jobs:
-  - job-prepare
   - job-unit-tests:
+      filters:
+        branches:
+          only: /.*(develop|staging|master).*/
       requires:
         - job-prepare
   - job-unit-tests-coverage:
+      filters:
+        branches:
+          only: /.*(develop|staging|master).*/
       requires:
         - job-prepare
   - job-unit-tests-gas-report:
+      filters:
+        branches:
+          only: /.*(develop|staging|master).*/
       requires:
         - job-prepare
   - job-unit-tests-legacy:
+      filters:
+        branches:
+          only: /.*(develop|staging|master).*/
       requires:
         - job-prepare
   - job-test-deploy-script:
+      filters:
+        branches:
+          only: /.*(develop|staging|master).*/
       requires:
         - job-prepare
   - job-test-ovm-bridge:
+      filters:
+        branches:
+          only: /.*(develop|staging|master).*/
       requires:
         - job-prepare
   - job-unit-tests-ovm:
+      filters:
+        branches:
+          only: /.*(develop|staging|master).*/
       requires:
         - job-prepare
