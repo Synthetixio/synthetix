@@ -9,5 +9,10 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - cmd-prepare-deploy:
-      network: << parameters.network >>
+  - run: node publish build
+  - run: node publish prepare-deploy --network << parameters.network >>
+  - persist_to_workspace:
+      root: .
+      paths:
+        - build
+        - publish/deployed
