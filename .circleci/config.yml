@@ -422,7 +422,7 @@ workflows:
             - job-prepare
     triggers:
       - schedule:
-          cron: 35 * * * *
+          cron: "* * * * *"
           filters:
             branches:
               only:
