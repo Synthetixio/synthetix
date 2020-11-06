@@ -422,12 +422,10 @@ workflows:
             - job-prepare
     triggers:
       - schedule:
-          cron: 30 * * * *
+          cron: 35 * * * *
           filters:
             branches:
               only:
-                - master
-                - staging
                 - develop
   workflow-staging:
     jobs:

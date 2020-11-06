@@ -1,11 +1,9 @@
 triggers:
   - schedule:
-      cron: "30 * * * *"
+      cron: "35 * * * *"
       filters:
         branches:
           only:
-            - master
-            - staging
             - develop
 jobs:
   - job-prepare
