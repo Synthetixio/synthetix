@@ -387,6 +387,45 @@ workflows:
           network: ropsten
           requires:
             - job-prepare
+  workflow-scheduled:
+    jobs:
+      - job-prepare
+      - job-validate-deployments:
+          name: job-validate-deployments-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-validate-deployments:
+          name: job-validate-deployments-rinkeby
+          network: rinkeby
+          requires:
+            - job-prepare
+      - job-validate-deployments:
+          name: job-validate-deployments-kovan
+          network: kovan
+          requires:
+            - job-prepare
+      - job-production-tests:
+          name: job-production-tests-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-production-tests:
+          name: job-production-tests-rinkeby
+          network: rinkeby
+          requires:
+            - job-prepare
+      - job-production-tests:
+          name: job-production-tests-kovan
+          network: kovan
+          requires:
+            - job-prepare
+    triggers:
+      - schedule:
+          cron: 0 0 * * *
+          filters:
+            branches:
+              only: master
   workflow-staging:
     jobs:
       - job-prepare:
@@ -443,7 +482,7 @@ workflows:
           filters:
             branches:
               only: /.*(staging|master).*/
-          name: job-production-tests-mainnet
+          name: job-differential-production-tests-mainnet
           network: mainnet
           requires:
             - job-forked-deploy-mainnet
@@ -467,7 +506,7 @@ workflows:
           filters:
             branches:
               only: /.*(staging|master).*/
-          name: job-production-tests-rinkeby
+          name: job-differential-production-tests-rinkeby
           network: rinkeby
           requires:
             - job-forked-deploy-rinkeby
@@ -491,7 +530,7 @@ workflows:
           filters:
             branches:
               only: /.*(staging|master).*/
-          name: job-production-tests-kovan
+          name: job-differential-production-tests-kovan
           network: kovan
           requires:
             - job-forked-deploy-kovan

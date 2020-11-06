@@ -38,8 +38,7 @@ jobs:
         - job-prepare
   # ~~~~~~~~~~~~ Deployment validation on ROPSTEN ~~~~~~~~~~~~~
   # Disabled because of recent attack to ropsten.
-
-  # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~ Simulate deploy and run production tests on MAINNET ~~~~~~~~~~~~~
   - job-prepare-deploy:
       name: job-prepare-deploy-mainnet
       filters:
@@ -57,14 +56,14 @@ jobs:
       requires:
         - job-prepare-deploy-mainnet
   - job-production-tests:
-      name: job-production-tests-mainnet
+      name: job-differential-production-tests-mainnet
       filters:
         branches:
           only: /.*(staging|master).*/
       network: mainnet
       requires:
         - job-forked-deploy-mainnet
-  # ~~~~~~~~~~~~ Production tests on RINKEBY ~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~ Simulate deploy and run production tests on RINKEBY ~~~~~~~~~~~~~
   - job-prepare-deploy:
       name: job-prepare-deploy-rinkeby
       filters:
@@ -82,14 +81,14 @@ jobs:
       requires:
         - job-prepare-deploy-rinkeby
   - job-production-tests:
-      name: job-production-tests-rinkeby
+      name: job-differential-production-tests-rinkeby
       filters:
         branches:
           only: /.*(staging|master).*/
       network: rinkeby
       requires:
         - job-forked-deploy-rinkeby
-  # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~ Simulate deploy and run production tests on KOVAN ~~~~~~~~~~~~~
   - job-prepare-deploy:
       name: job-prepare-deploy-kovan
       filters:
@@ -107,12 +106,12 @@ jobs:
       requires:
         - job-prepare-deploy-kovan
   - job-production-tests:
-      name: job-production-tests-kovan
+      name: job-differential-production-tests-kovan
       filters:
         branches:
           only: /.*(staging|master).*/
       network: kovan
       requires:
         - job-forked-deploy-kovan
-  # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~ Simulate deploy and run production tests on KOVAN ~~~~~~~~~~~~~
   # Disabled because of recent attack to ropsten.

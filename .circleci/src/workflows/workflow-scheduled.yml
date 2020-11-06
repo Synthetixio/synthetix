@@ -1,0 +1,48 @@
+triggers:
+  - schedule:
+      cron: "0 0 * * *"
+      filters:
+        branches:
+          only: master
+jobs:
+  - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      name: job-validate-deployments-mainnet
+      network: mainnet
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on RINKEBY ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      name: job-validate-deployments-rinkeby
+      network: rinkeby
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on KOVAN ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      name: job-validate-deployments-kovan
+      network: kovan
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on ROPSTEN ~~~~~~~~~~~~~
+  # Disabled because of recent attack to ropsten.
+  # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
+  - job-production-tests:
+      name: job-production-tests-mainnet
+      network: mainnet
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Production tests on RINKEBY ~~~~~~~~~~~~~
+  - job-production-tests:
+      name: job-production-tests-rinkeby
+      network: rinkeby
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
+  - job-production-tests:
+      name: job-production-tests-kovan
+      network: kovan
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
+  # Disabled because of recent attack to ropsten.
