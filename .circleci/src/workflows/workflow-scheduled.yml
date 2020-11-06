@@ -1,10 +1,12 @@
 triggers:
   - schedule:
-      cron: "* * * * *"
+      cron: "30 * * * *"
       filters:
         branches:
           only:
             - master
+            - staging
+            - develop
 jobs:
   - job-prepare
   # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
