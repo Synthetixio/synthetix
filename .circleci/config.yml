@@ -19,21 +19,6 @@ commands:
           background: true
           command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
       - cmd-wait-for-rpc
-  cmd-forked-deploy:
-    description: Performs a deployment using a fork
-    parameters:
-      network:
-        type: string
-    steps:
-      - cmd-fork-start:
-          network: << parameters.network >>
-          reset: true
-      - run: node publish deploy --use-fork --yes --network << parameters.network >>
-      - persist_to_workspace:
-          paths:
-            - publish/deployed
-            - .db
-          root: .
   cmd-prepare-deploy:
     parameters:
       network:
@@ -86,8 +71,15 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - cmd-forked-deploy:
+      - cmd-fork-start:
           network: << parameters.network >>
+          reset: true
+      - run: node publish deploy --use-fork --yes --network << parameters.network >>
+      - persist_to_workspace:
+          paths:
+            - publish/deployed
+            - .db
+          root: .
     working_directory: ~/repo
   job-lint:
     docker:
