@@ -577,7 +577,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         // Destroy the option tokens before destroying the market itself.
         options.long.expire(beneficiary);
         options.short.expire(beneficiary);
-        selfdestruct(beneficiary);
+        // selfdestruct(beneficiary);
     }
 
     function cancel(address payable beneficiary) external onlyOwner duringBidding {

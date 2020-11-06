@@ -158,7 +158,7 @@ contract BinaryOption is IERC20, IBinaryOption {
     // This must only be invoked after the exercise window is complete.
     // Note that any options which have not been exercised will linger.
     function expire(address payable beneficiary) external onlyMarket {
-        selfdestruct(beneficiary);
+        // selfdestruct(beneficiary);
     }
 
     /* ---------- ERC20 Functions ---------- */

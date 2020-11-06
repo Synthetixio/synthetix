@@ -61,7 +61,7 @@ contract SelfDestructible is Owned {
         require(selfDestructInitiated, "Self Destruct not yet initiated");
         require(initiationTime + SELFDESTRUCT_DELAY < now, "Self destruct delay not met");
         emit SelfDestructed(selfDestructBeneficiary);
-        selfdestruct(address(uint160(selfDestructBeneficiary)));
+        // selfdestruct(address(uint160(selfDestructBeneficiary)));
     }
 
     event SelfDestructTerminated();

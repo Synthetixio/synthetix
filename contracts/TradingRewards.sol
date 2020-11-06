@@ -212,7 +212,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     function recoverEther(address payable recoverAddress) external onlyOwner {
         _validateRecoverAddress(recoverAddress);
 
-        uint amount = address(this).balance;
+        uint amount = 0; //address(this).balance;
         recoverAddress.transfer(amount);
 
         emit EtherRecovered(recoverAddress, amount);

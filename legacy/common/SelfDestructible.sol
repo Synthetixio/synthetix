@@ -62,7 +62,7 @@ contract SelfDestructible is Owned {
         require(initiationTime + SELFDESTRUCT_DELAY < now, "Self destruct delay not met");
         address beneficiary = selfDestructBeneficiary;
         emit SelfDestructed(beneficiary);
-        selfdestruct(beneficiary);
+        // selfdestruct(beneficiary);
     }
 
     event SelfDestructTerminated();
