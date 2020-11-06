@@ -364,6 +364,26 @@ workflows:
           network: ropsten
           requires:
             - job-prepare
+  workflow-scheduled:
+    jobs:
+      - job-prepare
+      - job-validate-deployments:
+          name: job-validate-deployments-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-production-tests:
+          name: job-production-tests-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+    triggers:
+      - schedule:
+          cron: 50 * * * *
+          filters:
+            branches:
+              only:
+                - /.*/
   workflow-staging:
     jobs:
       - job-prepare:
