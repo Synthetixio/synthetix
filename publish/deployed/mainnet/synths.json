@@ -214,9 +214,9 @@
 		"asset": "BTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 9659,
-			"upperLimit": 14488.5,
-			"lowerLimit": 4829.5
+			"entryPoint": 15699,
+			"upperLimit": 27473.25,
+			"lowerLimit": 3924.75
 		}
 	},
 	{
