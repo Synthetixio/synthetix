@@ -9,5 +9,12 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - cmd-forked-deploy:
+  - cmd-fork-start:
       network: << parameters.network >>
+      reset: true
+  - run: node publish deploy --use-fork --yes --network << parameters.network >>
+  - persist_to_workspace:
+      root: .
+      paths:
+        - publish/deployed
+        - .db
