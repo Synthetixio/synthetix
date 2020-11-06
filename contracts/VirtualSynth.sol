@@ -25,7 +25,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
     bool public settled = false;
 
-    uint8 public constant DECIMALS = 18;
+    uint8 public constant decimals = 18;
 
     constructor(
         ISynth _synth,
@@ -84,10 +84,6 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
     function symbol() external view returns (string memory) {
         return string(abi.encodePacked("v", synth.currencyKey()));
-    }
-
-    function decimals() external pure returns (uint8) {
-        return DECIMALS;
     }
 
     // get the rate of the vSynth to the synth.

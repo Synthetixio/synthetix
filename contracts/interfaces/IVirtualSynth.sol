@@ -11,6 +11,8 @@ interface IVirtualSynth {
 
     function readyToSettle() external view returns (bool);
 
+    function secsLeftInWaitingPeriod() external view returns (uint);
+
     function settled() external view returns (bool);
 
     function synth() external view returns (ISynth);
