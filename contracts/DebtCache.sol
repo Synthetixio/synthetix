@@ -104,7 +104,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates) internal view returns (uint[] memory) {
         uint numValues = currencyKeys.length;
         uint[] memory values = new uint[](numValues);
-        ISynth[] memory synths = issuer().synthAddresses(currencyKeys);
+        ISynth[] memory synths = issuer().getSynths(currencyKeys);
 
         for (uint i = 0; i < numValues; i++) {
             bytes32 key = currencyKeys[i];
