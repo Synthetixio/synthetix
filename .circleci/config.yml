@@ -425,7 +425,8 @@ workflows:
           cron: 0 * * * *
           filters:
             branches:
-              only: master
+              only:
+                - master
   workflow-staging:
     jobs:
       - job-prepare:

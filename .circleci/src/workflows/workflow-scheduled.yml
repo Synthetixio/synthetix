@@ -3,7 +3,8 @@ triggers:
       cron: "0 * * * *"
       filters:
         branches:
-          only: master
+          only:
+            - master
 jobs:
   - job-prepare
   # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
