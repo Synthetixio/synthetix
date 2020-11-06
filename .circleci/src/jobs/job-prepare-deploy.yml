@@ -1,0 +1,13 @@
+# Compiles contracts and runs prepare-deploy, enabling latest release contracts for deployment
+working_directory: ~/repo
+docker:
+  - image: circleci/node:12.18
+parameters:
+  network:
+    type: string
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - cmd-prepare-deploy:
+      network: << parameters.network >>

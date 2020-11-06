@@ -1,3 +1,4 @@
+# Restarts a forked chain, and runs production tests with gas reports against it
 description: Runs prod tests on a fork
 parameters:
   network:
@@ -5,7 +6,6 @@ parameters:
 steps:
   - cmd-fork-start:
       network: << parameters.network >>
-      reset: true
   - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log

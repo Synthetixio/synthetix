@@ -1,4 +1,4 @@
-description: Wait until a connection is established with http://localhost:8545
+# Wait until a connection is established with http://localhost:8545
 steps:
   - run: sleep 5
   - run:

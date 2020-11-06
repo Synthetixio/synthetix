@@ -281,8 +281,20 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived, IVirtualSynth vSynth) {
-        return exchanger().exchangeWithVirtual(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
+    )
+        external
+        exchangeActive(sourceCurrencyKey, destinationCurrencyKey)
+        optionalProxy
+        returns (uint amountReceived, IVirtualSynth vSynth)
+    {
+        return
+            exchanger().exchangeWithVirtual(
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey,
+                messageSender
+            );
     }
 
     function settle(bytes32 currencyKey)
@@ -366,6 +378,10 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     function mintSecondary(address, uint) external {
+        revert("Cannot be run on this layer");
+    }
+
+    function mintSecondaryRewards(uint) external {
         revert("Cannot be run on this layer");
     }
 
