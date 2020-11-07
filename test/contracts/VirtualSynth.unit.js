@@ -115,7 +115,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 									assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
 								});
 								behaviors.whenSettlementCalled({ user: owner }, () => {
-									it('then the rate must still be 15/12 (with 18 decimals) as supply still exists', async () => {
+									it('then the rate must still be 15/12 (with 18 decimals)', async () => {
 										assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
 									});
 								});
@@ -123,9 +123,35 @@ contract('VirtualSynth (unit tests)', async accounts => {
 						});
 					});
 
-					behaviors.whenSettlementCalled({ user: owner }, () => {
-						it('then the rate shows 0 as no more supply', async () => {
-							assert.equal(await this.instance.rate(), '0');
+					describe('post-settlement', () => {
+						behaviors.whenMockedSettlementOwing({}, () => {
+							behaviors.whenSettlementCalled({ user: owner }, () => {
+								it('then the rate must be even', async () => {
+									assert.equal(await this.instance.rate(), (1e18).toString());
+								});
+							});
+							behaviors.whenMockedSettlementOwing({ reclaim: 200 }, () => {
+								behaviors.whenSettlementCalled({ user: owner }, () => {
+									it('then the rate must be 10/12 (with 18 decimals)', async () => {
+										assert.bnEqual(await this.instance.rate(), divideDecimal(10, 12));
+									});
+								});
+							});
+							behaviors.whenMockedSettlementOwing({ rebate: 300 }, () => {
+								it('then the rate must be 15/12 (with 18 decimals)', async () => {
+									assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
+								});
+								behaviors.whenUserTransfersAwayTokens({ amount: '300', from: owner }, () => {
+									it('then the rate must still be 15/12 (with 18 decimals)', async () => {
+										assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
+									});
+									behaviors.whenSettlementCalled({ user: owner }, () => {
+										it('then the rate must still be 15/12 (with 18 decimals) ', async () => {
+											assert.bnEqual(await this.instance.rate(), divideDecimal(15, 12));
+										});
+									});
+								});
+							});
 						});
 					});
 				});

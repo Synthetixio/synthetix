@@ -27,6 +27,11 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
     uint8 public constant decimals = 18;
 
+    // track initial supply so we can calculate the rate even after all supply is burned
+    uint public initialSupply;
+
+    uint public settledAmount;
+
     constructor(
         ISynth _synth,
         IAddressResolver _resolver,
@@ -38,6 +43,8 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
         // Note: we can do this as Exchanger will issue this amount to us
         _mint(_recipient, _amount);
+
+        initialSupply = _amount;
     }
 
     // INTERNALS
@@ -65,7 +72,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
         return vBalanceOfAccount.divideDecimalRound(_totalSupply).multiplyDecimalRound(synthBalance);
     }
 
-    function internalSettle() internal {
+    function settleSynth() internal {
         if (settled) {
             return;
         }
@@ -73,7 +80,9 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
         exchanger().settle(address(this), synth.currencyKey());
 
-        emit Settled(totalSupply(), IERC20(address(synth)).balanceOf(address(this)));
+        settledAmount = IERC20(address(synth)).balanceOf(address(this));
+
+        emit Settled(totalSupply(), settledAmount);
     }
 
     // VIEWS
@@ -89,23 +98,22 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     // get the rate of the vSynth to the synth.
     // Note: once all supply has been settled, this will return 0
     function rate() external view returns (uint) {
-        uint _totalSupply = totalSupply();
+        uint synthBalance;
 
-        if (_totalSupply == 0) {
-            return 0;
+        if (!settled) {
+            synthBalance = IERC20(address(synth)).balanceOf(address(this));
+            (uint reclaim, uint rebate, ) = exchanger().settlementOwing(address(this), synth.currencyKey());
+
+            if (reclaim > 0) {
+                synthBalance = synthBalance.sub(reclaim);
+            } else if (rebate > 0) {
+                synthBalance = synthBalance.add(rebate);
+            }
+        } else {
+            synthBalance = settledAmount;
         }
 
-        uint synthBalance = IERC20(address(synth)).balanceOf(address(this));
-
-        (uint reclaim, uint rebate, ) = exchanger().settlementOwing(address(this), synth.currencyKey());
-
-        if (reclaim > 0) {
-            synthBalance = synthBalance.sub(reclaim);
-        } else if (rebate > 0) {
-            synthBalance = synthBalance.add(rebate);
-        }
-
-        return synthBalance.divideDecimalRound(_totalSupply);
+        return synthBalance.divideDecimalRound(initialSupply);
     }
 
     // show the balance of the underlying synth that the given address has, given
@@ -127,7 +135,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     // Perform settlement of the underlying exchange if required,
     // then burn the accounts vSynths and transfer them their owed balanceOfUnderlying
     function settle(address account) external {
-        internalSettle();
+        settleSynth();
 
         IERC20(address(synth)).transfer(account, balanceUnderlying(account));
 
