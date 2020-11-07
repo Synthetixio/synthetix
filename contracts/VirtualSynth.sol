@@ -30,6 +30,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     // track initial supply so we can calculate the rate even after all supply is burned
     uint public initialSupply;
 
+    // track final settled amount of the synth so we can calculate the rate after settlement
     uint public settledAmount;
 
     constructor(
@@ -41,7 +42,8 @@ contract VirtualSynth is ERC20, IVirtualSynth {
         synth = _synth;
         resolver = _resolver;
 
-        // Note: we can do this as Exchanger will issue this amount to us
+        // Assumption: the synth will be issued to us within the same transaction,
+        // and this supply matches that
         _mint(_recipient, _amount);
 
         initialSupply = _amount;
