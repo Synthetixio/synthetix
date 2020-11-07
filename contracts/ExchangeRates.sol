@@ -250,7 +250,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
         uint roundId = startingRoundId;
         uint nextTimestamp = 0;
         while (true) {
-            (, nextTimestamp) = _getRateAndTimestampAtRound(currencyKey, roundId + 1);
+            (, nextTimestamp) = _getRateAndTimestampAtRound(currencyKey, roundId + 1, false);
             // if there's no new round, then the previous roundId was the latest
             if (nextTimestamp == 0 || nextTimestamp > startingTimestamp + timediff) {
                 return roundId;
@@ -274,8 +274,8 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
         // If there's no change in the currency, then just return the amount they gave us
         if (sourceCurrencyKey == destinationCurrencyKey) return sourceAmount;
 
-        (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc);
-        (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest);
+        (uint srcRate, ) = _getRateAndTimestampAtRound(sourceCurrencyKey, roundIdForSrc, false);
+        (uint destRate, ) = _getRateAndTimestampAtRound(destinationCurrencyKey, roundIdForDest, false);
         if (destRate == 0) {
             // prevent divide-by 0 error (this can happen when roundIDs jump epochs due
             // to aggregator upgrades)
@@ -286,7 +286,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
     }
 
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time) {
-        return _getRateAndTimestampAtRound(currencyKey, roundId);
+        return _getRateAndTimestampAtRound(currencyKey, roundId, false);
     }
 
     function lastRateUpdateTimes(bytes32 currencyKey) external view returns (uint256) {
@@ -341,7 +341,9 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
 
         uint roundId = _getCurrentRoundId(currencyKey);
         for (uint i = 0; i < numRounds; i++) {
-            (rates[i], times[i]) = _getRateAndTimestampAtRound(currencyKey, roundId);
+            // fetch the rate and treat is as current, so inverse limits if frozen will always be applied
+            // regardless of current rate
+            (rates[i], times[i]) = _getRateAndTimestampAtRound(currencyKey, roundId, true);
 
             if (roundId == 0) {
                 // if we hit the last round, then return what we have
@@ -518,7 +520,11 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
         return false;
     }
 
-    function _rateOrInverted(bytes32 currencyKey, uint rate) internal view returns (uint newRate) {
+    function _rateOrInverted(
+        bytes32 currencyKey,
+        uint rate,
+        bool rateIsCurrent
+    ) internal view returns (uint newRate) {
         // if an inverse mapping exists, adjust the price accordingly
         InversePricing memory inverse = inversePricing[currencyKey];
         if (inverse.entryPoint == 0 || rate == 0) {
@@ -530,10 +536,11 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
 
         newRate = rate;
 
-        // These cases ensures that if a price has been frozen, it stays frozen even if it returns to the bounds
-        if (inverse.frozenAtUpperLimit) {
+        // These cases for current rates ensure that if a price has been frozen, it stays frozen even if the underlying
+        // rate returns to the bounds (we do this for current not historical as we don't track when historical rates were frozen)
+        if (rateIsCurrent && inverse.frozenAtUpperLimit) {
             newRate = inverse.upperLimit;
-        } else if (inverse.frozenAtLowerLimit) {
+        } else if (rateIsCurrent && inverse.frozenAtLowerLimit) {
             newRate = inverse.lowerLimit;
         } else {
             // this ensures any rate outside the limit will never be returned
@@ -582,14 +589,14 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
                 );
                 return
                     RateAndUpdatedTime({
-                        rate: uint216(_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer))),
+                        rate: uint216(_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer), true)),
                         time: uint40(updatedAt)
                     });
             }
         } else {
             RateAndUpdatedTime memory entry = _rates[currencyKey][currentRoundForRate[currencyKey]];
 
-            return RateAndUpdatedTime({rate: uint216(_rateOrInverted(currencyKey, entry.rate)), time: entry.time});
+            return RateAndUpdatedTime({rate: uint216(_rateOrInverted(currencyKey, entry.rate, true)), time: entry.time});
         }
     }
 
@@ -603,7 +610,11 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
         }
     }
 
-    function _getRateAndTimestampAtRound(bytes32 currencyKey, uint roundId) internal view returns (uint rate, uint time) {
+    function _getRateAndTimestampAtRound(
+        bytes32 currencyKey,
+        uint roundId,
+        bool treatAsCurrentRate
+    ) internal view returns (uint rate, uint time) {
         AggregatorV2V3Interface aggregator = aggregators[currencyKey];
 
         if (aggregator != AggregatorV2V3Interface(0)) {
@@ -618,11 +629,14 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
                     returnData,
                     (uint80, int256, uint256, uint256, uint80)
                 );
-                return (_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer)), updatedAt);
+                return (
+                    _rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer), treatAsCurrentRate),
+                    updatedAt
+                );
             }
         } else {
             RateAndUpdatedTime memory update = _rates[currencyKey][roundId];
-            return (_rateOrInverted(currencyKey, update.rate), update.time);
+            return (_rateOrInverted(currencyKey, update.rate, treatAsCurrentRate), update.time);
         }
     }
 
