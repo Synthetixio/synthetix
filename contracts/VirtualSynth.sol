@@ -96,7 +96,6 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     }
 
     // get the rate of the vSynth to the synth.
-    // Note: once all supply has been settled, this will return 0
     function rate() external view returns (uint) {
         uint synthBalance;
 
