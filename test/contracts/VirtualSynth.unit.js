@@ -216,6 +216,47 @@ contract('VirtualSynth (unit tests)', async accounts => {
 								});
 							});
 						});
+
+						behaviors.whenMockedSettlementOwing({ reclaim: 333 }, () => {
+							behaviors.whenSettlementCalled({ user: owner }, () => {
+								it('then the user is transferred the remaining balance of the synths', async () => {
+									assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
+									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
+									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], '666');
+								});
+							});
+						});
+
+						behaviors.whenMockedSettlementOwing({ rebate: 1 }, () => {
+							behaviors.whenSettlementCalled({ user: owner }, () => {
+								it('then the user is transferred the entire balance of the synths', async () => {
+									assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
+									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
+									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], '1000');
+								});
+							});
+						});
+
+						behaviors.whenUserTransfersAwayTokens({ amount: '666', from: owner }, () => {
+							behaviors.whenSettlementCalled({ user: owner }, () => {
+								it('then the user is transferred their portion balance of the synths', async () => {
+									assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
+									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
+									assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], '333');
+								});
+							});
+
+							behaviors.whenMockedSettlementOwing({ reclaim: 300 }, () => {
+								// total synths is 999 - 300 = 699. User has 1/3 of the vSynth supply
+								behaviors.whenSettlementCalled({ user: owner }, () => {
+									it('then the user is transferred their portion balance of the synths', async () => {
+										assert.equal(await this.mocks.Synth.smocked.transfer.calls.length, 1);
+										assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][0], owner);
+										assert.equal(await this.mocks.Synth.smocked.transfer.calls[0][1], '233');
+									});
+								});
+							});
+						});
 					});
 				});
 			});
