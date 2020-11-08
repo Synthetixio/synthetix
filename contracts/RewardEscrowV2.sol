@@ -391,9 +391,10 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         external
         onlySynthetixBridge
         returns (
-            uint256,
-            uint64[52] memory,
-            uint256[52] memory
+            uint256 vestedAmount,
+            uint256 escrowedAccountBalance,
+            uint64[52] memory vestingTimstamps,
+            uint256[52] memory vestingAmounts
         )
     {
         // check if account's totalEscrowedAccountBalance > 0 and any vesting entries
@@ -407,12 +408,9 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         // flag account has migrated to Optimism L2
         // Optional - delete the vesting entries to reclaim gas
 
-        uint256 escrowedAccountBalance = totalEscrowedAccountBalance[account];
+        escrowedAccountBalance = totalEscrowedAccountBalance[account];
 
         uint LENGHT_TO_MIGRATE = 52;
-        uint64[52] memory vestingTimstamps;
-        uint256[52] memory vestingAmounts;
-
         if (escrowedAccountBalance > 0) {
             if (!vestingScheduleMigrationPending(account)) {
                 uint numEntries = _numVestingEntries(account);
@@ -426,11 +424,15 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
                 delete totalEscrowedAccountBalance[account];
             } else {
                 // populate schedule from old escrow contract
+
+                // vest all the tokens that can be vested and transfer to deposit contract
+
+                // Remove RewardEscrowV2.totalEscrowedAccountBalance[account] to 0
             }
         }
 
-        // return timestamps and amounts for vesting
-        return (escrowedAccountBalance, vestingTimstamps, vestingAmounts);
+        // return timestamps and amounts vested
+        return (vestedAmount, escrowedAccountBalance, vestingTimstamps, vestingAmounts);
     }
 
     function importVestingEntries(

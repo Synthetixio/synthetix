@@ -39,5 +39,5 @@ interface IRewardEscrowV2 {
     ) external;
 
     // Return amount of SNX transfered to SynthetixBridgeToOptimism deposit contract
-    function burnForMigration(address account) external returns (uint256, uint64[52] memory, uint256[52] memory);
+    function burnForMigration(address account) external returns (uint256 vestedAmount, uint256 escrowedAccountBalance, uint64[52] memory vestingTimstamps, uint256[52] memory vestingAmounts);
 }
