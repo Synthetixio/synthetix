@@ -1195,29 +1195,33 @@ const deploy = async ({
 		const contractResolverRequirements = {};
 
 		// collect all required addresses on-chain
-		const allRequiredAddressesInContracts = []
-		const filteredContracts = Object.entries(deployer.deployedContracts)
-			.filter(([, target]) =>
-				target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
-			)
+		const allRequiredAddressesInContracts = await Promise.all(
+			Object.entries(deployer.deployedContracts)
+				.filter(([, target]) =>
+					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
+				)
+				.map(([contract, target]) =>
+					// Note: if running a dryRun then the output here will only be an estimate, as
+					// the correct list of addresses require the contracts be deployed so these entries can then be read.
+					(
+						target.methods.getResolverAddressesRequired().call() ||
+						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
+						Promise.resolve([])
+					).then(names => {
+						const namesReadable = names.map(w3utils.hexToUtf8);
 
-		for (let key in filteredContracts) {
-			try {
-				let target = filteredContracts[key][1]
-				let contract = filteredContracts[key][0]
-				const addressNames = await target.methods.getResolverAddressesRequired().call() || []
-				const namesReadable = addressNames.map(w3utils.hexToUtf8);
-				namesReadable.forEach(
-					name =>
-						(contractResolverRequirements[name] = [contract].concat(
-							contractResolverRequirements[name]
-						))
-				);
-				allRequiredAddressesInContracts.push(namesReadable)
-			} catch (error) {
-				console.error(error)
-			}
-		}
+						// track requirements to log out later
+						namesReadable.forEach(
+							name =>
+								(contractResolverRequirements[name] = [contract].concat(
+									contractResolverRequirements[name]
+								))
+						);
+
+						return namesReadable;
+					})
+				)
+		);
 
 		let skipResolverSync = [];
 
@@ -1264,15 +1268,20 @@ const deploy = async ({
 		});
 
 		// Count how many addresses are not yet in the resolver
-		const addressesNotInResolver = []
-		for (let i = 0; i < expectedAddressesInResolver.length; i++) {
-			let { name, address } = expectedAddressesInResolver[i]
-			const foundAddress = await addressResolver.methods.getAddress(toBytes32(name)).call() || '';
-			// console.log(name, ': found address', foundAddress, 'for:', address)
-			if (address !== foundAddress) addressesNotInResolver.push({ name, address, found: address === foundAddress })
-		}
-		// and add everything if any not found (will overwrite any conflicts)
+		const addressesNotInResolver = (
+			await Promise.all(
+				expectedAddressesInResolver.map(({ name, address }) => {
+					// when a dryRun redeploys a new AddressResolver, this will return undefined, so instead resolve with
+					// empty promise
+					const promise =
+						addressResolver.methods.getAddress(toBytes32(name)).call() || Promise.resolve();
 
+					return promise.then(foundAddress => ({ name, address, found: address === foundAddress }));
+				})
+			)
+		).filter(entry => !entry.found);
+
+		// and add everything if any not found (will overwrite any conflicts)
 		if (addressesNotInResolver.length > 0) {
 			console.log(
 				gray(
