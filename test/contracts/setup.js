@@ -192,6 +192,7 @@ const setupContract = async ({
 			tryGetAddressOf('ProxyFeePool'),
 		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
+		RewardEscrowV2: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
 		SynthetixEscrow: [owner, tryGetAddressOf('Synthetix')],
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
@@ -529,6 +530,7 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'MintableSynthetix' },
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
+		{ contract: 'RewardEscrowV2' },
 		{ contract: 'SynthetixEscrow' },
 		{ contract: 'FeePoolEternalStorage' },
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },
@@ -635,12 +637,12 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'SynthetixBridgeToOptimism',
-			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase'],
-			deps: ['AddressResolver', 'Issuer', 'RewardEscrow'],
+			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase', 'RewardEscrowV2'],
+			deps: ['AddressResolver', 'Issuer'],
 		},
 		{
 			contract: 'SynthetixBridgeToBase',
-			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism'],
+			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'RewardEscrowV2'],
 			deps: ['AddressResolver'],
 		},
 		{ contract: 'TradingRewards', deps: ['AddressResolver', 'Synthetix'] },

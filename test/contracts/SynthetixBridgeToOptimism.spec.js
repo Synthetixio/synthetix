@@ -15,7 +15,7 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['Synthetix', 'Issuer', 'RewardEscrow', 'SynthetixBridgeToOptimism'],
+				contracts: ['Synthetix', 'Issuer', 'SynthetixBridgeToOptimism'],
 			}));
 		});
 
