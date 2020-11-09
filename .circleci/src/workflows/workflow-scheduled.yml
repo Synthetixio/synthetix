@@ -4,7 +4,7 @@ triggers:
       filters:
         branches:
           only:
-            - /.*/
+            - master
 jobs:
   - job-prepare
   # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
