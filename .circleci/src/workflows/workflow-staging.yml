@@ -38,81 +38,23 @@ jobs:
         - job-prepare
   # ~~~~~~~~~~~~ Deployment validation on ROPSTEN ~~~~~~~~~~~~~
   # Disabled because of recent attack to ropsten.
-
-  # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
-  - job-prepare-deploy:
-      name: job-prepare-deploy-mainnet
-      filters:
-        branches:
-          only: /.*(staging|master).*/
+  # ~~~~~~~~~~~~ Differential production tests on MAINNET ~~~~~~~~~~~~~
+  - job-production-tests-differential:
+      name: job-production-tests-differential-mainnet
       network: mainnet
       requires:
         - job-prepare
-  - job-forked-deploy:
-      name: job-forked-deploy-mainnet
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      network: mainnet
-      requires:
-        - job-prepare-deploy-mainnet
-  - job-production-tests:
-      name: job-production-tests-mainnet
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      network: mainnet
-      requires:
-        - job-forked-deploy-mainnet
-  # ~~~~~~~~~~~~ Production tests on RINKEBY ~~~~~~~~~~~~~
-  - job-prepare-deploy:
-      name: job-prepare-deploy-rinkeby
-      filters:
-        branches:
-          only: /.*(staging|master).*/
+  # ~~~~~~~~~~~~ Differential production tests on RINKEBY ~~~~~~~~~~~~~
+  - job-production-tests-differential:
+      name: job-production-tests-differential-rinkeby
       network: rinkeby
       requires:
         - job-prepare
-  - job-forked-deploy:
-      name: job-forked-deploy-rinkeby
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      network: rinkeby
-      requires:
-        - job-prepare-deploy-rinkeby
-  - job-production-tests:
-      name: job-production-tests-rinkeby
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      network: rinkeby
-      requires:
-        - job-forked-deploy-rinkeby
-  # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
-  - job-prepare-deploy:
-      name: job-prepare-deploy-kovan
-      filters:
-        branches:
-          only: /.*(staging|master).*/
+  # ~~~~~~~~~~~~ Differential production tests on KOVAN ~~~~~~~~~~~~~
+  - job-production-tests-differential:
+      name: job-production-tests-differential-kovan
       network: kovan
       requires:
         - job-prepare
-  - job-forked-deploy:
-      name: job-forked-deploy-kovan
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      network: kovan
-      requires:
-        - job-prepare-deploy-kovan
-  - job-production-tests:
-      name: job-production-tests-kovan
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      network: kovan
-      requires:
-        - job-forked-deploy-kovan
-  # ~~~~~~~~~~~~ Production tests on KOVAN ~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~ Differential production tests on ROPSTEN ~~~~~~~~~~~~~
   # Disabled because of recent attack to ropsten.
