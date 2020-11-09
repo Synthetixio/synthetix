@@ -131,7 +131,9 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
 
             inverse.frozenAtUpperLimit = freezeAtUpperLimit;
             inverse.frozenAtLowerLimit = freezeAtLowerLimit;
-            emit InversePriceFrozen(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, msg.sender);
+            uint roundId = _getCurrentRoundId(currencyKey);
+            roundFrozen[currencyKey] = roundId;
+            emit InversePriceFrozen(currencyKey, freezeAtUpperLimit ? upperLimit : lowerLimit, roundId, msg.sender);
         } else {
             // unfreeze if need be
             inverse.frozenAtUpperLimit = false;
@@ -204,7 +206,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
             inverse.frozenAtLowerLimit = (rate == inverse.lowerLimit);
             uint currentRoundId = _getCurrentRoundId(currencyKey);
             roundFrozen[currencyKey] = currentRoundId;
-            emit InversePriceFrozen(currencyKey, rate, msg.sender);
+            emit InversePriceFrozen(currencyKey, rate, currentRoundId, msg.sender);
         } else {
             revert("Rate within bounds");
         }
@@ -718,7 +720,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
     event RatesUpdated(bytes32[] currencyKeys, uint[] newRates);
     event RateDeleted(bytes32 currencyKey);
     event InversePriceConfigured(bytes32 currencyKey, uint entryPoint, uint upperLimit, uint lowerLimit);
-    event InversePriceFrozen(bytes32 currencyKey, uint rate, address initiator);
+    event InversePriceFrozen(bytes32 currencyKey, uint rate, uint roundId, address initiator);
     event AggregatorAdded(bytes32 currencyKey, address aggregator);
     event AggregatorRemoved(bytes32 currencyKey, address aggregator);
 }
