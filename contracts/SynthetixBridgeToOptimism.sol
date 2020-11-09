@@ -66,7 +66,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         return requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address");
     }
 
-    function rewardEscrow() internal view returns (IRewardEscrowV2) {
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
@@ -108,7 +108,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         uint256[52] memory vestingAmounts;
         bytes memory messageData;
 
-        (escrowAmount, vestingTimstamps, vestingAmounts) = rewardEscrow().burnForMigration(msg.sender);
+        (escrowAmount, vestingTimstamps, vestingAmounts) = rewardEscrowV2().burnForMigration(msg.sender);
         // if there is an escrow amount to be migrated
         if (escrowAmount > 0) {
             // create message payload for L2

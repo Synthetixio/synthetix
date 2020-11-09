@@ -44,7 +44,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
-    function rewardEscrow() internal view returns (IRewardEscrowV2) {
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
 
@@ -87,7 +87,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
         uint64[52] calldata timestamps,
         uint256[52] calldata amounts
     ) external onlyOptimismBridge {
-        rewardEscrow().importVestingEntries(account, timestamps, amounts);
+        rewardEscrowV2().importVestingEntries(account, timestamps, amounts);
         emit ImportedVestingEntries(account, timestamps, amounts);
     }
 
@@ -102,8 +102,8 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
         emit MintedSecondary(account, depositAmount);
         if (escrowedAmount > 0) {
             // Mint also the escrowed amount and transfer it to the RewarEscrow contract
-            synthetix().mintSecondary(address(rewardEscrow()), escrowedAmount);
-            emit MintedSecondary(address(rewardEscrow()), escrowedAmount);
+            synthetix().mintSecondary(address(rewardEscrowV2()), escrowedAmount);
+            emit MintedSecondary(address(rewardEscrowV2()), escrowedAmount);
         }
     }
 
