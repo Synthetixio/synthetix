@@ -542,7 +542,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
 
         newRate = rate;
 
-        // Determine when round was frozen
+        // Determine when round was frozen (if any)
         uint roundWhenRateFrozen = roundFrozen[currencyKey];
         // And if we're looking at a rate after frozen, and it's currently frozen, then apply the bounds limit even
         // if the current price is back within bounds
