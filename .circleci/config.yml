@@ -400,12 +400,12 @@ workflows:
           requires:
             - job-prepare
       - job-production-tests-differential:
-          name: job-production-tests-differential-mainnet
-          network: mainnet
+          name: job-production-tests-differential-rinkeby
+          network: rinkeby
           requires:
             - job-prepare
       - job-production-tests-differential:
-          name: job-production-tests-differential-mainnet
-          network: mainnet
+          name: job-production-tests-differential-kovan
+          network: kovan
           requires:
             - job-prepare

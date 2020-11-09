@@ -46,14 +46,14 @@ jobs:
         - job-prepare
   # ~~~~~~~~~~~~ Differential production tests on RINKEBY ~~~~~~~~~~~~~
   - job-production-tests-differential:
-      name: job-production-tests-differential-mainnet
-      network: mainnet
+      name: job-production-tests-differential-rinkeby
+      network: rinkeby
       requires:
         - job-prepare
   # ~~~~~~~~~~~~ Differential production tests on KOVAN ~~~~~~~~~~~~~
   - job-production-tests-differential:
-      name: job-production-tests-differential-mainnet
-      network: mainnet
+      name: job-production-tests-differential-kovan
+      network: kovan
       requires:
         - job-prepare
   # ~~~~~~~~~~~~ Differential production tests on ROPSTEN ~~~~~~~~~~~~~
