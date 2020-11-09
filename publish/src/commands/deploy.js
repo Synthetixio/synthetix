@@ -1674,9 +1674,11 @@ const deploy = async ({
 	};
 
 	const checkSnapshot = async () => {
-		const cacheInfo = await issuer.methods.cachedSNXIssuedDebtInfo().call()
-		const isStale = await issuer.methods.debtCacheIsStale().call()
-		const currentDebt = await issuer.methods.currentSNXIssuedDebt().call()
+		const [cacheInfo, isStale, currentDebt] = await Promise.all([
+			issuer.methods.cachedSNXIssuedDebtInfo().call(),
+			issuer.methods.debtCacheIsStale().call(),
+			issuer.methods.currentSNXIssuedDebt().call(),
+		]);
 
 		// Check if the snapshot is stale and can be fixed.
 		if (isStale && !currentDebt.anyRateIsInvalid) {
