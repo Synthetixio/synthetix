@@ -7,6 +7,7 @@ const {
 	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
+	ensureAccountHassUSD,
 	skipWaitingPeriod,
 	bootstrapLocal,
 } = require('./utils');
@@ -18,8 +19,8 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 	let network;
 
-	let EtherCollateral, AddressResolver;
-	let SynthsETH;
+	let EtherCollateral, AddressResolver, Depot;
+	let SynthsETH, SynthsUSD;
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
@@ -28,12 +29,14 @@ contract('EtherCollateral (prod tests)', accounts => {
 			await bootstrapLocal();
 		}
 
-		({ EtherCollateral, SynthsETH, AddressResolver } = await connectContracts({
+		({ EtherCollateral, SynthsETH, SynthsUSD, AddressResolver, Depot } = await connectContracts({
 			network,
 			requests: [
 				{ contractName: 'EtherCollateral' },
+				{ contractName: 'Depot' },
 				{ contractName: 'AddressResolver' },
 				{ contractName: 'ProxysETH', abiName: 'Synth', alias: 'SynthsETH' },
+				{ contractName: 'ProxyERC20sUSD', abiName: 'Synth', alias: 'SynthsUSD' },
 			],
 		}));
 
@@ -45,6 +48,12 @@ contract('EtherCollateral (prod tests)', accounts => {
 			amount: toUnit('10'),
 			account: owner,
 			fromAccount: accounts[7],
+			network,
+		});
+		await ensureAccountHassUSD({
+			amount: toUnit('1000'),
+			account: owner,
+			fromAccount: owner,
 			network,
 		});
 	});
@@ -83,7 +92,14 @@ contract('EtherCollateral (prod tests)', accounts => {
 		});
 
 		describe('closing a loan', () => {
-			before(async () => {
+			before('ensure depot has sUSD', async () => {
+				const amount = toUnit('200');
+
+				await SynthsUSD.approve(Depot.address, amount);
+				await Depot.depositSynths(amount);
+			});
+
+			before('close loan', async () => {
 				ethBalance = await web3.eth.getBalance(user1);
 				sEthBalance = await SynthsETH.balanceOf(user1);
 
