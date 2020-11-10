@@ -5,10 +5,12 @@ const { web3 } = require('@nomiclabs/buidler');
 const { toWei } = require('web3-utils');
 
 const network = 'local';
+let deploymentPath;
 
 async function simulateExchangeRates() {
 	const Issuer = await connectContract({
 		network,
+		deploymentPath,
 		contractName: 'Issuer',
 	});
 
@@ -19,6 +21,7 @@ async function simulateExchangeRates() {
 
 	const ExchangeRates = await connectContract({
 		network,
+		deploymentPath,
 		contractName: 'ExchangeRates',
 	});
 
@@ -35,13 +38,16 @@ async function simulateExchangeRates() {
 async function takeDebtSnapshot() {
 	const DebtCache = await connectContract({
 		network,
+		deploymentPath,
 		contractName: 'DebtCache',
 	});
 
 	await DebtCache.takeDebtSnapshot();
 }
 
-async function bootstrapLocal() {
+async function bootstrapLocal({ deploymentPath: _deploymentPath }) {
+	deploymentPath = _deploymentPath;
+
 	await simulateExchangeRates();
 	await takeDebtSnapshot();
 }

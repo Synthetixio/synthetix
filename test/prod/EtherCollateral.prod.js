@@ -1,5 +1,7 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const fs = require('fs');
+const path = require('path');
+const { contract, config } = require('@nomiclabs/buidler');
+const { wrap } = require('../../index.js');
 const { web3 } = require('@nomiclabs/buidler');
 const { assert } = require('../contracts/common');
 const { toUnit } = require('../utils')();
@@ -17,13 +19,19 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 	let owner;
 
-	let network;
+	let network, deploymentPath;
 
 	let EtherCollateral, AddressResolver, Depot;
 	let SynthsETH, SynthsUSD;
 
-	before('prepare', async () => {
+	before('prepare', async function() {
 		network = await detectNetworkName();
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		if (deploymentPath.includes('ovm')) {
+			return this.skip();
+		}
 
 		if (network === 'local') {
 			await bootstrapLocal();

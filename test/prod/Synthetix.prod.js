@@ -1,5 +1,7 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const fs = require('fs');
+const path = require('path');
+const { contract, config } = require('@nomiclabs/buidler');
+const { wrap } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
@@ -20,20 +22,24 @@ contract('Synthetix (prod tests)', accounts => {
 
 	let owner;
 
-	let network;
+	let network, deploymentPath;
 
 	let Synthetix, SynthetixState, AddressResolver;
 	let SynthsUSD, SynthsETH;
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
 		if (network === 'local') {
-			await bootstrapLocal();
+			await bootstrapLocal({ deploymentPath });
 		}
 
 		({ Synthetix, SynthetixState, SynthsUSD, SynthsETH, AddressResolver } = await connectContracts({
 			network,
+			deploymentPath,
 			requests: [
 				{ contractName: 'Synthetix' },
 				{ contractName: 'SynthetixState' },
@@ -44,7 +50,7 @@ contract('Synthetix (prod tests)', accounts => {
 			],
 		}));
 
-		await skipWaitingPeriod({ network });
+		await skipWaitingPeriod({ network, deploymentPath });
 
 		[owner] = getUsers({ network }).map(user => user.address);
 
@@ -53,18 +59,21 @@ contract('Synthetix (prod tests)', accounts => {
 			account: owner,
 			fromAccount: accounts[7],
 			network,
+			deploymentPath,
 		});
 		await ensureAccountHassUSD({
 			amount: toUnit('1000'),
 			account: user1,
 			fromAccount: owner,
 			network,
+			deploymentPath,
 		});
 		await ensureAccountHasSNX({
 			amount: toUnit('1000'),
 			account: user1,
 			fromAccount: owner,
 			network,
+			deploymentPath,
 		});
 	});
 
@@ -113,7 +122,13 @@ contract('Synthetix (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await writeSetting({ setting: 'setMinimumStakeTime', value: '60', owner, network });
+			await writeSetting({
+				setting: 'setMinimumStakeTime',
+				value: '60',
+				owner,
+				network,
+				deploymentPath,
+			});
 		});
 
 		it('can issue sUSD', async () => {
@@ -130,7 +145,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		it('can burn sUSD', async () => {
-			await skipStakeTime({ network });
+			await skipStakeTime({ network, deploymentPath });
 
 			const user1BalanceBefore = await SynthsUSD.balanceOf(user1);
 
@@ -148,7 +163,7 @@ contract('Synthetix (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		it('can exchange sUSD to sETH', async () => {
-			await skipWaitingPeriod({ network });
+			await skipWaitingPeriod({ network, deploymentPath });
 
 			const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
 			const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
@@ -166,7 +181,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		it('can exchange sETH to sUSD', async () => {
-			await skipWaitingPeriod({ network });
+			await skipWaitingPeriod({ network, deploymentPath });
 
 			const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
 			const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);

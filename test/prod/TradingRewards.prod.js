@@ -1,5 +1,7 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const fs = require('fs');
+const path = require('path');
+const { contract, config } = require('@nomiclabs/buidler');
+const { wrap } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
@@ -17,14 +19,20 @@ contract('TradingRewards (prod tests)', accounts => {
 
 	let owner;
 
-	let network;
+	let network, deploymentPath;
 
 	let TradingRewards, AddressResolver, SystemSettings;
 
 	let exchangeLogs;
 
-	before('prepare', async () => {
+	before('prepare', async function() {
 		network = await detectNetworkName();
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		if (deploymentPath.includes('ovm')) {
+			return this.skip();
+		}
 
 		if (network === 'local') {
 			await bootstrapLocal();
