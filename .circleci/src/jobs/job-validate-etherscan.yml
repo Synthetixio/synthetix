@@ -9,5 +9,4 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - cmd-etherscan-check:
-      network: << parameters.network >>
+  - run: npm run test:etherscan --  --network << parameters.network >>

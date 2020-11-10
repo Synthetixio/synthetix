@@ -1,11 +1,4 @@
 commands:
-  cmd-etherscan-check:
-    description: Run etherscan ABI check
-    parameters:
-      network:
-        type: string
-    steps:
-      - run: npm run test:etherscan --  --network << parameters.network >>
   cmd-fork-start:
     description: Starts a local ganache fork on the specified network
     parameters:
@@ -19,44 +12,6 @@ commands:
           background: true
           command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
       - cmd-wait-for-rpc
-  cmd-forked-deploy:
-    description: Performs a deployment using a fork
-    parameters:
-      network:
-        type: string
-    steps:
-      - cmd-fork-start:
-          network: << parameters.network >>
-          reset: true
-      - run: node publish deploy --use-fork --yes --network << parameters.network >>
-      - persist_to_workspace:
-          paths:
-            - publish/deployed
-            - .db
-          root: .
-  cmd-prepare-deploy:
-    parameters:
-      network:
-        type: string
-    steps:
-      - run: node publish build
-      - run: node publish prepare-deploy --network << parameters.network >>
-      - persist_to_workspace:
-          paths:
-            - build
-            - publish/deployed
-          root: .
-  cmd-production-tests:
-    description: Runs prod tests on a fork
-    parameters:
-      network:
-        type: string
-    steps:
-      - cmd-fork-start:
-          network: << parameters.network >>
-      - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
-      - store_artifacts:
-          path: test-gas-used-prod.log
   cmd-wait-for-rpc:
     steps:
       - run: sleep 5
@@ -75,19 +30,6 @@ jobs:
           at: .
       - run: npx buidler compile --optimizer --fail-oversize
       - run: npx buidler compile --use-ovm --optimizer --fail-oversize
-    working_directory: ~/repo
-  job-forked-deploy:
-    docker:
-      - image: circleci/node:12.18
-    parameters:
-      network:
-        type: string
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - cmd-forked-deploy:
-          network: << parameters.network >>
     working_directory: ~/repo
   job-lint:
     docker:
@@ -127,19 +69,6 @@ jobs:
             - node_modules
           root: .
     working_directory: ~/repo
-  job-prepare-deploy:
-    docker:
-      - image: circleci/node:12.18
-    parameters:
-      network:
-        type: string
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - cmd-prepare-deploy:
-          network: << parameters.network >>
-    working_directory: ~/repo
   job-production-tests:
     docker:
       - image: circleci/node:12.18
@@ -150,8 +79,31 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - cmd-production-tests:
+      - cmd-fork-start:
           network: << parameters.network >>
+      - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
+      - store_artifacts:
+          path: test-gas-used-prod.log
+    working_directory: ~/repo
+  job-production-tests-differential:
+    docker:
+      - image: circleci/node:12.18
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - cmd-fork-start:
+          network: << parameters.network >>
+          reset: true
+      - run: node publish prepare-deploy --network << parameters.network >>
+      - run: node publish deploy --use-fork --yes --network << parameters.network >>
+      - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
+      - store_artifacts:
+          path: test-gas-used-prod.log
     working_directory: ~/repo
   job-static-analysis:
     docker:
@@ -283,8 +235,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - cmd-etherscan-check:
-          network: << parameters.network >>
+      - run: npm run test:etherscan --  --network << parameters.network >>
     working_directory: ~/repo
 version: 2.1
 workflows:
@@ -387,6 +338,26 @@ workflows:
           network: ropsten
           requires:
             - job-prepare
+  workflow-scheduled:
+    jobs:
+      - job-prepare
+      - job-validate-deployments:
+          name: job-validate-deployments-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-production-tests:
+          name: job-production-tests-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+    triggers:
+      - schedule:
+          cron: "* 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
   workflow-staging:
     jobs:
       - job-prepare:
@@ -423,75 +394,18 @@ workflows:
           network: kovan
           requires:
             - job-prepare
-      - job-prepare-deploy:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          name: job-prepare-deploy-mainnet
+      - job-production-tests-differential:
+          name: job-production-tests-differential-mainnet
           network: mainnet
           requires:
             - job-prepare
-      - job-forked-deploy:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          name: job-forked-deploy-mainnet
-          network: mainnet
-          requires:
-            - job-prepare-deploy-mainnet
-      - job-production-tests:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          name: job-production-tests-mainnet
-          network: mainnet
-          requires:
-            - job-forked-deploy-mainnet
-      - job-prepare-deploy:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          name: job-prepare-deploy-rinkeby
+      - job-production-tests-differential:
+          name: job-production-tests-differential-rinkeby
           network: rinkeby
           requires:
             - job-prepare
-      - job-forked-deploy:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          name: job-forked-deploy-rinkeby
-          network: rinkeby
-          requires:
-            - job-prepare-deploy-rinkeby
-      - job-production-tests:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          name: job-production-tests-rinkeby
-          network: rinkeby
-          requires:
-            - job-forked-deploy-rinkeby
-      - job-prepare-deploy:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          name: job-prepare-deploy-kovan
+      - job-production-tests-differential:
+          name: job-production-tests-differential-kovan
           network: kovan
           requires:
             - job-prepare
-      - job-forked-deploy:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          name: job-forked-deploy-kovan
-          network: kovan
-          requires:
-            - job-prepare-deploy-kovan
-      - job-production-tests:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          name: job-production-tests-kovan
-          network: kovan
-          requires:
-            - job-forked-deploy-kovan
