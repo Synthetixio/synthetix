@@ -413,7 +413,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         }
     }
 
-    function synthAddresses(bytes32[] calldata currencyKeys) external view returns (ISynth[] memory) {
+    function getSynths(bytes32[] calldata currencyKeys) external view returns (ISynth[] memory) {
         uint numKeys = currencyKeys.length;
         ISynth[] memory addresses = new ISynth[](numKeys);
 
