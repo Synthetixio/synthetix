@@ -14,6 +14,7 @@ const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../../');
+const BN = require('bn.js');
 
 contract('SystemSettings', async accounts => {
 	const [, owner] = accounts;
@@ -261,15 +262,8 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
-		it('reverts when owner set the Target threshold to negative', async () => {
-			const thresholdPercent = -1;
-			await assert.revert(
-				systemSettings.setTargetThreshold(thresholdPercent, { from: owner }),
-				'Threshold too high'
-			);
-		});
-		it('reverts when owner set the Target threshold to above 50%', async () => {
-			const thresholdPercent = 51;
+		it('reverts when owner sets the Target threshold above the max allowed value', async () => {
+			const thresholdPercent = (await systemSettings.MAX_TARGET_THRESHOLD()).add(new BN(1));
 			await assert.revert(
 				systemSettings.setTargetThreshold(thresholdPercent, { from: owner }),
 				'Threshold too high'

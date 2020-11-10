@@ -41,5 +41,20 @@
 		},
 		"sources": ["Exchanger", "ExchangeRates", "Issuer", "SystemSettings"],
 		"sips": [83, 84, 88]
+	},
+	{
+		"name": "Mimosa",
+		"version": {
+			"major": 2,
+			"minor": 31
+		},
+		"sources": [
+			"DebtCache",
+			"Exchanger",
+			"ExchangeRates",
+			"Issuer",
+			"Synthetix"
+		],
+		"sips": [91, 92]
 	}
 ]

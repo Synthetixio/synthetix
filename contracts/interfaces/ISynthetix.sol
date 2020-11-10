@@ -3,6 +3,7 @@ pragma solidity >=0.4.24;
 import "../interfaces/ISynth.sol";
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/isynthetix
 interface ISynthetix {
     // Views
     function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);
@@ -100,4 +101,12 @@ interface ISynthetix {
         );
 
     function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool);
+
+    // Restricted Functions
+
+    function mintSecondary(address account, uint amount) external;
+
+    function mintSecondaryRewards(uint amount) external;
+
+    function burnSecondary(address account, uint amount) external;
 }

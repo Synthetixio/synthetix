@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/isystemsettings
 interface ISystemSettings {
     // Views
     function priceDeviationThresholdFactor() external view returns (uint);

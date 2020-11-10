@@ -8,6 +8,9 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
+	"DebtCache": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},
@@ -27,6 +30,9 @@
 		"deploy": true
 	},
 	"EtherCollateral": {
+		"deploy": true
+	},
+	"EtherCollateralsUSD": {
 		"deploy": true
 	},
 	"FeePool": {

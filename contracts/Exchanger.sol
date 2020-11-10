@@ -19,6 +19,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
+import "./interfaces/IDebtCache.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -52,12 +53,14 @@ interface ISynthetixInternal {
 }
 
 
-interface IIssuerInternal {
-    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates) external;
+interface IExchangerInternalDebtCache {
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
+
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
 }
 
 
-// https://docs.synthetix.io/contracts/Exchanger
+// https://docs.synthetix.io/contracts/source/contracts/exchanger
 contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -90,6 +93,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_TRADING_REWARDS = "TradingRewards";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -99,7 +103,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         CONTRACT_FEEPOOL,
         CONTRACT_TRADING_REWARDS,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUER
+        CONTRACT_ISSUER,
+        CONTRACT_DEBTCACHE
     ];
 
     constructor(address _owner, address _resolver)
@@ -141,6 +146,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+    }
+
+    function debtCache() internal view returns (IExchangerInternalDebtCache) {
+        return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE, "Missing DebtCache address"));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -395,6 +404,28 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         }
     }
 
+    function _updateSNXIssuedDebtOnExchange(bytes32[2] memory currencyKeys, uint[2] memory currencyRates) internal {
+        bool includesSUSD = currencyKeys[0] == sUSD || currencyKeys[1] == sUSD;
+        uint numKeys = includesSUSD ? 2 : 3;
+
+        bytes32[] memory keys = new bytes32[](numKeys);
+        keys[0] = currencyKeys[0];
+        keys[1] = currencyKeys[1];
+
+        uint[] memory rates = new uint[](numKeys);
+        rates[0] = currencyRates[0];
+        rates[1] = currencyRates[1];
+
+        if (!includesSUSD) {
+            keys[2] = sUSD; // And we'll also update sUSD to account for any fees if it wasn't one of the exchanged currencies
+            rates[2] = SafeDecimalMath.unit();
+        }
+
+        // Note that exchanges can't invalidate the debt cache, since if a rate is invalid,
+        // the exchange will have failed already.
+        debtCache().updateCachedSynthDebtsWithRates(keys, rates);
+    }
+
     function _exchange(
         address from,
         bytes32 sourceCurrencyKey,
@@ -473,10 +504,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
         // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
         // in these currencies
-        IIssuerInternal(address(issuer())).updateSNXIssuedDebtOnExchange(
-            [sourceCurrencyKey, destinationCurrencyKey],
-            [sourceRate, destinationRate]
-        );
+        _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
@@ -613,7 +641,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         if (updateCache) {
             bytes32[] memory key = new bytes32[](1);
             key[0] = currencyKey;
-            issuer().updateSNXIssuedDebtForCurrencies(key);
+            debtCache().updateCachedSynthDebts(key);
         }
 
         // emit settlement event for each settled exchange entry

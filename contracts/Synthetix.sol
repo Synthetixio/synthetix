@@ -17,7 +17,7 @@ import "./SupplySchedule.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
 
-// https://docs.synthetix.io/contracts/Synthetix
+// https://docs.synthetix.io/contracts/source/contracts/synthetix
 contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
@@ -356,6 +356,18 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return _transferByProxy(account, messageSender, totalRedeemed);
     }
 
+    function mintSecondary(address, uint) external {
+        revert("Cannot be run on this layer");
+    }
+
+    function mintSecondaryRewards(uint) external {
+        revert("Cannot be run on this layer");
+    }
+
+    function burnSecondary(address, uint) external {
+        revert("Cannot be run on this layer");
+    }
+
     // ========== MODIFIERS ==========
 
     modifier onlyExchanger() {
@@ -418,14 +430,7 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 toCurrencyKey,
         uint256 toAmount
     ) external onlyExchanger {
-        proxy._emit(
-            abi.encode(toCurrencyKey, toAmount),
-            2,
-            EXCHANGE_TRACKING_SIG,
-            trackingCode,
-            0,
-            0
-        );
+        proxy._emit(abi.encode(toCurrencyKey, toAmount), 2, EXCHANGE_TRACKING_SIG, trackingCode, 0, 0);
     }
 
     event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);

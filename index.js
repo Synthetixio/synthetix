@@ -14,6 +14,7 @@ const data = {
 };
 
 const assets = require('./publish/assets.json');
+const ovmIgnored = require('./publish/ovm-ignore.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
@@ -40,6 +41,7 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
+	OVM_IGNORE_FILENAME: 'ovm-ignore.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -73,7 +75,7 @@ const defaults = {
 		index: w3utils.toWei('0.003'),
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
-	DEBT_SNAPSHOT_STALE_TIME: (3600).toString(), // 1 hour
+	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
 	AGGREGATOR_WARNING_FLAGS: {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
@@ -105,6 +107,7 @@ const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = false 
 	const pathToDeployment = deploymentPath
 		? path.join(deploymentPath, constants.DEPLOYMENT_FILENAME)
 		: getPathToNetwork({ network, useOvm, path, file: constants.DEPLOYMENT_FILENAME });
+
 	if (!fs.existsSync(pathToDeployment)) {
 		throw Error(`Cannot find deployment for network: ${network}.`);
 	}
@@ -496,4 +499,5 @@ module.exports = {
 	networkToChainId,
 	toBytes32,
 	wrap,
+	ovmIgnored,
 };

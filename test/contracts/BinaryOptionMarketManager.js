@@ -130,7 +130,7 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 		it('Only expected functions are mutative', async () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: manager.abi,
-				ignoreParents: ['Owned', 'Pausable', 'SelfDestructible', 'MixinResolver'],
+				ignoreParents: ['Owned', 'Pausable', 'MixinResolver'],
 				expected: [
 					'setMaxOraclePriceAge',
 					'setExpiryDuration',
@@ -368,7 +368,7 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 		it('Only expected functions are mutative.', async () => {
 			await ensureOnlyExpectedMutativeFunctions({
 				abi: factory.abi,
-				ignoreParents: ['Owned', 'SelfDestructible', 'MixinResolver'],
+				ignoreParents: ['Owned', 'MixinResolver'],
 				expected: ['createMarket'],
 			});
 		});
@@ -997,11 +997,12 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 				.sort();
 
 			const createdMarkets = markets.map(m => m.address).sort();
-			let recordedMarkets = (await manager.activeMarkets(0, 100)).sort();
 
+			let recordedMarkets = await manager.activeMarkets(0, 100);
+			let recordedMarketsSorted = [...recordedMarkets].sort();
 			assert.bnEqual(await manager.numActiveMarkets(), toBN(numMarkets));
-			assert.equal(createdMarkets.length, recordedMarkets.length);
-			createdMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
+			assert.equal(createdMarkets.length, recordedMarketsSorted.length);
+			createdMarkets.forEach((p, i) => assert.equal(p, recordedMarketsSorted[i]));
 
 			// Resolve all the even markets, ensuring they have been transferred.
 			await fastForward(expiryDuration + 1000);
@@ -1011,12 +1012,14 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 			await Promise.all(evenMarkets.map(m => manager.resolveMarket(m)));
 
 			assert.bnEqual(await manager.numActiveMarkets(), toBN(4));
-			recordedMarkets = (await manager.activeMarkets(0, 100)).sort();
-			assert.equal(oddMarkets.length, recordedMarkets.length);
-			oddMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
+			recordedMarkets = await manager.activeMarkets(0, 100);
+			recordedMarketsSorted = [...recordedMarkets].sort();
+			assert.equal(oddMarkets.length, recordedMarketsSorted.length);
+			oddMarkets.forEach((p, i) => assert.equal(p, recordedMarketsSorted[i]));
 
 			assert.bnEqual(await manager.numMaturedMarkets(), toBN(4));
-			recordedMarkets = (await manager.maturedMarkets(0, 100)).sort();
+			recordedMarkets = await manager.maturedMarkets(0, 100);
+			recordedMarketsSorted = [...recordedMarkets].sort();
 			assert.equal(evenMarkets.length, recordedMarkets.length);
 			evenMarkets.forEach((p, i) => assert.equal(p, recordedMarkets[i]));
 
@@ -1025,20 +1028,22 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 
 			// Mature the rest of the markets
 			await Promise.all(oddMarkets.map(m => manager.resolveMarket(m)));
-			let remainingMarkets = (await manager.maturedMarkets(0, 100)).sort();
+			let remainingMarkets = await manager.maturedMarkets(0, 100);
+			let remainingMarketsSorted = [...remainingMarkets].sort();
 			assert.bnEqual(await manager.numMaturedMarkets(), toBN(numMarkets / 2));
-			oddMarkets.forEach((p, i) => assert.equal(p, remainingMarkets[i]));
+			oddMarkets.forEach((p, i) => assert.equal(p, remainingMarketsSorted[i]));
 
 			// Can remove the last market
 			const lastMarket = (await manager.maturedMarkets(numMarkets / 2 - 1, 1))[0];
 			assert.isTrue(remainingMarkets.includes(lastMarket));
 			await manager.expireMarkets([lastMarket], { from: initialCreator });
 			remainingMarkets = await manager.maturedMarkets(0, 100);
+			remainingMarketsSorted = [...remainingMarkets].sort();
 			assert.bnEqual(await manager.numMaturedMarkets(), toBN(numMarkets / 2 - 1));
-			assert.isFalse(remainingMarkets.includes(lastMarket));
+			assert.isFalse(remainingMarketsSorted.includes(lastMarket));
 
 			// Destroy the remaining markets.
-			await manager.expireMarkets(remainingMarkets);
+			await manager.expireMarkets(remainingMarketsSorted);
 			assert.bnEqual(await manager.numActiveMarkets(), toBN(0));
 			assert.equal((await manager.activeMarkets(0, 100)).length, 0);
 			assert.bnEqual(await manager.numMaturedMarkets(), toBN(0));

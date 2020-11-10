@@ -159,6 +159,7 @@ describe('publish scripts', () => {
 			let sBTCContract;
 			let sETHContract;
 			let FeePool;
+			let DebtCache;
 			let Exchanger;
 			let Issuer;
 			let SystemSettings;
@@ -200,7 +201,7 @@ describe('publish scripts', () => {
 						gasPrice,
 					});
 				// Cache the debt to make sure nothing's wrong/stale after the rate update.
-				await Issuer.methods.cacheSNXIssuedDebt().send({
+				await DebtCache.methods.takeDebtSnapshot().send({
 					from: accounts.deployer.public,
 					gas: gasLimit,
 					gasPrice,
@@ -222,6 +223,7 @@ describe('publish scripts', () => {
 
 				await commands.deploy({
 					network,
+					freshDeploy: true,
 					yes: true,
 					privateKey: accounts.deployer.private,
 				});
@@ -232,6 +234,7 @@ describe('publish scripts', () => {
 
 				Synthetix = new web3.eth.Contract(sources['Synthetix'].abi, targets['ProxyERC20'].address);
 				FeePool = new web3.eth.Contract(sources['FeePool'].abi, targets['ProxyFeePool'].address);
+				DebtCache = new web3.eth.Contract(sources['DebtCache'].abi, targets['DebtCache'].address);
 				Exchanger = new web3.eth.Contract(sources['Exchanger'].abi, targets['Exchanger'].address);
 				Issuer = new web3.eth.Contract(sources['Issuer'].abi, targets['Issuer'].address);
 				sUSDContract = new web3.eth.Contract(
@@ -292,7 +295,7 @@ describe('publish scripts', () => {
 						RATE_STALE_PERIOD
 					);
 					assert.strictEqual(
-						await Issuer.methods.debtSnapshotStaleTime().call(),
+						await DebtCache.methods.debtSnapshotStaleTime().call(),
 						DEBT_SNAPSHOT_STALE_TIME
 					);
 					assert.strictEqual(await Issuer.methods.minimumStakeTime().call(), MINIMUM_STAKE_TIME);
@@ -1390,10 +1393,18 @@ describe('publish scripts', () => {
 
 							const resolvers = await Promise.all(
 								Object.entries(targets)
+									// Note: SynthetixBridgeToOptimism and SynthetixBridgeToBase  have ':' in their deps, instead of hardcoding the
+									// address here we should look up all required contracts and ignore any that have
+									// ':' in it
+									.filter(
+										([contract]) =>
+											contract !== 'SynthetixBridgeToOptimism' &&
+											contract !== 'SynthetixBridgeToBase'
+									)
 									.filter(([, { source }]) =>
 										sources[source].abi.find(({ name }) => name === 'resolver')
 									)
-									.map(([contractName, { source, address }]) => {
+									.map(([, { source, address }]) => {
 										const Contract = new web3.eth.Contract(sources[source].abi, address);
 										return callMethodWithRetry(Contract.methods.resolver());
 									})
@@ -1420,6 +1431,7 @@ describe('publish scripts', () => {
 									'FeePool',
 									'FeePoolEternalStorage',
 									'FeePoolState',
+									'DebtCache',
 									'Issuer',
 									'RewardEscrow',
 									'RewardsDistribution',

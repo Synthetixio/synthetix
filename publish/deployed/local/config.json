@@ -17,6 +17,9 @@
 	"BinaryOptionMarketData": {
 		"deploy": true
 	},
+	"DebtCache": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},
