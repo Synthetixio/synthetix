@@ -87,8 +87,8 @@ contract('Synthetix (prod tests)', accounts => {
 
 			assert.isFalse(debtLedgerLength > 0 && totalIssuedSynths === 0);
 		});
-
 	});
+
 	describe('erc20 functionality', () => {
 		addSnapshotBeforeRestoreAfter();
 
