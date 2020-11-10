@@ -427,6 +427,11 @@ workflows:
           network: kovan
           requires:
             - job-prepare
+      - job-production-tests:
+          name: job-production-tests-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
       - job-production-tests-local:
           filters:
             branches:
