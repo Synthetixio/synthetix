@@ -400,13 +400,6 @@ describe('publish scripts', () => {
 							gas: gasLimit,
 							gasPrice,
 						});
-						await SystemSettings.methods
-							.setExchangeFeeRateForSynths([toBytes32('sUSD')], [newRateForsUSD])
-							.send({
-								from: accounts.deployer.public,
-								gas: gasLimit,
-								gasPrice,
-							});
 					});
 					describe('when redeployed with a new system settings contract', () => {
 						beforeEach(async () => {
@@ -463,12 +456,6 @@ describe('publish scripts', () => {
 							assert.strictEqual(
 								await Issuer.methods.minimumStakeTime().call(),
 								newMinimumStakeTime
-							);
-							assert.strictEqual(
-								await Exchanger.methods
-									.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
-									.call(),
-								newRateForsUSD
 							);
 						});
 					});
