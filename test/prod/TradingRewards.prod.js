@@ -53,13 +53,13 @@ contract('TradingRewards (prod tests)', accounts => {
 		[owner] = getUsers({ network }).map(user => user.address);
 
 		await ensureAccountHasEther({
-			amount: toUnit('10'),
+			amount: toUnit('1'),
 			account: owner,
 			fromAccount: accounts[7],
 			network,
 		});
 		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
+			amount: toUnit('100'),
 			account: user,
 			fromAccount: owner,
 			network,
@@ -100,7 +100,7 @@ contract('TradingRewards (prod tests)', accounts => {
 					account: user,
 					fromCurrency: 'sUSD',
 					toCurrency: 'sETH',
-					amount: toUnit('10'),
+					amount: toUnit('1'),
 				}));
 			});
 
@@ -136,7 +136,7 @@ contract('TradingRewards (prod tests)', accounts => {
 					account: user,
 					fromCurrency: 'sUSD',
 					toCurrency: 'sETH',
-					amount: toUnit('10'),
+					amount: toUnit('1'),
 				}));
 			});
 

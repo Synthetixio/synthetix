@@ -176,7 +176,7 @@ contract('Synthetix (prod tests)', accounts => {
 			const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
 			const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
 
-			assert.bnEqual(user1BalanceAftersUSD, user1BalanceBeforesUSD.sub(amount));
+			assert.bnLt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
 			assert.bnGt(user1BalanceAftersETH, user1BalanceBeforesETH);
 		});
 
@@ -194,7 +194,7 @@ contract('Synthetix (prod tests)', accounts => {
 			const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
 			const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
 
-			assert.bnEqual(user1BalanceAftersETH, user1BalanceBeforesETH.sub(amount));
+			assert.bnLt(user1BalanceAftersETH, user1BalanceBeforesETH);
 			assert.bnGt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
 		});
 	});
