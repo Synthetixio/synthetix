@@ -1,7 +1,0 @@
-# Makes sure all deployed contracts are verified in Etherscan
-description: Run etherscan ABI check
-parameters:
-  network:
-    type: string
-steps:
-  - run: npm run test:etherscan --  --network << parameters.network >>
