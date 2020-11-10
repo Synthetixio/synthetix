@@ -2327,6 +2327,83 @@ contract('Exchanger (via Synthetix)', async accounts => {
 											});
 										});
 									});
+									describe('edge case: frozen rate does not apply to old settlement', () => {
+										describe('when a price outside the bounds arrives for iBTC', () => {
+											beforeEach(async () => {
+												const newTimestamp = await currentTime();
+												await exchangeRates.updateRates([iBTC], [toUnit('8000')], newTimestamp, {
+													from: oracle,
+												});
+											});
+											it('then settlement owing shows some rebate', async () => {
+												const {
+													reclaimAmount,
+													rebateAmount,
+													numEntries,
+												} = await exchanger.settlementOwing(account1, iBTC);
+
+												assert.equal(reclaimAmount, '0');
+												assert.notEqual(rebateAmount, '0');
+												assert.equal(numEntries, '1');
+											});
+											describe('when a user freezes iBTC', () => {
+												beforeEach(async () => {
+													await exchangeRates.freezeRate(iBTC, { from: account1 });
+												});
+												it('then settlement owing still shows some rebate', async () => {
+													const {
+														reclaimAmount,
+														rebateAmount,
+														numEntries,
+													} = await exchanger.settlementOwing(account1, iBTC);
+
+													assert.equal(reclaimAmount, '0');
+													assert.notEqual(rebateAmount, '0');
+													assert.equal(numEntries, '1');
+												});
+											});
+										});
+										describe('when the waiting period expires', () => {
+											beforeEach(async () => {
+												await fastForward(500); // fast forward through waiting period
+											});
+											it('then settlement owing shows 0', async () => {
+												const {
+													reclaimAmount,
+													rebateAmount,
+													numEntries,
+												} = await exchanger.settlementOwing(account1, iBTC);
+
+												assert.equal(reclaimAmount, '0');
+												assert.equal(rebateAmount, '0');
+												assert.equal(numEntries, '1');
+											});
+											describe('when a price outside the bounds arrives for iBTC', () => {
+												beforeEach(async () => {
+													const newTimestamp = await currentTime();
+													await exchangeRates.updateRates([iBTC], [toUnit('12000')], newTimestamp, {
+														from: oracle,
+													});
+												});
+												describe('when a user freezes iBTC', () => {
+													beforeEach(async () => {
+														await exchangeRates.freezeRate(iBTC, { from: account1 });
+													});
+													it('then settlement owing still shows 0', async () => {
+														const {
+															reclaimAmount,
+															rebateAmount,
+															numEntries,
+														} = await exchanger.settlementOwing(account1, iBTC);
+
+														assert.equal(reclaimAmount, '0');
+														assert.equal(rebateAmount, '0');
+														assert.equal(numEntries, '1');
+													});
+												});
+											});
+										});
+									});
 								});
 							});
 						});
