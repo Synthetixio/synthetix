@@ -38,6 +38,28 @@ jobs:
         - job-prepare
   # ~~~~~~~~~~~~ Deployment validation on ROPSTEN ~~~~~~~~~~~~~
   # Disabled because of recent attack to ropsten.
+  # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
+  - job-production-tests:
+      name: job-production-tests-mainnet
+      network: mainnet
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Differential production tests on LOCAL ~~~~~~~~~~~~~
+  - job-production-tests-local:
+      name: job-production-tests-local
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Differential production tests on LOCAL with OVM config ~~~~~~~~~~~~~
+  - job-production-tests-local-ovm:
+      name: job-production-tests-local-ovm
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      requires:
+        - job-prepare
   # ~~~~~~~~~~~~ Differential production tests on MAINNET ~~~~~~~~~~~~~
   - job-production-tests-differential:
       name: job-production-tests-differential-mainnet

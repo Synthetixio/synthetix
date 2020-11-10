@@ -18,8 +18,8 @@ async function ensureAccountHasEther({ amount, account, fromAccount }) {
 	});
 }
 
-async function ensureAccountHasSNX({ network, amount, account, fromAccount }) {
-	const SNX = await connectContract({ network, contractName: 'ProxyERC20' });
+async function ensureAccountHasSNX({ network, deploymentPath, amount, account, fromAccount }) {
+	const SNX = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
 
 	const balance = toBN(await SNX.balanceOf(fromAccount));
 	if (balance.lt(amount)) {
@@ -33,16 +33,28 @@ async function ensureAccountHasSNX({ network, amount, account, fromAccount }) {
 	});
 }
 
-async function ensureAccountHassUSD({ network, amount, account, fromAccount }) {
-	const sUSD = await connectContract({ network, contractName: 'SynthsUSD', abiName: 'Synth' });
+async function ensureAccountHassUSD({ network, deploymentPath, amount, account, fromAccount }) {
+	const sUSD = await connectContract({
+		network,
+		deploymentPath,
+		contractName: 'SynthsUSD',
+		abiName: 'Synth',
+	});
 	const balance = toBN(await sUSD.transferableSynths(fromAccount));
 
 	if (balance.lt(amount)) {
-		const snxToTransfer = amount.mul(toBN('10'));
-		await ensureAccountHasSNX({ network, account, amount: snxToTransfer, fromAccount });
+		const snxToTransfer = amount.mul(toBN('50'));
+		await ensureAccountHasSNX({
+			network,
+			deploymentPath,
+			account,
+			amount: snxToTransfer,
+			fromAccount,
+		});
 
 		const Synthetix = await connectContract({
 			network,
+			deploymentPath,
 			contractName: 'ProxyERC20',
 			abiName: 'Synthetix',
 		});
@@ -55,12 +67,13 @@ async function ensureAccountHassUSD({ network, amount, account, fromAccount }) {
 	}
 }
 
-async function ensureAccountHassETH({ network, amount, account, fromAccount }) {
+async function ensureAccountHassETH({ network, deploymentPath, amount, account, fromAccount }) {
 	const sUSDAmount = amount.mul(toBN('10'));
-	await ensureAccountHassUSD({ network, amount: sUSDAmount, account, fromAccount });
+	await ensureAccountHassUSD({ network, deploymentPath, amount: sUSDAmount, account, fromAccount });
 
 	const Synthetix = await connectContract({
 		network,
+		deploymentPath,
 		contractName: 'ProxyERC20',
 		abiName: 'Synthetix',
 	});

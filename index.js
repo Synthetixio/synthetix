@@ -354,7 +354,11 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),
 		'goerli-ovm': Object.assign({}, base),
+		local: Object.assign({}, base),
 	};
+
+	// Deterministic account #0 when using `npx buidler node`
+	map.local.owner = '0xc783df8a850f42e7F7e57013759C285caa701eB6';
 
 	const users = Object.entries(
 		map[getFolderNameForNetwork({ network, useOvm })]

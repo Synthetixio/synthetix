@@ -1,5 +1,7 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const fs = require('fs');
+const path = require('path');
+const { contract, config } = require('@nomiclabs/buidler');
+const { wrap } = require('../../index.js');
 const { web3 } = require('@nomiclabs/buidler');
 const { assert } = require('../contracts/common');
 const { toUnit } = require('../utils')();
@@ -7,7 +9,9 @@ const {
 	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
+	ensureAccountHassUSD,
 	skipWaitingPeriod,
+	bootstrapLocal,
 } = require('./utils');
 
 contract('EtherCollateral (prod tests)', accounts => {
@@ -15,20 +19,32 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 	let owner;
 
-	let network;
+	let network, deploymentPath;
 
-	let EtherCollateral, AddressResolver;
-	let SynthsETH;
+	let EtherCollateral, AddressResolver, Depot;
+	let SynthsETH, SynthsUSD;
 
-	before('prepare', async () => {
+	before('prepare', async function() {
 		network = await detectNetworkName();
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 
-		({ EtherCollateral, SynthsETH, AddressResolver } = await connectContracts({
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		if (deploymentPath.includes('ovm')) {
+			return this.skip();
+		}
+
+		if (network === 'local') {
+			await bootstrapLocal({ deploymentPath });
+		}
+
+		({ EtherCollateral, SynthsETH, SynthsUSD, AddressResolver, Depot } = await connectContracts({
 			network,
 			requests: [
 				{ contractName: 'EtherCollateral' },
+				{ contractName: 'Depot' },
 				{ contractName: 'AddressResolver' },
-				{ contractName: 'ProxysETH', abiName: 'Synth', alias: 'SynthsETH' },
+				{ contractName: 'SynthsETH', abiName: 'Synth' },
+				{ contractName: 'SynthsUSD', abiName: 'Synth' },
 			],
 		}));
 
@@ -37,9 +53,15 @@ contract('EtherCollateral (prod tests)', accounts => {
 		[owner] = getUsers({ network }).map(user => user.address);
 
 		await ensureAccountHasEther({
-			amount: toUnit('10'),
+			amount: toUnit('1'),
 			account: owner,
 			fromAccount: accounts[7],
+			network,
+		});
+		await ensureAccountHassUSD({
+			amount: toUnit('1000'),
+			account: user1,
+			fromAccount: owner,
 			network,
 		});
 	});
@@ -79,6 +101,21 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 		describe('closing a loan', () => {
 			before(async () => {
+				if (network === 'local') {
+					const amount = toUnit('100');
+
+					const balance = await SynthsUSD.balanceOf(Depot.address);
+					if (balance.lt(amount)) {
+						await SynthsUSD.approve(Depot.address, amount, {
+							from: user1,
+						});
+
+						await Depot.depositSynths(amount, {
+							from: user1,
+						});
+					}
+				}
+
 				ethBalance = await web3.eth.getBalance(user1);
 				sEthBalance = await SynthsETH.balanceOf(user1);
 
