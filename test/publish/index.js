@@ -4,7 +4,6 @@ const assert = require('assert');
 
 const { isAddress } = require('web3-utils');
 const Web3 = require('web3');
-const w3utils = require('web3-utils');
 
 const { loadCompiledFiles } = require('../../publish/src/solidity');
 
@@ -301,17 +300,13 @@ describe('publish scripts', () => {
 					);
 					assert.strictEqual(await Issuer.methods.minimumStakeTime().call(), MINIMUM_STAKE_TIME);
 					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
-						let rateToCheck = rate;
 						// take the first synth we can find from that category
 						const synth = synths.find(({ category: c }) => c === category);
-						if (['sETH', 'iETH', 'sBTC', 'iBTC'].includes(synth.name)) {
-							rateToCheck = w3utils.toWei('0.003');
-						}
 						assert.strictEqual(
 							await Exchanger.methods
 								.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
 								.call(),
-							rateToCheck
+							rate
 						);
 					}
 				});
@@ -326,6 +321,7 @@ describe('publish scripts', () => {
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
 					let newRateStalePeriod;
+					let newRateForsUSD;
 					let newMinimumStakeTime;
 					let newDebtSnapshotStaleTime;
 
@@ -339,6 +335,7 @@ describe('publish scripts', () => {
 						newLiquidationsRatio = web3.utils.toWei('0.6'); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = web3.utils.toWei('0.25');
 						newRateStalePeriod = '3400';
+						newRateForsUSD = web3.utils.toWei('0.1');
 						newMinimumStakeTime = '3999';
 						newDebtSnapshotStaleTime = '43200'; // Half a day
 
@@ -398,6 +395,13 @@ describe('publish scripts', () => {
 							gas: gasLimit,
 							gasPrice,
 						});
+						await SystemSettings.methods
+							.setExchangeFeeRateForSynths([toBytes32('sUSD')], [newRateForsUSD])
+							.send({
+								from: accounts.deployer.public,
+								gas: gasLimit,
+								gasPrice,
+							});
 					});
 					describe('when redeployed with a new system settings contract', () => {
 						beforeEach(async () => {
@@ -454,6 +458,12 @@ describe('publish scripts', () => {
 							assert.strictEqual(
 								await Issuer.methods.minimumStakeTime().call(),
 								newMinimumStakeTime
+							);
+							assert.strictEqual(
+								await Exchanger.methods
+									.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
+									.call(),
+								newRateForsUSD
 							);
 						});
 					});
