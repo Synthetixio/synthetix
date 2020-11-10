@@ -45,11 +45,34 @@ async function takeDebtSnapshot() {
 	await DebtCache.takeDebtSnapshot();
 }
 
+async function mockBridge() {
+	const AddressResolver = await connectContract({
+		network,
+		deploymentPath,
+		contractName: 'AddressResolver',
+	});
+
+	const mockAddress = '0x0000000000000000000000000000000000000001';
+	AddressResolver.importAddresses(
+		['ovm:SynthetixBridgeToBase', 'base:SynthetixBridgeToOptimism', 'ext:Messenger'].map(toBytes32),
+		[mockAddress, mockAddress, mockAddress]
+	);
+
+	const SynthetixBridgeToBase = await connectContract({
+		network,
+		deploymentPath,
+		contractName: 'SynthetixBridgeToBase',
+	});
+
+	await SynthetixBridgeToBase.setResolverAndSyncCache(AddressResolver.address);
+}
+
 async function bootstrapLocal({ deploymentPath: _deploymentPath }) {
 	deploymentPath = _deploymentPath;
 
 	await simulateExchangeRates();
 	await takeDebtSnapshot();
+	await mockBridge();
 }
 
 module.exports = {
