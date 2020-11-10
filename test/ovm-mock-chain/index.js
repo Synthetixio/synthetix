@@ -67,6 +67,11 @@ describe('deploy an OVM instance', () => {
 			JSON.stringify({ targets: {}, sources: {} }, null, '\t')
 		);
 
+		// fs.writeFileSync(
+		// 	path.join(folderPath, constants.SYNTHS_FILENAME),
+		// 	JSON.stringify([{ name: 'sUSD', asset: 'USD' }], null, '\t')
+		// );
+
 		return folderPath;
 	};
 
@@ -122,17 +127,15 @@ describe('deploy an OVM instance', () => {
 		});
 	});
 
-	describe('when a user has 1000 SNX on L1', () => {
+	describe('when a user has 1000 SNX', () => {
 		const overrides = {
 			gasPrice: parseUnits('5', 'gwei'),
 			gasLimit: 1.5e6,
 		};
 		let user;
 		let mintableSynthetix;
-		let initialTotalSupply;
 
 		before('when a user has 1000 SNX', async () => {
-			// take the second predefined user (already loaded with ETH) and give them 1000 SNX on L1
 			user = new ethers.Wallet(users[1].private, provider);
 			mintableSynthetix = fetchContract({
 				contract: 'Synthetix',
@@ -142,17 +145,15 @@ describe('deploy an OVM instance', () => {
 			const originalL2Balance = await mintableSynthetix.balanceOf(user.address);
 
 			assert.bnEqual(originalL2Balance, parseEther('1000'));
-			initialTotalSupply = await mintableSynthetix.totalSupply();
 		});
 
-		it('then the user has 1000 SNX on L1', async () => {
+		it('then the user has 1000 SNX', async () => {
 			const newBalance = await mintableSynthetix.balanceOf(user.address);
 			assert.bnEqual(newBalance, parseEther('1000'));
 		});
 
 		describe('when the user tries to issue synths', () => {
 			let exchangeRates;
-			let debtCache;
 			let issuer;
 			before('update rates', async () => {
 				exchangeRates = fetchContract({
@@ -163,15 +164,7 @@ describe('deploy an OVM instance', () => {
 					contract: 'Issuer',
 					deployer,
 				});
-				simulateExchangeRates(provider, exchangeRates, issuer);
-			});
-
-			before('fetch cache', async () => {
-				debtCache = fetchContract({
-					contract: 'DebtCache',
-					source: 'RealtimeDebtCache',
-					deployer,
-				});
+				await simulateExchangeRates(provider, exchangeRates, issuer);
 			});
 
 			before('issue Synths', async () => {
@@ -180,20 +173,17 @@ describe('deploy an OVM instance', () => {
 					source: 'MintableSynthetix',
 					user,
 				});
-				// await mintableSynthetix.issueMaxSynths(overrides);
+				await mintableSynthetix.issueMaxSynths(overrides);
 			});
 
-			it('cache should be valid', async () => {
-				assert.equal(await debtCache.cacheInvalid(), false);
-			});
-
-			it('cache timestamp should be zero', async () => {
-				assert.equal(await debtCache.cacheTimestamp(), 0);
-			});
-
-			it('cache should be valid', async () => {
-				const rateStalePeriod = await exchangeRates.rateStalePeriod();
-				assert.bnEqual(rateStalePeriod, 0);
+			it('then the user must have some sUSD', async () => {
+				const sUSD = fetchContract({
+					contract: 'SynthsUSD',
+					source: 'ProxyERC20',
+					user,
+				});
+				const sUsdBalance = await sUSD.balanceOf(user.address);
+				assert.bnNotEqual(sUsdBalance, 0);
 			});
 		});
 	});
