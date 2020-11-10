@@ -48,7 +48,13 @@
 			"major": 2,
 			"minor": 31
 		},
-		"sources": ["Synthetix", "Issuer", "Exchanger", "DebtCache"],
-		"sips": [89, 91]
+		"sources": [
+			"DebtCache",
+			"Exchanger",
+			"ExchangeRates",
+			"Issuer",
+			"Synthetix"
+		],
+		"sips": [89, 91, 92]
 	}
 ]

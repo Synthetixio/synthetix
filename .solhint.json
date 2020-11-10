@@ -32,6 +32,7 @@
 		"func-name-mixedcase": "warn",
 		"contract-name-camelcase": "warn",
 		"multiple-sends": "warn",
-		"reentrancy": "warn"
+		"reentrancy": "warn",
+		"max-states-count": ["warn", 17]
 	}
 }
