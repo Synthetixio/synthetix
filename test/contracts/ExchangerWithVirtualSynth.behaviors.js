@@ -22,7 +22,7 @@ module.exports = function({ accounts }) {
 				'SystemStatus',
 				'TradingRewards',
 			],
-			accounts: accounts.slice(3), // mock using accounts after the first few
+			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
 	});
 

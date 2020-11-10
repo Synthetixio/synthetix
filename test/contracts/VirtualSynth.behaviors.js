@@ -14,7 +14,7 @@ module.exports = function({ accounts }) {
 		({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 			owner: accounts[1],
 			contracts: ['Synth', 'Exchanger'],
-			accounts: accounts.slice(3), // mock using accounts after the first few
+			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
 	});
 
