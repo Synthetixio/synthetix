@@ -1,4 +1,4 @@
-# Simulates a deployment in a form, and runs production tests against it
+# Simulates a deployment in a fork, and runs production tests against it
 working_directory: ~/repo
 docker:
   - image: circleci/node:12.18

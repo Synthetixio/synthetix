@@ -19,3 +19,13 @@ jobs:
       network: mainnet
       requires:
         - job-prepare
+  # ~~~~~~~~~~~~ Differential production tests on LOCAL ~~~~~~~~~~~~~
+  - job-production-tests-local:
+      name: job-production-tests-local
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Differential production tests on LOCAL with OVM config ~~~~~~~~~~~~~
+  - job-production-tests-local-ovm:
+      name: job-production-tests-local-ovm
+      requires:
+        - job-prepare

@@ -1,5 +1,7 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const fs = require('fs');
+const path = require('path');
+const { contract, config } = require('@nomiclabs/buidler');
+const { wrap } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
@@ -9,6 +11,7 @@ const {
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
+	bootstrapLocal,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -16,14 +19,24 @@ contract('TradingRewards (prod tests)', accounts => {
 
 	let owner;
 
-	let network;
+	let network, deploymentPath;
 
 	let TradingRewards, AddressResolver, SystemSettings;
 
 	let exchangeLogs;
 
-	before('prepare', async () => {
+	before('prepare', async function() {
 		network = await detectNetworkName();
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		if (deploymentPath.includes('ovm')) {
+			return this.skip();
+		}
+
+		if (network === 'local') {
+			await bootstrapLocal({ deploymentPath });
+		}
 
 		({ TradingRewards, AddressResolver, SystemSettings } = await connectContracts({
 			network,
@@ -40,13 +53,13 @@ contract('TradingRewards (prod tests)', accounts => {
 		[owner] = getUsers({ network }).map(user => user.address);
 
 		await ensureAccountHasEther({
-			amount: toUnit('10'),
+			amount: toUnit('1'),
 			account: owner,
 			fromAccount: accounts[7],
 			network,
 		});
 		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
+			amount: toUnit('100'),
 			account: user,
 			fromAccount: owner,
 			network,
@@ -87,7 +100,7 @@ contract('TradingRewards (prod tests)', accounts => {
 					account: user,
 					fromCurrency: 'sUSD',
 					toCurrency: 'sETH',
-					amount: toUnit('10'),
+					amount: toUnit('1'),
 				}));
 			});
 
@@ -119,10 +132,11 @@ contract('TradingRewards (prod tests)', accounts => {
 			before(async () => {
 				({ exchangeLogs } = await exchangeSynths({
 					network,
+					withTradingRewards: true,
 					account: user,
 					fromCurrency: 'sUSD',
 					toCurrency: 'sETH',
-					amount: toUnit('10'),
+					amount: toUnit('1'),
 				}));
 			});
 
