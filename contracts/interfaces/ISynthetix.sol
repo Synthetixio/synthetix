@@ -106,5 +106,7 @@ interface ISynthetix {
 
     function mintSecondary(address account, uint amount) external;
 
+    function mintSecondaryRewards(uint amount) external;
+
     function burnSecondary(address account, uint amount) external;
 }

@@ -30,7 +30,10 @@ test-gas-used-prod.log
 coverage.json
 coverage
 browser.js
-.coverage*
+.coverage_*
+
+# CircleCI local artifacts
+process.yml
 
 # Ganache local chain data
 .db

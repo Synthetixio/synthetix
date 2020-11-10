@@ -338,16 +338,33 @@ const setupContract = async ({
 			});
 
 			// then configure everything else (including setting the associated contract of TokenState back to the Synthetix contract)
-			await Promise.all([
-				(cache['TokenStateMintableSynthetix'].setAssociatedContract(instance.address, {
-					from: owner,
-				}),
-				cache['ProxyMintableSynthetix'].setTarget(instance.address, { from: owner }),
-				cache['ProxyERC20MintableSynthetix'].setTarget(instance.address, { from: owner }),
-				instance.setProxy(cache['ProxyERC20MintableSynthetix'].address, {
-					from: owner,
-				})),
-			]);
+			await Promise.all(
+				[
+					(cache['TokenStateMintableSynthetix'].setAssociatedContract(instance.address, {
+						from: owner,
+					}),
+					cache['ProxyMintableSynthetix'].setTarget(instance.address, { from: owner }),
+					cache['ProxyERC20MintableSynthetix'].setTarget(instance.address, { from: owner }),
+					instance.setProxy(cache['ProxyERC20MintableSynthetix'].address, {
+						from: owner,
+					})),
+				]
+					.concat(
+						// If there's a rewards distribution that's not a mock
+						tryInvocationIfNotMocked({
+							name: 'RewardsDistribution',
+							fncName: 'setAuthority',
+							args: [instance.address],
+						}) || []
+					)
+					.concat(
+						tryInvocationIfNotMocked({
+							name: 'RewardsDistribution',
+							fncName: 'setSynthetixProxy',
+							args: [cache['ProxyERC20MintableSynthetix'].address], // will fail if no Proxy instantiated for MintableSynthetix
+						}) || []
+					)
+			);
 		},
 		async Synth() {
 			await Promise.all(
@@ -599,17 +616,22 @@ const setupAllContracts = async ({
 			mocks: [
 				'Exchanger',
 				'SupplySchedule',
-				'RewardEscrow',
 				'SynthetixEscrow',
-				'RewardsDistribution',
 				'Liquidations',
 				'Issuer',
-				'SynthetixState',
 				'SystemStatus',
 				'ExchangeRates',
 				'SynthetixBridgeToBase',
 			],
-			deps: ['Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState'],
+			deps: [
+				'Proxy',
+				'ProxyERC20',
+				'AddressResolver',
+				'TokenState',
+				'RewardsDistribution',
+				'RewardEscrow',
+				'SynthetixState',
+			],
 		},
 		{
 			contract: 'SynthetixBridgeToOptimism',

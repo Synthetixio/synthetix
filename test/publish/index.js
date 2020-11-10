@@ -326,7 +326,6 @@ describe('publish scripts', () => {
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
 					let newRateStalePeriod;
-					let newRateForsUSD;
 					let newMinimumStakeTime;
 					let newDebtSnapshotStaleTime;
 
@@ -340,7 +339,6 @@ describe('publish scripts', () => {
 						newLiquidationsRatio = web3.utils.toWei('0.6'); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = web3.utils.toWei('0.25');
 						newRateStalePeriod = '3400';
-						newRateForsUSD = web3.utils.toWei('0.1');
 						newMinimumStakeTime = '3999';
 						newDebtSnapshotStaleTime = '43200'; // Half a day
 
@@ -1385,10 +1383,14 @@ describe('publish scripts', () => {
 
 							const resolvers = await Promise.all(
 								Object.entries(targets)
-									// Note: SecondaryDeposit has ':' in its deps, instead of hardcoding the
+									// Note: SynthetixBridgeToOptimism and SynthetixBridgeToBase  have ':' in their deps, instead of hardcoding the
 									// address here we should look up all required contracts and ignore any that have
 									// ':' in it
-									.filter(([contract]) => contract !== 'SecondaryDeposit')
+									.filter(
+										([contract]) =>
+											contract !== 'SynthetixBridgeToOptimism' &&
+											contract !== 'SynthetixBridgeToBase'
+									)
 									.filter(([, { source }]) =>
 										sources[source].abi.find(({ name }) => name === 'resolver')
 									)

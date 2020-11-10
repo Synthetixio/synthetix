@@ -1,11 +1,16 @@
-description: Runs prod tests on a fork
+# Restarts a forked chain, and runs production tests with gas reports against it
+working_directory: ~/repo
+docker:
+  - image: circleci/node:12.18
 parameters:
   network:
     type: string
 steps:
+  - checkout
+  - attach_workspace:
+      at: .
   - cmd-fork-start:
       network: << parameters.network >>
-      reset: true
   - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log

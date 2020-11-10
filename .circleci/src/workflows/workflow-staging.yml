@@ -1,0 +1,60 @@
+jobs:
+  - job-prepare:
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+  - job-pack-browser:
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      name: job-validate-deployments-mainnet
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: mainnet
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on RINKEBY ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      name: job-validate-deployments-rinkeby
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: rinkeby
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on KOVAN ~~~~~~~~~~~~~
+  - job-validate-deployments:
+      name: job-validate-deployments-kovan
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      network: kovan
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Deployment validation on ROPSTEN ~~~~~~~~~~~~~
+  # Disabled because of recent attack to ropsten.
+  # ~~~~~~~~~~~~ Differential production tests on MAINNET ~~~~~~~~~~~~~
+  - job-production-tests-differential:
+      name: job-production-tests-differential-mainnet
+      network: mainnet
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Differential production tests on RINKEBY ~~~~~~~~~~~~~
+  - job-production-tests-differential:
+      name: job-production-tests-differential-rinkeby
+      network: rinkeby
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Differential production tests on KOVAN ~~~~~~~~~~~~~
+  - job-production-tests-differential:
+      name: job-production-tests-differential-kovan
+      network: kovan
+      requires:
+        - job-prepare
+  # ~~~~~~~~~~~~ Differential production tests on ROPSTEN ~~~~~~~~~~~~~
+  # Disabled because of recent attack to ropsten.

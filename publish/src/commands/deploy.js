@@ -1377,7 +1377,7 @@ const deploy = async ({
 			await runStep({
 				contract: 'Issuer',
 				target: issuer,
-				read: 'synthAddresses',
+				read: 'getSynths',
 				readArg: [chunk.map(synth => synth.currencyKeyInBytes)],
 				expected: input =>
 					input.reduce((acc, cur, idx) => acc && cur === addressOf(chunk[idx].synth)),
