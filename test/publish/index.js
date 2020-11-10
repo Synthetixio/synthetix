@@ -1349,6 +1349,10 @@ describe('publish scripts', () => {
 			});
 
 			describe('AddressResolver consolidation', () => {
+				let ReadProxyAddressResolver;
+				beforeEach(async () => {
+					ReadProxyAddressResolver = getContract({ target: 'ReadProxyAddressResolver' });
+				});
 				describe('when the AddressResolver is set to deploy and everything else false', () => {
 					beforeEach(async () => {
 						const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
@@ -1371,38 +1375,18 @@ describe('publish scripts', () => {
 
 							AddressResolver = getContract({ target: 'AddressResolver' });
 						});
-						it('then all contracts with a resolver() have the new one set', async () => {
-							const resolvers = await Promise.all(
-								Object.entries(targets)
-									// Note: SynthetixBridgeToOptimism and SynthetixBridgeToBase  have ':' in their deps, instead of hardcoding the
-									// address here we should look up all required contracts and ignore any that have
-									// ':' in it
-									.filter(
-										([contract]) =>
-											contract !== 'SynthetixBridgeToOptimism' &&
-											contract !== 'SynthetixBridgeToBase'
-									)
-									.filter(([, { source }]) =>
-										sources[source].abi.find(({ name }) => name === 'resolver')
-									)
-									.map(([, { source, address }]) => {
-										const Contract = new web3.eth.Contract(sources[source].abi, address);
-										return callMethodWithRetry(Contract.methods.resolver());
-									})
+						it('then the read proxy address resolver is updated', async () => {
+							assert.strictEqual(
+								await ReadProxyAddressResolver.methods.target().call(),
+								AddressResolver.options.address
 							);
-
-							// at least all synths require a resolver
-							assert.ok(resolvers.length > synths.length);
-
-							for (const res of resolvers) {
-								assert.strictEqual(res, AddressResolver.options.address);
-							}
 						});
 						it('and the resolver has all the addresses inside', async () => {
 							const targets = getTarget();
 
 							const responses = await Promise.all(
 								[
+									'DebtCache',
 									'DelegateApprovals',
 									'Depot',
 									'EtherCollateral',
@@ -1412,8 +1396,8 @@ describe('publish scripts', () => {
 									'FeePool',
 									'FeePoolEternalStorage',
 									'FeePoolState',
-									'DebtCache',
 									'Issuer',
+									'Liquidations',
 									'RewardEscrow',
 									'RewardsDistribution',
 									'SupplySchedule',
@@ -1471,6 +1455,31 @@ describe('publish scripts', () => {
 							);
 
 							assert.strictEqual(actualExchanger, targets['Exchanger'].address);
+						});
+						it('and all have resolver cached correctly', async () => {
+							const contractsWithResolver = await Promise.all(
+								Object.entries(targets)
+									// Note: SynthetixBridgeToOptimism and SynthetixBridgeToBase  have ':' in their deps, instead of hardcoding the
+									// address here we should look up all required contracts and ignore any that have
+									// ':' in it
+									.filter(([contract]) => !/^SynthetixBridge/.test(contract))
+									.filter(([, { source }]) =>
+										sources[source].abi.find(({ name }) => name === 'resolver')
+									)
+									.map(([contract, { source, address }]) => {
+										const Contract = new web3.eth.Contract(sources[source].abi, address);
+										return { contract, Contract };
+									})
+							);
+
+							const readProxyAddress = ReadProxyAddressResolver.options.address;
+
+							for (const { contract, Contract } of contractsWithResolver) {
+								const isCached = await callMethodWithRetry(
+									Contract.methods.isResolverCached(readProxyAddress)
+								);
+								assert.ok(isCached, `${contract}.isResolverCached() is false!`);
+							}
 						});
 					});
 				});
