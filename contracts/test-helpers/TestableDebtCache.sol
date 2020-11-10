@@ -8,6 +8,6 @@ contract TestableDebtCache is DebtCache {
     constructor(address _owner, address _resolver) public DebtCache(_owner, _resolver) {}
 
     function setCachedSynthDebt(bytes32 currencyKey, uint debt) public {
-        cachedSynthDebt[currencyKey] = debt;
+        _cachedSynthDebt[currencyKey] = debt;
     }
 }
