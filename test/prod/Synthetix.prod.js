@@ -12,6 +12,7 @@ const {
 	skipWaitingPeriod,
 	skipStakeTime,
 	writeSetting,
+	bootstrapLocal,
 } = require('./utils');
 
 contract('Synthetix (prod tests)', accounts => {
@@ -26,6 +27,10 @@ contract('Synthetix (prod tests)', accounts => {
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
+
+		if (network === 'local') {
+			await bootstrapLocal();
+		}
 
 		({ Synthetix, SynthetixState, SynthsUSD, SynthsETH, AddressResolver } = await connectContracts({
 			network,

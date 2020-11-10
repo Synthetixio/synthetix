@@ -9,6 +9,7 @@ const {
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
+	bootstrapLocal,
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
@@ -23,6 +24,10 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
+
+		if (network === 'local') {
+			await bootstrapLocal();
+		}
 
 		({ ExchangeRates, AddressResolver, SystemSettings, Exchanger } = await connectContracts({
 			network,

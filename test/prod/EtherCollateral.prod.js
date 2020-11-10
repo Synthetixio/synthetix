@@ -8,6 +8,7 @@ const {
 	connectContracts,
 	ensureAccountHasEther,
 	skipWaitingPeriod,
+	bootstrapLocal,
 } = require('./utils');
 
 contract('EtherCollateral (prod tests)', accounts => {
@@ -22,6 +23,10 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
+
+		if (network === 'local') {
+			await bootstrapLocal();
+		}
 
 		({ EtherCollateral, SynthsETH, AddressResolver } = await connectContracts({
 			network,

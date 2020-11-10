@@ -1,7 +1,10 @@
+const fs = require('fs');
+const path = require('path');
 const { artifacts } = require('@nomiclabs/buidler');
-const { getTarget } = require('../../..');
+const { wrap } = require('../../..');
 
 async function connectContract({ network, contractName, abiName = contractName }) {
+	const { getTarget } = wrap({ network, fs, path });
 	const { address } = getTarget({ network, contract: contractName });
 
 	const Contract = artifacts.require(abiName);

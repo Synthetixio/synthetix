@@ -9,6 +9,7 @@ const {
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
+	bootstrapLocal,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -24,6 +25,10 @@ contract('TradingRewards (prod tests)', accounts => {
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
+
+		if (network === 'local') {
+			await bootstrapLocal();
+		}
 
 		({ TradingRewards, AddressResolver, SystemSettings } = await connectContracts({
 			network,
