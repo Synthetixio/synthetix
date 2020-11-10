@@ -8,6 +8,7 @@ import "./interfaces/IVirtualSynth.sol";
 import "./VirtualSynth.sol";
 
 
+// https://docs.synthetix.io/contracts/source/contracts/exchangerwithvirtualsynth
 contract ExchangerWithVirtualSynth is Exchanger {
     constructor(address _owner, address _resolver) public Exchanger(_owner, _resolver) {}
 
@@ -16,9 +17,6 @@ contract ExchangerWithVirtualSynth is Exchanger {
         address recipient,
         uint amount
     ) internal returns (IVirtualSynth vSynth) {
-        // Note: should actually pass ReadProxyAddressResolver here to future-proof this vSynth,
-        // but we don't have it currently in the AddressResolver...
-        // Solution
         vSynth = new VirtualSynth(synth, resolver, recipient, amount);
         emit VirtualSynthCreated(address(vSynth), address(synth), synth.currencyKey(), amount);
     }
