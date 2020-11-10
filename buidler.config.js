@@ -127,12 +127,14 @@ task('test:prod', 'run poduction tests against a running fork')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
+	.addOptionalParam('deploymentPath', 'Deployed data path')
 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
 	.setAction(async (taskArguments, bre) => {
 		if (bre.network.name !== 'localhost') {
 			throw new Error('Prod testing needs to be run with --network localhost');
 		}
 
+		bre.config.deploymentPath = taskArguments.deploymentPath;
 		bre.config.paths.tests = './test/prod/';
 
 		// Prod tests use forking, which means some txs could last minutes.

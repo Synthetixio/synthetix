@@ -62,6 +62,7 @@ const deploy = async ({
 	freshDeploy,
 	manageNonces,
 	ignoreSafetyChecks,
+	ignoreCustomParameters,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -120,6 +121,10 @@ const deploy = async ({
 
 	const getDeployParameter = async name => {
 		const defaultParam = defaults[name];
+		if (ignoreCustomParameters) {
+			return defaultParam;
+		}
+
 		let effectiveValue = defaultParam;
 
 		const param = (params || []).find(p => p.name === name);
@@ -1838,6 +1843,11 @@ module.exports = {
 			.option(
 				'-i, --ignore-safety-checks',
 				'Ignores some validations regarding paths, compiler versions, etc.',
+				false
+			)
+			.option(
+				'--ignore-custom-parameters',
+				'Ignores deployment parameters specified in params.json',
 				false
 			)
 			.option(
