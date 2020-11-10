@@ -45,10 +45,10 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
-		whenUserTransfersAwayTokens: ({ amount, from }, cb) => {
+		whenUserTransfersAwayTokens: ({ amount, from, to }, cb) => {
 			describe(`when the user transfers away ${amount} of their vSynths`, () => {
 				beforeEach(async () => {
-					await this.instance.transfer(this.instance.address, amount.toString(), {
+					await this.instance.transfer(to || this.instance.address, amount.toString(), {
 						from,
 					});
 				});

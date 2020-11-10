@@ -60,19 +60,29 @@ contract VirtualSynth is ERC20, IVirtualSynth {
         return exchanger().maxSecsLeftInWaitingPeriod(address(this), synth.currencyKey());
     }
 
-    function balanceUnderlying(address account) internal view returns (uint) {
-        uint synthBalance = IERC20(address(synth)).balanceOf(address(this));
+    function calcRate() internal view returns (uint) {
+        uint synthBalance;
 
-        uint vBalanceOfAccount = balanceOf(account);
+        if (!settled) {
+            synthBalance = IERC20(address(synth)).balanceOf(address(this));
+            (uint reclaim, uint rebate, ) = exchanger().settlementOwing(address(this), synth.currencyKey());
 
-        uint _totalSupply = totalSupply();
-
-        if (_totalSupply == 0) {
-            return 0;
+            if (reclaim > 0) {
+                synthBalance = synthBalance.sub(reclaim);
+            } else if (rebate > 0) {
+                synthBalance = synthBalance.add(rebate);
+            }
+        } else {
+            synthBalance = settledAmount;
         }
 
-        // NOTE: does not account for any pending settlement
-        return vBalanceOfAccount.divideDecimalRound(_totalSupply).multiplyDecimalRound(synthBalance);
+        return synthBalance.divideDecimalRound(initialSupply);
+    }
+
+    function balanceUnderlying(address account) internal view returns (uint) {
+        uint vBalanceOfAccount = balanceOf(account);
+
+        return vBalanceOfAccount.multiplyDecimalRound(calcRate());
     }
 
     function settleSynth() internal {
@@ -100,22 +110,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
     // get the rate of the vSynth to the synth.
     function rate() external view returns (uint) {
-        uint synthBalance;
-
-        if (!settled) {
-            synthBalance = IERC20(address(synth)).balanceOf(address(this));
-            (uint reclaim, uint rebate, ) = exchanger().settlementOwing(address(this), synth.currencyKey());
-
-            if (reclaim > 0) {
-                synthBalance = synthBalance.sub(reclaim);
-            } else if (rebate > 0) {
-                synthBalance = synthBalance.add(rebate);
-            }
-        } else {
-            synthBalance = settledAmount;
-        }
-
-        return synthBalance.divideDecimalRound(initialSupply);
+        return calcRate();
     }
 
     // show the balance of the underlying synth that the given address has, given

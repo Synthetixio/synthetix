@@ -18,7 +18,7 @@ const trimUtf8EscapeChars = input => web3.utils.hexToAscii(web3.utils.utf8ToHex(
 const VirtualSynth = artifacts.require('VirtualSynth');
 
 contract('VirtualSynth (unit tests)', async accounts => {
-	const [, owner] = accounts;
+	const [, owner, alice] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -60,31 +60,90 @@ contract('VirtualSynth (unit tests)', async accounts => {
 		describe('balanceOfUnderlying()', () => {
 			const amount = '1200';
 			behaviors.whenInstantiated({ amount, user: owner }, () => {
-				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
-					it('then balance underlying must match the balance', async () => {
-						assert.equal(await this.instance.balanceOfUnderlying(owner), amount);
-					});
-				});
-				behaviors.whenMockedSynthBalance({ balanceOf: amount / 2 }, () => {
-					it('then balance underlying must be half the balance', async () => {
-						assert.equal((await this.instance.balanceOfUnderlying(owner)).toString(), amount / 2);
-					});
-					behaviors.whenUserTransfersAwayTokens({ amount: amount / 2, from: owner }, () => {
-						it('then balance underlying must be quarter the balance', async () => {
-							assert.equal((await this.instance.balanceOfUnderlying(owner)).toString(), amount / 4);
+				// when nothing to be settled
+				behaviors.whenMockedSettlementOwing({}, () => {
+					behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
+						it('then balance underlying must match the balance', async () => {
+							assert.equal(await this.instance.balanceOfUnderlying(owner), amount);
 						});
-						behaviors.whenUserTransfersAwayTokens({ amount: amount / 3, from: owner }, () => {
-							it('then balance underlying must be a twelth of the balance', async () => {
+					});
+					behaviors.whenMockedSynthBalance({ balanceOf: amount / 2 }, () => {
+						it('then balance underlying must be half the balance', async () => {
+							assert.equal((await this.instance.balanceOfUnderlying(owner)).toString(), amount / 2);
+						});
+						behaviors.whenUserTransfersAwayTokens({ amount: amount / 2, from: owner }, () => {
+							it('then balance underlying must be quarter the balance', async () => {
 								assert.equal(
 									(await this.instance.balanceOfUnderlying(owner)).toString(),
-									amount / 12
+									amount / 4
+								);
+							});
+							behaviors.whenUserTransfersAwayTokens({ amount: amount / 3, from: owner }, () => {
+								it('then balance underlying must be a twelth of the balance', async () => {
+									assert.equal(
+										(await this.instance.balanceOfUnderlying(owner)).toString(),
+										amount / 12
+									);
+								});
+							});
+						});
+						behaviors.whenUserTransfersAwayTokens({ amount: amount / 3, from: owner }, () => {
+							it('then balance underlying must be a third of the balance', async () => {
+								assert.equal(
+									(await this.instance.balanceOfUnderlying(owner)).toString(),
+									amount / 3
 								);
 							});
 						});
 					});
-					behaviors.whenUserTransfersAwayTokens({ amount: amount / 3, from: owner }, () => {
-						it('then balance underlying must be a third of the balance', async () => {
-							assert.equal((await this.instance.balanceOfUnderlying(owner)).toString(), amount / 3);
+				});
+
+				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
+					behaviors.whenMockedSettlementOwing({ reclaim: 200 }, () => {
+						it('then balance underlying must match the balance after the reclaim', async () => {
+							assert.equal(await this.instance.balanceOfUnderlying(owner), +amount - 200);
+						});
+						behaviors.whenUserTransfersAwayTokens({ amount: amount / 2, from: owner }, () => {
+							it('then balance underlying must match the balance after the reclaim, in proportion to their share', async () => {
+								assert.equal(await this.instance.balanceOfUnderlying(owner), (+amount - 200) / 2);
+							});
+						});
+						behaviors.whenSettlementCalled({ user: owner }, () => {
+							it('then balance underlying is 0 as user supply is burned', async () => {
+								assert.equal(await this.instance.balanceOfUnderlying(owner), '0');
+							});
+						});
+					});
+					behaviors.whenMockedSettlementOwing({ rebate: 300 }, () => {
+						it('then balance underlying must match the balance after the rebate', async () => {
+							assert.equal(await this.instance.balanceOfUnderlying(owner), +amount + 300);
+						});
+						behaviors.whenUserTransfersAwayTokens(
+							{ amount: amount / 2, from: owner, to: alice },
+							() => {
+								it('then balance underlying must match the balance after the reclaim, in proportion to their share', async () => {
+									assert.equal(await this.instance.balanceOfUnderlying(owner), (+amount + 300) / 2);
+								});
+								it('whereas the other user has the other half', async () => {
+									assert.equal(await this.instance.balanceOfUnderlying(alice), (+amount + 300) / 2);
+								});
+								behaviors.whenSettlementCalled({ user: owner }, () => {
+									it('then balance underlying is 0 as user supply is burned', async () => {
+										assert.equal(await this.instance.balanceOfUnderlying(owner), '0');
+									});
+									it('whereas the other user still has the other half', async () => {
+										assert.equal(
+											await this.instance.balanceOfUnderlying(alice),
+											(+amount + 300) / 2
+										);
+									});
+								});
+							}
+						);
+						behaviors.whenSettlementCalled({ user: owner }, () => {
+							it('then balance underlying is 0 as user supply is burned', async () => {
+								assert.equal(await this.instance.balanceOfUnderlying(owner), '0');
+							});
 						});
 					});
 				});
