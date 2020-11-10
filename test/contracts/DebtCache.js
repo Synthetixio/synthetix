@@ -1,12 +1,14 @@
 'use strict';
 
-const { contract } = require('@nomiclabs/buidler');
+const { contract, artifacts } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts, setupContract, mockToken } = require('./setup');
 
 const { currentTime, toUnit, fastForward } = require('../utils')();
+const { toBN } = require('web3-utils');
+const { convertToDecimals } = require('./helpers');
 
 const {
 	setExchangeFeeRateForSynths,
@@ -977,9 +979,14 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(debts[1], toUnit(200));
 				assert.bnEqual(debts[2], toUnit(50));
 				assert.bnEqual(debts[3], toUnit(200));
+				assert.bnEqual(await realtimeDebtCache.cachedSynthDebt(sUSD), toUnit(100));
+				assert.bnEqual(await realtimeDebtCache.cachedSynthDebt(sEUR), toUnit(200));
+				assert.bnEqual(await realtimeDebtCache.cachedSynthDebt(sAUD), toUnit(50));
+				assert.bnEqual(await realtimeDebtCache.cachedSynthDebt(sETH), toUnit(200));
 
 				assert.bnEqual((await realtimeDebtCache.cacheInfo()).debt, toUnit(550));
 				assert.bnEqual((await realtimeDebtCache.currentDebt())[0], toUnit(550));
+				assert.bnEqual(await realtimeDebtCache.cachedDebt(), toUnit(550));
 
 				await exchangeRates.updateRates(
 					[sAUD, sEUR, sETH],
@@ -1001,9 +1008,80 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(debts[1], toUnit(300));
 				assert.bnEqual(debts[2], toUnit(100));
 				assert.bnEqual(debts[3], toUnit(400));
+				assert.bnEqual(await realtimeDebtCache.cachedSynthDebt(sUSD), toUnit(100));
+				assert.bnEqual(await realtimeDebtCache.cachedSynthDebt(sEUR), toUnit(300));
+				assert.bnEqual(await realtimeDebtCache.cachedSynthDebt(sAUD), toUnit(100));
+				assert.bnEqual(await realtimeDebtCache.cachedSynthDebt(sETH), toUnit(400));
 
 				assert.bnEqual((await realtimeDebtCache.cacheInfo()).debt, toUnit(900));
 				assert.bnEqual((await realtimeDebtCache.currentDebt())[0], toUnit(900));
+				assert.bnEqual(await realtimeDebtCache.cachedDebt(), toUnit(900));
+			});
+
+			it('Cache timestamps update in real time and are never stale', async () => {
+				const now = toBN(await currentTime());
+				let timestamp = toBN(await realtimeDebtCache.cacheTimestamp());
+				let stale = await realtimeDebtCache.cacheStale();
+				let info = await realtimeDebtCache.cacheInfo();
+
+				assert.bnLte(now, timestamp);
+				assert.bnLte(timestamp, toBN(info.timestamp));
+				assert.isFalse(stale);
+				assert.isFalse(info.isStale);
+
+				const staleTime = await systemSettings.debtSnapshotStaleTime();
+				await fastForward(staleTime * 2);
+
+				const later = toBN(await currentTime());
+				timestamp = toBN(await realtimeDebtCache.cacheTimestamp());
+				stale = await realtimeDebtCache.cacheStale();
+				info = await realtimeDebtCache.cacheInfo();
+
+				assert.bnLt(now, later);
+				assert.bnLte(later, timestamp);
+				assert.bnLte(timestamp, toBN(info.timestamp));
+				assert.isFalse(stale);
+				assert.isFalse(info.isStale);
+
+				assert.bnEqual(
+					toBN(await realtimeDebtCache.debtSnapshotStaleTime()),
+					toBN(2)
+						.pow(toBN(256))
+						.sub(toBN(1))
+				);
+			});
+
+			it('Cache invalidity changes in real time if a rate is flagged', async () => {
+				const mockFlagsInterface = await artifacts.require('MockFlagsInterface').new();
+				await systemSettings.setAggregatorWarningFlags(mockFlagsInterface.address, {
+					from: owner,
+				});
+				const aggregatorEUR = await artifacts.require('MockAggregatorV2V3').new({ from: owner });
+				aggregatorEUR.setDecimals('8');
+				await exchangeRates.addAggregator(sEUR, aggregatorEUR.address, {
+					from: owner,
+				});
+				await mockFlagsInterface.unflagAggregator(aggregatorEUR.address);
+
+				await exchangeRates.updateRates(
+					[sAUD, sETH],
+					['1', '200'].map(toUnit),
+					await currentTime(),
+					{
+						from: oracle,
+					}
+				);
+				await aggregatorEUR.setLatestAnswer(convertToDecimals(3, 8), await currentTime());
+				assert.isFalse(await realtimeDebtCache.cacheInvalid());
+				assert.isFalse((await realtimeDebtCache.cacheInfo()).isInvalid);
+
+				await mockFlagsInterface.flagAggregator(aggregatorEUR.address);
+				assert.isTrue(await realtimeDebtCache.cacheInvalid());
+				assert.isTrue((await realtimeDebtCache.cacheInfo()).isInvalid);
+
+				await mockFlagsInterface.unflagAggregator(aggregatorEUR.address);
+				assert.isFalse(await realtimeDebtCache.cacheInvalid());
+				assert.isFalse((await realtimeDebtCache.cacheInfo()).isInvalid);
 			});
 
 			it('Cache functions still operate, but are no-ops', async () => {
