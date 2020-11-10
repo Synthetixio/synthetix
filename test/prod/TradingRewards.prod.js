@@ -35,7 +35,7 @@ contract('TradingRewards (prod tests)', accounts => {
 		}
 
 		if (network === 'local') {
-			await bootstrapLocal();
+			await bootstrapLocal({ deploymentPath });
 		}
 
 		({ TradingRewards, AddressResolver, SystemSettings } = await connectContracts({
@@ -132,6 +132,7 @@ contract('TradingRewards (prod tests)', accounts => {
 			before(async () => {
 				({ exchangeLogs } = await exchangeSynths({
 					network,
+					withTradingRewards: true,
 					account: user,
 					fromCurrency: 'sUSD',
 					toCurrency: 'sETH',

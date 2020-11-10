@@ -1,6 +1,21 @@
 const { toBytes32 } = require('../../..');
-const { connectContract } = require('./connectContract');
+const { connectContract, connectContracts } = require('./connectContract');
 const { getDecodedLogs } = require('../../contracts/helpers');
+
+async function getExchangeLogsWithTradingRewards({ network, deploymentPath, exchangeTx }) {
+	const { TradingRewards, Synthetix } = await connectContracts({
+		network,
+		deploymentPath,
+		requests: [{ contractName: 'TradingRewards' }, { contractName: 'Synthetix' }],
+	});
+
+	const logs = await getDecodedLogs({
+		hash: exchangeTx.tx,
+		contracts: [Synthetix, TradingRewards],
+	});
+
+	return logs.filter(log => log !== undefined);
+}
 
 async function getExchangeLogs({ network, deploymentPath, exchangeTx }) {
 	const Synthetix = await connectContract({
@@ -25,6 +40,7 @@ async function exchangeSynths({
 	fromCurrency,
 	toCurrency,
 	amount,
+	withTradingRewards = false,
 }) {
 	const Synthetix = await connectContract({
 		network,
@@ -42,7 +58,12 @@ async function exchangeSynths({
 		}
 	);
 
-	const exchangeLogs = await getExchangeLogs({ network, deploymentPath, exchangeTx });
+	let exchangeLogs;
+	if (withTradingRewards) {
+		exchangeLogs = await getExchangeLogsWithTradingRewards({ network, deploymentPath, exchangeTx });
+	} else {
+		exchangeLogs = await getExchangeLogs({ network, deploymentPath, exchangeTx });
+	}
 
 	return { exchangeTx, exchangeLogs };
 }

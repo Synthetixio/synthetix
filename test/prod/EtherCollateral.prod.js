@@ -34,7 +34,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 		}
 
 		if (network === 'local') {
-			await bootstrapLocal();
+			await bootstrapLocal({ deploymentPath });
 		}
 
 		({ EtherCollateral, SynthsETH, SynthsUSD, AddressResolver, Depot } = await connectContracts({

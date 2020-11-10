@@ -53,7 +53,7 @@ async function mockBridge() {
 	});
 
 	const mockAddress = '0x0000000000000000000000000000000000000001';
-	AddressResolver.importAddresses(
+	await AddressResolver.importAddresses(
 		['ovm:SynthetixBridgeToBase', 'base:SynthetixBridgeToOptimism', 'ext:Messenger'].map(toBytes32),
 		[mockAddress, mockAddress, mockAddress]
 	);
@@ -72,7 +72,10 @@ async function bootstrapLocal({ deploymentPath: _deploymentPath }) {
 
 	await simulateExchangeRates();
 	await takeDebtSnapshot();
-	await mockBridge();
+
+	if (deploymentPath.includes('ovm')) {
+		await mockBridge();
+	}
 }
 
 module.exports = {
