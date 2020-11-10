@@ -55,21 +55,21 @@ contract('Synthetix (prod tests)', accounts => {
 		[owner] = getUsers({ network }).map(user => user.address);
 
 		await ensureAccountHasEther({
-			amount: toUnit('10'),
+			amount: toUnit('1'),
 			account: owner,
 			fromAccount: accounts[7],
 			network,
 			deploymentPath,
 		});
 		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
+			amount: toUnit('100'),
 			account: user1,
 			fromAccount: owner,
 			network,
 			deploymentPath,
 		});
 		await ensureAccountHasSNX({
-			amount: toUnit('1000'),
+			amount: toUnit('100'),
 			account: user1,
 			fromAccount: owner,
 			network,
@@ -105,7 +105,7 @@ contract('Synthetix (prod tests)', accounts => {
 			const user1BalanceBefore = await Synthetix.balanceOf(user1);
 			const user2BalanceBefore = await Synthetix.balanceOf(user2);
 
-			const amount = toUnit('100');
+			const amount = toUnit('10');
 			await Synthetix.transfer(user2, amount, {
 				from: user1,
 			});
@@ -134,7 +134,7 @@ contract('Synthetix (prod tests)', accounts => {
 		it('can issue sUSD', async () => {
 			const user1BalanceBefore = await SynthsUSD.balanceOf(user1);
 
-			const amount = toUnit('100');
+			const amount = toUnit('10');
 			await Synthetix.issueSynths(amount, {
 				from: user1,
 			});
@@ -155,7 +155,7 @@ contract('Synthetix (prod tests)', accounts => {
 
 			const user1BalanceAfter = await SynthsUSD.balanceOf(user1);
 
-			assert.bnEqual(user1BalanceAfter, toUnit('0'));
+			assert.bnLt(user1BalanceAfter, user1BalanceBefore);
 		});
 	});
 
@@ -168,7 +168,7 @@ contract('Synthetix (prod tests)', accounts => {
 			const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
 			const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
 
-			const amount = toUnit('100');
+			const amount = toUnit('10');
 			await Synthetix.exchange(toBytes32('sUSD'), amount, toBytes32('sETH'), {
 				from: user1,
 			});

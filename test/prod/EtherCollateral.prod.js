@@ -53,13 +53,13 @@ contract('EtherCollateral (prod tests)', accounts => {
 		[owner] = getUsers({ network }).map(user => user.address);
 
 		await ensureAccountHasEther({
-			amount: toUnit('10'),
+			amount: toUnit('1'),
 			account: owner,
 			fromAccount: accounts[7],
 			network,
 		});
 		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
+			amount: toUnit('100'),
 			account: owner,
 			fromAccount: owner,
 			network,
@@ -101,10 +101,12 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 		describe('closing a loan', () => {
 			before('ensure depot has sUSD', async () => {
-				const amount = toUnit('200');
+				if (network === 'local') {
+					const amount = toUnit('20');
 
-				await SynthsUSD.approve(Depot.address, amount);
-				await Depot.depositSynths(amount);
+					await SynthsUSD.approve(Depot.address, amount);
+					await Depot.depositSynths(amount);
+				}
 			});
 
 			before('close loan', async () => {
