@@ -16,7 +16,8 @@ contract RewardEscrowV2 is RewardEscrow {
             uint256,
             uint64[52] memory,
             uint256[52] memory
-        );
+        )
+    {}
 
     function migrateAccountEscrowBalances(
         address[] calldata accounts,
