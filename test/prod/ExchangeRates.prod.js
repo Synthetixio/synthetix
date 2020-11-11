@@ -38,6 +38,14 @@ contract('ExchangeRates (prod tests)', accounts => {
 			await bootstrapLocal({ deploymentPath });
 		} else {
 			if (config.simulateExchangeRates) {
+				await ensureAccountHasEther({
+					amount: toUnit('2'),
+					account: oracle,
+					fromAccount: accounts[7],
+					network,
+					deploymentPath,
+				});
+
 				await simulateExchangeRates({ deploymentPath, network, oracle });
 				await takeDebtSnapshot({ deploymentPath, network });
 			}
