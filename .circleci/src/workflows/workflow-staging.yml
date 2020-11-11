@@ -9,7 +9,10 @@ jobs:
           only: /.*(staging|master).*/
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Deployment validation
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-validate-deployments:
       name: job-validate-deployments-mainnet
       filters:
@@ -18,7 +21,6 @@ jobs:
       network: mainnet
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Deployment validation on RINKEBY ~~~~~~~~~~~~~
   - job-validate-deployments:
       name: job-validate-deployments-rinkeby
       filters:
@@ -27,7 +29,6 @@ jobs:
       network: rinkeby
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Deployment validation on KOVAN ~~~~~~~~~~~~~
   - job-validate-deployments:
       name: job-validate-deployments-kovan
       filters:
@@ -36,47 +37,59 @@ jobs:
       network: kovan
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Deployment validation on ROPSTEN ~~~~~~~~~~~~~
-  # Disabled because of recent attack to ropsten.
-  # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
-  - job-production-tests:
-      name: job-production-tests-mainnet
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Production tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-prod-tests:
+      name: job-prod-tests-mainnet
       network: mainnet
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Differential production tests on LOCAL ~~~~~~~~~~~~~
-  - job-production-tests-local:
-      name: job-production-tests-local
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      requires:
-        - job-prepare
-  # ~~~~~~~~~~~~ Differential production tests on LOCAL with OVM config ~~~~~~~~~~~~~
-  - job-production-tests-local-ovm:
-      name: job-production-tests-local-ovm
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      requires:
-        - job-prepare
-  # ~~~~~~~~~~~~ Differential production tests on MAINNET ~~~~~~~~~~~~~
-  - job-production-tests-differential:
-      name: job-production-tests-differential-mainnet
-      network: mainnet
-      requires:
-        - job-prepare
-  # ~~~~~~~~~~~~ Differential production tests on RINKEBY ~~~~~~~~~~~~~
-  - job-production-tests-differential:
-      name: job-production-tests-differential-rinkeby
+  - job-prod-tests:
+      name: job-prod-tests-rinkeby
       network: rinkeby
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Differential production tests on KOVAN ~~~~~~~~~~~~~
-  - job-production-tests-differential:
-      name: job-production-tests-differential-kovan
+  - job-prod-tests:
+      name: job-prod-tests-kovan
       network: kovan
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Differential production tests on ROPSTEN ~~~~~~~~~~~~~
-  # Disabled because of recent attack to ropsten.
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Differential local production tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-diff-prod-tests-local:
+      name: job-prod-tests-local
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      requires:
+        - job-prepare
+  - job-diff-prod-tests-local-ovm:
+      name: job-prod-tests-local-ovm
+      filters:
+        branches:
+          only: /.*(staging|master).*/
+      requires:
+        - job-prepare
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Differential production tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-diff-prod-tests:
+      name: job-diff-prod-tests-mainnet
+      network: mainnet
+      requires:
+        - job-prepare
+  - job-diff-prod-tests:
+      name: job-diff-prod-tests-rinkeby
+      network: rinkeby
+      requires:
+        - job-prepare
+  - job-diff-prod-tests:
+      name: job-diff-prod-tests-kovan
+      network: kovan
+      requires:
+        - job-prepare
