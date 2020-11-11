@@ -1529,8 +1529,10 @@ const deploy = async ({
 
 			// override individual currencyKey / synths exchange rates
 			const synthExchangeRateOverride = {
-				sETH: w3utils.toWei('0.005'),
-				iETH: w3utils.toWei('0.005'),
+				sETH: w3utils.toWei('0.003'),
+				iETH: w3utils.toWei('0.003'),
+				sBTC: w3utils.toWei('0.003'),
+				iBTC: w3utils.toWei('0.003'),
 			};
 
 			const synthsRatesToUpdate = synths

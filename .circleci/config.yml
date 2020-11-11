@@ -108,7 +108,7 @@ jobs:
           reset: true
       - run: node publish prepare-deploy --network << parameters.network >>
       - run: node publish deploy --use-fork --yes --network << parameters.network >>
-      - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
+      - run: npm run test:prod:gas -- --simulate-exchange-rates && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
     working_directory: ~/repo

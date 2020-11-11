@@ -4,10 +4,7 @@ const { connectContract } = require('./connectContract');
 const { web3 } = require('@nomiclabs/buidler');
 const { toWei } = require('web3-utils');
 
-const network = 'local';
-let deploymentPath;
-
-async function simulateExchangeRates() {
+async function simulateExchangeRates({ deploymentPath, network = 'local', oracle }) {
 	const Issuer = await connectContract({
 		network,
 		deploymentPath,
@@ -28,14 +25,22 @@ async function simulateExchangeRates() {
 	const { currentTime } = testUtils({ web3 });
 	const now = await currentTime();
 
+	const params = {};
+	if (oracle) {
+		params.from = oracle;
+	}
+
 	await ExchangeRates.updateRates(
 		currencyKeys,
 		currencyKeys.map(() => toWei('1')),
-		now
+		now,
+		{
+			from: oracle || (await web3.eth.getAccounts()[0]),
+		}
 	);
 }
 
-async function takeDebtSnapshot() {
+async function takeDebtSnapshot({ deploymentPath, network = 'local' }) {
 	const DebtCache = await connectContract({
 		network,
 		deploymentPath,
@@ -45,7 +50,7 @@ async function takeDebtSnapshot() {
 	await DebtCache.takeDebtSnapshot();
 }
 
-async function mockBridge() {
+async function mockBridge({ deploymentPath, network = 'local' }) {
 	const AddressResolver = await connectContract({
 		network,
 		deploymentPath,
@@ -67,17 +72,17 @@ async function mockBridge() {
 	await SynthetixBridgeToBase.setResolverAndSyncCache(AddressResolver.address);
 }
 
-async function bootstrapLocal({ deploymentPath: _deploymentPath }) {
-	deploymentPath = _deploymentPath;
-
-	await simulateExchangeRates();
-	await takeDebtSnapshot();
+async function bootstrapLocal({ deploymentPath, oracle }) {
+	await simulateExchangeRates({ deploymentPath, oracle });
+	await takeDebtSnapshot({ deploymentPath });
 
 	if (deploymentPath.includes('ovm')) {
-		await mockBridge();
+		await mockBridge({ deploymentPath });
 	}
 }
 
 module.exports = {
 	bootstrapLocal,
+	simulateExchangeRates,
+	takeDebtSnapshot,
 };

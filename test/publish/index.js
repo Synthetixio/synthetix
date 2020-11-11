@@ -299,8 +299,12 @@ describe('publish scripts', () => {
 					);
 					assert.strictEqual(await Issuer.methods.minimumStakeTime().call(), MINIMUM_STAKE_TIME);
 					for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
-						// take the first synth we can find from that category
-						const synth = synths.find(({ category: c }) => c === category);
+						// take the first synth we can find from that category, ignoring ETH and BTC as
+						// they deviate from the rest of the synth fee category defaults
+						const synth = synths.find(
+							({ category: c, name }) => c === category && !/^.(BTC|ETH)$/.test(name)
+						);
+
 						assert.strictEqual(
 							await Exchanger.methods
 								.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
