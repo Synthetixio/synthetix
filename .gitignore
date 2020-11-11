@@ -32,6 +32,9 @@ coverage
 browser.js
 .coverage_*
 
+# CircleCI local artifacts
+process.yml
+
 # Ganache local chain data
 .db
 

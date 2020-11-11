@@ -1,21 +1,25 @@
+const fs = require('fs');
+const path = require('path');
 const { artifacts } = require('@nomiclabs/buidler');
-const { getTarget } = require('../../..');
+const { wrap } = require('../../..');
 
-async function connectContract({ network, contractName, abiName = contractName }) {
-	const { address } = getTarget({ network, contract: contractName });
+async function connectContract({ network, deploymentPath, contractName, abiName }) {
+	const { getTarget } = wrap({ network, fs, path });
+	const { address, source } = getTarget({ network, deploymentPath, contract: contractName });
 
-	const Contract = artifacts.require(abiName);
+	const Contract = artifacts.require(abiName || source);
 
 	return Contract.at(address);
 }
 
-async function connectContracts({ network, requests }) {
+async function connectContracts({ network, deploymentPath, requests }) {
 	const contracts = {};
 
 	await Promise.all(
-		requests.map(async ({ contractName, abiName = contractName, alias = contractName }) => {
+		requests.map(async ({ contractName, abiName, alias = contractName }) => {
 			contracts[alias] = await connectContract({
 				network,
+				deploymentPath,
 				contractName,
 				abiName,
 			});

@@ -1232,6 +1232,9 @@ contract('Exchange Rates', async accounts => {
 				it('edge-case: freezeRate reverts as even though there is no price, it is not on bounds', async () => {
 					await assert.revert(instance.freezeRate(iBTC), 'Rate within bounds');
 				});
+				it('roundFrozen() returns 0 for iBTC', async () => {
+					assert.equal(await instance.roundFrozen(iBTC), '0');
+				});
 				describe('when an in-bounds rate arrives for iBTC', () => {
 					beforeEach(async () => {
 						await instance.updateRates([iBTC], [toUnit('5000')], await currentTime(), {
@@ -1241,12 +1244,18 @@ contract('Exchange Rates', async accounts => {
 					it('freezeRate reverts as the price is within bounds', async () => {
 						await assert.revert(instance.freezeRate(iBTC), 'Rate within bounds');
 					});
+					it('roundFrozen() returns 0 for iBTC', async () => {
+						assert.equal(await instance.roundFrozen(iBTC), '0');
+					});
 				});
 				describe('when an upper out-of-bounds rate arrives for iBTC', () => {
+					let roundId;
+
 					beforeEach(async () => {
 						await instance.updateRates([iBTC], [toUnit('6000')], await currentTime(), {
 							from: oracle,
 						});
+						roundId = await instance.getCurrentRoundId(iBTC);
 					});
 					describe('when freezeRate is invoked', () => {
 						let txn;
@@ -1257,6 +1266,7 @@ contract('Exchange Rates', async accounts => {
 							assert.eventEqual(txn, 'InversePriceFrozen', {
 								currencyKey: iBTC,
 								rate: toUnit(2300),
+								roundId,
 								initiator: accounts[2],
 							});
 						});
@@ -1268,13 +1278,18 @@ contract('Exchange Rates', async accounts => {
 							assert.notOk(frozenAtUpperLimit);
 							assert.ok(frozenAtLowerLimit);
 						});
+						it('and roundFrozen() returns the current round ID for iBTC', async () => {
+							assert.bnEqual(await instance.roundFrozen(iBTC), roundId);
+						});
 					});
 				});
 				describe('when a lower out-of-bounds rate arrives for iBTC', () => {
+					let roundId;
 					beforeEach(async () => {
 						await instance.updateRates([iBTC], [toUnit('1000')], await currentTime(), {
 							from: oracle,
 						});
+						roundId = await instance.getCurrentRoundId(iBTC);
 					});
 					describe('when freezeRate is invoked', () => {
 						let txn;
@@ -1285,6 +1300,7 @@ contract('Exchange Rates', async accounts => {
 							assert.eventEqual(txn, 'InversePriceFrozen', {
 								currencyKey: iBTC,
 								rate: toUnit(6500),
+								roundId,
 								initiator: accounts[2],
 							});
 						});
@@ -1295,6 +1311,9 @@ contract('Exchange Rates', async accounts => {
 
 							assert.ok(frozenAtUpperLimit);
 							assert.notOk(frozenAtLowerLimit);
+						});
+						it('and roundFrozen() returns the current round ID for iBTC', async () => {
+							assert.bnEqual(await instance.roundFrozen(iBTC), roundId);
 						});
 					});
 				});
@@ -1420,6 +1439,7 @@ contract('Exchange Rates', async accounts => {
 						assert.eventEqual(txn.logs[0], 'InversePriceFrozen', {
 							currencyKey: iBTC,
 							rate: toUnit(6500),
+							roundId: '0',
 							initiator: owner,
 						});
 					});
@@ -1493,6 +1513,7 @@ contract('Exchange Rates', async accounts => {
 						assert.eventEqual(txn.logs[0], 'InversePriceFrozen', {
 							currencyKey: iBTC,
 							rate: toUnit(2300),
+							roundId: '0',
 							initiator: owner,
 						});
 					});

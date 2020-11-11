@@ -1,3 +1,4 @@
+# Measures unit and spec test coverage
 working_directory: ~/repo
 docker:
   - image: circleci/node:12.18
