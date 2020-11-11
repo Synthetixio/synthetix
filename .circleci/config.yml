@@ -403,11 +403,11 @@ workflows:
           requires:
             - job-prepare
       - job-diff-prod-tests-local:
-          name: job-prod-tests-local
+          name: job-diff-prod-tests-local
           requires:
             - job-prepare
       - job-diff-prod-tests-local-ovm:
-          name: job-prod-tests-local-ovm
+          name: job-diff-prod-tests-local-ovm
           requires:
             - job-prepare
     triggers:
@@ -472,14 +472,14 @@ workflows:
           filters:
             branches:
               only: /.*(staging|master).*/
-          name: job-prod-tests-local
+          name: job-diff-prod-tests-local
           requires:
             - job-prepare
       - job-diff-prod-tests-local-ovm:
           filters:
             branches:
               only: /.*(staging|master).*/
-          name: job-prod-tests-local-ovm
+          name: job-diff-prod-tests-local-ovm
           requires:
             - job-prepare
       - job-diff-prod-tests:

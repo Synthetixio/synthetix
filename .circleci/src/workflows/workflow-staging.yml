@@ -61,14 +61,14 @@ jobs:
   # Differential local production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-diff-prod-tests-local:
-      name: job-prod-tests-local
+      name: job-diff-prod-tests-local
       filters:
         branches:
           only: /.*(staging|master).*/
       requires:
         - job-prepare
   - job-diff-prod-tests-local-ovm:
-      name: job-prod-tests-local-ovm
+      name: job-diff-prod-tests-local-ovm
       filters:
         branches:
           only: /.*(staging|master).*/
