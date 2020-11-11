@@ -486,22 +486,22 @@
 		"deploy": false
 	},
 	"TokenStatesOIL": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysOIL": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsOIL": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateiOIL": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyiOIL": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthiOIL": {
-		"deploy": true
+		"deploy": false
 	},
 	"FlexibleStorage": {
 		"deploy": false
