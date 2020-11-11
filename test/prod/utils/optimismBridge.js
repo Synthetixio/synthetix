@@ -46,4 +46,4 @@ async function mockOptimismBridge({ network, deploymentPath }) {
 
 module.exports = {
 	mockOptimismBridge,
-}
+};

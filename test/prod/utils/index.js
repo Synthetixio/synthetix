@@ -1,6 +1,10 @@
 const { detectNetworkName } = require('./detectNetwork');
 const { connectContract, connectContracts } = require('./connectContract');
-const { ensureAccountHasEther, ensureAccountHasSNX, ensureAccountHassUSD } = require('./ensureAccountHasBalance');
+const {
+	ensureAccountHasEther,
+	ensureAccountHasSNX,
+	ensureAccountHassUSD,
+} = require('./ensureAccountHasBalance');
 const { exchangeSynths } = require('./exchangeSynths');
 const { readSetting, writeSetting } = require('./systemSettings');
 const { skipWaitingPeriod, skipStakeTime } = require('./skipWaiting');

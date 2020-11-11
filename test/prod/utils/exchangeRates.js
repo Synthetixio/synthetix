@@ -58,7 +58,7 @@ async function simulateExchangeRates({ network, deploymentPath }) {
 		currencyKeys.map(() => toWei('1')),
 		now,
 		{
-			from: oracle
+			from: oracle,
 		}
 	);
 }

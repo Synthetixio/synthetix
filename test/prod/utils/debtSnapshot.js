@@ -20,4 +20,4 @@ async function takeDebtSnapshot({ network, deploymentPath }) {
 
 module.exports = {
 	takeDebtSnapshot,
-}
+};
