@@ -9,7 +9,7 @@ const fs = require('fs');
 
 const dbPath = '.db/';
 
-const forkChain = async ({ network, reset, providerUrl }) => {
+const forkChain = async ({ network, reset, providerUrl, unlockAccounts = [] }) => {
 	ensureNetwork(network);
 
 	const dbNetworkPath = path.join(dbPath, network);
@@ -31,7 +31,8 @@ const forkChain = async ({ network, reset, providerUrl }) => {
 	const pwnedAddresses = users
 		.map(user => user.address)
 		.filter(address => address !== fee.address)
-		.filter(address => address !== zero.address);
+		.filter(address => address !== zero.address)
+		.concat(unlockAccounts);
 
 	const { providerUrl: envProviderUrl } = loadConnections({ network });
 
@@ -89,6 +90,12 @@ module.exports = {
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
 			.option('-r, --reset', 'Reset local database', false)
+			.option(
+				'-u, --unlock-accounts <account>',
+				'Unlock a specific account (or accounts, comma-delimit no space)',
+				input => input.split(','),
+				[]
+			)
 			.action(async (...args) => {
 				try {
 					await forkChain(...args);
