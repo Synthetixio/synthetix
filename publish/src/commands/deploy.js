@@ -1446,12 +1446,14 @@ const deploy = async ({
 					const totalSynthSupply = await synth.methods.totalSupply().call();
 					console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
 
-					// check we haven't already inserted the correct rates yet
 					const inversePricingOnCurrentExRates = await exchangeRates.methods
 						.inversePricing(toBytes32(currencyKey))
 						.call();
 
+					// ensure that if it's a newer exchange rates deployed, then skip reinserting the inverse pricing if
+					// already done
 					if (
+						oldExrates.options.address !== exchangeRates.options.address &&
 						JSON.stringify(inversePricingOnCurrentExRates) === JSON.stringify(oldInversePricing)
 					) {
 						console.log(
