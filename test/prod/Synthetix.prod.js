@@ -18,6 +18,7 @@ const {
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
+	implementsVirtualSynths,
 } = require('./utils');
 
 const gasFromReceipt = ({ receipt }) =>
@@ -213,6 +214,13 @@ contract('Synthetix (prod tests)', accounts => {
 	describe('exchanging with virtual synths', () => {
 		let Exchanger;
 		let vSynth;
+
+		before('skip if there is no vSynth implementation', async function() {
+			if (!(await implementsVirtualSynths({ network, deploymentPath }))) {
+				this.skip();
+			}
+		});
+
 		before(async () => {
 			await skipWaitingPeriod({ network, deploymentPath });
 

@@ -11,6 +11,7 @@ const { skipWaitingPeriod, skipStakeTime } = require('./skipWaiting');
 const { simulateExchangeRates } = require('./exchangeRates');
 const { takeDebtSnapshot } = require('./debtSnapshot');
 const { mockOptimismBridge } = require('./optimismBridge');
+const { implementsVirtualSynths } = require('./virtualSynths');
 
 module.exports = {
 	detectNetworkName,
@@ -27,4 +28,5 @@ module.exports = {
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
+	implementsVirtualSynths,
 };
