@@ -502,7 +502,7 @@ const deploy = async ({
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
 	});
 
-	const rewardEscrowV2 = await deployer.deployContract({
+	await deployer.deployContract({
 		name: 'RewardEscrowV2',
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
 	});
