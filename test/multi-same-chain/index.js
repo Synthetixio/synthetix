@@ -75,6 +75,7 @@ describe('deploy multiple instances', () => {
 			deploymentPath,
 			network,
 		});
+		config['RewardEscrowV2'] = { deploy: true };
 		// adjust deployment indicators and update config file
 		if (deployL1ToL2Bridge) {
 			delete config['SynthetixBridgeToBase'];
