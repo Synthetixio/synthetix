@@ -62,6 +62,7 @@ const deploy = async ({
 	freshDeploy,
 	manageNonces,
 	ignoreSafetyChecks,
+	ignoreCustomParameters,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -120,6 +121,10 @@ const deploy = async ({
 
 	const getDeployParameter = async name => {
 		const defaultParam = defaults[name];
+		if (ignoreCustomParameters) {
+			return defaultParam;
+		}
+
 		let effectiveValue = defaultParam;
 
 		const param = (params || []).find(p => p.name === name);
@@ -463,16 +468,14 @@ const deploy = async ({
 		args: [account],
 	});
 
-	const resolverAddress = addressOf(addressResolver);
-
 	if (addressResolver && readProxyForResolver) {
 		await runStep({
 			contract: 'ReadProxyAddressResolver',
 			target: readProxyForResolver,
 			read: 'target',
-			expected: input => input === resolverAddress,
+			expected: input => input === addressOf(addressResolver),
 			write: 'setTarget',
-			writeArg: resolverAddress,
+			writeArg: addressOf(addressResolver),
 		});
 	}
 
@@ -484,7 +487,7 @@ const deploy = async ({
 
 	const systemSettings = await deployer.deployContract({
 		name: 'SystemSettings',
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const systemStatus = await deployer.deployContract({
@@ -494,7 +497,13 @@ const deploy = async ({
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, resolverAddress, [toBytes32('SNX')], [currentSynthetixPrice]],
+		args: [
+			account,
+			oracleExrates,
+			addressOf(readProxyForResolver),
+			[toBytes32('SNX')],
+			[currentSynthetixPrice],
+		],
 	});
 
 	const rewardEscrow = await deployer.deployContract({
@@ -542,7 +551,7 @@ const deploy = async ({
 
 	const liquidations = await deployer.deployContract({
 		name: 'Liquidations',
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const eternalStorageLiquidations = await deployer.deployContract({
@@ -570,7 +579,7 @@ const deploy = async ({
 	const feePool = await deployer.deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
-		args: [addressOf(proxyFeePool), account, resolverAddress],
+		args: [addressOf(proxyFeePool), account, addressOf(readProxyForResolver)],
 	});
 
 	if (proxyFeePool && feePool) {
@@ -646,7 +655,7 @@ const deploy = async ({
 			addressOf(tokenStateSynthetix),
 			account,
 			currentSynthetixSupply,
-			resolverAddress,
+			addressOf(readProxyForResolver),
 		],
 	});
 
@@ -692,13 +701,14 @@ const deploy = async ({
 		name: 'DebtCache',
 		source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
 		deps: ['AddressResolver'],
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
+		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
 		deps: ['AddressResolver'],
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const exchangeState = await deployer.deployContract({
@@ -768,7 +778,7 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'TradingRewards',
 		deps: ['AddressResolver', 'Exchanger'],
-		args: [account, account, resolverAddress],
+		args: [account, account, addressOf(readProxyForResolver)],
 	});
 
 	if (synthetixState && issuer) {
@@ -828,7 +838,7 @@ const deploy = async ({
 			source: 'FixedSupplySchedule',
 			args: [
 				account,
-				resolverAddress,
+				addressOf(readProxyForResolver),
 				inflationStartDate,
 				'0',
 				'0',
@@ -1004,7 +1014,7 @@ const deploy = async ({
 				account,
 				currencyKeyInBytes,
 				originalTotalSupply,
-				resolverAddress,
+				addressOf(readProxyForResolver),
 			].concat(additionalConstructorArgsMap[sourceContract + currencyKey] || []),
 			force: addNewSynths,
 		});
@@ -1083,7 +1093,7 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
-		args: [account, account, resolverAddress],
+		args: [account, account, addressOf(readProxyForResolver)],
 	});
 
 	if (useOvm) {
@@ -1100,22 +1110,22 @@ const deploy = async ({
 		});
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToBase',
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	} else {
 		await deployer.deployContract({
 			name: 'EtherCollateral',
 			deps: ['AddressResolver'],
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 		await deployer.deployContract({
 			name: 'EtherCollateralsUSD',
 			deps: ['AddressResolver'],
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	}
 
@@ -1127,7 +1137,7 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'BinaryOptionMarketFactory',
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 		deps: ['AddressResolver'],
 	});
 
@@ -1144,7 +1154,7 @@ const deploy = async ({
 		name: 'BinaryOptionMarketManager',
 		args: [
 			account,
-			resolverAddress,
+			addressOf(readProxyForResolver),
 			maxOraclePriceAge,
 			expiryDuration,
 			maxTimeToMaturity,
@@ -1342,10 +1352,10 @@ const deploy = async ({
 						contract,
 						target,
 						read: isPreSIP46 ? 'resolver' : 'isResolverCached',
-						readArg: isPreSIP46 ? undefined : resolverAddress,
-						expected: input => (isPreSIP46 ? input === resolverAddress : input),
+						readArg: isPreSIP46 ? undefined : addressOf(readProxyForResolver),
+						expected: input => (isPreSIP46 ? input === addressOf(readProxyForResolver) : input),
 						write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
-						writeArg: resolverAddress,
+						writeArg: addressOf(readProxyForResolver),
 					});
 				}
 			}
@@ -1377,7 +1387,7 @@ const deploy = async ({
 			await runStep({
 				contract: 'Issuer',
 				target: issuer,
-				read: 'synthAddresses',
+				read: 'getSynths',
 				readArg: [chunk.map(synth => synth.currencyKeyInBytes)],
 				expected: input =>
 					input.reduce((acc, cur, idx) => acc && cur === addressOf(chunk[idx].synth)),
@@ -1519,8 +1529,10 @@ const deploy = async ({
 
 			// override individual currencyKey / synths exchange rates
 			const synthExchangeRateOverride = {
-				sETH: w3utils.toWei('0.005'),
-				iETH: w3utils.toWei('0.005'),
+				sETH: w3utils.toWei('0.003'),
+				iETH: w3utils.toWei('0.003'),
+				sBTC: w3utils.toWei('0.003'),
+				iBTC: w3utils.toWei('0.003'),
 			};
 
 			const synthsRatesToUpdate = synths
@@ -1838,6 +1850,11 @@ module.exports = {
 			.option(
 				'-i, --ignore-safety-checks',
 				'Ignores some validations regarding paths, compiler versions, etc.',
+				false
+			)
+			.option(
+				'--ignore-custom-parameters',
+				'Ignores deployment parameters specified in params.json',
 				false
 			)
 			.option(
