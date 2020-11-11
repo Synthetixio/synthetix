@@ -127,5 +127,8 @@
 	},
 	"SynthsETH": {
 		"deploy": true
+	},
+	"SynthetixBridgeToBase": {
+		"deploy": true
 	}
 }

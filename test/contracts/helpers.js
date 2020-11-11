@@ -1,6 +1,7 @@
 const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const abiDecoder = require('abi-decoder');
+const { smockit } = require('@eth-optimism/smock');
 
 const { assert } = require('./common');
 
@@ -234,5 +235,25 @@ module.exports = {
 		} else {
 			throw Error(`Section: ${section} unsupported`);
 		}
+	},
+
+	async prepareSmocks({ contracts, accounts = [] }) {
+		const mocks = {};
+		for (const [i, contract] of Object.entries(contracts).concat([
+			[contracts.length, 'AddressResolver'],
+		])) {
+			if (mocks[contract]) {
+				continue; // prevent dupes
+			}
+			mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
+		}
+
+		const resolver = mocks['AddressResolver'];
+
+		const returnMockFromResolver = contract => mocks[web3.utils.hexToUtf8(contract)].address;
+		resolver.smocked.requireAndGetAddress.will.return.with(returnMockFromResolver);
+		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
+
+		return { mocks, resolver };
 	},
 };
