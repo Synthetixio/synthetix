@@ -228,10 +228,11 @@ contract('Synthetix (prod tests)', accounts => {
 		let Exchanger;
 		let vSynth;
 		before(async () => {
-			await skipWaitingPeriod({ network });
+			await skipWaitingPeriod({ network, deploymentPath });
 
 			Exchanger = await connectContract({
 				network,
+				deploymentPath,
 				contractName: 'Exchanger',
 			});
 
@@ -277,7 +278,7 @@ contract('Synthetix (prod tests)', accounts => {
 			});
 
 			it('can be settled into the synth after the waiting period expires', async () => {
-				await skipWaitingPeriod({ network });
+				await skipWaitingPeriod({ network, deploymentPath });
 
 				const txn = await vSynth.settle(user1, { from: user1 });
 
@@ -297,8 +298,12 @@ contract('Synthetix (prod tests)', accounts => {
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 
 			it('using virtual tokens', async () => {
-				// deploy SwapWithVirtualSynth
+				// can only simulate on mainnet due to above address limitations
+				if (network !== 'mainnet') {
+					return;
+				}
 
+				// deploy SwapWithVirtualSynth
 				const swapContract = await artifacts.require('SwapWithVirtualSynth').new();
 
 				console.log('\n\n✅ Deploy SwapWithVirtualSynth at', swapContract.address);
@@ -421,10 +426,11 @@ contract('Synthetix (prod tests)', accounts => {
 					)
 				);
 
-				require('fs').writeFileSync(
-					'prod-run.log',
-					require('util').inspect(settleTxn, false, null, true)
-				);
+				// output log of settlement txn if need be
+				// require('fs').writeFileSync(
+				// 	'prod-run.log',
+				// 	require('util').inspect(settleTxn, false, null, true)
+				// );
 			});
 		});
 	});
