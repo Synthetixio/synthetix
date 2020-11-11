@@ -15,12 +15,14 @@ const {
 	skipStakeTime,
 	writeSetting,
 	bootstrapLocal,
+	simulateExchangeRates,
+	takeDebtSnapshot,
 } = require('./utils');
 
 contract('Synthetix (prod tests)', accounts => {
 	const [, user1, user2] = accounts;
 
-	let owner;
+	let owner, oracle;
 
 	let network, deploymentPath;
 
@@ -33,8 +35,15 @@ contract('Synthetix (prod tests)', accounts => {
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
+		[owner, , , oracle] = getUsers({ network }).map(user => user.address);
+
 		if (network === 'local') {
 			await bootstrapLocal({ deploymentPath });
+		} else {
+			if (config.simulateExchangeRates) {
+				await simulateExchangeRates({ deploymentPath, network, oracle });
+				await takeDebtSnapshot({ deploymentPath, network });
+			}
 		}
 
 		({ Synthetix, SynthetixState, SynthsUSD, SynthsETH, AddressResolver } = await connectContracts({
@@ -51,8 +60,6 @@ contract('Synthetix (prod tests)', accounts => {
 		}));
 
 		await skipWaitingPeriod({ network, deploymentPath });
-
-		[owner] = getUsers({ network }).map(user => user.address);
 
 		await ensureAccountHasEther({
 			amount: toUnit('1'),
