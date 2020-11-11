@@ -21,7 +21,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 	let network, deploymentPath;
 
-	let EtherCollateral, AddressResolver, Depot;
+	let EtherCollateral, ReadProxyAddressResolver, Depot;
 	let SynthsETH, SynthsUSD;
 
 	before('prepare', async function() {
@@ -37,12 +37,18 @@ contract('EtherCollateral (prod tests)', accounts => {
 			await bootstrapLocal({ deploymentPath });
 		}
 
-		({ EtherCollateral, SynthsETH, SynthsUSD, AddressResolver, Depot } = await connectContracts({
+		({
+			EtherCollateral,
+			SynthsETH,
+			SynthsUSD,
+			ReadProxyAddressResolver,
+			Depot,
+		} = await connectContracts({
 			network,
 			requests: [
 				{ contractName: 'EtherCollateral' },
 				{ contractName: 'Depot' },
-				{ contractName: 'AddressResolver' },
+				{ contractName: 'ReadProxyAddressResolver' },
 				{ contractName: 'SynthsETH', abiName: 'Synth' },
 				{ contractName: 'SynthsUSD', abiName: 'Synth' },
 			],
@@ -68,7 +74,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
-			assert.equal(await EtherCollateral.resolver(), AddressResolver.address);
+			assert.equal(await EtherCollateral.resolver(), ReadProxyAddressResolver.address);
 		});
 
 		it('has the expected owner set', async () => {

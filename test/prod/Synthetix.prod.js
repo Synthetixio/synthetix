@@ -28,7 +28,7 @@ contract('Synthetix (prod tests)', accounts => {
 
 	let network, deploymentPath;
 
-	let Synthetix, SynthetixState, AddressResolver;
+	let Synthetix, SynthetixState, ReadProxyAddressResolver;
 	let SynthsUSD, SynthsETH;
 
 	before('prepare', async () => {
@@ -41,7 +41,13 @@ contract('Synthetix (prod tests)', accounts => {
 			await bootstrapLocal({ deploymentPath });
 		}
 
-		({ Synthetix, SynthetixState, SynthsUSD, SynthsETH, AddressResolver } = await connectContracts({
+		({
+			Synthetix,
+			SynthetixState,
+			SynthsUSD,
+			SynthsETH,
+			ReadProxyAddressResolver,
+		} = await connectContracts({
 			network,
 			deploymentPath,
 			requests: [
@@ -49,7 +55,7 @@ contract('Synthetix (prod tests)', accounts => {
 				{ contractName: 'SynthetixState' },
 				{ contractName: 'ProxyERC20sUSD', abiName: 'Synth', alias: 'SynthsUSD' },
 				{ contractName: 'ProxysETH', abiName: 'Synth', alias: 'SynthsETH' },
-				{ contractName: 'AddressResolver' },
+				{ contractName: 'ReadProxyAddressResolver' },
 				{ contractName: 'ProxyERC20', abiName: 'Synthetix' },
 			],
 		}));
@@ -83,7 +89,7 @@ contract('Synthetix (prod tests)', accounts => {
 
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
-			assert.equal(await Synthetix.resolver(), AddressResolver.address);
+			assert.equal(await Synthetix.resolver(), ReadProxyAddressResolver.address);
 		});
 
 		it('has the expected owner set', async () => {
@@ -209,7 +215,10 @@ contract('Synthetix (prod tests)', accounts => {
 		before(async () => {
 			await skipWaitingPeriod({ network });
 
-			Exchanger = await connectContract({ network, contractName: 'Exchanger' });
+			Exchanger = await connectContract({
+				network,
+				contractName: 'Exchanger',
+			});
 
 			// // clear out any pending settlements
 			await Exchanger.settle(user1, toBytes32('sETH'), { from: user1 });

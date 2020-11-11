@@ -21,7 +21,7 @@ contract('TradingRewards (prod tests)', accounts => {
 
 	let network, deploymentPath;
 
-	let TradingRewards, AddressResolver, SystemSettings;
+	let TradingRewards, ReadProxyAddressResolver, SystemSettings;
 
 	let exchangeLogs;
 
@@ -38,11 +38,11 @@ contract('TradingRewards (prod tests)', accounts => {
 			await bootstrapLocal({ deploymentPath });
 		}
 
-		({ TradingRewards, AddressResolver, SystemSettings } = await connectContracts({
+		({ TradingRewards, ReadProxyAddressResolver, SystemSettings } = await connectContracts({
 			network,
 			requests: [
 				{ contractName: 'TradingRewards' },
-				{ contractName: 'AddressResolver' },
+				{ contractName: 'ReadProxyAddressResolver' },
 				{ contractName: 'SystemSettings' },
 				{ contractName: 'ProxyERC20', abiName: 'Synthetix' },
 			],
@@ -67,7 +67,7 @@ contract('TradingRewards (prod tests)', accounts => {
 	});
 
 	it('has the expected resolver set', async () => {
-		assert.equal(await TradingRewards.resolver(), AddressResolver.address);
+		assert.equal(await TradingRewards.resolver(), ReadProxyAddressResolver.address);
 	});
 
 	it('has the expected owner set', async () => {

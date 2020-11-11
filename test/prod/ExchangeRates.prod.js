@@ -22,7 +22,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 	let network, deploymentPath;
 
-	let ExchangeRates, AddressResolver, SystemSettings, Exchanger;
+	let ExchangeRates, ReadProxyAddressResolver, SystemSettings, Exchanger;
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
@@ -34,12 +34,17 @@ contract('ExchangeRates (prod tests)', accounts => {
 			await bootstrapLocal({ deploymentPath });
 		}
 
-		({ ExchangeRates, AddressResolver, SystemSettings, Exchanger } = await connectContracts({
+		({
+			ExchangeRates,
+			ReadProxyAddressResolver,
+			SystemSettings,
+			Exchanger,
+		} = await connectContracts({
 			network,
 			deploymentPath,
 			requests: [
 				{ contractName: 'ExchangeRates' },
-				{ contractName: 'AddressResolver' },
+				{ contractName: 'ReadProxyAddressResolver' },
 				{ contractName: 'SystemSettings' },
 				{ contractName: 'Exchanger' },
 			],
@@ -67,7 +72,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
-			assert.equal(await ExchangeRates.resolver(), AddressResolver.address);
+			assert.equal(await ExchangeRates.resolver(), ReadProxyAddressResolver.address);
 		});
 
 		it('has the expected owner set', async () => {
