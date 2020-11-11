@@ -3,6 +3,10 @@ jobs:
       filters:
         branches:
           only: /.*(staging|master).*/
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Packaging
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-pack-browser:
       filters:
         branches:
@@ -14,27 +18,9 @@ jobs:
   # Deployment validation
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-validate-deployments:
-      name: job-validate-deployments-mainnet
       filters:
         branches:
           only: /.*(staging|master).*/
-      network: mainnet
-      requires:
-        - job-prepare
-  - job-validate-deployments:
-      name: job-validate-deployments-rinkeby
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      network: rinkeby
-      requires:
-        - job-prepare
-  - job-validate-deployments:
-      name: job-validate-deployments-kovan
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      network: kovan
       requires:
         - job-prepare
 

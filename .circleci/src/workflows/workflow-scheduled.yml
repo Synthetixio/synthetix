@@ -12,18 +12,9 @@ jobs:
   # Deployment validation
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-validate-deployments:
-      name: job-validate-deployments-mainnet
-      network: mainnet
-      requires:
-        - job-prepare
-  - job-validate-deployments:
-      name: job-validate-deployments-rinkeby
-      network: rinkeby
-      requires:
-        - job-prepare
-  - job-validate-deployments:
-      name: job-validate-deployments-kovan
-      network: kovan
+      filters:
+        branches:
+          only: /.*(staging|master).*/
       requires:
         - job-prepare
 
