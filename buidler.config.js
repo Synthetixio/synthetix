@@ -127,9 +127,9 @@ task('test:prod', 'run poduction tests against a running fork')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
 	.addFlag('patchFreshDeployment', 'Patches up some things in production tests for new deployments')
+	.addFlag('useOvm', 'Uses an Optimism configuration')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('deploymentPath', 'Deployed data path')
-	.addOptionalParam('useOvm', 'Uses an Optimism configuration')
 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
 	.setAction(async (taskArguments, bre) => {
 		if (bre.network.name !== 'localhost') {
