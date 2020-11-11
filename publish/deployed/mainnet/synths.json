@@ -33,10 +33,6 @@
 		"asset": "XAG"
 	},
 	{
-		"name": "sOIL",
-		"asset": "OIL"
-	},
-	{
 		"name": "sBTC",
 		"asset": "BTC"
 	},
@@ -373,16 +369,6 @@
 			"entryPoint": 2714.42,
 			"upperLimit": 4071.63,
 			"lowerLimit": 1357.21
-		}
-	},
-	{
-		"name": "iOIL",
-		"asset": "OIL",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 44.9459,
-			"upperLimit": 67.4189,
-			"lowerLimit": 22.4730
 		}
 	}
 ]
