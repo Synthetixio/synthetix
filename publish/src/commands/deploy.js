@@ -1423,13 +1423,17 @@ const deploy = async ({
 				// for this environment (true for all environments except the initial deploy in 'local' during those tests)
 				if (oldExrates) {
 					// get inverse synth's params from the old exrates, if any exist
+					const oldInversePricing = await oldExrates.methods
+						.inversePricing(toBytes32(currencyKey))
+						.call();
+
 					const {
 						entryPoint: oldEntryPoint,
 						upperLimit: oldUpperLimit,
 						lowerLimit: oldLowerLimit,
 						frozenAtUpperLimit: currentRateIsFrozenUpper,
 						frozenAtLowerLimit: currentRateIsFrozenLower,
-					} = await oldExrates.methods.inversePricing(toBytes32(currencyKey)).call();
+					} = oldInversePricing;
 
 					const currentRateIsFrozen = currentRateIsFrozenUpper || currentRateIsFrozenLower;
 					// and the last rate if any exists
@@ -1442,8 +1446,24 @@ const deploy = async ({
 					const totalSynthSupply = await synth.methods.totalSupply().call();
 					console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
 
-					// When there's an inverted synth with matching parameters
+					const inversePricingOnCurrentExRates = await exchangeRates.methods
+						.inversePricing(toBytes32(currencyKey))
+						.call();
+
+					// ensure that if it's a newer exchange rates deployed, then skip reinserting the inverse pricing if
+					// already done
 					if (
+						oldExrates.options.address !== exchangeRates.options.address &&
+						JSON.stringify(inversePricingOnCurrentExRates) === JSON.stringify(oldInversePricing)
+					) {
+						console.log(
+							gray(
+								`Current ExchangeRates.inversePricing(${currencyKey}) is the same as the previous. Nothing to do.`
+							)
+						);
+					}
+					// When there's an inverted synth with matching parameters
+					else if (
 						entryPoint === +w3utils.fromWei(oldEntryPoint) &&
 						upperLimit === +w3utils.fromWei(oldUpperLimit) &&
 						lowerLimit === +w3utils.fromWei(oldLowerLimit)
