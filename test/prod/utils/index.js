@@ -1,10 +1,17 @@
 const { detectNetworkName } = require('./detectNetwork');
 const { connectContract, connectContracts } = require('./connectContract');
-const { ensureAccountHasEther, ensureAccountHasSNX, ensureAccountHassUSD } = require('./getTokens');
+const {
+	ensureAccountHasEther,
+	ensureAccountHasSNX,
+	ensureAccountHassUSD,
+} = require('./ensureAccountHasBalance');
 const { exchangeSynths } = require('./exchangeSynths');
 const { readSetting, writeSetting } = require('./systemSettings');
 const { skipWaitingPeriod, skipStakeTime } = require('./skipWaiting');
-const { bootstrapLocal, simulateExchangeRates, takeDebtSnapshot } = require('./bootstrapLocal');
+const { simulateExchangeRates } = require('./exchangeRates');
+const { takeDebtSnapshot } = require('./debtSnapshot');
+const { mockOptimismBridge } = require('./optimismBridge');
+const { implementsVirtualSynths } = require('./virtualSynths');
 
 module.exports = {
 	detectNetworkName,
@@ -18,7 +25,8 @@ module.exports = {
 	writeSetting,
 	skipWaitingPeriod,
 	skipStakeTime,
-	bootstrapLocal,
 	simulateExchangeRates,
 	takeDebtSnapshot,
+	mockOptimismBridge,
+	implementsVirtualSynths,
 };
