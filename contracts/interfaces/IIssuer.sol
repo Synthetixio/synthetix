@@ -46,7 +46,7 @@ interface IIssuer {
 
     function synths(bytes32 currencyKey) external view returns (ISynth);
 
-    function synthAddresses(bytes32[] calldata currencyKeys) external view returns (ISynth[] memory);
+    function getSynths(bytes32[] calldata currencyKeys) external view returns (ISynth[] memory);
 
     function synthsByAddress(address synthAddress) external view returns (bytes32);
 

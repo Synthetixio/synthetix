@@ -1,5 +1,7 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const fs = require('fs');
+const path = require('path');
+const { contract, config } = require('@nomiclabs/buidler');
+const { wrap } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
@@ -9,27 +11,55 @@ const {
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
+	bootstrapLocal,
+	simulateExchangeRates,
+	takeDebtSnapshot,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
 	const [, user] = accounts;
 
-	let owner;
+	let owner, oracle;
 
-	let network;
+	let network, deploymentPath;
 
-	let TradingRewards, AddressResolver, SystemSettings;
+	let TradingRewards, ReadProxyAddressResolver, SystemSettings;
 
 	let exchangeLogs;
 
-	before('prepare', async () => {
+	before('prepare', async function() {
 		network = await detectNetworkName();
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 
-		({ TradingRewards, AddressResolver, SystemSettings } = await connectContracts({
+		[owner, , , oracle] = getUsers({ network }).map(user => user.address);
+
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		if (deploymentPath.includes('ovm')) {
+			return this.skip();
+		}
+
+		if (network === 'local') {
+			await bootstrapLocal({ deploymentPath });
+		} else {
+			if (config.simulateExchangeRates) {
+				await ensureAccountHasEther({
+					amount: toUnit('2'),
+					account: oracle,
+					fromAccount: accounts[7],
+					network,
+					deploymentPath,
+				});
+
+				await simulateExchangeRates({ deploymentPath, network, oracle });
+				await takeDebtSnapshot({ deploymentPath, network });
+			}
+		}
+
+		({ TradingRewards, ReadProxyAddressResolver, SystemSettings } = await connectContracts({
 			network,
 			requests: [
 				{ contractName: 'TradingRewards' },
-				{ contractName: 'AddressResolver' },
+				{ contractName: 'ReadProxyAddressResolver' },
 				{ contractName: 'SystemSettings' },
 				{ contractName: 'ProxyERC20', abiName: 'Synthetix' },
 			],
@@ -37,16 +67,14 @@ contract('TradingRewards (prod tests)', accounts => {
 
 		await skipWaitingPeriod({ network });
 
-		[owner] = getUsers({ network }).map(user => user.address);
-
 		await ensureAccountHasEther({
-			amount: toUnit('10'),
+			amount: toUnit('1'),
 			account: owner,
 			fromAccount: accounts[7],
 			network,
 		});
 		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
+			amount: toUnit('100'),
 			account: user,
 			fromAccount: owner,
 			network,
@@ -54,7 +82,7 @@ contract('TradingRewards (prod tests)', accounts => {
 	});
 
 	it('has the expected resolver set', async () => {
-		assert.equal(await TradingRewards.resolver(), AddressResolver.address);
+		assert.equal(await TradingRewards.resolver(), ReadProxyAddressResolver.address);
 	});
 
 	it('has the expected owner set', async () => {
@@ -87,7 +115,7 @@ contract('TradingRewards (prod tests)', accounts => {
 					account: user,
 					fromCurrency: 'sUSD',
 					toCurrency: 'sETH',
-					amount: toUnit('10'),
+					amount: toUnit('1'),
 				}));
 			});
 
@@ -119,10 +147,11 @@ contract('TradingRewards (prod tests)', accounts => {
 			before(async () => {
 				({ exchangeLogs } = await exchangeSynths({
 					network,
+					withTradingRewards: true,
 					account: user,
 					fromCurrency: 'sUSD',
 					toCurrency: 'sETH',
-					amount: toUnit('10'),
+					amount: toUnit('1'),
 				}));
 			});
 

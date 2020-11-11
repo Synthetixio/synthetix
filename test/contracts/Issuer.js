@@ -656,7 +656,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 
 					it('should be able to query multiple synth addresses', async () => {
-						const synthAddresses = await issuer.synthAddresses([currencyKey, sETH, sUSD]);
+						const synthAddresses = await issuer.getSynths([currencyKey, sETH, sUSD]);
 						assert.equal(synthAddresses[0], synth.address);
 						assert.equal(synthAddresses[1], sETHContract.address);
 						assert.equal(synthAddresses[2], sUSDContract.address);

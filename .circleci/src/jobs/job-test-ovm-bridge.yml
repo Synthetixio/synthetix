@@ -1,3 +1,4 @@
+# Tests the ovm bridge in a same chain environment
 working_directory: ~/repo
 docker:
   - image: circleci/node:12.18
@@ -5,6 +6,4 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npm run test:gas && npx codechecks codechecks.unit.yml
-  - store_artifacts:
-      path: test-gas-used.log
+  - run: npm run test:multi-same-chain

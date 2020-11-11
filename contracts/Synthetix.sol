@@ -15,6 +15,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./SupplySchedule.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/IVirtualSynth.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetix
@@ -273,6 +274,26 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
                 destinationCurrencyKey,
                 originator,
                 trackingCode
+            );
+    }
+
+    function exchangeWithVirtual(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    )
+        external
+        exchangeActive(sourceCurrencyKey, destinationCurrencyKey)
+        optionalProxy
+        returns (uint amountReceived, IVirtualSynth vSynth)
+    {
+        return
+            exchanger().exchangeWithVirtual(
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey,
+                messageSender
             );
     }
 

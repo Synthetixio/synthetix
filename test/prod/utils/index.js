@@ -4,6 +4,7 @@ const { ensureAccountHasEther, ensureAccountHasSNX, ensureAccountHassUSD } = req
 const { exchangeSynths } = require('./exchangeSynths');
 const { readSetting, writeSetting } = require('./systemSettings');
 const { skipWaitingPeriod, skipStakeTime } = require('./skipWaiting');
+const { bootstrapLocal, simulateExchangeRates, takeDebtSnapshot } = require('./bootstrapLocal');
 
 module.exports = {
 	detectNetworkName,
@@ -17,4 +18,7 @@ module.exports = {
 	writeSetting,
 	skipWaitingPeriod,
 	skipStakeTime,
+	bootstrapLocal,
+	simulateExchangeRates,
+	takeDebtSnapshot,
 };
