@@ -62,6 +62,34 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 									'Src/dest rate invalid or not found'
 								);
 							});
+							behaviors.whenMockedWithNoPriorExchangesToSettle(() => {
+								behaviors.whenMockedWithUintSystemSetting(
+									{ setting: 'waitingPeriodSecs', value: '0' },
+									() => {
+										behaviors.whenMockedEffectiveRateAsEqual(() => {
+											behaviors.whenMockedLastNRates(() => {
+												behaviors.whenMockedASynthToIssueAmdBurn(() => {
+													behaviors.whenMockedExchangeStatePersistance(() => {
+														it('it reverts trying to create a virtual synth with no supply', async () => {
+															await assert.revert(
+																this.instance.exchangeWithVirtual(
+																	owner,
+																	toBytes32('sUSD'),
+																	'0',
+																	toBytes32('sETH'),
+																	owner,
+																	{ from: this.mocks.Synthetix.address }
+																),
+																'Zero amount'
+															);
+														});
+													});
+												});
+											});
+										});
+									}
+								);
+							});
 						});
 					});
 				});
