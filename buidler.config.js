@@ -126,6 +126,7 @@ task('test:legacy', 'run the tests with legacy components')
 task('test:prod', 'run poduction tests against a running fork')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
+	.addFlag('simulateExchangeRates', 'Simulates exchange rates on production tests')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('deploymentPath', 'Deployed data path')
 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
@@ -135,6 +136,7 @@ task('test:prod', 'run poduction tests against a running fork')
 		}
 
 		bre.config.deploymentPath = taskArguments.deploymentPath;
+		bre.config.simulateExchangeRates = taskArguments.simulateExchangeRates;
 		bre.config.paths.tests = './test/prod/';
 
 		// Prod tests use forking, which means some txs could last minutes.
