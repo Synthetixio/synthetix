@@ -61,6 +61,10 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     }
 
     function calcRate() internal view returns (uint) {
+        if (initialSupply == 0) {
+            return 0;
+        }
+
         uint synthBalance;
 
         if (!settled) {
@@ -114,7 +118,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     }
 
     // show the balance of the underlying synth that the given address has, given
-    // their proportion of totalSupply and
+    // their proportion of totalSupply
     function balanceOfUnderlying(address account) external view returns (uint) {
         return balanceUnderlying(account);
     }

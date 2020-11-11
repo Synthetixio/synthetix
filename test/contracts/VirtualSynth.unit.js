@@ -152,6 +152,11 @@ contract('VirtualSynth (unit tests)', async accounts => {
 
 		describe('rate()', () => {
 			const amount = '1200';
+			behaviors.whenInstantiated({ amount: '0', user: owner }, () => {
+				it('then the rate must be 0', async () => {
+					assert.equal(await this.instance.rate(), '0');
+				});
+			});
 			behaviors.whenInstantiated({ amount, user: owner }, () => {
 				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
 					describe('pre-settlement', () => {
