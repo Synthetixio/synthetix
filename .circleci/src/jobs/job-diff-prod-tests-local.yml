@@ -11,6 +11,6 @@ steps:
   # Start local chain
   - cmd-local-start
   # Deploy
-  - run: node publish deploy --network local --fresh-deploy --private-key 0xc5e8f61d1ab959b397eecc0a37a6517b8e67a0e7cf1f4bce5591f3ed80199122 --yes
+  - run: node publish deploy --network local --fresh-deploy --yes
   # Run production tests
-  - run: npm run test:prod
+  - run: npm run test:prod -- --patch-fresh-deployment

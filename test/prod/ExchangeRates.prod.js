@@ -11,16 +11,16 @@ const {
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
-	bootstrapLocal,
 	simulateExchangeRates,
 	takeDebtSnapshot,
+	mockOptimismBridge,
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
 contract('ExchangeRates (prod tests)', accounts => {
 	const [, user] = accounts;
 
-	let owner, oracle;
+	let owner;
 
 	let network, deploymentPath;
 
@@ -30,25 +30,14 @@ contract('ExchangeRates (prod tests)', accounts => {
 		network = await detectNetworkName();
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 
-		[owner, , , oracle] = getUsers({ network }).map(user => user.address);
+		owner = getUsers({ network, user: 'owner' }).address;
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
-		if (network === 'local') {
-			await bootstrapLocal({ deploymentPath });
-		} else {
-			if (config.simulateExchangeRates) {
-				await ensureAccountHasEther({
-					amount: toUnit('2'),
-					account: oracle,
-					fromAccount: accounts[7],
-					network,
-					deploymentPath,
-				});
-
-				await simulateExchangeRates({ deploymentPath, network, oracle });
-				await takeDebtSnapshot({ deploymentPath, network });
-			}
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await takeDebtSnapshot({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
 		}
 
 		({

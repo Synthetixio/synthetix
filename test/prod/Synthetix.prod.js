@@ -15,9 +15,10 @@ const {
 	skipWaitingPeriod,
 	skipStakeTime,
 	writeSetting,
-	bootstrapLocal,
 	simulateExchangeRates,
 	takeDebtSnapshot,
+	mockOptimismBridge,
+	implementsVirtualSynths,
 } = require('./utils');
 
 const gasFromReceipt = ({ receipt }) =>
@@ -26,7 +27,7 @@ const gasFromReceipt = ({ receipt }) =>
 contract('Synthetix (prod tests)', accounts => {
 	const [, user1, user2] = accounts;
 
-	let owner, oracle;
+	let owner;
 
 	let network, deploymentPath;
 
@@ -39,23 +40,12 @@ contract('Synthetix (prod tests)', accounts => {
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
-		[owner, , , oracle] = getUsers({ network }).map(user => user.address);
+		owner = getUsers({ network, user: 'owner' }).address;
 
-		if (network === 'local') {
-			await bootstrapLocal({ deploymentPath });
-		} else {
-			if (config.simulateExchangeRates) {
-				await ensureAccountHasEther({
-					amount: toUnit('2'),
-					account: oracle,
-					fromAccount: accounts[7],
-					network,
-					deploymentPath,
-				});
-
-				await simulateExchangeRates({ deploymentPath, network, oracle });
-				await takeDebtSnapshot({ deploymentPath, network });
-			}
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await takeDebtSnapshot({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
 		}
 
 		({
@@ -82,21 +72,18 @@ contract('Synthetix (prod tests)', accounts => {
 		await ensureAccountHasEther({
 			amount: toUnit('1'),
 			account: owner,
-			fromAccount: accounts[7],
 			network,
 			deploymentPath,
 		});
 		await ensureAccountHassUSD({
 			amount: toUnit('100'),
 			account: user1,
-			fromAccount: owner,
 			network,
 			deploymentPath,
 		});
 		await ensureAccountHasSNX({
 			amount: toUnit('100'),
 			account: user1,
-			fromAccount: owner,
 			network,
 			deploymentPath,
 		});
@@ -227,11 +214,20 @@ contract('Synthetix (prod tests)', accounts => {
 	describe('exchanging with virtual synths', () => {
 		let Exchanger;
 		let vSynth;
+
+		before('skip if there is no vSynth implementation', async function() {
+			const virtualSynths = await implementsVirtualSynths({ network, deploymentPath });
+			if (config.useOvm || !virtualSynths) {
+				this.skip();
+			}
+		});
+
 		before(async () => {
-			await skipWaitingPeriod({ network });
+			await skipWaitingPeriod({ network, deploymentPath });
 
 			Exchanger = await connectContract({
 				network,
+				deploymentPath,
 				contractName: 'Exchanger',
 			});
 
@@ -277,7 +273,7 @@ contract('Synthetix (prod tests)', accounts => {
 			});
 
 			it('can be settled into the synth after the waiting period expires', async () => {
-				await skipWaitingPeriod({ network });
+				await skipWaitingPeriod({ network, deploymentPath });
 
 				const txn = await vSynth.settle(user1, { from: user1 });
 
@@ -296,9 +292,14 @@ contract('Synthetix (prod tests)', accounts => {
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 
+			before('skip if not on mainnet', async function() {
+				if (network !== 'mainnet') {
+					this.skip();
+				}
+			});
+
 			it('using virtual tokens', async () => {
 				// deploy SwapWithVirtualSynth
-
 				const swapContract = await artifacts.require('SwapWithVirtualSynth').new();
 
 				console.log('\n\n✅ Deploy SwapWithVirtualSynth at', swapContract.address);
@@ -421,10 +422,11 @@ contract('Synthetix (prod tests)', accounts => {
 					)
 				);
 
-				require('fs').writeFileSync(
-					'prod-run.log',
-					require('util').inspect(settleTxn, false, null, true)
-				);
+				// output log of settlement txn if need be
+				// require('fs').writeFileSync(
+				// 	'prod-run.log',
+				// 	require('util').inspect(settleTxn, false, null, true)
+				// );
 			});
 		});
 	});

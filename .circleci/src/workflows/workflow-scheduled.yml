@@ -7,25 +7,41 @@ triggers:
             - master
 jobs:
   - job-prepare
-  # ~~~~~~~~~~~~ Deployment validation on MAINNET ~~~~~~~~~~~~~
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Deployment validation
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-validate-deployments:
-      name: job-validate-deployments-mainnet
+      requires:
+        - job-prepare
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Production tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-prod-tests:
+      name: job-prod-tests-mainnet
       network: mainnet
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Production tests on MAINNET ~~~~~~~~~~~~~
-  - job-production-tests:
-      name: job-production-tests-mainnet
-      network: mainnet
+  - job-prod-tests:
+      name: job-prod-tests-rinkeby
+      network: rinkeby
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Differential production tests on LOCAL ~~~~~~~~~~~~~
-  - job-production-tests-local:
-      name: job-production-tests-local
+  - job-prod-tests:
+      name: job-prod-tests-kovan
+      network: kovan
       requires:
         - job-prepare
-  # ~~~~~~~~~~~~ Differential production tests on LOCAL with OVM config ~~~~~~~~~~~~~
-  - job-production-tests-local-ovm:
-      name: job-production-tests-local-ovm
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Differential local production tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-diff-prod-tests-local:
+      name: job-diff-prod-tests-local
+      requires:
+        - job-prepare
+  - job-diff-prod-tests-local-ovm:
+      name: job-diff-prod-tests-local-ovm
       requires:
         - job-prepare
