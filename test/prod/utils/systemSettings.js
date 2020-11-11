@@ -1,17 +1,19 @@
 const { connectContract } = require('./connectContract');
 
-async function readSetting({ network, setting }) {
+async function readSetting({ network, setting, deploymentPath }) {
 	const SystemSettings = await connectContract({
 		network,
+		deploymentPath,
 		contractName: 'SystemSettings',
 	});
 
 	return SystemSettings[setting]();
 }
 
-async function writeSetting({ network, setting, value, owner }) {
+async function writeSetting({ network, deploymentPath, setting, value, owner }) {
 	const SystemSettings = await connectContract({
 		network,
+		deploymentPath,
 		contractName: 'SystemSettings',
 	});
 

@@ -1,5 +1,7 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const fs = require('fs');
+const path = require('path');
+const { contract, config } = require('@nomiclabs/buidler');
+const { wrap } = require('../../index.js');
 const { assert } = require('../contracts/common');
 const { toUnit, fastForward } = require('../utils')();
 const {
@@ -9,6 +11,7 @@ const {
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
+	bootstrapLocal,
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
@@ -17,15 +20,23 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 	let owner;
 
-	let network;
+	let network, deploymentPath;
 
 	let ExchangeRates, AddressResolver, SystemSettings, Exchanger;
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+
+		if (network === 'local') {
+			await bootstrapLocal({ deploymentPath });
+		}
 
 		({ ExchangeRates, AddressResolver, SystemSettings, Exchanger } = await connectContracts({
 			network,
+			deploymentPath,
 			requests: [
 				{ contractName: 'ExchangeRates' },
 				{ contractName: 'AddressResolver' },
@@ -34,7 +45,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 			],
 		}));
 
-		await skipWaitingPeriod({ network });
+		await skipWaitingPeriod({ network, deploymentPath });
 
 		[owner] = getUsers({ network }).map(user => user.address);
 
@@ -43,12 +54,14 @@ contract('ExchangeRates (prod tests)', accounts => {
 			account: owner,
 			fromAccount: accounts[7],
 			network,
+			deploymentPath,
 		});
 		await ensureAccountHassUSD({
 			amount: toUnit('1000'),
 			account: user,
 			fromAccount: owner,
 			network,
+			deploymentPath,
 		});
 	});
 
@@ -67,6 +80,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 		before(async () => {
 			await exchangeSynths({
 				network,
+				deploymentPath,
 				account: user,
 				fromCurrency: 'sUSD',
 				toCurrency: 'sETH',

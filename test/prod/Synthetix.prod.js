@@ -1,8 +1,10 @@
 const { grey, red } = require('chalk');
-const { web3, contract, artifacts } = require('@nomiclabs/buidler');
+const { web3, contract, artifacts, config } = require('@nomiclabs/buidler');
+const fs = require('fs');
+const path = require('path');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit, fromUnit } = require('../utils')();
-const { getUsers, toBytes32 } = require('../..');
+const { wrap, toBytes32 } = require('../..');
 const {
 	detectNetworkName,
 	connectContracts,
@@ -13,6 +15,7 @@ const {
 	skipWaitingPeriod,
 	skipStakeTime,
 	writeSetting,
+	bootstrapLocal,
 } = require('./utils');
 
 const gasFromReceipt = ({ receipt }) =>
@@ -23,16 +26,24 @@ contract('Synthetix (prod tests)', accounts => {
 
 	let owner;
 
-	let network;
+	let network, deploymentPath;
 
 	let Synthetix, SynthetixState, AddressResolver;
 	let SynthsUSD, SynthsETH;
 
 	before('prepare', async () => {
 		network = await detectNetworkName();
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+
+		if (network === 'local') {
+			await bootstrapLocal({ deploymentPath });
+		}
 
 		({ Synthetix, SynthetixState, SynthsUSD, SynthsETH, AddressResolver } = await connectContracts({
 			network,
+			deploymentPath,
 			requests: [
 				{ contractName: 'Synthetix' },
 				{ contractName: 'SynthetixState' },
@@ -43,27 +54,30 @@ contract('Synthetix (prod tests)', accounts => {
 			],
 		}));
 
-		await skipWaitingPeriod({ network });
+		await skipWaitingPeriod({ network, deploymentPath });
 
 		[owner] = getUsers({ network }).map(user => user.address);
 
 		await ensureAccountHasEther({
-			amount: toUnit('10'),
+			amount: toUnit('1'),
 			account: owner,
 			fromAccount: accounts[7],
 			network,
+			deploymentPath,
 		});
 		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
+			amount: toUnit('100'),
 			account: user1,
 			fromAccount: owner,
 			network,
+			deploymentPath,
 		});
 		await ensureAccountHasSNX({
-			amount: toUnit('1000'),
+			amount: toUnit('100'),
 			account: user1,
 			fromAccount: owner,
 			network,
+			deploymentPath,
 		});
 	});
 
@@ -95,7 +109,7 @@ contract('Synthetix (prod tests)', accounts => {
 			const user1BalanceBefore = await Synthetix.balanceOf(user1);
 			const user2BalanceBefore = await Synthetix.balanceOf(user2);
 
-			const amount = toUnit('100');
+			const amount = toUnit('10');
 			await Synthetix.transfer(user2, amount, {
 				from: user1,
 			});
@@ -112,13 +126,19 @@ contract('Synthetix (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await writeSetting({ setting: 'setMinimumStakeTime', value: '60', owner, network });
+			await writeSetting({
+				setting: 'setMinimumStakeTime',
+				value: '60',
+				owner,
+				network,
+				deploymentPath,
+			});
 		});
 
 		it('can issue sUSD', async () => {
 			const user1BalanceBefore = await SynthsUSD.balanceOf(user1);
 
-			const amount = toUnit('100');
+			const amount = toUnit('10');
 			await Synthetix.issueSynths(amount, {
 				from: user1,
 			});
@@ -129,7 +149,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		it('can burn sUSD', async () => {
-			await skipStakeTime({ network });
+			await skipStakeTime({ network, deploymentPath });
 
 			const user1BalanceBefore = await SynthsUSD.balanceOf(user1);
 
@@ -139,7 +159,7 @@ contract('Synthetix (prod tests)', accounts => {
 
 			const user1BalanceAfter = await SynthsUSD.balanceOf(user1);
 
-			assert.bnEqual(user1BalanceAfter, toUnit('0'));
+			assert.bnLt(user1BalanceAfter, user1BalanceBefore);
 		});
 	});
 
@@ -147,12 +167,12 @@ contract('Synthetix (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		it('can exchange sUSD to sETH', async () => {
-			await skipWaitingPeriod({ network });
+			await skipWaitingPeriod({ network, deploymentPath });
 
 			const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
 			const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
 
-			const amount = toUnit('100');
+			const amount = toUnit('10');
 			await Synthetix.exchange(toBytes32('sUSD'), amount, toBytes32('sETH'), {
 				from: user1,
 			});
@@ -160,24 +180,25 @@ contract('Synthetix (prod tests)', accounts => {
 			const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
 			const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
 
-			assert.bnEqual(user1BalanceAftersUSD, user1BalanceBeforesUSD.sub(amount));
+			assert.bnLt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
 			assert.bnGt(user1BalanceAftersETH, user1BalanceBeforesETH);
 		});
 
 		it('can exchange sETH to sUSD', async () => {
-			await skipWaitingPeriod({ network });
+			await skipWaitingPeriod({ network, deploymentPath });
 
 			const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
 			const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
 
-			await Synthetix.exchange(toBytes32('sETH'), user1BalanceBeforesETH, toBytes32('sUSD'), {
+			const amount = toUnit('1');
+			await Synthetix.exchange(toBytes32('sETH'), amount, toBytes32('sUSD'), {
 				from: user1,
 			});
 
 			const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
 			const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
 
-			assert.bnEqual(user1BalanceAftersETH, toUnit('0'));
+			assert.bnLt(user1BalanceAftersETH, user1BalanceBeforesETH);
 			assert.bnGt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
 		});
 	});

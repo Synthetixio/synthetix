@@ -12,6 +12,13 @@ commands:
           background: true
           command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
       - cmd-wait-for-rpc
+  cmd-local-start:
+    description: Starts a local ganache chain
+    steps:
+      - run:
+          background: true
+          command: npx buidler node
+      - cmd-wait-for-rpc
   cmd-wait-for-rpc:
     steps:
       - run: sleep 5
@@ -104,6 +111,30 @@ jobs:
       - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
+    working_directory: ~/repo
+  job-production-tests-local:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - cmd-local-start
+      - run: node publish deploy --network local --fresh-deploy --private-key 0xc5e8f61d1ab959b397eecc0a37a6517b8e67a0e7cf1f4bce5591f3ed80199122 --yes
+      - run: npm run test:prod
+    working_directory: ~/repo
+  job-production-tests-local-ovm:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - cmd-local-start
+      - run: node publish deploy --network local --fresh-deploy --private-key 0xc5e8f61d1ab959b397eecc0a37a6517b8e67a0e7cf1f4bce5591f3ed80199122 --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
+      - run: npm run test:prod -- --deployment-path ./publish/deployed/local-ovm
     working_directory: ~/repo
   job-static-analysis:
     docker:
@@ -351,6 +382,14 @@ workflows:
           network: mainnet
           requires:
             - job-prepare
+      - job-production-tests-local:
+          name: job-production-tests-local
+          requires:
+            - job-prepare
+      - job-production-tests-local-ovm:
+          name: job-production-tests-local-ovm
+          requires:
+            - job-prepare
     triggers:
       - schedule:
           cron: "* 0 * * *"
@@ -392,6 +431,25 @@ workflows:
               only: /.*(staging|master).*/
           name: job-validate-deployments-kovan
           network: kovan
+          requires:
+            - job-prepare
+      - job-production-tests:
+          name: job-production-tests-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-production-tests-local:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-production-tests-local
+          requires:
+            - job-prepare
+      - job-production-tests-local-ovm:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-production-tests-local-ovm
           requires:
             - job-prepare
       - job-production-tests-differential:
