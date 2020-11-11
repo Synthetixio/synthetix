@@ -216,7 +216,8 @@ contract('Synthetix (prod tests)', accounts => {
 		let vSynth;
 
 		before('skip if there is no vSynth implementation', async function() {
-			if (!(await implementsVirtualSynths({ network, deploymentPath }))) {
+			const virtualSynths = await implementsVirtualSynths({ network, deploymentPath });
+			if (config.useOvm || !virtualSynths) {
 				this.skip();
 			}
 		});

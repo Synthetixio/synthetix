@@ -129,6 +129,7 @@ task('test:prod', 'run poduction tests against a running fork')
 	.addFlag('patchFreshDeployment', 'Patches up some things in production tests for new deployments')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('deploymentPath', 'Deployed data path')
+	.addOptionalParam('useOvm', 'Uses an Optimism configuration')
 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
 	.setAction(async (taskArguments, bre) => {
 		if (bre.network.name !== 'localhost') {
@@ -137,6 +138,7 @@ task('test:prod', 'run poduction tests against a running fork')
 
 		bre.config.deploymentPath = taskArguments.deploymentPath;
 		bre.config.patchFreshDeployment = taskArguments.patchFreshDeployment;
+		bre.config.useOvm = taskArguments.useOvm;
 		bre.config.paths.tests = './test/prod/';
 
 		// Prod tests use forking, which means some txs could last minutes.

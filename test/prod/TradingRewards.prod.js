@@ -34,7 +34,8 @@ contract('TradingRewards (prod tests)', accounts => {
 		owner = getUsers({ network, user: 'owner' }).address;
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
-		if (deploymentPath.includes('ovm')) {
+
+		if (config.useOvm) {
 			return this.skip();
 		}
 
