@@ -41,7 +41,7 @@ async function mockOptimismBridge({ network, deploymentPath }) {
 	await mockAddressIfNeeded({ alias: 'base:SynthetixBridgeToOptimism', AddressResolver });
 	await mockAddressIfNeeded({ alias: 'ext:Messenger', AddressResolver });
 
-	await syncCacheIfNeeded({ contract: SynthetixBridgeToBase, resolger: AddressResolver.address });
+	await syncCacheIfNeeded({ contract: SynthetixBridgeToBase, resolver: AddressResolver.address });
 }
 
 module.exports = {
