@@ -25,7 +25,11 @@ contract MockFlagsInterface is FlagsInterface {
         }
     }
 
-    function flagAggregator(address aggregator) external returns (bool) {
+    function flagAggregator(address aggregator) external {
         flags[aggregator] = true;
+    }
+
+    function unflagAggregator(address aggregator) external {
+        flags[aggregator] = false;
     }
 }

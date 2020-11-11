@@ -5655,8 +5655,9 @@
 			},
 			"Synthetix": {
 				"address": "0x5d2399cdA3Daedb92D0b9cde4F7B99Af75Ee408B",
-				"status": "current",
-				"keccak256": "0xf92685622f5b8ea9c56041189b6c200314f72f08df4ff073a02896c849eb834f"
+				"status": "replaced",
+				"keccak256": "0xf92685622f5b8ea9c56041189b6c200314f72f08df4ff073a02896c849eb834f",
+				"replaced_in": "v2.31.0-alpha"
 			},
 			"Exchanger": {
 				"address": "0x4390C5D8591A078eB20c0DdD346bC5071E3c9115",
@@ -5761,13 +5762,15 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xA36f5A656c48EB0b43b63293E690DA746162d40B",
-				"status": "current",
-				"keccak256": "0xecc746e9363b1e4d2cda6b3bd5773268540a790a4f1f14909b2eaf441acaf6c4"
+				"status": "replaced",
+				"keccak256": "0xecc746e9363b1e4d2cda6b3bd5773268540a790a4f1f14909b2eaf441acaf6c4",
+				"replaced_in": "v2.31.0-alpha"
 			},
 			"Exchanger": {
 				"address": "0xa470Bc799c7011B39D32f105685080033Be6413a",
-				"status": "current",
-				"keccak256": "0x5d6e11d4c9e1a785a435f44c861da9ed9ef4889db9151265145624a1cf64e512"
+				"status": "replaced",
+				"keccak256": "0x5d6e11d4c9e1a785a435f44c861da9ed9ef4889db9151265145624a1cf64e512",
+				"replaced_in": "v2.31.0-alpha"
 			},
 			"Issuer": {
 				"address": "0xFC37Ba057EbA689cb19479A77c5d291034E7cF46",
@@ -5792,8 +5795,44 @@
 		"contracts": {
 			"Issuer": {
 				"address": "0x8b6002e80C987eeFb781a968aEe019F4A8193233",
+				"status": "replaced",
+				"keccak256": "0xd75e68a23fef19a0e8604bebe92baa040bfb590ae5259333aeb63ac413c94da1",
+				"replaced_in": "v2.31.0-alpha"
+			}
+		}
+	},
+	"v2.31.0-alpha": {
+		"tag": "v2.31.0-alpha",
+		"fulltag": "v2.31.0-alpha",
+		"release": "Mimosa",
+		"network": "kovan",
+		"date": "2020-11-10T22:32:11-05:00",
+		"commit": "5754b7a1f281c74ee30af53ae948c1d429b8309c",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x0dfB3daf6108742309A856E72212C04eC6c59157",
 				"status": "current",
-				"keccak256": "0xd75e68a23fef19a0e8604bebe92baa040bfb590ae5259333aeb63ac413c94da1"
+				"keccak256": "0xb00ede4847d8725844e762151714f558e8b5d6fa3b34531cf29fe14d3e052884"
+			},
+			"Synthetix": {
+				"address": "0xBaF7cB0B9640d313A095E4074d874264a3A24B34",
+				"status": "current",
+				"keccak256": "0x02c3d358d6a0487f54ac56b33bf9f39f12c7af85564544f3d929a143ca96d9ea"
+			},
+			"Exchanger": {
+				"address": "0x9365b8875Fc4cC72cCb56A5BA16785F14c2436b2",
+				"status": "current",
+				"keccak256": "0xb4aec17ec72b273b7013d9042a231b06ed4b4246e8a77bc5f507598ebd77e396"
+			},
+			"Issuer": {
+				"address": "0x6813955a3b7F3951ca60C59A5e78d2Aa7492c92c",
+				"status": "current",
+				"keccak256": "0xffc3175744de9a11cf1cc91ca6aad118b539e8ccad902d409ce853619f7168d4"
+			},
+			"DebtCache": {
+				"address": "0xfBb7B55A0588c1E3E05D4d3ac66918f0aa6a511B",
+				"status": "current",
+				"keccak256": "0x35d36fdd6fa8ff932a8733f9583afaf396e33a59b1febc8b68a60d65f731a8a9"
 			}
 		}
 	}
