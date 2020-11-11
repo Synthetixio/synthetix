@@ -12,9 +12,6 @@ jobs:
   # Deployment validation
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-validate-deployments:
-      filters:
-        branches:
-          only: /.*(staging|master).*/
       requires:
         - job-prepare
 
