@@ -15,9 +15,9 @@ const {
 	skipWaitingPeriod,
 	skipStakeTime,
 	writeSetting,
-	bootstrapLocal,
 	simulateExchangeRates,
 	takeDebtSnapshot,
+	mockOptimismBridge,
 } = require('./utils');
 
 const gasFromReceipt = ({ receipt }) =>
@@ -26,7 +26,7 @@ const gasFromReceipt = ({ receipt }) =>
 contract('Synthetix (prod tests)', accounts => {
 	const [, user1, user2] = accounts;
 
-	let owner, oracle;
+	let owner;
 
 	let network, deploymentPath;
 
@@ -39,23 +39,12 @@ contract('Synthetix (prod tests)', accounts => {
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
-		[owner, , , oracle] = getUsers({ network }).map(user => user.address);
+		owner = getUsers({ network, user: 'owner' }).address;
 
-		if (network === 'local') {
-			await bootstrapLocal({ deploymentPath });
-		} else {
-			if (config.simulateExchangeRates) {
-				await ensureAccountHasEther({
-					amount: toUnit('2'),
-					account: oracle,
-					fromAccount: accounts[7],
-					network,
-					deploymentPath,
-				});
-
-				await simulateExchangeRates({ deploymentPath, network, oracle });
-				await takeDebtSnapshot({ deploymentPath, network });
-			}
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await takeDebtSnapshot({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
 		}
 
 		({
@@ -82,21 +71,18 @@ contract('Synthetix (prod tests)', accounts => {
 		await ensureAccountHasEther({
 			amount: toUnit('1'),
 			account: owner,
-			fromAccount: accounts[7],
 			network,
 			deploymentPath,
 		});
 		await ensureAccountHassUSD({
 			amount: toUnit('100'),
 			account: user1,
-			fromAccount: owner,
 			network,
 			deploymentPath,
 		});
 		await ensureAccountHasSNX({
 			amount: toUnit('100'),
 			account: user1,
-			fromAccount: owner,
 			network,
 			deploymentPath,
 		});
