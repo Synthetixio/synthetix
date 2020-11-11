@@ -485,6 +485,24 @@
 	"SynthiADA": {
 		"deploy": false
 	},
+	"TokenStatesOIL": {
+		"deploy": true
+	},
+	"ProxysOIL": {
+		"deploy": true
+	},
+	"SynthsOIL": {
+		"deploy": true
+	},
+	"TokenStateiOIL": {
+		"deploy": true
+	},
+	"ProxyiOIL": {
+		"deploy": true
+	},
+	"SynthiOIL": {
+		"deploy": true
+	},
 	"FlexibleStorage": {
 		"deploy": false
 	},
