@@ -299,11 +299,6 @@ contract('Synthetix (prod tests)', accounts => {
 			});
 
 			it('using virtual tokens', async () => {
-				// can only simulate on mainnet due to above address limitations
-				if (network !== 'mainnet') {
-					return;
-				}
-
 				// deploy SwapWithVirtualSynth
 				const swapContract = await artifacts.require('SwapWithVirtualSynth').new();
 

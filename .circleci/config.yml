@@ -53,7 +53,7 @@ jobs:
           network: << parameters.network >>
           reset: true
       - run: node publish prepare-deploy --network << parameters.network >>
-      - run: node publish deploy --use-fork --yes --network << parameters.network >>
+      - run: node publish deploy --add-new-synths --use-fork --yes --network << parameters.network >>
       - run: npm run test:prod:gas -- --patch-fresh-deployment && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
@@ -80,7 +80,7 @@ jobs:
       - run: node publish build
       - cmd-local-start
       - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
-      - run: npm run test:prod -- --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
+      - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
     working_directory: ~/repo
   job-lint:
     docker:
