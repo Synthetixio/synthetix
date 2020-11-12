@@ -20,6 +20,14 @@ import "./interfaces/ISynthetix.sol";
 contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
     using SafeMath for uint;
 
+    struct VestingEntry{
+        uint64 endTime;
+        uint64 duration;
+        uint64 lastClaim;
+        uint256 escrowAmonut;
+        uint256 remainingAmount;
+    }
+
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
      * These are the times at which each given quantity of SNX vests. */
     mapping(address => uint[2][]) public vestingSchedules;
