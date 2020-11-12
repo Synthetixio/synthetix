@@ -3,7 +3,6 @@
 	"ETH": {"asset": "ETH", "feed": "0x0"},
 	"COMP": {"asset": "COMP", "feed": "0x0"},
 	"KNC": {"asset": "KNC", "feed": "0x0"},
-	"LEND": {"asset": "LEND", "feed": "0x0"},
 	"REN": {"asset": "REN", "feed": "0x0"},
 	"BTC": {"asset": "BTC", "feed": "0x0"},
 	"BNB": {"asset": "BNB", "feed": "0x0"},

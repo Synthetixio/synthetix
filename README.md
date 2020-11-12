@@ -83,31 +83,31 @@ import 'synthetix/contracts/interfaces/ISynthetix.sol';
 
 
 contract MyContract {
-	// This should be instantiated with our ReadProxyAddressResolver
-	// it's a ReadProxy that won't change, so safe to code it here without a setter
-	// see https://docs.synthetix.io/addresses for addresses in mainnet and testnets
-	IAddressResolver public synthetixResolver;
+  // This should be instantiated with our ReadProxyAddressResolver
+  // it's a ReadProxy that won't change, so safe to code it here without a setter
+  // see https://docs.synthetix.io/addresses for addresses in mainnet and testnets
+  IAddressResolver public synthetixResolver;
 
-	constructor(IAddressResolver _snxResolver) public {
-		synthetixResolver = _snxResolver;
-	}
+  constructor(IAddressResolver _snxResolver) public {
+    synthetixResolver = _snxResolver;
+  }
 
-	function synthetixIssue() external {
-		ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
-		require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
+  function synthetixIssue() external {
+    ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
+    require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
 
-		// Issue for msg.sender = address(MyContract)
-		synthetix.issueMaxSynths();
-	}
+    // Issue for msg.sender = address(MyContract)
+    synthetix.issueMaxSynths();
+  }
 
-	function synthetixIssueOnBehalf(address user) external {
-		ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
-		require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
+  function synthetixIssueOnBehalf(address user) external {
+    ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
+    require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
 
-		// Note: this will fail if `DelegateApprovals.approveIssueOnBehalf(address(MyContract))` has
-		// not yet been invoked by the `user`
-		synthetix.issueMaxSynthsOnBehalf(user);
-	}
+    // Note: this will fail if `DelegateApprovals.approveIssueOnBehalf(address(MyContract))` has
+    // not yet been invoked by the `user`
+    synthetix.issueMaxSynthsOnBehalf(user);
+  }
 }
 ```
 

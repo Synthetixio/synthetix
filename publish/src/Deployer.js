@@ -5,12 +5,9 @@ const Web3 = require('web3');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
 const { getUsers } = require('../../index.js');
+const { stringify, getEtherscanLinkPrefix } = require('./util');
+const { getVersions } = require('../..');
 
-const { stringify } = require('./util');
-
-/**
- *
- */
 class Deployer {
 	/**
 	 *
@@ -32,6 +29,9 @@ class Deployer {
 		providerUrl,
 		privateKey,
 		useFork,
+		useOvm,
+		ignoreSafetyChecks,
+		nonceManager,
 	}) {
 		this.compiled = compiled;
 		this.config = config;
@@ -43,12 +43,18 @@ class Deployer {
 		this.methodCallGasLimit = methodCallGasLimit;
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
+		this.nonceManager = nonceManager;
+		this.useOvm = useOvm;
+		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
 		if (useFork) {
 			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		} else if (network === 'local') {
+			// Deterministic account #0 when using `npx buidler node`
+			this.web3.eth.defaultAccount = '0xc783df8a850f42e7F7e57013759C285caa701eB6';
 		} else {
 			this.web3.eth.accounts.wallet.add(privateKey);
 			this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
@@ -64,12 +70,18 @@ class Deployer {
 		this.newContractsDeployed = [];
 	}
 
-	sendParameters(type = 'method-call') {
-		return {
+	async sendParameters(type = 'method-call') {
+		const params = {
 			from: this.account,
 			gas: type === 'method-call' ? this.methodCallGasLimit : this.contractDeploymentGasLimit,
 			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
 		};
+
+		if (this.nonceManager) {
+			params.nonce = await this.nonceManager.getNonce();
+		}
+
+		return params;
 	}
 
 	async _deploy({ name, source, args = [], deps = [], force = false, dryRun = this.dryRun }) {
@@ -87,7 +99,26 @@ class Deployer {
 		if (this.config[name]) {
 			deploy = this.config[name].deploy;
 		}
+
 		const compiled = this.compiled[source];
+
+		if (!this.ignoreSafetyChecks) {
+			const compilerVersion = compiled.metadata.compiler.version;
+			const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
+			const compilerMismatch = (this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
+			if (compilerMismatch) {
+				if (this.useOvm) {
+					throw new Error(
+						`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				} else {
+					throw new Error(
+						`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				}
+			}
+		}
+
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
 			: '';
@@ -122,7 +153,7 @@ class Deployer {
 			if (dryRun) {
 				this._dryRunCounter++;
 				// use the existing version of a contract in a dry run
-				deployedContract = this.getContract({ abi: compiled.abi, address: existingAddress });
+				deployedContract = this.makeContract({ abi: compiled.abi, address: existingAddress });
 				const { account } = this;
 				// but stub out all method calls except owner because it is needed to
 				// determine which actions can be performed directly or need to be added to ownerActions
@@ -139,8 +170,12 @@ class Deployer {
 						data: '0x' + bytecode,
 						arguments: args,
 					})
-					.send(this.sendParameters('contract-deployment'))
+					.send(await this.sendParameters('contract-deployment'))
 					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
+
+				if (this.nonceManager) {
+					this.nonceManager.incrementNonce();
+				}
 			}
 			deployedContract.options.deployed = true; // indicate a fresh deployment occurred
 			console.log(
@@ -152,7 +187,7 @@ class Deployer {
 			);
 		} else if (existingAddress && existingABI) {
 			// get ABI from the deployment (not the compiled ABI which may be newer)
-			deployedContract = this.getContract({ abi: existingABI, address: existingAddress });
+			deployedContract = this.makeContract({ abi: existingABI, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
 		} else {
 			throw new Error(
@@ -179,7 +214,7 @@ class Deployer {
 			name,
 			address,
 			source,
-			link: `https://${this.network !== 'mainnet' ? this.network + '.' : ''}etherscan.io/address/${
+			link: `${getEtherscanLinkPrefix(this.network)}/address/${
 				this.deployedContracts[name].options.address
 			}`,
 			timestamp,
@@ -242,8 +277,27 @@ class Deployer {
 		return deployedContract;
 	}
 
-	getContract({ abi, address }) {
+	makeContract({ abi, address }) {
 		return new this.web3.eth.Contract(abi, address);
+	}
+
+	getExistingContract({ contract }) {
+		let address;
+		if (this.network === 'local') {
+			address = this.deployment.targets[contract].address;
+		} else {
+			const contractVersion = getVersions({
+				network: this.network,
+				useOvm: this.useOvm,
+				byContract: true,
+			})[contract];
+			const lastEntry = contractVersion.slice(-1)[0];
+			address = lastEntry.address;
+		}
+
+		const { source } = this.deployment.targets[contract];
+		const { abi } = this.deployment.sources[source];
+		return this.makeContract({ abi, address });
 	}
 }
 

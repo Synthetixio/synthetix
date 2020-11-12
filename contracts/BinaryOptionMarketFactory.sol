@@ -2,14 +2,14 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./SelfDestructible.sol";
 import "./MixinResolver.sol";
 
 // Internal references
 import "./BinaryOptionMarket.sol";
 
 
-contract BinaryOptionMarketFactory is Owned, SelfDestructible, MixinResolver {
+// https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarketfactory
+contract BinaryOptionMarketFactory is Owned, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
@@ -20,12 +20,7 @@ contract BinaryOptionMarketFactory is Owned, SelfDestructible, MixinResolver {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        SelfDestructible()
-        MixinResolver(_resolver, addressesToCache)
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
 
     /* ========== VIEWS ========== */
 

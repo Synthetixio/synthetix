@@ -5,6 +5,7 @@ import "./Owned.sol";
 import "./State.sol";
 
 
+// https://docs.synthetix.io/contracts/source/contracts/eternalstorage
 /**
  * @notice  This contract is based on the code available from this blog
  * https://blog.colony.io/writing-upgradeable-contracts-in-solidity-6743f0eecc88/
@@ -12,7 +13,6 @@ import "./State.sol";
  * and extensible option. This ensures data schema changes can be implemented without
  * requiring upgrades to the storage contract.
  */
-// https://docs.synthetix.io/contracts/EternalStorage
 contract EternalStorage is Owned, State {
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 

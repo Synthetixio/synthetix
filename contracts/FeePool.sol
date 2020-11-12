@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./Proxyable.sol";
-import "./SelfDestructible.sol";
 import "./LimitedSetup.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
@@ -28,8 +27,8 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
 
 
-// https://docs.synthetix.io/contracts/FeePool
-contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, MixinSystemSettings, IFeePool {
+// https://docs.synthetix.io/contracts/source/contracts/feepool
+contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -99,7 +98,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     )
         public
         Owned(_owner)
-        SelfDestructible()
         Proxyable(_proxy)
         LimitedSetup(3 weeks)
         MixinResolver(_resolver, addressesToCache)
