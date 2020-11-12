@@ -1454,7 +1454,10 @@ const deploy = async ({
 					// already done
 					if (
 						oldExrates.options.address !== exchangeRates.options.address &&
-						JSON.stringify(inversePricingOnCurrentExRates) === JSON.stringify(oldInversePricing)
+						JSON.stringify(inversePricingOnCurrentExRates) === JSON.stringify(oldInversePricing) &&
+						inversePricingOnCurrentExRates.entryPoint === entryPoint &&
+						inversePricingOnCurrentExRates.upperLimit === upperLimit &&
+						inversePricingOnCurrentExRates.entryPoint === lowerLimit
 					) {
 						console.log(
 							gray(
