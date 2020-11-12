@@ -1585,8 +1585,8 @@
 			"address": "0x54EA32890a1bDB1C1aE106C921bE010F2C7faaC2",
 			"source": "PurgeableSynth",
 			"link": "https://etherscan.io/address/0x54EA32890a1bDB1C1aE106C921bE010F2C7faaC2",
-			"timestamp": "2020-11-12T01:08:43.254Z",
-			"txn": "",
+			"timestamp": "2020-11-12T01:08:31.000Z",
+			"txn": "https://etherscan.io/tx/0xd77c3229d1f234d002346013b4787924252437a76619de07c7ea97c35af0fac6",
 			"network": "mainnet"
 		}
 	},

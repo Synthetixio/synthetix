@@ -1,65 +1,366 @@
 {
-	"ProxyERC20.setTarget(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)": {
-		"target": "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F",
-		"action": "setTarget(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F#writeContract",
-		"data": "0x776d1a010000000000000000000000007e6ab054070599ca7b1552aea7962b6b344a9950"
+	"SystemSettings.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x703D37fb776A4C905e28f7Ff23C73102ce36E08B",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x703D37fb776A4C905e28f7Ff23C73102ce36E08B#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
 	},
-	"ProxySynthetix.setTarget(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)": {
-		"target": "0xC011A72400E58ecD99Ee497CF89E3775d4bd732F",
-		"action": "setTarget(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xC011A72400E58ecD99Ee497CF89E3775d4bd732F#writeContract",
-		"data": "0x776d1a010000000000000000000000007e6ab054070599ca7b1552aea7962b6b344a9950"
+	"Liquidations.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x46338723022deF2c5151e83BE759796A988754a2",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x46338723022deF2c5151e83BE759796A988754a2#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
 	},
-	"ExchangeState.setAssociatedContract(0x300F0f100389282b51F1Bc486D8c2ad22B6C4E42)": {
-		"target": "0x545973f28950f50fc6c7F52AAb4Ad214A27C0564",
-		"action": "setAssociatedContract(0x300F0f100389282b51F1Bc486D8c2ad22B6C4E42)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x545973f28950f50fc6c7F52AAb4Ad214A27C0564#writeContract",
-		"data": "0x52f445ca000000000000000000000000300f0f100389282b51f1bc486d8c2ad22b6c4e42"
+	"FeePool.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x013D16CB1Bd493bBB89D45b43254842FadC169C8",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x013D16CB1Bd493bBB89D45b43254842FadC169C8#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
 	},
-	"SystemStatus.updateAccessControl(Synth\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000,0x300F0f100389282b51F1Bc486D8c2ad22B6C4E42,true,false)": {
-		"target": "0x4534E92eefecc63C6105F53893D355C14aA129cf",
-		"action": "updateAccessControl(0x53796e7468000000000000000000000000000000000000000000000000000000,0x300F0f100389282b51F1Bc486D8c2ad22B6C4E42,true,false)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x4534E92eefecc63C6105F53893D355C14aA129cf#writeContract",
-		"data": "0x48bf197153796e7468000000000000000000000000000000000000000000000000000000000000000000000000000000300f0f100389282b51f1bc486d8c2ad22b6c4e4200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+	"TradingRewards.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xfF535F02CE0Df35D52c7A1bdace447101D2514D3",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xfF535F02CE0Df35D52c7A1bdace447101D2514D3#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
 	},
-	"TokenStateSynthetix.setAssociatedContract(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)": {
-		"target": "0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD",
-		"action": "setAssociatedContract(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD#writeContract",
-		"data": "0x52f445ca0000000000000000000000007e6ab054070599ca7b1552aea7962b6b344a9950"
+	"SynthsUSD.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x705142E6f3970F004721bdf05b696B45Fc4aD6d7",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x705142E6f3970F004721bdf05b696B45Fc4aD6d7#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
 	},
-	"SynthetixState.setAssociatedContract(0xdd692195b3b632B196FE33eB274CCBE91b8D849f)": {
-		"target": "0x4b9Ca5607f1fF8019c1C6A3c2f0CC8de622D5B82",
-		"action": "setAssociatedContract(0xdd692195b3b632B196FE33eB274CCBE91b8D849f)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x4b9Ca5607f1fF8019c1C6A3c2f0CC8de622D5B82#writeContract",
-		"data": "0x52f445ca000000000000000000000000dd692195b3b632b196fe33eb274ccbe91b8d849f"
+	"SynthsEUR.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x2fB419E7023b32201e9aB3aba947f5c101a5C30e",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x2fB419E7023b32201e9aB3aba947f5c101a5C30e#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
 	},
-	"RewardEscrow.setSynthetix(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)": {
-		"target": "0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F",
-		"action": "setSynthetix(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F#writeContract",
-		"data": "0xfec9f9da0000000000000000000000007e6ab054070599ca7b1552aea7962b6b344a9950"
+	"SynthsJPY.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x8ed1B71B00DbaB96A6db6DF0C910f749243de6D3",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x8ed1B71B00DbaB96A6db6DF0C910f749243de6D3#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
 	},
-	"RewardsDistribution.setAuthority(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)": {
-		"target": "0x29C295B046a73Cde593f21f63091B072d407e3F2",
-		"action": "setAuthority(0x7e6ab054070599ca7B1552aEa7962b6B344A9950)",
-		"complete": false,
-		"link": "https://etherscan.io/address/0x29C295B046a73Cde593f21f63091B072d407e3F2#writeContract",
-		"data": "0x7a9e5e4b0000000000000000000000007e6ab054070599ca7b1552aea7962b6b344a9950"
+	"SynthsAUD.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xe04d8770Dc06135Dd97214ea8bcbf7B1CC057AA3",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xe04d8770Dc06135Dd97214ea8bcbf7B1CC057AA3#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
 	},
-	"AddressResolver.importAddresses(0x4465627443616368650000000000000000000000000000000000000000000000,0x45786368616e6765526174657300000000000000000000000000000000000000,0x45786368616e6765720000000000000000000000000000000000000000000000,0x4973737565720000000000000000000000000000000000000000000000000000,0x53796e7468657469780000000000000000000000000000000000000000000000,0x198A560EA4842c8E64Dd7cF445C5fBC5903B2736,0xA68C6020fF9Ea79F05345cDd2CE37DF4b89478ed,0x300F0f100389282b51F1Bc486D8c2ad22B6C4E42,0xdd692195b3b632B196FE33eB274CCBE91b8D849f,0x7e6ab054070599ca7B1552aEa7962b6B344A9950)": {
-		"target": "0x61166014E3f04E40C953fe4EAb9D9E40863C83AE",
-		"action": "importAddresses(0x4465627443616368650000000000000000000000000000000000000000000000,0x45786368616e6765526174657300000000000000000000000000000000000000,0x45786368616e6765720000000000000000000000000000000000000000000000,0x4973737565720000000000000000000000000000000000000000000000000000,0x53796e7468657469780000000000000000000000000000000000000000000000,0x198A560EA4842c8E64Dd7cF445C5fBC5903B2736,0xA68C6020fF9Ea79F05345cDd2CE37DF4b89478ed,0x300F0f100389282b51F1Bc486D8c2ad22B6C4E42,0xdd692195b3b632B196FE33eB274CCBE91b8D849f,0x7e6ab054070599ca7B1552aEa7962b6B344A9950)",
+	"SynthsGBP.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xB3098Ae40f488ffdb979827Fd01597CC20c5a5A0",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xB3098Ae40f488ffdb979827Fd01597CC20c5a5A0#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsCHF.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x253914cf059f4c3E277c28060C404acFc38FB6e2",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x253914cf059f4c3E277c28060C404acFc38FB6e2#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsXAU.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xA408d8e01C8E084B67559226C5B55D6F0B7074e2",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xA408d8e01C8E084B67559226C5B55D6F0B7074e2#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsXAG.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x1B9d6cD65dDC981410cb93Af91B097667E0Bc7eE",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x1B9d6cD65dDC981410cb93Af91B097667E0Bc7eE#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsBTC.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x17628A557d1Fc88D1c35989dcBAC3f3e275E2d2B",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x17628A557d1Fc88D1c35989dcBAC3f3e275E2d2B#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsETH.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xD0DC005d31C2979CC0d38718e23c82D1A50004C0",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xD0DC005d31C2979CC0d38718e23c82D1A50004C0#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsBNB.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xadaD43Be81E2206f6D1aF4299cA2a029e16af7AB",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xadaD43Be81E2206f6D1aF4299cA2a029e16af7AB#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsTRX.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xC4Be4583bc0307C56CF301975b2B2B1E5f95fcB2",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xC4Be4583bc0307C56CF301975b2B2B1E5f95fcB2#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsXTZ.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x91DBC6f587D043FEfbaAD050AB48696B30F13d89",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x91DBC6f587D043FEfbaAD050AB48696B30F13d89#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsXRP.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xF5d0BFBc617d3969C1AcE93490A76cE80Db1Ed0e",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xF5d0BFBc617d3969C1AcE93490A76cE80Db1Ed0e#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsLTC.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x6cF29c515A33209c6eCa43c293004ac80c0614f0",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x6cF29c515A33209c6eCa43c293004ac80c0614f0#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsLINK.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xAf918f4a72BC34E59dFaF65866feC87947F1f590",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xAf918f4a72BC34E59dFaF65866feC87947F1f590#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsEOS.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x31a9c51eEd5282F11ae5CDD061A65A4ce0346C08",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x31a9c51eEd5282F11ae5CDD061A65A4ce0346C08#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsBCH.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x9b68b85c61B082B2495B342F26B20a57cFd73D26",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x9b68b85c61B082B2495B342F26B20a57cFd73D26#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsETC.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x2369D37ae9B30451D859C11CAbAc70df1CE48F78",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x2369D37ae9B30451D859C11CAbAc70df1CE48F78#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsDASH.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xc66499aCe3B6c6a30c784bE5511E8d338d543913",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xc66499aCe3B6c6a30c784bE5511E8d338d543913#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsXMR.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x86FD9c0261E804476bA11056fFD758da2469ed56",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x86FD9c0261E804476bA11056fFD758da2469ed56#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsADA.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x1Cda42C559D2EB137103D9A01d1ae736dEDA3aEF",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x1Cda42C559D2EB137103D9A01d1ae736dEDA3aEF#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsFTSE.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x8D34924EAe7578692775fDd94Ed27bc355397E4a",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x8D34924EAe7578692775fDd94Ed27bc355397E4a#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsNIKKEI.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x4CeB220C5E38E27ef5187F7ab853aC182D233d39",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x4CeB220C5E38E27ef5187F7ab853aC182D233d39#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsCEX.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x5eA2544551448cF6DcC1D853aDdd663D480fd8d3",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0x5eA2544551448cF6DcC1D853aDdd663D480fd8d3#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthsDEFI.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xf5a6115Aa582Fd1BEEa22BC93B7dC7a785F60d03",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xf5a6115Aa582Fd1BEEa22BC93B7dC7a785F60d03#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiBTC.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xc704c9AA89d1ca60F67B3075d05fBb92b3B00B3B#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiETH.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xaE55F163337A2A46733AA66dA9F35299f9A46e9e",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xaE55F163337A2A46733AA66dA9F35299f9A46e9e#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiBNB.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xf86048DFf23cF130107dfB4e6386f574231a5C65",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": true,
+		"link": "https://etherscan.io/address/0xf86048DFf23cF130107dfB4e6386f574231a5C65#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiTRX.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xdD87cbDe3C1f8F728C7924c8C9C983Af6dfcfeA8",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
 		"complete": false,
-		"link": "https://etherscan.io/address/0x61166014E3f04E40C953fe4EAb9D9E40863C83AE#writeContract",
-		"data": "0xab0b8f77000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000005446562744361636865000000000000000000000000000000000000000000000045786368616e676552617465730000000000000000000000000000000000000045786368616e6765720000000000000000000000000000000000000000000000497373756572000000000000000000000000000000000000000000000000000053796e74686574697800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000198a560ea4842c8e64dd7cf445c5fbc5903b2736000000000000000000000000a68c6020ff9ea79f05345cdd2ce37df4b89478ed000000000000000000000000300f0f100389282b51f1bc486d8c2ad22b6c4e42000000000000000000000000dd692195b3b632b196fe33eb274ccbe91b8d849f0000000000000000000000007e6ab054070599ca7b1552aea7962b6b344a9950"
+		"link": "https://etherscan.io/address/0xdD87cbDe3C1f8F728C7924c8C9C983Af6dfcfeA8#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiXTZ.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x6dFDFbfB4B180be4482F8b753fb33720C2831a9f",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x6dFDFbfB4B180be4482F8b753fb33720C2831a9f#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiXRP.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x71Cd588eFA3609bc14E7B0c7C57dDDfd3a72E8a2",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x71Cd588eFA3609bc14E7B0c7C57dDDfd3a72E8a2#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiLINK.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x63d630B6D89c21E171E86c51C7243284510DBd79",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x63d630B6D89c21E171E86c51C7243284510DBd79#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiLTC.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x0f5BdfD0958345C2e7Adb1741024aEd6Dd159e6C",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x0f5BdfD0958345C2e7Adb1741024aEd6Dd159e6C#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiEOS.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xc66a263f2C7C1Af0bD70c6cA4Bff5936F3D6Ef9F",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xc66a263f2C7C1Af0bD70c6cA4Bff5936F3D6Ef9F#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiBCH.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x0E87a320daCE86A0b427FA2Bae282dE5c7697278",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x0E87a320daCE86A0b427FA2Bae282dE5c7697278#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiETC.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xF13f9E75913b352622F8AEEA5Ac32498b1C228d0",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xF13f9E75913b352622F8AEEA5Ac32498b1C228d0#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiDASH.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x5f7A299Be82D8f5A626300c62C477b233F616121",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x5f7A299Be82D8f5A626300c62C477b233F616121#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiXMR.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xC5D2b3f5DAf11B6111Af86a72A5938B0fE6c5045",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xC5D2b3f5DAf11B6111Af86a72A5938B0fE6c5045#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiADA.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x9D4193187B247a400E8D8ba716F1C18c0dC65528",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x9D4193187B247a400E8D8ba716F1C18c0dC65528#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiCEX.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x817c39c8825e12eA7752483c85dd2c800b78B357",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x817c39c8825e12eA7752483c85dd2c800b78B357#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SynthiDEFI.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x489d4D4c4bC781EAab3A36C44d66762Ceb6e1e2D",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x489d4D4c4bC781EAab3A36C44d66762Ceb6e1e2D#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"Depot.setResolver(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xE1f64079aDa6Ef07b03982Ca34f1dD7152AA3b86",
+		"action": "setResolver(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xE1f64079aDa6Ef07b03982Ca34f1dD7152AA3b86#writeContract",
+		"data": "0x4e543b260000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"EtherCollateral.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x7133afF303539b0A4F60Ab9bd9656598BF49E272",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x7133afF303539b0A4F60Ab9bd9656598BF49E272#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"EtherCollateralsUSD.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0xfED77055B40d63DCf17ab250FFD6948FBFF57B82",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0xfED77055B40d63DCf17ab250FFD6948FBFF57B82#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"BinaryOptionMarketFactory.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x72c091691b5cD86fAcD048972157985f74Ea1F07",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x72c091691b5cD86fAcD048972157985f74Ea1F07#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"BinaryOptionMarketManager.setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)": {
+		"target": "0x8071bA88e58a19176EF007995FB5D9E1Faa73F92",
+		"action": "setResolverAndSyncCache(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x8071bA88e58a19176EF007995FB5D9E1Faa73F92#writeContract",
+		"data": "0x3be99e6f0000000000000000000000004e3b31eb0e5cb73641ee1e65e7dcefe520ba3ef2"
+	},
+	"SystemSettings.setExchangeFeeRateForSynths(0x734f494c00000000000000000000000000000000000000000000000000000000,0x694f494c00000000000000000000000000000000000000000000000000000000,3000000000000000,3000000000000000)": {
+		"target": "0x703D37fb776A4C905e28f7Ff23C73102ce36E08B",
+		"action": "setExchangeFeeRateForSynths(0x734f494c00000000000000000000000000000000000000000000000000000000,0x694f494c00000000000000000000000000000000000000000000000000000000,3000000000000000,3000000000000000)",
+		"complete": false,
+		"link": "https://etherscan.io/address/0x703D37fb776A4C905e28f7Ff23C73102ce36E08B#writeContract",
+		"data": "0x28a1170d000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002734f494c00000000000000000000000000000000000000000000000000000000694f494c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000aa87bee538000000000000000000000000000000000000000000000000000000aa87bee538000"
 	}
 }
