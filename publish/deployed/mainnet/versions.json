@@ -2187,8 +2187,9 @@
 			},
 			"Synthetix": {
 				"address": "0x6eB3aC83701f624bAEfBc50db654b53d1F51dC94",
-				"status": "current",
-				"keccak256": "0xf92685622f5b8ea9c56041189b6c200314f72f08df4ff073a02896c849eb834f"
+				"status": "replaced",
+				"keccak256": "0xf92685622f5b8ea9c56041189b6c200314f72f08df4ff073a02896c849eb834f",
+				"replaced_in": "v2.31.1"
 			},
 			"Exchanger": {
 				"address": "0x1d53a13D78766C0Db6eF73eC0ae1138eA2b6f5D4",
@@ -2272,23 +2273,91 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xda80E6024bC82C9fe9e4e6760a9769CF0D231E80",
-				"status": "current",
-				"keccak256": "0xecc746e9363b1e4d2cda6b3bd5773268540a790a4f1f14909b2eaf441acaf6c4"
+				"status": "replaced",
+				"keccak256": "0xecc746e9363b1e4d2cda6b3bd5773268540a790a4f1f14909b2eaf441acaf6c4",
+				"replaced_in": "v2.31.1"
 			},
 			"Exchanger": {
 				"address": "0xc4942df0d3c561c71417BBA09d2DEA7a3CC676Fb",
-				"status": "current",
-				"keccak256": "0x5d6e11d4c9e1a785a435f44c861da9ed9ef4889db9151265145624a1cf64e512"
+				"status": "replaced",
+				"keccak256": "0x5d6e11d4c9e1a785a435f44c861da9ed9ef4889db9151265145624a1cf64e512",
+				"replaced_in": "v2.31.1"
 			},
 			"Issuer": {
 				"address": "0x2BA226A6134516457471583AE172457b189187C0",
-				"status": "current",
-				"keccak256": "0xd75e68a23fef19a0e8604bebe92baa040bfb590ae5259333aeb63ac413c94da1"
+				"status": "replaced",
+				"keccak256": "0xd75e68a23fef19a0e8604bebe92baa040bfb590ae5259333aeb63ac413c94da1",
+				"replaced_in": "v2.31.1"
 			},
 			"SystemSettings": {
 				"address": "0x703D37fb776A4C905e28f7Ff23C73102ce36E08B",
 				"status": "current",
 				"keccak256": "0x0119b6d98214114e4c7c41b10e0cd5b58903143e6556156917772b4019c44335"
+			}
+		}
+	},
+	"v2.31.1": {
+		"tag": "v2.31.1",
+		"fulltag": "v2.31.1",
+		"release": "Mimosa",
+		"network": "mainnet",
+		"date": "2020-11-11T22:10:58-05:00",
+		"commit": "29919ec289317f6441c89df4852620ebb6983285",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xA68C6020fF9Ea79F05345cDd2CE37DF4b89478ed",
+				"status": "current",
+				"keccak256": "0xb00ede4847d8725844e762151714f558e8b5d6fa3b34531cf29fe14d3e052884"
+			},
+			"Synthetix": {
+				"address": "0x7e6ab054070599ca7B1552aEa7962b6B344A9950",
+				"status": "current",
+				"keccak256": "0x02c3d358d6a0487f54ac56b33bf9f39f12c7af85564544f3d929a143ca96d9ea"
+			},
+			"Exchanger": {
+				"address": "0x300F0f100389282b51F1Bc486D8c2ad22B6C4E42",
+				"status": "current",
+				"keccak256": "0xb4aec17ec72b273b7013d9042a231b06ed4b4246e8a77bc5f507598ebd77e396"
+			},
+			"Issuer": {
+				"address": "0xdd692195b3b632B196FE33eB274CCBE91b8D849f",
+				"status": "current",
+				"keccak256": "0xffc3175744de9a11cf1cc91ca6aad118b539e8ccad902d409ce853619f7168d4"
+			},
+			"DebtCache": {
+				"address": "0x198A560EA4842c8E64Dd7cF445C5fBC5903B2736",
+				"status": "current",
+				"keccak256": "0x35d36fdd6fa8ff932a8733f9583afaf396e33a59b1febc8b68a60d65f731a8a9"
+			},
+			"TokenStatesOIL": {
+				"address": "0x98d7CcF403B8BD2F6DC3F3cA4161f1E8db3dD080",
+				"status": "current",
+				"keccak256": "0x0f7749d534fc2dd7ab5c3b8490967a5792fb132eaeba573e74f6016c383d7701"
+			},
+			"ProxysOIL": {
+				"address": "0x6d16cF3EC5F763d4d99cB0B0b110eefD93B11B56",
+				"status": "current",
+				"keccak256": "0xf57882920536d50a381ff2e8395534cabfdd4224df40c4efa8ec25a8c8ab7088"
+			},
+			"SynthsOIL": {
+				"address": "0xDE3Eaa39875d0528A575dBcC436b2C6ae9fc353c",
+				"status": "current",
+				"keccak256": "0x268ff01dc0d6236517d11269cb667a5600eb62633953148d78921900688e30cb"
+			},
+			"TokenStateiOIL": {
+				"address": "0xF92BE89BF1aebA61AC48D90CF7C9Ac2b3616c4Da",
+				"status": "current",
+				"keccak256": "0x0f7749d534fc2dd7ab5c3b8490967a5792fb132eaeba573e74f6016c383d7701"
+			},
+			"ProxyiOIL": {
+				"address": "0xA5a5DF41883Cdc00c4cCC6E8097130535399d9a3",
+				"status": "current",
+				"keccak256": "0xf57882920536d50a381ff2e8395534cabfdd4224df40c4efa8ec25a8c8ab7088"
+			},
+			"SynthiOIL": {
+				"address": "0x54EA32890a1bDB1C1aE106C921bE010F2C7faaC2",
+				"status": "current",
+				"keccak256": "0xa334bb44b69f6f2cbd66738d110ac1cf455cb8f8b7c98a960fbaea9d9a4f2b72"
 			}
 		}
 	}
