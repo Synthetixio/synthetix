@@ -24,7 +24,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         uint64 endTime;
         uint64 duration;
         uint64 lastClaim;
-        uint256 escrowAmonut;
+        uint256 escrowAmount;
         uint256 remainingAmount;
     }
 
@@ -147,44 +147,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     }
 
     /**
-     * @notice Obtain the index of the next schedule entry that will vest for a given user.
-     */
-    function getNextVestingIndex(address account) public view returns (uint) {
-        uint len = _numVestingEntries(account);
-        for (uint i = 0; i < len; i++) {
-            if (getVestingTime(account, i) != 0) {
-                return i;
-            }
-        }
-        return len;
-    }
-
-    /**
-     * @notice Obtain the next schedule entry that will vest for a given user.
-     * @return A pair of uints: (timestamp, synthetix quantity). */
-    function getNextVestingEntry(address account) public view returns (uint[2] memory) {
-        uint index = getNextVestingIndex(account);
-        if (index == _numVestingEntries(account)) {
-            return [uint(0), 0];
-        }
-        return getVestingScheduleEntry(account, index);
-    }
-
-    /**
-     * @notice Obtain the time at which the next schedule entry will vest for a given user.
-     */
-    function getNextVestingTime(address account) external view returns (uint) {
-        return getNextVestingEntry(account)[TIME_INDEX];
-    }
-
-    /**
-     * @notice Obtain the quantity which the next schedule entry will vest for a given user.
-     */
-    function getNextVestingQuantity(address account) external view returns (uint) {
-        return getNextVestingEntry(account)[QUANTITY_INDEX];
-    }
-
-    /**
      * @notice return the full vesting schedule entries vest for a given user.
      * @dev For DApps to display the vesting schedule for the
      * inflationary supply over 5 years. Solidity cant return variable length arrays
@@ -201,6 +163,14 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         return _result;
     }
 
+    function ratePerSecond(address account, uint256 entryID) public view {
+        // Retrieve the vesting entry on
+
+        // Calculate the rate of emission for entry based on escrowAmount / duration seconds
+
+        // entry.escrowAmount.divideDecimalRound(duration);
+    }
+    
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function _appendVestingEntry(address account, uint quantity) internal {
