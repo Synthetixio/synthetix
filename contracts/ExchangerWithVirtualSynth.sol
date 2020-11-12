@@ -18,8 +18,8 @@ contract ExchangerWithVirtualSynth is Exchanger {
         uint amount
     ) internal returns (IVirtualSynth vSynth) {
         vSynth = new VirtualSynth(synth, resolver, recipient, amount);
-        emit VirtualSynthCreated(address(vSynth), address(synth), synth.currencyKey(), amount);
+        emit VirtualSynthCreated(address(vSynth), address(synth), synth.currencyKey(), amount, recipient);
     }
 
-    event VirtualSynthCreated(address vSynth, address synth, bytes32 currencyKey, uint amount);
+    event VirtualSynthCreated(address vSynth, address synth, bytes32 currencyKey, uint amount, address recipient);
 }

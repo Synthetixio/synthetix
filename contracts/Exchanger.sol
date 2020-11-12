@@ -580,7 +580,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
 
         // persist the exchange information for the dest key
         appendExchange(
-            destinationAddress,
+            vSynth != IVirtualSynth(0) ? address(vSynth) : destinationAddress,
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
             destinationCurrencyKey,

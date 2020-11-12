@@ -2455,6 +2455,167 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	});
 
+	describe('exchangeWithVirtual()', () => {
+		describe('when a user has 1000 sUSD', () => {
+			describe('when the waiting period is set to 60s', () => {
+				beforeEach(async () => {
+					await systemSettings.setWaitingPeriodSecs('60', { from: owner });
+				});
+				describe('when a user exchanges into sAUD using virtual synths', () => {
+					let logs;
+					let amountReceived;
+					let exchangeFeeRate;
+					let findNamedEventValue;
+					let vSynthAddress;
+
+					beforeEach(async () => {
+						const txn = await synthetix.exchangeWithVirtual(sUSD, amountIssued, sAUD, {
+							from: account1,
+						});
+
+						({ amountReceived, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+							amountIssued,
+							sUSD,
+							sAUD
+						));
+
+						logs = await getDecodedLogs({
+							hash: txn.tx,
+							contracts: [synthetix, exchanger, sUSDContract, issuer, flexibleStorage, debtCache],
+						});
+						const vSynthCreatedEvent = logs.find(({ name }) => name === 'VirtualSynthCreated');
+						assert.ok(vSynthCreatedEvent, 'Found VirtualSynthCreated event');
+						findNamedEventValue = param =>
+							vSynthCreatedEvent.events.find(({ name }) => name === param);
+						vSynthAddress = findNamedEventValue('vSynth').value;
+					});
+
+					it('then it emits an ExchangeEntryAppended for the new Virtual Synth', async () => {
+						decodedEventEqual({
+							log: logs.find(({ name }) => name === 'ExchangeEntryAppended'),
+							event: 'ExchangeEntryAppended',
+							emittedFrom: exchanger.address,
+							args: [
+								vSynthAddress,
+								sUSD,
+								amountIssued,
+								sAUD,
+								amountReceived,
+								exchangeFeeRate,
+								new web3.utils.BN(1),
+								new web3.utils.BN(2),
+							],
+							bnCloseVariance,
+						});
+					});
+					it('and it emits the VirtualSynthCreated event', async () => {
+						/// TODO: synth should be proxy
+						assert.equal(findNamedEventValue('synth').value, sAUDContract.address.toLowerCase());
+						assert.equal(findNamedEventValue('currencyKey').value, sAUD);
+						assert.equal(findNamedEventValue('amount').value, amountReceived);
+						assert.equal(findNamedEventValue('recipient').value, account1.toLowerCase());
+					});
+					it('and the balance of the user is nothing', async () => {
+						assert.bnEqual(await sAUDContract.balanceOf(account1), '0');
+					});
+					it('and the user has no fee reclamation entries', async () => {
+						const { reclaimAmount, rebateAmount, numEntries } = await exchanger.settlementOwing(
+							account1,
+							sAUD
+						);
+						assert.equal(reclaimAmount, '0');
+						assert.equal(rebateAmount, '0');
+						assert.equal(numEntries, '0');
+					});
+
+					describe('with the new virtual synth', () => {
+						let vSynth;
+						beforeEach(async () => {
+							vSynth = await artifacts.require('VirtualSynth').at(vSynthAddress);
+						});
+						it('and the balance of the vSynth is the whole amount', async () => {
+							assert.bnEqual(await sAUDContract.balanceOf(vSynth.address), amountReceived);
+						});
+						it('then it is created with the correct parameters', async () => {
+							assert.equal(await vSynth.resolver(), resolver.address);
+							// TODO should be proxy
+							assert.equal(await vSynth.synth(), sAUDContract.address);
+							assert.bnEqual(await vSynth.totalSupply(), amountReceived);
+							assert.bnEqual(await vSynth.balanceOf(account1), amountReceived);
+						});
+						it('and the vSynth has 1 fee reclamation entries', async () => {
+							const { reclaimAmount, rebateAmount, numEntries } = await exchanger.settlementOwing(
+								vSynth.address,
+								sAUD
+							);
+							assert.equal(reclaimAmount, '0');
+							assert.equal(rebateAmount, '0');
+							assert.equal(numEntries, '1');
+						});
+						it('and the secsLeftInWaitingPeriod() returns the waitingPeriodSecs', async () => {
+							const maxSecs = await vSynth.secsLeftInWaitingPeriod();
+							timeIsClose({ actual: maxSecs, expected: 60, variance: 2 });
+						});
+
+						describe('when the waiting period expires', () => {
+							beforeEach(async () => {
+								// end waiting period
+								await fastForward(await systemSettings.waitingPeriodSecs());
+							});
+
+							it('and the secsLeftInWaitingPeriod() returns 0', async () => {
+								assert.equal(await vSynth.secsLeftInWaitingPeriod(), '0');
+							});
+
+							it('and readyToSettle() is true', async () => {
+								assert.equal(await vSynth.readyToSettle(), true);
+							});
+
+							describe('when the vSynth is settled for the holder', () => {
+								beforeEach(async () => {
+									await vSynth.settle(account1);
+								});
+
+								it('then the user has all the synths', async () => {
+									assert.bnEqual(await sAUDContract.balanceOf(account1), amountReceived);
+								});
+
+								it('and the vSynth is settled', async () => {
+									assert.equal(await vSynth.settled(), true);
+								});
+
+								it('and the entry is settled for the vSynth', async () => {
+									const {
+										reclaimAmount,
+										rebateAmount,
+										numEntries,
+									} = await exchanger.settlementOwing(vSynth.address, sAUD);
+									assert.equal(reclaimAmount, '0');
+									assert.equal(rebateAmount, '0');
+									assert.equal(numEntries, '0');
+								});
+
+								it('and the user still has no fee reclamation entries', async () => {
+									const {
+										reclaimAmount,
+										rebateAmount,
+										numEntries,
+									} = await exchanger.settlementOwing(account1, sAUD);
+									assert.equal(reclaimAmount, '0');
+									assert.equal(rebateAmount, '0');
+									assert.equal(numEntries, '0');
+								});
+
+								it('and no more supply exists in the vSynth', async () => {
+									assert.equal(await vSynth.totalSupply(), '0');
+								});
+							});
+						});
+					});
+				});
+			});
+		});
+	});
 	describe('setLastExchangeRateForSynth() SIP-78', () => {
 		it('cannot be invoked by any user', async () => {
 			await onlyGivenAddressCanInvoke({
