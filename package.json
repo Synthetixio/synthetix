@@ -11,7 +11,9 @@
 		"coverage": "NODE_OPTIONS=\"--max-old-space-size=4096\" buidler coverage --network coverage",
 		"generate-asts": "buidler compile",
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\" \"**/*.md\" \"**/*.yml\"",
-		"lint": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\" && eslint \"**/*.js\"",
+		"lint:js": "eslint \"**/*.js\"",
+		"lint:sol": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\"",
+		"lint": "npm run lint:js && npm run lint:sol",
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"ci:build": "circleci config pack .circleci/src > .circleci/config.yml && circleci config validate",
 		"slither": "pip3 install --user slither-analyzer && slither .",
@@ -32,7 +34,7 @@
 	},
 	"husky": {
 		"hooks": {
-			"pre-commit": "./hooks/circleci && npm run lint && pretty-quick --staged"
+			"pre-commit": "./hooks/circleci && ./hooks/lint"
 		}
 	},
 	"repository": {

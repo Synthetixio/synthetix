@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+if ! git diff --name-only --exit-code -- '***.js'; then
+	npm run lint:js
+	npx pretty-quick --staged
+fi
+
+if ! git diff --name-only --exit-code -- '***.sol'; then
+	npm run lint:sol
+fi
