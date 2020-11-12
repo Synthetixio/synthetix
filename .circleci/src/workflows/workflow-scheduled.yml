@@ -12,8 +12,7 @@ jobs:
   # Deployment validation
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-validate-deployments:
-      requires:
-        - job-prepare
+      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Production tests
@@ -21,27 +20,22 @@ jobs:
   - job-prod-tests:
       name: job-prod-tests-mainnet
       network: mainnet
-      requires:
-        - job-prepare
+      {{> require-prepare.yml}}
   - job-prod-tests:
       name: job-prod-tests-rinkeby
       network: rinkeby
-      requires:
-        - job-prepare
+      {{> require-prepare.yml}}
   - job-prod-tests:
       name: job-prod-tests-kovan
       network: kovan
-      requires:
-        - job-prepare
+      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Differential local production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-diff-prod-tests-local:
       name: job-diff-prod-tests-local
-      requires:
-        - job-prepare
+      {{> require-prepare.yml}}
   - job-diff-prod-tests-local-ovm:
       name: job-diff-prod-tests-local-ovm
-      requires:
-        - job-prepare
+      {{> require-prepare.yml}}

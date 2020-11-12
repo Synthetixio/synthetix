@@ -10,6 +10,7 @@ function main() {
 		...buildPartialsForDirectory(path.join(__dirname, 'src/commands')),
 		...buildPartialsForDirectory(path.join(__dirname, 'src/jobs')),
 		...buildPartialsForDirectory(path.join(__dirname, 'src/workflows')),
+		...readPartialsInDirectory(path.join(__dirname, 'src/snippets'), false, false),
 	};
 
 	let output = mustache.render(template, data, partials);
@@ -24,27 +25,32 @@ function buildPartialsForDirectory(dirPath) {
 	return {
 		[path.basename(dirPath)]: buildPartialsArrayFromDirectory(dirPath),
 		...readPartialsInDirectory(dirPath),
-	}
+	};
 }
 
 function buildPartialsArrayFromDirectory(dirPath) {
 	let array = '';
 
-	fs.readdirSync(dirPath).forEach((file) => {
+	fs.readdirSync(dirPath).forEach(file => {
 		array += `{{> ${file}}}\n\n`;
 	});
 
 	return array;
 }
 
-function readPartialsInDirectory(dirPath) {
+function readPartialsInDirectory(dirPath, includeName = true, indent = true) {
 	const files = {};
 
-	fs.readdirSync(dirPath).forEach((file) => {
+	fs.readdirSync(dirPath).forEach(file => {
 		const filePath = path.join(dirPath, file);
 		const fileName = file.split('.')[0];
 
-		files[file] = `${fileName}:\n${readFileWithIndentation(filePath, '  ')}`;
+		const indentationString = indent ? '  ' : '';
+		if (includeName) {
+			files[file] = `${fileName}:\n${readFileWithIndentation(filePath, indentationString)}`;
+		} else {
+			files[file] = readFileWithIndentation(filePath, indentationString);
+		}
 	});
 
 	return files;

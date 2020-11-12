@@ -1,7 +1,5 @@
 # Compiles for ovm and runs unit tests in a local ovm chain
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
 steps:
   - checkout
   - attach_workspace:
