@@ -119,9 +119,10 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 														});
 														it('emits a VirtualSynthCreated event with the correct underlying synth and amount', async () => {
 															assert.eventEqual(txn, 'VirtualSynthCreated', {
-																synth: this.mocks.synth.address,
+																synth: this.mocks.synth.smocked.proxy.will.returnValue,
 																currencyKey: toBytes32('sETH'),
 																amount,
+																recipient: owner,
 															});
 														});
 														describe('when interrogating the Virtual Synths construction params', () => {
@@ -133,7 +134,10 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																vSynth = await artifacts.require('VirtualSynth').at(vSynthAddress);
 															});
 															it('the vSynth has the correct synth', async () => {
-																assert.equal(await vSynth.synth(), this.mocks.synth.address);
+																assert.equal(
+																	await vSynth.synth(),
+																	this.mocks.synth.smocked.proxy.will.returnValue
+																);
 															});
 															it('the vSynth has the correct resolver', async () => {
 																assert.equal(await vSynth.resolver(), this.resolver.address);

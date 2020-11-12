@@ -13,12 +13,13 @@ contract ExchangerWithVirtualSynth is Exchanger {
     constructor(address _owner, address _resolver) public Exchanger(_owner, _resolver) {}
 
     function _createVirtualSynth(
-        ISynth synth,
+        IERC20 synth,
         address recipient,
-        uint amount
+        uint amount,
+        bytes32 currencyKey
     ) internal returns (IVirtualSynth vSynth) {
-        vSynth = new VirtualSynth(synth, resolver, recipient, amount);
-        emit VirtualSynthCreated(address(vSynth), address(synth), synth.currencyKey(), amount, recipient);
+        vSynth = new VirtualSynth(synth, resolver, recipient, amount, currencyKey);
+        emit VirtualSynthCreated(address(vSynth), address(synth), currencyKey, amount, recipient);
     }
 
     event VirtualSynthCreated(address vSynth, address synth, bytes32 currencyKey, uint amount, address recipient);

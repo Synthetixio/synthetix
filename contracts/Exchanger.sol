@@ -20,6 +20,7 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IDebtCache.sol";
 import "./interfaces/IVirtualSynth.sol";
+import "./Proxyable.sol";
 
 // Note: use OZ's IERC20 here as using ours will complain about conflicting names
 // during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
@@ -605,7 +606,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         ISynth dest = issuer().synths(destinationCurrencyKey);
 
         if (virtualSynth) {
-            vSynth = _createVirtualSynth(dest, recipient, amountReceived);
+            Proxyable synth = Proxyable(address(dest));
+            vSynth = _createVirtualSynth(IERC20(address(synth.proxy())), recipient, amountReceived, destinationCurrencyKey);
             dest.issue(address(vSynth), amountReceived);
         } else {
             dest.issue(recipient, amountReceived);
@@ -613,9 +615,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     }
 
     function _createVirtualSynth(
-        ISynth,
+        IERC20,
         address,
-        uint
+        uint,
+        bytes32
     ) internal returns (IVirtualSynth) {
         revert("Not supported in this layer");
     }

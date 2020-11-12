@@ -2509,8 +2509,10 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 					});
 					it('and it emits the VirtualSynthCreated event', async () => {
-						/// TODO: synth should be proxy
-						assert.equal(findNamedEventValue('synth').value, sAUDContract.address.toLowerCase());
+						assert.equal(
+							findNamedEventValue('synth').value,
+							(await sAUDContract.proxy()).toLowerCase()
+						);
 						assert.equal(findNamedEventValue('currencyKey').value, sAUD);
 						assert.equal(findNamedEventValue('amount').value, amountReceived);
 						assert.equal(findNamedEventValue('recipient').value, account1.toLowerCase());
@@ -2538,8 +2540,8 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 						it('then it is created with the correct parameters', async () => {
 							assert.equal(await vSynth.resolver(), resolver.address);
-							// TODO should be proxy
-							assert.equal(await vSynth.synth(), sAUDContract.address);
+							assert.equal(await vSynth.synth(), await sAUDContract.proxy());
+							assert.equal(await vSynth.currencyKey(), sAUD);
 							assert.bnEqual(await vSynth.totalSupply(), amountReceived);
 							assert.bnEqual(await vSynth.balanceOf(account1), amountReceived);
 						});
