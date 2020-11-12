@@ -10,7 +10,6 @@ import "./interfaces/IExchanger.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/IERC20.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -19,6 +18,12 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
+import "./interfaces/IDebtCache.sol";
+import "./interfaces/IVirtualSynth.sol";
+
+// Note: use OZ's IERC20 here as using ours will complain about conflicting names
+// during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
@@ -52,12 +57,14 @@ interface ISynthetixInternal {
 }
 
 
-interface IIssuerInternal {
-    function updateSNXIssuedDebtOnExchange(bytes32[2] calldata currencyKeys, uint[2] calldata currencyRates) external;
+interface IExchangerInternalDebtCache {
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
+
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
 }
 
 
-// https://docs.synthetix.io/contracts/Exchanger
+// https://docs.synthetix.io/contracts/source/contracts/exchanger
 contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -90,6 +97,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_TRADING_REWARDS = "TradingRewards";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_SYSTEMSTATUS,
@@ -99,7 +107,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         CONTRACT_FEEPOOL,
         CONTRACT_TRADING_REWARDS,
         CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUER
+        CONTRACT_ISSUER,
+        CONTRACT_DEBTCACHE
     ];
 
     constructor(address _owner, address _resolver)
@@ -141,6 +150,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+    }
+
+    function debtCache() internal view returns (IExchangerInternalDebtCache) {
+        return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE, "Missing DebtCache address"));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -313,7 +326,14 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         address destinationAddress
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
-        (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+        (amountReceived, fee, ) = _exchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress,
+            false
+        );
 
         _processTradingRewards(fee, destinationAddress);
     }
@@ -328,12 +348,13 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
-        (amountReceived, fee) = _exchange(
+        (amountReceived, fee, ) = _exchange(
             exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            exchangeForAddress
+            exchangeForAddress,
+            false
         );
 
         _processTradingRewards(fee, exchangeForAddress);
@@ -349,7 +370,14 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
-        (amountReceived, fee) = _exchange(from, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, destinationAddress);
+        (amountReceived, fee, ) = _exchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress,
+            false
+        );
 
         _processTradingRewards(fee, originator);
 
@@ -368,17 +396,38 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
-        (amountReceived, fee) = _exchange(
+        (amountReceived, fee, ) = _exchange(
             exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
-            exchangeForAddress
+            exchangeForAddress,
+            false
         );
 
         _processTradingRewards(fee, originator);
 
         _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+    }
+
+    function exchangeWithVirtual(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress
+    ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
+        uint fee;
+        (amountReceived, fee, vSynth) = _exchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress,
+            true
+        );
+
+        _processTradingRewards(fee, destinationAddress);
     }
 
     function _emitTrackingEvent(
@@ -395,29 +444,76 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         }
     }
 
-    function _exchange(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress
-    ) internal returns (uint amountReceived, uint fee) {
-        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+    function _suspendIfRateInvalid(bytes32 currencyKey, uint rate) internal returns (bool circuitBroken) {
+        if (_isSynthRateInvalid(currencyKey, rate)) {
+            systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
+            circuitBroken = true;
+        } else {
+            lastExchangeRate[currencyKey] = rate;
+        }
+    }
 
+    function _updateSNXIssuedDebtOnExchange(bytes32[2] memory currencyKeys, uint[2] memory currencyRates) internal {
+        bool includesSUSD = currencyKeys[0] == sUSD || currencyKeys[1] == sUSD;
+        uint numKeys = includesSUSD ? 2 : 3;
+
+        bytes32[] memory keys = new bytes32[](numKeys);
+        keys[0] = currencyKeys[0];
+        keys[1] = currencyKeys[1];
+
+        uint[] memory rates = new uint[](numKeys);
+        rates[0] = currencyRates[0];
+        rates[1] = currencyRates[1];
+
+        if (!includesSUSD) {
+            keys[2] = sUSD; // And we'll also update sUSD to account for any fees if it wasn't one of the exchanged currencies
+            rates[2] = SafeDecimalMath.unit();
+        }
+
+        // Note that exchanges can't invalidate the debt cache, since if a rate is invalid,
+        // the exchange will have failed already.
+        debtCache().updateCachedSynthDebtsWithRates(keys, rates);
+    }
+
+    function _settleAndCalcSourceAmountRemaining(
+        uint sourceAmount,
+        address from,
+        bytes32 sourceCurrencyKey
+    ) internal returns (uint sourceAmountAfterSettlement) {
         (, uint refunded, uint numEntriesSettled) = _internalSettle(from, sourceCurrencyKey, false);
 
-        uint sourceAmountAfterSettlement = sourceAmount;
+        sourceAmountAfterSettlement = sourceAmount;
 
         // when settlement was required
         if (numEntriesSettled > 0) {
             // ensure the sourceAmount takes this into account
             sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
+        }
+    }
 
-            // If, after settlement the user has no balance left (highly unlikely), then return to prevent
-            // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
-            if (sourceAmountAfterSettlement == 0) {
-                return (0, 0);
-            }
+    function _exchange(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+        bool virtualSynth
+    )
+        internal
+        returns (
+            uint amountReceived,
+            uint fee,
+            IVirtualSynth vSynth
+        )
+    {
+        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+
+        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+
+        // If, after settlement the user has no balance left (highly unlikely), then return to prevent
+        // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
+        if (sourceAmountAfterSettlement == 0) {
+            return (0, 0, IVirtualSynth(0));
         }
 
         uint exchangeFeeRate;
@@ -432,28 +528,25 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         );
 
         // SIP-65: Decentralized Circuit Breaker
-        if (_isSynthRateInvalid(sourceCurrencyKey, sourceRate)) {
-            systemStatus().suspendSynth(sourceCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            return (0, 0);
-        } else {
-            lastExchangeRate[sourceCurrencyKey] = sourceRate;
-        }
-
-        if (_isSynthRateInvalid(destinationCurrencyKey, destinationRate)) {
-            systemStatus().suspendSynth(destinationCurrencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
-            return (0, 0);
-        } else {
-            lastExchangeRate[destinationCurrencyKey] = destinationRate;
+        if (
+            _suspendIfRateInvalid(sourceCurrencyKey, sourceRate) ||
+            _suspendIfRateInvalid(destinationCurrencyKey, destinationRate)
+        ) {
+            return (0, 0, IVirtualSynth(0));
         }
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
-        // Burn the source amount
-        issuer().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
-
-        // Issue their new synths
-        issuer().synths(destinationCurrencyKey).issue(destinationAddress, amountReceived);
+        vSynth = _convert(
+            sourceCurrencyKey,
+            from,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey,
+            amountReceived,
+            destinationAddress,
+            virtualSynth
+        );
 
         // Remit the fee if required
         if (fee > 0) {
@@ -473,10 +566,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
         // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
         // in these currencies
-        IIssuerInternal(address(issuer())).updateSNXIssuedDebtOnExchange(
-            [sourceCurrencyKey, destinationCurrencyKey],
-            [sourceRate, destinationRate]
-        );
+        _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
@@ -497,6 +587,37 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             amountReceived,
             exchangeFeeRate
         );
+    }
+
+    function _convert(
+        bytes32 sourceCurrencyKey,
+        address from,
+        uint sourceAmountAfterSettlement,
+        bytes32 destinationCurrencyKey,
+        uint amountReceived,
+        address recipient,
+        bool virtualSynth
+    ) internal returns (IVirtualSynth vSynth) {
+        // Burn the source amount
+        issuer().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
+
+        // Issue their new synths
+        ISynth dest = issuer().synths(destinationCurrencyKey);
+
+        if (virtualSynth) {
+            vSynth = _createVirtualSynth(dest, recipient, amountReceived);
+            dest.issue(address(vSynth), amountReceived);
+        } else {
+            dest.issue(recipient, amountReceived);
+        }
+    }
+
+    function _createVirtualSynth(
+        ISynth,
+        address,
+        uint
+    ) internal returns (IVirtualSynth) {
+        revert("Not supported in this layer");
     }
 
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
@@ -613,7 +734,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         if (updateCache) {
             bytes32[] memory key = new bytes32[](1);
             key[0] = currencyKey;
-            issuer().updateSNXIssuedDebtForCurrencies(key);
+            debtCache().updateCachedSynthDebts(key);
         }
 
         // emit settlement event for each settled exchange entry
