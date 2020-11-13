@@ -20,6 +20,7 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IDebtCache.sol";
 import "./interfaces/IVirtualSynth.sol";
+import "./Proxyable.sol";
 
 // Note: use OZ's IERC20 here as using ours will complain about conflicting names
 // during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
@@ -415,7 +416,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address destinationAddress
+        address destinationAddress,
+        bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
         uint fee;
         (amountReceived, fee, vSynth) = _exchange(
@@ -428,6 +430,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         );
 
         _processTradingRewards(fee, destinationAddress);
+
+        if (trackingCode != bytes32(0)) {
+            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+        }
     }
 
     function _emitTrackingEvent(
@@ -548,6 +554,11 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             virtualSynth
         );
 
+        // When using a virtual synth, it becomes the destinationAddress for event and settlement tracking
+        if (vSynth != IVirtualSynth(0)) {
+            destinationAddress = address(vSynth);
+        }
+
         // Remit the fee if required
         if (fee > 0) {
             // Normalize fee to sUSD
@@ -605,7 +616,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         ISynth dest = issuer().synths(destinationCurrencyKey);
 
         if (virtualSynth) {
-            vSynth = _createVirtualSynth(dest, recipient, amountReceived);
+            Proxyable synth = Proxyable(address(dest));
+            vSynth = _createVirtualSynth(IERC20(address(synth.proxy())), recipient, amountReceived, destinationCurrencyKey);
             dest.issue(address(vSynth), amountReceived);
         } else {
             dest.issue(recipient, amountReceived);
@@ -613,9 +625,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     }
 
     function _createVirtualSynth(
-        ISynth,
+        IERC20,
         address,
-        uint
+        uint,
+        bytes32
     ) internal returns (IVirtualSynth) {
         revert("Not supported in this layer");
     }

@@ -236,20 +236,29 @@ contract('Synthetix (prod tests)', accounts => {
 			await Exchanger.settle(user1, toBytes32('sBTC'), { from: user1 });
 		});
 
-		describe('with virtual synths', () => {
-			it('can exchange sUSD to sETH using a Virtual Synth', async () => {
-				const amount = toUnit('1');
-				const txn = await Synthetix.exchangeWithVirtual(
+		describe('when user exchanges sUSD into sETH using a Virtualynths', () => {
+			const amount = toUnit('1');
+			let txn;
+			let receipt;
+			let userBalanceOfsETHBefore;
+
+			before(async () => {
+				userBalanceOfsETHBefore = await SynthsETH.balanceOf(user1);
+
+				txn = await Synthetix.exchangeWithVirtual(
 					toBytes32('sUSD'),
 					amount,
 					toBytes32('sETH'),
+					toBytes32(),
 					{
 						from: user1,
 					}
 				);
 
-				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+				receipt = await web3.eth.getTransactionReceipt(txn.tx);
+			});
 
+			it('creates the virtual synth as expected', async () => {
 				console.log('Gas on exchange', gasFromReceipt({ receipt }));
 
 				const vSynthCreationEvent = Exchanger.abi.find(
@@ -262,28 +271,74 @@ contract('Synthetix (prod tests)', accounts => {
 
 				const decoded = web3.eth.abi.decodeLog(vSynthCreationEvent.inputs, log.data, log.topics);
 
-				console.log('vSynth addy', decoded.vSynth);
-
 				vSynth = await artifacts.require('VirtualSynth').at(decoded.vSynth);
 
-				console.log('vSynth name', await vSynth.name());
-				console.log('vSynth symbol', await vSynth.symbol());
-				console.log('vSynth total supply', fromUnit(await vSynth.totalSupply()));
-				console.log('vSynth balance of user1', fromUnit(await vSynth.balanceOf(user1)));
+				const trimUtf8EscapeChars = input => web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
+
+				assert.equal(trimUtf8EscapeChars(await vSynth.name()), 'Virtual Synth sETH');
+				assert.equal(trimUtf8EscapeChars(await vSynth.symbol()), 'vsETH');
+
+				assert.ok((await vSynth.totalSupply()).toString() > 0);
+				assert.ok((await vSynth.balanceOf(user1)).toString() > 0);
+
+				assert.ok(await SynthsETH.balanceOf(vSynth.address), '0');
+
+				assert.ok((await vSynth.secsLeftInWaitingPeriod()) > 0);
+				assert.notOk(await vSynth.readyToSettle());
+				assert.notOk(await vSynth.settled());
 			});
 
-			it('can be settled into the synth after the waiting period expires', async () => {
-				await skipWaitingPeriod({ network, deploymentPath });
+			it('and the vSynth has a single settlement entry', async () => {
+				const { numEntries } = await Exchanger.settlementOwing(vSynth.address, toBytes32('sETH'));
 
-				const txn = await vSynth.settle(user1, { from: user1 });
+				assert.equal(numEntries.toString(), '1');
+			});
 
-				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+			it('and the user has no settlement entries', async () => {
+				const { numEntries } = await Exchanger.settlementOwing(user1, toBytes32('sETH'));
 
-				console.log('Gas on vSynth settlement', gasFromReceipt({ receipt }));
+				assert.equal(numEntries.toString(), '0');
+			});
 
-				const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
+			it('and the user has no more sETH after the exchanage', async () => {
+				assert.bnEqual(await SynthsETH.balanceOf(user1), userBalanceOfsETHBefore);
+			});
 
-				console.log('user1 has sETH:', fromUnit(user1BalanceAftersETH));
+			describe('when the waiting period expires', () => {
+				before(async () => {
+					await skipWaitingPeriod({ network, deploymentPath });
+				});
+				it('then the vSynth shows ready for settlement', async () => {
+					assert.equal(await vSynth.secsLeftInWaitingPeriod(), '0');
+					assert.ok(await vSynth.readyToSettle());
+				});
+				describe('when settled', () => {
+					before(async () => {
+						const txn = await vSynth.settle(user1, { from: user1 });
+						const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+
+						console.log('Gas on vSynth settlement', gasFromReceipt({ receipt }));
+					});
+					it('user has more sETH balance', async () => {
+						assert.bnGt(await SynthsETH.balanceOf(user1), userBalanceOfsETHBefore);
+					});
+					it('and the user has no settlement entries', async () => {
+						const { numEntries } = await Exchanger.settlementOwing(user1, toBytes32('sETH'));
+
+						assert.equal(numEntries.toString(), '0');
+					});
+					it('and the vSynth has no settlement entries', async () => {
+						const { numEntries } = await Exchanger.settlementOwing(
+							vSynth.address,
+							toBytes32('sETH')
+						);
+
+						assert.equal(numEntries.toString(), '0');
+					});
+					it('and the vSynth shows settled', async () => {
+						assert.equal(await vSynth.settled(), true);
+					});
+				});
 			});
 		});
 

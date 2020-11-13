@@ -37,7 +37,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 		describe('exchanging', () => {
 			describe('exchangeWithVirtual', () => {
 				describe('failure modes', () => {
-					const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner];
+					const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner, toBytes32()];
 
 					behaviors.whenInstantiated({ owner }, () => {
 						// as we aren't calling as Synthetix, we need to mock the check for synths
@@ -62,33 +62,50 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 									'Src/dest rate invalid or not found'
 								);
 							});
-							behaviors.whenMockedWithNoPriorExchangesToSettle(() => {
-								behaviors.whenMockedWithUintSystemSetting(
-									{ setting: 'waitingPeriodSecs', value: '0' },
-									() => {
-										behaviors.whenMockedEffectiveRateAsEqual(() => {
-											behaviors.whenMockedLastNRates(() => {
-												behaviors.whenMockedASynthToIssueAmdBurn(() => {
-													behaviors.whenMockedExchangeStatePersistance(() => {
-														it('it reverts trying to create a virtual synth with no supply', async () => {
-															await assert.revert(
-																this.instance.exchangeWithVirtual(
-																	owner,
-																	toBytes32('sUSD'),
-																	'0',
-																	toBytes32('sETH'),
-																	owner,
-																	{ from: this.mocks.Synthetix.address }
-																),
-																'Zero amount'
-															);
+							behaviors.whenMockedWithExchangeRatesValidity({ valid: true }, () => {
+								behaviors.whenMockedWithNoPriorExchangesToSettle(() => {
+									behaviors.whenMockedWithUintSystemSetting(
+										{ setting: 'waitingPeriodSecs', value: '0' },
+										() => {
+											behaviors.whenMockedEffectiveRateAsEqual(() => {
+												behaviors.whenMockedLastNRates(() => {
+													behaviors.whenMockedASynthToIssueAmdBurn(() => {
+														behaviors.whenMockedExchangeStatePersistance(() => {
+															it('it reverts trying to create a virtual synth with no supply', async () => {
+																await assert.revert(
+																	this.instance.exchangeWithVirtual(
+																		owner,
+																		toBytes32('sUSD'),
+																		'0',
+																		toBytes32('sETH'),
+																		owner,
+																		toBytes32(),
+																		{ from: this.mocks.Synthetix.address }
+																	),
+																	'Zero amount'
+																);
+															});
+															it('it reverts trying to virtualize into an inverse synth', async () => {
+																await assert.revert(
+																	this.instance.exchangeWithVirtual(
+																		owner,
+																		toBytes32('sUSD'),
+																		'100',
+																		toBytes32('iETH'),
+																		owner,
+																		toBytes32(),
+																		{ from: this.mocks.Synthetix.address }
+																	),
+																	'Cannot virtualize this synth'
+																);
+															});
 														});
 													});
 												});
 											});
-										});
-									}
-								);
+										}
+									);
+								});
 							});
 						});
 					});
@@ -114,14 +131,16 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																amount,
 																toBytes32('sETH'),
 																owner,
+																toBytes32(),
 																{ from: this.mocks.Synthetix.address }
 															);
 														});
 														it('emits a VirtualSynthCreated event with the correct underlying synth and amount', async () => {
 															assert.eventEqual(txn, 'VirtualSynthCreated', {
-																synth: this.mocks.synth.address,
+																synth: this.mocks.synth.smocked.proxy.will.returnValue,
 																currencyKey: toBytes32('sETH'),
 																amount,
+																recipient: owner,
 															});
 														});
 														describe('when interrogating the Virtual Synths construction params', () => {
@@ -133,7 +152,10 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																vSynth = await artifacts.require('VirtualSynth').at(vSynthAddress);
 															});
 															it('the vSynth has the correct synth', async () => {
-																assert.equal(await vSynth.synth(), this.mocks.synth.address);
+																assert.equal(
+																	await vSynth.synth(),
+																	this.mocks.synth.smocked.proxy.will.returnValue
+																);
 															});
 															it('the vSynth has the correct resolver', async () => {
 																assert.equal(await vSynth.resolver(), this.resolver.address);

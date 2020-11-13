@@ -56,5 +56,14 @@
 			"Synthetix"
 		],
 		"sips": [89, 91, 92]
+	},
+	{
+		"name": "Regulus",
+		"version": {
+			"major": 2,
+			"minor": 32
+		},
+		"sources": ["Exchanger", "Synthetix"],
+		"sips": [94]
 	}
 ]
