@@ -279,7 +279,7 @@
 		"asset": "OIL",
 		"category": "commodity",
 		"sign": "$",
-		"description": "BRENT USD"
+		"description": "Brent Crude Oil"
 	},
 	"FTSE100": {
 		"asset": "FTSE100",
