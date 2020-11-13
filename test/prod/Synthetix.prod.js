@@ -237,7 +237,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		describe('when user exchanges sUSD into sETH using a Virtualynths', () => {
-			const amount = toUnit('1');
+			const amount = toUnit('100');
 			let txn;
 			let receipt;
 			let userBalanceOfsETHBefore;
@@ -269,7 +269,11 @@ contract('Synthetix (prod tests)', accounts => {
 					({ topics }) => topics[0] === vSynthCreationEvent.signature
 				);
 
-				const decoded = web3.eth.abi.decodeLog(vSynthCreationEvent.inputs, log.data, log.topics);
+				const decoded = web3.eth.abi.decodeLog(
+					vSynthCreationEvent.inputs,
+					log.data,
+					log.topics.slice(1)
+				);
 
 				vSynth = await artifacts.require('VirtualSynth').at(decoded.vSynth);
 
