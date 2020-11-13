@@ -2515,6 +2515,16 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 					});
 
+					it('then it emits an SynthExchange into the new Virtual Synth', async () => {
+						decodedEventEqual({
+							log: logs.find(({ name }) => name === 'SynthExchange'),
+							event: 'SynthExchange',
+							emittedFrom: await synthetix.proxy(),
+							args: [account1, sUSD, amountIssued, sAUD, amountReceived, vSynthAddress],
+							bnCloseVariance: '0',
+						});
+					});
+
 					it('then an ExchangeTracking is emitted with the correct code', async () => {
 						const evt = logs.find(({ name }) => name === 'ExchangeTracking');
 						assert.equal(

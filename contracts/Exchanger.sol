@@ -554,6 +554,11 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             virtualSynth
         );
 
+        // When using a virtual synth, it becomes the destinationAddress for event and settlement tracking
+        if (vSynth != IVirtualSynth(0)) {
+            destinationAddress = address(vSynth);
+        }
+
         // Remit the fee if required
         if (fee > 0) {
             // Normalize fee to sUSD
@@ -586,7 +591,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
 
         // persist the exchange information for the dest key
         appendExchange(
-            vSynth != IVirtualSynth(0) ? address(vSynth) : destinationAddress,
+            destinationAddress,
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
             destinationCurrencyKey,
