@@ -2544,6 +2544,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							assert.equal(await vSynth.currencyKey(), sAUD);
 							assert.bnEqual(await vSynth.totalSupply(), amountReceived);
 							assert.bnEqual(await vSynth.balanceOf(account1), amountReceived);
+							assert.notOk(await vSynth.settled());
 						});
 						it('and the vSynth has 1 fee reclamation entries', async () => {
 							const { reclaimAmount, rebateAmount, numEntries } = await exchanger.settlementOwing(
@@ -2574,8 +2575,22 @@ contract('Exchanger (spec tests)', async accounts => {
 							});
 
 							describe('when the vSynth is settled for the holder', () => {
+								let txn;
+								let logs;
 								beforeEach(async () => {
-									await vSynth.settle(account1);
+									txn = await vSynth.settle(account1);
+
+									logs = await getDecodedLogs({
+										hash: txn.tx,
+										contracts: [
+											synthetix,
+											exchanger,
+											sUSDContract,
+											issuer,
+											flexibleStorage,
+											debtCache,
+										],
+									});
 								});
 
 								it('then the user has all the synths', async () => {
@@ -2584,6 +2599,14 @@ contract('Exchanger (spec tests)', async accounts => {
 
 								it('and the vSynth is settled', async () => {
 									assert.equal(await vSynth.settled(), true);
+								});
+
+								it('and ExchangeEntrySettled is emitted', async () => {
+									const evt = logs.find(({ name }) => name === 'ExchangeEntrySettled');
+
+									const findEvt = param => evt.events.find(({ name }) => name === param);
+
+									assert.equal(findEvt('from').value, vSynth.address.toLowerCase());
 								});
 
 								it('and the entry is settled for the vSynth', async () => {

@@ -276,6 +276,10 @@ contract('Synthetix (prod tests)', accounts => {
 				assert.ok((await vSynth.balanceOf(user1)).toString() > 0);
 
 				assert.ok(await SynthsETH.balanceOf(vSynth.address), '0');
+
+				assert.ok((await vSynth.secsLeftInWaitingPeriod()) > 0);
+				assert.notOk(await vSynth.readyToSettle());
+				assert.notOk(await vSynth.settled());
 			});
 
 			it('and the vSynth has a single settlement entry', async () => {
@@ -298,10 +302,13 @@ contract('Synthetix (prod tests)', accounts => {
 				before(async () => {
 					await skipWaitingPeriod({ network, deploymentPath });
 				});
+				it('then the vSynth shows ready for settlement', async () => {
+					assert.equal(await vSynth.secsLeftInWaitingPeriod(), '0');
+					assert.ok(await vSynth.readyToSettle());
+				});
 				describe('when settled', () => {
 					before(async () => {
 						const txn = await vSynth.settle(user1, { from: user1 });
-
 						const receipt = await web3.eth.getTransactionReceipt(txn.tx);
 
 						console.log('Gas on vSynth settlement', gasFromReceipt({ receipt }));
@@ -321,6 +328,11 @@ contract('Synthetix (prod tests)', accounts => {
 						);
 
 						assert.equal(numEntries.toString(), '0');
+					});
+					it('and the vSynth shows settled', async () => {
+						console.log(await vSynth.settled());
+						console.log('totalSupply', (await vSynth.totalSupply()).toString());
+						assert.equal(await vSynth.settled(), true);
 					});
 				});
 			});
