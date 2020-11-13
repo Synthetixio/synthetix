@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const mustache = require('mustache');
+const YamlValidator = require('yaml-validator');
+const execa = require('execa');
 
-function main() {
-	const data = fs.readFileSync(path.join(__dirname, 'data.json'), 'utf-8');
+async function main() {
 	const template = fs.readFileSync(path.join(__dirname, 'config.template.yml'), 'utf-8');
 
 	const partials = {
@@ -13,12 +14,22 @@ function main() {
 		...readPartialsInDirectory(path.join(__dirname, 'src/snippets'), false, false),
 	};
 
-	let output = mustache.render(template, data, partials);
+	let output = mustache.render(template, {}, partials);
 
 	const emptyLinesRegex = /^\s*\n/gm;
 	output = output.replace(emptyLinesRegex, '');
 
-	fs.writeFileSync(path.join(__dirname, 'config.yml'), output);
+	const outputPath = path.join(__dirname, 'config.yml');
+	fs.writeFileSync(outputPath, output);
+
+	const validator = new YamlValidator();
+	validator.validate([outputPath]);
+
+	try {
+		await execa('circleci', ['config', 'validate']);
+	} catch (error) {
+		console.log(error.stderr);
+	}
 }
 
 function buildPartialsForDirectory(dirPath) {
@@ -64,4 +75,9 @@ function readFileWithIndentation(filePath, indentationString) {
 	return contents;
 }
 
-main();
+main()
+	.then(() => process.exit(0))
+	.catch(error => {
+		console.error(error);
+		process.exit(1);
+	});
