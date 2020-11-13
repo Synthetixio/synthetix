@@ -63,7 +63,7 @@
 			"major": 2,
 			"minor": 32
 		},
-		"sources": ["Exchanger"],
+		"sources": ["Exchanger", "Synthetix"],
 		"sips": [94]
 	}
 ]
