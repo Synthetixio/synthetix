@@ -341,7 +341,7 @@ contract('Synthetix (prod tests)', accounts => {
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 
-			before('skip if not on mainnet', async () => {
+			before('skip if not on mainnet', async function() {
 				if (network !== 'mainnet') {
 					this.skip();
 				}
