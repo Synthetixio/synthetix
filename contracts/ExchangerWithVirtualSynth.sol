@@ -13,13 +13,23 @@ contract ExchangerWithVirtualSynth is Exchanger {
     constructor(address _owner, address _resolver) public Exchanger(_owner, _resolver) {}
 
     function _createVirtualSynth(
-        ISynth synth,
+        IERC20 synth,
         address recipient,
-        uint amount
+        uint amount,
+        bytes32 currencyKey
     ) internal returns (IVirtualSynth vSynth) {
-        vSynth = new VirtualSynth(synth, resolver, recipient, amount);
-        emit VirtualSynthCreated(address(vSynth), address(synth), synth.currencyKey(), amount);
+        // prevent inverse synths from being allowed due to purgeability
+        require(currencyKey[0] != 0x69, "Cannot virtualize this synth");
+
+        vSynth = new VirtualSynth(synth, resolver, recipient, amount, currencyKey);
+        emit VirtualSynthCreated(address(synth), recipient, address(vSynth), currencyKey, amount);
     }
 
-    event VirtualSynthCreated(address vSynth, address synth, bytes32 currencyKey, uint amount);
+    event VirtualSynthCreated(
+        address indexed synth,
+        address indexed recipient,
+        address vSynth,
+        bytes32 currencyKey,
+        uint amount
+    );
 }

@@ -21,7 +21,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    ISynth public synth;
+    IERC20 public synth;
     IAddressResolver public resolver;
 
     bool public settled = false;
@@ -34,14 +34,18 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     // track final settled amount of the synth so we can calculate the rate after settlement
     uint public settledAmount;
 
+    bytes32 public currencyKey;
+
     constructor(
-        ISynth _synth,
+        IERC20 _synth,
         IAddressResolver _resolver,
         address _recipient,
-        uint _amount
+        uint _amount,
+        bytes32 _currencyKey
     ) public ERC20() {
         synth = _synth;
         resolver = _resolver;
+        currencyKey = _currencyKey;
 
         // Assumption: the synth will be issued to us within the same transaction,
         // and this supply matches that
@@ -57,7 +61,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     }
 
     function secsLeft() internal view returns (uint) {
-        return exchanger().maxSecsLeftInWaitingPeriod(address(this), synth.currencyKey());
+        return exchanger().maxSecsLeftInWaitingPeriod(address(this), currencyKey);
     }
 
     function calcRate() internal view returns (uint) {
@@ -69,7 +73,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
         if (!settled) {
             synthBalance = IERC20(address(synth)).balanceOf(address(this));
-            (uint reclaim, uint rebate, ) = exchanger().settlementOwing(address(this), synth.currencyKey());
+            (uint reclaim, uint rebate, ) = exchanger().settlementOwing(address(this), currencyKey);
 
             if (reclaim > 0) {
                 synthBalance = synthBalance.sub(reclaim);
@@ -95,7 +99,7 @@ contract VirtualSynth is ERC20, IVirtualSynth {
         }
         settled = true;
 
-        exchanger().settle(address(this), synth.currencyKey());
+        exchanger().settle(address(this), currencyKey);
 
         settledAmount = IERC20(address(synth)).balanceOf(address(this));
 
@@ -105,11 +109,11 @@ contract VirtualSynth is ERC20, IVirtualSynth {
     // VIEWS
 
     function name() external view returns (string memory) {
-        return string(abi.encodePacked("Virtual Synth ", synth.currencyKey()));
+        return string(abi.encodePacked("Virtual Synth ", currencyKey));
     }
 
     function symbol() external view returns (string memory) {
-        return string(abi.encodePacked("v", synth.currencyKey()));
+        return string(abi.encodePacked("v", currencyKey));
     }
 
     // get the rate of the vSynth to the synth.

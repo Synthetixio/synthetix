@@ -72,7 +72,7 @@ const defaults = {
 		commodity: w3utils.toWei('0.003'),
 		equities: w3utils.toWei('0.003'),
 		crypto: w3utils.toWei('0.01'),
-		index: w3utils.toWei('0.003'),
+		index: w3utils.toWei('0.01'),
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time

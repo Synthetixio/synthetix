@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.31.1",
+	"version": "2.32.1-beta",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -17,7 +17,6 @@
 		"slither": "pip3 install --user slither-analyzer && slither .",
 		"pack": "webpack --mode production",
 		"prepublishOnly": "npm run generate-asts && npm run pack",
-		"postpublish": "node publish persist-tokens --yes",
 		"fork": "node publish fork --reset --network mainnet",
 		"test": "buidler test",
 		"test:gas": "buidler test --gas --optimizer || cat test-gas-used.log",
