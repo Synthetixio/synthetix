@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts } = require('@nomiclabs/buidler');
+const { artifacts, web3 } = require('@nomiclabs/buidler');
 const { smockit } = require('@eth-optimism/smock');
 const { toBytes32 } = require('../..');
 const { prepareSmocks } = require('./helpers');
@@ -99,9 +99,10 @@ module.exports = function({ accounts }) {
 			describe(`when mocked a synth to burn`, () => {
 				beforeEach(async () => {
 					// create and share the one synth for all Issuer.synths() calls
-					this.mocks.synth = await smockit(artifacts.require('ISynth').abi);
+					this.mocks.synth = await smockit(artifacts.require('Synth').abi);
 					this.mocks.synth.smocked.burn.will.return();
 					this.mocks.synth.smocked.issue.will.return();
+					this.mocks.synth.smocked.proxy.will.return.with(web3.eth.accounts.create().address);
 					this.mocks.Issuer.smocked.synths.will.return.with(currencyKey => {
 						// but when currency
 						this.mocks.synth.smocked.currencyKey.will.return.with(currencyKey);

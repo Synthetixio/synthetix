@@ -23,13 +23,12 @@ module.exports = function({ accounts }) {
 		whenInstantiated: ({ amount, user, synth = 'sETH' }, cb) => {
 			describe(`when instantiated for user ${user.slice(0, 7)}`, () => {
 				beforeEach(async () => {
-					this.mocks.Synth.smocked.currencyKey.will.return.with(toBytes32(synth));
-
 					this.instance = await VirtualSynth.new(
 						this.mocks.Synth.address,
 						this.resolver.address,
 						user,
-						amount
+						amount,
+						toBytes32(synth)
 					);
 				});
 				cb();

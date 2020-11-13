@@ -86,7 +86,8 @@ interface ISynthetix {
     function exchangeWithVirtual(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
-        bytes32 destinationCurrencyKey
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
     ) external returns (uint amountReceived, IVirtualSynth vSynth);
 
     function issueMaxSynths() external;
