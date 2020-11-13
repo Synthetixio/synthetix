@@ -62,34 +62,50 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 									'Src/dest rate invalid or not found'
 								);
 							});
-							behaviors.whenMockedWithNoPriorExchangesToSettle(() => {
-								behaviors.whenMockedWithUintSystemSetting(
-									{ setting: 'waitingPeriodSecs', value: '0' },
-									() => {
-										behaviors.whenMockedEffectiveRateAsEqual(() => {
-											behaviors.whenMockedLastNRates(() => {
-												behaviors.whenMockedASynthToIssueAmdBurn(() => {
-													behaviors.whenMockedExchangeStatePersistance(() => {
-														it('it reverts trying to create a virtual synth with no supply', async () => {
-															await assert.revert(
-																this.instance.exchangeWithVirtual(
-																	owner,
-																	toBytes32('sUSD'),
-																	'0',
-																	toBytes32('sETH'),
-																	owner,
-																	toBytes32(),
-																	{ from: this.mocks.Synthetix.address }
-																),
-																'Zero amount'
-															);
+							behaviors.whenMockedWithExchangeRatesValidity({ valid: true }, () => {
+								behaviors.whenMockedWithNoPriorExchangesToSettle(() => {
+									behaviors.whenMockedWithUintSystemSetting(
+										{ setting: 'waitingPeriodSecs', value: '0' },
+										() => {
+											behaviors.whenMockedEffectiveRateAsEqual(() => {
+												behaviors.whenMockedLastNRates(() => {
+													behaviors.whenMockedASynthToIssueAmdBurn(() => {
+														behaviors.whenMockedExchangeStatePersistance(() => {
+															it('it reverts trying to create a virtual synth with no supply', async () => {
+																await assert.revert(
+																	this.instance.exchangeWithVirtual(
+																		owner,
+																		toBytes32('sUSD'),
+																		'0',
+																		toBytes32('sETH'),
+																		owner,
+																		toBytes32(),
+																		{ from: this.mocks.Synthetix.address }
+																	),
+																	'Zero amount'
+																);
+															});
+															it('it reverts trying to virtualize into an inverse synth', async () => {
+																await assert.revert(
+																	this.instance.exchangeWithVirtual(
+																		owner,
+																		toBytes32('sUSD'),
+																		'100',
+																		toBytes32('iETH'),
+																		owner,
+																		toBytes32(),
+																		{ from: this.mocks.Synthetix.address }
+																	),
+																	'Cannot virtualize this synth'
+																);
+															});
 														});
 													});
 												});
 											});
-										});
-									}
-								);
+										}
+									);
+								});
 							});
 						});
 					});
