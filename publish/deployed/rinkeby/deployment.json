@@ -68,8 +68,8 @@
 			"address": "0x74598aF355c85f5050B5E05e5BAB5559a51C34ab",
 			"source": "Synthetix",
 			"link": "https://rinkeby.etherscan.io/address/0x74598aF355c85f5050B5E05e5BAB5559a51C34ab",
-			"timestamp": "2020-11-13T03:35:34.239Z",
-			"txn": "",
+			"timestamp": "2020-11-13T03:35:29.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x9f8b28081f2d5bf54e426cae574f8c48d977da37037af762696a0379644585a4",
 			"network": "rinkeby"
 		},
 		"SynthetixEscrow": {
@@ -950,8 +950,8 @@
 			"address": "0xB99009c7bE322d98f3c8d615f1DC9310DAe03d36",
 			"source": "ExchangerWithVirtualSynth",
 			"link": "https://rinkeby.etherscan.io/address/0xB99009c7bE322d98f3c8d615f1DC9310DAe03d36",
-			"timestamp": "2020-11-13T03:35:34.239Z",
-			"txn": "",
+			"timestamp": "2020-11-13T03:38:14.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x766bfbece674e298b182c453ce905285832416f077c5fa62ca45f15dd4231275",
 			"network": "rinkeby"
 		},
 		"ExchangeState": {
@@ -1445,8 +1445,8 @@
 			"address": "0x473cc79c7085D148018F8C66d3F4355FB5785C9e",
 			"source": "DebtCache",
 			"link": "https://rinkeby.etherscan.io/address/0x473cc79c7085D148018F8C66d3F4355FB5785C9e",
-			"timestamp": "2020-11-11T21:15:01.139Z",
-			"txn": "",
+			"timestamp": "2020-11-11T21:14:59.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0xa1b986b56fa792076132e732615dc340e1a7c33b73bde8b3787cd6b7db6058b9",
 			"network": "rinkeby"
 		}
 	},
