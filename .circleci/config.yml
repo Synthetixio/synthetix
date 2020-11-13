@@ -134,10 +134,10 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - "v2-dependencies-"
+            - 'v2-dependencies-'
       - run: npm install
       - save_cache:
-          key: "v2-dependencies-"
+          key: 'v2-dependencies-'
           paths:
             - node_modules
       - persist_to_workspace:
@@ -408,7 +408,7 @@ workflows:
   workflow-scheduled:
     triggers:
       - schedule:
-          cron: "* 0 * * *"
+          cron: "0 0 * * *"
           filters:
             branches:
               only:
@@ -545,117 +545,3 @@ workflows:
               only: /.*(staging|master).*/
           requires:
             - job-prepare
-            - job-validate-deployments:
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                name: job-prod-tests-mainnet
-                network: mainnet
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                name: job-prod-tests-rinkeby
-                network: rinkeby
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                name: job-prod-tests-kovan
-                network: kovan
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests-local:
-                name: job-diff-prod-tests-local
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests-local-ovm:
-                name: job-diff-prod-tests-local-ovm
-                requires:
-                    - job-prepare
-        triggers:
-            - schedule:
-                cron: 0 0 * * *
-                filters:
-                    branches:
-                        only:
-                            - master
-    workflow-staging:
-        jobs:
-            - job-prepare:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-            - job-pack-browser:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                requires:
-                    - job-prepare
-            - job-validate-deployments:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-prod-tests-mainnet
-                network: mainnet
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-prod-tests-rinkeby
-                network: rinkeby
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-prod-tests-kovan
-                network: kovan
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests-local:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-local
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests-local-ovm:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-local-ovm
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-mainnet
-                network: mainnet
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-rinkeby
-                network: rinkeby
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-kovan
-                network: kovan
-                requires:
-                    - job-prepare
-
