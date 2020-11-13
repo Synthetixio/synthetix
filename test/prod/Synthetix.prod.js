@@ -330,8 +330,6 @@ contract('Synthetix (prod tests)', accounts => {
 						assert.equal(numEntries.toString(), '0');
 					});
 					it('and the vSynth shows settled', async () => {
-						console.log(await vSynth.settled());
-						console.log('totalSupply', (await vSynth.totalSupply()).toString());
 						assert.equal(await vSynth.settled(), true);
 					});
 				});
