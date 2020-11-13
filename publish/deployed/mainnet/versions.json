@@ -2312,13 +2312,15 @@
 			},
 			"Synthetix": {
 				"address": "0x7e6ab054070599ca7B1552aEa7962b6B344A9950",
-				"status": "current",
-				"keccak256": "0x02c3d358d6a0487f54ac56b33bf9f39f12c7af85564544f3d929a143ca96d9ea"
+				"status": "replaced",
+				"keccak256": "0x02c3d358d6a0487f54ac56b33bf9f39f12c7af85564544f3d929a143ca96d9ea",
+				"replaced_in": "v2.32.2"
 			},
 			"Exchanger": {
 				"address": "0x300F0f100389282b51F1Bc486D8c2ad22B6C4E42",
-				"status": "current",
-				"keccak256": "0xb4aec17ec72b273b7013d9042a231b06ed4b4246e8a77bc5f507598ebd77e396"
+				"status": "replaced",
+				"keccak256": "0xb4aec17ec72b273b7013d9042a231b06ed4b4246e8a77bc5f507598ebd77e396",
+				"replaced_in": "v2.32.2"
 			},
 			"Issuer": {
 				"address": "0xdd692195b3b632B196FE33eB274CCBE91b8D849f",
@@ -2373,6 +2375,26 @@
 			"StakingRewardsiBTC": {
 				"address": "0x32C9F03490A9F560EccC9f107e71560C1b0A2535",
 				"status": "current"
+			}
+		}
+	},
+	"v2.32.2": {
+		"tag": "v2.32.2",
+		"fulltag": "v2.32.2",
+		"release": "Regulus",
+		"network": "mainnet",
+		"date": "2020-11-12T23:51:24-05:00",
+		"commit": "cd889471d05c29510af0cb082fed6c03b8638981",
+		"contracts": {
+			"Synthetix": {
+				"address": "0xf87A0587Fe48Ca05dd68a514Ce387C0d4d3AE31C",
+				"status": "current",
+				"keccak256": "0x1bfcc7247998d65ebfb5c17d978eafdef24825868b4d77df2bb5354d6aaf0e19"
+			},
+			"Exchanger": {
+				"address": "0xd3970a9D35d2Be3aaf62D2b5B2be3Ee303aC4228",
+				"status": "current",
+				"keccak256": "0xee1b7e9552a2b8e7da01a7932c36340a6a1e667b8b37f6eefd7a59ef6bbc5361"
 			}
 		}
 	}
