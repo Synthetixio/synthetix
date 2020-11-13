@@ -2461,7 +2461,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				beforeEach(async () => {
 					await systemSettings.setWaitingPeriodSecs('60', { from: owner });
 				});
-				describe('when a user exchanges into sAUD using virtual synths', () => {
+				describe('when a user exchanges into sAUD using virtual synths with a tracking code', () => {
 					let logs;
 					let amountReceived;
 					let exchangeFeeRate;
@@ -2469,9 +2469,15 @@ contract('Exchanger (spec tests)', async accounts => {
 					let vSynthAddress;
 
 					beforeEach(async () => {
-						const txn = await synthetix.exchangeWithVirtual(sUSD, amountIssued, sAUD, {
-							from: account1,
-						});
+						const txn = await synthetix.exchangeWithVirtual(
+							sUSD,
+							amountIssued,
+							sAUD,
+							toBytes32('AGGREGATOR'),
+							{
+								from: account1,
+							}
+						);
 
 						({ amountReceived, exchangeFeeRate } = await exchanger.getAmountsForExchange(
 							amountIssued,
@@ -2508,6 +2514,15 @@ contract('Exchanger (spec tests)', async accounts => {
 							bnCloseVariance,
 						});
 					});
+
+					it('then an ExchangeTracking is emitted with the correct code', async () => {
+						const evt = logs.find(({ name }) => name === 'ExchangeTracking');
+						assert.equal(
+							evt.events.find(({ name }) => name === 'trackingCode').value,
+							toBytes32('AGGREGATOR')
+						);
+					});
+
 					it('and it emits the VirtualSynthCreated event', async () => {
 						assert.equal(
 							findNamedEventValue('synth').value,
@@ -2636,6 +2651,23 @@ contract('Exchanger (spec tests)', async accounts => {
 								});
 							});
 						});
+					});
+				});
+
+				describe('when a user exchanges without a tracking code', () => {
+					let logs;
+					beforeEach(async () => {
+						const txn = await synthetix.exchangeWithVirtual(sUSD, amountIssued, sAUD, toBytes32(), {
+							from: account1,
+						});
+
+						logs = await getDecodedLogs({
+							hash: txn.tx,
+							contracts: [synthetix, exchanger, sUSDContract, issuer, flexibleStorage, debtCache],
+						});
+					});
+					it('then no ExchangeTracking is emitted (as no tracking code supplied)', async () => {
+						assert.notOk(logs.find(({ name }) => name === 'ExchangeTracking'));
 					});
 				});
 			});

@@ -416,7 +416,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address destinationAddress
+        address destinationAddress,
+        bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
         uint fee;
         (amountReceived, fee, vSynth) = _exchange(
@@ -429,6 +430,10 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         );
 
         _processTradingRewards(fee, destinationAddress);
+
+        if (trackingCode != bytes32(0)) {
+            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+        }
     }
 
     function _emitTrackingEvent(

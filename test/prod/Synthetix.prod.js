@@ -245,9 +245,15 @@ contract('Synthetix (prod tests)', accounts => {
 			before(async () => {
 				userBalanceOfsETHBefore = await SynthsETH.balanceOf(user1);
 
-				txn = await Synthetix.exchangeWithVirtual(toBytes32('sUSD'), amount, toBytes32('sETH'), {
-					from: user1,
-				});
+				txn = await Synthetix.exchangeWithVirtual(
+					toBytes32('sUSD'),
+					amount,
+					toBytes32('sETH'),
+					toBytes32(),
+					{
+						from: user1,
+					}
+				);
 
 				receipt = await web3.eth.getTransactionReceipt(txn.tx);
 			});

@@ -37,7 +37,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 		describe('exchanging', () => {
 			describe('exchangeWithVirtual', () => {
 				describe('failure modes', () => {
-					const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner];
+					const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner, toBytes32()];
 
 					behaviors.whenInstantiated({ owner }, () => {
 						// as we aren't calling as Synthetix, we need to mock the check for synths
@@ -78,6 +78,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																	'0',
 																	toBytes32('sETH'),
 																	owner,
+																	toBytes32(),
 																	{ from: this.mocks.Synthetix.address }
 																),
 																'Zero amount'
@@ -114,6 +115,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																amount,
 																toBytes32('sETH'),
 																owner,
+																toBytes32(),
 																{ from: this.mocks.Synthetix.address }
 															);
 														});
