@@ -1402,11 +1402,11 @@
 		},
 		"StakingRewardsiBTC": {
 			"name": "StakingRewardsiBTC",
-			"address": "0xE5Ea1DDA3299C0b133a93A47eF9F5536C6892AcE",
+			"address": "0x32C9F03490A9F560EccC9f107e71560C1b0A2535",
 			"source": "StakingRewardsiBTC",
-			"link": "https://etherscan.io/address/0xE5Ea1DDA3299C0b133a93A47eF9F5536C6892AcE",
-			"timestamp": "2020-07-24",
-			"txn": "https://etherscan.io/tx/0x8c5840b5f7a9d1258a3dfdef184660098b6f92b324f6d9b52476a5f834fa8108",
+			"link": "https://etherscan.io/address/0x32C9F03490A9F560EccC9f107e71560C1b0A2535",
+			"timestamp": "2020-11-06",
+			"txn": "https://etherscan.io/tx/0xd425cc41f214a972daf8b4ef01957d05922d34a79501cbf2dde8eb1fc768ac02",
 			"network": "mainnet"
 		},
 		"StakingRewardssBTCCurve": {
