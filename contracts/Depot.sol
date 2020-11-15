@@ -501,15 +501,15 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     /* ========== INTERNAL VIEWS ========== */
 
     function synthsUSD() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function synthetix() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     // ========== MODIFIERS ==========

@@ -440,23 +440,23 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     /* ========== INTERNAL VIEWS ========== */
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function synthsETH() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSETH, "Missing SynthsETH address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSETH));
     }
 
     function synthsUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function depot() internal view returns (IDepot) {
-        return IDepot(requireAndGetAddress(CONTRACT_DEPOT, "Missing Depot address"));
+        return IDepot(requireAndGetAddress(CONTRACT_DEPOT));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     /* ========== MODIFIERS ========== */

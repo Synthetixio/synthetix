@@ -37,7 +37,7 @@ contract PurgeableSynth is Synth {
     /* ========== VIEWS ========== */
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

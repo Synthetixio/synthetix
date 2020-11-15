@@ -29,7 +29,7 @@ contract MultiCollateralSynth is Synth {
     /* ========== VIEWS ======================= */
 
     function multiCollateral() internal view returns (address) {
-        return requireAndGetAddress(multiCollateralKey, "Resolver is missing multiCollateral address");
+        return requireAndGetAddress(multiCollateralKey);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

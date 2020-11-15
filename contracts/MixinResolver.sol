@@ -37,7 +37,10 @@ contract MixinResolver {
         for (uint i = 0; i < resolverAddressesRequired.length; i++) {
             bytes32 name = resolverAddressesRequired[i];
             // Note: can only be invoked once the resolver has all the targets needed added
-            addressCache[name] = resolver.requireAndGetAddress(name, "Resolver missing target");
+            addressCache[name] = resolver.requireAndGetAddress(
+                name,
+                string(abi.encodePacked("Resolver missing target: ", name))
+            );
         }
     }
 
@@ -63,9 +66,9 @@ contract MixinResolver {
         addressCache[name] = resolver.getAddress(name);
     }
 
-    function requireAndGetAddress(bytes32 name, string memory reason) internal view returns (address) {
+    function requireAndGetAddress(bytes32 name) internal view returns (address) {
         address _foundAddress = addressCache[name];
-        require(_foundAddress != address(0), reason);
+        require(_foundAddress != address(0), string(abi.encodePacked("Missing ", name, " address")));
         return _foundAddress;
     }
 }

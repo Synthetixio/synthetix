@@ -40,7 +40,7 @@ contract MintableSynthetix is Synthetix {
     /* ========== VIEWS ======================= */
 
     function synthetixBridge() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixBridgeToBase address");
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */

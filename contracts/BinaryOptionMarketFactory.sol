@@ -27,7 +27,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
     /* ---------- Related Contracts ---------- */
 
     function _manager() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_BINARYOPTIONMARKETMANAGER, "Missing BinaryOptionMarketManager address");
+        return requireAndGetAddress(CONTRACT_BINARYOPTIONMARKETMANAGER);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

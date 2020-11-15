@@ -32,7 +32,7 @@ contract MixinSystemSettings is MixinResolver {
     }
 
     function flexibleStorage() internal view returns (IFlexibleStorage) {
-        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
+        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
     }
 
     function getTradingRewardsEnabled() internal view returns (bool) {

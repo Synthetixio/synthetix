@@ -443,7 +443,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function getFlagsForRates(bytes32[] memory currencyKeys) internal view returns (bool[] memory flagList) {

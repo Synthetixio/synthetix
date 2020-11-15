@@ -101,7 +101,7 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
     // ========== VIEWS ==========
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     /**
