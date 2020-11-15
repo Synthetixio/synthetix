@@ -31,6 +31,7 @@ contract MockBinaryOptionMarketManager {
             bids,
             fees
         );
+        market.rebuildCache();
     }
 
     function decrementTotalDeposited(uint) external pure {

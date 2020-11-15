@@ -784,6 +784,10 @@ const setupAllContracts = async ({
 
 	// now invoke AddressResolver to set all addresses
 	if (returnObj['AddressResolver']) {
+		if (process.env.DEBUG) {
+			log(`Importing into AddressResolver:\n\t - ${Object.keys(returnObj).join('\n\t - ')}`);
+		}
+
 		await returnObj['AddressResolver'].importAddresses(
 			Object.keys(returnObj).map(toBytes32),
 			Object.values(returnObj).map(entry =>

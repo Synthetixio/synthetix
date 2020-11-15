@@ -88,6 +88,7 @@ contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
 	};
 
 	const deployMarket = async ({
+		resolver,
 		endOfBidding,
 		maturity,
 		expiry,
@@ -107,6 +108,7 @@ contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
 			args: [
 				accounts[0],
 				creator,
+				resolver,
 				[capitalRequirement, skewLimit],
 				oracleKey,
 				strikePrice,

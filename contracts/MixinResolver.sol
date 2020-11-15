@@ -31,8 +31,8 @@ contract MixinResolver {
         // Do not sync the cache as addresses may not be in the resolver yet
     }
 
-    /* ========== RESTRICTED FUNCTIONS ========== */
-    function invalidateCache() external {
+    /* ========== PUBLIC FUNCTIONS ========== */
+    function rebuildCache() external {
         // The resolver must call this function whenver it updates its state
         for (uint i = 0; i < resolverAddressesRequired.length; i++) {
             bytes32 name = resolverAddressesRequired[i];
