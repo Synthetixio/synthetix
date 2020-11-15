@@ -1205,161 +1205,32 @@ const deploy = async ({
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	let addressesAreImported = true;
-	let skipResolverSync = [];
 
 	if (addressResolver) {
-		// track which contracts need which
-		const contractResolverRequirements = {};
+		// Now we need to add everything into the AddressResolver.
+		// We must add everything as some targets which do not use the resolver
+		// could still be a target of something which does
 
-		// collect all required addresses on-chain
-		const allRequiredAddressesInContracts = await Promise.all(
-			Object.entries(deployer.deployedContracts)
-				.filter(([, target]) =>
-					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
-				)
-				.map(([contract, target]) =>
-					// Note: if running a dryRun then the output here will only be an estimate, as
-					// the correct list of addresses require the contracts be deployed so these entries can then be read.
-					(
-						target.methods.getResolverAddressesRequired().call() ||
-						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
-						Promise.resolve([])
-					).then(names => {
-						const namesReadable = names.map(w3utils.hexToUtf8);
-
-						// track requirements to log out later
-						namesReadable.forEach(
-							name =>
-								(contractResolverRequirements[name] = [contract].concat(
-									contractResolverRequirements[name]
-								))
-						);
-
-						return namesReadable;
-					})
-				)
-		);
-
-		const allRequiredAddresses = Array.from(
-			// create set to remove dupes
-			new Set(
-				allRequiredAddressesInContracts
-					// flatten into one array
-					.reduce((memo, entry) => memo.concat(entry), [])
-					// and remove blanks
-					.filter(entry => entry)
-					// now filter out any externals or alternates with a colon
-					.filter(entry => {
-						if (/:/.test(entry)) {
-							skipResolverSync = skipResolverSync.concat(contractResolverRequirements[entry]);
-							console.log(
-								redBright(
-									`⚠⚠⚠ WARNING: Skipping AddressResolver requirement of "${entry}" (from ${contractResolverRequirements[entry]})`
-								)
-							);
-							return false;
-						}
-						return true;
-					})
-					// SystemSettings isn't required anywhere but necessary for us to be able to
-					// write to FlexibleStorage below via "setExchangeFeeRates()"
-					.concat(['SystemSettings'])
-			)
-		).sort();
-
-		// now map these into a list of names and addresses
-		const expectedAddressesInResolver = allRequiredAddresses.map(name => {
-			const contract = deployer.deployedContracts[name];
-			// quick sanity check of names in expected list
-			if (!contract) {
-				throw Error(
-					`Error setting up AddressResolver: cannot find one of the contracts listed as required in a contract: ${name} in the list of deployment targets`
-				);
-			}
-			return {
-				name,
-				address: addressOf(contract),
-			};
+		await runStep({
+			gasLimit: 9e6, // higher gas required
+			contract: `AddressResolver`,
+			target: addressResolver,
+			write: 'importAddresses',
+			writeArg: [
+				Object.keys(deployer.deployedContracts).map(contract => toBytes32(contract)),
+				Object.values(deployer.deployedContracts).map(({ options: { address } }) => address),
+			],
 		});
 
-		// Count how many addresses are not yet in the resolver
-		const addressesNotInResolver = (
-			await Promise.all(
-				expectedAddressesInResolver.map(({ name, address }) => {
-					// when a dryRun redeploys a new AddressResolver, this will return undefined, so instead resolve with
-					// empty promise
-					const promise =
-						addressResolver.methods.getAddress(toBytes32(name)).call() || Promise.resolve();
-
-					return promise.then(foundAddress => ({ name, address, found: address === foundAddress }));
-				})
-			)
-		).filter(entry => !entry.found);
-
-		// and add everything if any not found (will overwrite any conflicts)
-		if (addressesNotInResolver.length > 0) {
-			console.log(
-				gray(
-					`Detected ${addressesNotInResolver.length} / ${expectedAddressesInResolver.length} missing or incorrect in the AddressResolver.\n\t` +
-						addressesNotInResolver.map(({ name, address }) => `${name} ${address}`).join('\n\t') +
-						`\nAdding all addresses in one transaction.`
-				)
-			);
-			const result = await runStep({
-				gasLimit: methodCallGasLimit * 3, // higher gas required
-				contract: `AddressResolver`,
-				target: addressResolver,
-				write: 'importAddresses',
-				writeArg: [
-					addressesNotInResolver.map(({ name }) => toBytes32(name)),
-					addressesNotInResolver.map(({ address }) => address),
-				],
-			});
-
-			// This is an ugly hack: we need to halt the rest of the script if importing addresses happens from the pDAO.
-			// This relies on the fact that runStep returns undefined if nothing needed to be done, a tx hash if the
-			// transaction could be mined, and true in other cases, including appending to the owner actions file.
-			// Note that this will also end the script in the case of manual transaction mining.
-			addressesAreImported = typeof result !== 'boolean';
-		}
+		// This is an ugly hack: we need to halt the rest of the script if importing addresses happens from the pDAO.
+		// This relies on the fact that runStep returns undefined if nothing needed to be done, a tx hash if the
+		// transaction could be mined, and true in other cases, including appending to the owner actions file.
+		// Note that this will also end the script in the case of manual transaction mining.
+		addressesAreImported = typeof result !== 'boolean';
 	}
 
 	if (addressesAreImported) {
 		console.log(gray('Addresses are correctly set up, continuing...'));
-
-		if (addressResolver) {
-			// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
-			for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
-				if (skipResolverSync.indexOf(contract) > -1) {
-					console.log(
-						redBright(
-							`Warning: Skipping setResolverAndSyncCache for ${contract} due to unresolved dependencies.`
-						)
-					);
-					continue;
-					// don't invoke setResolverAndSyncCache for those marked to skip (must be called later)
-				}
-				// old "setResolver" for Depot, from prior to SIP-48
-				const setResolverFncEntry = target.options.jsonInterface.find(
-					({ name }) => name === 'setResolverAndSyncCache' || name === 'setResolver'
-				);
-
-				if (setResolverFncEntry) {
-					// prior to SIP-46, contracts used setResolver and had no check
-					const isPreSIP46 = setResolverFncEntry.name === 'setResolver';
-					await runStep({
-						gasLimit: methodCallGasLimit * 3, // higher gas required
-						contract,
-						target,
-						read: isPreSIP46 ? 'resolver' : 'isResolverCached',
-						readArg: isPreSIP46 ? undefined : addressOf(readProxyForResolver),
-						expected: input => (isPreSIP46 ? input === addressOf(readProxyForResolver) : input),
-						write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
-						writeArg: addressOf(readProxyForResolver),
-					});
-				}
-			}
-		}
 
 		// now after resolvers have been set
 

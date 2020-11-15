@@ -22,6 +22,7 @@ contract MockBinaryOptionMarketManager {
         market = new BinaryOptionMarket(
             address(this),
             creator,
+            address(resolver),
             creatorLimits,
             oracleKey,
             strikePrice,
@@ -30,7 +31,6 @@ contract MockBinaryOptionMarketManager {
             bids,
             fees
         );
-        market.setResolverAndSyncCache(resolver);
     }
 
     function decrementTotalDeposited(uint) external pure {

@@ -79,6 +79,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     constructor(
         address _owner,
         address _creator,
+        address _resolver,
         uint[2] memory _creatorLimits, // [capitalRequirement, skewLimit]
         bytes32 _oracleKey,
         uint _strikePrice,
@@ -86,11 +87,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         uint[3] memory _times, // [biddingEnd, maturity, expiry]
         uint[2] memory _bids, // [longBid, shortBid]
         uint[3] memory _fees // [poolFee, creatorFee, refundFee]
-    )
-        public
-        Owned(_owner)
-        MixinResolver(_owner, addressesToCache) // The resolver is initially set to the owner, but it will be set correctly when the cache is synchronised
-    {
+    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
         creator = _creator;
         creatorLimits = BinaryOptionMarketManager.CreatorLimits(_creatorLimits[0], _creatorLimits[1]);
 

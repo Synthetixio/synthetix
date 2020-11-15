@@ -49,6 +49,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
             new BinaryOptionMarket(
                 manager,
                 creator,
+                address(resolver),
                 creatorLimits,
                 oracleKey,
                 strikePrice,
