@@ -57,7 +57,7 @@ const connectBridge = async ({
 	await SynthetixBridgeToBase.setResolverAndSyncCache(AddressResolverL1.options.address);
 
 	console.log(gray('> Connecting bridge on L2...'));
-	await AddressResolverL1.importAddresses(
+	await AddressResolverL2.importAddresses(
 		[toBytes32('ext:Messenger'), toBytes32('base:SynthetixBridgeToOptimism')],
 		l2Messenger,
 		SynthetixBridgeToOptimism.options.address
