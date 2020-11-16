@@ -132,25 +132,25 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 				abi: manager.abi,
 				ignoreParents: ['Owned', 'Pausable', 'MixinResolver'],
 				expected: [
-					'setMaxOraclePriceAge',
-					'setExpiryDuration',
-					'setMaxTimeToMaturity',
-					'setPoolFee',
-					'setCreatorFee',
-					'setRefundFee',
-					'setCreatorCapitalRequirement',
-					'setCreatorSkewLimit',
-					'incrementTotalDeposited',
-					'decrementTotalDeposited',
-					'createMarket',
-					'resolveMarket',
 					'cancelMarket',
+					'createMarket',
+					'decrementTotalDeposited',
 					'expireMarkets',
-					'setResolverAndSyncCacheOnMarkets',
-					'setMarketCreationEnabled',
-					'setMigratingManager',
+					'incrementTotalDeposited',
+					'invalidateMarketCaches',
 					'migrateMarkets',
 					'receiveMarkets',
+					'resolveMarket',
+					'setCreatorCapitalRequirement',
+					'setCreatorFee',
+					'setCreatorSkewLimit',
+					'setExpiryDuration',
+					'setMarketCreationEnabled',
+					'setMaxOraclePriceAge',
+					'setMaxTimeToMaturity',
+					'setMigratingManager',
+					'setPoolFee',
+					'setRefundFee',
 				],
 			});
 		});
@@ -1307,8 +1307,7 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 					from: accounts[1],
 				}
 			);
-			await factory.setResolverAndSyncCache(addressResolver.address, { from: accounts[1] });
-			await newManager.setResolverAndSyncCache(addressResolver.address, { from: managerOwner });
+			await factory.rebuildCache();
 
 			await Promise.all(
 				markets.map(m => sUSDSynth.approve(m.address, toUnit(1000), { from: bidder }))
@@ -1581,51 +1580,9 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 			assert.equal(tx.logs[5].args.markets[0], markets[0].address);
 			assert.equal(tx.logs[5].args.markets[1], markets[1].address);
 		});
+	});
 
-		it('Can sync the resolver of child markets.', async () => {
-			const resolverMock = await setupContract({
-				accounts,
-				contract: 'GenericMock',
-				mock: 'AddressResolver',
-			});
-
-			await mockGenericContractFnc({
-				instance: resolverMock,
-				fncName: 'requireAndGetAddress',
-				mock: 'AddressResolver',
-				returns: [managerOwner],
-			});
-
-			// Only sets the resolver for the listed addresses
-			await manager.setResolverAndSyncCacheOnMarkets(resolverMock.address, [markets[0].address], {
-				from: managerOwner,
-			});
-
-			assert.equal(await markets[0].resolver(), resolverMock.address);
-			assert.equal(await markets[1].resolver(), addressResolver.address);
-			assert.equal(await markets[2].resolver(), addressResolver.address);
-
-			// Only sets the resolver for the remaining addresses
-			await manager.setResolverAndSyncCacheOnMarkets(
-				resolverMock.address,
-				[markets[1].address, markets[2].address],
-				{ from: managerOwner }
-			);
-
-			assert.equal(await markets[0].resolver(), resolverMock.address);
-			assert.equal(await markets[1].resolver(), resolverMock.address);
-			assert.equal(await markets[2].resolver(), resolverMock.address);
-		});
-
-		it('Only the owner can sync market resolvers', async () => {
-			onlyGivenAddressCanInvoke({
-				fnc: manager.setResolverAndSyncCacheOnMarkets,
-				args: [addressResolver.address, [markets[0].address]],
-				accounts,
-				address: managerOwner,
-				skipPassCheck: true,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
+	describe('resyncing cache', () => {
+		xit('TODO check each markets to sync has the cache rebuil', async () => {});
 	});
 });
