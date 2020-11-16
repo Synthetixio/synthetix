@@ -798,6 +798,12 @@ const setupAllContracts = async ({
 				from: owner,
 			}
 		);
+
+		await returnObj['AddressResolver'].rebuildCaches(
+			Object.values(returnObj)
+				.filter(entry => 'rebuildCache' in entry)
+				.map(({ address }) => address)
+		);
 	}
 
 	// if deploying a real Synthetix, then we add the synths
