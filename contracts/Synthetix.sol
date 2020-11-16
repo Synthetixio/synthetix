@@ -280,7 +280,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     function exchangeWithVirtual(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
-        bytes32 destinationCurrencyKey
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
     )
         external
         exchangeActive(sourceCurrencyKey, destinationCurrencyKey)
@@ -293,7 +294,8 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
                 sourceCurrencyKey,
                 sourceAmount,
                 destinationCurrencyKey,
-                messageSender
+                messageSender,
+                trackingCode
             );
     }
 
