@@ -170,10 +170,10 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
         // entry.escrowAmount.divideDecimalRound(duration);
     }
-    
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function _appendVestingEntry(address account, uint quantity) internal {
+    function _appendVestingEntry(address account, uint quantity, uint duration) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
 
@@ -217,8 +217,8 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
      * @param account The account to append a new vesting entry to.
      * @param quantity The quantity of SNX that will be escrowed.
      */
-    function appendVestingEntry(address account, uint quantity) external onlyFeePool {
-        _appendVestingEntry(account, quantity);
+    function appendVestingEntry(address account, uint quantity, uint duration) external onlyFeePool {
+        _appendVestingEntry(account, quantity, duration);
     }
 
     // TODO - Vesting no longer assumes that the vestingSchedules list is sorted, requires index to be passed in to vest.
