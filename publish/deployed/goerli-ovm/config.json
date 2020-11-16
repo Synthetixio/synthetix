@@ -14,6 +14,9 @@
 	"TradingRewards": {
 		"deploy": false
 	},
+	"DebtCache": {
+		"deploy": false
+	},
 	"EscrowChecker": {
 		"deploy": false
 	},

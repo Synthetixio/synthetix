@@ -7,7 +7,8 @@ const { parseEther, parseUnits } = ethers.utils;
 
 const {
 	initCrossDomainMessengers,
-	waitForCrossDomainMessages,
+	relayL1ToL2Messages,
+	relayL2ToL1Messages,
 } = require('@eth-optimism/ovm-toolchain');
 
 const { assert } = require('../contracts/common');
@@ -21,10 +22,14 @@ const commands = {
 	deploy: require('../../publish/src/commands/deploy').deploy,
 };
 
+async function mineBlock(provider, timeLeap) {
+	const currentTimestamp = (await provider.getBlock(provider.getBlockNumber())).timestamp;
+	await provider.send('evm_mine', [currentTimestamp + timeLeap]);
+}
 describe('deploy multiple instances', () => {
 	let deployer;
 
-	let loadLocalUsers, isCompileRequired, fastForward, setupProvider, getContract;
+	let loadLocalUsers, setupProvider, getContract;
 
 	let wallet, provider;
 
@@ -38,7 +43,7 @@ describe('deploy multiple instances', () => {
 	const deploymentPaths = [];
 
 	before('set up test utils', async () => {
-		({ loadLocalUsers, isCompileRequired, fastForward, setupProvider, getContract } = testUtils());
+		({ loadLocalUsers, setupProvider, getContract } = testUtils());
 	});
 
 	before('connect to local chain with accounts', async () => {
@@ -48,16 +53,6 @@ describe('deploy multiple instances', () => {
 			providerUrl: 'http://127.0.0.1:8545',
 			privateKey: deployer.private,
 		}));
-	});
-
-	before('compile if needed', async () => {
-		if (isCompileRequired()) {
-			console.log('Found source file modified after build. Rebuilding...');
-
-			await commands.build({ showContractSize: true, testHelpers: true });
-		} else {
-			console.log('Skipping build as everything up to date');
-		}
 	});
 
 	const createTempLocalCopy = ({ prefix }) => {
@@ -106,20 +101,29 @@ describe('deploy multiple instances', () => {
 		messengers = await initCrossDomainMessengers(10, 1000, ethers, wallet);
 	});
 
+	before('compile contracts', async () => {
+		// Note: Will use regular compilation for both instances
+		// since they will be run in a regular local chain.
+		await commands.build({ showContractSize: true, testHelpers: true });
+	});
+
 	before('deploy instance 1', async () => {
-		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-' }));
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-local-' }));
+
 		// ensure that only SynthetixBridgeToOptimism is deployed on L1
 		switchL2Deployment(network, deploymentPaths[0], true);
+
 		await commands.deploy({
 			network,
 			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
+			ignoreSafetyChecks: true,
 			deploymentPath: deploymentPaths[0],
 		});
+
 		// now set the external messenger contract
 		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
-
 		await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l1CrossDomainMessenger.address]
@@ -127,19 +131,24 @@ describe('deploy multiple instances', () => {
 	});
 
 	before('deploy instance 2', async () => {
-		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-' }));
+		deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-local-ovm-' }));
+
 		// ensure that only SynthetixBridgeToBase is deployed on L2
 		switchL2Deployment(network, deploymentPaths[1], false);
+
 		await commands.deploy({
 			network,
 			freshDeploy: true,
 			yes: true,
 			privateKey: deployer.private,
 			useOvm: true,
+			ignoreSafetyChecks: true,
 			deploymentPath: deploymentPaths[1],
 		});
+
 		// now set the external messenger contract
-		await fetchContract({ contract: 'AddressResolver', instance: 1 }).importAddresses(
+		const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 1 });
+		await addressResolver.importAddresses(
 			[toBytes32('ext:Messenger')],
 			[messengers.l2CrossDomainMessenger.address]
 		);
@@ -228,11 +237,11 @@ describe('deploy multiple instances', () => {
 		});
 
 		it('and after a delay, the user has 100 SNX on L2', async () => {
-			// wait 100s
-			await fastForward(100);
+			// fast forward 100s
+			await mineBlock(provider, 100);
 
 			// wait for message to be relayed
-			await waitForCrossDomainMessages(user);
+			await relayL1ToL2Messages(user);
 
 			const newL2Balance = await synthetixAlt.balanceOf(user.address);
 			assert.bnEqual(newL2Balance, parseEther('100'));
@@ -240,6 +249,32 @@ describe('deploy multiple instances', () => {
 
 		it('and the totalSupply on L2 has incremented by 100', async () => {
 			assert.bnEqual(await synthetixAlt.totalSupply(), l2InitialTotalSupply.add(parseEther('100')));
+		});
+
+		describe('when the user withdraws back to L1', () => {
+			let l2ToL1Bridge;
+			before('initiate withdrawal', async () => {
+				l2ToL1Bridge = fetchContract({ contract: 'SynthetixBridgeToBase', instance: 1, user });
+				// initiate withdrawal on L2
+				await l2ToL1Bridge.initiateWithdrawal(parseEther('100'), overrides);
+				// fast forward 1000s
+				await mineBlock(provider, 1000);
+				// wait for message to be relayed
+				await relayL2ToL1Messages(user);
+			});
+
+			it('the totalSupply on L2 decreases by 100', async () => {
+				assert.bnEqual(await synthetixAlt.totalSupply(), l2InitialTotalSupply);
+			});
+
+			it('the deposit contract has 0 balance', async () => {
+				assert.bnEqual(await synthetix.balanceOf(l1ToL2Bridge.address), 0);
+			});
+
+			it('then the user has again 1000 SNX on L1', async () => {
+				const newL1Balance = await synthetix.balanceOf(user.address);
+				assert.bnEqual(newL1Balance, parseEther('1000'));
+			});
 		});
 	});
 });

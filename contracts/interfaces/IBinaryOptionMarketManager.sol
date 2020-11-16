@@ -3,6 +3,7 @@ pragma solidity >=0.4.24;
 import "../interfaces/IBinaryOptionMarket.sol";
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/ibinaryoptionmarketmanager
 interface IBinaryOptionMarketManager {
     /* ========== VIEWS / VARIABLES ========== */
 

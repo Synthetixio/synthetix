@@ -1,5 +1,7 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const fs = require('fs');
+const path = require('path');
+const { contract, config } = require('@nomiclabs/buidler');
+const { wrap } = require('../../index.js');
 const { web3 } = require('@nomiclabs/buidler');
 const { assert } = require('../contracts/common');
 const { toUnit } = require('../utils')();
@@ -7,7 +9,11 @@ const {
 	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
+	ensureAccountHassUSD,
 	skipWaitingPeriod,
+	simulateExchangeRates,
+	takeDebtSnapshot,
+	mockOptimismBridge,
 } = require('./utils');
 
 contract('EtherCollateral (prod tests)', accounts => {
@@ -15,38 +21,65 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 	let owner;
 
-	let network;
+	let network, deploymentPath;
 
-	let EtherCollateral, AddressResolver;
-	let SynthsETH;
+	let EtherCollateral, ReadProxyAddressResolver, Depot;
+	let SynthsETH, SynthsUSD;
 
-	before('prepare', async () => {
+	before('prepare', async function() {
 		network = await detectNetworkName();
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 
-		({ EtherCollateral, SynthsETH, AddressResolver } = await connectContracts({
+		owner = getUsers({ network, user: 'owner' }).address;
+
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+
+		if (config.useOvm) {
+			return this.skip();
+		}
+
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await takeDebtSnapshot({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
+		}
+
+		({
+			EtherCollateral,
+			SynthsETH,
+			SynthsUSD,
+			ReadProxyAddressResolver,
+			Depot,
+		} = await connectContracts({
 			network,
 			requests: [
 				{ contractName: 'EtherCollateral' },
-				{ contractName: 'AddressResolver' },
-				{ contractName: 'ProxysETH', abiName: 'Synth', alias: 'SynthsETH' },
+				{ contractName: 'Depot' },
+				{ contractName: 'ReadProxyAddressResolver' },
+				{ contractName: 'SynthsETH', abiName: 'Synth' },
+				{ contractName: 'SynthsUSD', abiName: 'Synth' },
 			],
 		}));
 
 		await skipWaitingPeriod({ network });
 
-		[owner] = getUsers({ network }).map(user => user.address);
-
 		await ensureAccountHasEther({
-			amount: toUnit('10'),
+			amount: toUnit('1'),
 			account: owner,
 			fromAccount: accounts[7],
+			network,
+		});
+		await ensureAccountHassUSD({
+			amount: toUnit('1000'),
+			account: user1,
+			fromAccount: owner,
 			network,
 		});
 	});
 
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
-			assert.equal(await EtherCollateral.resolver(), AddressResolver.address);
+			assert.equal(await EtherCollateral.resolver(), ReadProxyAddressResolver.address);
 		});
 
 		it('has the expected owner set', async () => {
@@ -79,6 +112,21 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 		describe('closing a loan', () => {
 			before(async () => {
+				if (network === 'local') {
+					const amount = toUnit('100');
+
+					const balance = await SynthsUSD.balanceOf(Depot.address);
+					if (balance.lt(amount)) {
+						await SynthsUSD.approve(Depot.address, amount, {
+							from: user1,
+						});
+
+						await Depot.depositSynths(amount, {
+							from: user1,
+						});
+					}
+				}
+
 				ethBalance = await web3.eth.getBalance(user1);
 				sEthBalance = await SynthsETH.balanceOf(user1);
 

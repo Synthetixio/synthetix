@@ -14,6 +14,9 @@
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
+	"DebtCache": {
+		"deploy": false
+	},
 	"DelegateApprovals": {
 		"deploy": false
 	},
@@ -492,6 +495,24 @@
 		"deploy": false
 	},
 	"EtherCollateralsUSD": {
+		"deploy": false
+	},
+	"TokenStatesOIL": {
+		"deploy": false
+	},
+	"ProxysOIL": {
+		"deploy": false
+	},
+	"SynthsOIL": {
+		"deploy": false
+	},
+	"TokenStateiOIL": {
+		"deploy": false
+	},
+	"ProxyiOIL": {
+		"deploy": false
+	},
+	"SynthiOIL": {
 		"deploy": false
 	}
 }

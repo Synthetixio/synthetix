@@ -7,7 +7,6 @@ const Deployer = require('../Deployer');
 const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
-const { getVersions } = require('../../..');
 
 const {
 	ensureNetwork,
@@ -58,18 +57,16 @@ const deploy = async ({
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
 	useFork,
-	providerUrl: specifiedProviderUrl,
+	providerUrl,
 	useOvm,
 	freshDeploy,
 	manageNonces,
+	ignoreSafetyChecks,
+	ignoreCustomParameters,
 } = {}) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
-
-	if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
-		throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
-	}
 
 	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
@@ -91,17 +88,43 @@ const deploy = async ({
 		network,
 	});
 
-	// Fresh deploy and deployment.json not empty?
-	if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
-		throw new Error(
-			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
-		);
+	if (!ignoreSafetyChecks) {
+		// Using Goerli without manageNonces?
+		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
+			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+		}
+
+		// Deploying on OVM and not using an OVM deployment path?
+		const isOvmPath = deploymentPath.includes('ovm');
+		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
+		if (deploymentPathMismatch) {
+			if (useOvm) {
+				throw new Error(
+					`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`
+				);
+			} else {
+				throw new Error(
+					`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`
+				);
+			}
+		}
+
+		// Fresh deploy and deployment.json not empty?
+		if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
+			throw new Error(
+				`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
+			);
+		}
 	}
 
 	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
 
 	const getDeployParameter = async name => {
 		const defaultParam = defaults[name];
+		if (ignoreCustomParameters) {
+			return defaultParam;
+		}
+
 		let effectiveValue = defaultParam;
 
 		const param = (params || []).find(p => p.name === name);
@@ -159,11 +182,22 @@ const deploy = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const {
+		providerUrl: envProviderUrl,
+		privateKey: envPrivateKey,
+		etherscanLinkPrefix,
+	} = loadConnections({
 		network,
 		useFork,
-		specifiedProviderUrl,
 	});
+
+	if (!providerUrl) {
+		if (!envProviderUrl) {
+			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
+		}
+
+		providerUrl = envProviderUrl;
+	}
 
 	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
 	if (network !== 'local' || !privateKey) {
@@ -185,30 +219,13 @@ const deploy = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
+		useOvm,
 		useFork,
+		ignoreSafetyChecks,
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
 	const { account } = deployer;
-
-	const getExistingContract = ({ contract, network }) => {
-		let address;
-		if (network === 'local') {
-			address = deployment.targets[contract].address;
-		} else {
-			const contractVersion = getVersions({ network, byContract: true })[contract];
-			const lastEntry = contractVersion.slice(-1)[0];
-			address = lastEntry.address;
-		}
-
-		const { source } = deployment.targets[contract];
-		const { abi } = deployment.sources[source];
-
-		return deployer.getContract({
-			address,
-			abi,
-		});
-	};
 
 	nonceManager.web3 = deployer.web3;
 	nonceManager.account = account;
@@ -222,7 +239,7 @@ const deploy = async ({
 	let systemSuspendedReason;
 
 	try {
-		const oldSynthetix = getExistingContract({ contract: 'Synthetix', network });
+		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 
 		// inflationSupplyToDate = total supply - 100m
@@ -262,7 +279,7 @@ const deploy = async ({
 	}
 
 	try {
-		oldExrates = getExistingContract({ contract: 'ExchangeRates', network });
+		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
 		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
 		if (!oracleExrates) {
 			oracleExrates = await oldExrates.methods.oracle().call();
@@ -284,7 +301,7 @@ const deploy = async ({
 	}
 
 	try {
-		const oldSystemStatus = getExistingContract({ contract: 'SystemStatus', network });
+		const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
 
 		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
 
@@ -451,16 +468,14 @@ const deploy = async ({
 		args: [account],
 	});
 
-	const resolverAddress = addressOf(addressResolver);
-
 	if (addressResolver && readProxyForResolver) {
 		await runStep({
 			contract: 'ReadProxyAddressResolver',
 			target: readProxyForResolver,
 			read: 'target',
-			expected: input => input === resolverAddress,
+			expected: input => input === addressOf(addressResolver),
 			write: 'setTarget',
-			writeArg: resolverAddress,
+			writeArg: addressOf(addressResolver),
 		});
 	}
 
@@ -472,7 +487,7 @@ const deploy = async ({
 
 	const systemSettings = await deployer.deployContract({
 		name: 'SystemSettings',
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const systemStatus = await deployer.deployContract({
@@ -482,7 +497,13 @@ const deploy = async ({
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, resolverAddress, [toBytes32('SNX')], [currentSynthetixPrice]],
+		args: [
+			account,
+			oracleExrates,
+			addressOf(readProxyForResolver),
+			[toBytes32('SNX')],
+			[currentSynthetixPrice],
+		],
 	});
 
 	const rewardEscrow = await deployer.deployContract({
@@ -530,7 +551,7 @@ const deploy = async ({
 
 	const liquidations = await deployer.deployContract({
 		name: 'Liquidations',
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const eternalStorageLiquidations = await deployer.deployContract({
@@ -558,7 +579,7 @@ const deploy = async ({
 	const feePool = await deployer.deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
-		args: [addressOf(proxyFeePool), account, resolverAddress],
+		args: [addressOf(proxyFeePool), account, addressOf(readProxyForResolver)],
 	});
 
 	if (proxyFeePool && feePool) {
@@ -634,7 +655,7 @@ const deploy = async ({
 			addressOf(tokenStateSynthetix),
 			account,
 			currentSynthetixSupply,
-			resolverAddress,
+			addressOf(readProxyForResolver),
 		],
 	});
 
@@ -676,10 +697,18 @@ const deploy = async ({
 		});
 	}
 
+	const debtCache = await deployer.deployContract({
+		name: 'DebtCache',
+		source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
+		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
 		deps: ['AddressResolver'],
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const exchangeState = await deployer.deployContract({
@@ -740,7 +769,6 @@ const deploy = async ({
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
-		source: useOvm ? 'IssuerWithoutUpdatableCache' : 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(addressResolver)],
 	});
@@ -750,7 +778,7 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'TradingRewards',
 		deps: ['AddressResolver', 'Exchanger'],
-		args: [account, account, resolverAddress],
+		args: [account, account, addressOf(readProxyForResolver)],
 	});
 
 	if (synthetixState && issuer) {
@@ -810,7 +838,7 @@ const deploy = async ({
 			source: 'FixedSupplySchedule',
 			args: [
 				account,
-				resolverAddress,
+				addressOf(readProxyForResolver),
 				inflationStartDate,
 				'0',
 				'0',
@@ -937,7 +965,7 @@ const deploy = async ({
 		let originalTotalSupply = 0;
 		if (synthConfig.deploy) {
 			try {
-				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}`, network });
+				const oldSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
 				if (!freshDeploy) {
@@ -986,7 +1014,7 @@ const deploy = async ({
 				account,
 				currencyKeyInBytes,
 				originalTotalSupply,
-				resolverAddress,
+				addressOf(readProxyForResolver),
 			].concat(additionalConstructorArgsMap[sourceContract + currencyKey] || []),
 			force: addNewSynths,
 		});
@@ -1065,7 +1093,7 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
-		args: [account, account, resolverAddress],
+		args: [account, account, addressOf(readProxyForResolver)],
 	});
 
 	if (useOvm) {
@@ -1082,22 +1110,22 @@ const deploy = async ({
 		});
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToBase',
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	} else {
 		await deployer.deployContract({
 			name: 'EtherCollateral',
 			deps: ['AddressResolver'],
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 		await deployer.deployContract({
 			name: 'EtherCollateralsUSD',
 			deps: ['AddressResolver'],
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	}
 
@@ -1109,7 +1137,7 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'BinaryOptionMarketFactory',
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 		deps: ['AddressResolver'],
 	});
 
@@ -1126,7 +1154,7 @@ const deploy = async ({
 		name: 'BinaryOptionMarketManager',
 		args: [
 			account,
-			resolverAddress,
+			addressOf(readProxyForResolver),
 			maxOraclePriceAge,
 			expiryDuration,
 			maxTimeToMaturity,
@@ -1324,10 +1352,10 @@ const deploy = async ({
 						contract,
 						target,
 						read: isPreSIP46 ? 'resolver' : 'isResolverCached',
-						readArg: isPreSIP46 ? undefined : resolverAddress,
-						expected: input => (isPreSIP46 ? input === resolverAddress : input),
+						readArg: isPreSIP46 ? undefined : addressOf(readProxyForResolver),
+						expected: input => (isPreSIP46 ? input === addressOf(readProxyForResolver) : input),
 						write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
-						writeArg: resolverAddress,
+						writeArg: addressOf(readProxyForResolver),
 					});
 				}
 			}
@@ -1338,15 +1366,34 @@ const deploy = async ({
 		console.log(gray(`\n------ ADD SYNTHS TO ISSUER ------\n`));
 
 		// Set up the connection to the Issuer for each Synth (requires FlexibleStorage to have been configured)
+
+		// First filter out all those synths which are already properly imported
+		console.log(gray('Filtering synths to add to the issuer.'));
+		const filteredSynths = [];
 		for (const synth of synthsToAdd) {
+			const issuerSynthAddress = await issuer.methods.synths(synth.currencyKeyInBytes).call();
+			const currentSynthAddress = addressOf(synth.synth);
+			if (issuerSynthAddress === currentSynthAddress) {
+				console.log(gray(`${currentSynthAddress} requires no action`));
+			} else {
+				console.log(gray(`${currentSynthAddress} will be added to the issuer.`));
+				filteredSynths.push(synth);
+			}
+		}
+
+		const synthChunkSize = 15;
+		for (let i = 0; i < filteredSynths.length; i += synthChunkSize) {
+			const chunk = filteredSynths.slice(i, i + synthChunkSize);
 			await runStep({
 				contract: 'Issuer',
 				target: issuer,
-				read: 'synths',
-				readArg: synth.currencyKeyInBytes,
-				expected: input => input === addressOf(synth.synth),
-				write: 'addSynth',
-				writeArg: addressOf(synth.synth),
+				read: 'getSynths',
+				readArg: [chunk.map(synth => synth.currencyKeyInBytes)],
+				expected: input =>
+					input.reduce((acc, cur, idx) => acc && cur === addressOf(chunk[idx].synth)),
+				write: 'addSynths',
+				writeArg: [chunk.map(synth => addressOf(synth.synth))],
+				gasLimit: 1e5 * synthChunkSize,
 			});
 		}
 
@@ -1376,13 +1423,17 @@ const deploy = async ({
 				// for this environment (true for all environments except the initial deploy in 'local' during those tests)
 				if (oldExrates) {
 					// get inverse synth's params from the old exrates, if any exist
+					const oldInversePricing = await oldExrates.methods
+						.inversePricing(toBytes32(currencyKey))
+						.call();
+
 					const {
 						entryPoint: oldEntryPoint,
 						upperLimit: oldUpperLimit,
 						lowerLimit: oldLowerLimit,
 						frozenAtUpperLimit: currentRateIsFrozenUpper,
 						frozenAtLowerLimit: currentRateIsFrozenLower,
-					} = await oldExrates.methods.inversePricing(toBytes32(currencyKey)).call();
+					} = oldInversePricing;
 
 					const currentRateIsFrozen = currentRateIsFrozenUpper || currentRateIsFrozenLower;
 					// and the last rate if any exists
@@ -1395,8 +1446,27 @@ const deploy = async ({
 					const totalSynthSupply = await synth.methods.totalSupply().call();
 					console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
 
-					// When there's an inverted synth with matching parameters
+					const inversePricingOnCurrentExRates = await exchangeRates.methods
+						.inversePricing(toBytes32(currencyKey))
+						.call();
+
+					// ensure that if it's a newer exchange rates deployed, then skip reinserting the inverse pricing if
+					// already done
 					if (
+						oldExrates.options.address !== exchangeRates.options.address &&
+						JSON.stringify(inversePricingOnCurrentExRates) === JSON.stringify(oldInversePricing) &&
+						+w3utils.fromWei(inversePricingOnCurrentExRates.entryPoint) === entryPoint &&
+						+w3utils.fromWei(inversePricingOnCurrentExRates.upperLimit) === upperLimit &&
+						+w3utils.fromWei(inversePricingOnCurrentExRates.lowerLimit) === lowerLimit
+					) {
+						console.log(
+							gray(
+								`Current ExchangeRates.inversePricing(${currencyKey}) is the same as the previous. Nothing to do.`
+							)
+						);
+					}
+					// When there's an inverted synth with matching parameters
+					else if (
 						entryPoint === +w3utils.fromWei(oldEntryPoint) &&
 						upperLimit === +w3utils.fromWei(oldUpperLimit) &&
 						lowerLimit === +w3utils.fromWei(oldLowerLimit)
@@ -1482,8 +1552,10 @@ const deploy = async ({
 
 			// override individual currencyKey / synths exchange rates
 			const synthExchangeRateOverride = {
-				sETH: w3utils.toWei('0.005'),
-				iETH: w3utils.toWei('0.005'),
+				sETH: w3utils.toWei('0.003'),
+				iETH: w3utils.toWei('0.003'),
+				sBTC: w3utils.toWei('0.003'),
+				iBTC: w3utils.toWei('0.003'),
 			};
 
 			const synthsRatesToUpdate = synths
@@ -1662,9 +1734,9 @@ const deploy = async ({
 				console.log(yellow(`Refreshing debt snapshot...`));
 				await runStep({
 					gasLimit: 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
-					contract: 'Issuer',
-					target: issuer,
-					write: 'cacheSNXIssuedDebt',
+					contract: 'DebtCache',
+					target: debtCache,
+					write: 'takeDebtSnapshot',
 					writeArg: [],
 				});
 			} else if (!validityChanged) {
@@ -1675,16 +1747,19 @@ const deploy = async ({
 		};
 
 		const checkSnapshot = async () => {
-			const [cacheInfo, isStale, currentDebt] = await Promise.all([
-				issuer.methods.cachedSNXIssuedDebtInfo().call(),
-				issuer.methods.debtCacheIsStale().call(),
-				issuer.methods.currentSNXIssuedDebt().call(),
+			const [cacheInfo, currentDebt] = await Promise.all([
+				debtCache.methods.cacheInfo().call(),
+				debtCache.methods.currentDebt().call(),
 			]);
 
 			// Check if the snapshot is stale and can be fixed.
-			if (isStale && !currentDebt.anyRateIsInvalid) {
+			if (cacheInfo.isStale && !currentDebt.anyRateIsInvalid) {
 				console.log(yellow('Debt snapshot is stale, and can be refreshed.'));
-				await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, isStale);
+				await refreshSnapshotIfPossible(
+					cacheInfo.isInvalid,
+					currentDebt.anyRateIsInvalid,
+					cacheInfo.isStale
+				);
 				return true;
 			}
 
@@ -1696,12 +1771,12 @@ const deploy = async ({
 					await refreshSnapshotIfPossible(
 						cacheInfo.isInvalid,
 						currentDebt.anyRateIsInvalid,
-						isStale
+						cacheInfo.isStale
 					);
 					return true;
 				} else {
-					const cachedDebtEther = w3utils.fromWei(cacheInfo.cachedDebt);
-					const currentDebtEther = w3utils.fromWei(currentDebt.snxIssuedDebt);
+					const cachedDebtEther = w3utils.fromWei(cacheInfo.debt);
+					const currentDebtEther = w3utils.fromWei(currentDebt.debt);
 					const deviation =
 						(Number(currentDebtEther) - Number(cachedDebtEther)) / Number(cachedDebtEther);
 					const maxDeviation = DEFAULTS.debtSnapshotMaxDeviation;
@@ -1794,6 +1869,16 @@ module.exports = {
 			.option(
 				'-h, --fresh-deploy',
 				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
+			)
+			.option(
+				'-i, --ignore-safety-checks',
+				'Ignores some validations regarding paths, compiler versions, etc.',
+				false
+			)
+			.option(
+				'--ignore-custom-parameters',
+				'Ignores deployment parameters specified in params.json',
+				false
 			)
 			.option(
 				'-k, --use-fork',
