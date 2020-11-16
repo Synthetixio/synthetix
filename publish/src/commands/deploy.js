@@ -1217,28 +1217,30 @@ const deploy = async ({
 				.filter(([, target]) =>
 					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
 				)
-				.map(([contract, target]) =>
+				.map(([contract, target]) => {
+					console.log('Contract:', contract);
 					// Note: if running a dryRun then the output here will only be an estimate, as
 					// the correct list of addresses require the contracts be deployed so these entries can then be read.
-					(
-						target.methods.getResolverAddressesRequired().call() ||
-						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
-						Promise.resolve([])
-					).then(names => {
-						const namesReadable = names.map(w3utils.hexToUtf8);
+					target.methods.getResolverAddressesRequired().call() ||
+						// if dryRun and the contract is new then there’s nothing to read on-chain, so resolve []
+						Promise.resolve([]);
+				})
+				.then(names => {
+					const namesReadable = names.map(w3utils.hexToUtf8);
 
-						// track requirements to log out later
-						namesReadable.forEach(
-							name =>
-								(contractResolverRequirements[name] = [contract].concat(
-									contractResolverRequirements[name]
-								))
-						);
+					// track requirements to log out later
+					namesReadable.forEach(
+						name =>
+							(contractResolverRequirements[name] = [contract].concat(
+								contractResolverRequirements[name]
+							))
+					);
 
-						return namesReadable;
-					})
-				)
+					return namesReadable;
+				})
 		);
+
+		console.log('Step 1');
 
 		const allRequiredAddresses = Array.from(
 			// create set to remove dupes
@@ -1267,6 +1269,8 @@ const deploy = async ({
 			)
 		).sort();
 
+		console.log('Step 2');
+
 		// now map these into a list of names and addresses
 		const expectedAddressesInResolver = allRequiredAddresses.map(name => {
 			const contract = deployer.deployedContracts[name];
@@ -1282,6 +1286,7 @@ const deploy = async ({
 			};
 		});
 
+		console.log('Step 3');
 		// Count how many addresses are not yet in the resolver
 		const addressesNotInResolver = (
 			await Promise.all(
@@ -1295,7 +1300,7 @@ const deploy = async ({
 				})
 			)
 		).filter(entry => !entry.found);
-
+		console.log('Step 4');
 		// and add everything if any not found (will overwrite any conflicts)
 		if (addressesNotInResolver.length > 0) {
 			console.log(
@@ -1322,6 +1327,7 @@ const deploy = async ({
 			// Note that this will also end the script in the case of manual transaction mining.
 			addressesAreImported = typeof result !== 'boolean';
 		}
+		console.log('Step 5');
 	}
 
 	if (addressesAreImported) {
