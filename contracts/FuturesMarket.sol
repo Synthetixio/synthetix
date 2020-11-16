@@ -61,6 +61,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     uint public marketSize;
     int public marketSkew;
     uint public entryNotionalSum;
+    uint public pendingOrderValue;
+    uint public marginSum;
 
     mapping(address => Order) public orders;
     mapping(address => Position) public positions;
@@ -180,8 +182,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
 
         Position storage position = positions[account];
         int funding = includeFunding ? 0 : 0; // TODO: Apply funding
-        int marginPlusFunding = int(_abs(position.margin).add(marginPlusFunding));
-        int size = int(_abs(position.size));
+        int marginPlusFunding = _abs(position.margin).add(marginPlusFunding);
+        int size = _abs(position.size);
         int entryPrice = int(position.entryPrice);
 
         int liquidationFee = int(getFuturesLiquidationFee());
@@ -190,7 +192,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
 
     /* ---------- Utilities ---------- */
 
-    function _abs(int x) internal pure returns (uint) {
+    function _abs(int x) internal pure returns (int) {
         return x > 0 ? x : -x;
     }
 
@@ -203,6 +205,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     // Details for a particular position
     // Funding
     // Net funding
+    //
+    // Fees
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -246,20 +250,24 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         require(margin <= minInitialMargin, "Insufficient margin");
 
         // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
-        // TODO: Revert if the margin would exceed the maximum configured for the market
+
         uint balance = _sUSD().balanceOf(msg.sender);
         require(margin <= balance, "Insufficient balance");
         // TODO: Deduct balance, and record fee.
 
-        IExchangeRates exchangeRates = _exchangeRates();
+        // Update pending order value (not forgetting to deduct for any pending orders)
+        // Revert if the margin would exceed the maximum configured for the market
+        Order storage order = orders[msg.sender];
+        if (order.pending) {
+            pendingOrderValue = pendingOrderValue.sub(order.margin);
+        }
+        pendingOrderValue = pendingOrderValue.add(margin);
+        require(marketSize.add(pendingOrderValue) <= maxTotalMargin, "Max market size exceeded");
 
-        (uint price, bool isInvalid) = _priceAndInvalid(exchangeRates);
-        uint roundId = exchangeRates.getCurrentRoundId();
-
-        orders[msg.sender] = Order(true, margin, leverage, roundId);
-
+        // Lodge the order, which can be confirmed at the next price update
+        uint roundId = _exchangeRates().getCurrentRoundId();
+        order = Order(true, margin, leverage, roundId);
         emit OrderSubmitted(msg.sender, margin, leverage, roundId);
-        return;
     }
 
     function closePosition() external {
@@ -288,26 +296,27 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         require(order.pending, "No pending order");
         require(currentRoundId > order.roundId, "Awaiting next price");
 
-        int margin = order.margin;
-        int newSize = margin.divideDecimalRound(int(price));
-        uint newAbsoluteSize = _abs(size);
+        int newMargin = order.margin;
+        int newSize = newMargin.multiplyDecimalRound(int(order.leverage)).divideDecimalRound(int(price));
+        int newAbsoluteSize = _abs(newSize);
 
         Position storage position = positions[account];
-
-        uint positionSize = position.size;
-        uint absolutePositionSize = _abs(positionSize);
+        int positionSize = position.size;
+        int absolutePositionSize = _abs(positionSize);
 
         marketSkew = marketSkew.sub(positionSize).add(newSize);
         marketSize = marketSize.sub(absolutePositionSize).add(newAbsoluteSize);
 
-        // Modifying a position should respect the max market size.
-        require(marketSize <= maxTotalMargin, "Max market size exceeded");
+        int marginDelta = newMargin.sub(position.margin);
+        int notionalDelta = newSize.multiplyDecimalRound(int(price)).sub(
+            position.size.multiplyDecimalRound(int(position.entryPrice))
+        );
+        entryNotionalSum = entryNotionalSum.add(marginDelta).add(notionalDelta);
 
         // TODO: compute current funding index
         uint entryIndex = 0;
-        position = Position(margin, newSize, price, entryIndex);
-        emit OrderConfirmed(account, margin, newSize, price, entryIndex);
-        return;
+        position = Position(newMargin, newSize, price, entryIndex);
+        emit OrderConfirmed(account, newMargin, newSize, price, entryIndex);
     }
 
     event ExchangeFeeUpdated(uint fee);
