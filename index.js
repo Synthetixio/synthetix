@@ -72,7 +72,7 @@ const defaults = {
 		commodity: w3utils.toWei('0.003'),
 		equities: w3utils.toWei('0.003'),
 		crypto: w3utils.toWei('0.01'),
-		index: w3utils.toWei('0.003'),
+		index: w3utils.toWei('0.01'),
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
@@ -354,6 +354,10 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),
 		'goerli-ovm': Object.assign({}, base),
+		local: Object.assign({}, base, {
+			// Deterministic account #0 when using `npx buidler node`
+			owner: '0xc783df8a850f42e7F7e57013759C285caa701eB6',
+		}),
 	};
 
 	const users = Object.entries(

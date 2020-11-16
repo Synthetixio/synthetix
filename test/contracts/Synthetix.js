@@ -92,14 +92,16 @@ contract('Synthetix', async accounts => {
 				'emitExchangeTracking',
 				'exchange',
 				'exchangeOnBehalf',
-				'exchangeWithTracking',
 				'exchangeOnBehalfWithTracking',
+				'exchangeWithTracking',
+				'exchangeWithVirtual',
 				'issueMaxSynths',
 				'issueMaxSynthsOnBehalf',
 				'issueSynths',
 				'issueSynthsOnBehalf',
 				'mint',
 				'mintSecondary',
+				'mintSecondaryRewards',
 				'settle',
 				'transfer',
 				'transferFrom',
@@ -139,6 +141,34 @@ contract('Synthetix', async accounts => {
 			assert.equal(await instance.owner(), owner);
 			assert.equal(await instance.totalSupply(), YEAR_2_SYNTHETIX_TOTAL_SUPPLY);
 			assert.equal(await instance.resolver(), addressResolver.address);
+		});
+	});
+
+	describe('secondary fucntions always revert on L1', () => {
+		const amount = 100;
+		it('should revert no matter who the caller is', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.mintSecondary,
+				accounts,
+				args: [account1, amount],
+				reason: 'Cannot be run on this layer',
+			});
+		});
+		it('should revert no matter who the caller is', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.mintSecondaryRewards,
+				accounts,
+				args: [amount],
+				reason: 'Cannot be run on this layer',
+			});
+		});
+		it('should revert no matter who the caller is', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: synthetix.burnSecondary,
+				accounts,
+				args: [account1, amount],
+				reason: 'Cannot be run on this layer',
+			});
 		});
 	});
 

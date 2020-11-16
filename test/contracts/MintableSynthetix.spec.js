@@ -1,35 +1,29 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { setupAllContracts } = require('./setup');
 const { toWei } = web3.utils;
 const { toBytes32 } = require('../..');
 const BN = require('bn.js');
 
-const MintableSynthetix = artifacts.require('MintableSynthetix');
 const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
 contract('MintableSynthetix (spec tests)', accounts => {
 	const [, owner, synthetixBridgeToBase, account1] = accounts;
 
-	it('ensure only known functions are mutative', () => {
-		ensureOnlyExpectedMutativeFunctions({
-			abi: MintableSynthetix.abi,
-			ignoreParents: ['Synthetix'],
-			expected: ['mintSecondary', 'burnSecondary'],
-		});
-	});
-
 	let mintableSynthetix;
 	let addressResolver;
+	let rewardsDistribution;
+	let rewardEscrow;
 	describe('when system is setup', () => {
 		before('deploy a new instance', async () => {
 			({
 				Synthetix: mintableSynthetix, // we request Synthetix instead of MintableSynthetix because it is renamed in setup.js
 				AddressResolver: addressResolver,
+				RewardsDistribution: rewardsDistribution,
+				RewardEscrow: rewardEscrow,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['MintableSynthetix'],
+				contracts: ['AddressResolver', 'MintableSynthetix', 'RewardsDistribution', 'RewardEscrow'],
 			}));
 			// update resolver
 			await addressResolver.importAddresses(
@@ -41,28 +35,6 @@ contract('MintableSynthetix (spec tests)', accounts => {
 			);
 			// synch cache
 			await mintableSynthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		});
-
-		describe('access permissions', async () => {
-			it('should only allow SynthetixBridgeToBase to call mintSecondary()', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: mintableSynthetix.mintSecondary,
-					args: [account1, 100],
-					address: synthetixBridgeToBase,
-					accounts,
-					reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
-				});
-			});
-
-			it('should only allow SynthetixBridgeToBase to call burnSecondary()', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: mintableSynthetix.burnSecondary,
-					args: [account1, 100],
-					address: synthetixBridgeToBase,
-					accounts,
-					reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
-				});
-			});
 		});
 
 		describe('mintSecondary()', async () => {
@@ -92,9 +64,47 @@ contract('MintableSynthetix (spec tests)', accounts => {
 			});
 		});
 
+		describe('mintSecondaryRewards()', async () => {
+			let mintSecondaryRewardsTx;
+			const amount = 100;
+			let currentSupply;
+			before('record current supply', async () => {
+				currentSupply = await mintableSynthetix.totalSupply();
+			});
+
+			before('when SynthetixBridgeToBase calls mintSecondaryRewards()', async () => {
+				mintSecondaryRewardsTx = await mintableSynthetix.mintSecondaryRewards(amount, {
+					from: synthetixBridgeToBase,
+				});
+			});
+
+			it('should tranfer the tokens initially to RewardsDistribution which  transfers them to RewardEscrow (no distributions)', async () => {
+				assert.equal(await mintableSynthetix.balanceOf(rewardsDistribution.address), 0);
+				assert.equal(await mintableSynthetix.balanceOf(rewardEscrow.address), amount);
+			});
+
+			it('should increase the total supply', async () => {
+				const newSupply = currentSupply.add(new BN(amount));
+				assert.bnEqual(await mintableSynthetix.totalSupply(), newSupply);
+			});
+
+			it('should emit a Transfer event', async () => {
+				assert.eventEqual(mintSecondaryRewardsTx, 'Transfer', {
+					from: mintableSynthetix.address,
+					to: rewardsDistribution.address,
+					value: amount,
+				});
+			});
+		});
+
 		describe('burnSecondary()', async () => {
 			let burnSecondaryTx;
 			const amount = 100;
+			let currentSupply;
+			before('record current supply', async () => {
+				currentSupply = await mintableSynthetix.totalSupply();
+			});
+
 			before('when SynthetixBridgeToBase calls burnSecondary()', async () => {
 				burnSecondaryTx = await mintableSynthetix.burnSecondary(account1, amount, {
 					from: synthetixBridgeToBase,
@@ -105,7 +115,8 @@ contract('MintableSynthetix (spec tests)', accounts => {
 			});
 
 			it('should decrease the total supply', async () => {
-				assert.bnEqual(await mintableSynthetix.totalSupply(), SYNTHETIX_TOTAL_SUPPLY);
+				const newSupply = currentSupply.sub(new BN(amount));
+				assert.bnEqual(await mintableSynthetix.totalSupply(), newSupply);
 			});
 
 			it('should emit a Transfer event', async () => {

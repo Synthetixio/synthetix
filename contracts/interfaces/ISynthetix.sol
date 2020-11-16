@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
-import "../interfaces/ISynth.sol";
+import "./ISynth.sol";
+import "./IVirtualSynth.sol";
 
 
 // https://docs.synthetix.io/contracts/source/interfaces/isynthetix
@@ -82,6 +83,13 @@ interface ISynthetix {
         bytes32 trackingCode
     ) external returns (uint amountReceived);
 
+    function exchangeWithVirtual(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived, IVirtualSynth vSynth);
+
     function issueMaxSynths() external;
 
     function issueMaxSynthsOnBehalf(address issueForAddress) external;
@@ -105,6 +113,8 @@ interface ISynthetix {
     // Restricted Functions
 
     function mintSecondary(address account, uint amount) external;
+
+    function mintSecondaryRewards(uint amount) external;
 
     function burnSecondary(address account, uint amount) external;
 }

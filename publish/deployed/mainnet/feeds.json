@@ -57,5 +57,6 @@
 		"asset": "NIKKEI225",
 		"feed": "0x5c4939a2ab3A2a9f93A518d81d4f8D0Bc6a68980"
 	},
-	"XAG": {"asset": "XAG", "feed": "0x379589227b15F1a12195D3f2d90bBc9F31f95235"}
+	"XAG": {"asset": "XAG", "feed": "0x379589227b15F1a12195D3f2d90bBc9F31f95235"},
+	"OIL": {"asset": "OIL", "feed": "0xb70ba475F1a6b5396e46d9b2a5f7081080Dc9d09"}
 }

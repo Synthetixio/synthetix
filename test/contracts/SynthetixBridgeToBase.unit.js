@@ -1,114 +1,175 @@
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { mockGenericContractFnc } = require('./setup');
-const BN = require('bn.js');
 
-const SynthetixBridgeToOptimism = artifacts.require('SynthetixBridgeToOptimism');
+const { toBytes32 } = require('../..');
+const { smockit } = require('@eth-optimism/smock');
+
 const SynthetixBridgeToBase = artifacts.require('SynthetixBridgeToBase');
-const FakeSynthetixBridgeToBase = artifacts.require('FakeSynthetixBridgeToBase');
 
 contract('SynthetixBridgeToBase (unit tests)', accounts => {
-	const [owner, bridge, account1] = accounts;
-
-	const mockAddress = '0x0000000000000000000000000000000000000001';
+	const [owner, user1, snxBridgeToOptimism, smockedMessenger, randomAddress] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToBase.abi,
-			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
-			expected: ['initiateWithdrawal', 'mintSecondaryFromDeposit'],
+			ignoreParents: ['Owned', 'MixinResolver'],
+			expected: [
+				'initiateWithdrawal',
+				'mintSecondaryFromDeposit',
+				'mintSecondaryFromDepositForRewards',
+			],
 		});
 	});
 
-	describe('when deploying a mock token', () => {
-		describe('when mock for resolver is added', () => {
-			before('deploy a mock issuer contract', async () => {
-				this.resolverMock = await artifacts.require('GenericMock').new();
-				// now instruct the mock AddressResolver that getAddress() must return a mock addresss
-				await mockGenericContractFnc({
-					instance: this.resolverMock,
-					mock: 'AddressResolver',
-					fncName: 'getAddress',
-					returns: [mockAddress],
-				});
+	const getDataOfEncodedFncCall = ({ fnc, args = [] }) =>
+		web3.eth.abi.encodeFunctionCall(
+			artifacts.require('SynthetixBridgeToOptimism').abi.find(({ name }) => name === fnc),
+			args
+		);
 
-				this.mintableSynthetixMock = await artifacts.require('MockMintableSynthetix').new();
+	describe('when all the deps are (s)mocked @cov-skip', () => {
+		let messenger;
+		let mintableSynthetix;
+		let resolver;
+		beforeEach(async () => {
+			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
+				address: smockedMessenger,
+			});
+			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
+
+			// now add to address resolver
+			resolver = await artifacts.require('AddressResolver').new(owner);
+			await resolver.importAddresses(
+				['ext:Messenger', 'Synthetix', 'base:SynthetixBridgeToOptimism'].map(toBytes32),
+				[messenger.address, mintableSynthetix.address, snxBridgeToOptimism],
+				{ from: owner }
+			);
+		});
+
+		beforeEach(async () => {
+			// stubs
+			mintableSynthetix.smocked.burnSecondary.will.return.with(() => {});
+			mintableSynthetix.smocked.mintSecondary.will.return.with(() => {});
+			mintableSynthetix.smocked.balanceOf.will.return.with(() => web3.utils.toWei('1'));
+			messenger.smocked.sendMessage.will.return.with(() => {});
+			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToOptimism);
+		});
+
+		describe('when the target is deployed', () => {
+			let instance;
+			beforeEach(async () => {
+				instance = await artifacts.require('SynthetixBridgeToBase').new(owner, resolver.address);
+				await instance.setResolverAndSyncCache(resolver.address, { from: owner });
 			});
 
-			it('contracs are deployed', async () => {
-				assert.notEqual(this.resolverMock.address, 0);
-				assert.notEqual(this.mintableSynthetixMock.address, 0);
-			});
-
-			describe('when a SynthetixBridgeToBase contract is deployed', () => {
-				before('deploy bridge contract', async () => {
-					this.synthetixBridgeToBase = await FakeSynthetixBridgeToBase.new(
-						owner,
-						this.resolverMock.address,
-						this.mintableSynthetixMock.address,
-						bridge,
-						{
-							from: owner,
-						}
-					);
-				});
-
-				before('connect to CrossDomainMessengerMock', async () => {
-					const crossDomainMessengerMock = await artifacts.require('MockCrossDomainMessenger');
-					const currentAddress = await this.synthetixBridgeToBase.crossDomainMessengerMock();
-					this.messengerMock = await crossDomainMessengerMock.at(currentAddress);
-				});
-
-				it('has the expected parameters', async () => {
-					assert.equal(await this.synthetixBridgeToBase.owner(), owner);
-					assert.equal(await this.synthetixBridgeToBase.resolver(), this.resolverMock.address);
-					assert.equal(await this.synthetixBridgeToBase.xChainBridge(), bridge);
-				});
-
-				describe('a user initiates a withdrawal', () => {
+			describe('initiateWithdrawal', () => {
+				describe('when invoked by a user', () => {
 					let withdrawalTx;
 					const amount = 100;
 					const gasLimit = 3e6;
-					before('user tries to withdraw 100 tokens', async () => {
-						withdrawalTx = await this.synthetixBridgeToBase.initiateWithdrawal(amount, {
-							from: account1,
+					beforeEach('user tries to withdraw 100 tokens', async () => {
+						withdrawalTx = await instance.initiateWithdrawal(amount, { from: user1 });
+					});
+
+					it('then SNX is burned via mintableSyntetix.burnSecondary', async () => {
+						assert.equal(mintableSynthetix.smocked.burnSecondary.calls.length, 1);
+						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][0], user1);
+						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][1].toString(), amount);
+					});
+
+					it('the message is relayed', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToOptimism);
+						const expectedData = getDataOfEncodedFncCall({
+							fnc: 'completeWithdrawal',
+							args: [user1, amount],
 						});
+
+						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[0][2], gasLimit.toString());
 					});
 
-					it('should call the burnSecondary() function in MintbaleSynthetix (check mock side effects)', async () => {
-						assert.equal(await this.mintableSynthetixMock.burnSecondaryCallAccount(), account1);
-						assert.equal(await this.mintableSynthetixMock.burnSecondaryCallAmount(), amount);
-					});
-
-					it('should emit a WithdrawalInitiated event', async () => {
+					it('and a WithdrawalInitiated event is emitted', async () => {
 						assert.eventEqual(withdrawalTx, 'WithdrawalInitiated', {
-							account: account1,
+							account: user1,
 							amount: amount,
 						});
 					});
+				});
+			});
 
-					it('called sendMessage with the expected target address', async () => {
-						assert.equal(
-							await this.messengerMock.sendMessageCallTarget(),
-							await this.synthetixBridgeToBase.xChainBridge()
-						);
+			describe('mintSecondaryFromDeposit', async () => {
+				describe('failure modes', () => {
+					it('should only allow the relayer (aka messenger) to call mintSecondaryFromDeposit()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: instance.mintSecondaryFromDeposit,
+							args: [user1, 100],
+							accounts,
+							address: smockedMessenger,
+							reason: 'Only the relayer can call this',
+						});
 					});
 
-					it('called sendMessage with the expected gasLimit', async () => {
-						assert.equal(await this.messengerMock.sendMessageCallGasLimit(), gasLimit);
+					it('should only allow the L1 bridge to invoke mintSecondaryFromDeposit() via the messenger', async () => {
+						// 'smock' the messenger to return a random msg sender
+						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						await assert.revert(
+							instance.mintSecondaryFromDeposit(user1, 100, {
+								from: smockedMessenger,
+							}),
+							'Only the L1 bridge can invoke'
+						);
+					});
+				});
+
+				describe('when invoked by the messenger (aka relayer)', async () => {
+					let mintSecondaryTx;
+					const mintSecondaryAmount = 100;
+					beforeEach('mintSecondaryFromDeposit is called', async () => {
+						mintSecondaryTx = await instance.mintSecondaryFromDeposit(user1, mintSecondaryAmount, {
+							from: smockedMessenger,
+						});
 					});
 
-					it('called sendMessage with the expected message', async () => {
-						const synthetixBridgeToOptimism = await SynthetixBridgeToOptimism.new(
-							owner,
-							this.resolverMock.address
-						);
+					it('should emit a MintedSecondary event', async () => {
+						assert.eventEqual(mintSecondaryTx, 'MintedSecondary', {
+							account: user1,
+							amount: mintSecondaryAmount,
+						});
+					});
+
+					it('then SNX is minted via MintableSynthetix.mintSecondary', async () => {
+						assert.equal(mintableSynthetix.smocked.mintSecondary.calls.length, 1);
+						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[0][0], user1);
 						assert.equal(
-							await this.messengerMock.sendMessageCallMessage(),
-							synthetixBridgeToOptimism.contract.methods
-								.completeWithdrawal(account1, amount)
-								.encodeABI()
+							mintableSynthetix.smocked.mintSecondary.calls[0][1].toString(),
+							mintSecondaryAmount
+						);
+					});
+				});
+			});
+
+			describe('mintSecondaryFromDepositForRewards', async () => {
+				describe('failure modes', () => {
+					it('should only allow the relayer (aka messenger) to call mintSecondaryFromDepositForRewards()', async () => {
+						await onlyGivenAddressCanInvoke({
+							fnc: instance.mintSecondaryFromDepositForRewards,
+							args: [100],
+							accounts,
+							address: smockedMessenger,
+							reason: 'Only the relayer can call this',
+						});
+					});
+
+					it('should only allow the L1 bridge to invoke mintSecondaryFromDepositForRewards() via the messenger', async () => {
+						// 'smock' the messenger to return a random msg sender
+						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
+						await assert.revert(
+							instance.mintSecondaryFromDeposit(user1, 100, {
+								from: smockedMessenger,
+							}),
+							'Only the L1 bridge can invoke'
 						);
 					});
 				});
@@ -116,56 +177,27 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				describe('when invoked by the bridge on the other layer', async () => {
 					let mintSecondaryTx;
 					const mintSecondaryAmount = 100;
-
-					before('mintSecondaryFromDeposit is called', async () => {
-						mintSecondaryTx = await this.messengerMock.mintSecondaryFromDeposit(
-							this.synthetixBridgeToBase.address,
-							account1,
-							mintSecondaryAmount
+					beforeEach('mintSecondaryFromDepositForRewards is called', async () => {
+						mintSecondaryTx = await instance.mintSecondaryFromDepositForRewards(
+							mintSecondaryAmount,
+							{
+								from: smockedMessenger,
+							}
 						);
 					});
 
-					it('should emit a MintedSecondary event', async () => {
-						assert.eventEqual(mintSecondaryTx, 'MintedSecondary', {
-							account: account1,
+					it('should emit a MintedSecondaryRewards event', async () => {
+						assert.eventEqual(mintSecondaryTx, 'MintedSecondaryRewards', {
 							amount: mintSecondaryAmount,
 						});
 					});
 
-					it('called Synthetix.mintSecondaryFromDeposit with the expected parameters', async () => {
-						assert.equal(await this.mintableSynthetixMock.mintSecondaryCallAccount(), account1);
-						assert.bnEqual(
-							await this.mintableSynthetixMock.mintSecondaryCallAmount(),
-							new BN(mintSecondaryAmount)
+					it('then SNX is minted via MintbaleSynthetix.mintSecondary', async () => {
+						assert.equal(mintableSynthetix.smocked.mintSecondaryRewards.calls.length, 1);
+						assert.equal(
+							mintableSynthetix.smocked.mintSecondaryRewards.calls[0][0].toString(),
+							mintSecondaryAmount
 						);
-					});
-				});
-
-				describe('modifiers and access permissions', async () => {
-					it('should only allow the relayer to call mintSecondaryFromDeposit()', async () => {
-						await onlyGivenAddressCanInvoke({
-							fnc: this.synthetixBridgeToBase.mintSecondaryFromDeposit,
-							args: [account1, 100],
-							accounts,
-							reason: 'Only the relayer can call this',
-						});
-					});
-
-					it('should only allow the  bridge to invoke mintSecondaryFromDeposit()', async () => {
-						// create a messenger mock with a random address as the bridge on L1
-						const crossDomainMessengerMock = await artifacts
-							.require('MockCrossDomainMessenger')
-							.new(mockAddress);
-						it('should revert when the original msg sender is not the right bridge ', async () => {
-							await assert.revert(
-								crossDomainMessengerMock.mintSecondaryFromDeposit(
-									this.synthetixBridgeToBase.address,
-									account1,
-									100
-								),
-								'Only bridge contract can invoke'
-							);
-						});
 					});
 				});
 			});

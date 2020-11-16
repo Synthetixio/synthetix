@@ -91,6 +91,7 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 const setupContract = async ({
 	accounts,
 	contract,
+	source = undefined, // if a separate source file should be used
 	mock = undefined, // if contract is GenericMock, this is the name of the contract being mocked
 	forContract = undefined, // when a contract is deployed for another (like Proxy for FeePool)
 	cache = {},
@@ -100,7 +101,7 @@ const setupContract = async ({
 }) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
-	const artifact = artifacts.require(contract);
+	const artifact = artifacts.require(source || contract);
 
 	const create = ({ constructorArgs }) => {
 		return artifact.new(
@@ -238,8 +239,7 @@ const setupContract = async ({
 		if (process.env.DEBUG) {
 			log(
 				'Deployed',
-				contract,
-				forContract ? 'for ' + forContract : '',
+				contract + (source ? ` (${source})` : '') + (forContract ? ' for ' + forContract : ''),
 				mock ? 'mock of ' + mock : '',
 				'to',
 				instance.address
@@ -338,16 +338,33 @@ const setupContract = async ({
 			});
 
 			// then configure everything else (including setting the associated contract of TokenState back to the Synthetix contract)
-			await Promise.all([
-				(cache['TokenStateMintableSynthetix'].setAssociatedContract(instance.address, {
-					from: owner,
-				}),
-				cache['ProxyMintableSynthetix'].setTarget(instance.address, { from: owner }),
-				cache['ProxyERC20MintableSynthetix'].setTarget(instance.address, { from: owner }),
-				instance.setProxy(cache['ProxyERC20MintableSynthetix'].address, {
-					from: owner,
-				})),
-			]);
+			await Promise.all(
+				[
+					(cache['TokenStateMintableSynthetix'].setAssociatedContract(instance.address, {
+						from: owner,
+					}),
+					cache['ProxyMintableSynthetix'].setTarget(instance.address, { from: owner }),
+					cache['ProxyERC20MintableSynthetix'].setTarget(instance.address, { from: owner }),
+					instance.setProxy(cache['ProxyERC20MintableSynthetix'].address, {
+						from: owner,
+					})),
+				]
+					.concat(
+						// If there's a rewards distribution that's not a mock
+						tryInvocationIfNotMocked({
+							name: 'RewardsDistribution',
+							fncName: 'setAuthority',
+							args: [instance.address],
+						}) || []
+					)
+					.concat(
+						tryInvocationIfNotMocked({
+							name: 'RewardsDistribution',
+							fncName: 'setSynthetixProxy',
+							args: [cache['ProxyERC20MintableSynthetix'].address], // will fail if no Proxy instantiated for MintableSynthetix
+						}) || []
+					)
+			);
 		},
 		async Synth() {
 			await Promise.all(
@@ -557,6 +574,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Exchanger',
+			source: 'ExchangerWithVirtualSynth',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
 			deps: [
 				'AddressResolver',
@@ -599,17 +617,22 @@ const setupAllContracts = async ({
 			mocks: [
 				'Exchanger',
 				'SupplySchedule',
-				'RewardEscrow',
 				'SynthetixEscrow',
-				'RewardsDistribution',
 				'Liquidations',
 				'Issuer',
-				'SynthetixState',
 				'SystemStatus',
 				'ExchangeRates',
 				'SynthetixBridgeToBase',
 			],
-			deps: ['Proxy', 'ProxyERC20', 'AddressResolver', 'TokenState'],
+			deps: [
+				'Proxy',
+				'ProxyERC20',
+				'AddressResolver',
+				'TokenState',
+				'RewardsDistribution',
+				'RewardEscrow',
+				'SynthetixState',
+			],
 		},
 		{
 			contract: 'SynthetixBridgeToOptimism',
@@ -692,7 +715,7 @@ const setupAllContracts = async ({
 	);
 
 	// now setup each contract in serial in case we have deps we need to load
-	for (const { contract, mocks = [], forContract } of contractsToFetch) {
+	for (const { contract, source, mocks = [], forContract } of contractsToFetch) {
 		// mark each mock onto the returnObj as true when it doesn't exist, indicating it needs to be
 		// put through the AddressResolver
 		// for all mocks required for this contract
@@ -724,6 +747,7 @@ const setupAllContracts = async ({
 		returnObj[contractRegistered + forContractName] = await setupContract({
 			accounts,
 			contract,
+			source,
 			forContract,
 			// the cache is a combination of the mocks and any return objects
 			cache: Object.assign({}, mocks, returnObj),
