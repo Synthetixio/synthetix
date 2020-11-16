@@ -15,7 +15,6 @@ import "./interfaces/IERC20.sol";
 
 
 // General market details
-//     Market size / Aggregate debt
 //     current funding rate
 //     Accrued funding sequence
 //     Fees
@@ -151,6 +150,16 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         int size = int(marketSize);
         int skew = int(marketSkew);
         return (uint(_abs(size.add(skew).div(2))), uint(_abs(size.sub(skew).div(2))));
+    }
+
+    function marketDebt() external view returns (uint debt, bool isInvalid) {
+        (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
+        int debt = int(price).multiplyDecimalRound(skew).add(entryNotionalSum).add(int(pendingOrderValue));
+
+        if (debt < 0) {
+            return 0;
+        }
+        return debt;
     }
 
     /* ---------- Position Details ---------- */
