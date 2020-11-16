@@ -31,7 +31,7 @@
 	},
 	"husky": {
 		"hooks": {
-			"pre-commit": "./hooks/circleci && npm run lint && pretty-quick --staged"
+			"pre-commit": "./hooks/circleci && pretty-quick --staged --verbose"
 		}
 	},
 	"repository": {
