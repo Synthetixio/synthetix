@@ -10,6 +10,7 @@ import "./interfaces/ISystemSettings.sol";
 import "./SafeDecimalMath.sol";
 
 
+// https://docs.synthetix.io/contracts/source/contracts/systemsettings
 contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -112,6 +113,10 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
 
     function minimumStakeTime() external view returns (uint) {
         return getMinimumStakeTime();
+    }
+
+    function debtSnapshotStaleTime() external view returns (uint) {
+        return getDebtSnapshotStaleTime();
     }
 
     function aggregatorWarningFlags() external view returns (address) {
@@ -233,6 +238,11 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         emit MinimumStakeTimeUpdated(_seconds);
     }
 
+    function setDebtSnapshotStaleTime(uint _seconds) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME, _seconds);
+        emit DebtSnapshotStaleTimeUpdated(_seconds);
+    }
+
     function setAggregatorWarningFlags(address _flags) external onlyOwner {
         require(_flags != address(0), "Valid address must be given");
         flexibleStorage().setAddressValue(SETTING_CONTRACT_NAME, SETTING_AGGREGATOR_WARNING_FLAGS, _flags);
@@ -252,5 +262,6 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     event RateStalePeriodUpdated(uint rateStalePeriod);
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
+    event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
 }

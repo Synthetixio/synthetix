@@ -1,6 +1,7 @@
 const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const abiDecoder = require('abi-decoder');
+const { smockit } = require('@eth-optimism/smock');
 
 const { assert } = require('./common');
 
@@ -33,7 +34,7 @@ module.exports = {
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
 			if (type === 'address') {
-				assert.equal(web3.utils.toChecksumAddress(value), arg);
+				assert.equal(web3.utils.toChecksumAddress(value), web3.utils.toChecksumAddress(arg));
 			} else if (/^u?int/.test(type)) {
 				assert.bnClose(new web3.utils.BN(value), arg, bnCloseVariance);
 			} else {
@@ -66,7 +67,7 @@ module.exports = {
 		);
 	},
 
-	async updateRatesWithDefaults({ exchangeRates, oracle }) {
+	async updateRatesWithDefaults({ exchangeRates, oracle, debtCache }) {
 		const timestamp = await currentTime();
 
 		const [SNX, sAUD, sEUR, sBTC, iBTC, sETH, ETH] = [
@@ -87,6 +88,8 @@ module.exports = {
 				from: oracle,
 			}
 		);
+
+		await debtCache.takeDebtSnapshot();
 	},
 
 	async onlyGivenAddressCanInvoke({
@@ -110,7 +113,7 @@ module.exports = {
 	},
 
 	// Helper function that can issue synths directly to a user without having to have them exchange anything
-	async issueSynthsToUser({ owner, synthetix, addressResolver, synthContract, user, amount }) {
+	async issueSynthsToUser({ owner, issuer, addressResolver, synthContract, user, amount }) {
 		// First override the resolver to make it seem the owner is the Synthetix contract
 		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], {
 			from: owner,
@@ -121,7 +124,9 @@ module.exports = {
 		await synthContract.issue(user, amount, {
 			from: owner,
 		});
-		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [synthetix.address], {
+
+		// Now make sure to set the issuer address back to what it was afterwards
+		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [issuer.address], {
 			from: owner,
 		});
 		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
@@ -230,5 +235,25 @@ module.exports = {
 		} else {
 			throw Error(`Section: ${section} unsupported`);
 		}
+	},
+
+	async prepareSmocks({ contracts, accounts = [] }) {
+		const mocks = {};
+		for (const [i, contract] of Object.entries(contracts).concat([
+			[contracts.length, 'AddressResolver'],
+		])) {
+			if (mocks[contract]) {
+				continue; // prevent dupes
+			}
+			mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
+		}
+
+		const resolver = mocks['AddressResolver'];
+
+		const returnMockFromResolver = contract => mocks[web3.utils.hexToUtf8(contract)].address;
+		resolver.smocked.requireAndGetAddress.will.return.with(returnMockFromResolver);
+		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
+
+		return { mocks, resolver };
 	},
 };

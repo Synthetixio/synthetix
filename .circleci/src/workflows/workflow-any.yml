@@ -1,0 +1,11 @@
+jobs:
+  - job-prepare
+  - job-lint:
+      requires:
+        - job-prepare
+  - job-compile:
+      requires:
+        - job-prepare
+  - job-static-analysis:
+      requires:
+        - job-prepare

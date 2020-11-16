@@ -45,7 +45,7 @@ const replaceSynths = async ({
 	yes,
 }) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	const { getTarget } = wrap({ network, fs, path });

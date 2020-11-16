@@ -20,7 +20,7 @@ const {
 
 const nominate = async ({ network, newOwner, contracts, deploymentPath, gasPrice, gasLimit }) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	if (!newOwner) {
@@ -46,7 +46,8 @@ const nominate = async ({ network, newOwner, contracts, deploymentPath, gasPrice
 		}
 	});
 	if (!contracts.length) {
-		contracts = Object.keys(config);
+		// if contracts not supplied, use all contracts except the DappMaintenance (UI control)
+		contracts = Object.keys(config).filter(contract => contract !== 'DappMaintenance');
 	}
 
 	const { providerUrl, privateKey } = loadConnections({ network });

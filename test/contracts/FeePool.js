@@ -43,6 +43,7 @@ contract('FeePool', async accounts => {
 		await exchangeRates.updateRates([sAUD, SNX], ['0.5', '0.1'].map(toUnit), timestamp, {
 			from: oracle,
 		});
+		await debtCache.takeDebtSnapshot();
 	};
 
 	const closeFeePeriod = async () => {
@@ -66,6 +67,7 @@ contract('FeePool', async accounts => {
 	const [sUSD, sAUD, SNX] = ['sUSD', 'sAUD', 'SNX'].map(toBytes32);
 
 	let feePool,
+		debtCache,
 		feePoolProxy,
 		FEE_ADDRESS,
 		synthetix,
@@ -87,6 +89,7 @@ contract('FeePool', async accounts => {
 			ExchangeRates: exchangeRates,
 			FeePool: feePool,
 			FeePoolState: feePoolState,
+			DebtCache: debtCache,
 			ProxyFeePool: feePoolProxy,
 			RewardEscrow: rewardEscrow,
 			Synthetix: synthetix,
@@ -102,7 +105,7 @@ contract('FeePool', async accounts => {
 				'FeePool',
 				'FeePoolEternalStorage',
 				'FeePoolState',
-				'Issuer',
+				'DebtCache',
 				'Proxy',
 				'Synthetix',
 				'SynthetixState',
@@ -136,7 +139,7 @@ contract('FeePool', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: feePool.abi,
-			ignoreParents: ['Proxyable', 'SelfDestructible', 'LimitedSetup', 'MixinResolver'],
+			ignoreParents: ['Proxyable', 'LimitedSetup', 'MixinResolver'],
 			expected: [
 				'appendAccountIssuanceRecord',
 				'recordFeePaid',
@@ -821,6 +824,7 @@ contract('FeePool', async accounts => {
 									from: oracle,
 								}
 							);
+							await debtCache.takeDebtSnapshot();
 						});
 
 						if (type === 'none') {
@@ -1089,6 +1093,7 @@ contract('FeePool', async accounts => {
 				await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 					from: oracle,
 				});
+				await debtCache.takeDebtSnapshot();
 
 				assert.equal(await feePool.isFeesClaimable(owner), true);
 			});
@@ -1105,6 +1110,7 @@ contract('FeePool', async accounts => {
 				await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 					from: oracle,
 				});
+				await debtCache.takeDebtSnapshot();
 
 				const issuanceRatio = fromUnit(await feePool.issuanceRatio());
 				const penaltyThreshold = fromUnit(await feePool.targetThreshold());
@@ -1129,6 +1135,7 @@ contract('FeePool', async accounts => {
 					await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 						from: oracle,
 					});
+					await debtCache.takeDebtSnapshot();
 				}
 			});
 
@@ -1163,6 +1170,7 @@ contract('FeePool', async accounts => {
 				await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 					from: oracle,
 				});
+				await debtCache.takeDebtSnapshot();
 
 				// fees available is unaffected but not claimable
 				assert.bnClose(await getFeesAvailable(account1), fee.div(web3.utils.toBN('2')));
@@ -1205,6 +1213,7 @@ contract('FeePool', async accounts => {
 				await exchangeRates.updateRates([SNX], [newRate], timestamp, {
 					from: oracle,
 				});
+				await debtCache.takeDebtSnapshot();
 
 				// fees available is unaffected but not claimable
 				assert.bnClose(await getFeesAvailable(account1), fee.div(web3.utils.toBN('2')));
@@ -1314,6 +1323,7 @@ contract('FeePool', async accounts => {
 									from: oracle,
 								}
 							);
+							await debtCache.takeDebtSnapshot();
 						});
 
 						if (type === 'none') {

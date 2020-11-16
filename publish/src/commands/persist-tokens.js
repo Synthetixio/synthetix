@@ -7,7 +7,7 @@ const { confirmAction, ensureNetwork, loadConnections } = require('../util');
 const { gray, yellow, red, green } = require('chalk');
 const Web3 = require('web3');
 const w3utils = require('web3-utils');
-
+const axios = require('axios');
 const { schema } = require('@uniswap/token-lists');
 
 const Ajv = require('ajv');
@@ -33,6 +33,7 @@ const persistTokens = async ({
 	network,
 	yes,
 	privateKey,
+	assetsVersion,
 	gasPrice = DEFAULTS.gasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 }) => {
@@ -56,7 +57,8 @@ const persistTokens = async ({
 
 	const [major, minor, patch] = version.split(/\.|-/);
 
-	const baseURI = 'https://raw.githubusercontent.com/Synthetixio/synthetix-assets/v2.0.1';
+	const baseURI = `https://raw.githubusercontent.com/Synthetixio/synthetix-assets/v${assetsVersion}`;
+
 	const output = {
 		name: 'Synthetix',
 		logoURI: `${baseURI}/snx/SNX.svg`,
@@ -71,14 +73,14 @@ const persistTokens = async ({
 			},
 			inverse: {
 				name: 'Inverse Synth',
-				description: 'Tokens that track inverted price movement of an underlying asset. ',
+				description: 'Tokens that track inverted price movement of an underlying asset.',
 			},
 			index: {
 				name: 'Index Synth',
 				description:
 					'Tokens that are compromised of a basket of underlying assets ' +
 					'determined by a set number of units of each. These units are ' +
-					'are based on a marketcap weighting of each asset',
+					'are based on a marketcap weighting of each asset.',
 			},
 		},
 		version: {
@@ -94,11 +96,19 @@ const persistTokens = async ({
 			decimals,
 			logoURI: baseURI + (symbol === 'SNX' ? '/snx/SNX.svg' : `/synths/${symbol}.svg`),
 			tags: []
-				.concat(symbol !== 'SNX' ? 'synth' : [])
 				.concat(index ? 'index' : [])
-				.concat(inverted ? 'inverse' : []),
+				.concat(inverted ? 'inverse' : [])
+				.concat(symbol !== 'SNX' ? 'synth' : []),
 		})),
 	};
+
+	// check version exists
+	try {
+		await axios.get(output.logoURI);
+	} catch (err) {
+		console.log(red('Cannot find uri:', output.logoURI));
+		process.exit(1);
+	}
 
 	console.log(JSON.stringify(output, null, 2));
 
@@ -110,7 +120,7 @@ const persistTokens = async ({
 			red('Failed validation against schema'),
 			util.inspect(ajv.errors, false, null, true)
 		);
-		process.exit();
+		process.exit(1);
 	}
 
 	if (!yes) {
@@ -132,7 +142,7 @@ const persistTokens = async ({
 		);
 	} catch (err) {
 		console.log(red(err));
-		process.exit();
+		process.exit(1);
 	}
 
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -168,7 +178,7 @@ const persistTokens = async ({
 		);
 	} catch (err) {
 		console.log(red(err));
-		process.exit();
+		process.exit(1);
 	}
 };
 
@@ -192,6 +202,7 @@ module.exports = {
 				'-p, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
 			)
+			.option('-v, --assets-version <value>', 'Version of the synthetix-assets to use')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.action(persistTokens),
 };

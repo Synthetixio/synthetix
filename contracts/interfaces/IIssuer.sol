@@ -3,6 +3,7 @@ pragma solidity >=0.4.24;
 import "../interfaces/ISynth.sol";
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/iissuer
 interface IIssuer {
     // Views
     function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);
@@ -44,6 +45,8 @@ interface IIssuer {
         );
 
     function synths(bytes32 currencyKey) external view returns (ISynth);
+
+    function getSynths(bytes32[] calldata currencyKeys) external view returns (ISynth[] memory);
 
     function synthsByAddress(address synthAddress) external view returns (bytes32);
 

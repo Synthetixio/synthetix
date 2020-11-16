@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 
+// https://docs.synthetix.io/contracts/source/libraries/addresslistlib/
 library AddressListLib {
     struct AddressList {
         address[] elements;

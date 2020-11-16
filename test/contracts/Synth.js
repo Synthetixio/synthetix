@@ -36,6 +36,7 @@ contract('Synth', async accounts => {
 		systemStatus,
 		systemSettings,
 		exchanger,
+		debtCache,
 		issuer;
 
 	before(async () => {
@@ -47,6 +48,7 @@ contract('Synth', async accounts => {
 			SystemStatus: systemStatus,
 			Synth: sUSDContract,
 			Exchanger: exchanger,
+			DebtCache: debtCache,
 			Issuer: issuer,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
@@ -59,9 +61,11 @@ contract('Synth', async accounts => {
 				'Synthetix',
 				'SystemStatus',
 				'AddressResolver',
+				'DebtCache',
 				'Issuer', // required to issue via Synthetix
 				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
 				'SystemSettings',
+				'FlexibleStorage',
 			],
 		}));
 
@@ -77,6 +81,7 @@ contract('Synth', async accounts => {
 		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
 			from: oracle,
 		});
+		await debtCache.takeDebtSnapshot();
 
 		// set default issuanceRatio to 0.2
 		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
@@ -702,6 +707,7 @@ contract('Synth', async accounts => {
 						AddressResolver: addressResolver,
 						SystemStatus: systemStatus,
 						Issuer: issuer,
+						DebtCache: debtCache,
 						Exchanger: exchanger,
 						FeePool: feePool,
 						Synthetix: synthetix,
@@ -715,13 +721,14 @@ contract('Synth', async accounts => {
 				await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
 					from: oracle,
 				});
+				await debtCache.takeDebtSnapshot();
 			});
 
 			it('when transferring it to FEE_ADDRESS it should exchange into sUSD first before sending', async () => {
 				// allocate the user some sEUR
 				await issueSynthsToUser({
 					owner,
-					synthetix,
+					issuer,
 					addressResolver,
 					synthContract: sEURContract,
 					user: owner,

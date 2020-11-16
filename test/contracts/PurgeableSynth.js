@@ -30,8 +30,7 @@ contract('PurgeableSynth', accounts => {
 	let TokenState;
 	let Proxy;
 
-	let synthetix,
-		exchangeRates,
+	let exchangeRates,
 		exchanger,
 		systemSettings,
 		sUSDContract,
@@ -40,6 +39,7 @@ contract('PurgeableSynth', accounts => {
 		systemStatus,
 		timestamp,
 		addressResolver,
+		debtCache,
 		issuer;
 
 	before(async () => {
@@ -53,11 +53,11 @@ contract('PurgeableSynth', accounts => {
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
-			Synthetix: synthetix,
 			SynthsUSD: sUSDContract,
 			SynthsAUD: sAUDContract,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
+			DebtCache: debtCache,
 			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
@@ -65,6 +65,7 @@ contract('PurgeableSynth', accounts => {
 			contracts: [
 				'ExchangeRates',
 				'Exchanger',
+				'DebtCache',
 				'Issuer',
 				'FeePool',
 				'FeePoolEternalStorage',
@@ -168,6 +169,7 @@ contract('PurgeableSynth', accounts => {
 						from: oracle,
 					}
 				);
+				await debtCache.takeDebtSnapshot();
 			});
 
 			describe('and a user holds 100K USD worth of purgeable synth iETH', () => {
@@ -180,7 +182,7 @@ contract('PurgeableSynth', accounts => {
 					const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
 					await issueSynthsToUser({
 						owner,
-						synthetix,
+						issuer,
 						addressResolver,
 						synthContract: iETHContract,
 						user: account1,
@@ -214,6 +216,7 @@ contract('PurgeableSynth', accounts => {
 							await exchangeRates.updateRates([iETH], ['170'].map(toUnit), await currentTime(), {
 								from: oracle,
 							});
+							await debtCache.takeDebtSnapshot();
 						});
 						it('then purge() still works as expected', async () => {
 							await iETHContract.purge([account1], { from: owner });
@@ -301,7 +304,7 @@ contract('PurgeableSynth', accounts => {
 						const iETHAmount = await exchangeRates.effectiveValue(sUSD, amountToExchange, iETH);
 						await issueSynthsToUser({
 							owner,
-							synthetix,
+							issuer,
 							addressResolver,
 							synthContract: iETHContract,
 							user: account2,
@@ -337,6 +340,7 @@ contract('PurgeableSynth', accounts => {
 							await exchangeRates.updateRates([iETH], ['160'].map(toUnit), timestamp, {
 								from: oracle,
 							});
+							await debtCache.takeDebtSnapshot();
 						});
 						describe('when purge is invoked with just one account', () => {
 							let txn;
@@ -407,6 +411,7 @@ contract('PurgeableSynth', accounts => {
 				await exchangeRates.updateRates([sAUD], ['0.776845993'].map(toUnit), timestamp, {
 					from: oracle,
 				});
+				await debtCache.takeDebtSnapshot();
 			});
 			describe('when a user holds some sAUD', () => {
 				let userBalanceOfOldSynth;

@@ -1,7 +1,7 @@
 pragma solidity >=0.4.24;
 
 
-// https://docs.synthetix.io/contracts/source/interfaces/IExchangeRates
+// https://docs.synthetix.io/contracts/source/interfaces/iexchangerates
 interface IExchangeRates {
     // Structs
     struct RateAndUpdatedTime {
@@ -84,6 +84,8 @@ interface IExchangeRates {
     function rateAndTimestampAtRound(bytes32 currencyKey, uint roundId) external view returns (uint rate, uint time);
 
     function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time);
+
+    function rateAndInvalid(bytes32 currencyKey) external view returns (uint rate, bool isInvalid);
 
     function rateForCurrency(bytes32 currencyKey) external view returns (uint);
 
