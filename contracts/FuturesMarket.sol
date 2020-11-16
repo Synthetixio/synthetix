@@ -22,6 +22,11 @@ import "./interfaces/IERC20.sol";
 // Details for a particular position
 //     Funding
 //     Net funding
+//
+// Functionality
+//     Gas tank
+//     Multi order confirmation
+//     Hook up to issuance/burning
 
 // TODO: IFuturesMarket interface
 
