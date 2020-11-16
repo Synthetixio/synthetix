@@ -10,6 +10,7 @@ import "./MixinResolver.sol";
 import "./SafeDecimalMath.sol";
 
 import "./MultiCollateralState.sol";
+import "./MultiCollateralManager.sol";
 
 import "./interfaces/IMultiCollateral.sol";
 
@@ -30,13 +31,12 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
     
-    uint256 internal constant SECONDS_IN_A_YEAR = 31536000;
-
     // The collateral that this contract stores
     bytes32 public collateralKey;
 
     bytes32 public sUSD = "sUSD";
 
+    address public manager;
 
     // ========== STATE VARIABLES ==========
 
@@ -64,8 +64,9 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_EXRATES, CONTRACT_FEEPOOL];
+    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_EXRATES, CONTRACT_FEEPOOL, CONTRACT_SYNTHSUSD];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -73,13 +74,13 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         address payable _proxy,
         MultiCollateralState _multiCollateralState,
         address _owner,
+        address _manager,
         address _resolver,
         bytes32 _collateralKey, // synth associated with the collateral.
         bytes32[] memory _synths,
         uint _minimumCollateralisation,
         uint _interestRate,
-        uint _liquidationPenalty,
-        uint _debtCeiling
+        uint _liquidationPenalty
         ) public
         Owned(_owner)
         Pausable()
@@ -92,7 +93,8 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         setMinimumCollateralisation(_minimumCollateralisation);
         setBaseRate(_interestRate);
         setLiquidationPenalty(_liquidationPenalty);
-        setDebtCeiling(_debtCeiling);
+
+        manager = _manager;
 
         for (uint i = 0; i < _synths.length; i++) {
             appendToAddressCache(_synths[i]);
@@ -116,6 +118,10 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         return ISynth(requireAndGetAddress(synth, "Missing synths address"));
     }
 
+    function synthsUSD() internal view returns (ISynth) {
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing synthsUSD address"));
+    }
+
     function exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
@@ -124,17 +130,21 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
     }
 
+    function _manager() internal view returns (MultiCollateralManager) {
+        return MultiCollateralManager(manager);
+    }
+
     /* ---------- Public Views ---------- */
 
-    function collateralRatio(Loan memory loan) public view returns (uint256 cratio) {
-        // Any interest accrued prior is rolled up into loan amount
-        // Do I need this line still?
-        uint256 loanAmountWithAccruedInterest = loan.amount.add(loan.accruedInterest);
+    function issued(bytes32 synth) external view returns (uint256 long, uint256 short) {
+        (long, short) = multiCollateralState.getBalance(synth);
+    }
 
+    function collateralRatio(Loan memory loan) public view returns (uint256 cratio) {
         // Wwe don't need to do this if we are in the same currency i.e sETH for ETH
         uint256 cvalue = loan.collateral.multiplyDecimal(exchangeRates().rateForCurrency(collateralKey));
 
-        cratio = cvalue.divideDecimal(loanAmountWithAccruedInterest);
+        cratio = cvalue.divideDecimal(loan.amount.add(loan.accruedInterest));
     }
 
     function issuanceRatio() public view returns (uint256 ratio) {
@@ -155,7 +165,7 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
     function liquidationAmount(Loan memory loan) public view returns (uint256 amount) {
-        uint256 debtValue = loan.amount.add(loan.accruedInterest);
+        uint256 debtValue = loan.amount.add(loan.accruedInterest).multiplyDecimal(exchangeRates().rateForCurrency(loan.currency));
         uint256 collateralValue = loan.collateral.multiplyDecimal(exchangeRates().rateForCurrency(collateralKey));
 
         uint unit = SafeDecimalMath.unit();
@@ -174,49 +184,6 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         return collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
     }
 
-     function getFundingRate(bytes32 synth) public view returns (uint256 fundingRate) {
-
-        // what is the risk here? if its ETH/sETH then we are safe
-        // if (synth == collateralKey) {
-        //     return baseInterestRate;
-        // } else if (synth == sUSD) {
-        //     // pay interest based on utilisation?
-        //     // return baseInterestRate + utilisation;
-        // } else {
-        //     // here we are doing things that introduce skew.
-
-        //     // this synth has a balance in the debt pool. we wish to charge
-        //     // the overweighted side 
-        //     // if (longs > shorts)
-        // }
-
-        // Here I can do things like, read the maker rate. Check synth skew. CHeck debt pool.
-
-        // When I issue a certain synth says, 'sBTC', I want to check
-        // the total amount of sBTC and iBTC in the market.
-        // If sBTC > iBTC then they pay a positive rate r.
-        // If iBTC < sBTC then they pay a negative rate r (or 0).
-
-        // uint256 longs = issuer().totalIssuedSynths(synth, false); 
-
-        // uint256 longs = 10000 * SafeDecimalMath.unit();
-
-        // uint256 shorts = 5000 * SafeDecimalMath.unit();
-
-        // // need to sup the bigger from the smaller and then note the sign.
-        // uint256 skew = longs.sub(shorts);
-
-        // uint256 proportionalSkew = skew.divideDecimal(longs.add(shorts));
-
-        // uint256 maxSkewThreshold = SafeDecimalMath.unit();
-
-        // uint256 maxRate = (10 * SafeDecimalMath.unit()) / 100;
-        
-        // uint256 fundingRate = proportionalSkew.divideDecimal(maxSkewThreshold).multiplyDecimal(maxRate);
-
-        return baseInterestRate;
-     }
-
     /* ---------- UTILITIES ---------- */
     
     // Check the account has enough of the synth to make the payment
@@ -225,7 +192,7 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
     }
 
     function _checkLoanIsOpen(Loan memory _loan) internal pure {
-        require(_loan.interestIndex > 0, "Loan already closed");
+        require(_loan.interestIndex > 0, "This loan does not exist, or it has already been closed");
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -251,6 +218,10 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
 
     function setDebtCeiling(uint256 _debtCeiling) public onlyOwner {
         debtCeiling = _debtCeiling;
+    }
+
+    function setManager(address _manager) public onlyOwner {
+        
     }
 
     /* ---------- LOAN INTERACTIONS ---------- */
@@ -311,15 +282,16 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
 
         if (short) {
             // require no open shorts for this synth by this account? Or do we not care about the implicit leverage?
-            
-
             // Go back to the collateral currency
             loanAmountMinusFee = exchangeRates().effectiveValue(currency, loanAmountMinusFee, collateralKey);
-            synth(synths[collateralKey]).issue(msg.sender, loanAmountMinusFee);
-            multiCollateralState.incrementShorts(currency, amount);
+            // this would be wrong if we allowed non SUSD contracts too short. But I don't think we will.
+            synthsUSD().issue(msg.sender, loanAmountMinusFee);
+            // multiCollateralState.incrementShorts(currency, amount);
+            _manager().incrementShorts(currency, amount);
         } else {
             synth(synths[currency]).issue(msg.sender, loanAmountMinusFee);
-            multiCollateralState.incrementLongs(currency, amount);
+            // multiCollateralState.incrementLongs(currency, amount);
+            _manager().incrementLongs(currency, amount);
         }
 
         // 8. Emit event
@@ -339,34 +311,58 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         loan = accrueInterest(loan);
 
         // 4. Work out the total amount owing on the loan.
-        uint256 amountOwing = loan.amount.add(loan.accruedInterest);
+        uint256 total = loan.amount.add(loan.accruedInterest);
 
-        // 5. Check they hvae enough balance to close the loan.
-        _checkSynthBalance(loan.account, loan.currency, amountOwing);
+        // 5. Check they have enough balance to close the loan.
+        _checkSynthBalance(loan.account, loan.currency, total);
 
         // 6. Burn the synths
-        _burnSynths(borrower, loan.currency, amountOwing, loan.short);
+        // multiCollateralState.decrementLongs(loan.currency, loan.amount);
+        _manager().decrementLongs(loan.currency, loan.amount);
+        synth(synths[loan.currency]).burn(borrower, total);
 
         // 7. Pay fees
         _payFees(loan.accruedInterest, loan.currency);
 
-        // 8. Liquidation
-        // if (liquidation) {
-        //     // Work out how much collateral to redeem
-        //     uint256 totalCollateralLiquidated = collateralRedeemed(loan.currency, amountToLiquidate);
-
-        //     msg.sender.transfer(totalCollateralLiquidated);
-        // }
-
-        // 9. 
-
-        collateral = 0;
+        collateral = loan.collateral;
 
         // 5. Record loan as closed
-        loan.interestIndex = 0;
+        loan.amount = 0;
+        loan.collateral = 0;
+        loan.accruedInterest = 0;
+        loan.interestIndex = 0;        
         multiCollateralState.updateLoan(loan);
 
         emit LoanClosed(borrower, loanID, loan.accruedInterest);
+    }
+
+    function closeByLiquidation(address borrower, address liquidator, Loan memory loan) internal returns(uint256 collateral) {
+        // here we need to
+        // 0 out the loan amount and collateral
+        // return the collateral so it can be transferred in the erc20/eth contract
+        // emit an event
+        // do I need to accrue interest here if it was already done in the liquidation function?
+        uint256 total = loan.amount.add(loan.accruedInterest);
+
+        collateral = loan.collateral;
+        
+        // 6. Burn the synths
+        // multiCollateralState.decrementLongs(loan.currency, loan.amount);
+        _manager().decrementLongs(loan.currency, loan.amount);
+        synth(synths[loan.currency]).burn(liquidator, total);
+
+        // 7. Pay fees
+        _payFees(loan.accruedInterest, loan.currency);
+
+        loan.amount = 0;
+        loan.collateral = 0;
+        loan.accruedInterest = 0;
+        loan.interestIndex = 0;
+        multiCollateralState.updateLoan(loan);
+
+        // emit LoanClosedByLiquidation(liquidator, collateral);
+
+        return collateral;
     }
 
     // Deposits collateral to the specified loan
@@ -395,6 +391,11 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         emit CollateralDeposited(account, id, amount, loan.collateral);
     }
 
+    ////// WITHDRAW PATTERN ////////
+    ////// WITHDRAW PATTERN ////////
+    ////// WITHDRAW PATTERN ////////
+    ////// WITHDRAW PATTERN ////////
+
     // Withdraws collateral from the specified loan
     function withdraw(uint256 id, uint256 amount) internal {
         systemStatus().requireIssuanceActive();
@@ -418,10 +419,10 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         loan.collateral = loan.collateral.sub(amount);
 
         // 5. Workout what the new c ratio would be.
-        uint256 collateralRatioAfter = collateralRatio(loan);
+        uint256 cratioAfter = collateralRatio(loan);
 
         // 6. Check that the new amount does not put them under the minimum c ratio.
-        require(collateralRatioAfter > minimumCollateralisation, "Collateral ratio below liquidation after withdraw");
+        require(cratioAfter > minimumCollateralisation, "Collateral ratio below liquidation after withdraw");
 
         // 7. Store the loan.
         multiCollateralState.updateLoan(loan);
@@ -443,17 +444,17 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         // 3. Check the loan is open.
         _checkLoanIsOpen(loan);
 
-        // 4. Check they have enough balance to make the payment.
-        _checkSynthBalance(msg.sender, loan.currency, payment);
-
-        // 5. Accrue interest.
+        // 4. Accrue interest.
         loan = accrueInterest(loan);
+
+        // 5. Check they have enough balance to make the payment.
+        _checkSynthBalance(msg.sender, loan.currency, payment);
         
         // 6. Get the collateral ratio.
-        uint256 collateralRatio = collateralRatio(loan);
+        uint256 cratio = collateralRatio(loan);
 
         // 7 Check they are eligible for liquidation.
-        require(collateralRatio < minimumCollateralisation, "Collateral ratio above liquidation ratio");
+        require(cratio < minimumCollateralisation, "Collateral ratio above liquidation ratio");
 
         // 8. Determine how much needs to be liquidated to fix their c ratio.
         uint256 liquidationAmount = liquidationAmount(loan);
@@ -468,19 +469,18 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         if (amountToLiquidate > amountOwing) {
             // cap amountToLiquidate here at amountOwing.
             // close the loan
-        } else {
-
+            return closeByLiquidation(borrower, msg.sender, loan);
         }
 
         // 10. Process the payment to workout interest/principal split.
         loan = _processPayment(loan, amountToLiquidate);
 
         // 11. Work out how much collateral to redeem
-        uint256 totalCollateralLiquidated = collateralRedeemed(loan.currency, amountToLiquidate);
-        loan.collateral = loan.collateral.sub(totalCollateralLiquidated);
+        uint256 collateralLiquidated = collateralRedeemed(loan.currency, amountToLiquidate);
+        loan.collateral = loan.collateral.sub(collateralLiquidated);
 
-        // 12. burn sUSD from msg.sender for amount to liquidate
-        _burnSynths(msg.sender, loan.currency, amountToLiquidate, loan.short);
+        // 12. burn synths from msg.sender for amount to liquidate
+        synth(synths[loan.currency]).burn(msg.sender, amountToLiquidate);
 
         // 15. Store the loan.
         multiCollateralState.updateLoan(loan);
@@ -491,10 +491,10 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
             id,
             msg.sender,
             amountToLiquidate,
-            totalCollateralLiquidated
+            collateralLiquidated
         );
 
-        return totalCollateralLiquidated;
+        return collateralLiquidated;
     }
 
     // Make a repayment on the loan
@@ -511,11 +511,11 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         // 2. Check the loan is still open
         _checkLoanIsOpen(loan);
 
-        // 3. Check the spender has enough synths to make the repayment
-        _checkSynthBalance(repayer, loan.currency, payment);
-
         // 4. Accrue interest.
         loan = accrueInterest(loan);
+
+        // 5. Check the spender has enough synths to make the repayment
+        _checkSynthBalance(repayer, loan.currency, payment);
 
         // 4. Work out the total amount owing on the loan.
         uint256 amountOwing = loan.amount.add(loan.accruedInterest);
@@ -527,7 +527,7 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
         loan = _processPayment(loan, payment);
 
         // 6. Burn synths from the payer
-        _burnSynths(repayer, loan.currency, payment, loan.short);
+        synth(synths[loan.currency]).burn(repayer, payment);
 
         // 9. Store the loan
         multiCollateralState.updateLoan(loan);
@@ -551,8 +551,13 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
          uint256 lastCumulativeRate = rates[rates.length - 1];
 
          // 4. Get the instantaneous rate. i
-         uint256 instantaneousRate = getFundingRate(loan.currency);
-        
+        uint256 instantaneousRate = baseInterestRate;
+        if (loan.short) {
+            instantaneousRate = _manager().getShortRate(loan.currency);
+        } else {
+            instantaneousRate = _manager().getBorrowRate();
+        }
+
          // 5. Get the time since we last updated the rate.
          uint256 timeDelta = (block.timestamp - lastTime) * SafeDecimalMath.unit();
 
@@ -585,25 +590,29 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
      }
 
     // This function works out the amount of interest and principal after a repayment is made.
-    // Will be used by repayLoan and liquidateLoan.
+    // It is called when payments are made either as repayments or as part of a liquidation.
     function _processPayment(Loan memory loanBefore, uint256 payment)
         internal
         returns (Loan memory loanAfter)
     {
         loanAfter = loanBefore;
-        uint256 interestPaid = 0;
-
+        
         if (payment > 0 && loanBefore.accruedInterest > 0) {
-            interestPaid = payment > loanBefore.accruedInterest ? loanBefore.accruedInterest : payment;
+            uint256 interestPaid = payment > loanBefore.accruedInterest ? loanBefore.accruedInterest : payment;
             loanAfter.accruedInterest = loanBefore.accruedInterest.sub(interestPaid);
             payment = payment.sub(interestPaid);
 
             _payFees(interestPaid, loanBefore.currency);
+
         }
 
         // If there is more payment left after the interest, pay down the principal.
         if (payment > 0) {
             loanAfter.amount = loanBefore.amount.sub(payment);
+
+            // And get the manager to reduce the total long/short balance.
+            loanAfter.short ? _manager().decrementShorts(loanAfter.currency, payment) : _manager().decrementLongs(loanAfter.currency, payment);
+
         }
     }  
     
@@ -613,23 +622,11 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
             if (_synth != sUSD) {
                 amount = exchangeRates().effectiveValue(_synth, amount, sUSD);
             }
-            synth(synths[sUSD]).issue(feePool().FEE_ADDRESS(), amount);
+            synthsUSD().issue(feePool().FEE_ADDRESS(), amount);
             feePool().recordFeePaid(amount);
 
             // are you supposed to record this?
     }
-
-    // Burn an amount of synths from the account
-    function _burnSynths(address account, bytes32 _synth, uint amount, bool short) internal {
-        synth(synths[_synth]).burn(account, amount);
-        // decrement synths here.
-        if (short) {
-            multiCollateralState.decrementShorts(_synth, amount);
-        } else {
-            multiCollateralState.decrementLongs(_synth, amount);
-        }
-    }
-
 
     /* ========== MODIFIERS ========== */
 
@@ -660,4 +657,5 @@ contract MultiCollateral is IMultiCollateral, Owned, MixinResolver, Pausable {
     event CollateralDeposited(address indexed account, uint256 id, uint256 collateralAmount, uint256 collateralAfter);
     event CollateralWithdrawn(address indexed account, uint256 id, uint256 amountWithdrawn, uint256 collateralAfter);
     event LoanRepaymentMade(address indexed account, address indexed repayer, uint256 id, uint256 repaidAmount, uint256 newLoanAmount);
+    event LoanClosedByLiquidation(address indexed liquidator, uint256 collateral);
 }

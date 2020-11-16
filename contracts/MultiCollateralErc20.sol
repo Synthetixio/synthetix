@@ -21,13 +21,13 @@ contract MultiCollateralErc20 is MultiCollateral {
         address payable _proxy,
         MultiCollateralState _multiCollateralState,
         address _owner,
+        address _manager,
         address _resolver,
         bytes32 _collateralKey,
         bytes32[] memory _synthKeys,
         uint _collateralisationRatio,
         uint _interestRate,
         uint _liquidationPenalty,
-        uint _debtCeiling,
         address _underlyingContract
     ) 
     public 
@@ -35,13 +35,13 @@ contract MultiCollateralErc20 is MultiCollateral {
         _proxy,
         _multiCollateralState, 
         _owner, 
+        _manager,
         _resolver, 
         _collateralKey, 
         _synthKeys, 
         _collateralisationRatio, 
         _interestRate, 
-        _liquidationPenalty, 
-        _debtCeiling
+        _liquidationPenalty
         )
     {
         underlyingContract = _underlyingContract;

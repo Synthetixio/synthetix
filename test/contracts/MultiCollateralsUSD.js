@@ -167,6 +167,8 @@ contract('MultiCollateralErc20', async accounts => {
 			}
 		);
 
+		await mcstate.addCurrency(sBTC, { from: owner });
+
 		// Sync feePool with imported mockIssuer
 		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
@@ -296,7 +298,7 @@ contract('MultiCollateralErc20', async accounts => {
 				shortId = await getLoanID(shortTx);
 			});
 
-			xit('should emit the event', async () => {
+			it('should emit the event', async () => {
 				assert.eventEqual(shortTx, 'LoanCreated', {
 					account: account1,
 					loanID: shortId,

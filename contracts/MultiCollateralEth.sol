@@ -11,25 +11,25 @@ contract MultiCollateralEth is MultiCollateral {
         address payable _proxy,
         MultiCollateralState _multiCollateralState,
         address _owner,
+        address _manager,
         address _resolver,
         bytes32 _collateralKey,
         bytes32[] memory _synthKeys,
         uint _minimumCollateralisation,
         uint _interestRate,
-        uint _liquidationPenalty,
-        uint _debtCeiling
+        uint _liquidationPenalty
     ) public 
         MultiCollateral(
         _proxy,
         _multiCollateralState, 
         _owner, 
+        _manager,
         _resolver, 
         _collateralKey, 
         _synthKeys, 
         _minimumCollateralisation, 
         _interestRate, 
-        _liquidationPenalty, 
-        _debtCeiling
+        _liquidationPenalty
         )
     { }
 
@@ -73,6 +73,8 @@ contract MultiCollateralEth is MultiCollateral {
 
         // Send liquidated ETH collateral to the liquidator
         msg.sender.transfer(collateralLiquidated);
+
+        emit LoanClosedByLiquidation(msg.sender, collateralLiquidated);
 
     }
 }

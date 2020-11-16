@@ -37,7 +37,7 @@ contract('MultiCollateralEth', async accounts => {
 	const DAY = 86400;
 	const WEEK = 604800;
 	const MONTH = 2629743;
-	const YEAR = 31536000;
+	const YEAR = 31556926; // 31556926
 
 	const sUSD = toBytes32('sUSD');
 	const sETH = toBytes32('sETH');
@@ -64,6 +64,10 @@ contract('MultiCollateralEth', async accounts => {
 
 	let mceth,
 		mcstate,
+		manager,
+		issuer,
+		synths,
+		systemSettings,
 		synthetix,
 		feePool,
 		exchangeRates,
@@ -82,27 +86,26 @@ contract('MultiCollateralEth', async accounts => {
 
 	const issuesUSDToAccount = async (issueAmount, receiver) => {
 		// Set up the depositor with an amount of synths to deposit.
-		await sUSDSynth.transfer(receiver, issueAmount, {
+		await sUSDSynth.issue(receiver, issueAmount, {
 			from: owner,
 		});
 	};
 
 	const issuesETHToAccount = async (issueAmount, receiver) => {
-		await sETHSynth.transfer(receiver, issueAmount, { from: owner });
+		await sETHSynth.issue(receiver, issueAmount, { from: owner });
 	};
 
 	const deployCollateral = async ({
 		proxy,
 		mcState,
 		owner,
+		manager,
 		resolver,
 		collatKey,
-		// synthKeys,
 		synths,
 		minColat,
 		intRate,
 		liqPen,
-		debtCeil,
 	}) => {
 		return setupContract({
 			accounts,
@@ -111,72 +114,61 @@ contract('MultiCollateralEth', async accounts => {
 				proxy,
 				mcState,
 				owner,
+				manager,
 				resolver,
 				collatKey,
-				// [sUSD, sETH, toBytes32('sBTC')],
 				synths,
 				minColat,
 				intRate,
 				liqPen,
-				debtCeil,
 			],
 		});
 	};
 
 	const setupMultiCollateral = async () => {
-		// Mock SNX, sUSD
-		[
-			{ token: synthetix },
-			{ token: sUSDSynth },
-			{ token: sETHSynth },
-			{ token: sBTCSynth },
-		] = await Promise.all([
-			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
-			mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
-			mockToken({ accounts, synth: 'sETH', name: 'Synthetic ETH', symbol: 'sETH' }),
-			mockToken({ accounts, synth: 'sBTC', name: 'Synthetic BTC', symbol: 'sBTC' }),
-		]);
-
+		synths = ['sUSD', 'sAUD', 'sBTC', 'sETH'];
 		({
+			Synthetix: synthetix,
+			SystemStatus: systemStatus,
+			SystemSettings: systemSettings,
+			ExchangeRates: exchangeRates,
+			SynthsUSD: sUSDSynth,
+			SynthsETH: sETHSynth,
+			SynthsBTC: sBTCSynth,
 			FeePool: feePool,
 			AddressResolver: addressResolver,
-			ExchangeRates: exchangeRates,
-			SystemStatus: systemStatus,
+			Issuer: issuer,
+			// DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
-			mocks: {
-				SynthsUSD: sUSDSynth,
-				SynthsETH: sETHSynth,
-				SynthsBTC: sBTCSynth,
-				Synthetix: synthetix,
-			},
-			contracts: ['FeePool', 'AddressResolver', 'ExchangeRates', 'SystemStatus'],
+			synths,
+			contracts: [
+				'Synthetix',
+				'FeePool',
+				'AddressResolver',
+				'ExchangeRates',
+				'SystemStatus',
+				'Issuer',
+				'DebtCache',
+			],
 		}));
+
+		const MultiCollateralManager = artifacts.require(`MultiCollateralManager`);
+		manager = await MultiCollateralManager.new(owner, addressResolver.address, {
+			from: deployerAccount,
+		});
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 		// mintingFee = await multiCollateralEth.issueFeeRate();
-
-		// mock a Issuer for the FeePool.onlyInternalContracts
-		const mockIssuer = await setupContract({
-			accounts,
-			contract: 'GenericMock',
-			mock: 'Issuer',
-		});
-		// instruct the mock Issuer synthsByAddress to return an address
-		await mockGenericContractFnc({
-			instance: mockIssuer,
-			mock: 'Issuer',
-			fncName: 'synthsByAddress',
-			returns: [ZERO_ADDRESS],
-		});
 
 		const MultiCollateralState = artifacts.require(`MultiCollateralState`);
 		mcstate = await MultiCollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
 		mceth = await deployCollateral({
-			proxy: account1,
+			proxy: ZERO_ADDRESS,
 			mcState: mcstate.address,
 			owner: owner,
+			manager: manager.address,
 			resolver: addressResolver.address,
 			collatKey: sETH,
 			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsETH')],
@@ -184,29 +176,27 @@ contract('MultiCollateralEth', async accounts => {
 			// 5% / 31536000 (seconds in common year)
 			intRate: 1585489599,
 			liqPen: toUnit(0.1),
-			debtCeil: toUnit(100000),
 		});
 
+		await manager.addCollateral(mceth.address, { from: owner });
+
 		await addressResolver.importAddresses(
-			[toBytes32('Issuer'), toBytes32('MultiCollateralEth')],
-			[mockIssuer.address, mceth.address],
+			[toBytes32('Issuer'), toBytes32('MultiCollateralEth'), toBytes32('MultiCollateralManager')],
+			[issuer.address, mceth.address, manager.address],
 			{
 				from: owner,
 			}
 		);
 
-		// Sync feePool with imported mockIssuer
-		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
-		await mcstate.setAssociatedContract(mceth.address, { from: owner });
-
-		await mceth.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
-		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
 		await mcstate.addCurrency(sUSD, { from: owner });
 
 		await mcstate.addCurrency(sETH, { from: owner });
+
+		await mcstate.setAssociatedContract(mceth.address, { from: owner });
+		await mceth.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await manager.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
 	};
 
 	const updateRatesWithDefaults = async () => {
@@ -249,7 +239,7 @@ contract('MultiCollateralEth', async accounts => {
 		assert.bnEqual(await mceth.minimumCollateralisation(), toUnit(1.5));
 		assert.bnEqual(await mceth.baseInterestRate(), 1585489599);
 		assert.bnEqual(await mceth.liquidationPenalty(), toUnit(0.1));
-		assert.bnEqual(await mceth.debtCeiling(), toUnit(100000));
+		assert.bnEqual(await mceth.debtCeiling(), 0);
 	});
 
 	it('should ensure only expected functions are mutative', async () => {
@@ -306,11 +296,59 @@ contract('MultiCollateralEth', async accounts => {
 		 * To go back to another synth, remember to do effective value
 		 */
 
-		beforeEach(async () => {});
-
-		it('when we start at 200%, we can take a 25% reduction in collateral prices', async () => {
+		beforeEach(async () => {
 			tx = await mceth.openEthLoan(oneHundredsUSD, sUSD, {
 				value: twoETH,
+				from: account1,
+			});
+
+			id = await getid(tx);
+			loan = await mcstate.getLoan(account1, id);
+		});
+
+		it('when we start at 200%, we can take a 25% reduction in collateral prices', async () => {
+			await exchangeRates.updateRates([sETH], ['75'].map(toUnit), await currentTime(), {
+				from: oracle,
+			});
+
+			amountToLiquidate = await mceth.liquidationAmount(loan);
+
+			assert.bnEqual(amountToLiquidate, toUnit(0));
+		});
+
+		it('when we start at 200%, a price shock of 30% in the collateral requires 25% of the loan to be liquidated', async () => {
+			await exchangeRates.updateRates([sETH], ['70'].map(toUnit), await currentTime(), {
+				from: oracle,
+			});
+
+			amountToLiquidate = await mceth.liquidationAmount(loan);
+
+			assert.bnClose(amountToLiquidate, toUnit(25), '100');
+		});
+
+		it('when we start at 200%, a price shock of 40% in the collateral requires 75% of the loan to be liquidated', async () => {
+			await exchangeRates.updateRates([sETH], ['60'].map(toUnit), await currentTime(), {
+				from: oracle,
+			});
+
+			amountToLiquidate = await mceth.liquidationAmount(loan);
+
+			assert.bnClose(amountToLiquidate, toUnit(75), '100');
+		});
+
+		it('when we start at 200%, a price shock of 55% in the collateral requires 100% of the loan to be liquidated', async () => {
+			await exchangeRates.updateRates([sETH], ['55'].map(toUnit), await currentTime(), {
+				from: oracle,
+			});
+
+			amountToLiquidate = await mceth.liquidationAmount(loan);
+
+			assert.bnClose(amountToLiquidate, toUnit(100), '1000');
+		});
+
+		it('when we start at 150%, a 25% reduction in collateral requires', async () => {
+			tx = await mceth.openEthLoan(oneHundredsUSD, sUSD, {
+				value: toUnit(1.5),
 				from: account1,
 			});
 
@@ -323,7 +361,7 @@ contract('MultiCollateralEth', async accounts => {
 
 			amountToLiquidate = await mceth.liquidationAmount(loan);
 
-			assert.bnEqual(amountToLiquidate, toUnit(0));
+			assert.bnClose(amountToLiquidate, toUnit(93.750000594558599507), 1000);
 		});
 
 		it('when we start at 150%, any reduction in collateral will make the position undercollateralised ', async () => {
@@ -341,7 +379,7 @@ contract('MultiCollateralEth', async accounts => {
 
 			amountToLiquidate = await mceth.liquidationAmount(loan);
 
-			assert.bnClose(amountToLiquidate, toUnit(37.5), 100);
+			assert.bnClose(amountToLiquidate, toUnit(37.500000594558599578), 1000);
 		});
 	});
 
@@ -364,6 +402,16 @@ contract('MultiCollateralEth', async accounts => {
 			assert.bnEqual(collateralRedeemed, toUnit(0.055));
 		});
 
+		it('when ETH is @ $70 and we are liquidating 25 sUSD, then redeem 0.36666 ETH', async () => {
+			await exchangeRates.updateRates([sETH], ['70'].map(toUnit), await currentTime(), {
+				from: oracle,
+			});
+
+			collateralRedeemed = await mceth.collateralRedeemed(sUSD, toUnit(25));
+
+			assert.bnClose(collateralRedeemed, toUnit(0.392857142857142857), '100');
+		});
+
 		it('regardless of eth price, we liquidate 1.1 * amount when doing sETH', async () => {
 			collateralRedeemed = await mceth.collateralRedeemed(sETH, oneETH);
 
@@ -379,7 +427,11 @@ contract('MultiCollateralEth', async accounts => {
 		});
 	});
 
-	describe('funding rate test', async () => {});
+	xdescribe('funding rate test', async () => {
+		xit('should work', async () => {
+			await issuesUSDToAccount(toUnit(1000), account1);
+		});
+	});
 
 	// END PUBLIC VIEW TESTS
 
@@ -756,8 +808,8 @@ contract('MultiCollateralEth', async accounts => {
 						beforeEach(async () => {
 							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
-						it('then calling deposit() succeeds', async () => {
-							mceth.repayEthLoan(account1, id, oneETH, { from: account1 });
+						it('then calling repay() succeeds', async () => {
+							await mceth.repayEthLoan(account1, id, onesUSD, { from: account1 });
 						});
 					});
 				});
@@ -777,6 +829,14 @@ contract('MultiCollateralEth', async accounts => {
 				await assert.revert(
 					mceth.repayEthLoan(account1, id, tensUSD, { from: account2 }),
 					'Not enough synth balance'
+				);
+			});
+
+			it('should revert if they try to pay more than the amount owing', async () => {
+				await issuesUSDToAccount(toUnit(1000), account1);
+				await assert.revert(
+					mceth.repayEthLoan(account1, id, toUnit(1000), { from: account1 }),
+					'Repayment would close loan. If you are the borrower then call close loan'
 				);
 			});
 		});
@@ -855,7 +915,6 @@ contract('MultiCollateralEth', async accounts => {
 	});
 
 	describe('liquidations', async () => {
-		const liquidationAmount = toUnit(50);
 		beforeEach(async () => {
 			// make a loan here so we have a valid ID to pass to the blockers and reverts.
 			loan = await mceth.openEthLoan(oneHundredsUSD, sUSD, {
@@ -883,7 +942,7 @@ contract('MultiCollateralEth', async accounts => {
 						});
 						it('then calling liquidate() succeeds', async () => {
 							// fast forward a long time to make sure the loan is underwater.
-							fastForwardAndUpdateRates(10 * YEAR);
+							await fastForwardAndUpdateRates(10 * YEAR);
 							await mceth.liquidateEthLoan(account1, id, oneETH, { from: account1 });
 						});
 					});
@@ -894,7 +953,7 @@ contract('MultiCollateralEth', async accounts => {
 		describe('revert conditions', async () => {
 			it('should revert if they have no sUSD', async () => {
 				await assert.revert(
-					mceth.liquidateEthLoan(account1, id, liquidationAmount, { from: account2 }),
+					mceth.liquidateEthLoan(account1, id, onesUSD, { from: account2 }),
 					'Not enough synth balance'
 				);
 			});
@@ -903,114 +962,197 @@ contract('MultiCollateralEth', async accounts => {
 				await issuesUSDToAccount(toUnit(100), account2);
 
 				await assert.revert(
-					mceth.liquidateEthLoan(account1, id, liquidationAmount, { from: account2 }),
+					mceth.liquidateEthLoan(account1, id, onesUSD, { from: account2 }),
 					'Collateral ratio above liquidation ratio'
 				);
 			});
 		});
 
-		describe('setup', async () => {
-			describe('amounts to liquidate', async () => {
-				xit('should correclt calcualte the amount', async () => {
-					const amount = await mceth.calculateAmountToLiquidate(toUnit(143), toUnit(200));
+		describe('should allow liquidations on an undercollateralised sUSD loan', async () => {
+			const liquidationAmount = toUnit(25);
+			const liquidatedCollateral = 392857142857142857;
+
+			beforeEach(async () => {
+				const timestamp = await currentTime();
+				await exchangeRates.updateRates([sETH], ['70'].map(toUnit), timestamp, {
+					from: oracle,
+				});
+
+				await issuesUSDToAccount(toUnit(1000), account2);
+
+				loan = await mcstate.getLoan(account1, id);
+
+				tx = await mceth.liquidateEthLoan(account1, id, liquidationAmount, {
+					from: account2,
 				});
 			});
 
-			describe('should allow liquidations on an undercollateralised sUSD loan', async () => {
-				let liquidatorUSDBalBefore;
-				let liquidatorUSDBalAfter;
-				let liquidatorEthBalBefore;
-				let liquidatorEthBalAfter;
-				let feePoolBalanceBefore;
-				let feePoolBalanceAfter;
-				let expectedInterest;
-				let cratioBefore;
-				let cratioAfter;
-				const liquidatedCollateral = toUnit(0.22);
+			xit('should cap the amount to liquidate to bring the c ratio back above minimum', async () => {
+				loan = await mcstate.getLoan(account1, id);
+			});
 
-				beforeEach(async () => {
-					// Fast forward to get the loan undercollateralised from interest.
-					// fastForward(YEAR);
+			it('should update the loan correctly', async () => {
+				loan = await mcstate.getLoan(account1, id);
+			});
 
-					// Alternatively, lets change the eth price?
-					const timestamp = await currentTime();
-					await exchangeRates.updateRates([sETH], ['70'].map(toUnit), timestamp, {
-						from: oracle,
-					});
+			xit('should emit a liquidation event', async () => {
+				assert.eventEqual(tx, 'LoanPartiallyLiquidated', {
+					account: account1,
+					id: id,
+					liquidator: account2,
+					liquidatedAmount: liquidationAmount,
+					liquidatedCollateral: liquidatedCollateral,
+				});
+			});
 
-					await issuesUSDToAccount(toUnit(1000), account2);
-					liquidatorUSDBalBefore = await sUSDSynth.balanceOf(account2);
-					liquidatorEthBalBefore = new BN(await getEthBalance(account2));
-					feePoolBalanceBefore = await sUSDSynth.balanceOf(FEE_ADDRESS);
+			xit('should reduce the liquicators synth amount', async () => {
+				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
+				assert.bnEqual(liquidatorBalance, liquidatorUSDBalBefore.sub(liquidationAmount));
+			});
 
-					loan = await mcstate.getLoan(account1, id);
+			xit('should transfer the liquidated collateral to the liquidator', async () => {
+				// the actual amount of eth is different because of gas spent on transactions
+				// so we just check that they have more eth now
+				liquidatorEthBalAfter = new BN(await getEthBalance(account2)).add(liquidatedCollateral);
 
-					cratioBefore = await mceth.collateralRatio(loan);
+				assert.bnClose(liquidatorEthBalAfter, liquidatorEthBalBefore);
+			});
 
-					const amountToLiquidate = toUnit(25);
+			xit('should pay the interest to the fee pool', async () => {
+				const balance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+
+				assert.bnEqual(feePoolBalanceAfter, expected);
+			});
+
+			xit('should fix the collateralisation ratio of the loan', async () => {
+				const loanAfter = await mcstate.getLoan(account1, id);
+
+				cratioAfter = await mceth._loanCollateralRatio(loanAfter);
+			});
+		});
+
+		describe('when a loan needs to be completely liquidated', async () => {
+			let liquidatorEthBalBefore;
+
+			beforeEach(async () => {
+				// Alternatively, lets change the eth price?
+				const timestamp = await currentTime();
+				await exchangeRates.updateRates([sETH], ['50'].map(toUnit), timestamp, {
+					from: oracle,
 				});
 
-				xit('should cap the amount to liquidate to bring the c ratio back above minimum', async () => {
-					tx = await mceth.liquidateEthLoan(account1, id, toUnit(1000), {
-						from: account2,
-					});
+				await issuesUSDToAccount(toUnit(1000), account2);
 
-					loan = await mcstate.getLoan(account1, id);
+				liquidatorEthBalBefore = parseFloat(fromUnit(await getEthBalance(account2)));
+				const liquidatorsUSDBalBefore = await sUSDSynth.balanceOf(account2);
 
-					const expected = toUnit(75);
-
-					assert.closeTo(loan.amount, fromUnit(expected));
+				tx = await mceth.liquidateEthLoan(account1, id, toUnit(1000), {
+					from: account2,
 				});
+			});
 
-				xit('should update the loan correctly', async () => {
-					loan = await mcstate.getLoan(account1, id);
+			it('should emit the event', async () => {
+				assert.eventEqual(tx, 'LoanClosedByLiquidation', {
+					liquidator: account2,
+					collateral: twoETH,
 				});
+			});
 
-				xit('should emit a liquidation event', async () => {
-					const maxLiquidatable = await mceth.calculateAmountToLiquidate(loan.amount, V);
+			it('should close the loan correctly', async () => {
+				loan = await mcstate.getLoan(account1, id);
 
-					assert.eventEqual(liquidationTx, 'LoanPartiallyLiquidated', {
-						account: account1,
-						id: id,
-						liquidator: account2,
-						liquidatedAmount: liquidationAmount,
-						liquidatedCollateral: liquidatedCollateral,
-					});
-				});
+				assert.equal(loan.amount, 0);
+				assert.equal(loan.collateral, 0);
+				assert.equal(loan.interestIndex, 0);
+			});
 
-				xit('should reduce the liquicators synth amount', async () => {
-					liquidatorUSDBalAfter = await sUSDSynth.balanceOf(account2);
-					let maxLiquidationAmount;
-					assert.bnEqual(liquidatorUSDBalAfter, liquidatorUSDBalBefore.sub(liquidationAmount));
-				});
+			xit('should transfer all the collateral to the liquidator', async () => {
+				const liquidatorEthBalAfter = parseFloat(fromUnit(await getEthBalance(account2)));
 
-				xit('should transfer the liquidated collateral to the liquidator', async () => {
-					// the actual amount of eth is different because of gas spent on transactions
-					// so we just check that they have more eth now
-					liquidatorEthBalAfter = new BN(await getEthBalance(account2)).add(liquidatedCollateral);
+				assert.closeTo(liquidatorEthBalBefore, liquidatorEthBalAfter);
+			});
 
-					assert.bnClose(liquidatorEthBalAfter, liquidatorEthBalBefore);
-				});
-
-				xit('should pay the interest to the fee pool', async () => {
-					feePoolBalanceAfter = await sUSDSynth.balanceOf(FEE_ADDRESS);
-
-					const expected = feePoolBalanceBefore.add(expectedInterest);
-
-					assert.bnEqual(feePoolBalanceAfter, expected);
-				});
-
-				xit('should fix the collateralisation ratio of the loan', async () => {
-					const loanAfter = await mcstate.getLoan(account1, id);
-
-					cratioAfter = await mceth._loanCollateralRatio(loanAfter);
-				});
+			it('should reduce the liquidators synth balance', async () => {
+				const liquidatorsUSDBalAfter = await sUSDSynth.balanceOf(account2);
 			});
 		});
 	});
 
 	describe('closing', async () => {
-		xit('tba');
+		beforeEach(async () => {
+			// make a loan here so we have a valid ID to pass to the blockers and reverts.
+			loan = await mceth.openEthLoan(oneHundredsUSD, sUSD, {
+				value: twoETH,
+				from: account1,
+			});
+			id = await getid(loan);
+		});
+
+		describe('potential blocking conditions', async () => {
+			['System', 'Issuance'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
+					beforeEach(async () => {
+						await setStatus({ owner, systemStatus, section, suspend: true });
+					});
+					it('then calling close() reverts', async () => {
+						await assert.revert(mceth.closeEthLoan(id, { from: account1 }), 'Operation prohibited');
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, systemStatus, section, suspend: false });
+						});
+						it('then calling close() succeeds', async () => {
+							// Give them some more sUSD to make up for the fees.
+							await issuesUSDToAccount(tensUSD, account1);
+							await mceth.closeEthLoan(id, { from: account1 });
+						});
+					});
+				});
+			});
+		});
+
+		describe('revert conditions', async () => {
+			it('should revert if they have no sUSD', async () => {
+				await assert.revert(mceth.closeEthLoan(id, { from: account1 }), 'Not enough synth balance');
+			});
+
+			it('should revert if they are not the borrower', async () => {
+				// this is not a good error message.
+				// what is getLoan returning in this case? empty struct? it should fail?
+				// getLoan returns a struct with 0'd values in this case.
+				await assert.revert(mceth.closeEthLoan(id, { from: account2 }), 'Loan already closed');
+			});
+		});
+
+		describe('when it works', async () => {
+			beforeEach(async () => {
+				// Give them some more sUSD to make up for the fees.
+				await issuesUSDToAccount(tensUSD, account1);
+
+				tx = await mceth.closeEthLoan(id, { from: account1 });
+			});
+
+			it('should record the loan as closed', async () => {
+				loan = await mcstate.getLoan(account1, id);
+
+				assert.equal(loan.amount, 0);
+				assert.equal(loan.collateral, 0);
+				assert.equal(loan.interestIndex, 0);
+			});
+
+			it('should pay the fee pool', async () => {});
+
+			it('should transfer the collateral back to the borrower', async () => {
+				// assert.closeTo(liquidatorEthBalBefore, liquidatorEthBalAfter);
+			});
+
+			it('should emit the event', async () => {
+				assert.eventEqual(tx, 'LoanClosed', {
+					account: account1,
+					id: id,
+				});
+			});
+		});
 	});
 
 	describe('Accrue Interest', async () => {

@@ -33,8 +33,7 @@ contract MultiCollateralState is Owned, State, IMultiCollateral {
     }
 
     // The total amount of long and short for a synth,
-    mapping(bytes32 => balance) totalIssuedSynths;
-
+    mapping(bytes32 => balance) public totalIssuedSynths;
 
     mapping(address => Loan[]) public loans;
 
@@ -42,7 +41,7 @@ contract MultiCollateralState is Owned, State, IMultiCollateral {
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 
     /* ========== VIEWS ========== */
-
+    // If we do not find the loan, this returns a struct with 0'd values.
     function getLoan(address account, uint256 loanID) external view returns (Loan memory) {
         Loan[] memory synthLoans = loans[account];
         for (uint256 i = 0; i < synthLoans.length; i++) {
@@ -56,11 +55,15 @@ contract MultiCollateralState is Owned, State, IMultiCollateral {
         return rates[currency];
     }
 
+    function getBalance(bytes32 synth) external view returns (uint256 long, uint256 short) {
+        return (totalIssuedSynths[synth].long, totalIssuedSynths[synth].short);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function addCurrency(bytes32 _synth) external onlyOwner {
-            rates[_synth].push(0);
-            rateLastUpdated[_synth] = block.timestamp;
+        rates[_synth].push(0);
+        rateLastUpdated[_synth] = block.timestamp;
     }
 
     function updateRates(bytes32 currency, uint rate) external onlyAssociatedContract {

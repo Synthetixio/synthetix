@@ -23,6 +23,7 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
+import "./interfaces/IMultiCollateralManager.sol";
 
 
 // https://docs.synthetix.io/contracts/Issuer
@@ -49,6 +50,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
+    bytes32 private constant CONTRACT_MULTICOLLATERALMANAGER = "MultiCollateralManager";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
@@ -62,6 +64,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ETHERCOLLATERAL,
         CONTRACT_ETHERCOLLATERAL_SUSD,
+        CONTRACT_MULTICOLLATERALMANAGER,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
         CONTRACT_LIQUIDATIONS
@@ -116,6 +119,10 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
     }
 
+    function multiCollateralManager() internal view returns (IMultiCollateralManager) {
+        return IMultiCollateralManager(requireAndGetAddress(CONTRACT_MULTICOLLATERALMANAGER, "Missing MultiCollateralManager addresss"));
+    }
+
     function rewardEscrow() internal view returns (IRewardEscrow) {
         return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
     }
@@ -165,15 +172,28 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
             if (excludeEtherCollateral) {
                 // minus total issued synths from Ether Collateral from sETH.totalSupply()
-                if (synth == "sETH") {
-                    totalSynths = totalSynths.sub(etherCollateral().totalIssuedSynths());
-                }
+                // if (synth == "sETH") {
+                //     totalSynths = totalSynths.sub(etherCollateral().totalIssuedSynths());
+                // }
 
-                // minus total issued synths from Ether Collateral from sUSD.totalSupply()
-                if (synth == "sUSD") {
-                    totalSynths = totalSynths.sub(etherCollateralsUSD().totalIssuedSynths());
+                // // minus total issued synths from Ether Collateral from sUSD.totalSupply()
+                // if (synth == "sUSD") {
+                //     totalSynths = totalSynths.sub(etherCollateralsUSD().totalIssuedSynths());
+                // }
+
+                // WE WILL FAIL IN THE CASE THAT sUSD is only issued by multi collat, casue of fees.
+                // What to do with shorts here?
+
+                (uint256 long, uint256 short) = multiCollateralManager().issuedSynths(synth);
+
+                // if we have more mc issued then total Supply
+                if (long > totalSynths) {
+                    totalSynths = 0;
+                } else {
+                    totalSynths = totalSynths.sub(long);
                 }
             }
+
 
             uint synthValue = totalSynths.multiplyDecimalRound(rates[i]);
             total = total.add(synthValue);
