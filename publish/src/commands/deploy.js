@@ -1212,13 +1212,34 @@ const deploy = async ({
 		// could still be a target of something which does
 
 		await runStep({
-			gasLimit: 9e6, // higher gas required
+			gasLimit: 4e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'importAddresses',
 			writeArg: [
 				Object.keys(deployer.deployedContracts).map(contract => toBytes32(contract)),
 				Object.values(deployer.deployedContracts).map(({ options: { address } }) => address),
+			],
+		});
+
+		await runStep({
+			gasLimit: 7e6, // higher gas required
+			contract: `AddressResolver`,
+			target: addressResolver,
+			write: 'rebuildCaches',
+			writeArg: [
+				Object.entries(deployer.deployedContracts)
+					.filter(([, target]) =>
+						target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')
+					)
+					.map(
+						([
+							,
+							{
+								options: { address },
+							},
+						]) => address
+					),
 			],
 		});
 

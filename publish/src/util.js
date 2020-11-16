@@ -215,6 +215,7 @@ const performTransactionalStep = async ({
 	if (owner === account) {
 		// perform action
 		let hash;
+		let gasUsed = 0;
 		if (dryRun) {
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
@@ -230,7 +231,9 @@ const performTransactionalStep = async ({
 			}
 
 			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
+
 			hash = txn.transactionHash;
+			gasUsed = txn.gasUsed;
 
 			if (nonceManager) {
 				nonceManager.incrementNonce();
@@ -238,7 +241,13 @@ const performTransactionalStep = async ({
 		}
 
 		console.log(
-			green(`${dryRun ? '[DRY RUN] ' : ''}Successfully completed ${action} in hash: ${hash}`)
+			green(
+				`${
+					dryRun ? '[DRY RUN] ' : ''
+				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
+					2
+				)}m `
+			)
 		);
 
 		return hash;

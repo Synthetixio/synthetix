@@ -24,12 +24,12 @@ contract AddressResolver is Owned, IAddressResolver {
         for (uint i = 0; i < names.length; i++) {
             repository[names[i]] = destinations[i];
         }
+    }
 
+    function rebuildCaches(MixinResolver[] calldata destinations) external {
         // then, attempt to update all caches as required
-        for (uint i = 0; i < names.length; i++) {
-            // solhint-disable avoid-low-level-calls
-            (bool success, ) = address(destinations[i]).call(abi.encodePacked(MixinResolver(0).rebuildCache.selector));
-            success; // supressing the compiler warning
+        for (uint i = 0; i < destinations.length; i++) {
+            destinations[i].rebuildCache();
         }
     }
 
