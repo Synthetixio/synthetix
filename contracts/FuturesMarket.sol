@@ -6,13 +6,23 @@ import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SignedSafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
 
+
+// General market details
+//     Market size / Aggregate debt
+//     current funding rate
+//     Accrued funding sequence
+//     Fees
+//
+// Details for a particular position
+//     Funding
+//     Net funding
 
 // TODO: IFuturesMarket interface
 
@@ -21,7 +31,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
-    using SafeDecimalMath for uint;
+    using SignedSafeMath for int;
     using SignedSafeDecimalMath for int;
 
     /* ========== TYPES ========== */
@@ -85,8 +95,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         uint _maxLeverage,
         uint _maxTotalMargin,
         uint _minInitialMargin,
-        uint[3] _fundingParameters // TODO: update this to a struct
-    ) public Owned(_owner) MixinResolver(_owner, addressesToCache) {
+        uint[3] memory _fundingParameters // TODO: update this to a struct
+    ) public Owned(_owner) MixinResolver(_owner, _addressesToCache) {
         baseAsset = _baseAsset;
 
         exchangeFee = _exchangeFee;
@@ -101,10 +111,10 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         minInitialMargin = _minInitialMargin;
         emit MinInitialMarginUpdated(_minInitialMargin);
 
-        fundingParameters.maxFundingRate = fundingParameters[0];
-        fundingParameters.maxFundingRateSkew = fundingParameters[1];
-        fundingParameters.maxFundingRateDelta = fundingParameters[2];
-        emit FundingParametersUpdated(fundingParameters[0], fundingParameters[1], fundingParameters[2]);
+        fundingParameters.maxFundingRate = _fundingParameters[0];
+        fundingParameters.maxFundingRateSkew = _fundingParameters[1];
+        fundingParameters.maxFundingRateDelta = _fundingParameters[2];
+        emit FundingParametersUpdated(_fundingParameters[0], _fundingParameters[1], _fundingParameters[2]);
     }
 
     /* ========== VIEWS ========== */
@@ -129,23 +139,31 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         return _priceAndInvalid(_exchangeRates());
     }
 
+    function _currentRoundId(IExchangeRates exchangeRates) internal view returns (uint roundId) {
+        return exchangeRates.getCurrentRoundId(baseAsset);
+    }
+
+    function currentRoundId() external view returns (uint roundId) {
+        return _currentRoundId(_exchangeRates());
+    }
+
     function marketSizes() external view returns (uint short, uint long) {
-        uint size = marketSize;
-        uint skew = marketSkew;
-        return (size.add(skew).div(2), size.sub(skew).div(2));
+        int size = int(marketSize);
+        int skew = int(marketSkew);
+        return (uint(_abs(size.add(skew).div(2))), uint(_abs(size.sub(skew).div(2))));
     }
 
     /* ---------- Position Details ---------- */
 
     function notionalValue(address account) external view returns (int value, bool isInvalid) {
-        (uint price, bool invalid) = priceAndInvalid();
-        return (positions[account].size.multiplyDecimalRound(price), invalid);
+        (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
+        return (positions[account].size.multiplyDecimalRound(int(price)), invalid);
     }
 
     function _profitLoss(address account) internal view returns (int pnl, bool isInvalid) {
-        (uint price, bool invalid) = priceAndInvalid();
+        (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
         Position storage position = positions[account];
-        uint priceShift = price.sub(position.entryPrice);
+        int priceShift = int(price).sub(int(position.entryPrice));
         return (position.size.multiplyDecimalRound(priceShift), invalid);
     }
 
@@ -160,7 +178,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         int remaining = margin.add(pnl);
 
         // if the sign of our margin flipped, then the remaining margin went past zero and the position would have
-        // been liquidated.
+        // been liquidated. Since we only care about the sign of the product, we don't care about overflow, and
+        // aren't using SignedSafeDecimalMath
         if (remaining * margin < 0) {
             return (0, isInvalid);
         }
@@ -181,13 +200,16 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         //     liquidationPrice = entryPrice + (liquidationFee - (|margin| + funding)) / |positionSize|
 
         Position storage position = positions[account];
-        int funding = includeFunding ? 0 : 0; // TODO: Apply funding
-        int marginPlusFunding = _abs(position.margin).add(marginPlusFunding);
+        int marginPlusFunding = _abs(position.margin);
+        if (includeFunding) {
+            marginPlusFunding = marginPlusFunding.add(0); // TODO: Apply funding
+        }
+
         int size = _abs(position.size);
         int entryPrice = int(position.entryPrice);
 
         int liquidationFee = int(getFuturesLiquidationFee());
-        return entryPrice.add(liquidationFee.sub(marginPlusFunding).divideDecimalRound(size));
+        return uint(entryPrice.add(liquidationFee.sub(marginPlusFunding).divideDecimalRound(size)));
     }
 
     /* ---------- Utilities ---------- */
@@ -196,38 +218,26 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         return x > 0 ? x : -x;
     }
 
-    // Market size / Aggregate debt
-
-    // Skew
-    // current funding rate
-    // Accrued funding sequence
-    //
-    // Details for a particular position
-    // Funding
-    // Net funding
-    //
-    // Fees
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Setters ---------- */
 
-    function setExchangeFee(uint fee) onlyOwner {
+    function setExchangeFee(uint fee) external onlyOwner {
         exchangeFee = fee;
         emit ExchangeFeeUpdated(fee);
     }
 
-    function setMaxLeverage(uint leverage) onlyOwner {
+    function setMaxLeverage(uint leverage) external onlyOwner {
         maxLeverage = leverage;
         emit MaxLeverageUpdated(leverage);
     }
 
-    function setMaxMarketSize(uint cap) onlyOwner {
+    function setMaxMarketSize(uint cap) external onlyOwner {
         maxTotalMargin = cap;
         emit MaxMarketSizeUpdated(cap);
     }
 
-    function setMinInitialMargin(uint minMargin) onlyOwner {
+    function setMinInitialMargin(uint minMargin) external onlyOwner {
         minInitialMargin = minMargin;
         emit MinInitialMarginUpdated(minMargin);
     }
@@ -236,7 +246,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         uint maxFundingRate,
         uint maxFundingRateSkew,
         uint maxFundingRateDelta
-    ) onlyOwner {
+    ) external onlyOwner {
         fundingParameters.maxFundingRate = maxFundingRate;
         fundingParameters.maxFundingRateSkew = maxFundingRateSkew;
         fundingParameters.maxFundingRateDelta = maxFundingRateDelta;
@@ -247,26 +257,29 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     // TODO: Make this withdraw directly from their sUSD.
     function submitOrder(int margin, uint leverage) external {
         require(leverage <= maxLeverage, "Max leverage exceeded");
-        require(margin <= minInitialMargin, "Insufficient margin");
+        require(uint(_abs(margin)) <= minInitialMargin, "Insufficient margin");
 
         // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
 
         uint balance = _sUSD().balanceOf(msg.sender);
-        require(margin <= balance, "Insufficient balance");
+        require(uint(_abs(margin)) <= balance, "Insufficient balance");
         // TODO: Deduct balance, and record fee.
 
         // Update pending order value (not forgetting to deduct for any pending orders)
         // Revert if the margin would exceed the maximum configured for the market
         Order storage order = orders[msg.sender];
         if (order.pending) {
-            pendingOrderValue = pendingOrderValue.sub(order.margin);
+            pendingOrderValue = pendingOrderValue.sub(uint(_abs(order.margin)));
         }
-        pendingOrderValue = pendingOrderValue.add(margin);
+        pendingOrderValue = pendingOrderValue.add(uint(_abs(margin)));
         require(marketSize.add(pendingOrderValue) <= maxTotalMargin, "Max market size exceeded");
 
         // Lodge the order, which can be confirmed at the next price update
-        uint roundId = _exchangeRates().getCurrentRoundId();
-        order = Order(true, margin, leverage, roundId);
+        uint roundId = _currentRoundId(_exchangeRates());
+        order.pending = true;
+        order.margin = margin;
+        order.leverage = leverage;
+        order.roundId = roundId;
         emit OrderSubmitted(msg.sender, margin, leverage, roundId);
     }
 
@@ -275,9 +288,10 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     }
 
     function cancelOrder() external {
-        Orders storage order = orders[msg.sender];
+        Order storage order = orders[msg.sender];
         require(order.pending, "No pending order");
         order.pending = false;
+        pendingOrderValue = pendingOrderValue.sub(uint(_abs(order.margin)));
         emit OrderCancelled(msg.sender);
 
         // TODO: Reimburse balance and fee
@@ -287,36 +301,38 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     // TODO: Send fee to fee pool on confirmation
     // Order confirmation should emit event including the price at which it was confirmed
     function confirmOrder(address account) external {
-        (uint price, bool isInvalid) = _priceAndInvalid(_exchangeRates());
+        (uint entryPrice, bool isInvalid) = _priceAndInvalid(_exchangeRates());
         require(!isInvalid, "Price is invalid");
-
-        uint currentRoundId = _exchangeRates().getCurrentRoundId();
 
         Order storage order = orders[account];
         require(order.pending, "No pending order");
-        require(currentRoundId > order.roundId, "Awaiting next price");
+        require(_currentRoundId(_exchangeRates()) > order.roundId, "Awaiting next price");
 
         int newMargin = order.margin;
-        int newSize = newMargin.multiplyDecimalRound(int(order.leverage)).divideDecimalRound(int(price));
-        int newAbsoluteSize = _abs(newSize);
+        int newSize = newMargin.multiplyDecimalRound(int(order.leverage)).divideDecimalRound(int(entryPrice));
 
         Position storage position = positions[account];
         int positionSize = position.size;
-        int absolutePositionSize = _abs(positionSize);
 
-        marketSkew = marketSkew.sub(positionSize).add(newSize);
-        marketSize = marketSize.sub(absolutePositionSize).add(newAbsoluteSize);
+        marketSkew = marketSkew.add(newSize).sub(positionSize);
+        marketSize = marketSize.add(uint(_abs(newSize))).sub(uint(_abs(positionSize)));
 
         int marginDelta = newMargin.sub(position.margin);
-        int notionalDelta = newSize.multiplyDecimalRound(int(price)).sub(
-            position.size.multiplyDecimalRound(int(position.entryPrice))
+        int notionalDelta = position.size.multiplyDecimalRound(int(position.entryPrice)).sub(
+            newSize.multiplyDecimalRound(int(entryPrice))
         );
-        entryNotionalSum = entryNotionalSum.add(marginDelta).add(notionalDelta);
+        entryNotionalSum = uint(int(entryNotionalSum).add(marginDelta).add(notionalDelta));
+        pendingOrderValue = pendingOrderValue.sub(uint(_abs(order.margin)));
 
         // TODO: compute current funding index
         uint entryIndex = 0;
-        position = Position(newMargin, newSize, price, entryIndex);
-        emit OrderConfirmed(account, newMargin, newSize, price, entryIndex);
+
+        position.margin = newMargin;
+        position.size = newSize;
+        position.entryPrice = entryPrice;
+        position.entryIndex = entryIndex;
+
+        emit OrderConfirmed(account, newMargin, newSize, entryPrice, entryIndex);
     }
 
     event ExchangeFeeUpdated(uint fee);
@@ -324,6 +340,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     event MaxMarketSizeUpdated(uint cap);
     event MinInitialMarginUpdated(uint minMargin);
     event FundingParametersUpdated(uint maxFundingRate, uint maxFundingRateSkew, uint maxFundingRateDelta);
-    event OrderSubmitted(address indexed account, int margin, int leverage, uint indexed roundId);
+    event OrderSubmitted(address indexed account, int margin, uint leverage, uint indexed roundId);
     event OrderConfirmed(address indexed account, int margin, int size, uint entryPrice, uint entryIndex);
+    event OrderCancelled(address indexed account);
 }
