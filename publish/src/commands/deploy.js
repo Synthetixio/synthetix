@@ -1212,7 +1212,7 @@ const deploy = async ({
 		// could still be a target of something which does
 
 		await runStep({
-			gasLimit: 4e6, // higher gas required
+			gasLimit: 5e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'importAddresses',
@@ -1223,7 +1223,7 @@ const deploy = async ({
 		});
 
 		await runStep({
-			gasLimit: 7e6, // higher gas required
+			gasLimit: 9e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'rebuildCaches',

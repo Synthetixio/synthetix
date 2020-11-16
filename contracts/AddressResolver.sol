@@ -15,17 +15,20 @@ contract AddressResolver is Owned, IAddressResolver {
 
     constructor(address _owner) public Owned(_owner) {}
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    /* ========== RESTRICTED FUNCTIONS ========== */
 
     function importAddresses(bytes32[] calldata names, address[] calldata destinations) external onlyOwner {
         require(names.length == destinations.length, "Input lengths must match");
 
-        // first add all destinations to the resolver
         for (uint i = 0; i < names.length; i++) {
             repository[names[i]] = destinations[i];
+            // solhint-disable avoid-low-level-calls
+            (bool success, ) = address(destinations[i]).call(abi.encodePacked(MixinResolver(0).invalidateCache.selector));
+            emit AddressImported(names[i], destinations[i], success);
         }
     }
 
+    /* ========== PUBLIC FUNCTIONS ========== */
     function rebuildCaches(MixinResolver[] calldata destinations) external {
         // then, attempt to update all caches as required
         for (uint i = 0; i < destinations.length; i++) {
@@ -34,7 +37,6 @@ contract AddressResolver is Owned, IAddressResolver {
     }
 
     /* ========== VIEWS ========== */
-
     function getAddress(bytes32 name) external view returns (address) {
         return repository[name];
     }
@@ -50,4 +52,7 @@ contract AddressResolver is Owned, IAddressResolver {
         require(address(issuer) != address(0), "Cannot find Issuer address");
         return address(issuer.synths(key));
     }
+
+    /* ========== EVENTS ========== */
+    event AddressImported(bytes32 name, address destinations, bool cacheInvalidated);
 }
