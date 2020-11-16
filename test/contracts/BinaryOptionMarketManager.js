@@ -12,7 +12,7 @@ const {
 	divideDecimalRound,
 } = require('../utils')();
 const { toBytes32 } = require('../..');
-const { setupContract, setupAllContracts, mockGenericContractFnc } = require('./setup');
+const { setupContract, setupAllContracts } = require('./setup');
 const {
 	setStatus,
 	ensureOnlyExpectedMutativeFunctions,
