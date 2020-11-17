@@ -30,7 +30,6 @@
 		"feed": "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c"
 	},
 	"EOS": {"asset": "EOS", "feed": "0x10a43289895eAff840E8d45995BBa89f9115ECEe"},
-	"BCH": {"asset": "BCH", "feed": "0x9F0F69428F923D6c95B781F89E165C9b2df9789D"},
 	"ETC": {"asset": "ETC", "feed": "0xaEA2808407B7319A31A383B6F8B60f04BCa23cE2"},
 	"DASH": {
 		"asset": "DASH",
