@@ -13,6 +13,7 @@ const {
 const connectBridge = async ({
 	l1Network,
 	l2Network,
+	l2ProviderUrl,
 	l1DeploymentPath,
 	l2DeploymentPath,
 	l1PrivateKey,
@@ -21,11 +22,16 @@ const connectBridge = async ({
 	l2UseFork,
 	l1Messenger,
 	l2Messenger,
+	dryRun,
+	l1GasPrice,
+	l2GasPrice,
+	gasLimit,
 }) => {
 	console.log(gray('> Connecting with L1 instance...'));
 	const {
 		AddressResolver: AddressResolverL1,
 		SynthetixBridge: SynthetixBridgeToOptimism,
+		account: accountL1,
 	} = await connectInstance({
 		network: l1Network,
 		deploymentPath: l1DeploymentPath,
@@ -39,8 +45,10 @@ const connectBridge = async ({
 	const {
 		AddressResolver: AddressResolverL2,
 		SynthetixBridge: SynthetixBridgeToBase,
+		account: accountL2,
 	} = await connectInstance({
 		network: l2Network,
+		providerUrl: l2ProviderUrl,
 		deploymentPath: l2DeploymentPath,
 		privateKey: l2PrivateKey,
 		useFork: l2UseFork,
@@ -48,37 +56,92 @@ const connectBridge = async ({
 		useOvm: true,
 	});
 
+	let tx;
+	let names;
+	let addresses;
+
 	console.log(gray('> Connecting bridge on L1...'));
-	await AddressResolverL1.importAddresses(
-		[toBytes32('ext:Messenger'), toBytes32('ovm:SynthetixBridgeToBase')],
-		l1Messenger,
-		SynthetixBridgeToBase.options.address
-	);
-	await SynthetixBridgeToBase.setResolverAndSyncCache(AddressResolverL1.options.address);
+	names = ['ext:Messenger', 'ovm:SynthetixBridgeToBase'];
+	addresses = [l1Messenger, SynthetixBridgeToBase.options.address];
+	console.log(gray(names, addresses));
+	if (!dryRun) {
+		const params = {
+			from: accountL1,
+			gasPrice: Web3.utils.toWei(l1GasPrice.toString(), 'gwei'),
+			gas: gasLimit,
+		};
+		console.log(gray('> tx params:', JSON.stringify(params)));
+
+		console.log('AddressResolverL1.importAddresses()...');
+		tx = await AddressResolverL1.methods
+			.importAddresses(names.map(toBytes32), addresses)
+			.send(params);
+		console.log(JSON.stringify(tx, null, 2));
+
+		console.log('SynthetixBridgeToOptimism.setResolverAndSyncCache()...');
+		tx = await SynthetixBridgeToOptimism.methods
+			.setResolverAndSyncCache(AddressResolverL1.options.address)
+			.send(params);
+		console.log(JSON.stringify(tx, null, 2));
+	}
 
 	console.log(gray('> Connecting bridge on L2...'));
-	await AddressResolverL2.importAddresses(
-		[toBytes32('ext:Messenger'), toBytes32('base:SynthetixBridgeToOptimism')],
-		l2Messenger,
-		SynthetixBridgeToOptimism.options.address
-	);
-	await SynthetixBridgeToOptimism.setResolverAndSyncCache(AddressResolverL2.options.address);
+	names = ['ext:Messenger', 'base:SynthetixBridgeToOptimism'];
+	addresses = [l2Messenger, SynthetixBridgeToOptimism.options.address];
+	console.log(gray(names, addresses));
+	if (!dryRun) {
+		const params = {
+			from: accountL2,
+			gasPrice: Web3.utils.toWei(l2GasPrice.toString(), 'gwei'),
+			gas: gasLimit,
+		};
+		console.log(gray('> tx params:', JSON.stringify(params)));
+
+		console.log('AddressResolverL2.importAddresses()...');
+		tx = await AddressResolverL2.methods
+			.importAddresses(names.map(toBytes32), addresses)
+			.send(params);
+		console.log(JSON.stringify(tx, null, 2));
+
+		console.log('SynthetixBridgeToBase.setResolverAndSyncCache()...');
+		tx = await SynthetixBridgeToBase.methods
+			.setResolverAndSyncCache(AddressResolverL2.options.address)
+			.send(params);
+		console.log(JSON.stringify(tx, null, 2));
+	}
 };
 
-const connectInstance = async ({ network, deploymentPath, privateKey, useFork, useOvm }) => {
+const connectInstance = async ({
+	network,
+	providerUrl: specifiedProviderUrl,
+	deploymentPath,
+	privateKey,
+	useFork,
+	useOvm,
+}) => {
 	console.log(gray('  > network:', network));
 	console.log(gray('  > deploymentPath:', deploymentPath));
 	console.log(gray('  > privateKey:', privateKey));
 	console.log(gray('  > useFork:', useFork));
 	console.log(gray('  > useOvm:', useOvm));
 
-	const { web3, getSource, getTarget } = bootstrapConnection({
+	const { web3, getSource, getTarget, providerUrl } = bootstrapConnection({
 		network,
+		providerUrl: specifiedProviderUrl,
 		deploymentPath,
 		privateKey,
 		useFork,
 		useOvm,
 	});
+	console.log(gray('  > provider:', providerUrl));
+
+	let account;
+	if (privateKey) {
+		web3.eth.accounts.wallet.add(privateKey);
+		web3.eth.defaultAccount = web3.eth.accounts.wallet[0].address;
+		account = web3.eth.defaultAccount;
+	}
+	console.log(gray('  > account:', account));
 
 	const AddressResolver = getContract({
 		contract: 'AddressResolver',
@@ -102,15 +165,23 @@ const connectInstance = async ({ network, deploymentPath, privateKey, useFork, u
 	return {
 		AddressResolver,
 		SynthetixBridge,
+		account,
 	};
 };
 
-const bootstrapConnection = ({ network, deploymentPath, privateKey, useFork, useOvm }) => {
+const bootstrapConnection = ({
+	network,
+	providerUrl: specifiedProviderUrl,
+	deploymentPath,
+	privateKey,
+	useFork,
+	useOvm,
+}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
-	const { providerUrl, privateKey: envPrivateKey } = loadConnections({
+	const { providerUrl: defaultProviderUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
 		useFork,
 	});
@@ -120,6 +191,7 @@ const bootstrapConnection = ({ network, deploymentPath, privateKey, useFork, use
 		privateKey = envPrivateKey;
 	}
 
+	const providerUrl = specifiedProviderUrl || defaultProviderUrl;
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
 	const { getUsers, getTarget, getSource } = wrap({ network, useOvm, fs, path });
@@ -134,6 +206,7 @@ const bootstrapConnection = ({ network, deploymentPath, privateKey, useFork, use
 
 	return {
 		deploymentPath,
+		providerUrl,
 		privateKey,
 		web3,
 		account,
@@ -165,6 +238,7 @@ module.exports = {
 			.description('Configures the bridge between an L1-L2 instance pair.')
 			.option('--l1-network <value>', 'The name of the target L1 network', 'goerli')
 			.option('--l2-network <value>', 'The name of the target L2 network', 'goerli')
+			.option('--l2-provider-url <value>', 'The L2 provider to use', 'https://goerli.optimism.io')
 			.option('--l1-deployment-path <value>', 'The path of the L1 deployment to target')
 			.option('--l2-deployment-path <value>', 'The path of the L2 deployment to target')
 			.option('--l1-private-key <value>', 'Optional private key for signing L1 transactions')
@@ -173,6 +247,10 @@ module.exports = {
 			.option('--l2-use-fork', 'Wether to use a fork for the L2 connection', false)
 			.option('--l1-messenger <value>', 'L1 cross domain messenger to use')
 			.option('--l2-messenger <value>', 'L2 cross domain messenger to use')
+			.option('-g, --l1-gas-price <value>', 'Gas price to set when performing transfers in L1', 1)
+			.option('-g, --l2-gas-price <value>', 'Gas price to set when performing transfers in L2', 1)
+			.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
+			.option('--dry-run', 'Do not execute any transactions')
 			.action(async (...args) => {
 				try {
 					await connectBridge(...args);
