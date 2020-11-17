@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 import "./SignedSafeMath.sol";
 
+// TODO: Test suite
 
 // https://docs.synthetix.io/contracts/SisngedSafeDecimalMath
 library SignedSafeDecimalMath {
@@ -35,7 +36,8 @@ library SignedSafeDecimalMath {
     /**
      * @dev Rounds an input with an extra zero of precision, returning the result without the extra zero.
      * Half increments round away from zero; positive numbers at a half increment are rounded up,
-     * while negative such numbers are rounded down.
+     * while negative such numbers are rounded down. This behaviour is designed to be consistent with the
+     * unsigned version of this library (SafeDecimalMath).
      */
     function _roundDividingByTen(int valueTimesTen) private pure returns (int) {
         int increment;
