@@ -78,7 +78,8 @@
 	},
 	{
 		"name": "sBCH",
-		"asset": "BCH"
+		"asset": "BCH",
+		"subclass": "PurgeableSynth"
 	},
 	{
 		"name": "sETC",
