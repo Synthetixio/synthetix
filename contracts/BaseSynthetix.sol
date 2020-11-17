@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./interfaces/IERC20.sol";
 import "./ExternStateToken.sol";
-import "./BaseSynthetix.sol";
 import "./MixinResolver.sol";
 import "./interfaces/ISynthetix.sol";
 
@@ -19,8 +18,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IVirtualSynth.sol";
 
 
-// https://docs.synthetix.io/contracts/source/contracts/synthetix
-contract Synthetix is IERC20, ExternStateToken, MixinResolver, BaseSynthetix {
+contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
@@ -55,7 +53,11 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, BaseSynthetix {
         address _owner,
         uint _totalSupply,
         address _resolver
-    ) public BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
+    )
+        public
+        ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
+        MixinResolver(_resolver, addressesToCache)
+    {}
 
     /* ========== VIEWS ========== */
 
@@ -140,6 +142,18 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, BaseSynthetix {
         return issuer().remainingIssuableSynths(account);
     }
 
+    function collateralisationRatio(address _issuer) external view returns (uint) {
+        return issuer().collateralisationRatio(_issuer);
+    }
+
+    function collateral(address account) external view returns (uint) {
+        return issuer().collateral(account);
+    }
+
+    function transferableSynthetix(address account) external view returns (uint transferable) {
+        (transferable, ) = issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
+    }
+
     function _canTransfer(address account, uint value) internal view returns (bool) {
         (uint initialDebtOwnership, ) = synthetixState().issuanceData(account);
 
@@ -212,168 +226,69 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, BaseSynthetix {
     }
 
     function exchange(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
+        bytes32,
+        uint,
+        bytes32
+    ) external returns (uint) {
+        revert("Cannot be run on this layer");
     }
 
     function exchangeOnBehalf(
-        address exchangeForAddress,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeOnBehalf(
-                exchangeForAddress,
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey
-            );
+        address,
+        bytes32,
+        uint,
+        bytes32
+    ) external returns (uint) {
+        revert("Cannot be run on this layer");
     }
 
     function exchangeWithTracking(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address originator,
-        bytes32 trackingCode
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeWithTracking(
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                messageSender,
-                originator,
-                trackingCode
-            );
+        bytes32,
+        uint,
+        bytes32,
+        address,
+        bytes32
+    ) external returns (uint) {
+        revert("Cannot be run on this layer");
     }
 
     function exchangeOnBehalfWithTracking(
-        address exchangeForAddress,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address originator,
-        bytes32 trackingCode
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeOnBehalfWithTracking(
-                exchangeForAddress,
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                originator,
-                trackingCode
-            );
+        address,
+        bytes32,
+        uint,
+        bytes32,
+        address,
+        bytes32
+    ) external returns (uint) {
+        revert("Cannot be run on this layer");
     }
 
     function exchangeWithVirtual(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        bytes32 trackingCode
-    )
-        external
-        exchangeActive(sourceCurrencyKey, destinationCurrencyKey)
-        optionalProxy
-        returns (uint amountReceived, IVirtualSynth vSynth)
-    {
-        return
-            exchanger().exchangeWithVirtual(
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                messageSender,
-                trackingCode
-            );
+        bytes32,
+        uint,
+        bytes32,
+        bytes32
+    ) external returns (uint, IVirtualSynth) {
+        revert("Cannot be run on this layer");
     }
 
-    function settle(bytes32 currencyKey)
+    function settle(bytes32)
         external
-        optionalProxy
         returns (
-            uint reclaimed,
-            uint refunded,
-            uint numEntriesSettled
+            uint,
+            uint,
+            uint
         )
     {
-        return exchanger().settle(messageSender, currencyKey);
+        revert("Cannot be run on this layer");
     }
 
-    function collateralisationRatio(address _issuer) external view returns (uint) {
-        return issuer().collateralisationRatio(_issuer);
+    function mint() external returns (bool) {
+        revert("Cannot be run on this layer");
     }
 
-    function collateral(address account) external view returns (uint) {
-        return issuer().collateral(account);
-    }
-
-    function transferableSynthetix(address account) external view returns (uint transferable) {
-        (transferable, ) = issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
-    }
-
-    function mint() external issuanceActive returns (bool) {
-        require(address(rewardsDistribution()) != address(0), "RewardsDistribution not set");
-
-        SupplySchedule _supplySchedule = supplySchedule();
-        IRewardsDistribution _rewardsDistribution = rewardsDistribution();
-
-        uint supplyToMint = _supplySchedule.mintableSupply();
-        require(supplyToMint > 0, "No supply is mintable");
-
-        // record minting event before mutation to token supply
-        _supplySchedule.recordMintEvent(supplyToMint);
-
-        // Set minted SNX balance to RewardEscrow's balance
-        // Minus the minterReward and set balance of minter to add reward
-        uint minterReward = _supplySchedule.minterReward();
-        // Get the remainder
-        uint amountToDistribute = supplyToMint.sub(minterReward);
-
-        // Set the token balance to the RewardsDistribution contract
-        tokenState.setBalanceOf(
-            address(_rewardsDistribution),
-            tokenState.balanceOf(address(_rewardsDistribution)).add(amountToDistribute)
-        );
-        emitTransfer(address(this), address(_rewardsDistribution), amountToDistribute);
-
-        // Kick off the distribution of rewards
-        _rewardsDistribution.distributeRewards(amountToDistribute);
-
-        // Assign the minters reward.
-        tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
-        emitTransfer(address(this), msg.sender, minterReward);
-
-        totalSupply = totalSupply.add(supplyToMint);
-
-        return true;
-    }
-
-    function liquidateDelinquentAccount(address account, uint susdAmount)
-        external
-        systemActive
-        optionalProxy
-        returns (bool)
-    {
-        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateDelinquentAccount(
-            account,
-            susdAmount,
-            messageSender
-        );
-
-        emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
-
-        // Transfer SNX redeemed to messageSender
-        // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
-        return _transferByProxy(account, messageSender, totalRedeemed);
+    function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool) {
+        revert("Cannot be run on this layer");
     }
 
     function mintSecondary(address, uint) external {
@@ -409,88 +324,5 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, BaseSynthetix {
         systemStatus().requireExchangeActive();
         systemStatus().requireSynthsActive(src, dest);
         _;
-    }
-
-    // ========== EVENTS ==========
-    event SynthExchange(
-        address indexed account,
-        bytes32 fromCurrencyKey,
-        uint256 fromAmount,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress
-    );
-    bytes32 internal constant SYNTHEXCHANGE_SIG = keccak256(
-        "SynthExchange(address,bytes32,uint256,bytes32,uint256,address)"
-    );
-
-    function emitSynthExchange(
-        address account,
-        bytes32 fromCurrencyKey,
-        uint256 fromAmount,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress
-    ) external onlyExchanger {
-        proxy._emit(
-            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
-            2,
-            SYNTHEXCHANGE_SIG,
-            addressToBytes32(account),
-            0,
-            0
-        );
-    }
-
-    event ExchangeTracking(bytes32 indexed trackingCode, bytes32 toCurrencyKey, uint256 toAmount);
-    bytes32 internal constant EXCHANGE_TRACKING_SIG = keccak256("ExchangeTracking(bytes32,bytes32,uint256)");
-
-    function emitExchangeTracking(
-        bytes32 trackingCode,
-        bytes32 toCurrencyKey,
-        uint256 toAmount
-    ) external onlyExchanger {
-        proxy._emit(abi.encode(toCurrencyKey, toAmount), 2, EXCHANGE_TRACKING_SIG, trackingCode, 0, 0);
-    }
-
-    event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);
-    bytes32 internal constant EXCHANGERECLAIM_SIG = keccak256("ExchangeReclaim(address,bytes32,uint256)");
-
-    function emitExchangeReclaim(
-        address account,
-        bytes32 currencyKey,
-        uint256 amount
-    ) external onlyExchanger {
-        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGERECLAIM_SIG, addressToBytes32(account), 0, 0);
-    }
-
-    event ExchangeRebate(address indexed account, bytes32 currencyKey, uint amount);
-    bytes32 internal constant EXCHANGEREBATE_SIG = keccak256("ExchangeRebate(address,bytes32,uint256)");
-
-    function emitExchangeRebate(
-        address account,
-        bytes32 currencyKey,
-        uint256 amount
-    ) external onlyExchanger {
-        proxy._emit(abi.encode(currencyKey, amount), 2, EXCHANGEREBATE_SIG, addressToBytes32(account), 0, 0);
-    }
-
-    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
-    bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
-
-    function emitAccountLiquidated(
-        address account,
-        uint256 snxRedeemed,
-        uint256 amountLiquidated,
-        address liquidator
-    ) internal {
-        proxy._emit(
-            abi.encode(snxRedeemed, amountLiquidated, liquidator),
-            2,
-            ACCOUNTLIQUIDATED_SIG,
-            addressToBytes32(account),
-            0,
-            0
-        );
     }
 }
