@@ -61,7 +61,8 @@ const build = async ({
 		const contractPaths = Object.keys(contracts);
 		contractPaths.map(contractPath => {
 			const filename = path.basename(contractPath, '.sol');
-			const isIgnored = ovmIgnored.some(ignored => filename === ignored);
+			const ignoredEntry = ovmIgnored[filename];
+			const isIgnored = ignoredEntry && !ignoredEntry.compile;
 
 			if (isIgnored) {
 				console.log(gray(`    > ${filename}`));
@@ -122,7 +123,7 @@ const build = async ({
 		const toWrite = path.join(compiledPath, contractName);
 		const filePath = `${toWrite}.json`;
 		const prevSizeIfAny = fs.existsSync(filePath)
-			? await sizeOfContracts({
+			? sizeOfContracts({
 					contractToObjectMap: { [filePath]: require(filePath).evm.deployedBytecode.object },
 			  })[0]
 			: undefined;

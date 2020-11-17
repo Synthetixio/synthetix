@@ -43,6 +43,37 @@ contract MintableSynthetix is Synthetix {
         return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixBridgeToBase address");
     }
 
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function exchangeWithTracking(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address originator,
+        bytes32 trackingCode
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {}
+
+    function exchangeOnBehalfWithTracking(
+        address exchangeForAddress,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address originator,
+        bytes32 trackingCode
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {}
+
+    function exchangeWithVirtual(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    )
+        external
+        exchangeActive(sourceCurrencyKey, destinationCurrencyKey)
+        optionalProxy
+        returns (uint amountReceived, IVirtualSynth vSynth)
+    {}
+
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function mintSecondary(address account, uint amount) external onlyBridge {
