@@ -27,7 +27,11 @@ contract MintableSynthetix is Synthetix {
     }
 
     function onlyAllowFromBridge() internal view {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixBridgeToBase contract");
+        require(
+            msg.sender ==
+                requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixBridgeToBase address"),
+            "Can only be invoked by the SynthetixBridgeToBase contract"
+        );
     }
 
     /* ========== MODIFIERS =================== */
@@ -35,12 +39,6 @@ contract MintableSynthetix is Synthetix {
     modifier onlyBridge() {
         onlyAllowFromBridge();
         _;
-    }
-
-    /* ========== VIEWS ======================= */
-
-    function synthetixBridge() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixBridgeToBase address");
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -51,7 +49,7 @@ contract MintableSynthetix is Synthetix {
         bytes32 destinationCurrencyKey,
         address originator,
         bytes32 trackingCode
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {}
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) returns (uint amountReceived) {}
 
     function exchangeOnBehalfWithTracking(
         address exchangeForAddress,
@@ -60,19 +58,14 @@ contract MintableSynthetix is Synthetix {
         bytes32 destinationCurrencyKey,
         address originator,
         bytes32 trackingCode
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {}
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) returns (uint amountReceived) {}
 
     function exchangeWithVirtual(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         bytes32 trackingCode
-    )
-        external
-        exchangeActive(sourceCurrencyKey, destinationCurrencyKey)
-        optionalProxy
-        returns (uint amountReceived, IVirtualSynth vSynth)
-    {}
+    ) external returns (uint amountReceived, IVirtualSynth vSynth) {}
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
@@ -91,4 +84,12 @@ contract MintableSynthetix is Synthetix {
         emitTransfer(account, address(0), amount);
         totalSupply = totalSupply.sub(amount);
     }
+
+    /* ========== EVENTS ========== */
+
+    function emitExchangeTracking(
+        bytes32 trackingCode,
+        bytes32 toCurrencyKey,
+        uint256 toAmount
+    ) external onlyExchanger {}
 }
