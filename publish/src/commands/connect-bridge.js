@@ -69,7 +69,7 @@ const connectBridge = async ({
 			gasPrice: Web3.utils.toWei(l1GasPrice.toString(), 'gwei'),
 			gasLimit,
 		};
-		console.log(gray('> tx params:', params));
+		console.log(gray('> tx params:', JSON.stringify(params)));
 
 		await AddressResolverL1.methods.importAddresses(names.map(toBytes32), addresses).send(params);
 		await SynthetixBridgeToBase.methods
@@ -87,7 +87,7 @@ const connectBridge = async ({
 			gasPrice: Web3.utils.toWei(l2GasPrice.toString(), 'gwei'),
 			gasLimit,
 		};
-		console.log(gray('> tx params:', params));
+		console.log(gray('> tx params:', JSON.stringify(params)));
 
 		await AddressResolverL2.methods.importAddresses(names.map(toBytes32), addresses).send(params);
 		await SynthetixBridgeToOptimism.methods
@@ -144,13 +144,13 @@ const connectInstance = async ({
 		getSource,
 		deploymentPath,
 		web3,
-		account,
 	});
 	console.log(gray(`  > ${bridgeName}:`, SynthetixBridge.options.address));
 
 	return {
 		AddressResolver,
 		SynthetixBridge,
+		account,
 	};
 };
 
