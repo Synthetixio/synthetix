@@ -33,6 +33,21 @@ library SignedSafeDecimalMath {
     }
 
     /**
+     * @dev Rounds an input with an extra zero of precision, returning the result without the extra zero.
+     * Half increments round away from zero; positive numbers at a half increment are rounded up,
+     * while negative such numbers are rounded down.
+     */
+    function _roundDividingByTen(int valueTimesTen) private pure returns (int) {
+        int increment;
+        if (valueTimesTen % 10 >= 5) {
+            increment = 10;
+        } else if (valueTimesTen % 10 <= -5) {
+            increment = -10;
+        }
+        return (valueTimesTen + increment) / 10;
+    }
+
+    /**
      * @return The result of multiplying x and y, interpreting the operands as fixed-point
      * decimals.
      *
@@ -65,13 +80,7 @@ library SignedSafeDecimalMath {
     ) private pure returns (int) {
         /* Divide by UNIT to remove the extra factor introduced by the product. */
         int quotientTimesTen = x.mul(y) / (precisionUnit / 10);
-
-        // TODO: Round half away from zero.
-        if (quotientTimesTen % 10 >= 5) {
-            quotientTimesTen += 10;
-        }
-
-        return quotientTimesTen / 10;
+        return _roundDividingByTen(quotientTimesTen);
     }
 
     /**
@@ -134,13 +143,7 @@ library SignedSafeDecimalMath {
         int precisionUnit
     ) private pure returns (int) {
         int resultTimesTen = x.mul(precisionUnit * 10).div(y);
-
-        // TODO: Round half away form zero
-        if (resultTimesTen % 10 >= 5) {
-            resultTimesTen += 10;
-        }
-
-        return resultTimesTen / 10;
+        return _roundDividingByTen(resultTimesTen);
     }
 
     /**
@@ -179,12 +182,6 @@ library SignedSafeDecimalMath {
      */
     function preciseDecimalToDecimal(int i) internal pure returns (int) {
         int quotientTimesTen = i / (UNIT_TO_HIGH_PRECISION_CONVERSION_FACTOR / 10);
-
-        // TODO: Round half away from zero
-        if (quotientTimesTen % 10 >= 5) {
-            quotientTimesTen += 10;
-        }
-
-        return quotientTimesTen / 10;
+        return _roundDividingByTen(quotientTimesTen);
     }
 }
