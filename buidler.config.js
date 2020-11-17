@@ -182,7 +182,9 @@ internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
 		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
 		filePaths = filePaths.filter(filePath => {
 			const filename = path.basename(filePath, '.sol');
-			const isIgnored = ovmIgnored.some(ignored => filename === ignored);
+			const ignoredEntry = ovmIgnored[filename];
+			const isIgnored = ignoredEntry && !ignoredEntry.compile;
+
 			if (isIgnored) {
 				console.log(gray(`    > ${filename}`));
 			}
@@ -198,7 +200,6 @@ internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
 // Filtering the right sources should be enough. However, knowing which are the right sources can be hard.
 // I.e. you may mark TradingRewards to be ignored, but it ends up in the compilation anyway
 // because test-helpers/FakeTradingRewards uses it.
-// We also override this task to more easily detect when this is happening.
 internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => {
 	const graph = await runSuper();
 
@@ -213,11 +214,14 @@ internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => 
 			for (const dependency of dependencies.keys()) {
 				const filename = path.basename(dependency.globalName, '.sol');
 
-				const offender = ovmIgnored.find(ignored => filename === ignored);
-				if (offender) {
-					throw new Error(
-						red(
-							`Ignored source ${offender} is in the dependency graph because ${sourceFilename} imports it.`
+				const ignoredEntry = ovmIgnored[filename];
+				const isIgnored = ignoredEntry && !ignoredEntry.compile;
+				if (isIgnored) {
+					const offender = Object.keys(ovmIgnored).find(filename);
+
+					console.log(
+						yellow(
+							`WARNING: Ignored source ${offender} is in the dependency graph because ${sourceFilename} imports it.`
 						)
 					);
 				}
@@ -281,7 +285,20 @@ task('compile')
 			const sizes = logContractSizes({ contractToObjectMap });
 
 			if (taskArguments.failOversize) {
-				const offenders = sizes.filter(entry => +entry.pcent.split('%')[0] > 100);
+				const offenders = sizes.filter(entry => {
+					const isExcused = ovmIgnored[entry.file];
+					const oversized = +entry.pcent.split('%')[0] > 100;
+
+					if (isExcused && oversized) {
+						console.log(
+							yellow(
+								`WARNING: Contract ${entry.file} is oversized, but allowed to be so because its probably not intended for direct deployment. Make sure it is NOT deployed directly. It can be used as a dependency of a contract with a smaller size however.`
+							)
+						);
+					}
+
+					return !isExcused && oversized;
+				});
 
 				if (offenders.length > 0) {
 					const names = offenders.map(o => o.file);

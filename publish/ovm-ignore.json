@@ -1,14 +1,54 @@
-[
-	"BinaryOption",
-	"BinaryOptionMarket",
-	"BinaryOptionMarketData",
-	"BinaryOptionMarketFactory",
-	"BinaryOptionMarketManager",
-	"EtherCollateral",
-	"EtherCollateralsUSD",
-	"ExchangerWithVirtualSynth",
-	"FakeTradingRewards",
-	"MockBinaryOptionMarket",
-	"MockBinaryOptionMarketManager",
-	"TestableBinaryOptionMarket"
-]
+{
+	"BinaryOption": {
+		"compile": false,
+		"ignore": false
+	},
+	"BinaryOptionMarket": {
+		"compile": false,
+		"ignore": false
+	},
+	"BinaryOptionMarketData": {
+		"compile": false,
+		"ignore": false
+	},
+	"BinaryOptionMarketFactory": {
+		"compile": false,
+		"ignore": false
+	},
+	"BinaryOptionMarketManager": {
+		"compile": false,
+		"ignore": false
+	},
+	"EtherCollateral": {
+		"compile": false,
+		"ignore": false
+	},
+	"EtherCollateralsUSD": {
+		"compile": false,
+		"ignore": false
+	},
+	"ExchangerWithVirtualSynth": {
+		"compile": false,
+		"ignore": false
+	},
+	"FakeTradingRewards": {
+		"compile": false,
+		"ignore": false
+	},
+	"MockBinaryOptionMarket": {
+		"compile": false,
+		"ignore": false
+	},
+	"MockBinaryOptionMarketManager": {
+		"compile": false,
+		"ignore": false
+	},
+	"TestableBinaryOptionMarket": {
+		"compile": false,
+		"ignore": false
+	},
+	"Synthetix": {
+		"compile": true,
+		"ignore": true
+	}
+}
