@@ -78,9 +78,9 @@ const connectBridge = async ({
 			.send(params);
 		console.log(JSON.stringify(tx, null, 2));
 
-		console.log('SynthetixBridgeToBase.setResolverAndSyncCache()...');
-		tx = await SynthetixBridgeToBase.methods
-			.setResolverAndSyncCache(AddressResolverL1.options.address)
+		console.log('SynthetixBridgeToOptimism.setResolverAndSyncCache()...');
+		tx = await SynthetixBridgeToOptimism.methods
+			.setResolverAndSyncCache(AddressResolverL2.options.address)
 			.send(params);
 		console.log(JSON.stringify(tx, null, 2));
 	}
@@ -103,9 +103,9 @@ const connectBridge = async ({
 			.send(params);
 		console.log(JSON.stringify(tx, null, 2));
 
-		console.log('SynthetixBridgeToOptimism.setResolverAndSyncCache()...');
-		tx = await SynthetixBridgeToOptimism.methods
-			.setResolverAndSyncCache(AddressResolverL2.options.address)
+		console.log('SynthetixBridgeToBase.setResolverAndSyncCache()...');
+		tx = await SynthetixBridgeToBase.methods
+			.setResolverAndSyncCache(AddressResolverL1.options.address)
 			.send(params);
 		console.log(JSON.stringify(tx, null, 2));
 	}
