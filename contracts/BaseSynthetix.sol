@@ -287,7 +287,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         revert("Cannot be run on this layer");
     }
 
-    function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool) {
+    function liquidateDelinquentAccount(address, uint) external returns (bool) {
         revert("Cannot be run on this layer");
     }
 
