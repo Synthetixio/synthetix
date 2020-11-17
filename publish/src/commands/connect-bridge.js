@@ -56,6 +56,7 @@ const connectBridge = async ({
 		useOvm: true,
 	});
 
+	let tx;
 	let names;
 	let addresses;
 
@@ -71,10 +72,17 @@ const connectBridge = async ({
 		};
 		console.log(gray('> tx params:', JSON.stringify(params)));
 
-		await AddressResolverL1.methods.importAddresses(names.map(toBytes32), addresses).send(params);
-		await SynthetixBridgeToBase.methods
+		console.log('AddressResolverL1.importAddresses()...');
+		tx = await AddressResolverL1.methods
+			.importAddresses(names.map(toBytes32), addresses)
+			.send(params);
+		console.log(JSON.stringify(tx, null, 2));
+
+		console.log('SynthetixBridgeToBase.setResolverAndSyncCache()...');
+		tx = await SynthetixBridgeToBase.methods
 			.setResolverAndSyncCache(AddressResolverL1.options.address)
 			.send(params);
+		console.log(JSON.stringify(tx, null, 2));
 	}
 
 	console.log(gray('> Connecting bridge on L2...'));
@@ -89,10 +97,17 @@ const connectBridge = async ({
 		};
 		console.log(gray('> tx params:', JSON.stringify(params)));
 
-		await AddressResolverL2.methods.importAddresses(names.map(toBytes32), addresses).send(params);
-		await SynthetixBridgeToOptimism.methods
+		console.log('AddressResolverL2.importAddresses()...');
+		tx = await AddressResolverL2.methods
+			.importAddresses(names.map(toBytes32), addresses)
+			.send(params);
+		console.log(JSON.stringify(tx, null, 2));
+
+		console.log('SynthetixBridgeToOptimism.setResolverAndSyncCache()...');
+		tx = await SynthetixBridgeToOptimism.methods
 			.setResolverAndSyncCache(AddressResolverL2.options.address)
 			.send(params);
+		console.log(JSON.stringify(tx, null, 2));
 	}
 };
 
