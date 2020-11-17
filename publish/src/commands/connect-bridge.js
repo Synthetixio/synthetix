@@ -67,7 +67,7 @@ const connectBridge = async ({
 		const params = {
 			from: accountL1,
 			gasPrice: Web3.utils.toWei(l1GasPrice.toString(), 'gwei'),
-			gasLimit,
+			gas: gasLimit,
 		};
 		console.log(gray('> tx params:', JSON.stringify(params)));
 
@@ -85,7 +85,7 @@ const connectBridge = async ({
 		const params = {
 			from: accountL2,
 			gasPrice: Web3.utils.toWei(l2GasPrice.toString(), 'gwei'),
-			gasLimit,
+			gas: gasLimit,
 		};
 		console.log(gray('> tx params:', JSON.stringify(params)));
 
