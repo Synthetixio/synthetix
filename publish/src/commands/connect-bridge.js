@@ -23,11 +23,15 @@ const connectBridge = async ({
 	l1Messenger,
 	l2Messenger,
 	dryRun,
+	l1GasPrice,
+	l2GasPrice,
+	gasLimit,
 }) => {
 	console.log(gray('> Connecting with L1 instance...'));
 	const {
 		AddressResolver: AddressResolverL1,
 		SynthetixBridge: SynthetixBridgeToOptimism,
+		account: accountL1,
 	} = await connectInstance({
 		network: l1Network,
 		deploymentPath: l1DeploymentPath,
@@ -41,6 +45,7 @@ const connectBridge = async ({
 	const {
 		AddressResolver: AddressResolverL2,
 		SynthetixBridge: SynthetixBridgeToBase,
+		account: accountL2,
 	} = await connectInstance({
 		network: l2Network,
 		providerUrl: l2ProviderUrl,
@@ -59,8 +64,16 @@ const connectBridge = async ({
 	addresses = [l1Messenger, SynthetixBridgeToBase.options.address];
 	console.log(gray(names, addresses));
 	if (!dryRun) {
-		await AddressResolverL1.importAddresses(names.map(toBytes32), addresses);
-		await SynthetixBridgeToBase.setResolverAndSyncCache(AddressResolverL1.options.address);
+		const params = {
+			from: accountL1,
+			gasPrice: Web3.utils.toWei(l1GasPrice.toString(), 'gwei'),
+			gasLimit,
+		};
+
+		await AddressResolverL1.methods.importAddresses(names.map(toBytes32), addresses).send(params);
+		await SynthetixBridgeToBase.methods
+			.setResolverAndSyncCache(AddressResolverL1.options.address)
+			.send(params);
 	}
 
 	console.log(gray('> Connecting bridge on L2...'));
@@ -68,8 +81,16 @@ const connectBridge = async ({
 	addresses = [l2Messenger, SynthetixBridgeToOptimism.options.address];
 	console.log(gray(names, addresses));
 	if (!dryRun) {
-		await AddressResolverL2.importAddresses(names.map(toBytes32), addresses);
-		await SynthetixBridgeToOptimism.setResolverAndSyncCache(AddressResolverL2.options.address);
+		const params = {
+			from: accountL2,
+			gasPrice: Web3.utils.toWei(l2GasPrice.toString(), 'gwei'),
+			gasLimit,
+		};
+
+		await AddressResolverL2.methods.importAddresses(names.map(toBytes32), addresses).send(params);
+		await SynthetixBridgeToOptimism.methods
+			.setResolverAndSyncCache(AddressResolverL2.options.address)
+			.send(params);
 	}
 };
 
@@ -97,6 +118,13 @@ const connectInstance = async ({
 	});
 	console.log(gray('  > provider:', providerUrl));
 
+	let account;
+	if (privateKey) {
+		web3.eth.accounts.wallet.add(privateKey);
+		web3.eth.defaultAccount = web3.eth.accounts.wallet[0].address;
+		account = web3.eth.defaultAccount;
+	}
+
 	const AddressResolver = getContract({
 		contract: 'AddressResolver',
 		getTarget,
@@ -113,6 +141,7 @@ const connectInstance = async ({
 		getSource,
 		deploymentPath,
 		web3,
+		account,
 	});
 	console.log(gray(`  > ${bridgeName}:`, SynthetixBridge.options.address));
 
@@ -200,6 +229,9 @@ module.exports = {
 			.option('--l2-use-fork', 'Wether to use a fork for the L2 connection', false)
 			.option('--l1-messenger <value>', 'L1 cross domain messenger to use')
 			.option('--l2-messenger <value>', 'L2 cross domain messenger to use')
+			.option('-g, --l1-gas-price <value>', 'Gas price to set when performing transfers in L1', 1)
+			.option('-g, --l2-gas-price <value>', 'Gas price to set when performing transfers in L2', 1)
+			.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
 			.option('--dry-run', 'Do not execute any transactions')
 			.action(async (...args) => {
 				try {
