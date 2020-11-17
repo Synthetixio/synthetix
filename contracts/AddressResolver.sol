@@ -16,27 +16,35 @@ contract AddressResolver is Owned, IAddressResolver {
     constructor(address _owner) public Owned(_owner) {}
 
     /* ========== RESTRICTED FUNCTIONS ========== */
-
     function importAddresses(bytes32[] calldata names, address[] calldata destinations) external onlyOwner {
         require(names.length == destinations.length, "Input lengths must match");
 
+        // add everything first
         for (uint i = 0; i < names.length; i++) {
             repository[names[i]] = destinations[i];
+        }
+
+        // then rebuild all the caches on everything that needs it
+
+        // NOTE: This will call rebuild twice on proxies and underlyings... need to address thi
+
+        for (uint i = 0; i < destinations.length; i++) {
             // solhint-disable avoid-low-level-calls
-            (bool success, ) = address(destinations[i]).call(abi.encodePacked(MixinResolver(0).invalidateCache.selector));
+            (bool success, ) = address(destinations[i]).call(abi.encodePacked(MixinResolver(0).rebuildCache.selector));
             emit AddressImported(names[i], destinations[i], success);
         }
     }
 
-    /* ========== PUBLIC FUNCTIONS ========== */
-    function rebuildCaches(MixinResolver[] calldata destinations) external {
-        // then, attempt to update all caches as required
-        for (uint i = 0; i < destinations.length; i++) {
-            destinations[i].rebuildCache();
+    /* ========== VIEWS ========== */
+    function areAddressesImported(bytes32[] calldata names, address[] calldata destinations) external view returns (bool) {
+        for (uint i = 0; i < names.length; i++) {
+            if (repository[names[i]] != destinations[i]) {
+                return false;
+            }
         }
+        return true;
     }
 
-    /* ========== VIEWS ========== */
     function getAddress(bytes32 name) external view returns (address) {
         return repository[name];
     }
@@ -54,5 +62,5 @@ contract AddressResolver is Owned, IAddressResolver {
     }
 
     /* ========== EVENTS ========== */
-    event AddressImported(bytes32 name, address destinations, bool cacheInvalidated);
+    event AddressImported(bytes32 name, address destination, bool cacheRebuilt);
 }

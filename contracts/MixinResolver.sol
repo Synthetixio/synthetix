@@ -18,8 +18,6 @@ contract MixinResolver {
 
     uint public constant MAX_ADDRESSES_FROM_RESOLVER = 24;
 
-    bool public isCached = false;
-
     constructor(address _resolver, bytes32[MAX_ADDRESSES_FROM_RESOLVER] memory _addressesToCache) internal {
         for (uint i = 0; i < _addressesToCache.length; i++) {
             if (_addressesToCache[i] != bytes32(0)) {
@@ -31,12 +29,7 @@ contract MixinResolver {
             }
         }
         resolver = AddressResolver(_resolver);
-        // Do not sync the cache as addresses may not be in the resolver yet
-    }
-
-    /* ============ RESTRICTED FUNCTIONS ============= */
-    function invalidateCache() external onlyResolver {
-        isCached = false;
+        // Do not rebuild the cache as addresses may not be in the resolver yet
     }
 
     /* ========== PUBLIC FUNCTIONS ========== */
@@ -50,7 +43,6 @@ contract MixinResolver {
                 string(abi.encodePacked("Resolver missing target: ", name))
             );
         }
-        isCached = true;
     }
 
     /* ========== VIEWS ========== */
@@ -76,17 +68,8 @@ contract MixinResolver {
     }
 
     function requireAndGetAddress(bytes32 name) internal view returns (address) {
-        require(isCached, "Contract cache needs rebuilding");
         address _foundAddress = addressCache[name];
         require(_foundAddress != address(0), string(abi.encodePacked("Missing ", name, " address")));
         return _foundAddress;
-    }
-
-    /* ============ MODIFIERS ============= */
-    modifier onlyResolver {
-        // restrict to prevent griefing
-        address _resolver = address(resolver);
-        require(msg.sender == _resolver || msg.sender == ReadProxy(_resolver).target(), "Only callable from Resolver");
-        _;
     }
 }

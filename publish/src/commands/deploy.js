@@ -1210,38 +1210,32 @@ const deploy = async ({
 		// Now we need to add everything into the AddressResolver.
 		// We must add everything as some targets which do not use the resolver
 		// could still be a target of something which does
+		const addressArgs = [
+			Object.entries(deployer.deployedContracts).map(([contract]) => toBytes32(contract)),
+			Object.entries(deployer.deployedContracts).map(
+				([
+					,
+					{
+						options: { address },
+					},
+				]) => address
+			),
+		];
 
 		await runStep({
 			gasLimit: 5e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
+			read: 'areAddressesImported',
+			expected: input => input,
+			readArg: addressArgs,
 			write: 'importAddresses',
-			writeArg: [
-				Object.keys(deployer.deployedContracts).map(contract => toBytes32(contract)),
-				Object.values(deployer.deployedContracts).map(({ options: { address } }) => address),
-			],
+			writeArg: addressArgs,
 		});
 
-		await runStep({
-			gasLimit: 9e6, // higher gas required
-			contract: `AddressResolver`,
-			target: addressResolver,
-			write: 'rebuildCaches',
-			writeArg: [
-				Object.entries(deployer.deployedContracts)
-					.filter(([, target]) =>
-						target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')
-					)
-					.map(
-						([
-							,
-							{
-								options: { address },
-							},
-						]) => address
-					),
-			],
-		});
+		// TODO 1: use-ovm deploy will fail due to addresses with ':' in them not existing
+
+		// TODO 2: fix this ugly hack below
 
 		// This is an ugly hack: we need to halt the rest of the script if importing addresses happens from the pDAO.
 		// This relies on the fact that runStep returns undefined if nothing needed to be done, a tx hash if the
