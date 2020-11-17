@@ -7,6 +7,7 @@ import "./MixinSystemSettings.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+import "./SignedSafeMath.sol";
 import "./SignedSafeDecimalMath.sol";
 
 // Internal references
@@ -27,6 +28,9 @@ import "./interfaces/IERC20.sol";
 //     Gas tank
 //     Multi order confirmation
 //     Hook up to issuance/burning
+//     Margin Adjustment
+//     Liquidations
+//     Pausable from SystemStatus
 
 // TODO: IFuturesMarket interface
 
@@ -74,7 +78,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
 
     uint public marketSize;
     int public marketSkew;
-    uint public entryNotionalSum;
+    int public entryMarginMinusNotionalSkewSum;
     uint public pendingOrderValue;
     uint public marginSum;
 
@@ -94,13 +98,14 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
 
     constructor(
         address _owner,
+        address _resolver,
         bytes32 _baseAsset,
         uint _exchangeFee,
         uint _maxLeverage,
         uint _maxTotalMargin,
         uint _minInitialMargin,
         uint[3] memory _fundingParameters // TODO: update this to a struct
-    ) public Owned(_owner) MixinResolver(_owner, _addressesToCache) {
+    ) public Owned(_owner) MixinResolver(_resolver, _addressesToCache) {
         baseAsset = _baseAsset;
 
         exchangeFee = _exchangeFee;
@@ -159,8 +164,10 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
 
     function marketDebt() external view returns (uint debt, bool isInvalid) {
         (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
-        int debt = int(price).multiplyDecimalRound(marketSkew).add(int(entryNotionalSum)).add(int(pendingOrderValue));
-        return (uint(_max(debt, 0)), invalid);
+        int totalDebt = int(price).multiplyDecimalRound(marketSkew).add(entryMarginMinusNotionalSkewSum).add(
+            int(pendingOrderValue)
+        );
+        return (uint(_max(totalDebt, 0)), invalid);
     }
 
     function _proportionalSkew() internal view returns (int) {
@@ -199,14 +206,14 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         return _profitLoss(account);
     }
 
-    function _remainingMargin(address account) internal view returns (int remainingMargin, bool isInvalid) {
+    function _remainingMargin(address account) internal view returns (int marginRemaining, bool isInvalid) {
         (int pnl, bool invalid) = _profitLoss(account);
-        // TODO: apply funding
         int margin = positions[account].margin;
-        int remaining = margin.add(pnl);
+        int funding = 0; // TODO: apply funding
+        int remaining = margin.add(pnl).add(funding);
 
         // if the sign of our margin flipped, then the remaining margin went past zero and the position would have
-        // been liquidated. Since we only care about the sign of the product, we don't care about overflow, and
+        // been liquidated. Since we only care about the sign of the product, we don't care about overflow and
         // aren't using SignedSafeDecimalMath
         if (remaining * margin < 0) {
             return (0, invalid);
@@ -214,23 +221,27 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         return (remaining, invalid);
     }
 
-    function remainingMargin(address account) external view returns (int remainingMargin, bool isInvalid) {
+    function remainingMargin(address account) external view returns (int marginRemaining, bool isInvalid) {
         return _remainingMargin(account);
     }
 
-    function liquidationPrice(address account, bool includeFunding) external view returns (uint liquidationPrice) {
+    function liquidationPrice(address account, bool includeFunding) external view returns (uint price) {
         // If margin > 0, we're long, the position can be liquidated whenever:
         //     remainingMargin < liquidationFee
         // Otherwise, we're short, and we'll examine
         //     -remainingMargin < liquidationFee
-        // In this case, then margin and positionSize are negative, so we'll take the absolute value of
-        // these components. Hence:
-        //     liquidationPrice = entryPrice + (liquidationFee - (|margin| + funding)) / |positionSize|
+        // In the short case, the signs of entryMargin, positionSize, and funding are flipped. Hence, expanding
+        // the definition of remainingMargin, and solving for the price:
+        //     liquidationPrice = entryPrice + (liquidationFee - (|entryMargin| +- funding)) / |positionSize|
+        // (positive sign for funding when long, negative sign when short)
 
         Position storage position = positions[account];
-        int marginPlusFunding = _signedAbs(position.margin);
+        int margin = position.margin;
+        int marginPlusFunding = _signedAbs(margin);
         if (includeFunding) {
-            marginPlusFunding = marginPlusFunding.add(0); // TODO: Apply funding
+            // prettier-ignore
+            function(int, int) pure returns (int) operation = margin > 0 ? SignedSafeMath.add : SignedSafeMath.sub;
+            marginPlusFunding = operation(marginPlusFunding, 0); // TODO: Apply funding
         }
 
         int size = _signedAbs(position.size);
@@ -247,7 +258,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     }
 
     function _abs(int x) internal pure returns (uint) {
-        return uint(_abs(x));
+        return uint(_signedAbs(x));
     }
 
     function _max(int x, int y) internal pure returns (int) {
@@ -295,9 +306,10 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
 
     // TODO: Modifying a position should charge fees on the portion opened on the heavier side.
     // TODO: Make this withdraw directly from their sUSD.
+    // TODO: What to do if an order already exists.
     function submitOrder(int margin, uint leverage) external {
         require(leverage <= maxLeverage, "Max leverage exceeded");
-        require(_abs(margin) <= minInitialMargin, "Insufficient margin");
+        require(minInitialMargin <= _abs(margin), "Insufficient margin");
 
         // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
 
@@ -323,6 +335,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         emit OrderSubmitted(msg.sender, margin, leverage, roundId);
     }
 
+    // TODO
     function closePosition() external {
         return;
     }
@@ -330,8 +343,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     function cancelOrder() external {
         Order storage order = orders[msg.sender];
         require(order.pending, "No pending order");
-        order.pending = false;
         pendingOrderValue = pendingOrderValue.sub(_abs(order.margin));
+        delete orders[msg.sender];
         emit OrderCancelled(msg.sender);
 
         // TODO: Reimburse balance and fee
@@ -339,7 +352,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
 
     // TODO: Multiple position confirmations
     // TODO: Send fee to fee pool on confirmation
-    // Order confirmation should emit event including the price at which it was confirmed
+    // TODO: What to do if an order already exists.
     function confirmOrder(address account) external {
         (uint entryPrice, bool isInvalid) = _priceAndInvalid(_exchangeRates());
         require(!isInvalid, "Price is invalid");
@@ -358,10 +371,11 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         marketSize = marketSize.add(_abs(newSize)).sub(_abs(positionSize));
 
         int marginDelta = newMargin.sub(position.margin);
-        int notionalDelta = position.size.multiplyDecimalRound(int(position.entryPrice)).sub(
-            newSize.multiplyDecimalRound(int(entryPrice))
+        int notionalDelta = newSize.multiplyDecimalRound(int(entryPrice)).sub(
+            position.size.multiplyDecimalRound(int(position.entryPrice))
         );
-        entryNotionalSum = _abs(int(entryNotionalSum).add(marginDelta).add(notionalDelta));
+
+        entryMarginMinusNotionalSkewSum = entryMarginMinusNotionalSkewSum.add(marginDelta).sub(notionalDelta);
         pendingOrderValue = pendingOrderValue.sub(_abs(order.margin));
 
         // TODO: compute current funding index
@@ -372,6 +386,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         position.entryPrice = entryPrice;
         position.entryIndex = entryIndex;
 
+        delete orders[account];
         emit OrderConfirmed(account, newMargin, newSize, entryPrice, entryIndex);
     }
 

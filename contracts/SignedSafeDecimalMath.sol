@@ -1,6 +1,6 @@
-import "./SafeDecimalMath.sol";
+pragma solidity ^0.5.16;
 
-import "SignedSafeMath.sol";
+import "./SignedSafeMath.sol";
 
 
 // https://docs.synthetix.io/contracts/SisngedSafeDecimalMath
