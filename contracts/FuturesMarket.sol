@@ -13,12 +13,13 @@ import "./SignedSafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IFeePool.sol";
 import "./interfaces/IERC20.sol";
 
 
 // General market details
 //     Accrued funding sequence
-//     Fees
+//     Skew-sensitive Fees
 //     max funding rate rate of change
 //
 // Details for a particular position
@@ -59,6 +60,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         bool pending;
         int margin;
         uint leverage;
+        uint fee;
         uint roundId;
     }
 
@@ -154,6 +156,10 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates"));
+    }
+
+    function _feePool() internal view returns (IFeePool) {
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool"));
     }
 
     function _sUSD() internal view returns (IERC20) {
@@ -273,6 +279,15 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         return uint(entryPrice.add(liquidationFee.sub(marginPlusFunding).divideDecimalRound(size)));
     }
 
+    // TODO: conditional fee depending on skew
+    function _orderFee(int margin, uint leverage) internal view returns (uint) {
+        return _abs(margin.multiplyDecimalRound(int(leverage)).multiplyDecimalRound(int(exchangeFee)));
+    }
+
+    function orderFee(int margin, uint leverage) external view returns (uint) {
+        return _orderFee(margin, leverage);
+    }
+
     /* ---------- Utilities ---------- */
 
     function _signedAbs(int x) internal pure returns (int) {
@@ -359,24 +374,25 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         // TODO: If they are owed anything because the position is being closed, then remit it at confirmation.
         uint balance = _sUSD().balanceOf(msg.sender);
         uint absoluteMargin = _abs(margin);
-        require(absoluteMargin <= balance, "Insufficient balance");
+        uint fee = _orderFee(margin, leverage);
+        require(absoluteMargin.add(fee) <= balance, "Insufficient balance");
         if (absoluteMargin > 0) {
-            _manager().burnSUSD(msg.sender, absoluteMargin);
+            _manager().burnSUSD(msg.sender, absoluteMargin.add(fee));
 
             // Update pending order value
             // Revert if the margin would exceed the maximum configured for the market
             pendingOrderValue = pendingOrderValue.add(absoluteMargin);
             require(marketSize.add(pendingOrderValue) <= maxTotalMargin, "Max market size exceeded");
         }
-        // TODO: Deduct / record fee.
 
         // Lodge the order, which can be confirmed at the next price update
         uint roundId = _currentRoundId(_exchangeRates());
         order.pending = true;
         order.margin = margin;
         order.leverage = leverage;
+        order.fee = fee;
         order.roundId = roundId;
-        emit OrderSubmitted(msg.sender, margin, leverage, roundId);
+        emit OrderSubmitted(msg.sender, margin, leverage, fee, roundId);
     }
 
     function submitOrder(int margin, uint leverage) external {
@@ -415,7 +431,12 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         );
 
         entryMarginMinusNotionalSkewSum = entryMarginMinusNotionalSkewSum.add(marginDelta).sub(notionalDelta);
-        pendingOrderValue = pendingOrderValue.sub(_abs(order.margin));
+        pendingOrderValue = pendingOrderValue.sub(_abs(newMargin));
+
+        uint fee = order.fee;
+        if (fee > 0) {
+            _manager().issueSUSD(_feePool().FEE_ADDRESS(), fee);
+        }
 
         // TODO: compute current funding index
         uint entryIndex = 0;
@@ -426,7 +447,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         position.entryIndex = entryIndex;
 
         delete orders[account];
-        emit OrderConfirmed(account, newMargin, newSize, entryPrice, entryIndex);
+        emit OrderConfirmed(account, newMargin, newSize, fee, entryPrice, entryIndex);
     }
 
     event ExchangeFeeUpdated(uint fee);
@@ -434,7 +455,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     event MaxMarketSizeUpdated(uint cap);
     event MinInitialMarginUpdated(uint minMargin);
     event FundingParametersUpdated(uint maxFundingRate, uint maxFundingRateSkew, uint maxFundingRateDelta);
-    event OrderSubmitted(address indexed account, int margin, uint leverage, uint indexed roundId);
-    event OrderConfirmed(address indexed account, int margin, int size, uint entryPrice, uint entryIndex);
+    event OrderSubmitted(address indexed account, int margin, uint leverage, uint fee, uint indexed roundId);
+    event OrderConfirmed(address indexed account, int margin, int size, uint fee, uint entryPrice, uint entryIndex);
     event OrderCancelled(address indexed account);
 }
