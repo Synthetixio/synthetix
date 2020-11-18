@@ -228,6 +228,7 @@ const setupContract = async ({
 			toWei('0.02'), // refund fee
 		],
 		BinaryOptionMarketData: [],
+		FuturesMarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarket: [
 			owner,
 			tryGetAddressOf('AddressResolver'),
@@ -443,6 +444,9 @@ const setupContract = async ({
 					{ from: owner }
 				),
 			]);
+		},
+		async FuturesMarket() {
+			await cache['FuturesMarketManager'].addMarket(instance.address, { from: owner });
 		},
 
 		async GenericMock() {
@@ -694,7 +698,8 @@ const setupAllContracts = async ({
 			contract: 'BinaryOptionMarketData',
 			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
-		{ contract: 'FuturesMarket', deps: ['AddressResolver'] },
+		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
+		{ contract: 'FuturesMarket', deps: ['AddressResolver', 'FuturesMarketManager'] },
 	];
 
 	// get deduped list of all required base contracts

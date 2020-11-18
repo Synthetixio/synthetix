@@ -4,6 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
+import "./interfaces/IFuturesMarket.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
@@ -25,17 +26,24 @@ import "./interfaces/IERC20.sol";
 //     Net funding
 //
 // Functionality
-//     Gas tank
-//     Multi order confirmation
-//     Hook up to issuance/burning
+//     Gas tank (non testnet)
+//     Multi order confirmation (non testnet)
+//     Pausable from SystemStatus (no funding charged in this period, but people can close orders) (non testnet)
+//     Debt caching (non testnet)
 //     Margin Adjustment
 //     Liquidations
-//     Pausable from SystemStatus
 
 // TODO: IFuturesMarket interface
 
+interface IFuturesMarketManagerInternal {
+    function issueSUSD(address account, uint amount) external;
+
+    function burnSUSD(address account, uint amount) external;
+}
+
+
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarket
-contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
+contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMarket {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -91,8 +99,15 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
 
-    bytes32[24] internal _addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_EXRATES, CONTRACT_SYNTHSUSD, CONTRACT_FEEPOOL];
+    bytes32[24] internal _addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
+        CONTRACT_EXRATES,
+        CONTRACT_SYNTHSUSD,
+        CONTRACT_FEEPOOL,
+        CONTRACT_FUTURESMARKETMANAGER
+    ];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -104,7 +119,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         uint _maxLeverage,
         uint _maxTotalMargin,
         uint _minInitialMargin,
-        uint[3] memory _fundingParameters // TODO: update this to a struct
+        uint[3] memory _fundingParameters
     ) public Owned(_owner) MixinResolver(_resolver, _addressesToCache) {
         baseAsset = _baseAsset;
 
@@ -129,6 +144,13 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     /* ========== VIEWS ========== */
 
     /* ---------- External Contracts ---------- */
+
+    function _manager() internal view returns (IFuturesMarketManagerInternal) {
+        return
+            IFuturesMarketManagerInternal(
+                requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER, "Missing FuturesMarketManager")
+            );
+    }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates"));
@@ -304,6 +326,23 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         emit FundingParametersUpdated(maxFundingRate, maxFundingRateSkew, maxFundingRateDelta);
     }
 
+    function _cancelOrder(Order storage order) internal {
+        uint absoluteMargin = _abs(order.margin);
+        _manager().issueSUSD(msg.sender, absoluteMargin);
+        pendingOrderValue = pendingOrderValue.sub(absoluteMargin);
+
+        delete orders[msg.sender];
+        emit OrderCancelled(msg.sender);
+
+        // TODO: Reimburse fee
+    }
+
+    function cancelOrder() external {
+        Order storage order = orders[msg.sender];
+        require(order.pending, "No pending order");
+        _cancelOrder(order);
+    }
+
     // TODO: Modifying a position should charge fees on the portion opened on the heavier side.
     // TODO: Make this withdraw directly from their sUSD.
     // TODO: What to do if an order already exists.
@@ -311,19 +350,25 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
         require(leverage <= maxLeverage, "Max leverage exceeded");
         require(minInitialMargin <= _abs(margin), "Insufficient margin");
 
-        // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
-
-        uint balance = _sUSD().balanceOf(msg.sender);
-        require(_abs(margin) <= balance, "Insufficient balance");
-        // TODO: Deduct balance, and record fee.
-
-        // Update pending order value (not forgetting to deduct for any pending orders)
-        // Revert if the margin would exceed the maximum configured for the market
+        // First cancel any open order.
         Order storage order = orders[msg.sender];
         if (order.pending) {
-            pendingOrderValue = pendingOrderValue.sub(_abs(order.margin));
+            _cancelOrder(order);
         }
-        pendingOrderValue = pendingOrderValue.add(_abs(margin));
+
+        // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
+
+        // Check that they have sufficient sUSD balance to cover the desired margin, and burn it.
+        // TODO: If they are owed anything because the position is being closed, then remit it at confirmation.
+        uint balance = _sUSD().balanceOf(msg.sender);
+        uint absoluteMargin = _abs(margin);
+        require(absoluteMargin <= balance, "Insufficient balance");
+        _manager().burnSUSD(msg.sender, absoluteMargin);
+        // TODO: Deduct / record fee.
+
+        // Update pending order value
+        // Revert if the margin would exceed the maximum configured for the market
+        pendingOrderValue = pendingOrderValue.add(absoluteMargin);
         require(marketSize.add(pendingOrderValue) <= maxTotalMargin, "Max market size exceeded");
 
         // Lodge the order, which can be confirmed at the next price update
@@ -338,16 +383,6 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings {
     // TODO
     function closePosition() external {
         return;
-    }
-
-    function cancelOrder() external {
-        Order storage order = orders[msg.sender];
-        require(order.pending, "No pending order");
-        pendingOrderValue = pendingOrderValue.sub(_abs(order.margin));
-        delete orders[msg.sender];
-        emit OrderCancelled(msg.sender);
-
-        // TODO: Reimburse balance and fee
     }
 
     // TODO: Multiple position confirmations

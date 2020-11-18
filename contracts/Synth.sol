@@ -32,8 +32,15 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
 
-    bytes32[24] internal addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_EXCHANGER, CONTRACT_ISSUER, CONTRACT_FEEPOOL];
+    bytes32[24] internal addressesToCache = [
+        CONTRACT_SYSTEMSTATUS,
+        CONTRACT_EXCHANGER,
+        CONTRACT_ISSUER,
+        CONTRACT_FEEPOOL,
+        CONTRACT_FUTURESMARKETMANAGER
+    ];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -175,6 +182,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     }
 
     /* ========== VIEWS ========== */
+
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
     }
@@ -189,6 +197,10 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+    }
+
+    function futuresMarketManager() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER, "Missing FuturesMarketManager");
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
@@ -232,11 +244,13 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== MODIFIERS ========== */
 
     modifier onlyInternalContracts() {
-        bool isFeePool = msg.sender == address(feePool());
-        bool isExchanger = msg.sender == address(exchanger());
-        bool isIssuer = msg.sender == address(issuer());
-
-        require(isFeePool || isExchanger || isIssuer, "Only FeePool, Exchanger or Issuer contracts allowed");
+        require(
+            msg.sender == address(feePool()) ||
+                msg.sender == address(exchanger()) ||
+                msg.sender == address(issuer()) ||
+                msg.sender == address(futuresMarketManager()),
+            "Only internal contracts allowed"
+        );
         _;
     }
 

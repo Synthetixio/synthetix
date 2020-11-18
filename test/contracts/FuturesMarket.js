@@ -8,7 +8,7 @@ const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 contract('FuturesMarket', accounts => {
-	let futuresMarket, exchangeRates, oracle, sUSD;
+	let futuresMarketManager, futuresMarket, exchangeRates, oracle, sUSD;
 
 	const trader = accounts[2];
 	const noBalance = accounts[3];
@@ -25,6 +25,7 @@ contract('FuturesMarket', accounts => {
 
 	before(async () => {
 		({
+			FuturesMarketManager: futuresMarketManager,
 			FuturesMarket: futuresMarket,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSD,
@@ -53,7 +54,7 @@ contract('FuturesMarket', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	describe('Basic parameters', () => {
+	describe.only('Basic parameters', () => {
 		it('static parameters are set properly at construction', async () => {
 			assert.equal(await futuresMarket.baseAsset(), baseAsset);
 			assert.bnEqual(await futuresMarket.exchangeFee(), exchangeFee);
@@ -83,11 +84,12 @@ contract('FuturesMarket', accounts => {
 		});
 	});
 
-	describe('Submitting orders', () => {
+	describe.only('Submitting orders', () => {
 		it('can successfully submit an order', async () => {
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');
 
+			const preBalance = await sUSD.balanceOf(trader);
 			const pendingOrderValue = await futuresMarket.pendingOrderValue();
 
 			await futuresMarket.submitOrder(margin, leverage, { from: trader });
@@ -98,7 +100,16 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, leverage);
 			assert.bnEqual(order.roundId, await futuresMarket.currentRoundId());
 
+			assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(margin));
 			assert.bnEqual(await futuresMarket.pendingOrderValue(), pendingOrderValue.add(margin));
+		});
+
+		it('submitting orders emits events properly.', async () => {
+			assert.isTrue(false);
+		});
+
+		it('submitting a second order cancels the first one.', async () => {
+			assert.isTrue(false);
 		});
 
 		it('max leverage cannot be exceeded', async () => {
@@ -123,8 +134,9 @@ contract('FuturesMarket', accounts => {
 		});
 	});
 
-	describe('Cancelling orders', () => {
+	describe.only('Cancelling orders', () => {
 		it('can successfully cancel an order', async () => {
+			const preBalance = await sUSD.balanceOf(trader);
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');
 			await futuresMarket.submitOrder(margin, leverage, { from: trader });
@@ -138,7 +150,12 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.margin, toUnit(0));
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
+			assert.bnEqual(await sUSD.balanceOf(trader), preBalance);
 			assert.bnEqual(await futuresMarket.pendingOrderValue(), pendingOrderValue.sub(margin));
+		});
+
+		it('properly emits events', async () => {
+			assert.isTrue(false);
 		});
 
 		it('cannot cancel an order if no pending order exists', async () => {
