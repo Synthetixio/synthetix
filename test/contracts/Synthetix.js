@@ -79,13 +79,8 @@ contract('Synthetix', async accounts => {
 	it('ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: synthetix.abi,
-			ignoreParents: ['ExternStateToken', 'MixinResolver'],
+			ignoreParents: ['BaseSynthetix'],
 			expected: [
-				'burnSecondary',
-				'burnSynths',
-				'burnSynthsOnBehalf',
-				'burnSynthsToTarget',
-				'burnSynthsToTargetOnBehalf',
 				'emitExchangeRebate',
 				'emitExchangeReclaim',
 				'emitSynthExchange',
@@ -95,17 +90,9 @@ contract('Synthetix', async accounts => {
 				'exchangeOnBehalfWithTracking',
 				'exchangeWithTracking',
 				'exchangeWithVirtual',
-				'issueMaxSynths',
-				'issueMaxSynthsOnBehalf',
-				'issueSynths',
-				'issueSynthsOnBehalf',
-				'mint',
-				'mintSecondary',
-				'mintSecondaryRewards',
-				'settle',
-				'transfer',
-				'transferFrom',
 				'liquidateDelinquentAccount',
+				'mint',
+				'settle',
 			],
 		});
 	});
