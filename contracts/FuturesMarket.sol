@@ -18,13 +18,11 @@ import "./interfaces/IERC20.sol";
 
 
 // General market details
-//     Accrued funding sequence
 //     Skew-sensitive Fees
 //     max funding rate rate of change
 //
 // Details for a particular position
-//     Funding
-//     Net funding
+//     Properly accrue funding
 //
 // Functionality
 //     Gas tank (non testnet)
@@ -33,8 +31,6 @@ import "./interfaces/IERC20.sol";
 //     Debt caching (non testnet)
 //     Margin Adjustment
 //     Liquidations
-
-// TODO: IFuturesMarket interface
 
 interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
@@ -95,6 +91,9 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     mapping(address => Order) public orders;
     mapping(address => Position) public positions;
 
+    uint public fundingLastRecomputed;
+    int[] public fundingSequence;
+
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -141,6 +140,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         fundingParameters.maxFundingRateSkew = _fundingParameters[1];
         fundingParameters.maxFundingRateDelta = _fundingParameters[2];
         emit FundingParametersUpdated(_fundingParameters[0], _fundingParameters[1], _fundingParameters[2]);
+
+        fundingSequence.push(0);
     }
 
     /* ========== VIEWS ========== */
@@ -216,6 +217,38 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         return _currentFundingRate();
     }
 
+    // TODO: respect maximum funding rate of change
+    function _unrecordedFunding() internal view returns (int funding, bool isInvalid) {
+        int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
+        (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
+        return (_currentFundingRate().multiplyDecimalRound(int(price)).mul(elapsed), invalid);
+    }
+
+    function unrecordedFunding() external view returns (int funding, bool isInvalid) {
+        return _unrecordedFunding();
+    }
+
+    // TODO: respect maximum funding rate of change
+    function _netFundingPerUnit(
+        uint startIndex,
+        uint endIndex,
+        uint sequenceLength
+    ) internal view returns (int funding, bool isInvalid) {
+        if (endIndex == sequenceLength) {
+            (int unrecorded, bool invalid) = _unrecordedFunding();
+            funding = unrecorded;
+            isInvalid = invalid;
+            endIndex = sequenceLength.sub(1);
+        }
+
+        funding = funding.add(fundingSequence[endIndex]).sub(fundingSequence[startIndex]);
+        return (funding, isInvalid);
+    }
+
+    function netFundingPerUnit(uint startIndex, uint endIndex) external view returns (int funding, bool isInvalid) {
+        return _netFundingPerUnit(startIndex, endIndex, fundingSequence.length);
+    }
+
     /* ---------- Position Details ---------- */
 
     function notionalValue(address account) external view returns (int value, bool isInvalid) {
@@ -232,6 +265,21 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
 
     function profitLoss(address account) external view returns (int pnl, bool isInvalid) {
         return _profitLoss(account);
+    }
+
+    function _accruedFunding(address account) internal view returns (int funding, bool isInvalid) {
+        Position storage position = positions[account];
+        uint entryIndex = position.entryIndex;
+        if (entryIndex == 0) {
+            return (0, false);
+        }
+        uint sequenceLength = fundingSequence.length;
+        (int net, bool invalid) = _netFundingPerUnit(entryIndex, sequenceLength, sequenceLength);
+        return (position.size.multiplyDecimalRound(net), invalid);
+    }
+
+    function accruedFunding(address account) external view returns (int funding, bool isInvalid) {
+        return _accruedFunding(account);
     }
 
     function _remainingMargin(address account) internal view returns (int marginRemaining, bool isInvalid) {
@@ -341,15 +389,24 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         emit FundingParametersUpdated(maxFundingRate, maxFundingRateSkew, maxFundingRateDelta);
     }
 
+    function _recomputeFunding() internal returns (uint lastIndex) {
+        (int funding, bool invalid) = _unrecordedFunding();
+        require(!invalid, "Price is invalid");
+
+        uint sequenceLength = fundingSequence.length;
+        fundingSequence.push(fundingSequence[sequenceLength.sub(1)].add(funding));
+        fundingLastRecomputed = block.timestamp;
+
+        return sequenceLength;
+    }
+
     function _cancelOrder(Order storage order) internal {
         uint absoluteMargin = _abs(order.margin);
-        _manager().issueSUSD(msg.sender, absoluteMargin);
+        _manager().issueSUSD(msg.sender, absoluteMargin.add(order.fee));
         pendingOrderValue = pendingOrderValue.sub(absoluteMargin);
 
         delete orders[msg.sender];
         emit OrderCancelled(msg.sender);
-
-        // TODO: Reimburse fee
     }
 
     function cancelOrder() external {
@@ -449,6 +506,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         delete orders[account];
         emit OrderConfirmed(account, newMargin, newSize, fee, entryPrice, entryIndex);
     }
+
+    /* ========== EVENTS ========== */
 
     event ExchangeFeeUpdated(uint fee);
     event MaxLeverageUpdated(uint leverage);
