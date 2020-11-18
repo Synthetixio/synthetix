@@ -235,4 +235,63 @@ contract('FuturesMarket', accounts => {
 			assert.isTrue(false);
 		});
 	});
+
+	describe.only('Closing orders', () => {
+		it('can close an open position once a new price arrives', async () => {
+			const margin = toUnit('1000');
+			const leverage = toUnit('10');
+			await futuresMarket.submitOrder(margin, leverage, { from: trader });
+
+			await exchangeRates.updateRates([baseAsset], [toUnit('200')], await currentTime(), {
+				from: oracle,
+			});
+			await futuresMarket.confirmOrder(trader);
+
+			await futuresMarket.closePosition({ from: trader });
+
+			const price = toUnit('100');
+			await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
+				from: oracle,
+			});
+			await futuresMarket.confirmOrder(trader);
+
+			const position = await futuresMarket.positions(trader);
+
+			assert.bnEqual(position.margin, toUnit(0));
+			assert.bnEqual(position.size, toUnit(0));
+			assert.bnEqual(position.entryPrice, price);
+			assert.bnEqual(position.entryIndex, toBN(0));
+
+			// Skew, size, entry notional sum, pending order value are updated.
+			assert.bnEqual(await futuresMarket.marketSkew(), toUnit(0));
+			assert.bnEqual(await futuresMarket.marketSize(), toUnit(0));
+			assert.bnEqual(await futuresMarket.entryMarginMinusNotionalSkewSum(), toUnit(0));
+			assert.bnEqual(await futuresMarket.pendingOrderValue(), toBN(0));
+
+			// Order values are deleted
+			const order = await futuresMarket.orders(trader);
+			assert.isFalse(order.pending);
+			assert.bnEqual(order.margin, toUnit(0));
+			assert.bnEqual(order.leverage, toUnit(0));
+			assert.bnEqual(order.roundId, toUnit(0));
+		});
+
+		it('closing positions fails if a new price has not been set.', async () => {
+			const margin = toUnit('1000');
+			const leverage = toUnit('10');
+			await futuresMarket.submitOrder(margin, leverage, { from: trader });
+
+			await exchangeRates.updateRates([baseAsset], [toUnit('200')], await currentTime(), {
+				from: oracle,
+			});
+			await futuresMarket.confirmOrder(trader);
+			await futuresMarket.closePosition({ from: trader });
+
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Awaiting next price');
+		});
+
+		it('closing a position cancels any open orders.', async () => {
+			assert.isFalse(true);
+		});
+	});
 });

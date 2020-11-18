@@ -346,10 +346,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     // TODO: Modifying a position should charge fees on the portion opened on the heavier side.
     // TODO: Make this withdraw directly from their sUSD.
     // TODO: What to do if an order already exists.
-    function submitOrder(int margin, uint leverage) external {
-        require(leverage <= maxLeverage, "Max leverage exceeded");
-        require(minInitialMargin <= _abs(margin), "Insufficient margin");
-
+    function _submitOrder(int margin, uint leverage) internal {
         // First cancel any open order.
         Order storage order = orders[msg.sender];
         if (order.pending) {
@@ -363,13 +360,15 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         uint balance = _sUSD().balanceOf(msg.sender);
         uint absoluteMargin = _abs(margin);
         require(absoluteMargin <= balance, "Insufficient balance");
-        _manager().burnSUSD(msg.sender, absoluteMargin);
-        // TODO: Deduct / record fee.
+        if (absoluteMargin > 0) {
+            _manager().burnSUSD(msg.sender, absoluteMargin);
 
-        // Update pending order value
-        // Revert if the margin would exceed the maximum configured for the market
-        pendingOrderValue = pendingOrderValue.add(absoluteMargin);
-        require(marketSize.add(pendingOrderValue) <= maxTotalMargin, "Max market size exceeded");
+            // Update pending order value
+            // Revert if the margin would exceed the maximum configured for the market
+            pendingOrderValue = pendingOrderValue.add(absoluteMargin);
+            require(marketSize.add(pendingOrderValue) <= maxTotalMargin, "Max market size exceeded");
+        }
+        // TODO: Deduct / record fee.
 
         // Lodge the order, which can be confirmed at the next price update
         uint roundId = _currentRoundId(_exchangeRates());
@@ -380,9 +379,14 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         emit OrderSubmitted(msg.sender, margin, leverage, roundId);
     }
 
-    // TODO
+    function submitOrder(int margin, uint leverage) external {
+        require(leverage <= maxLeverage, "Max leverage exceeded");
+        require(minInitialMargin <= _abs(margin), "Insufficient margin");
+        _submitOrder(margin, leverage);
+    }
+
     function closePosition() external {
-        return;
+        _submitOrder(0, 0);
     }
 
     // TODO: Multiple position confirmations
