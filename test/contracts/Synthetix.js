@@ -1,8 +1,10 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+
+const { smockit } = require('@eth-optimism/smock');
 
 require('./common'); // import common test scaffolding
 
@@ -199,6 +201,100 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
+	describe('Exchanger calls', () => {
+		let smockExchanger;
+		beforeEach(async () => {
+			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
+			smockExchanger.smocked.exchangeOnBehalf.will.return.with(() => '1');
+			smockExchanger.smocked.exchangeWithTracking.will.return.with(() => '1');
+			smockExchanger.smocked.exchangeOnBehalfWithTracking.will.return.with(() => '1');
+			smockExchanger.smocked.exchangeWithVirtual.will.return.with(() => ['1', account1]);
+			smockExchanger.smocked.settle.will.return.with(() => ['1', '2', '3']);
+			await addressResolver.importAddresses(
+				['Exchanger'].map(toBytes32),
+				[smockExchanger.address],
+				{ from: owner }
+			);
+			await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		});
+
+		const amount1 = '10';
+		const currencyKey1 = sAUD;
+		const currencyKey2 = sEUR;
+		const trackingCode = toBytes32('1inch');
+		const msgSender = owner;
+
+		it('exchangeOnBehalf is called with the right arguments ', async () => {
+			await synthetix.exchangeOnBehalf(account1, currencyKey1, amount1, currencyKey2, {
+				from: owner,
+			});
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][0], account1);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][1], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][2], currencyKey1);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][3].toString(), amount1);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][4], currencyKey2);
+		});
+
+		it('exchangeWithTracking is called with the right arguments ', async () => {
+			await synthetix.exchangeWithTracking(
+				currencyKey1,
+				amount1,
+				currencyKey2,
+				account2,
+				trackingCode,
+				{ from: owner }
+			);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][0], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][1], currencyKey1);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][2].toString(), amount1);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][3], currencyKey2);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][4], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][5], account2);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][6], trackingCode);
+		});
+
+		it('exchangeOnBehalfWithTracking is called with the right arguments ', async () => {
+			await synthetix.exchangeOnBehalfWithTracking(
+				account1,
+				currencyKey1,
+				amount1,
+				currencyKey2,
+				account2,
+				trackingCode,
+				{ from: owner }
+			);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][0], account1);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][1], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][2], currencyKey1);
+			assert.equal(
+				smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][3].toString(),
+				amount1
+			);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][4], currencyKey2);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][5], account2);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][6], trackingCode);
+		});
+
+		it('exchangeWithVirtual is called with the right arguments ', async () => {
+			await synthetix.exchangeWithVirtual(currencyKey1, amount1, currencyKey2, trackingCode, {
+				from: owner,
+			});
+			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][0], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][1], currencyKey1);
+			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][2].toString(), amount1);
+			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][3], currencyKey2);
+			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][4], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][5], trackingCode);
+		});
+
+		it('settle is called with the right arguments ', async () => {
+			await synthetix.settle(currencyKey1, {
+				from: owner,
+			});
+			assert.equal(smockExchanger.smocked.settle.calls[0][0], msgSender);
+			assert.equal(smockExchanger.smocked.settle.calls[0][1].toString(), currencyKey1);
+		});
+	});
 	describe('isWaitingPeriod()', () => {
 		it('returns false by default', async () => {
 			assert.isFalse(await synthetix.isWaitingPeriod(sETH));
