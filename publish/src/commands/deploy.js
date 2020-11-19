@@ -1217,7 +1217,7 @@ const deploy = async ({
 
 	if (deployedFuturesMarkets.length > 0) {
 		const numManagerKnownMarkets = await futuresMarketManager.methods.numMarkets().call();
-		const managerKnownMarkets = (
+		const managerKnownMarkets = Array.from(
 			await futuresMarketManager.methods.markets(0, numManagerKnownMarkets).call()
 		).sort();
 
@@ -1238,12 +1238,6 @@ const deploy = async ({
 		}
 
 		const toAdd = deployedFuturesMarkets.filter(market => !managerKnownMarkets.includes(market));
-
-		console.log(deployedFuturesMarkets);
-		console.log(managerKnownMarkets);
-		console.log(toRemove);
-		console.log(toKeep);
-		console.log(toAdd);
 
 		if (toAdd.length > 0) {
 			await runStep({
