@@ -2,16 +2,13 @@
 	"SystemSettings": {
 		"deploy": false
 	},
-	"SecondaryDeposit": {
+	"SynthetixBridgeToBase": {
 		"deploy": false
 	},
 	"AddressResolver": {
 		"deploy": false
 	},
 	"ReadProxyAddressResolver": {
-		"deploy": false
-	},
-	"TradingRewards": {
 		"deploy": false
 	},
 	"DebtCache": {
