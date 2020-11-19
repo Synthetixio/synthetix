@@ -119,7 +119,7 @@ contract FuturesMarketData {
         return summaries;
     }
 
-    function marketSummaryForMarkets(address[] calldata markets) external view returns (MarketSummary[] memory) {
+    function marketSummaries(address[] calldata markets) external view returns (MarketSummary[] memory) {
         return _marketSummaries(markets);
     }
 
