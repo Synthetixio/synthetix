@@ -201,7 +201,7 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	describe('Exchanger calls', () => {
+	describe('Exchanger calls @cov-skip', () => {
 		let smockExchanger;
 		beforeEach(async () => {
 			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
