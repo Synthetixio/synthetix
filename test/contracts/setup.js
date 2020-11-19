@@ -446,7 +446,7 @@ const setupContract = async ({
 			]);
 		},
 		async FuturesMarket() {
-			await cache['FuturesMarketManager'].addMarket(instance.address, { from: owner });
+			await cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner });
 		},
 
 		async GenericMock() {

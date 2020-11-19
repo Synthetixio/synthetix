@@ -119,6 +119,10 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         return getDebtSnapshotStaleTime();
     }
 
+    function futuresLiquidationFee() external view returns (uint) {
+        return getFuturesLiquidationFee();
+    }
+
     function aggregatorWarningFlags() external view returns (address) {
         return getAggregatorWarningFlags();
     }

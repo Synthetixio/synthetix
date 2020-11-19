@@ -20,6 +20,7 @@ contract FuturesMarketManager is Owned, MixinResolver {
     /* ========== STATE VARIABLES ========== */
 
     AddressListLib.AddressList internal _markets;
+    mapping(bytes32 => address) public marketForAsset;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -41,6 +42,15 @@ contract FuturesMarketManager is Owned, MixinResolver {
         return _markets.getPage(index, pageSize);
     }
 
+    function marketsForAssets(bytes32[] calldata assets) external returns (address[] memory) {
+        uint numAssets = assets.length;
+        address[] results = new address[](numAssets);
+        for (uint i; i < numAssets; i++) {
+            results[i] = marketForAsset[assets[i]];
+        }
+        return results;
+    }
+
     // TODO: Plug this into total system debt calculation
     // TODO: Caching
     function totalDebt() external view returns (uint debt, bool isInvalid) {
@@ -57,15 +67,31 @@ contract FuturesMarketManager is Owned, MixinResolver {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function addMarket(address market) external onlyOwner {
-        require(!_markets.contains(market), "Market already exists");
-        _markets.push(market);
-        emit MarketAdded(market);
+    function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
+        uint numMarkets = marketsToAdd.length;
+        for (uint i; i < numMarkets; i++) {
+            address market = marketsToAdd[i];
+            require(!_markets.contains(market), "Market already exists");
+
+            bytes32 key = IFuturesMarket(market).baseAsset();
+            require(marketForAsset[key] == address(0), "Market already exists for this asset");
+            marketForAsset[key] = market;
+            _markets.push(market);
+            emit MarketAdded(market);
+        }
     }
 
-    function removeMarket(address market) external onlyOwner {
-        _markets.remove(market);
-        emit MarketRemoved(market);
+    function removeMarkets(address[] calldata marketsToRemove) external onlyOwner {
+        uint numMarkets = marketsToRemove.length;
+        for (uint i; i < numMarkets; i++) {
+            address market = marketsToRemove[i];
+
+            bytes32 key = IFuturesMarket(market).baseAsset();
+            require(marketForAsset[key] != address(0), "No market exists for this asset");
+            delete marketForAsset[key];
+            _markets.remove(market);
+            emit MarketRemoved(market);
+        }
     }
 
     function issueSUSD(address account, uint amount) external onlyMarkets(msg.sender) {
