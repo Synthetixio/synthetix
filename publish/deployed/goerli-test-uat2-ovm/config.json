@@ -115,5 +115,8 @@
 	},
 	"TokenStatesUSD": {
 		"deploy": false
+	},
+	"TradingRewards": {
+		"deploy": false
 	}
 }
