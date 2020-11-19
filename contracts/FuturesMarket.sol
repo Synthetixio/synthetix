@@ -201,7 +201,11 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     }
 
     function _proportionalSkew() internal view returns (int) {
-        return marketSkew.divideDecimalRound(int(marketSize));
+        int signedSize = int(marketSize);
+        if (signedSize == 0) {
+            return 0;
+        }
+        return marketSkew.divideDecimalRound(signedSize);
     }
 
     function proportionalSkew() external view returns (int) {
@@ -209,8 +213,14 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     }
 
     function _currentFundingRate() internal view returns (int) {
-        int functionFraction = _proportionalSkew().divideDecimalRound(int(fundingParameters.maxFundingRateSkew));
-        return _min(_max(-1, functionFraction), 1).multiplyDecimalRound(int(fundingParameters.maxFundingRate));
+        int maxFundingRateSkew = int(fundingParameters.maxFundingRateSkew);
+        int maxFundingRate = int(fundingParameters.maxFundingRate);
+        if (maxFundingRateSkew == 0) {
+            return maxFundingRate;
+        }
+
+        int functionFraction = _proportionalSkew().divideDecimalRound(maxFundingRateSkew);
+        return _min(_max(-1, functionFraction), 1).multiplyDecimalRound(maxFundingRate);
     }
 
     // TODO: respect max funding rate rate of change
@@ -313,6 +323,12 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         // (positive sign for funding when long, negative sign when short)
 
         Position storage position = positions[account];
+        int size = _signedAbs(position.size);
+
+        if (size == 0) {
+            return 0;
+        }
+
         int margin = position.margin;
         int marginPlusFunding = _signedAbs(margin);
         if (includeFunding) {
@@ -321,7 +337,6 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
             marginPlusFunding = operation(marginPlusFunding, 0); // TODO: Apply funding
         }
 
-        int size = _signedAbs(position.size);
         int entryPrice = int(position.entryPrice);
 
         int liquidationFee = int(getFuturesLiquidationFee());
@@ -440,6 +455,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
             // Update pending order value
             // Revert if the margin would exceed the maximum configured for the market
             pendingOrderValue = pendingOrderValue.add(absoluteMargin);
+            // TODO: This requirement needs to process total margin, not market size.
             require(marketSize.add(pendingOrderValue) <= maxTotalMargin, "Max market size exceeded");
         }
 
@@ -469,6 +485,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     function confirmOrder(address account) external {
         (uint entryPrice, bool isInvalid) = _priceAndInvalid(_exchangeRates());
         require(!isInvalid, "Price is invalid");
+        require(entryPrice != 0, "Zero entry price. Cancel order and try again.");
 
         Order storage order = orders[account];
         require(order.pending, "No pending order");
