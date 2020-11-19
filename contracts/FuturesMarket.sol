@@ -86,7 +86,6 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     int public marketSkew;
     int public entryMarginMinusNotionalSkewSum;
     uint public pendingOrderValue;
-    uint public marginSum;
 
     mapping(address => Order) public orders;
     mapping(address => Position) public positions;

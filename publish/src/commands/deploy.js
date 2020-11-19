@@ -1276,6 +1276,10 @@ const deploy = async ({
 		name: 'BinaryOptionMarketData',
 	});
 
+	await deployer.deployContract({
+		name: 'FuturesMarketData',
+	});
+
 	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
 
 	// Setup remaining price feeds (that aren't synths)

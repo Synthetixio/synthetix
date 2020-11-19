@@ -243,6 +243,7 @@ const setupContract = async ({
 				toWei('0.0125'), // 1.25% per hour max funding rate of change
 			],
 		],
+		FuturesMarketData: [],
 	};
 
 	let instance;
@@ -700,6 +701,7 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
 		{ contract: 'FuturesMarket', deps: ['AddressResolver', 'FuturesMarketManager'] },
+		{ contract: 'FuturesMarketData', deps: [] },
 	];
 
 	// get deduped list of all required base contracts
