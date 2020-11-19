@@ -1164,8 +1164,100 @@ const deploy = async ({
 			creatorFee,
 			refundFee,
 		],
-		deps: ['AddressResolver'],
+		deps: [],
 	});
+
+	// ----------------
+	// Futures market setup
+	// ----------------
+
+	console.log(gray(`\n------ DEPLOY FUTURES MARKETS ------\n`));
+
+	const futuresMarketManager = await deployer.deployContract({
+		name: 'FuturesMarketManager',
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
+	const futuresAssets = ['BTC', 'ETH', 'LINK'];
+	const deployedFuturesMarkets = [];
+
+	// TODO: Perform this programmatically per-market
+	const exchangeFee = w3utils.toWei('0.003');
+	const maxLeverage = w3utils.toWei('10');
+	const maxTotalMargin = w3utils.toWei('100000');
+	const minInitialMargin = w3utils.toWei('100');
+	const fundingParameters = [
+		w3utils.toWei('0.1'), // max funding rate per day
+		w3utils.toWei('1'), // max funding rate skew
+		w3utils.toWei('0.0125'), // max funding rate delta per hour
+	];
+
+	for (const asset of futuresAssets) {
+		const result = await deployer.deployContract({
+			name: 'FuturesMarket' + asset,
+			source: 'FuturesMarket',
+			args: [
+				account,
+				addressOf(readProxyForResolver),
+				toBytes32('s' + asset),
+				exchangeFee,
+				maxLeverage,
+				maxTotalMargin,
+				minInitialMargin,
+				fundingParameters,
+			],
+		});
+
+		if (result !== undefined) {
+			deployedFuturesMarkets.push(result.options.address);
+		}
+	}
+
+	// Now replace the relevant markets in the manager (if any)
+
+	if (deployedFuturesMarkets.length > 0) {
+		const numManagerKnownMarkets = await futuresMarketManager.methods.numMarkets().call();
+		const managerKnownMarkets = (
+			await futuresMarketManager.methods.markets(0, numManagerKnownMarkets).call()
+		).sort();
+
+		const toRemove = managerKnownMarkets.filter(market => !deployedFuturesMarkets.includes(market));
+		const toKeep = managerKnownMarkets
+			.filter(market => deployedFuturesMarkets.includes(market))
+			.sort();
+		if (toRemove.length > 0) {
+			await runStep({
+				contract: `FuturesMarketManager`,
+				target: futuresMarketManager,
+				read: 'markets',
+				readArg: [0, numManagerKnownMarkets],
+				expected: markets => JSON.stringify(markets.sort()) === JSON.stringify(toKeep),
+				write: 'removeMarkets',
+				writeArg: [toRemove],
+			});
+		}
+
+		const toAdd = deployedFuturesMarkets.filter(market => !managerKnownMarkets.includes(market));
+
+		console.log(deployedFuturesMarkets);
+		console.log(managerKnownMarkets);
+		console.log(toRemove);
+		console.log(toKeep);
+		console.log(toAdd);
+
+		if (toAdd.length > 0) {
+			await runStep({
+				contract: `FuturesMarketManager`,
+				target: futuresMarketManager,
+				read: 'markets',
+				readArg: [0, Math.max(numManagerKnownMarkets, deployedFuturesMarkets.length)],
+				expected: markets =>
+					JSON.stringify(markets.sort()) === JSON.stringify(deployedFuturesMarkets.sort()),
+				write: 'addMarkets',
+				writeArg: [toAdd],
+			});
+		}
+	}
 
 	console.log(gray(`\n------ DEPLOY DAPP UTILITIES ------\n`));
 
@@ -1708,6 +1800,15 @@ const deploy = async ({
 				expected: input => input !== '0', // only change if zero
 				write: 'setDebtSnapshotStaleTime',
 				writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
+			});
+
+			await runStep({
+				contract: 'SystemSettings',
+				target: systemSettings,
+				read: 'futuresLiquidationFee',
+				expected: input => input !== '0', // only change if zero
+				write: 'setFuturesLiquidationFee',
+				writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE'),
 			});
 
 			const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[

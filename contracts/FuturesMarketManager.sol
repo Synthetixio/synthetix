@@ -42,13 +42,21 @@ contract FuturesMarketManager is Owned, MixinResolver {
         return _markets.getPage(index, pageSize);
     }
 
-    function marketsForAssets(bytes32[] calldata assets) external returns (address[] memory) {
+    function numMarkets() external view returns (uint) {
+        return _markets.elements.length;
+    }
+
+    function _marketsForAssets(bytes32[] memory assets) internal returns (address[] memory) {
         uint numAssets = assets.length;
-        address[] results = new address[](numAssets);
+        address[] memory results = new address[](numAssets);
         for (uint i; i < numAssets; i++) {
             results[i] = marketForAsset[assets[i]];
         }
         return results;
+    }
+
+    function marketsForAssets(bytes32[] calldata assets) external returns (address[] memory) {
+        return _marketsForAssets(assets);
     }
 
     // TODO: Plug this into total system debt calculation
@@ -81,7 +89,7 @@ contract FuturesMarketManager is Owned, MixinResolver {
         }
     }
 
-    function removeMarkets(address[] calldata marketsToRemove) external onlyOwner {
+    function _removeMarkets(address[] memory marketsToRemove) internal {
         uint numMarkets = marketsToRemove.length;
         for (uint i; i < numMarkets; i++) {
             address market = marketsToRemove[i];
@@ -92,6 +100,14 @@ contract FuturesMarketManager is Owned, MixinResolver {
             _markets.remove(market);
             emit MarketRemoved(market);
         }
+    }
+
+    function removeMarkets(address[] calldata marketsToRemove) external onlyOwner {
+        return _removeMarkets(marketsToRemove);
+    }
+
+    function removeMarketsByAsset(bytes32[] calldata assetsToRemove) external onlyOwner {
+        _removeMarkets(_marketsForAssets(assetsToRemove));
     }
 
     function issueSUSD(address account, uint amount) external onlyMarkets(msg.sender) {

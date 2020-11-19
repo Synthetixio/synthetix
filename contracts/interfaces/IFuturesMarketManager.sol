@@ -4,6 +4,8 @@ pragma solidity ^0.5.16;
 interface IFuturesMarketManager {
     function markets(uint index, uint pageSize) external view returns (address[] memory);
 
+    function numMarkets() external view returns (uint);
+
     function marketForAsset(bytes32 asset) external returns (address);
 
     function marketsForAssets(bytes32[] calldata assets) external returns (address[] memory);
