@@ -10,5 +10,7 @@
 	"FakeTradingRewards",
 	"MockBinaryOptionMarket",
 	"MockBinaryOptionMarketManager",
-	"TestableBinaryOptionMarket"
+	"TestableBinaryOptionMarket",
+	"Synthetix",
+	"TradingRewards"
 ]
