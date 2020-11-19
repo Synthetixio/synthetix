@@ -243,7 +243,7 @@ const setupContract = async ({
 				toWei('0.0125'), // 1.25% per hour max funding rate of change
 			],
 		],
-		FuturesMarketData: [],
+		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;

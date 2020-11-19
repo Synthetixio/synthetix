@@ -3,9 +3,25 @@ pragma experimental ABIEncoderV2;
 
 // Internal references
 import "./FuturesMarket.sol";
+import "./FuturesMarketManager.sol";
+import "./interfaces/IAddressResolver.sol";
 
 
 contract FuturesMarketData {
+    /* ========== TYPES ========== */
+
+    struct MarketSummary {
+        address market;
+        bytes32 asset;
+        uint maxLeverage;
+        uint price;
+        uint marketSize;
+        int marketSkew;
+        uint marketDebt;
+        int currentFundingRate;
+        uint exchangeFee;
+    }
+
     struct MarketLimits {
         uint maxLeverage;
         uint maxTotalMargin;
@@ -40,6 +56,7 @@ contract FuturesMarketData {
     }
 
     struct MarketData {
+        address market;
         bytes32 baseAsset;
         uint exchangeFee;
         FuturesMarketData.MarketLimits limits;
@@ -58,6 +75,62 @@ contract FuturesMarketData {
         uint liquidationPrice;
     }
 
+    /* ========== STORAGE VARIABLES ========== */
+
+    IAddressResolver public resolverProxy;
+
+    /* ========== CONSTRUCTOR ========== */
+
+    constructor(IAddressResolver _resolverProxy) public {
+        resolverProxy = _resolverProxy;
+    }
+
+    /* ========== VIEWS ========== */
+
+    function _futuresMarketManager() internal view returns (FuturesMarketManager) {
+        return
+            FuturesMarketManager(
+                resolverProxy.requireAndGetAddress("FuturesMarketManager", "Missing FuturesMarketManager Address")
+            );
+    }
+
+    function _marketSummaries(address[] memory markets) internal view returns (MarketSummary[] memory) {
+        uint numMarkets = markets.length;
+        MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
+        for (uint i; i < numMarkets; i++) {
+            FuturesMarket market = FuturesMarket(markets[i]);
+
+            (uint price, ) = market.priceAndInvalid();
+            (uint debt, ) = market.marketDebt();
+
+            summaries[i] = MarketSummary(
+                address(market),
+                market.baseAsset(),
+                market.maxLeverage(),
+                price,
+                market.marketSize(),
+                market.marketSkew(),
+                debt,
+                market.currentFundingRate(),
+                market.exchangeFee()
+            );
+        }
+
+        return summaries;
+    }
+
+    function marketSummaryForMarkets(address[] calldata markets) external view returns (MarketSummary[] memory) {
+        return _marketSummaries(markets);
+    }
+
+    function marketSummaryForAssets(bytes32[] calldata assets) external view returns (MarketSummary[] memory) {
+        return _marketSummaries(_futuresMarketManager().marketsForAssets(assets));
+    }
+
+    function allMarketSummaries() external view returns (MarketSummary[] memory) {
+        return _marketSummaries(_futuresMarketManager().allMarkets());
+    }
+
     function marketDetails(FuturesMarket market) external view returns (MarketData memory) {
         (uint maxFundingRate, uint maxFundingRateSkew, uint maxFundingRateDelta) = market.fundingParameters();
         (uint short, uint long) = market.marketSizes();
@@ -67,6 +140,7 @@ contract FuturesMarketData {
 
         return
             MarketData(
+                address(market),
                 market.baseAsset(),
                 market.exchangeFee(),
                 MarketLimits(market.maxLeverage(), market.maxTotalMargin(), market.minInitialMargin()),

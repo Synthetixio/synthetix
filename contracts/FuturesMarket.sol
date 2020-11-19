@@ -31,6 +31,8 @@ import "./interfaces/IERC20.sol";
 //     Debt caching (non testnet)
 //     Margin Adjustment
 //     Liquidations
+//     Circuit breaker
+//     Proxify / separated state
 
 interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;

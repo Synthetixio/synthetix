@@ -1278,6 +1278,8 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'FuturesMarketData',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
 	});
 
 	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));

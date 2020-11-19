@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
@@ -13,7 +14,7 @@ import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/ISynth.sol";
 
 
-contract FuturesMarketManager is Owned, MixinResolver {
+contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     using SafeMath for uint;
     using AddressListLib for AddressListLib.AddressList;
 
@@ -46,7 +47,11 @@ contract FuturesMarketManager is Owned, MixinResolver {
         return _markets.elements.length;
     }
 
-    function _marketsForAssets(bytes32[] memory assets) internal returns (address[] memory) {
+    function allMarkets() external view returns (address[] memory) {
+        return _markets.getPage(0, _markets.elements.length);
+    }
+
+    function _marketsForAssets(bytes32[] memory assets) internal view returns (address[] memory) {
         uint numAssets = assets.length;
         address[] memory results = new address[](numAssets);
         for (uint i; i < numAssets; i++) {
@@ -55,7 +60,7 @@ contract FuturesMarketManager is Owned, MixinResolver {
         return results;
     }
 
-    function marketsForAssets(bytes32[] calldata assets) external returns (address[] memory) {
+    function marketsForAssets(bytes32[] calldata assets) external view returns (address[] memory) {
         return _marketsForAssets(assets);
     }
 
@@ -64,8 +69,8 @@ contract FuturesMarketManager is Owned, MixinResolver {
     function totalDebt() external view returns (uint debt, bool isInvalid) {
         uint total;
         bool anyIsInvalid;
-        uint numMarkets = _markets.elements.length;
-        for (uint i; i < numMarkets; i++) {
+        uint numOfMarkets = _markets.elements.length;
+        for (uint i; i < numOfMarkets; i++) {
             (uint marketDebt, bool invalid) = IFuturesMarket(_markets.elements[i]).marketDebt();
             total = total.add(marketDebt);
             anyIsInvalid = anyIsInvalid || invalid;
@@ -76,8 +81,8 @@ contract FuturesMarketManager is Owned, MixinResolver {
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
-        uint numMarkets = marketsToAdd.length;
-        for (uint i; i < numMarkets; i++) {
+        uint numOfMarkets = marketsToAdd.length;
+        for (uint i; i < numOfMarkets; i++) {
             address market = marketsToAdd[i];
             require(!_markets.contains(market), "Market already exists");
 
@@ -90,8 +95,8 @@ contract FuturesMarketManager is Owned, MixinResolver {
     }
 
     function _removeMarkets(address[] memory marketsToRemove) internal {
-        uint numMarkets = marketsToRemove.length;
-        for (uint i; i < numMarkets; i++) {
+        uint numOfMarkets = marketsToRemove.length;
+        for (uint i; i < numOfMarkets; i++) {
             address market = marketsToRemove[i];
 
             bytes32 key = IFuturesMarket(market).baseAsset();
