@@ -2,23 +2,26 @@
 	"SystemSettings": {
 		"deploy": false
 	},
+	"SecondaryDeposit": {
+		"deploy": false
+	},
 	"AddressResolver": {
 		"deploy": false
 	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
-	"Depot": {
+	"TradingRewards": {
 		"deploy": false
 	},
-	"TradingRewards": {
+	"DebtCache": {
 		"deploy": false
 	},
 	"EscrowChecker": {
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": true
+		"deploy": false
 	},
 	"Exchanger": {
 		"deploy": false
@@ -31,9 +34,6 @@
 	},
 	"EtherCollateralsUSD": {
 		"deploy": false
-	},
-	"SynthetixBridgeToBase": {
-		"deploy": true
 	},
 	"FeePool": {
 		"deploy": false
@@ -53,11 +53,8 @@
 	"DelegateApprovalsEternalStorage": {
 		"deploy": false
 	},
-	"DebtCache": {
-		"deploy": true
-	},
 	"Issuer": {
-		"deploy": true
+		"deploy": false
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -69,7 +66,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixEscrow": {
 		"deploy": false
