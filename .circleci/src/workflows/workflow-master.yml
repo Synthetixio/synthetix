@@ -3,39 +3,40 @@ jobs:
       filters:
         branches:
           only: /.*(master).*/
-  # ~~~~~~~~~~~~ Etherscan validation on MAINNET ~~~~~~~~~~~~~
-  - job-validate-etherscan:
-      name: job-validate-etherscan-mainnet
-      filters:
-        branches:
-          only: /.*(master).*/
-      network: mainnet
-      requires:
-        - job-prepare
-  # ~~~~~~~~~~~~ Etherscan validation on RINKEBY ~~~~~~~~~~~~~
-  - job-validate-etherscan:
-      name: job-validate-etherscan-rinkeby
-      filters:
-        branches:
-          only: /.*(master).*/
-      network: rinkeby
-      requires:
-        - job-prepare
-  # ~~~~~~~~~~~~ Etherscan validation on KOVAN ~~~~~~~~~~~~~
-  - job-validate-etherscan:
-      name: job-validate-etherscan-kovan
-      filters:
-        branches:
-          only: /.*(master).*/
-      network: kovan
-      requires:
-        - job-prepare
-  # ~~~~~~~~~~~~ Etherscan validation on ROPSTEN ~~~~~~~~~~~~~
-  - job-validate-etherscan:
-      name: job-validate-etherscan-ropsten
-      filters:
-        branches:
-          only: /.*(master).*/
-      network: ropsten
-      requires:
-        - job-prepare
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Etherscan validations
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # NOTE: This is currently disabled because the script used to validate etherscan
+  # verifications cannot handle multiple ABIs for the same source.
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-mainnet
+  #     filters:
+  #       branches:
+  #         only: /.*(master).*/
+  #     network: mainnet
+  #     requires:
+  #       - job-prepare
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-rinkeby
+  #     filters:
+  #       branches:
+  #         only: /.*(master).*/
+  #     network: rinkeby
+  #     requires:
+  #       - job-prepare
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-kovan
+  #     filters:
+  #       branches:
+  #         only: /.*(master).*/
+  #     network: kovan
+  #     requires:
+  #       - job-prepare
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-ropsten
+  #     filters:
+  #       branches:
+  #         only: /.*(master).*/
+  #     network: ropsten
+  #     requires:
+  #       - job-prepare
