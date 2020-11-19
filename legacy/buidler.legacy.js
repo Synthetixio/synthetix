@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { gray } = require('chalk');
-const { task } = require('@nomiclabs/buidler/config');
+const { task } = require('hardhat/config');
 
 const sourceFolder = './contracts';
 const legacyArtifactsFolder = '../build/legacy/artifacts';

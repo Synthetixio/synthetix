@@ -1,5 +1,5 @@
 const { grey, red } = require('chalk');
-const { web3, contract, artifacts, config } = require('@nomiclabs/buidler');
+const { web3, contract, artifacts, config } = require('hardhat');
 const fs = require('fs');
 const path = require('path');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');

@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts } = require('@nomiclabs/buidler');
+const { artifacts } = require('hardhat');
 
 const { toBytes32 } = require('../..');
 

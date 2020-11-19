@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, web3 } = require('@nomiclabs/buidler');
+const { artifacts, web3 } = require('hardhat');
 const { smockit } = require('@eth-optimism/smock');
 const { toBytes32 } = require('../..');
 const { prepareSmocks } = require('./helpers');

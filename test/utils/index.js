@@ -3,7 +3,7 @@ const { assert } = require('chai');
 const fs = require('fs');
 const path = require('path');
 
-const buidler = require('@nomiclabs/buidler');
+const buidler = require('hardhat');
 const ethers = require('ethers');
 
 const {

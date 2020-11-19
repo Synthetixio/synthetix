@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, web3, log, linkWithLegacySupport } = require('@nomiclabs/buidler');
+const { artifacts, web3, log, linkWithLegacySupport } = require('hardhat');
 
 const { toWei } = web3.utils;
 const {

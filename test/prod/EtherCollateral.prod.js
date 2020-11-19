@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { contract, config } = require('@nomiclabs/buidler');
+const { contract, config } = require('hardhat');
 const { wrap } = require('../../index.js');
-const { web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('hardhat');
 const { assert } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {

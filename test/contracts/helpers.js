@@ -1,4 +1,4 @@
-const { artifacts, web3 } = require('@nomiclabs/buidler');
+const { artifacts, web3 } = require('hardhat');
 
 const abiDecoder = require('abi-decoder');
 const { smockit } = require('@eth-optimism/smock');
