@@ -201,7 +201,7 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	describe('Exchanger calls', () => {
+	describe('Exchanger calls @cov-skip', () => {
 		let smockExchanger;
 		beforeEach(async () => {
 			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
@@ -295,6 +295,7 @@ contract('Synthetix', async accounts => {
 			assert.equal(smockExchanger.smocked.settle.calls[0][1].toString(), currencyKey1);
 		});
 	});
+
 	describe('isWaitingPeriod()', () => {
 		it('returns false by default', async () => {
 			assert.isFalse(await synthetix.isWaitingPeriod(sETH));
