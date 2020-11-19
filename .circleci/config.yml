@@ -1,485 +1,452 @@
 commands:
-    cmd-fork-start:
-        description: Starts a local ganache fork on the specified network
-        parameters:
-            network:
-                type: string
-            reset:
-                default: false
-                type: boolean
-        steps:
-            - run:
-                background: true
-                command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >> --unlock-accounts 0xbe0eb53f46cd790cd13851d5eff43d12404d33e8
-            - cmd-wait-for-rpc
-    cmd-local-start:
-        description: Starts a local ganache chain
-        steps:
-            - run:
-                background: true
-                command: npx buidler node
-            - cmd-wait-for-rpc
-    cmd-wait-for-rpc:
-        steps:
-            - run: sleep 5
-            - run:
-                command: |
-                    wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
-                    :
-                shell: /bin/sh
+  cmd-fork-start:
+    description: Starts a local ganache fork on the specified network
+    parameters:
+      network:
+        type: string
+      reset:
+        default: false
+        type: boolean
+    steps:
+      - run:
+          background: true
+          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >> --unlock-accounts 0xbe0eb53f46cd790cd13851d5eff43d12404d33e8
+      - cmd-wait-for-rpc
+  cmd-local-start:
+    description: Starts a local ganache chain
+    steps:
+      - run:
+          background: true
+          command: npx buidler node
+      - cmd-wait-for-rpc
+  cmd-wait-for-rpc:
+    steps:
+      - run: sleep 5
+      - run:
+          command: |
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            :
+          shell: /bin/sh
 jobs:
-    job-compile:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npx buidler compile --optimizer --fail-oversize
-            - run: npx buidler compile --use-ovm --optimizer --fail-oversize
-        working_directory: ~/repo
-    job-diff-prod-tests:
-        docker:
-            - image: circleci/node:12.18
-        parameters:
-            network:
-                type: string
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: node publish build
-            - cmd-fork-start:
-                network: << parameters.network >>
-                reset: true
-            - run: node publish prepare-deploy --network << parameters.network >>
-            - run: node publish deploy --add-new-synths --use-fork --yes --network << parameters.network >>
-            - run: npm run test:prod:gas -- --patch-fresh-deployment && npx codechecks codechecks.prod.yml
-            - store_artifacts:
-                path: test-gas-used-prod.log
-        working_directory: ~/repo
-    job-diff-prod-tests-local:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: node publish build
-            - cmd-local-start
-            - run: node publish deploy --network local --fresh-deploy --yes
-            - run: npm run test:prod -- --patch-fresh-deployment
-        working_directory: ~/repo
-    job-diff-prod-tests-local-ovm:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: node publish build
-            - cmd-local-start
-            - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
-            - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
-        working_directory: ~/repo
-    job-lint:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run lint
-        working_directory: ~/repo
-    job-pack-browser:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run pack
-            - store_artifacts:
-                path: browser.js
-        working_directory: ~/repo
-    job-prepare:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - restore_cache:
-                keys:
-                    - v2-dependencies-{{ checksum "package-lock.json" }}
-            - run: npm install
-            - save_cache:
-                key: v2-dependencies-{{ checksum "package-lock.json" }}
-                paths:
-                    - node_modules
-            - persist_to_workspace:
-                paths:
-                    - node_modules
-                root: .
-        working_directory: ~/repo
-    job-prod-tests:
-        docker:
-            - image: circleci/node:12.18
-        parameters:
-            network:
-                type: string
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - cmd-fork-start:
-                network: << parameters.network >>
-            - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
-            - store_artifacts:
-                path: test-gas-used-prod.log
-        working_directory: ~/repo
-    job-static-analysis:
-        docker:
-            - image: trailofbits/eth-security-toolbox
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run:
-                command: |
-                    set +e
-                    slither .
-                    exit 0
-                name: Show Slither output
-    job-test-deploy-script:
-        docker:
-            - image: circleci/node:12.18
-        resource_class: large
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run:
-                command: |
-                    set +e
-                    npm run test:publish
-                    EXIT_CODE=$?
-                    if [ $EXIT_CODE -gt 0 ]; then
-                      tail -n 2000 test/publish/test.log; # show tail of logs here if test failed
-                    fi
-                    npx ansi-to-html --newline --bg black test/publish/test.log > test/publish/test-log.html
-                    exit $EXIT_CODE
-                name: Test and output logs
-            - store_artifacts:
-                destination: test-log.html
-                path: test/publish/test-log.html
-        working_directory: ~/repo
-    job-test-ovm-bridge:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run test:multi-same-chain
-        working_directory: ~/repo
-    job-unit-tests:
-        docker:
-            - image: circleci/node:12.18
-        resource_class: large
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npx buidler compile --showsize --optimizer
-            - run:
-                command: |
-                    set +e
-                    npm test
-                    EXIT_CODE=$?
-                    cat test-gas-used.log
-                    printf "\\n"
-                    exit $EXIT_CODE
-                name: Test and output gas used
-        working_directory: ~/repo
-    job-unit-tests-coverage:
-        docker:
-            - image: circleci/node:12.18
-        resource_class: xlarge
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
-            - run: bash <(curl -s https://codecov.io/bash)
-        working_directory: ~/repo
-    job-unit-tests-gas-report:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run test:gas && npx codechecks codechecks.unit.yml
-            - store_artifacts:
-                path: test-gas-used.log
-        working_directory: ~/repo
-    job-unit-tests-legacy:
-        docker:
-            - image: circleci/node:12.18
-        resource_class: large
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run compile:legacy
-            - run: npx buidler test:legacy
-        working_directory: ~/repo
-    job-unit-tests-ovm:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run:
-                command: |
-                    npx buidler compile --use-ovm --optimizer
-        working_directory: ~/repo
-    job-validate-deployments:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run test:deployments
-        working_directory: ~/repo
-    job-validate-etherscan:
-        docker:
-            - image: circleci/node:12.18
-        parameters:
-            network:
-                type: string
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run test:etherscan --  --network << parameters.network >>
-        working_directory: ~/repo
+  job-compile:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npx buidler compile --optimizer --fail-oversize
+      - run: npx buidler compile --use-ovm --optimizer --fail-oversize
+    working_directory: ~/repo
+  job-diff-prod-tests:
+    docker:
+      - image: circleci/node:12.18
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - cmd-fork-start:
+          network: << parameters.network >>
+          reset: true
+      - run: node publish prepare-deploy --network << parameters.network >>
+      - run: node publish deploy --add-new-synths --use-fork --yes --network << parameters.network >>
+      - run: npm run test:prod:gas -- --patch-fresh-deployment && npx codechecks codechecks.prod.yml
+      - store_artifacts:
+          path: test-gas-used-prod.log
+    working_directory: ~/repo
+  job-diff-prod-tests-local:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - cmd-local-start
+      - run: node publish deploy --network local --fresh-deploy --yes
+      - run: npm run test:prod -- --patch-fresh-deployment
+    working_directory: ~/repo
+  job-diff-prod-tests-local-ovm:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - cmd-local-start
+      - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
+      - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
+    working_directory: ~/repo
+  job-lint:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run lint
+    working_directory: ~/repo
+  job-pack-browser:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run pack
+      - store_artifacts:
+          path: browser.js
+    working_directory: ~/repo
+  job-prepare:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v2-dependencies-{{ checksum "package-lock.json" }}
+      - run: npm install
+      - save_cache:
+          key: v2-dependencies-{{ checksum "package-lock.json" }}
+          paths:
+            - node_modules
+      - persist_to_workspace:
+          paths:
+            - node_modules
+          root: .
+    working_directory: ~/repo
+  job-prod-tests:
+    docker:
+      - image: circleci/node:12.18
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - cmd-fork-start:
+          network: << parameters.network >>
+      - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
+      - store_artifacts:
+          path: test-gas-used-prod.log
+    working_directory: ~/repo
+  job-static-analysis:
+    docker:
+      - image: trailofbits/eth-security-toolbox
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: |
+            set +e
+            slither .
+            exit 0
+          name: Show Slither output
+  job-test-deploy-script:
+    docker:
+      - image: circleci/node:12.18
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: |
+            set +e
+            npm run test:publish
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -gt 0 ]; then
+              tail -n 2000 test/publish/test.log; # show tail of logs here if test failed
+            fi
+            npx ansi-to-html --newline --bg black test/publish/test.log > test/publish/test-log.html
+            exit $EXIT_CODE
+          name: Test and output logs
+      - store_artifacts:
+          destination: test-log.html
+          path: test/publish/test-log.html
+    working_directory: ~/repo
+  job-test-ovm-bridge:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:multi-same-chain
+    working_directory: ~/repo
+  job-unit-tests:
+    docker:
+      - image: circleci/node:12.18
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npx buidler compile --showsize --optimizer
+      - run:
+          command: |
+            set +e
+            npm test
+            EXIT_CODE=$?
+            cat test-gas-used.log
+            printf "\\n"
+            exit $EXIT_CODE
+          name: Test and output gas used
+    working_directory: ~/repo
+  job-unit-tests-coverage:
+    docker:
+      - image: circleci/node:12.18
+    resource_class: xlarge
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
+      - run: bash <(curl -s https://codecov.io/bash)
+    working_directory: ~/repo
+  job-unit-tests-gas-report:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:gas && npx codechecks codechecks.unit.yml
+      - store_artifacts:
+          path: test-gas-used.log
+    working_directory: ~/repo
+  job-unit-tests-legacy:
+    docker:
+      - image: circleci/node:12.18
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run compile:legacy
+      - run: npx buidler test:legacy
+    working_directory: ~/repo
+  job-unit-tests-ovm:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: |
+            npx buidler compile --use-ovm --optimizer
+    working_directory: ~/repo
+  job-validate-deployments:
+    docker:
+      - image: circleci/node:12.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:deployments
+    working_directory: ~/repo
+  job-validate-etherscan:
+    docker:
+      - image: circleci/node:12.18
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:etherscan --  --network << parameters.network >>
+    working_directory: ~/repo
 version: 2.1
 workflows:
-    version: 2
-    workflow-any:
-        jobs:
+  version: 2
+  workflow-any:
+    jobs:
+      - job-prepare
+      - job-lint:
+          requires:
             - job-prepare
-            - job-lint:
-                requires:
-                    - job-prepare
-            - job-compile:
-                requires:
-                    - job-prepare
-            - job-static-analysis:
-                requires:
-                    - job-prepare
-    workflow-develop:
-        jobs:
-            - job-prepare:
-                filters:
-                    branches:
-                        only: /.*(develop|staging|master).*/
-            - job-unit-tests:
-                filters:
-                    branches:
-                        only: /.*(develop|staging|master).*/
-                requires:
-                    - job-prepare
-            - job-unit-tests-coverage:
-                filters:
-                    branches:
-                        only: /.*(develop|staging|master).*/
-                requires:
-                    - job-prepare
-            - job-unit-tests-gas-report:
-                filters:
-                    branches:
-                        only: /.*(develop|staging|master).*/
-                requires:
-                    - job-prepare
-            - job-unit-tests-legacy:
-                filters:
-                    branches:
-                        only: /.*(develop|staging|master).*/
-                requires:
-                    - job-prepare
-            - job-test-deploy-script:
-                filters:
-                    branches:
-                        only: /.*(develop|staging|master).*/
-                requires:
-                    - job-prepare
-            - job-test-ovm-bridge:
-                filters:
-                    branches:
-                        only: /.*(develop|staging|master).*/
-                requires:
-                    - job-prepare
-            - job-unit-tests-ovm:
-                filters:
-                    branches:
-                        only: /.*(develop|staging|master).*/
-                requires:
-                    - job-prepare
-    workflow-master:
-        jobs:
-            - job-prepare:
-                filters:
-                    branches:
-                        only: /.*(master).*/
-            - job-validate-etherscan:
-                filters:
-                    branches:
-                        only: /.*(master).*/
-                name: job-validate-etherscan-mainnet
-                network: mainnet
-                requires:
-                    - job-prepare
-            - job-validate-etherscan:
-                filters:
-                    branches:
-                        only: /.*(master).*/
-                name: job-validate-etherscan-rinkeby
-                network: rinkeby
-                requires:
-                    - job-prepare
-            - job-validate-etherscan:
-                filters:
-                    branches:
-                        only: /.*(master).*/
-                name: job-validate-etherscan-kovan
-                network: kovan
-                requires:
-                    - job-prepare
-            - job-validate-etherscan:
-                filters:
-                    branches:
-                        only: /.*(master).*/
-                name: job-validate-etherscan-ropsten
-                network: ropsten
-                requires:
-                    - job-prepare
-    workflow-scheduled:
-        jobs:
+      - job-compile:
+          requires:
             - job-prepare
-            - job-validate-deployments:
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                name: job-prod-tests-mainnet
-                network: mainnet
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                name: job-prod-tests-rinkeby
-                network: rinkeby
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                name: job-prod-tests-kovan
-                network: kovan
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests-local:
-                name: job-diff-prod-tests-local
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests-local-ovm:
-                name: job-diff-prod-tests-local-ovm
-                requires:
-                    - job-prepare
-        triggers:
-            - schedule:
-                cron: 0 0 * * *
-                filters:
-                    branches:
-                        only:
-                            - master
-    workflow-staging:
-        jobs:
-            - job-prepare:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-            - job-pack-browser:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                requires:
-                    - job-prepare
-            - job-validate-deployments:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-prod-tests-mainnet
-                network: mainnet
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-prod-tests-rinkeby
-                network: rinkeby
-                requires:
-                    - job-prepare
-            - job-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-prod-tests-kovan
-                network: kovan
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests-local:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-local
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests-local-ovm:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-local-ovm
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-mainnet
-                network: mainnet
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-rinkeby
-                network: rinkeby
-                requires:
-                    - job-prepare
-            - job-diff-prod-tests:
-                filters:
-                    branches:
-                        only: /.*(staging|master).*/
-                name: job-diff-prod-tests-kovan
-                network: kovan
-                requires:
-                    - job-prepare
-
+      - job-static-analysis:
+          requires:
+            - job-prepare
+  workflow-develop:
+    jobs:
+      - job-prepare:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+      - job-unit-tests:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-coverage:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-gas-report:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-legacy:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-test-deploy-script:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-test-ovm-bridge:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-ovm:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+  workflow-master:
+    jobs:
+      - job-prepare:
+          filters:
+            branches:
+              only: /.*(master).*/
+  workflow-scheduled:
+    jobs:
+      - job-prepare
+      - job-validate-deployments:
+          requires:
+            - job-prepare
+      - job-prod-tests:
+          name: job-prod-tests-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-prod-tests:
+          name: job-prod-tests-rinkeby
+          network: rinkeby
+          requires:
+            - job-prepare
+      - job-prod-tests:
+          name: job-prod-tests-kovan
+          network: kovan
+          requires:
+            - job-prepare
+      - job-diff-prod-tests-local:
+          name: job-diff-prod-tests-local
+          requires:
+            - job-prepare
+      - job-diff-prod-tests-local-ovm:
+          name: job-diff-prod-tests-local-ovm
+          requires:
+            - job-prepare
+    triggers:
+      - schedule:
+          cron: 0 0 * * *
+          filters:
+            branches:
+              only:
+                - master
+  workflow-staging:
+    jobs:
+      - job-prepare:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+      - job-pack-browser:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-validate-deployments:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-prod-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-prod-tests-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-prod-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-prod-tests-rinkeby
+          network: rinkeby
+          requires:
+            - job-prepare
+      - job-prod-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-prod-tests-kovan
+          network: kovan
+          requires:
+            - job-prepare
+      - job-diff-prod-tests-local:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-diff-prod-tests-local
+          requires:
+            - job-prepare
+      - job-diff-prod-tests-local-ovm:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-diff-prod-tests-local-ovm
+          requires:
+            - job-prepare
+      - job-diff-prod-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-diff-prod-tests-mainnet
+          network: mainnet
+          requires:
+            - job-prepare
+      - job-diff-prod-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-diff-prod-tests-rinkeby
+          network: rinkeby
+          requires:
+            - job-prepare
+      - job-diff-prod-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          name: job-diff-prod-tests-kovan
+          network: kovan
+          requires:
+            - job-prepare
