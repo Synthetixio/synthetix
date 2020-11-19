@@ -2,6 +2,6 @@
 description: Starts a local ganache chain
 steps:
   - run:
-      command: npx buidler node
+      command: npx hardhat node
       background: true
   - cmd-wait-for-rpc

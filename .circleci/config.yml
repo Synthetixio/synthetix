@@ -17,7 +17,7 @@ commands:
     steps:
       - run:
           background: true
-          command: npx buidler node
+          command: npx hardhat node
       - cmd-wait-for-rpc
   cmd-wait-for-rpc:
     steps:
@@ -35,8 +35,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npx buidler compile --optimizer --fail-oversize
-      - run: npx buidler compile --use-ovm --optimizer --fail-oversize
+      - run: npx hardhat compile --optimizer --fail-oversize
+      - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
     working_directory: ~/repo
   job-diff-prod-tests:
     docker:
@@ -189,7 +189,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npx buidler compile --showsize --optimizer
+      - run: npx hardhat compile --showsize --optimizer
       - run:
           command: |
             set +e
@@ -231,7 +231,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run compile:legacy
-      - run: npx buidler test:legacy
+      - run: npx hardhat test:legacy
     working_directory: ~/repo
   job-unit-tests-ovm:
     docker:
@@ -242,7 +242,7 @@ jobs:
           at: .
       - run:
           command: |
-            npx buidler compile --use-ovm --optimizer
+            npx hardhat compile --use-ovm --optimizer
     working_directory: ~/repo
   job-validate-deployments:
     docker:

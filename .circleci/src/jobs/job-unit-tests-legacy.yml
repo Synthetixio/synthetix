@@ -8,4 +8,4 @@ steps:
   - attach_workspace:
       at: .
   - run: npm run compile:legacy
-  - run: npx buidler test:legacy
+  - run: npx hardhat test:legacy

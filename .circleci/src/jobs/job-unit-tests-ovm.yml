@@ -8,4 +8,4 @@ steps:
       at: .
   - run:
       command: |
-        npx buidler compile --use-ovm --optimizer
+        npx hardhat compile --use-ovm --optimizer
