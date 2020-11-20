@@ -3,10 +3,13 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Synth.sol";
 
+// Internal references
+import "./interfaces/ICollateralManager.sol";
+
 
 // https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
-    bytes32 public multiCollateralKey;
+    address public collateralManager;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -19,17 +22,15 @@ contract MultiCollateralSynth is Synth {
         bytes32 _currencyKey,
         uint _totalSupply,
         address _resolver,
-        bytes32 _multiCollateralKey
+        address _collateralManager
     ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
-        multiCollateralKey = _multiCollateralKey;
-
-        appendToAddressCache(multiCollateralKey);
+        collateralManager = _collateralManager;
     }
 
     /* ========== VIEWS ======================= */
 
-    function multiCollateral() internal view returns (address) {
-        return requireAndGetAddress(multiCollateralKey, "Resolver is missing multiCollateral address");
+   function _multiCollateralManager() internal view returns (ICollateralManager) {
+        return ICollateralManager(collateralManager);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -59,7 +60,7 @@ contract MultiCollateralSynth is Synth {
         bool isFeePool = msg.sender == address(feePool());
         bool isExchanger = msg.sender == address(exchanger());
         bool isIssuer = msg.sender == address(issuer());
-        bool isMultiCollateral = msg.sender == address(multiCollateral());
+        bool isMultiCollateral = _multiCollateralManager().collateralByAddress(msg.sender);
 
         require(
             isFeePool || isExchanger || isIssuer || isMultiCollateral,
