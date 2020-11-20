@@ -187,7 +187,7 @@ const bootstrapConnection = ({
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
-	if (network !== 'local' || !privateKey) {
+	if (network === 'local' || !privateKey) {
 		privateKey = envPrivateKey;
 	}
 
