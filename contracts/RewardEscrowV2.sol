@@ -20,23 +20,28 @@ import "./interfaces/ISynthetix.sol";
 contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
     using SafeMath for uint;
 
-    struct VestingEntry{
+    struct VestingEntry {
         uint64 endTime;
         uint64 duration;
-        uint64 lastClaim;
+        uint64 lastVested;
         uint256 escrowAmount;
         uint256 remainingAmount;
     }
 
     /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
      * These are the times at which each given quantity of SNX vests. */
-    mapping(address => uint[2][]) public vestingSchedules;
+    mapping(address => mapping(uint256 => VestingEntry)) public vestingSchedules;
+
+    mapping(address => uint256[]) public accountVestingEntryIDs;
+
+    /*Counter for new vesting entry ids. */
+    uint256 public nextEntryId;
 
     /* An account's total escrowed synthetix balance to save recomputing this for fee extraction purposes. */
-    mapping(address => uint) public totalEscrowedAccountBalance;
+    mapping(address => uint256) public totalEscrowedAccountBalance;
 
     /* An account's total vested reward synthetix. */
-    mapping(address => uint) public totalVestedAccountBalance;
+    mapping(address => uint256) public totalVestedAccountBalance;
 
     /* Mapping of accounts that are pending to migrate vesting entries from the old reward escrow to the new reward escrow */
     mapping(address => bool) public accountEscrowMigrationPending;
@@ -50,9 +55,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     uint public accountMergingDuration = 24 hours;
 
     uint public accountMergingEndTime;
-
-    uint internal constant TIME_INDEX = 0;
-    uint internal constant QUANTITY_INDEX = 1;
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
      * There are 5 years of the supply schedule */
@@ -78,6 +80,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
     constructor(address _owner, IRewardEscrow _oldRewardEscrow) public Owned(_owner) {
         oldRewardEscrow = _oldRewardEscrow;
+        nextEntryId = 1;
     }
 
     /* ========== VIEWS ======================= */
@@ -114,66 +117,33 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     }
 
     function _numVestingEntries(address account) internal view returns (uint) {
-        return vestingSchedules[account].length;
+        return accountVestingEntryIDs[account].length;
     }
 
     /**
      * @notice The number of vesting dates in an account's schedule.
      */
     function numVestingEntries(address account) external view returns (uint) {
-        return vestingSchedules[account].length;
-    }
-
-    /**
-     * @notice Get a particular schedule entry for an account.
-     * @return A pair of uints: (timestamp, synthetix quantity).
-     */
-    function getVestingScheduleEntry(address account, uint index) public view returns (uint[2] memory) {
-        return vestingSchedules[account][index];
-    }
-
-    /**
-     * @notice Get the time at which a given schedule entry will vest.
-     */
-    function getVestingTime(address account, uint index) public view returns (uint) {
-        return getVestingScheduleEntry(account, index)[TIME_INDEX];
-    }
-
-    /**
-     * @notice Get the quantity of SNX associated with a given schedule entry.
-     */
-    function getVestingQuantity(address account, uint index) public view returns (uint) {
-        return getVestingScheduleEntry(account, index)[QUANTITY_INDEX];
-    }
-
-    /**
-     * @notice return the full vesting schedule entries vest for a given user.
-     * @dev For DApps to display the vesting schedule for the
-     * inflationary supply over 5 years. Solidity cant return variable length arrays
-     * so this is returning pairs of data. Vesting Time at [0] and quantity at [1] and so on
-     */
-    function checkAccountSchedule(address account) public view returns (uint[520] memory) {
-        uint[520] memory _result;
-        uint schedules = _numVestingEntries(account);
-        for (uint i = 0; i < schedules; i++) {
-            uint[2] memory pair = getVestingScheduleEntry(account, i);
-            _result[i * 2] = pair[0];
-            _result[i * 2 + 1] = pair[1];
-        }
-        return _result;
+        return accountVestingEntryIDs[account].length;
     }
 
     function ratePerSecond(address account, uint256 entryID) public view {
         // Retrieve the vesting entry on
-
         // Calculate the rate of emission for entry based on escrowAmount / duration seconds
-
         // entry.escrowAmount.divideDecimalRound(duration);
+    }
+
+    function getLengthOfEntries(address account) external view returns (uint) {
+        return accountVestingEntryIDs[account].length;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function _appendVestingEntry(address account, uint quantity, uint duration) internal {
+    function _appendVestingEntry(
+        address account,
+        uint quantity,
+        uint duration
+    ) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
 
@@ -184,29 +154,37 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 
-        /* Disallow arbitrarily long vesting schedules in light of the gas limit. */
-        uint scheduleLength = vestingSchedules[account].length;
-        require(scheduleLength <= MAX_VESTING_ENTRIES, "Vesting schedule is too long");
+        /* Escrow the tokens for duration. */
+        uint endTime = now + duration;
 
-        /* Escrow the tokens for 1 year. */
-        uint time = now + 52 weeks;
+        /* Add quantity to account's escrowed balance */
+        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(quantity);
 
-        if (scheduleLength == 0) {
-            totalEscrowedAccountBalance[account] = quantity;
-        } else {
-            /* Disallow adding new vested SNX earlier than the last one.
-             * Since entries are only appended, this means that no vesting date can be repeated. */
-            require(
-                getVestingTime(account, scheduleLength - 1) < time,
-                "Cannot add new vested entries earlier than the last one"
-            );
-            totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(quantity);
-        }
+        uint entryID = nextEntryId;
+        vestingSchedules[account][entryID] = VestingEntry({
+            endTime: uint64(endTime),
+            duration: uint64(duration),
+            lastVested: 0,
+            escrowAmount: quantity,
+            remainingAmount: quantity
+        });
 
-        vestingSchedules[account].push([time, quantity]);
+        accountVestingEntryIDs[account].push(entryID);
 
-        emit VestingEntryCreated(account, now, quantity);
+        /* Increment the next entry id. */
+        nextEntryId = nextEntryId.add(1);
+
+        emit VestingEntryCreated(account, now, quantity, duration);
     }
+
+    function _importVestingEntry(
+        address account,
+        uint escrowAmount,
+        uint remainingAmount,
+        uint endTime,
+        uint duration,
+        uint lastVested
+    ) internal {}
 
     /**
      * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
@@ -217,37 +195,15 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
      * @param account The account to append a new vesting entry to.
      * @param quantity The quantity of SNX that will be escrowed.
      */
-    function appendVestingEntry(address account, uint quantity, uint duration) external onlyFeePool {
+    function appendVestingEntry(
+        address account,
+        uint quantity,
+        uint duration
+    ) external onlyFeePool {
         _appendVestingEntry(account, quantity, duration);
     }
 
     // TODO - Vesting no longer assumes that the vestingSchedules list is sorted, requires index to be passed in to vest.
-
-    /**
-     * @notice Allow a user to withdraw any SNX in their schedule that have vested.
-     */
-    function vest(address account) external {
-        require(!vestingScheduleMigrationPending(account), "Escrow migration pending");
-
-        uint numEntries = _numVestingEntries(msg.sender);
-        uint total;
-        for (uint i = 0; i < numEntries; i++) {
-            uint time = getVestingTime(msg.sender, i);
-            /* The list is sorted; when we reach the first future time, bail out. */
-            if (time > now) {
-                break;
-            }
-            uint qty = getVestingQuantity(msg.sender, i);
-            if (qty > 0) {
-                vestingSchedules[msg.sender][i] = [0, 0];
-                total = total.add(qty);
-            }
-        }
-
-        if (total != 0) {
-            _transferVestedTokens(msg.sender, total);
-        }
-    }
 
     function _transferVestedTokens(address _account, uint256 _amount) internal {
         totalEscrowedBalance = totalEscrowedBalance.sub(_amount);
@@ -308,9 +264,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
             _transferVestedTokens(addressToMigrate, totalVested);
         }
 
-        // Vesting entries are sorted in order of oldest to newer entries.
-        // Vested entries are not copied to new escrow
-
         // TODO - consider using appendVestingEntry for appending vesting schedules
         uint remainingEntries = numEntries - vestedEntries;
         for (uint i = vestedEntries - 1; i < remainingEntries; i++) {
@@ -365,52 +318,44 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
     /* ========== L2 MIGRATION ========== */
 
-    function burnForMigration(address account)
+    function burnForMigration(address account, uint[] calldata entryIDs)
         external
         onlySynthetixBridge
         returns (
-            uint256 vestedAmount,
             uint256 escrowedAccountBalance,
-            uint64[52] memory vestingTimstamps,
-            uint256[52] memory vestingAmounts
+            uint64[] memory vestingTimstamps,
+            uint64[] memory durations,
+            uint64[] memory lastVested,
+            uint256[] memory escrowAmounts,
+            uint256[] memory remainingAmounts
         )
     {
-        // check if account's totalEscrowedAccountBalance > 0 and any vesting entries
-        // Check whether entries have been migrated, else read from old rewardEscrow
+        // check if account migrated on L1
+        _checkEscrowMigrationPending(account);
 
         // sub totalEscrowedAccountBalance migrated
-        // sub totalEscrowedBalance
 
         // transfer the SNX to the L2 bridge
-        // keep the totalVestedAccountBalance[account]
-        // flag account has migrated to Optimism L2
+        // update the totalEscrowedAccountBalance[account]
+        // update the totalVestedAccountBalance[account]
+
         // Optional - delete the vesting entries to reclaim gas
 
         escrowedAccountBalance = totalEscrowedAccountBalance[account];
 
-        uint LENGHT_TO_MIGRATE = 52;
+        vestingTimstamps = new uint64[](entryIDs.length);
+        durations = new uint64[](entryIDs.length);
+        lastVested = new uint64[](entryIDs.length);
+        escrowAmounts = new uint256[](entryIDs.length);
+        remainingAmounts = new uint256[](entryIDs.length);
+
         if (escrowedAccountBalance > 0) {
-            if (!vestingScheduleMigrationPending(account)) {
-                uint numEntries = _numVestingEntries(account);
-
-                // Iterate lastest 52 records
-                for (uint i = numEntries - 1; i < LENGHT_TO_MIGRATE; i--) {
-                    uint[2] memory entry = getVestingScheduleEntry(account, i);
-                    vestingTimstamps[i] = uint64(entry[TIME_INDEX]);
-                    vestingAmounts[i] = entry[QUANTITY_INDEX];
-                }
-                delete totalEscrowedAccountBalance[account];
-            } else {
-                // populate schedule from old escrow contract
-
-                // vest all the tokens that can be vested and transfer to deposit contract
-
-                // Remove RewardEscrowV2.totalEscrowedAccountBalance[account] to 0
-            }
+            for (uint i = 0; i < entryIDs.length; i++) {}
+            delete totalEscrowedAccountBalance[account];
         }
 
         // return timestamps and amounts vested
-        return (vestedAmount, escrowedAccountBalance, vestingTimstamps, vestingAmounts);
+        return (escrowedAccountBalance, vestingTimstamps, durations, lastVested, escrowAmounts, remainingAmounts);
     }
 
     function importVestingEntries(
@@ -422,7 +367,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
         // TODO - consider using appendVestingEntry for appending vesting schedules
         for (uint i = 0; i < amounts.length; i++) {
-            vestingSchedules[account].push([timestamps[i], amounts[i]]);
+            // vestingSchedules[account].push([timestamps[i], amounts[i]]);
             accountEscrowedBalance = accountEscrowedBalance.add(amounts[i]);
         }
 
@@ -437,8 +382,11 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(accountEscrowedBalance);
     }
 
-    /* ========== MODIFIERS ========== */
+    function _checkEscrowMigrationPending(address account) internal view {
+        require(!vestingScheduleMigrationPending(account), "Escrow migration pending");
+    }
 
+    /* ========== MODIFIERS ========== */
     modifier onlyFeePool() {
         require(msg.sender == address(feePool()), "Only the FeePool contracts can perform this action");
         _;
@@ -457,5 +405,5 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     /* ========== EVENTS ========== */
     event Vested(address indexed beneficiary, uint time, uint value);
 
-    event VestingEntryCreated(address indexed beneficiary, uint time, uint value);
+    event VestingEntryCreated(address indexed beneficiary, uint time, uint value, uint duration);
 }

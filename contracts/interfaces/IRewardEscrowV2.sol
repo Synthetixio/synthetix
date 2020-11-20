@@ -34,10 +34,23 @@ interface IRewardEscrowV2 {
     // L2 Migration
     function importVestingEntries(
         address account,
-        uint64[52] calldata timestamps,
-        uint256[52] calldata amounts
+        uint256 escrowedAccountBalance,
+        uint64[] calldata vestingTimstamps,
+        uint64[] calldata durations,
+        uint64[] calldata lastVested,
+        uint256[] calldata escrowAmounts,
+        uint256[] calldata remainingAmounts
     ) external;
 
     // Return amount of SNX transfered to SynthetixBridgeToOptimism deposit contract
-    function burnForMigration(address account) external returns (uint256 vestedAmount, uint256 escrowedAccountBalance, uint64[52] memory vestingTimstamps, uint256[52] memory vestingAmounts);
+    function burnForMigration(address account, uint[] calldata entryIDs)
+        external
+        returns (
+            uint256 escrowedAccountBalance,
+            uint64[] memory vestingTimstamps,
+            uint64[] memory durations,
+            uint64[] memory lastVested,
+            uint256[] memory escrowAmounts,
+            uint256[] memory remainingAmounts
+        );
 }
