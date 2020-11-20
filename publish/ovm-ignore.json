@@ -8,10 +8,8 @@
 	"EtherCollateralsUSD",
 	"ExchangerWithVirtualSynth",
 	"FakeTradingRewards",
-	"Issuer",
-	"IssuerWithoutUpdatableCache",
 	"MockBinaryOptionMarket",
 	"MockBinaryOptionMarketManager",
 	"TestableBinaryOptionMarket",
-	"TradingRewards"
+	"Synthetix"
 ]
