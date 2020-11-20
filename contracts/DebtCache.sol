@@ -138,11 +138,11 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
             uint supply = IERC20(synthAddress).totalSupply();
 
             if (collateralSynths[synthAddress]) {
-                uint collateralIssued = collateralManager().issuedSynths(key);
+                uint collateralIssued = collateralManager().long(key);
                 
                 // if a synth other than sUSD is only issued by MC
-                // the long value will exceed the supply due to the 
-                // minting fee, so we check explicitly and 0 it out to prevent 
+                // the long value will exceed the supply if there was a minting fee, 
+                // so we check explicitly and 0 it out to prevent 
                 // a safesub overflow.
                 
                 if (collateralIssued > supply) {
