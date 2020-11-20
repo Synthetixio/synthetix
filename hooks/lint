@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# Run pretty-quick, no matter if things changed or not.
-# (It's ok, because it's super fast)
-npx pretty-quick --staged
-
 # Detect changes in js and sol files
 jsChangedFiles=$(git diff --name-only --exit-code --staged -- '***.js')
 solChangedFiles=$(git diff --name-only --exit-code --staged -- '***.sol' ':!contracts/interfaces/*.sol')
