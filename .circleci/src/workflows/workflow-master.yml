@@ -1,27 +1,29 @@
 jobs:
   - job-prepare:
       {{> filter-master.yml}}
-  # ~~~~~~~~~~~~ Etherscan validation on MAINNET ~~~~~~~~~~~~~
-  - job-validate-etherscan:
-      name: job-validate-etherscan-mainnet
-      network: mainnet
-      {{> filter-master.yml}}
-      {{> require-prepare.yml}}
-  # ~~~~~~~~~~~~ Etherscan validation on RINKEBY ~~~~~~~~~~~~~
-  - job-validate-etherscan:
-      name: job-validate-etherscan-rinkeby
-      network: rinkeby
-      {{> filter-master.yml}}
-      {{> require-prepare.yml}}
-  # ~~~~~~~~~~~~ Etherscan validation on KOVAN ~~~~~~~~~~~~~
-  - job-validate-etherscan:
-      name: job-validate-etherscan-kovan
-      network: kovan
-      {{> filter-master.yml}}
-      {{> require-prepare.yml}}
-  # ~~~~~~~~~~~~ Etherscan validation on ROPSTEN ~~~~~~~~~~~~~
-  - job-validate-etherscan:
-      name: job-validate-etherscan-ropsten
-      network: ropsten
-      {{> filter-master.yml}}
-      {{> require-prepare.yml}}
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Etherscan validations
+  # NOTE: Currently disabled because our Etherscan test
+  # needs to be smarter. It needs to be able to handle multiple
+  # versioned ABIs per contract.
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-mainnet
+  #     network: mainnet
+  #     {{> filter-master.yml}}
+  #     {{> require-prepare.yml}}
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-rinkeby
+  #     network: rinkeby
+  #     {{> filter-master.yml}}
+  #     {{> require-prepare.yml}}
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-kovan
+  #     network: kovan
+  #     {{> filter-master.yml}}
+  #     {{> require-prepare.yml}}
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-ropsten
+  #     network: ropsten
+  #     {{> filter-master.yml}}
+  #     {{> require-prepare.yml}}
