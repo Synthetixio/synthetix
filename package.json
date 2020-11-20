@@ -31,7 +31,7 @@
 	},
 	"husky": {
 		"hooks": {
-			"pre-commit": "./hooks/circleci && ./hooks/circleci"
+			"pre-commit": "./hooks/circleci && ./hooks/lint"
 		}
 	},
 	"repository": {
