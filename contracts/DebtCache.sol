@@ -17,6 +17,8 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/ICollateralManager.sol";
+
 
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
@@ -28,6 +30,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     mapping(bytes32 => uint) internal _cachedSynthDebt;
     uint internal _cacheTimestamp;
     bool internal _cacheInvalid = true;
+    mapping(address => bool) internal collateralSynths;
 
     /* ========== ENCODED NAMES ========== */
 
@@ -42,6 +45,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
+    bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_ISSUER,
@@ -49,7 +53,8 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         CONTRACT_EXRATES,
         CONTRACT_SYSTEMSTATUS,
         CONTRACT_ETHERCOLLATERAL,
-        CONTRACT_ETHERCOLLATERAL_SUSD
+        CONTRACT_ETHERCOLLATERAL_SUSD,
+        CONTRACT_COLLATERALMANAGER
     ];
 
     constructor(address _owner, address _resolver)
@@ -86,6 +91,10 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
             IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
     }
 
+    function collateralManager() internal view returns (ICollateralManager) {
+        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER, "Missing MultiCollateralManager addresss"));
+    }
+
     function debtSnapshotStaleTime() external view returns (uint) {
         return getDebtSnapshotStaleTime();
     }
@@ -120,7 +129,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates) internal view returns (uint[] memory) {
         uint numValues = currencyKeys.length;
         uint[] memory values = new uint[](numValues);
-        ISynth[] memory synths = issuer().getSynths(currencyKeys);
+        ISynth[] memory synths = issuer().getSynths(currencyKeys);        
 
         for (uint i = 0; i < numValues; i++) {
             bytes32 key = currencyKeys[i];
@@ -128,13 +137,19 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
 
-            bool isSUSD = key == sUSD;
-            if (isSUSD || key == sETH) {
-                IEtherCollateral etherCollateralContract = isSUSD
-                    ? IEtherCollateral(address(etherCollateralsUSD()))
-                    : etherCollateral();
-                uint etherCollateralSupply = etherCollateralContract.totalIssuedSynths();
-                supply = supply.sub(etherCollateralSupply);
+            if (collateralSynths[synthAddress]) {
+                uint collateralIssued = collateralManager().issuedSynths(key);
+                
+                // if a synth other than sUSD is only issued by MC
+                // the long value will exceed the supply due to the 
+                // minting fee, so we check explicitly and 0 it out to prevent 
+                // a safesub overflow.
+                
+                if (collateralIssued > supply) {
+                    supply = 0;
+                } else {
+                    supply = supply.sub(collateralIssued);
+                }
             }
 
             values[i] = supply.multiplyDecimalRound(rates[i]);
@@ -252,6 +267,10 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         _updateDebtCacheValidity(currentlyInvalid);
     }
 
+    function addCollateralSynths(address synth) external onlyCollateralManager {
+        collateralSynths[synth] = true;    
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _updateDebtCacheValidity(bool currentlyInvalid) internal {
@@ -314,7 +333,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
 
     function _onlyIssuer() internal view {
         require(msg.sender == address(issuer()), "Sender is not Issuer");
-    }
+    } 
 
     modifier onlyIssuer() {
         _onlyIssuer();
@@ -327,6 +346,13 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
 
     modifier onlyIssuerOrExchanger() {
         _onlyIssuerOrExchanger();
+        _;
+    }
+
+    modifier onlyCollateralManager() {
+        bool isCollateralManager = msg.sender == address(collateralManager());
+
+        require(isCollateralManager, "Only the Collateral Manager");
         _;
     }
 

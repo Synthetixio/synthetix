@@ -23,7 +23,7 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
-import "./interfaces/IMultiCollateralManager.sol";
+import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IDebtCache.sol";
 
 
@@ -77,7 +77,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
-    bytes32 private constant CONTRACT_MULTICOLLATERALMANAGER = "MultiCollateralManager";
+    bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
@@ -93,7 +93,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         CONTRACT_DELEGATEAPPROVALS,
         CONTRACT_ETHERCOLLATERAL,
         CONTRACT_ETHERCOLLATERAL_SUSD,
-        CONTRACT_MULTICOLLATERALMANAGER,
+        CONTRACT_COLLATERALMANAGER,
         CONTRACT_REWARDESCROW,
         CONTRACT_SYNTHETIXESCROW,
         CONTRACT_LIQUIDATIONS,
@@ -147,8 +147,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
     }
 
-    function multiCollateralManager() internal view returns (IMultiCollateralManager) {
-        return IMultiCollateralManager(requireAndGetAddress(CONTRACT_MULTICOLLATERALMANAGER, "Missing MultiCollateralManager addresss"));
+    function collateralManager() internal view returns (ICollateralManager) {
+        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER, "Missing MultiCollateralManager addresss"));
     }
 
     function rewardEscrow() internal view returns (IRewardEscrow) {
@@ -181,7 +181,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return currencyKeys;
     }
 
-    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeCollateral)
         internal
         view
         returns (uint totalIssued, bool anyRateIsInvalid)
@@ -192,15 +192,9 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         IExchangeRates exRates = exchangeRates();
 
         // Add total issued synths from Ether Collateral back into the total if not excluded
-        if (!excludeEtherCollateral) {
-            // Add ether collateral sUSD
-            debt = debt.add(etherCollateralsUSD().totalIssuedSynths());
-
-            // Add ether collateral sETH
-            (uint ethRate, bool ethRateInvalid) = exRates.rateAndInvalid(sETH);
-            uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
-            debt = debt.add(ethIssuedDebt);
-            anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
+        if (!excludeCollateral) {
+            // Get the sUSD equivalent amount of all the MC issued synths.
+            debt = debt.add(collateralManager().totalLong());
         }
 
         if (currencyKey == sUSD) {
