@@ -31,7 +31,7 @@
 	},
 	"husky": {
 		"hooks": {
-			"pre-commit": "npm run lint && pretty-quick --staged"
+			"pre-commit": "npm run lint && pretty-quick --staged --ignore-path .pretty-quick-ignore"
 		}
 	},
 	"repository": {
