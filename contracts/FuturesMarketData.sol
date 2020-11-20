@@ -24,7 +24,7 @@ contract FuturesMarketData {
 
     struct MarketLimits {
         uint maxLeverage;
-        uint maxTotalMargin;
+        uint maxMarketDebt;
         uint minInitialMargin;
     }
 
@@ -39,7 +39,7 @@ contract FuturesMarketData {
         uint marketDebt;
         int marketSkew;
         int proportionalSkew;
-        int entryMarginMinusNotionalSkewSum;
+        int entryMarginSumMinusNotionalSkew;
         uint pendingOrderValue;
     }
 
@@ -123,7 +123,7 @@ contract FuturesMarketData {
         return _marketSummaries(markets);
     }
 
-    function marketSummaryForAssets(bytes32[] calldata assets) external view returns (MarketSummary[] memory) {
+    function marketSummariesForAssets(bytes32[] calldata assets) external view returns (MarketSummary[] memory) {
         return _marketSummaries(_futuresMarketManager().marketsForAssets(assets));
     }
 
@@ -131,7 +131,7 @@ contract FuturesMarketData {
         return _marketSummaries(_futuresMarketManager().allMarkets());
     }
 
-    function marketDetails(FuturesMarket market) external view returns (MarketData memory) {
+    function _marketDetails(FuturesMarket market) internal view returns (MarketData memory) {
         (uint maxFundingRate, uint maxFundingRateSkew, uint maxFundingRateDelta) = market.fundingParameters();
         (uint short, uint long) = market.marketSizes();
         (uint price, bool isInvalid) = market.priceAndInvalid();
@@ -143,7 +143,7 @@ contract FuturesMarketData {
                 address(market),
                 market.baseAsset(),
                 market.exchangeFee(),
-                MarketLimits(market.maxLeverage(), market.maxTotalMargin(), market.minInitialMargin()),
+                MarketLimits(market.maxLeverage(), market.maxMarketDebt(), market.minInitialMargin()),
                 FuturesMarket.FundingParameters(maxFundingRate, maxFundingRateSkew, maxFundingRateDelta),
                 MarketSizeDetails(
                     market.marketSize(),
@@ -151,11 +151,19 @@ contract FuturesMarketData {
                     marketDebt,
                     market.marketSkew(),
                     market.proportionalSkew(),
-                    market.entryMarginMinusNotionalSkewSum(),
+                    market.entryMarginSumMinusNotionalSkew(),
                     market.pendingOrderValue()
                 ),
                 PriceDetails(price, market.currentRoundId(), isInvalid)
             );
+    }
+
+    function marketDetails(FuturesMarket market) external view returns (MarketData memory) {
+        return _marketDetails(market);
+    }
+
+    function marketDetailsForAsset(bytes32 asset) external view returns (MarketData memory) {
+        return _marketDetails(FuturesMarket(_futuresMarketManager().marketForAsset(asset)));
     }
 
     function _notionalValue(FuturesMarket market, address account) internal view returns (int) {
@@ -178,7 +186,7 @@ contract FuturesMarketData {
         return value;
     }
 
-    function positionDetails(FuturesMarket market, address account) external view returns (PositionData memory) {
+    function _positionDetails(FuturesMarket market, address account) internal view returns (PositionData memory) {
         (bool orderPending, int orderMargin, uint orderLeverage, uint orderFee, uint orderRoundId) = market.orders(account);
         (int positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) = market.positions(account);
 
@@ -192,5 +200,13 @@ contract FuturesMarketData {
                 _remainingMargin(market, account),
                 market.liquidationPrice(account, true)
             );
+    }
+
+    function positionDetails(FuturesMarket market, address account) external view returns (PositionData memory) {
+        return _positionDetails(market, account);
+    }
+
+    function positionDetailsForAsset(bytes32 asset, address account) external view returns (PositionData memory) {
+        return _positionDetails(FuturesMarket(_futuresMarketManager().marketForAsset(asset)), account);
     }
 }

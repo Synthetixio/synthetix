@@ -232,10 +232,10 @@ const setupContract = async ({
 		FuturesMarket: [
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('BTC'), // base asset
+			toBytes32('sBTC'), // base asset
 			toWei('0.003'), // 0.3% exchange fee
 			toWei('10'), // 10x max leverage
-			toWei('100000'), // 100000 max total margin
+			toWei('100000'), // 100000 max market debt
 			toWei('100'), // 100 sUSD minimum initial margin
 			[
 				toWei('0.1'), // 10% max funding rate

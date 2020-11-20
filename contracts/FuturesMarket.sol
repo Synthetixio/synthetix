@@ -80,13 +80,14 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     bytes32 public baseAsset;
     uint public exchangeFee;
     uint public maxLeverage;
-    uint public maxTotalMargin;
+    uint public maxMarketDebt;
     uint public minInitialMargin;
     FundingParameters public fundingParameters;
 
     uint public marketSize;
     int public marketSkew;
-    int public entryMarginMinusNotionalSkewSum;
+    int public entryMarginSumMinusNotionalSkew;
+    int public entryNotionalSkew;
     uint public pendingOrderValue;
 
     mapping(address => Order) public orders;
@@ -119,7 +120,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         bytes32 _baseAsset,
         uint _exchangeFee,
         uint _maxLeverage,
-        uint _maxTotalMargin,
+        uint _maxMarketDebt,
         uint _minInitialMargin,
         uint[3] memory _fundingParameters
     ) public Owned(_owner) MixinResolver(_resolver, _addressesToCache) {
@@ -131,8 +132,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         maxLeverage = _maxLeverage;
         emit MaxLeverageUpdated(_maxLeverage);
 
-        maxTotalMargin = _maxTotalMargin;
-        emit MaxMarketSizeUpdated(_maxTotalMargin);
+        maxMarketDebt = _maxMarketDebt;
+        emit MaxMarketDebtUpdated(_maxMarketDebt);
 
         minInitialMargin = _minInitialMargin;
         emit MinInitialMarginUpdated(_minInitialMargin);
@@ -192,12 +193,16 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
     }
 
-    function marketDebt() external view returns (uint debt, bool isInvalid) {
+    function _marketDebt() internal view returns (uint debt, bool isInvalid) {
         (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
-        int totalDebt = int(price).multiplyDecimalRound(marketSkew).add(entryMarginMinusNotionalSkewSum).add(
+        int totalDebt = int(price).multiplyDecimalRound(marketSkew).add(entryMarginSumMinusNotionalSkew).add(
             int(pendingOrderValue)
         );
         return (uint(_max(totalDebt, 0)), invalid);
+    }
+
+    function marketDebt() external view returns (uint debt, bool isInvalid) {
+        return _marketDebt();
     }
 
     function _proportionalSkew() internal view returns (int) {
@@ -384,9 +389,9 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         emit MaxLeverageUpdated(leverage);
     }
 
-    function setMaxMarketSize(uint cap) external onlyOwner {
-        maxTotalMargin = cap;
-        emit MaxMarketSizeUpdated(cap);
+    function setMaxMarketDebt(uint cap) external onlyOwner {
+        maxMarketDebt = cap;
+        emit MaxMarketDebtUpdated(cap);
     }
 
     function setMinInitialMargin(uint minMargin) external onlyOwner {
@@ -453,10 +458,11 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
             _manager().burnSUSD(msg.sender, absoluteMargin.add(fee));
 
             // Update pending order value
-            // Revert if the margin would exceed the maximum configured for the market
+            // Revert if the total debt (which increases when we add the new margin) would exceed the maximum configured for the market
             pendingOrderValue = pendingOrderValue.add(absoluteMargin);
-            // TODO: This requirement needs to process total margin, not market size.
-            require(marketSize.add(pendingOrderValue) <= maxTotalMargin, "Max market size exceeded");
+            (uint debt, bool isInvalid) = _marketDebt();
+            require(!isInvalid, "Price is invalid");
+            require(debt <= maxMarketDebt, "Max market debt exceeded");
         }
 
         // Lodge the order, which can be confirmed at the next price update
@@ -500,12 +506,11 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         marketSkew = marketSkew.add(newSize).sub(positionSize);
         marketSize = marketSize.add(_abs(newSize)).sub(_abs(positionSize));
 
-        int marginDelta = newMargin.sub(position.margin);
+        int marginDelta = _signedAbs(newMargin).sub(_signedAbs(position.margin));
         int notionalDelta = newSize.multiplyDecimalRound(int(entryPrice)).sub(
             position.size.multiplyDecimalRound(int(position.entryPrice))
         );
-
-        entryMarginMinusNotionalSkewSum = entryMarginMinusNotionalSkewSum.add(marginDelta).sub(notionalDelta);
+        entryMarginSumMinusNotionalSkew = entryMarginSumMinusNotionalSkew.add(marginDelta).sub(notionalDelta);
         pendingOrderValue = pendingOrderValue.sub(_abs(newMargin));
 
         uint fee = order.fee;
@@ -529,7 +534,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
 
     event ExchangeFeeUpdated(uint fee);
     event MaxLeverageUpdated(uint leverage);
-    event MaxMarketSizeUpdated(uint cap);
+    event MaxMarketDebtUpdated(uint cap);
     event MinInitialMarginUpdated(uint minMargin);
     event FundingParametersUpdated(uint maxFundingRate, uint maxFundingRateSkew, uint maxFundingRateDelta);
     event OrderSubmitted(address indexed account, int margin, uint leverage, uint fee, uint indexed roundId);

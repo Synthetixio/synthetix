@@ -1184,7 +1184,7 @@ const deploy = async ({
 	// TODO: Perform this programmatically per-market
 	const exchangeFee = w3utils.toWei('0.003');
 	const maxLeverage = w3utils.toWei('10');
-	const maxTotalMargin = w3utils.toWei('100000');
+	const maxMarketDebt = w3utils.toWei('100000');
 	const minInitialMargin = w3utils.toWei('100');
 	const fundingParameters = [
 		w3utils.toWei('0.1'), // max funding rate per day
@@ -1202,7 +1202,7 @@ const deploy = async ({
 				toBytes32('s' + asset),
 				exchangeFee,
 				maxLeverage,
-				maxTotalMargin,
+				maxMarketDebt,
 				minInitialMargin,
 				fundingParameters,
 			],
