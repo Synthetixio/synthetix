@@ -41,4 +41,6 @@ interface IDebtCache {
     function takeDebtSnapshot() external;
 
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
+
+    function addCollateralSynths(address synth) external;
 }
