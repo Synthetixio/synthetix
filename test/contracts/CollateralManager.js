@@ -30,18 +30,18 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const SafeDecimalMath = artifacts.require('SafeDecimalMath');
-const MultiCollateralManager = artifacts.require(`MultiCollateralManager`);
-const MultiCollateralState = artifacts.require(`MultiCollateralState`);
+const CollateralManager = artifacts.require(`CollateralManager`);
+const CollateralState = artifacts.require(`CollateralState`);
+const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-contract('MultiCollateralManager', async accounts => {
+contract('CollateralManager', async accounts => {
 	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
 	const sBTC = toBytes32('sBTC');
 
-	const deployCollateral = async ({
+	const deployEthCollateral = async ({
 		proxy,
 		mcState,
 		owner,
@@ -55,7 +55,7 @@ contract('MultiCollateralManager', async accounts => {
 	}) => {
 		return setupContract({
 			accounts,
-			contract: 'MultiCollateralEth',
+			contract: 'CollateralEth',
 			args: [
 				proxy,
 				mcState,
@@ -86,7 +86,7 @@ contract('MultiCollateralManager', async accounts => {
 	}) => {
 		return setupContract({
 			accounts,
-			contract: 'MultiCollateralErc20',
+			contract: 'CollateralErc20',
 			args: [
 				proxy,
 				mcState,
@@ -103,16 +103,17 @@ contract('MultiCollateralManager', async accounts => {
 		});
 	};
 
-	let mceth,
+	let ceth,
 		mcstate,
 		stateShort,
 		mcshort,
 		mcstateErc20,
-		mcerc20,
+		cerc20,
 		proxy,
 		renBTC,
 		tokenState,
 		manager,
+		managerState,
 		addressResolver,
 		issuer,
 		systemStatus,
@@ -127,6 +128,20 @@ contract('MultiCollateralManager', async accounts => {
 
 	const issueRenBTCtoAccount = async (issueAmount, receiver) => {
 		await renBTC.transfer(receiver, issueAmount, { from: owner });
+	};
+
+	const issuesUSDToAccount = async (issueAmount, receiver) => {
+		await sUSDSynth.issue(receiver, issueAmount, {
+			from: owner,
+		});
+	};
+
+	const issuesETHToAccount = async (issueAmount, receiver) => {
+		await sETHSynth.issue(receiver, issueAmount, { from: owner });
+	};
+
+	const issuesBTCToAccount = async (issueAmount, receiver) => {
+		await sBTCSynth.issue(receiver, issueAmount, { from: owner });
 	};
 
 	const setupManager = async () => {
@@ -156,16 +171,17 @@ contract('MultiCollateralManager', async accounts => {
 			],
 		}));
 
-		const math = await SafeDecimalMath.new();
-		MultiCollateralManager.link(math);
+		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		manager = await MultiCollateralManager.new(owner, addressResolver.address, [sUSD, sETH, sBTC], {
+		manager = await CollateralManager.new(managerState.address, owner, addressResolver.address, {
 			from: deployerAccount,
 		});
 
-		mcstate = await MultiCollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+		await managerState.setAssociatedContract(manager.address, { from: owner });
 
-		mceth = await deployCollateral({
+		mcstate = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+
+		ceth = await deployEthCollateral({
 			proxy: ZERO_ADDRESS,
 			mcState: mcstate.address,
 			owner: owner,
@@ -179,7 +195,7 @@ contract('MultiCollateralManager', async accounts => {
 			liqPen: toUnit(0.1),
 		});
 
-		mcstateErc20 = await MultiCollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+		mcstateErc20 = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
 		const ProxyERC20 = artifacts.require(`ProxyERC20`);
 		const TokenState = artifacts.require(`TokenState`);
@@ -213,7 +229,7 @@ contract('MultiCollateralManager', async accounts => {
 		// Issue ren and set allowance
 		await issueRenBTCtoAccount(toUnit(100), account1);
 
-		mcerc20 = await deployErc20Collateral({
+		cerc20 = await deployErc20Collateral({
 			proxy: ZERO_ADDRESS,
 			mcState: mcstateErc20.address,
 			owner: owner,
@@ -228,65 +244,37 @@ contract('MultiCollateralManager', async accounts => {
 			underCon: renBTC.address,
 		});
 
-		stateShort = await MultiCollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-		mcshort = await deployErc20Collateral({
-			proxy: account1,
-			mcState: stateShort.address,
-			owner: owner,
-			manager: manager.address,
-			resolver: addressResolver.address,
-			collatKey: sUSD,
-			synths: [toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
-			minColat: toUnit(1.5),
-			// 5% / 31536000 (seconds in common year)
-			intRate: 1585489599,
-			liqPen: toUnit(0.1),
-			underCon: sUSDSynth.address,
-		});
-
-		await manager.addCollateral(mceth.address, { from: owner });
-		await manager.addCollateral(mcerc20.address, { from: owner });
-		await manager.addCollateral(mcshort.address, { from: owner });
-
 		await addressResolver.importAddresses(
-			[
-				toBytes32('Issuer'),
-				toBytes32('MultiCollateralEth'),
-				toBytes32('MultiCollateralErc20'),
-				toBytes32('MultiCollateralShort'),
-				toBytes32('MultiCollateralManager'),
-			],
-			[issuer.address, mceth.address, mcerc20.address, mcshort.address, manager.address],
+			[toBytes32('CollateralEth'), toBytes32('CollateralErc20'), toBytes32('CollateralManager')],
+			[ceth.address, cerc20.address, manager.address],
 			{
 				from: owner,
 			}
 		);
 
-		await mcstate.setAssociatedContract(mceth.address, { from: owner });
-		await mcstateErc20.setAssociatedContract(mcerc20.address, { from: owner });
-		await stateShort.setAssociatedContract(mcshort.address, { from: owner });
-
-		await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
-		await mceth.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await mcerc20.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await mcshort.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
-		await debtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
-		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
 		await mcstate.addCurrency(sUSD, { from: owner });
 		await mcstateErc20.addCurrency(sUSD, { from: owner });
-
 		await mcstate.addCurrency(sETH, { from: owner });
 		await mcstateErc20.addCurrency(sBTC, { from: owner });
 
-		await stateShort.addCurrency(sETH, { from: owner });
+		await mcstate.setAssociatedContract(ceth.address, { from: owner });
+		await mcstateErc20.setAssociatedContract(cerc20.address, { from: owner });
 
+		await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await ceth.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await cerc20.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await debtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		await manager.setResolverAndSyncCache(addressResolver.address, { from: owner });
 
-		await renBTC.approve(mcerc20.address, toUnit(100), { from: account1 });
+		await manager.addCollateral(ceth.address, { from: owner });
+		await manager.addCollateral(cerc20.address, { from: owner });
+		
+		await manager.addSynth(sUSDSynth.address, { from: owner });
+		await manager.addSynth(sETHSynth.address, { from: owner });
+		await manager.addSynth(sBTCSynth.address, { from: owner });
+
+		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
 	};
 
 	const updateRatesWithDefaults = async () => {
@@ -316,9 +304,14 @@ contract('MultiCollateralManager', async accounts => {
 
 	beforeEach(async () => {
 		await updateRatesWithDefaults();
+
+		await issuesUSDToAccount(toUnit(1000), owner);
+		await issuesETHToAccount(toUnit(10), owner);
+		await issuesBTCToAccount(toUnit(0.1), owner);
+		await debtCache.takeDebtSnapshot();
 	});
 
-	xit('should access its dependencies via the address resolver', async () => {
+	it('should access its dependencies via the address resolver', async () => {
 		assert.equal(await addressResolver.getAddress(toBytes32('SynthsUSD')), sUSDSynth.address);
 		assert.equal(await addressResolver.getAddress(toBytes32('FeePool')), feePool.address);
 		assert.equal(
@@ -328,11 +321,9 @@ contract('MultiCollateralManager', async accounts => {
 	});
 
 	it('should add the collaterals during construction', async () => {
-		assert.equal(await manager.collaterals(0), mceth.address);
-		assert.equal(await manager.collaterals(1), mcerc20.address);
-		assert.equal(await manager.collaterals(2), mcshort.address);
+		assert.isTrue(await manager.collateralByAddress(ceth.address));
+		assert.isTrue(await manager.collateralByAddress(cerc20.address));
 	});
-
 
 	describe('Collaterals', async () => {
 		describe('revert conditions', async () => {
@@ -350,13 +341,13 @@ contract('MultiCollateralManager', async accounts => {
 			});
 
 			it('should add the collateral', async () => {
-				assert.equal(await manager.collaterals(3), ZERO_ADDRESS);
+				assert.isTrue(await manager.collateralByAddress(ZERO_ADDRESS));
 			});
 		});
 
 		describe('retreiving collateral by address', async () => {
 			it('if a collateral is in the manager, it should return true', async () => {
-				assert.isTrue(await manager.collateralByAddress(mceth.address));
+				assert.isTrue(await manager.collateralByAddress(ceth.address));
 			});
 
 			it('if a collateral is in the manager, it should return false', async () => {
@@ -366,39 +357,35 @@ contract('MultiCollateralManager', async accounts => {
 	});
 
 	it('should track issued synths', async () => {
-		await mceth.openEthLoan(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
+		await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
 
-		assert.bnEqual(await manager.issuedSynths(sUSD), toUnit(100));
+		assert.bnEqual(await manager.long(sUSD), toUnit(100));
 
-		await mceth.openEthLoan(toUnit(1), sETH, { value: toUnit(2), from: account1 });
+		await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
 
-		assert.bnEqual(await manager.issuedSynths(sETH), toUnit(1));
+		assert.bnEqual(await manager.long(sETH), toUnit(1));
 	});
 
 	it('should track MC total issued synths properly', async () => {
-		await mceth.openEthLoan(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
-		await mceth.openEthLoan(toUnit(1), sETH, { value: toUnit(2), from: account1 });
-		await mcerc20.openErc20Loan(toUnit(1), toUnit(100), sUSD, { from: account1 });
-		await mcerc20.openErc20Loan(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
+		await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
+		await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
+		await cerc20.open(toUnit(1), toUnit(100), sUSD, { from: account1 });
+		await cerc20.open(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
 
-		assert.bnEqual(await manager.totalIssuedSynths(), toUnit(400));
+		assert.bnEqual(await manager.totalLong(), toUnit(400));
 	});
 
-	it('should get the borrow rate correctly', async () => {
+	it('should get scaled utilisation correctly', async () => {
 		await sUSDSynth.issue(owner, toUnit(500));
 		await sETHSynth.issue(owner, toUnit(5));
 		await sBTCSynth.issue(owner, toUnit(0.1));
 		await debtCache.takeDebtSnapshot();
 
-		await mceth.openEthLoan(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
-		await mceth.openEthLoan(toUnit(1), sETH, { value: toUnit(2), from: account1 });
-		await mcerc20.openErc20Loan(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
+		await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
+		await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
+		await cerc20.open(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
 
-		// await debtCache.takeDebtSnapshot();
-
-		const rate = await manager.getBorrowRate();
-
-		console.log('Borrow rate: ' + fromUnit(rate));
+		const utilisation = await manager.getScaledUtilisation();
 	});
 
 	it('should correctly determine the total debt issued in sUSD', async () => {
@@ -406,12 +393,12 @@ contract('MultiCollateralManager', async accounts => {
 		await sETHSynth.issue(owner, toUnit(5));
 		await debtCache.takeDebtSnapshot();
 
-		await mceth.openEthLoan(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
-		await mceth.openEthLoan(toUnit(1), sETH, { value: toUnit(2), from: account1 });
-		await mcerc20.openErc20Loan(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
+		await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
+		await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
+		await cerc20.open(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
 
-		const x = await manager.totalIssuedSynths();
+		const total = await manager.totalLong();
 
-		console.log(fromUnit(x));
+		assert.bnEqual(total, toUnit(300));
 	});
 });
