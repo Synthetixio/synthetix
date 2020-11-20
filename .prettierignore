@@ -1,3 +1,5 @@
 build
 .coverage_*
 coverage
+.circleci/*.template.yml
+.circleci/src
