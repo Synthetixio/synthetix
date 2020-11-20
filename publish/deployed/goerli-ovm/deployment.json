@@ -2,18 +2,18 @@
 	"targets": {
 		"SafeDecimalMath": {
 			"name": "SafeDecimalMath",
-			"address": "0x212dD0505eDECA3947b07b86e0b0d44ba8eE81c4",
+			"address": "0x905c5ff75c58213d6e873D5BE576e3479456c9f4",
 			"source": "SafeDecimalMath",
-			"link": "https://goerli.etherscan.io/address/0x212dD0505eDECA3947b07b86e0b0d44ba8eE81c4",
+			"link": "https://goerli.etherscan.io/address/0x905c5ff75c58213d6e873D5BE576e3479456c9f4",
 			"timestamp": "2020-09-25T00:15:35.572Z",
 			"txn": "",
 			"network": "goerli"
 		},
 		"Math": {
 			"name": "Math",
-			"address": "0x5DF689ea1FB350bcB177Ff5e66ED8Dfe28C6045D",
+			"address": "0x5F010E3010d46cBdE975e65D97Ec3C12bB83D1ae",
 			"source": "Math",
-			"link": "https://goerli.etherscan.io/address/0x5DF689ea1FB350bcB177Ff5e66ED8Dfe28C6045D",
+			"link": "https://goerli.etherscan.io/address/0x5F010E3010d46cBdE975e65D97Ec3C12bB83D1ae",
 			"timestamp": "2020-09-25T00:15:35.855Z",
 			"txn": "",
 			"network": "goerli"
