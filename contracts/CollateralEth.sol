@@ -12,7 +12,7 @@ import "./CollateralState.sol";
 // This contract handles the payable aspects of eth loans.
 contract CollateralEth is Collateral, ICollateralEth {
 
-    mapping (address => uint) pendingWithdrawals;
+    mapping(address => uint) public pendingWithdrawals;
 
     constructor(
         address payable _proxy,
@@ -21,19 +21,20 @@ contract CollateralEth is Collateral, ICollateralEth {
         address _manager,
         address _resolver,
         bytes32 _collateralKey,
-        bytes32[] memory _synthKeys,
+        bytes32[] memory _synths,
         uint _minimumCollateralisation,
         uint _interestRate,
         uint _liquidationPenalty
-    ) public 
-        Collateral(
+    ) 
+    public 
+    Collateral(
         _proxy,
         _state, 
         _owner, 
         _manager,
         _resolver, 
         _collateralKey, 
-        _synthKeys, 
+        _synths, 
         _minimumCollateralisation, 
         _interestRate, 
         _liquidationPenalty
@@ -47,7 +48,6 @@ contract CollateralEth is Collateral, ICollateralEth {
     function close(uint id) external {
         uint256 collateral = closeInternal(msg.sender, id);
 
-        // if we sucessfully closed a cloan, transfer back the collateral
         msg.sender.transfer(collateral);
     }
 
@@ -56,15 +56,9 @@ contract CollateralEth is Collateral, ICollateralEth {
     }
 
     function withdraw(uint id, uint withdrawAmount) external {
+        uint amount = withdrawInternal(id, withdrawAmount);
 
-        // anyone can call this and withdraw collateral. must fix this.
-
-        withdrawInternal(id, withdrawAmount);
-
-        // transfer ETH to msg.sender if it worked
-        msg.sender.transfer(withdrawAmount);
-
-        // should we emit the event here? since it could still fail on the transfer?
+        pendingWithdrawals[msg.sender] += amount;
     }
 
     function repay(address account, uint id, uint amount) external {
@@ -74,10 +68,13 @@ contract CollateralEth is Collateral, ICollateralEth {
     function liquidate(address borrower, uint id, uint amount) external {
         uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 
-        // Send liquidated ETH collateral to the liquidator
-        msg.sender.transfer(collateralLiquidated);
+        pendingWithdrawals[msg.sender] += collateralLiquidated;
+    }
 
-        // emit LoanClosedByLiquidation(msg.sender, collateralLiquidated);
-
+    function claim(uint amount) public returns (bool success) {
+        require(pendingWithdrawals[msg.sender] >= amount);
+        pendingWithdrawals[msg.sender] -= amount;
+        msg.sender.transfer(amount);
+        return true;
     }
 }

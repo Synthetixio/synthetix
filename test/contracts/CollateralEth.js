@@ -245,7 +245,7 @@ contract('CollateralEth', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: ceth.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
-			expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate'],
+			expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'claim'],
 		});
 	});
 
@@ -851,6 +851,22 @@ contract('CollateralEth', async accounts => {
 
 				assert.bnEqual(loan.collateral, expectedCollateral);
 			});
+
+			it('should create a pending withdraw entry', async () => {
+				const withdraw = await ceth.pendingWithdrawals(account1);
+
+				assert.bnEqual(withdraw, oneETH);
+			});
+
+			it('should allow the withdrawer to withdraw', async () => {
+				const bal = new BN(await getEthBalance(account1));
+
+				await ceth.claim(oneETH, { from: account1 });
+
+				const balAfter = new BN(await getEthBalance(account1));
+
+				assert.bnGt(balAfter, bal);
+			});
 		});
 	});
 
@@ -1088,12 +1104,10 @@ contract('CollateralEth', async accounts => {
 				assert.bnEqual(liquidatorBalance, expectedBalance);
 			});
 
-			xit('should transfer the liquidated collateral to the liquidator', async () => {
-				// the actual amount of eth is different because of gas spent on transactions
-				// so we just check that they have more eth now
-				liquidatorEthBalAfter = new BN(await getEthBalance(account2)).add(liquidatedCollateral);
+			it('should create a pending withdrawl entry', async () => {
+				const withdaw = await ceth.pendingWithdrawals(account2);
 
-				assert.bnClose(liquidatorEthBalAfter, liquidatorEthBalBefore);
+				assert.bnEqual(withdaw, liquidatedCollateral);
 			});
 
 			it('should pay the interest to the fee pool', async () => {
@@ -1150,10 +1164,10 @@ contract('CollateralEth', async accounts => {
 				assert.equal(loan.interestIndex, 0);
 			});
 
-			it('should transfer all the collateral to the liquidator', async () => {
-				const liquidatorBal = await getEthBalance(account2);
+			it('should create a pending withdrawl entry', async () => {
+				const withdaw = await ceth.pendingWithdrawals(account2);
 
-				// assert.bnGt(liquidatorBal, liquidatorEthBalBefore);
+				assert.bnEqual(withdaw, twoETH);
 			});
 
 			it('should reduce the liquidators synth balance', async () => {
@@ -1298,9 +1312,6 @@ contract('CollateralEth', async accounts => {
 
 			const rates = await state.getRates(sUSD);
 			const rates2 = await state.getRates(sETH);
-
-			console.log(rates.map(x => fromUnit(x)));
-			console.log(rates2.map(x => fromUnit(x)));
 		});
 	});
 });

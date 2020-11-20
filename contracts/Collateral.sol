@@ -47,9 +47,9 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
     uint public minimumCollateralisation;
     
-    uint public baseInterestRate = 0;
+    uint public baseInterestRate;
 
-    uint public liquidationPenalty ;
+    uint public liquidationPenalty;
     
     uint public issueFeeRate;
 
@@ -78,17 +78,16 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         ) public
         Owned(_owner)
         Pausable()
-        MixinResolver(_resolver, addressesToCache) // what about adding the synth contract of the collateral
+        MixinResolver(_resolver, addressesToCache)
     {
         owner = msg.sender;
+
+        manager = _manager;
         state = _state;
         collateralKey = _collateralKey;
-        // Set the vars
         setMinimumCollateralisation(_minimumCollateralisation);
         setBaseInterestRate(_interestRate);
         setLiquidationPenalty(_liquidationPenalty);
-
-        manager = _manager;
 
         for (uint i = 0; i < _synths.length; i++) {
             appendToAddressCache(_synths[i]);
@@ -97,7 +96,6 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
             }
 
         owner = _owner;
-
     }
 
     /* ========== VIEWS ========== */
@@ -215,11 +213,6 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     function setManager(address _manager) public onlyOwner {
         manager = _manager;
         emit ManagerUpdated(manager);
-    }
-
-    function addSynth(address synth) public onlyOwner {
-        // ISynth synth = ISynth(synth);
-        // require(!synths[synth.currencyKey()], "Synth already added.");
     }
 
     /* ---------- LOAN INTERACTIONS ---------- */
@@ -379,7 +372,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     }
 
     // Withdraws collateral from the specified loan
-    function withdrawInternal(uint id, uint amount) internal {
+    function withdrawInternal(uint id, uint amount) internal returns (uint withdraw) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -409,6 +402,8 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
         // 9. Store the loan.
         state.updateLoan(loan);
+
+        withdraw = amount;
         
         // 10. Emit the event.
         emit CollateralWithdrawn(msg.sender, id, amount, loan.collateral);
