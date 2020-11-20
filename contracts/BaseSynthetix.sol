@@ -230,7 +230,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint,
         bytes32
     ) external returns (uint) {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function exchangeOnBehalf(
@@ -239,7 +239,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint,
         bytes32
     ) external returns (uint) {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function exchangeWithTracking(
@@ -249,7 +249,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address,
         bytes32
     ) external returns (uint) {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function exchangeOnBehalfWithTracking(
@@ -260,7 +260,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address,
         bytes32
     ) external returns (uint) {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function exchangeWithVirtual(
@@ -269,7 +269,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32,
         bytes32
     ) external returns (uint, IVirtualSynth) {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function settle(bytes32)
@@ -280,26 +280,30 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             uint
         )
     {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function mint() external returns (bool) {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function liquidateDelinquentAccount(address, uint) external returns (bool) {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function mintSecondary(address, uint) external {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function mintSecondaryRewards(uint) external {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     function burnSecondary(address, uint) external {
+        _notImplemented();
+    }
+
+    function _notImplemented() internal pure {
         revert("Cannot be run on this layer");
     }
 
