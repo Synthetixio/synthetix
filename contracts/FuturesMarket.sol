@@ -28,10 +28,10 @@ import "./interfaces/IERC20.sol";
 //     Gas tank (non testnet)
 //     Multi order confirmation (non testnet)
 //     Pausable from SystemStatus (no funding charged in this period, but people can close orders) (non testnet)
+//         Circuit breaker (relies on pausable if a price divergence is detected, part of keeper) (non testnet)
 //     Debt caching (non testnet)
 //     Margin Adjustment
 //     Liquidations
-//     Circuit breaker
 //     Proxify / separated state
 
 interface IFuturesMarketManagerInternal {
@@ -85,7 +85,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     FundingParameters public fundingParameters;
 
     uint public marketSize;
-    int public marketSkew;
+    int public marketSkew; // When positive, longs outweigh shorts. When negative, shorts outweigh longs.
     int public entryMarginSumMinusNotionalSkew;
     int public entryNotionalSkew;
     uint public pendingOrderValue;
@@ -193,16 +193,16 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
     }
 
-    function _marketDebt() internal view returns (uint debt, bool isInvalid) {
-        (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
+    function _marketDebt(uint price) internal view returns (uint) {
         int totalDebt = int(price).multiplyDecimalRound(marketSkew).add(entryMarginSumMinusNotionalSkew).add(
             int(pendingOrderValue)
         );
-        return (uint(_max(totalDebt, 0)), invalid);
+        return uint(_max(totalDebt, 0));
     }
 
     function marketDebt() external view returns (uint debt, bool isInvalid) {
-        return _marketDebt();
+        (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
+        return (_marketDebt(price), invalid);
     }
 
     function _proportionalSkew() internal view returns (int) {
@@ -349,12 +349,21 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     }
 
     // TODO: conditional fee depending on skew
-    function _orderFee(int margin, uint leverage) internal view returns (uint) {
+    function _orderFee(
+        int margin,
+        uint leverage,
+        uint price
+    ) internal view returns (uint) {
+        //margin
+
+        int newSize = margin.multiplyDecimalRound(int(leverage)).divideDecimalRound(int(price));
+
         return _abs(margin.multiplyDecimalRound(int(leverage)).multiplyDecimalRound(int(exchangeFee)));
     }
 
     function orderFee(int margin, uint leverage) external view returns (uint) {
-        return _orderFee(margin, leverage);
+        (uint price, ) = _priceAndInvalid(_exchangeRates());
+        return _orderFee(margin, leverage, price);
     }
 
     /* ---------- Utilities ---------- */
@@ -436,6 +445,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         _cancelOrder(order);
     }
 
+    // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
+    // TODO: If they are owed anything because the position is being closed, then remit it at confirmation.
     // TODO: Modifying a position should charge fees on the portion opened on the heavier side.
     // TODO: Make this withdraw directly from their sUSD.
     // TODO: What to do if an order already exists.
@@ -446,23 +457,34 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
             _cancelOrder(order);
         }
 
-        // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
+        // Either argument being zero will cancel the whole order
+        if (margin == 0 || leverage == 0) {
+            margin = 0;
+            leverage = 0;
+        }
 
-        // Check that they have sufficient sUSD balance to cover the desired margin, and burn it.
-        // TODO: If they are owed anything because the position is being closed, then remit it at confirmation.
-        uint balance = _sUSD().balanceOf(msg.sender);
+        // Compute the fee owed.
+        (uint price, bool isInvalid) = _priceAndInvalid(_exchangeRates());
+        require(!isInvalid, "Price is invalid");
+        uint fee = _orderFee(margin, leverage, price);
+
+        // Check that they have sufficient sUSD balance to cover the desired margin plus fee, and burn it.
         uint absoluteMargin = _abs(margin);
-        uint fee = _orderFee(margin, leverage);
-        require(absoluteMargin.add(fee) <= balance, "Insufficient balance");
-        if (absoluteMargin > 0) {
-            _manager().burnSUSD(msg.sender, absoluteMargin.add(fee));
-
-            // Update pending order value
-            // Revert if the total debt (which increases when we add the new margin) would exceed the maximum configured for the market
-            pendingOrderValue = pendingOrderValue.add(absoluteMargin);
-            (uint debt, bool isInvalid) = _marketDebt();
-            require(!isInvalid, "Price is invalid");
-            require(debt <= maxMarketDebt, "Max market debt exceeded");
+        uint balance = _sUSD().balanceOf(msg.sender);
+        uint totalCharge = absoluteMargin.add(fee);
+        // TODO: This should not charge anything if they're DECREASING their position.
+        require(totalCharge <= balance, "Insufficient balance");
+        if (totalCharge > 0) {
+            // TODO: allow the user to decrease their position without closing it if the debt exceeds the cap
+            // Update pending order value, which increases the market debt
+            // Revert if the new debt would exceed the maximum configured for the market
+            if (absoluteMargin > 0) {
+                // This may be zero if the order is being cancelled.
+                pendingOrderValue = pendingOrderValue.add(absoluteMargin);
+                uint debt = _marketDebt(price);
+                require(debt <= maxMarketDebt, "Max market debt exceeded");
+            }
+            _manager().burnSUSD(msg.sender, totalCharge);
         }
 
         // Lodge the order, which can be confirmed at the next price update
