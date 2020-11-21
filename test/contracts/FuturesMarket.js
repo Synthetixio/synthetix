@@ -11,6 +11,7 @@ contract('FuturesMarket', accounts => {
 	let futuresMarketManager, futuresMarket, exchangeRates, oracle, sUSD;
 
 	const trader = accounts[2];
+	const trader2 = accounts[4];
 	const noBalance = accounts[3];
 	const traderInitialBalance = toUnit(1000000);
 
@@ -22,6 +23,15 @@ contract('FuturesMarket', accounts => {
 	const maxFundingRate = toUnit('0.1');
 	const maxFundingRateSkew = toUnit('1');
 	const maxFundingRateDelta = toUnit('0.0125');
+	const initialPrice = toUnit('100');
+
+	async function submitAndConfirmOrder({ market, account, fillPrice, margin, leverage }) {
+		await market.submitOrder(margin, leverage, { from: account });
+		await exchangeRates.updateRates([await market.baseAsset()], [fillPrice], await currentTime(), {
+			from: oracle,
+		});
+		await market.confirmOrder(account);
+	}
 
 	before(async () => {
 		({
@@ -45,12 +55,13 @@ contract('FuturesMarket', accounts => {
 
 		// Update the rate so that it is not invalid
 		oracle = await exchangeRates.oracle();
-		await exchangeRates.updateRates([baseAsset], [toUnit(100)], await currentTime(), {
+		await exchangeRates.updateRates([baseAsset], [initialPrice], await currentTime(), {
 			from: oracle,
 		});
 
 		// Issue the trader some sUSD
 		await sUSD.issue(trader, traderInitialBalance);
+		await sUSD.issue(trader2, traderInitialBalance);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -83,6 +94,84 @@ contract('FuturesMarket', accounts => {
 			assert.isFalse(result.isInvalid);
 			assert.bnEqual(await futuresMarket.currentRoundId(), toBN(roundId).add(toBN(1)));
 		});
+	});
+
+	describe('Order fees', () => {
+		const leverage = toUnit('3.5');
+
+		for (const margin of ['1000', '-1000'].map(toUnit)) {
+			const side = parseInt(margin.toString()) > 0 ? 'long' : 'short';
+
+			describe(`${side}`, () => {
+				it(`Submit a fresh order when there is no skew (${side})`, async () => {
+					const notional = multiplyDecimalRound(margin.abs(), leverage);
+					const fee = multiplyDecimalRound(notional, exchangeFee);
+					assert.bnEqual(await futuresMarket.orderFee(trader, margin, leverage), fee);
+				});
+
+				it(`Submit a fresh order on the same side as the skew (${side})`, async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin,
+						leverage,
+					});
+
+					const notional = multiplyDecimalRound(margin.abs(), leverage);
+					const fee = multiplyDecimalRound(notional, exchangeFee);
+					assert.bnEqual(await futuresMarket.orderFee(trader, margin, leverage), fee);
+				});
+
+				it(`Submit a fresh order on the opposite side to the skew smaller than the skew (${side})`, async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin.neg(),
+						leverage,
+					});
+
+					assert.bnEqual(
+						await futuresMarket.orderFee(trader, margin.div(toBN(2)), leverage),
+						toBN(0)
+					);
+				});
+
+				it('Submit an fresh order on the opposite side to the skew larger than the skew', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin.neg().div(toBN(2)),
+						leverage,
+					});
+
+					const { fromUnit } = require('../utils')();
+					console.log(fromUnit(await futuresMarket.marketSkew()));
+
+					const notional = multiplyDecimalRound(margin.abs(), leverage);
+					const fee = multiplyDecimalRound(notional, exchangeFee).div(toBN(2));
+					assert.bnEqual(await futuresMarket.orderFee(trader, margin, leverage), fee);
+				});
+
+				it('Increase an existing position', async () => {
+					assert.isTrue(false);
+				});
+
+				it('reduce an existing position', async () => {
+					assert.isTrue(false);
+				});
+
+				it('smaller order on opposite side of an existing position', async () => {
+					assert.isTrue(false);
+				});
+
+				it('larger order on opposite side of an existing position', async () => {
+					assert.isTrue(false);
+				});
+			});
+		}
 	});
 
 	describe('Submitting orders', () => {

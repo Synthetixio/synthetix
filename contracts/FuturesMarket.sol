@@ -18,11 +18,11 @@ import "./interfaces/IERC20.sol";
 
 
 // General market details
-//     Skew-sensitive Fees
 //     max funding rate rate of change
 //
 // Details for a particular position
 //     Properly accrue funding
+//     Modification of existing positions (order submission, order fill, order fee computation)
 //
 // Functionality
 //     Gas tank (non testnet)
@@ -305,9 +305,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         int remaining = margin.add(pnl).add(funding);
 
         // if the sign of our margin flipped, then the remaining margin went past zero and the position would have
-        // been liquidated. Since we only care about the sign of the product, we don't care about overflow and
-        // aren't using SignedSafeDecimalMath
-        if (remaining * margin < 0) {
+        // been liquidated.
+        if (!_sameSide(remaining, margin)) {
             return (0, invalid);
         }
         return (remaining, invalid);
@@ -348,22 +347,47 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         return uint(entryPrice.add(liquidationFee.sub(marginPlusFunding).divideDecimalRound(size)));
     }
 
-    // TODO: conditional fee depending on skew
+    // TODO: take into account existing positions
     function _orderFee(
         int margin,
         uint leverage,
+        int existingSize,
         uint price
     ) internal view returns (uint) {
-        //margin
+        // TODO: Generalise to decreasing a position
+        // Charge nothing if closing a position.
+        if (margin == 0 || leverage == 0) {
+            return 0;
+        }
 
-        int newSize = margin.multiplyDecimalRound(int(leverage)).divideDecimalRound(int(price));
+        int skew = marketSkew;
+        int chargeableValue = margin.multiplyDecimalRound(int(leverage));
 
-        return _abs(margin.multiplyDecimalRound(int(leverage)).multiplyDecimalRound(int(exchangeFee)));
+        // If the order is submitted on the same side as the skew, a fee is charged on the entire position.
+        // If not, the fee is only charged on the new skew they induce on their side, if any.
+        if (!_sameSide(skew, chargeableValue)) {
+            int notionalSkew = skew.multiplyDecimalRound(int(price));
+            int notionalSkewInduced = notionalSkew.add(chargeableValue);
+
+            // The order was insufficient to flip the skew, so no fee is charged.
+            if (_sameSide(notionalSkew, notionalSkewInduced)) {
+                return 0;
+            }
+
+            chargeableValue = notionalSkewInduced;
+        }
+
+        return _abs(chargeableValue.multiplyDecimalRound(int(exchangeFee)));
     }
 
-    function orderFee(int margin, uint leverage) external view returns (uint) {
+    function orderFee(
+        address account,
+        int margin,
+        uint leverage
+    ) external view returns (uint) {
         (uint price, ) = _priceAndInvalid(_exchangeRates());
-        return _orderFee(margin, leverage, price);
+
+        return _orderFee(margin, leverage, positions[account].size, price);
     }
 
     /* ---------- Utilities ---------- */
@@ -382,6 +406,12 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
 
     function _min(int x, int y) internal pure returns (int) {
         return x < y ? x : y;
+    }
+
+    function _sameSide(int a, int b) internal pure returns (bool) {
+        // Since we only care about the sign of the product, we don't care about overflow and
+        // aren't using SignedSafeDecimalMath
+        return a * b > 0;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -466,7 +496,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         // Compute the fee owed.
         (uint price, bool isInvalid) = _priceAndInvalid(_exchangeRates());
         require(!isInvalid, "Price is invalid");
-        uint fee = _orderFee(margin, leverage, price);
+        uint fee = _orderFee(margin, leverage, positions[msg.sender].size, price);
 
         // Check that they have sufficient sUSD balance to cover the desired margin plus fee, and burn it.
         uint absoluteMargin = _abs(margin);
