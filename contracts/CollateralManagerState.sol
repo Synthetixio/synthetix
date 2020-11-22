@@ -14,9 +14,6 @@ contract CollateralManagerState is Owned, State {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    uint public openLoans;
-    uint public totalLoans;
-
     struct balance {
         uint long;
         uint short;
@@ -34,14 +31,6 @@ contract CollateralManagerState is Owned, State {
     function short(bytes32 synth) external view onlyAssociatedContract returns (uint) {
         return totalIssuedSynths[synth].short;
     } 
-
-    function incrementTotalLoans() external onlyAssociatedContract returns (uint) {
-        openLoans = openLoans.add(1);
-        totalLoans = totalLoans.add(1);
-        // Return total count to be used as a unique ID.
-        return totalLoans;
-    }
-
 
     function incrementLongs(bytes32 synth, uint256 amount) external onlyAssociatedContract {
         totalIssuedSynths[synth].long = totalIssuedSynths[synth].long.add(amount);

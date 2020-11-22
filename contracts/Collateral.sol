@@ -25,7 +25,9 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bytes32 public sUSD = "sUSD";
+    /* ========== CONSTANTS ========== */
+
+    bytes32 private constant sUSD = "sUSD";
 
     // ========== STATE VARIABLES ==========
 
@@ -39,9 +41,6 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
     // The synths that this contract can issue.
     mapping(bytes32 => bytes32) public synths;
-
-    // The synths this collateral can short.
-    mapping(bytes32 => bytes32) public shorts;
 
     // ========== SETTER STATE VARIABLES ==========
 
@@ -65,7 +64,6 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address payable _proxy,
         CollateralState _state,
         address _owner,
         address _manager,
@@ -553,8 +551,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
          return loanAfter;
      }
 
-    // This function works out the amount of interest and principal after a repayment is made.
-    // It is called when payments are made either as repayments or as part of a liquidation.
+    // Works out the amount of interest and principal after a repayment is made.
     function _processPayment(Loan memory loanBefore, uint payment)
         internal
         returns (Loan memory loanAfter)
@@ -580,7 +577,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         }
     }  
     
-    // Take an amount of fees and a currency they are denominated in. Coverts to sUSD if necessary and pay to the fee pool.
+    // Take an amount of fees in a certain synth and convert it to sUSD before paying the fee pool.
     function _payFees(uint amount, bytes32 _synth) internal {
         if (amount > 0)
             if (_synth != sUSD) {

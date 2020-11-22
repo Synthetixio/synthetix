@@ -29,7 +29,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
     bytes32 private constant sUSD = "sUSD";
 
-    uint constant SECONDS_IN_A_YEAR = 31556926 * 1e18;
+    uint private constant SECONDS_IN_A_YEAR = 31556926 * 1e18;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -141,7 +141,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     function addCollateral(address collateral) external onlyOwner {
         _systemStatus().requireSystemActive();
 
-        // Has one of the other contracts already added the synth?
+        // Has one of the other contracts already added the collateral?
         require(!_collaterals.contains(collateral), "Collateral already added");
 
         // Add it to the address list lib.
@@ -165,28 +165,28 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         emit SynthAdded(synth);
     }
     
-    function incrementLongs(bytes32 synth, uint amount) external onlyMultiCollateral {
+    function incrementLongs(bytes32 synth, uint amount) external onlyCollateral {
         state.incrementLongs(synth, amount);
     }
 
-    function decrementLongs(bytes32 synth, uint amount) external onlyMultiCollateral {
+    function decrementLongs(bytes32 synth, uint amount) external onlyCollateral {
         state.decrementLongs(synth, amount);
     }
 
-    function incrementShorts(bytes32 synth, uint amount) external onlyMultiCollateral {
+    function incrementShorts(bytes32 synth, uint amount) external onlyCollateral {
         state.incrementShorts(synth, amount);
     }
 
-    function decrementShorts(bytes32 synth, uint amount) external onlyMultiCollateral {
+    function decrementShorts(bytes32 synth, uint amount) external onlyCollateral {
         state.decrementShorts(synth, amount);
     }
 
     /* ========== MODIFIERS ========== */
     
-    modifier onlyMultiCollateral {
+    modifier onlyCollateral {
         bool isMultiCollateral = collateralByAddress(msg.sender);
 
-        require(isMultiCollateral, "Only MultiCollateral contracts");
+        require(isMultiCollateral, "Only collateral contracts");
         _;
     }
 

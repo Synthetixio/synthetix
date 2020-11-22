@@ -14,7 +14,6 @@ contract CollateralState is Owned, State, ILoan {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
  
-    uint public openLoans;
     uint public totalLoans;
 
     mapping(bytes32 => uint) public rateLastUpdated;
@@ -28,10 +27,10 @@ contract CollateralState is Owned, State, ILoan {
     /* ========== VIEWS ========== */
     // If we do not find the loan, this returns a struct with 0'd values.
     function getLoan(address account, uint256 loanID) external view returns (Loan memory) {
-        Loan[] memory synthLoans = loans[account];
-        for (uint i = 0; i < synthLoans.length; i++) {
-            if (synthLoans[i].id == loanID) {
-                return (synthLoans[i]);
+        Loan[] memory accountLoans = loans[account];
+        for (uint i = 0; i < accountLoans.length; i++) {
+            if (accountLoans[i].id == loanID) {
+                return (accountLoans[i]);
             }
         }
     }
@@ -66,9 +65,7 @@ contract CollateralState is Owned, State, ILoan {
     }
 
     function incrementTotalLoans() external onlyAssociatedContract returns (uint) {
-        openLoans = openLoans.add(1);
         totalLoans = totalLoans.add(1);
-        // Return total count to be used as a unique ID.
         return totalLoans;
     }
 }
