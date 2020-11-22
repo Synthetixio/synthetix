@@ -269,7 +269,7 @@ contract('CollateralManager', async accounts => {
 
 		await manager.addCollateral(ceth.address, { from: owner });
 		await manager.addCollateral(cerc20.address, { from: owner });
-		
+
 		await manager.addSynth(sUSDSynth.address, { from: owner });
 		await manager.addSynth(sETHSynth.address, { from: owner });
 		await manager.addSynth(sBTCSynth.address, { from: owner });

@@ -240,7 +240,6 @@ contract('CollateralErc20', async accounts => {
 			underCon: renBTC.address,
 		});
 
-
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralErc20'), toBytes32('CollateralManager')],
 			[cerc20.address, manager.address],
@@ -262,7 +261,6 @@ contract('CollateralErc20', async accounts => {
 		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
 
 		await manager.addCollateral(cerc20.address, { from: owner });
-
 
 		await manager.addSynth(sUSDSynth.address, { from: owner });
 		await manager.addSynth(sBTCSynth.address, { from: owner });
@@ -361,7 +359,7 @@ contract('CollateralErc20', async accounts => {
 
 	describe('issuance ratio test', async () => {
 		it('should work', async () => {
-			let ratio = await cerc20.issuanceRatio();
+			const ratio = await cerc20.issuanceRatio();
 		});
 	});
 
@@ -1175,7 +1173,6 @@ contract('CollateralErc20', async accounts => {
 
 				liquidatorEthBalBefore = parseFloat(fromUnit(await getEthBalance(account2)));
 				const liquidatorsUSDBalBefore = await sUSDSynth.balanceOf(account2);
-
 
 				tx = await cerc20.liquidate(account1, id, toUnit(10000), {
 					from: account2,

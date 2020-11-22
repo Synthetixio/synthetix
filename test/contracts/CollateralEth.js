@@ -306,7 +306,7 @@ contract('CollateralEth', async accounts => {
 
 	describe('issuance ratio test', async () => {
 		it('should work', async () => {
-			let ratio = await ceth.issuanceRatio();
+			const ratio = await ceth.issuanceRatio();
 		});
 	});
 
