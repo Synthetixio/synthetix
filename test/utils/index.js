@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 const hardhat = require('hardhat');
+// Note: the below is hardhat internal and is subject to change
+const { normalizeHardhatNetworkAccountsConfig } = require('hardhat/internal/core/providers/util');
 const ethers = require('ethers');
 
 const {
@@ -510,7 +512,7 @@ module.exports = ({ web3 } = {}) => {
 	const getEthBalance = account => web3.eth.getBalance(account);
 
 	const loadLocalUsers = () => {
-		return accounts.map(({ privateKey }) => ({
+		return normalizeHardhatNetworkAccountsConfig(accounts).map(({ privateKey }) => ({
 			private: privateKey,
 			public: web3.eth.accounts.privateKeyToAccount(privateKey).address,
 		}));
