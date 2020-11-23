@@ -323,7 +323,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         onlySynthetixBridge
         returns (
             uint256 escrowedAccountBalance,
-            uint64[] memory vestingTimstamps,
+            uint64[] memory vestingTimestamps,
             uint64[] memory durations,
             uint64[] memory lastVested,
             uint256[] memory escrowAmounts,
@@ -343,7 +343,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
         escrowedAccountBalance = totalEscrowedAccountBalance[account];
 
-        vestingTimstamps = new uint64[](entryIDs.length);
+        vestingTimestamps = new uint64[](entryIDs.length);
         durations = new uint64[](entryIDs.length);
         lastVested = new uint64[](entryIDs.length);
         escrowAmounts = new uint256[](entryIDs.length);
@@ -355,13 +355,13 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         }
 
         // return timestamps and amounts vested
-        return (escrowedAccountBalance, vestingTimstamps, durations, lastVested, escrowAmounts, remainingAmounts);
+        return (escrowedAccountBalance, vestingTimestamps, durations, lastVested, escrowAmounts, remainingAmounts);
     }
 
     function importVestingEntries(
         address account,
         uint256 escrowedAccountBalance,
-        uint64[] calldata vestingTimstamps,
+        uint64[] calldata vestingTimestamps,
         uint64[] calldata durations,
         uint64[] calldata lastVested,
         uint256[] calldata escrowAmounts,
