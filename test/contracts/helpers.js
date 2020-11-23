@@ -1,6 +1,7 @@
 const { artifacts, web3 } = require('@nomiclabs/buidler');
 
 const abiDecoder = require('abi-decoder');
+const { smockit } = require('@eth-optimism/smock');
 
 const { assert } = require('./common');
 
@@ -33,7 +34,7 @@ module.exports = {
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
 			if (type === 'address') {
-				assert.equal(web3.utils.toChecksumAddress(value), arg);
+				assert.equal(web3.utils.toChecksumAddress(value), web3.utils.toChecksumAddress(arg));
 			} else if (/^u?int/.test(type)) {
 				assert.bnClose(new web3.utils.BN(value), arg, bnCloseVariance);
 			} else {
@@ -155,11 +156,20 @@ module.exports = {
 		expected = [],
 		ignoreParents = [],
 	}) {
-		const removeSignatureProp = abiEntry => {
+		const removeExcessParams = abiEntry => {
 			// Clone to not mutate anything processed by truffle
 			const clone = JSON.parse(JSON.stringify(abiEntry));
 			// remove the signature in the cases where it's in the parent ABI but not the subclass
 			delete clone.signature;
+			// remove input and output named params
+			(clone.inputs || []).map(input => {
+				delete input.name;
+				return input;
+			});
+			(clone.outputs || []).map(input => {
+				delete input.name;
+				return input;
+			});
 			return clone;
 		};
 
@@ -168,14 +178,14 @@ module.exports = {
 				(memo, parent) => memo.concat(artifacts.require(parent, { ignoreLegacy: true }).abi),
 				[]
 			)
-			.map(removeSignatureProp);
+			.map(removeExcessParams);
 
 		const fncs = abi
 			.filter(
 				({ type, stateMutability }) =>
 					type === 'function' && stateMutability !== 'view' && stateMutability !== 'pure'
 			)
-			.map(removeSignatureProp)
+			.map(removeExcessParams)
 			.filter(
 				entry =>
 					!combinedParentsABI.find(
@@ -234,5 +244,25 @@ module.exports = {
 		} else {
 			throw Error(`Section: ${section} unsupported`);
 		}
+	},
+
+	async prepareSmocks({ contracts, accounts = [] }) {
+		const mocks = {};
+		for (const [i, contract] of Object.entries(contracts).concat([
+			[contracts.length, 'AddressResolver'],
+		])) {
+			if (mocks[contract]) {
+				continue; // prevent dupes
+			}
+			mocks[contract] = await smockit(artifacts.require(contract).abi, { address: accounts[i] });
+		}
+
+		const resolver = mocks['AddressResolver'];
+
+		const returnMockFromResolver = contract => mocks[web3.utils.hexToUtf8(contract)].address;
+		resolver.smocked.requireAndGetAddress.will.return.with(returnMockFromResolver);
+		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
+
+		return { mocks, resolver };
 	},
 };

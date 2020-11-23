@@ -52,6 +52,9 @@ class Deployer {
 
 		if (useFork) {
 			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		} else if (network === 'local') {
+			// Deterministic account #0 when using `npx buidler node`
+			this.web3.eth.defaultAccount = '0xc783df8a850f42e7F7e57013759C285caa701eB6';
 		} else {
 			this.web3.eth.accounts.wallet.add(privateKey);
 			this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;

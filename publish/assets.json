@@ -275,6 +275,12 @@
 		"sign": "oz",
 		"description": "Silver Ounce"
 	},
+	"OIL": {
+		"asset": "OIL",
+		"category": "commodity",
+		"sign": "$",
+		"description": "Brent Crude Oil"
+	},
 	"FTSE100": {
 		"asset": "FTSE100",
 		"category": "equities",

@@ -24,10 +24,10 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    uint public cachedDebt;
-    mapping(bytes32 => uint) public cachedSynthDebt;
-    uint public cacheTimestamp;
-    bool public cacheInvalid = true;
+    uint internal _cachedDebt;
+    mapping(bytes32 => uint) internal _cachedSynthDebt;
+    uint internal _cacheTimestamp;
+    bool internal _cacheInvalid = true;
 
     /* ========== ENCODED NAMES ========== */
 
@@ -90,6 +90,22 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         return getDebtSnapshotStaleTime();
     }
 
+    function cachedDebt() external view returns (uint) {
+        return _cachedDebt;
+    }
+
+    function cachedSynthDebt(bytes32 currencyKey) external view returns (uint) {
+        return _cachedSynthDebt[currencyKey];
+    }
+
+    function cacheTimestamp() external view returns (uint) {
+        return _cacheTimestamp;
+    }
+
+    function cacheInvalid() external view returns (bool) {
+        return _cacheInvalid;
+    }
+
     function _cacheStale(uint timestamp) internal view returns (bool) {
         // Note a 0 timestamp means that the cache is uninitialised.
         // We'll keep the check explicitly in case the stale time is
@@ -98,13 +114,13 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     }
 
     function cacheStale() external view returns (bool) {
-        return _cacheStale(cacheTimestamp);
+        return _cacheStale(_cacheTimestamp);
     }
 
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates) internal view returns (uint[] memory) {
         uint numValues = currencyKeys.length;
         uint[] memory values = new uint[](numValues);
-        ISynth[] memory synths = issuer().synthAddresses(currencyKeys);
+        ISynth[] memory synths = issuer().getSynths(currencyKeys);
 
         for (uint i = 0; i < numValues; i++) {
             bytes32 key = currencyKeys[i];
@@ -147,7 +163,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         uint numKeys = currencyKeys.length;
         uint[] memory debts = new uint[](numKeys);
         for (uint i = 0; i < numKeys; i++) {
-            debts[i] = cachedSynthDebt[currencyKeys[i]];
+            debts[i] = _cachedSynthDebt[currencyKeys[i]];
         }
         return debts;
     }
@@ -180,8 +196,8 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
             bool isStale
         )
     {
-        uint time = cacheTimestamp;
-        return (cachedDebt, time, cacheInvalid, _cacheStale(time));
+        uint time = _cacheTimestamp;
+        return (_cachedDebt, time, _cacheInvalid, _cacheStale(time));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -189,7 +205,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     // This function exists in case a synth is ever somehow removed without its snapshot being updated.
     function purgeCachedSynthDebt(bytes32 currencyKey) external onlyOwner {
         require(issuer().synths(currencyKey) == ISynth(0), "Synth exists");
-        delete cachedSynthDebt[currencyKey];
+        delete _cachedSynthDebt[currencyKey];
     }
 
     function takeDebtSnapshot() external requireSystemActiveIfNotOwner {
@@ -201,10 +217,10 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         for (uint i; i < numValues; i++) {
             uint value = values[i];
             snxCollateralDebt = snxCollateralDebt.add(value);
-            cachedSynthDebt[currencyKeys[i]] = value;
+            _cachedSynthDebt[currencyKeys[i]] = value;
         }
-        cachedDebt = snxCollateralDebt;
-        cacheTimestamp = block.timestamp;
+        _cachedDebt = snxCollateralDebt;
+        _cacheTimestamp = block.timestamp;
         emit DebtCacheUpdated(snxCollateralDebt);
         emit DebtCacheSnapshotTaken(block.timestamp);
 
@@ -239,8 +255,8 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _updateDebtCacheValidity(bool currentlyInvalid) internal {
-        if (cacheInvalid != currentlyInvalid) {
-            cacheInvalid = currentlyInvalid;
+        if (_cacheInvalid != currentlyInvalid) {
+            _cacheInvalid = currentlyInvalid;
             emit DebtCacheValidityChanged(currentlyInvalid);
         }
     }
@@ -260,19 +276,19 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
         for (uint i = 0; i < numKeys; i++) {
             bytes32 key = currencyKeys[i];
             uint currentSynthDebt = currentValues[i];
-            cachedSum = cachedSum.add(cachedSynthDebt[key]);
+            cachedSum = cachedSum.add(_cachedSynthDebt[key]);
             currentSum = currentSum.add(currentSynthDebt);
-            cachedSynthDebt[key] = currentSynthDebt;
+            _cachedSynthDebt[key] = currentSynthDebt;
         }
 
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {
-            uint debt = cachedDebt;
+            uint debt = _cachedDebt;
             // This requirement should never fail, as the total debt snapshot is the sum of the individual synth
             // debt snapshots.
             require(cachedSum <= debt, "Cached synth sum exceeds total debt");
             debt = debt.sub(cachedSum).add(currentSum);
-            cachedDebt = debt;
+            _cachedDebt = debt;
             emit DebtCacheUpdated(debt);
         }
 

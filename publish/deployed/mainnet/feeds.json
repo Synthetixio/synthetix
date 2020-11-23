@@ -30,7 +30,6 @@
 		"feed": "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c"
 	},
 	"EOS": {"asset": "EOS", "feed": "0x10a43289895eAff840E8d45995BBa89f9115ECEe"},
-	"BCH": {"asset": "BCH", "feed": "0x9F0F69428F923D6c95B781F89E165C9b2df9789D"},
 	"ETC": {"asset": "ETC", "feed": "0xaEA2808407B7319A31A383B6F8B60f04BCa23cE2"},
 	"DASH": {
 		"asset": "DASH",
@@ -57,5 +56,6 @@
 		"asset": "NIKKEI225",
 		"feed": "0x5c4939a2ab3A2a9f93A518d81d4f8D0Bc6a68980"
 	},
-	"XAG": {"asset": "XAG", "feed": "0x379589227b15F1a12195D3f2d90bBc9F31f95235"}
+	"XAG": {"asset": "XAG", "feed": "0x379589227b15F1a12195D3f2d90bBc9F31f95235"},
+	"OIL": {"asset": "OIL", "feed": "0xb70ba475F1a6b5396e46d9b2a5f7081080Dc9d09"}
 }
