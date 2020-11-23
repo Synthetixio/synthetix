@@ -22,7 +22,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 		});
 	});
 
-	describe('initial setup, smock all deps @cov-skip', () => {
+	describe('initial setup, smock all deps', () => {
 		let resolver;
 		let tokenState;
 		let proxy;

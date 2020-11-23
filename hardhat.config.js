@@ -11,7 +11,7 @@ const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD } = require('hardhat/builtin-tasks/
 // require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-compiler'); // enable custom solc compiler
 // require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-node'); // add ability to start an OVM node
 
-// usePlugin('solidity-coverage');
+require('solidity-coverage');
 // usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
 // usePlugin('buidler-gas-reporter');
 
@@ -330,7 +330,6 @@ module.exports = {
 	},
 	networks: {
 		hardhat: baseNetworkConfig,
-		coverage: localNetwork,
 		localhost: localNetwork,
 	},
 	gasReporter: {
