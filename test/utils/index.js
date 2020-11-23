@@ -3,14 +3,16 @@ const { assert } = require('chai');
 const fs = require('fs');
 const path = require('path');
 
-const buidler = require('hardhat');
+const hardhat = require('hardhat');
 const ethers = require('ethers');
 
 const {
-	network: {
-		config: { accounts },
+	config: {
+		networks: {
+			hardhat: { accounts },
+		},
 	},
-} = buidler;
+} = hardhat;
 
 const BN = require('bn.js');
 
@@ -31,7 +33,7 @@ const { buildPath } = deployCmd.DEFAULTS;
 
 module.exports = ({ web3 } = {}) => {
 	// allow non-buidler based test tasks to pass thru web3
-	web3 = web3 || buidler.web3;
+	web3 = web3 || hardhat.web3;
 
 	/**
 	 * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
@@ -80,7 +82,7 @@ module.exports = ({ web3 } = {}) => {
 			params: [seconds],
 		};
 
-		if (buidler.ovm) {
+		if (hardhat.ovm) {
 			params = {
 				method: 'evm_setNextBlockTimestamp',
 				params: [(await currentTime()) + seconds],
