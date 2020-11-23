@@ -20,5 +20,4 @@ module.exports = {
 	// passed to compiler causes it to crash (See discussion PR #732)
 	// Line and branch coverage will still be reported.
 	measureStatementCoverage: false,
-	measureFunctionCoverage: true,
 };
