@@ -113,7 +113,8 @@ const setupContract = async ({
 		);
 	};
 
-	if (artifact.bytecode.includes('__')) {
+	// if it needs library linking
+	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
 		await linkWithLegacySupport(artifact, 'SafeDecimalMath');
 	}
 
