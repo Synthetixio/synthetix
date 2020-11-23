@@ -1509,7 +1509,7 @@ const deploy = async ({
 						);
 						// Then a new inverted synth is being added (as there's no existing supply)
 						await setInversePricing({ freezeAtUpperLimit: false, freezeAtLowerLimit: false });
-					} else if (forceUpdateInverseSynthsOnTestnet) {
+					} else if (network !== 'mainnet' && forceUpdateInverseSynthsOnTestnet) {
 						// as we are on testnet and the flag is enabled, allow a mutative pricing change
 						console.log(
 							redBright(
