@@ -8,7 +8,7 @@ isolChangedFiles=$(git diff --name-only --exit-code --staged -- 'contracts/inter
 # Lint Javascript, only on changed files
 if [[ ! -z $jsChangedFiles ]]; then
 	echo "Javascript changed files [$jsChangedFiles]"
-	stderrOutput=$(npx eslint $jsChangedFiles 2>&1)
+	stderrOutput=$(npx eslint $jsChangedFiles --ignore-pattern '!.*' 2>&1)
 	if [[ ! -z $stderrOutput ]]; then
 		echo "Javascript lint failed with: $stderrOutput"
 		exit 1
