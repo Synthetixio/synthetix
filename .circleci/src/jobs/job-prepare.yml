@@ -1,7 +1,5 @@
 # Bootstraps dependencies
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
 steps:
   - checkout
   - restore_cache:

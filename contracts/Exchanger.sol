@@ -630,7 +630,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint,
         bytes32
     ) internal returns (IVirtualSynth) {
-        revert("Not supported in this layer");
+        revert("Cannot be run on this layer");
     }
 
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)

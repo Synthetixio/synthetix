@@ -1,47 +1,24 @@
 jobs:
   - job-prepare:
-      filters:
-        branches:
-          only: /.*(develop|staging|master).*/
+      {{> filter-develop.yml}}
   - job-unit-tests:
-      filters:
-        branches:
-          only: /.*(develop|staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-develop.yml}}
+      {{> require-prepare.yml}}
   - job-unit-tests-coverage:
-      filters:
-        branches:
-          only: /.*(develop|staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-develop.yml}}
+      {{> require-prepare.yml}}
   - job-unit-tests-gas-report:
-      filters:
-        branches:
-          only: /.*(develop|staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-develop.yml}}
+      {{> require-prepare.yml}}
   - job-unit-tests-legacy:
-      filters:
-        branches:
-          only: /.*(develop|staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-develop.yml}}
+      {{> require-prepare.yml}}
   - job-test-deploy-script:
-      filters:
-        branches:
-          only: /.*(develop|staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-develop.yml}}
+      {{> require-prepare.yml}}
   - job-test-ovm-bridge:
-      filters:
-        branches:
-          only: /.*(develop|staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-develop.yml}}
+      {{> require-prepare.yml}}
   - job-unit-tests-ovm:
-      filters:
-        branches:
-          only: /.*(develop|staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-develop.yml}}
+      {{> require-prepare.yml}}

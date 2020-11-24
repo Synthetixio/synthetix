@@ -2,7 +2,7 @@
 	"SystemSettings": {
 		"deploy": false
 	},
-	"SecondaryDeposit": {
+	"SynthetixBridgeToBase": {
 		"deploy": false
 	},
 	"AddressResolver": {

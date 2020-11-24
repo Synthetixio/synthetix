@@ -209,16 +209,6 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
         emit NewPeriodStarted(_currentPeriodID);
     }
 
-    // Note: Contract does not accept ETH, but still could receive via selfdestruct.
-    function recoverEther(address payable recoverAddress) external onlyOwner {
-        _validateRecoverAddress(recoverAddress);
-
-        uint amount = address(this).balance;
-        recoverAddress.transfer(amount);
-
-        emit EtherRecovered(recoverAddress, amount);
-    }
-
     function recoverTokens(address tokenAddress, address recoverAddress) external onlyOwner {
         _validateRecoverAddress(recoverAddress);
         require(tokenAddress != address(synthetix()), "Must use another function");
@@ -297,7 +287,6 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     event NewPeriodStarted(uint periodID);
     event PeriodFinalizedWithRewards(uint periodID, uint rewards);
     event TokensRecovered(address tokenAddress, address recoverAddress, uint amount);
-    event EtherRecovered(address recoverAddress, uint amount);
     event UnassignedRewardTokensRecovered(address recoverAddress, uint amount);
     event AssignedRewardTokensRecovered(address recoverAddress, uint amount, uint periodID);
     event PeriodControllerChanged(address newPeriodController);

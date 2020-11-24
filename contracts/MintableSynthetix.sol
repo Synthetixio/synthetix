@@ -1,11 +1,11 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./Synthetix.sol";
+import "./BaseSynthetix.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/mintablesynthetix
-contract MintableSynthetix is Synthetix {
+contract MintableSynthetix is BaseSynthetix {
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE = "SynthetixBridgeToBase";
 
     constructor(
@@ -14,7 +14,7 @@ contract MintableSynthetix is Synthetix {
         address _owner,
         uint _totalSupply,
         address _resolver
-    ) public Synthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {
+    ) public BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {
         appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE);
     }
 

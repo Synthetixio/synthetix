@@ -2145,7 +2145,8 @@
 		"contracts": {
 			"StakingRewardsiETH": {
 				"address": "0x6Dc0b8A7DACe47Bc75D2dDFDF8BF29e363d92693",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.33.1"
 			},
 			"StakingRewardsiBTC": {
 				"address": "0xE5Ea1DDA3299C0b133a93A47eF9F5536C6892AcE",
@@ -2395,6 +2396,20 @@
 				"address": "0xd3970a9D35d2Be3aaf62D2b5B2be3Ee303aC4228",
 				"status": "current",
 				"keccak256": "0xee1b7e9552a2b8e7da01a7932c36340a6a1e667b8b37f6eefd7a59ef6bbc5361"
+			}
+		}
+	},
+	"v2.33.1": {
+		"tag": "v2.33.1",
+		"fulltag": "v2.33.1",
+		"release": "regulus",
+		"network": "mainnet",
+		"date": "2020-11-24T12:48:26+11:00",
+		"commit": "1925c97723ce0b4871ac4864f1e63f5f12990c5a",
+		"contracts": {
+			"StakingRewardsiETH": {
+				"address": "0x3fdbbbd81b0962fdf486d74f94a68c70ba87c6c7",
+				"status": "current"
 			}
 		}
 	}
