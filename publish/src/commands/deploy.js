@@ -1390,7 +1390,7 @@ const deploy = async ({
 				read: 'getSynths',
 				readArg: [chunk.map(synth => synth.currencyKeyInBytes)],
 				expected: input =>
-					input.reduce((acc, cur, idx) => acc && cur === addressOf(chunk[idx].synth)),
+					input.reduce((acc, cur, idx) => acc && cur === addressOf(chunk[idx].synth), true),
 				write: 'addSynths',
 				writeArg: [chunk.map(synth => addressOf(synth.synth))],
 				gasLimit: 1e5 * synthChunkSize,
