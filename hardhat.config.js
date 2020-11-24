@@ -27,7 +27,7 @@ const baseNetworkConfig = {
 	allowUnlimitedContractSize: true,
 };
 
-require('./hardhat/src');
+require('./hardhat');
 
 const localNetwork = Object.assign(
 	{

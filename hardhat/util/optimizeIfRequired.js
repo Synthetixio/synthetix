@@ -1,7 +1,7 @@
 const { gray, yellow } = require('chalk');
 const {
 	DEFAULTS: { optimizerRuns },
-} = require('../../../publish/src/commands/build');
+} = require('../../publish/src/commands/build');
 
 module.exports = ({ hre, taskArguments: { optimizer } }) => {
 	if (optimizer || hre.optimizer) {

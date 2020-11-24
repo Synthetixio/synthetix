@@ -4,7 +4,7 @@ const { subtask, task, internalTask } = require('hardhat/config');
 const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD } = require('hardhat/builtin-tasks/task-names');
 const { gray, red } = require('chalk');
 
-const { ovmIgnored } = require('.');
+const { ovmIgnored } = require('../..');
 
 const optimizeIfRequired = require('../util/optimizeIfRequired');
 // const {
