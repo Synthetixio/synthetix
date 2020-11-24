@@ -4,9 +4,8 @@ const linker = require('solc/linker');
 const Web3 = require('web3');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
-const { getUsers } = require('../../index.js');
 const { stringify, getEtherscanLinkPrefix } = require('./util');
-const { getVersions } = require('../..');
+const { getVersions, getUsers } = require('../..');
 
 class Deployer {
 	/**
@@ -50,11 +49,8 @@ class Deployer {
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
-		if (useFork) {
-			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
-		} else if (network === 'local' && !privateKey) {
-			// Deterministic account #0 when using `npx hardhat node`
-			this.web3.eth.defaultAccount = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+		if (useFork || (network === 'local' && !privateKey)) {
+			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address;
 		} else {
 			this.web3.eth.accounts.wallet.add(privateKey);
 			this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
