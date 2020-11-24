@@ -18,7 +18,6 @@ const migrateBridge = async ({
 	useFork,
 	gasPrice,
 	gasLimit,
-	newBridgeAddress,
 }) => {
 	let web3, account, getSource, getTarget;
 
@@ -34,34 +33,51 @@ const migrateBridge = async ({
 	console.log(gray(`  > Deployment path: ${deploymentPath}`));
 
 	// -----------------------------------
+	// Confirm bridge addresses
+	// -----------------------------------
+
+	const { getVersions } = wrap({ network, fs, path });
+
+	const bridgeVersions = getVersions({ network, deploymentPath, byContract: true })
+		.SynthetixBridgeToOptimism;
+	if (bridgeVersions.length < 2) {
+		throw new Error(
+			red(
+				'❌ At least two bridge versions are needed for a migration. Please make sure to deploy new versions before migrating, and that they are registered versions'
+			)
+		);
+	}
+	const [secondLastEntry, lastEntry] = bridgeVersions.slice(-2);
+
+	const newBridgeAddress = lastEntry.address;
+	const oldBridgeAddress = secondLastEntry.address;
+
+	// -----------------------------------
 	// Ultra-paranoid validation
 	// -----------------------------------
 
 	console.log(yellow('Validations...'));
 
-	if (!newBridgeAddress) {
-		throw new Error(red('Please specify --new-bridge-address'));
-	}
-
 	// Valid address
 	if (!web3.utils.isAddress(newBridgeAddress.toLowerCase())) {
 		throw new Error(red(`New bridge address ${newBridgeAddress} is invalid`));
 	}
-	console.log(gray(`  > New bridge address ${newBridgeAddress} is valid`));
+	console.log(gray(`  ✅ New bridge address is a valid address`));
 
 	// Is contract
 	const code = await web3.eth.getCode(newBridgeAddress);
 	if (code === '0x') {
-		throw new Error(red(`New bridge address ${newBridgeAddress} is not a contract`));
+		throw new Error(red(`❌ New bridge address ${newBridgeAddress} is not a contract`));
 	}
-	console.log(gray(`  > New bridge address ${newBridgeAddress} is a contract`));
+	console.log(gray(`  ✅ New bridge address is a contract`));
 
 	// Not same address
 	const oldBridge = getContract({
-		contract: 'SynthetixBridgeToOptimismOld',
+		contract: 'SynthetixBridgeToOptimism',
 		deploymentPath,
 		getTarget,
 		getSource,
+		address: oldBridgeAddress,
 		web3,
 	});
 	const newBridge = getContract({
@@ -69,28 +85,55 @@ const migrateBridge = async ({
 		deploymentPath,
 		getTarget,
 		getSource,
+		address: newBridgeAddress,
 		web3,
 	});
 	if (newBridge.options.address === oldBridge.options.address) {
-		throw new Error(red(`New bridge address is the same as the old bridge address`));
+		throw new Error(red(`❌ New bridge address is the same as the old bridge address`));
 	}
-	console.log(gray(`  > New bridge address is different than the old bridge address`));
+	console.log(gray(`  ✅ New bridge address is different than the old bridge address`));
 
 	// Same owner
 	const oldOwner = await oldBridge.methods.owner().call();
 	const newOwner = await newBridge.methods.owner().call();
 	if (newOwner !== oldOwner) {
-		throw new Error(red(`New bridge does not have the same owner as the old bridge`));
+		throw new Error(red(`❌ New bridge does not have the same owner as the old bridge`));
 	}
-	console.log(gray(`  > New bridge address owner is the same owner: ${newOwner}`));
+	console.log(gray(`  ✅ New bridge address owner is the same owner: ${newOwner}`));
 
 	// Correct contract address
 	if (newBridgeAddress !== newBridge.options.address) {
 		throw new Error(
 			red(
-				`Something is wrong, newBridgeAddress is ${newBridgeAddress}, and newBridge.options.address is ${newBridge.options.address}`
+				`❌ Something is wrong, newBridgeAddress is ${newBridgeAddress}, and newBridge.options.address is ${newBridge.options.address}`
 			)
 		);
+	}
+
+	// New bridge should not have SNX balance
+	// but old bridge should have a positive balance
+	const snx = getContract({
+		contract: 'Synthetix',
+		deploymentPath,
+		getTarget,
+		getSource,
+		web3,
+	});
+	const newBalance = web3.utils.fromWei(
+		await snx.methods.balanceOf(newBridgeAddress).call(),
+		'ether'
+	);
+	if (newBalance > 0) {
+		throw new Error(
+			red(`❌ New bridge already has a positive SNX balance of ${newBalance.toString()} SNX`)
+		);
+	}
+	const oldBalance = web3.utils.fromWei(
+		await snx.methods.balanceOf(oldBridgeAddress).call(),
+		'ether'
+	);
+	if (oldBalance === 0) {
+		throw new Error(red("❌ Old bridge's balance is zero"));
 	}
 
 	// -----------------------------------
@@ -98,6 +141,10 @@ const migrateBridge = async ({
 	// -----------------------------------
 
 	console.log(yellow('Tx params...'));
+
+	// Bridge addresses
+	console.log(yellow(`  > New bridge: ${newBridgeAddress}`));
+	console.log(yellow(`  > Old bridge: ${oldBridgeAddress}`));
 
 	// Tx params
 	const params = {
@@ -165,10 +212,14 @@ const bootstrapConnection = ({ network, deploymentPath, privateKey, useFork }) =
 	};
 };
 
-const getContract = ({ contract, deploymentPath, getTarget, getSource, web3 }) => {
-	const target = getTarget({ deploymentPath, contract });
-	if (!target) {
-		throw new Error(`Unable to find deployed target for ${contract} in ${deploymentPath}`);
+const getContract = ({ contract, deploymentPath, getTarget, getSource, web3, address }) => {
+	if (!address) {
+		const target = getTarget({ deploymentPath, contract });
+		if (!target) {
+			throw new Error(`Unable to find deployed target for ${contract} in ${deploymentPath}`);
+		}
+
+		address = target.address;
 	}
 
 	const source = getSource({ deploymentPath, contract });
@@ -176,7 +227,7 @@ const getContract = ({ contract, deploymentPath, getTarget, getSource, web3 }) =
 		throw new Error(`Unable to find source for ${contract}`);
 	}
 
-	return new web3.eth.Contract(source.abi, target.address);
+	return new web3.eth.Contract(source.abi, address);
 };
 
 module.exports = {
@@ -189,7 +240,6 @@ module.exports = {
 			.option('--deployment-path <value>', 'The path of the deployment to target')
 			.option('--private-key <value>', 'Optional private key for signing transactions')
 			.option('--use-fork', 'Wether to use a fork for the migration', false)
-			.option('--new-bridge-address <value>', 'The address of the bridge to migrate to')
 			.option('-g, --gas-price <value>', 'Gas price to set when signing transactions', 1)
 			.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
 			.action(async (...args) => {
