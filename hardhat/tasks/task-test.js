@@ -48,10 +48,6 @@ task('test')
 				hre.config.mocha.grep = '@gas-skip';
 				hre.config.mocha.invert = true;
 			}
-			// Tell buidler-gas-reporter not to wrap provider when using ganache
-			if (hre.network.name === 'localhost') {
-				hre.config.gasReporter.fast = false;
-			}
 		}
 
 		if (gasOutputFile) {
