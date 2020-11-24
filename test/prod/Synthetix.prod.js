@@ -333,12 +333,7 @@ contract('Synthetix (prod tests)', accounts => {
 
 						assert.equal(numEntries.toString(), '0');
 					});
-					// NOTE: There seems to be an error with ganache-core forks.
-					// Skip until after hardhat migration or ganache-core fix.
-					// vSynth.settled() shows as false even though it should be true.
-					// Probably has to do with how the variable is stored and fork caching.
-					// Disabling caching in ganache-core yields it unusable.
-					it.skip('and the vSynth shows settled', async () => {
+					it('and the vSynth shows settled', async () => {
 						assert.equal(await vSynth.settled(), true);
 					});
 				});

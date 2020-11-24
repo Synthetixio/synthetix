@@ -1,25 +1,27 @@
-// task('test:prod', 'run poduction tests against a running fork')
-// 	.addFlag('optimizer', 'Compile with the optimizer')
-// 	.addFlag('gas', 'Compile gas usage')
-// 	.addFlag('patchFreshDeployment', 'Patches up some things in production tests for new deployments')
-// 	.addFlag('useOvm', 'Uses an Optimism configuration')
-// 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
-// 	.addOptionalParam('deploymentPath', 'Deployed data path')
-// 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
-// 	.setAction(async (taskArguments, bre) => {
-// 		if (bre.network.name !== 'localhost') {
-// 			throw new Error('Prod testing needs to be run with --network localhost');
-// 		}
+const { task } = require('hardhat/config');
 
-// 		bre.config.deploymentPath = taskArguments.deploymentPath;
-// 		bre.config.patchFreshDeployment = taskArguments.patchFreshDeployment;
-// 		bre.config.useOvm = taskArguments.useOvm;
-// 		bre.config.paths.tests = './test/prod/';
+task('test:prod', 'run production tests against a running fork')
+	.addFlag('optimizer', 'Compile with the optimizer')
+	.addFlag('gas', 'Compile gas usage')
+	.addFlag('patchFreshDeployment', 'Patches up some things in production tests for new deployments')
+	.addFlag('useOvm', 'Uses an Optimism configuration')
+	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
+	.addOptionalParam('deploymentPath', 'Deployed data path')
+	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
+	.setAction(async (taskArguments, hre) => {
+		if (hre.network.name !== 'localhost') {
+			throw new Error('Prod testing needs to be run with --network localhost');
+		}
 
-// 		// Prod tests use forking, which means some txs could last minutes.
-// 		const timeout = 5 * 60 * 1000; // 5 minutes
-// 		bre.config.mocha.timeout = timeout;
-// 		bre.config.networks.localhost.timeout = timeout;
+		hre.config.deploymentPath = taskArguments.deploymentPath;
+		hre.config.patchFreshDeployment = taskArguments.patchFreshDeployment;
+		hre.config.useOvm = taskArguments.useOvm;
+		hre.config.paths.tests = './test/prod/';
 
-// 		await bre.run('test', taskArguments);
-// 	});
+		// Prod tests use forking, which means some txs could last minutes.
+		const timeout = 5 * 60 * 1000; // 5 minutes
+		hre.config.mocha.timeout = timeout;
+		hre.config.networks.localhost.timeout = timeout;
+
+		await hre.run('test', taskArguments);
+	});

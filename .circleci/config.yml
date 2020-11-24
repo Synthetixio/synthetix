@@ -1,7 +1,7 @@
 version: 2.1
 commands:
   cmd-fork-start:
-    description: Starts a local ganache fork on the specified network
+    description: Starts a local hardhat fork on the specified network
     parameters:
       network:
         type: string
@@ -14,7 +14,7 @@ commands:
           background: true
       - cmd-wait-for-rpc
   cmd-local-start:
-    description: Starts a local ganache chain
+    description: Starts a local hardhat chain
     steps:
       - run:
           command: npx hardhat node

@@ -2,10 +2,11 @@
 
 const { ensureNetwork, loadConnections } = require('../util');
 const { getUsers, networkToChainId } = require('../../..');
-const ganache = require('ganache-core');
-const { red, green, gray, yellow } = require('chalk');
+const { red, gray, yellow } = require('chalk');
 const path = require('path');
 const fs = require('fs');
+
+const hre = require('hardhat');
 
 const dbPath = '.db/';
 
@@ -44,34 +45,11 @@ const forkChain = async ({ network, reset, providerUrl, unlockAccounts = [] }) =
 		providerUrl = envProviderUrl;
 	}
 
-	const server = ganache.server({
-		fork: providerUrl,
-		gasLimit: 5e7,
-		mnemonic: 'ability air report ranch fiber derive impulse wheat design raccoon moon upset',
-		keepAliveTimeout: 0,
-		unlocked_accounts: pwnedAddresses,
-		logger: console,
-		network_id: chainId,
-		db_path: `.db/${network}/`,
-		default_balance_ether: 100000,
-	});
+	// NOTEs:
+	// 1. No reset support
+	// 2. No network support
 
-	server.listen(8545, (error, state) => {
-		if (error) {
-			console.error(error);
-			process.exit(1);
-		} else {
-			console.log(
-				yellow(`Successfully forked ${network} at block ${state.blockchain.forkBlockNumber}`)
-			);
-
-			console.log(gray('gasLimit:', state.options.gasLimit));
-			console.log(gray('gasPrice:', state.options.gasPrice));
-			console.log(green('unlocked_accounts:', state.options.unlocked_accounts));
-
-			console.log(gray('Waiting for txs...'));
-		}
-	});
+	await hre.run('node', { fork: providerUrl, unlockedAccounts: pwnedAddresses.join(',') });
 };
 
 module.exports = {

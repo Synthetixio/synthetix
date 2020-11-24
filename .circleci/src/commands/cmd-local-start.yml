@@ -1,5 +1,5 @@
 # Starts a local chain
-description: Starts a local ganache chain
+description: Starts a local hardhat chain
 steps:
   - run:
       command: npx hardhat node

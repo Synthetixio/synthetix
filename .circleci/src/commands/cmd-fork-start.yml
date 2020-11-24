@@ -1,5 +1,5 @@
 # Starts a forked local chain
-description: Starts a local ganache fork on the specified network
+description: Starts a local hardhat fork on the specified network
 parameters:
   network:
     type: string
