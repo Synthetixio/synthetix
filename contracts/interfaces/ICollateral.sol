@@ -39,6 +39,8 @@ interface ICollateralEth {
     function repay(address borrower, uint id, uint amount) external;
 
     function liquidate(address borrower, uint id, uint amount) external;
+
+    function claim(uint amount) external;
 }
 
 interface ICollateralErc20 {
