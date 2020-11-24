@@ -49,7 +49,7 @@ class Deployer {
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
-		if (useFork || (network === 'local' && !privateKey)) {
+		if (useFork || network === 'local') {
 			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address;
 		} else {
 			this.web3.eth.accounts.wallet.add(privateKey);
