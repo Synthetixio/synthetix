@@ -17,24 +17,23 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IERC20.sol";
 
 
-// General market details
-//     max funding rate rate of change
-//
-// Details for a particular position
-//     Properly accrue funding
+// Remaining Functionality
+//     Ensure funding accrues properly
 //     Modification of existing positions (order submission, order fill, order fee computation)
-//
-// Functionality
-//     Gas tank (non testnet)
-//     Multi order confirmation (non testnet)
-//     Pausable from SystemStatus (no funding charged in this period, but people can close orders) (non testnet)
-//         Circuit breaker (relies on pausable if a price divergence is detected, part of keeper) (non testnet)
-//     Debt caching (non testnet)
-//     Retrospective liquidations (non testnet)
 //     Margin Adjustment
-//     Liquidations
 //     Proxify / separated state
 //     Functionalise price retrieval for efficiency (only one call to exrates per invocation of any function)
+//     Pausable from SystemStatus (no funding charged in this period, but people can close orders)
+//         Circuit breaker (relies on pausable if a price divergence is detected, part of keeper)
+//     Multi-confirmation
+//
+// Future (non-testnet) Functionality
+//     Gas tank
+//     Multi order confirmation
+//     Debt caching
+//     Retrospective liquidations
+//     Multi-liquidation
+//     max funding rate rate of change
 
 interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
@@ -234,12 +233,10 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         return _min(_max(-1, functionFraction), 1).multiplyDecimalRound(maxFundingRate);
     }
 
-    // TODO: respect max funding rate rate of change
     function currentFundingRate() external view returns (int) {
         return _currentFundingRate();
     }
 
-    // TODO: respect maximum funding rate of change
     function _unrecordedFunding() internal view returns (int funding, bool isInvalid) {
         int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
         (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
@@ -250,7 +247,6 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         return _unrecordedFunding();
     }
 
-    // TODO: respect maximum funding rate of change
     function _netFundingPerUnit(
         uint startIndex,
         uint endIndex,
@@ -529,8 +525,6 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
 
     // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
     // TODO: If they are owed anything because the position is being closed, then remit it at confirmation.
-    // TODO: Modifying a position should charge fees on the portion opened on the heavier side.
-    // TODO: Make this withdraw directly from their sUSD.
     // TODO: What to do if an order already exists.
     function _submitOrder(int margin, uint leverage) internal {
         // First cancel any open order.
@@ -589,8 +583,6 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         _submitOrder(0, 0);
     }
 
-    // TODO: Multiple position confirmations
-    // TODO: Send fee to fee pool on confirmation
     // TODO: What to do if an order already exists.
     function confirmOrder(address account) external {
         (uint entryPrice, bool isInvalid) = _priceAndInvalid(_exchangeRates());
