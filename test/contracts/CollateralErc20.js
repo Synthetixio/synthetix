@@ -8,24 +8,11 @@ const BN = require('bn.js');
 
 const PublicEST = artifacts.require('PublicEST');
 
-const {
-	fastForward,
-	getEthBalance,
-	toUnit,
-	fromUnit,
-	toUnitFromBN,
-	multiplyDecimal,
-	currentTime,
-} = require('../utils')();
+const { fastForward, toUnit, currentTime } = require('../utils')();
 
-const { mockGenericContractFnc, mockToken, setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts, setupContract } = require('./setup');
 
-const {
-	issueSynthsToUser,
-	ensureOnlyExpectedMutativeFunctions,
-	onlyGivenAddressCanInvoke,
-	setStatus,
-} = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, setStatus } = require('./helpers');
 
 const {
 	toBytes32,
@@ -39,27 +26,17 @@ const ProxyERC20 = artifacts.require(`ProxyERC20`);
 const TokenState = artifacts.require(`TokenState`);
 
 contract('CollateralErc20', async accounts => {
-	const MINUTE = 60;
-	const DAY = 86400;
-	const WEEK = 604800;
-	const MONTH = 2629743;
 	const YEAR = 31536000;
 
 	const sUSD = toBytes32('sUSD');
 	const sETH = toBytes32('sETH');
 	const sBTC = toBytes32('sBTC');
 
-	const [ETH] = ['sETH'].map(toBytes32);
-
 	const oneRenBTC = toUnit(1);
 	const twoRenBTC = toUnit(2);
 	const fiveRenBTC = toUnit(5);
-	const tenRenBTC = toUnit(10);
-	const twentyRenBTC = toUnit(20);
 
 	const onesUSD = toUnit(1);
-	const twosUSD = toUnit(2);
-	const fivesUSD = toUnit(5);
 	const tensUSD = toUnit(10);
 	const oneHundredsUSD = toUnit(100);
 	const oneThousandsUSD = toUnit(1000);
@@ -75,7 +52,6 @@ contract('CollateralErc20', async accounts => {
 	let cerc20,
 		state,
 		managerState,
-		synthetix,
 		feePool,
 		exchangeRates,
 		addressResolver,
@@ -129,7 +105,6 @@ contract('CollateralErc20', async accounts => {
 	};
 
 	const deployCollateral = async ({
-		proxy,
 		state,
 		owner,
 		manager,
@@ -145,7 +120,6 @@ contract('CollateralErc20', async accounts => {
 			accounts,
 			contract: 'CollateralErc20',
 			args: [
-				proxy,
 				state,
 				owner,
 				manager,
@@ -163,7 +137,6 @@ contract('CollateralErc20', async accounts => {
 	const setupMultiCollateral = async () => {
 		synths = ['sUSD', 'sBTC'];
 		({
-			Synthetix: synthetix,
 			SystemStatus: systemStatus,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
@@ -226,7 +199,6 @@ contract('CollateralErc20', async accounts => {
 		await issueRenBTCtoAccount(toUnit(100), account1);
 
 		cerc20 = await deployCollateral({
-			proxy: ZERO_ADDRESS,
 			state: state.address,
 			owner: owner,
 			manager: manager.address,
@@ -357,11 +329,7 @@ contract('CollateralErc20', async accounts => {
 		});
 	});
 
-	describe('issuance ratio test', async () => {
-		it('should work', async () => {
-			const ratio = await cerc20.issuanceRatio();
-		});
-	});
+	describe('issuance ratio test', async () => {});
 
 	describe('max loan test', async () => {
 		it('should convert correctly', async () => {
@@ -746,12 +714,10 @@ contract('CollateralErc20', async accounts => {
 				assert.bnEqual(await sBTCSynth.balanceOf(account1), expecetdBalance);
 			});
 
-			xit('should issue the minting fee to the fee pool', async () => {
+			it('should issue the minting fee to the fee pool', async () => {
 				const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
 
-				const expecetdBalance = toUnit(100);
-
-				assert.equal(expecetdBalance, feePoolBalance.toString());
+				assert.equal(issueFee, feePoolBalance.toString());
 			});
 
 			it('should emit the event properly', async () => {
@@ -1109,15 +1075,6 @@ contract('CollateralErc20', async accounts => {
 				});
 			});
 
-			it('should update the loan correctly', async () => {
-				loan = await state.getLoan(account1, id);
-
-				const expectedAmount = toUnit(loan.amount).sub(liquidationAmount);
-
-				// assert.bnClose(loan.amount, expectedAmount, 100);
-				// assert.bnEqual(loan.collateral, remainingCollateral);
-			});
-
 			it('should emit a liquidation event', async () => {
 				assert.eventEqual(tx, 'LoanPartiallyLiquidated', {
 					account: account1,
@@ -1128,19 +1085,17 @@ contract('CollateralErc20', async accounts => {
 				});
 			});
 
-			it('should reduce the liquicators synth amount', async () => {
+			it('should reduce the liquidators synth amount', async () => {
 				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
 				const expectedBalance = toUnit(5000).sub(liquidationAmount);
 
 				assert.bnEqual(liquidatorBalance, expectedBalance);
 			});
 
-			xit('should transfer the liquidated collateral to the liquidator', async () => {
-				// the actual amount of eth is different because of gas spent on transactions
-				// so we just check that they have more eth now
-				liquidatorEthBalAfter = new BN(await getEthBalance(account2)).add(liquidatedCollateral);
+			it('should transfer the liquidated collateral to the liquidator', async () => {
+				const bal = await renBTC.balanceOf(account2);
 
-				assert.bnClose(liquidatorEthBalAfter, liquidatorEthBalBefore);
+				assert.bnEqual(bal, liquidatedCollateral);
 			});
 
 			it('should pay the interest to the fee pool', async () => {
@@ -1149,18 +1104,17 @@ contract('CollateralErc20', async accounts => {
 				assert.bnGt(balance, toUnit(0));
 			});
 
-			xit('should fix the collateralisation ratio of the loan', async () => {
+			it('should fix the collateralisation ratio of the loan', async () => {
 				loan = await state.getLoan(account1, id);
 
-				const ratio = await mcerc20.collateralRatio(loan);
+				const ratio = await cerc20.collateralRatio(loan);
 
-				assert.bnGte(ratio, toUnit(1.5));
+				// the loan is very close 150%, we are in 10^18 land.
+				assert.bnClose(ratio, toUnit(1.5), '100000000000');
 			});
 		});
 
 		describe('when a loan needs to be completely liquidated', async () => {
-			let liquidatorEthBalBefore;
-
 			beforeEach(async () => {
 				const timestamp = await currentTime();
 				await exchangeRates.updateRates([sBTC], ['5000'].map(toUnit), timestamp, {
@@ -1170,9 +1124,6 @@ contract('CollateralErc20', async accounts => {
 				loan = await state.getLoan(account1, id);
 
 				await issuesUSDToAccount(toUnit(10000), account2);
-
-				liquidatorEthBalBefore = parseFloat(fromUnit(await getEthBalance(account2)));
-				const liquidatorsUSDBalBefore = await sUSDSynth.balanceOf(account2);
 
 				tx = await cerc20.liquidate(account1, id, toUnit(10000), {
 					from: account2,
@@ -1198,11 +1149,16 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('should transfer all the collateral to the liquidator', async () => {
-				// assert.bnGt(liquidatorBal, liquidatorEthBalBefore);
+				const bal = await renBTC.balanceOf(account2);
+
+				assert.bnEqual(bal, oneRenBTC);
 			});
 
 			it('should reduce the liquidators synth balance', async () => {
-				// const liquidatorsUSDBalAfter = await sUSDSynth.balanceOf(account2);
+				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
+				const expectedBalance = toUnit(10000).sub(toUnit(5000));
+
+				assert.bnClose(liquidatorBalance, expectedBalance, '100000000000000');
 			});
 		});
 	});
@@ -1251,9 +1207,13 @@ contract('CollateralErc20', async accounts => {
 		});
 
 		describe('when it works', async () => {
+			let accountRenBalBefore;
+
 			beforeEach(async () => {
 				// Give them some more sUSD to make up for the fees.
 				await issuesUSDToAccount(tensUSD, account1);
+
+				accountRenBalBefore = await renBTC.balanceOf(account1);
 
 				tx = await cerc20.close(id, { from: account1 });
 			});
@@ -1274,7 +1234,10 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('should transfer the collateral back to the borrower', async () => {
-				// assert.closeTo(liquidatorEthBalBefore, liquidatorEthBalAfter);
+				const bal = await renBTC.balanceOf(account1);
+				const expected = accountRenBalBefore.add(twoRenBTC);
+
+				assert.bnEqual(bal, expected);
 			});
 
 			it('should emit the event', async () => {

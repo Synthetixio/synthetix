@@ -6,24 +6,11 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const BN = require('bn.js');
 
-const {
-	fastForward,
-	getEthBalance,
-	toUnit,
-	fromUnit,
-	toUnitFromBN,
-	multiplyDecimal,
-	currentTime,
-} = require('../utils')();
+const { fastForward, getEthBalance, toUnit, fromUnit, currentTime } = require('../utils')();
 
-const { mockGenericContractFnc, mockToken, setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts, setupContract } = require('./setup');
 
-const {
-	issueSynthsToUser,
-	ensureOnlyExpectedMutativeFunctions,
-	onlyGivenAddressCanInvoke,
-	setStatus,
-} = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, setStatus } = require('./helpers');
 
 const {
 	toBytes32,
@@ -35,17 +22,10 @@ const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
 contract('CollateralEth', async accounts => {
-	const MINUTE = 60;
-	const DAY = 86400;
-	const WEEK = 604800;
-	const MONTH = 2629743;
-	const YEAR = 31556926; // 31556926
+	const YEAR = 31556926;
 
 	const sUSD = toBytes32('sUSD');
 	const sETH = toBytes32('sETH');
-	const sBTC = toBytes32('sBTC');
-
-	const [ETH] = ['sETH'].map(toBytes32);
 
 	const oneETH = toUnit(1);
 	const twoETH = toUnit(2);
@@ -54,8 +34,6 @@ contract('CollateralEth', async accounts => {
 	const twentyETH = toUnit(20);
 
 	const onesUSD = toUnit(1);
-	const twosUSD = toUnit(2);
-	const fivesUSD = toUnit(5);
 	const tensUSD = toUnit(10);
 	const oneHundredsUSD = toUnit(100);
 
@@ -71,7 +49,6 @@ contract('CollateralEth', async accounts => {
 		manager,
 		issuer,
 		synths,
-		synthetix,
 		feePool,
 		exchangeRates,
 		addressResolver,
@@ -98,7 +75,6 @@ contract('CollateralEth', async accounts => {
 	};
 
 	const deployCollateral = async ({
-		proxy,
 		state,
 		owner,
 		manager,
@@ -112,14 +88,13 @@ contract('CollateralEth', async accounts => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [proxy, state, owner, manager, resolver, collatKey, synths, minColat, intRate, liqPen],
+			args: [state, owner, manager, resolver, collatKey, synths, minColat, intRate, liqPen],
 		});
 	};
 
 	const setupMultiCollateral = async () => {
 		synths = ['sUSD', 'sETH'];
 		({
-			Synthetix: synthetix,
 			SystemStatus: systemStatus,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
@@ -156,7 +131,6 @@ contract('CollateralEth', async accounts => {
 		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
 		ceth = await deployCollateral({
-			proxy: ZERO_ADDRESS,
 			state: state.address,
 			owner: owner,
 			manager: manager.address,
@@ -305,9 +279,7 @@ contract('CollateralEth', async accounts => {
 	});
 
 	describe('issuance ratio test', async () => {
-		it('should work', async () => {
-			const ratio = await ceth.issuanceRatio();
-		});
+		it('should work', async () => {});
 	});
 
 	describe('max loan test', async () => {
@@ -699,12 +671,10 @@ contract('CollateralEth', async accounts => {
 				assert.bnEqual(await sETHSynth.balanceOf(account1), expecetdBalance);
 			});
 
-			xit('should issue the minting fee to the fee pool', async () => {
+			it('should issue the minting fee to the fee pool', async () => {
 				const feePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
 
-				const expecetdBalance = toUnit(2.5);
-
-				assert.equal(expecetdBalance, feePoolBalance.toString());
+				assert.equal(issueFee, feePoolBalance.toString());
 			});
 
 			it('should emit the event properly', async () => {
@@ -1004,6 +974,8 @@ contract('CollateralEth', async accounts => {
 	});
 
 	describe('liquidations', async () => {
+		let liquidatorEthBalBefore;
+
 		beforeEach(async () => {
 			// make a loan here so we have a valid ID to pass to the blockers and reverts.
 			loan = await ceth.open(oneHundredsUSD, sUSD, {
@@ -1071,20 +1043,13 @@ contract('CollateralEth', async accounts => {
 
 				loan = await state.getLoan(account1, id);
 
+				liquidatorEthBalBefore = new BN(await getEthBalance(account2));
+
 				liquidationAmount = await ceth.liquidationAmount(loan);
 
 				tx = await ceth.liquidate(account1, id, liquidationAmount, {
 					from: account2,
 				});
-			});
-
-			it('should update the loan correctly', async () => {
-				loan = await state.getLoan(account1, id);
-
-				const expectedAmount = toUnit(loan.amount).sub(liquidationAmount);
-
-				// assert.bnClose(loan.amount, expectedAmount, 100);
-				// assert.bnEqual(loan.collateral, remainingCollateral);
 			});
 
 			it('should emit a liquidation event', async () => {
@@ -1097,7 +1062,7 @@ contract('CollateralEth', async accounts => {
 				});
 			});
 
-			it('should reduce the liquicators synth amount', async () => {
+			it('should reduce the liquidators synth amount', async () => {
 				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
 				const expectedBalance = toUnit(1000).sub(liquidationAmount);
 
@@ -1116,12 +1081,21 @@ contract('CollateralEth', async accounts => {
 				assert.bnGt(balance, toUnit(0));
 			});
 
-			xit('should fix the collateralisation ratio of the loan', async () => {
+			it('should fix the collateralisation ratio of the loan', async () => {
 				loan = await state.getLoan(account1, id);
 
 				const ratio = await ceth.collateralRatio(loan);
 
-				assert.bnGte(ratio, toUnit(1.5));
+				// the loan is very close 150%, we are in 10^18 land.
+				assert.bnClose(ratio, toUnit(1.5), '100000000000');
+			});
+
+			it('should allow the liquidator to call claim', async () => {
+				tx = await ceth.claim(liquidatedCollateral, { from: account2 });
+
+				const bal = new BN(await getEthBalance(account2));
+
+				assert.bnGt(bal, liquidatorEthBalBefore);
 			});
 		});
 
@@ -1138,8 +1112,7 @@ contract('CollateralEth', async accounts => {
 
 				await issuesUSDToAccount(toUnit(1000), account2);
 
-				liquidatorEthBalBefore = parseFloat(fromUnit(await getEthBalance(account2)));
-				const liquidatorsUSDBalBefore = await sUSDSynth.balanceOf(account2);
+				liquidatorEthBalBefore = new BN(await getEthBalance(account2));
 
 				tx = await ceth.liquidate(account1, id, toUnit(1000), {
 					from: account2,
@@ -1164,6 +1137,13 @@ contract('CollateralEth', async accounts => {
 				assert.equal(loan.interestIndex, 0);
 			});
 
+			it('should reduce the liquidators synth amount', async () => {
+				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
+				const expectedBalance = toUnit(1000).sub(toUnit(100));
+
+				assert.bnClose(liquidatorBalance, expectedBalance, '1000000000000');
+			});
+
 			it('should create a pending withdrawl entry', async () => {
 				const withdaw = await ceth.pendingWithdrawals(account2);
 
@@ -1171,7 +1151,11 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should reduce the liquidators synth balance', async () => {
-				// const liquidatorsUSDBalAfter = await sUSDSynth.balanceOf(account2);
+				tx = await ceth.claim(twoETH, { from: account2 });
+
+				const bal = new BN(await getEthBalance(account2));
+
+				assert.bnGt(bal, liquidatorEthBalBefore);
 			});
 		});
 	});
@@ -1242,8 +1226,18 @@ contract('CollateralEth', async accounts => {
 				assert.bnGt(balance, toUnit(0));
 			});
 
-			it('should transfer the collateral back to the borrower', async () => {
-				// assert.closeTo(liquidatorEthBalBefore, liquidatorEthBalAfter);
+			it('should add a pending withdrawl entry', async () => {
+				assert.bnEqual(await ceth.pendingWithdrawals(account1), twoETH);
+			});
+
+			it('should allow the closer to withdraw', async () => {
+				const bal = new BN(await getEthBalance(account1));
+
+				await ceth.claim(oneETH, { from: account1 });
+
+				const balAfter = new BN(await getEthBalance(account1));
+
+				assert.bnGt(balAfter, bal);
 			});
 
 			it('should emit the event', async () => {
@@ -1256,7 +1250,9 @@ contract('CollateralEth', async accounts => {
 	});
 
 	describe('Accrue Interest', async () => {
-		xit('should work', async () => {
+		beforeEach(async () => {});
+
+		it('should correctly determine the interest on loans', async () => {
 			tx = await ceth.open(oneHundredsUSD, sUSD, {
 				value: twoETH,
 				from: account1,
@@ -1264,54 +1260,51 @@ contract('CollateralEth', async accounts => {
 
 			id = await getid(tx);
 
-			let rates = await state.getRates(sUSD);
+			// after a year we should have accrued about 5% + (100/2100) = 0.09761904762
 
 			await fastForwardAndUpdateRates(YEAR);
 
-			// should have accrued about 5% after 1 year when he comes to repay.
+			// deposit some eth to trigger the interest accrual.
 
-			tx = await ceth.repay(account1, id, tensUSD, { from: account1 });
-
-			// so the balance remaining on the loan should be around $95.
-
-			tx = await ceth.open(oneETH, sETH, {
-				value: twoETH,
-				from: account1,
-			});
-
-			rates = await state.getRates(sUSD);
+			tx = await ceth.deposit(account1, id, { from: account1, value: oneETH });
 
 			loan = await state.getLoan(account1, id);
 
-			// assert.bnClose(loan.amount, expected, '197955359900');
+			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			await fastForward(YEAR);
+			assert.equal(interest, 9.7652);
 
-			tx = await ceth.repay(account1, id, tensUSD, { from: account1 });
-		});
-
-		it('should work', async () => {
 			tx = await ceth.open(oneHundredsUSD, sUSD, {
 				value: twoETH,
-				from: account1,
-			});
-
-			id = await getid(tx);
-
-			tx = await ceth.open(twoETH, sETH, {
-				value: fiveETH,
 				from: account1,
 			});
 
 			const id2 = await getid(tx);
 
+			// after a year we should have accrued abot 5% + (200/2200) = 0.1409090909
+
 			await fastForwardAndUpdateRates(YEAR);
 
-			tx = await ceth.deposit(account1, id, { from: account1, value: oneETH });
 			tx = await ceth.deposit(account1, id2, { from: account1, value: oneETH });
 
-			const rates = await state.getRates(sUSD);
-			const rates2 = await state.getRates(sETH);
+			loan = await state.getLoan(account1, id2);
+
+			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
+
+			assert.equal(interest, 14.0942);
+
+			// after two years we should have accrued
+			// 5% + (100/2100) = 0.09761904762 +
+			// 5% + (200/2200) = 0.1409090909 +
+			//                 = 0.2385281385
+
+			tx = await ceth.deposit(account1, id, { from: account1, value: oneETH });
+
+			loan = await state.getLoan(account1, id);
+
+			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
+
+			assert.equal(interest, 23.8595);
 		});
 	});
 });
