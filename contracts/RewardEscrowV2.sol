@@ -179,12 +179,30 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
     function _importVestingEntry(
         address account,
-        uint escrowAmount,
-        uint remainingAmount,
-        uint endTime,
-        uint duration,
-        uint lastVested
-    ) internal {}
+        uint256 escrowAmount,
+        uint256 remainingAmount,
+        uint64 vestingTimestamp,
+        uint64 duration,
+        uint64 lastVested
+    ) internal {
+        /* No empty vesting entries allowed. */
+        require(escrowAmount != 0, "Quantity cannot be zero");
+
+        uint entryID = nextEntryId;
+        vestingSchedules[account][entryID] = VestingEntry({
+            endTime: vestingTimestamp,
+            duration: duration,
+            lastVested: lastVested,
+            escrowAmount: escrowAmount,
+            remainingAmount: remainingAmount
+        });
+
+        // append entryID to list of entries for account
+        accountVestingEntryIDs[account].push(entryID);
+
+        /* Increment the next entry id. */
+        nextEntryId = nextEntryId.add(1);
+    }
 
     /**
      * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
@@ -360,30 +378,33 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
     function importVestingEntries(
         address account,
-        uint256 escrowedAccountBalance,
+        uint256 escrowedAmount,
         uint64[] calldata vestingTimestamps,
         uint64[] calldata durations,
         uint64[] calldata lastVested,
         uint256[] calldata escrowAmounts,
         uint256[] calldata remainingAmounts
     ) external onlySynthetixBridgeToBase {
-        uint256 accountEscrowedBalance;
-
-        // TODO - consider using appendVestingEntry for appending vesting schedules
-        for (uint i = 0; i < escrowAmounts.length; i++) {
-            // vestingSchedules[account].push([timestamps[i], amounts[i]]);
-            accountEscrowedBalance = accountEscrowedBalance.add(escrowAmounts[i]);
-        }
-
         // There must be enough balance in the contract to provide for the escrowed balance.
-        totalEscrowedBalance = totalEscrowedBalance.add(accountEscrowedBalance);
+        totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
         require(
             totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
             "Insufficient balance in the contract to provide for escrowed balance"
         );
 
+        for (uint i = 0; i < vestingTimestamps.length; i++) {
+            _importVestingEntry(
+                account,
+                escrowAmounts[i],
+                remainingAmounts[i],
+                vestingTimestamps[i],
+                durations[i],
+                lastVested[i]
+            );
+        }
+
         // Record account escrowed balance
-        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(accountEscrowedBalance);
+        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
     }
 
     function _checkEscrowMigrationPending(address account) internal view {

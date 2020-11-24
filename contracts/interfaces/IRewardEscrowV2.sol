@@ -34,7 +34,7 @@ interface IRewardEscrowV2 {
     // L2 Migration
     function importVestingEntries(
         address account,
-        uint256 escrowedAccountBalance,
+        uint256 escrowedAmount,
         uint64[] calldata vestingTimstamps,
         uint64[] calldata durations,
         uint64[] calldata lastVested,
