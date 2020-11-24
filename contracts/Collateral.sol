@@ -91,7 +91,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
             appendToAddressCache(_synths[i]);
             ISynth synth = ISynth(requireAndGetAddress(_synths[i], "Missing address"));
             synths[synth.currencyKey()] = _synths[i];
-            }
+        }
 
         owner = _owner;
     }
@@ -375,7 +375,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         _systemStatus().requireIssuanceActive();
 
         // 1. Check withdraw amount
-        require(amount > 0 , "Amount to withdraw must be greater than 0");
+        require(amount > 0, "Amount to withdraw must be greater than 0");
 
         // 2. Get the loan.
         Loan memory loan = state.getLoan(msg.sender, id);
@@ -510,46 +510,46 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     }
 
      // Update the cumulative interest rate for the currency that was interacted with.
-     function accrueInterest(Loan memory loan) internal returns (Loan memory loanAfter) {
-         loanAfter = loan;
+    function accrueInterest(Loan memory loan) internal returns (Loan memory loanAfter) {
+        loanAfter = loan;
 
-         // 1. Get the rates time series for this currency.
-         uint[] memory rates = state.getRates(loan.currency);
+        // 1. Get the rates time series for this currency.
+        uint[] memory rates = state.getRates(loan.currency);
 
-         // 2. Get the timestamp of the last rate update.
-         uint lastTime = state.rateLastUpdated(loan.currency);
+        // 2. Get the timestamp of the last rate update.
+        uint lastTime = state.rateLastUpdated(loan.currency);
 
-         // 3. Get the last cumulative rate. F_last
-         uint lastCumulativeRate = rates[rates.length - 1];
+        // 3. Get the last cumulative rate. F_last
+        uint lastCumulativeRate = rates[rates.length - 1];
 
-         // 4. Get the instantaneous rate. i
-         uint instantaneousRate = baseInterestRate.add(_manager().getScaledUtilisation());
+        // 4. Get the instantaneous rate. i
+        uint instantaneousRate = baseInterestRate.add(_manager().getScaledUtilisation());
 
-         // 5. Get the time since we last updated the rate.
-         uint timeDelta = (block.timestamp - lastTime) * SafeDecimalMath.unit();
+        // 5. Get the time since we last updated the rate.
+        uint timeDelta = (block.timestamp - lastTime) * SafeDecimalMath.unit();
 
-         // 6. Get the time its been applied for. F
-         uint cumulativeRate = instantaneousRate.multiplyDecimal(timeDelta);
+        // 6. Get the time its been applied for. F
+        uint cumulativeRate = instantaneousRate.multiplyDecimal(timeDelta);
 
-         // 7. Get the latest cumulative rate. F_n+1 = F_n + F_last
-         uint latestCumulative = lastCumulativeRate.add(cumulativeRate);
+        // 7. Get the latest cumulative rate. F_n+1 = F_n + F_last
+        uint latestCumulative = lastCumulativeRate.add(cumulativeRate);
 
-         // 8. Get the latest cumulative rate. F_n+1 = F_n + F_last
-         uint entryCumulativeRate = rates[loan.interestIndex];
-        
-         // 9. Determine the interest that has accrued on the loan.
-         uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative - entryCumulativeRate);
+        // 8. Get the latest cumulative rate. F_n+1 = F_n + F_last
+        uint entryCumulativeRate = rates[loan.interestIndex];
 
-         // 10. Update rates with the lastest cumulative rate. This also updates the time.
-         state.updateRates(loan.currency, latestCumulative);
-        
-         // 11. Update loan
-         loanAfter.accruedInterest = loan.accruedInterest + interest;
-         loanAfter.interestIndex = rates.length;
-         state.updateLoan(loanAfter);
+        // 9. Determine the interest that has accrued on the loan.
+        uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative - entryCumulativeRate);
 
-         return loanAfter;
-     }
+        // 10. Update rates with the lastest cumulative rate. This also updates the time.
+        state.updateRates(loan.currency, latestCumulative);
+
+        // 11. Update loan
+        loanAfter.accruedInterest = loan.accruedInterest + interest;
+        loanAfter.interestIndex = rates.length;
+        state.updateLoan(loanAfter);
+
+        return loanAfter;
+    }
 
     // Works out the amount of interest and principal after a repayment is made.
     function _processPayment(Loan memory loanBefore, uint payment)
@@ -579,12 +579,13 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     
     // Take an amount of fees in a certain synth and convert it to sUSD before paying the fee pool.
     function _payFees(uint amount, bytes32 _synth) internal {
-        if (amount > 0)
+        if (amount > 0) {
             if (_synth != sUSD) {
                 amount = _exchangeRates().effectiveValue(_synth, amount, sUSD);
             }
             _synthsUSD().issue(_feePool().FEE_ADDRESS(), amount);
             _feePool().recordFeePaid(amount);
+        }
     }
 
     /* ========== MODIFIERS ========== */

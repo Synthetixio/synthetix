@@ -17,7 +17,6 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     address public underlyingContract;
 
     constructor(
-        address payable _proxy,
         CollateralState _state,
         address _owner,
         address _manager,
@@ -31,7 +30,6 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     ) 
     public 
     Collateral(
-        _proxy,
         _state, 
         _owner, 
         _manager,

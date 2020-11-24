@@ -29,7 +29,7 @@ contract MultiCollateralSynth is Synth {
 
     /* ========== VIEWS ======================= */
 
-   function _multiCollateralManager() internal view returns (ICollateralManager) {
+    function _multiCollateralManager() internal view returns (ICollateralManager) {
         return ICollateralManager(collateralManager);
     }
 

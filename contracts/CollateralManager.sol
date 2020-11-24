@@ -42,9 +42,6 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     // The set of all synths issuable by the various collateral contracts
     AddressListLib.AddressList internal _synths;
 
-    // The total issued balance for a synth across collaterals.
-    mapping(bytes32 => uint) totalIssued;
-
     // The factor that will scale the utilisation ratio.
     uint public utilisationMultiplier = 1e18; 
 
@@ -87,6 +84,10 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
     function collateralByAddress(address collateral) public view returns (bool) {
         return _collaterals.contains(collateral);
+    }
+
+    function synthByAddress(address synth) public view returns (bool) {
+        return _synths.contains(synth);
     }
 
     function long(bytes32 synth) external view returns (uint amount) {

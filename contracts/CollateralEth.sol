@@ -15,7 +15,6 @@ contract CollateralEth is Collateral, ICollateralEth {
     mapping(address => uint) public pendingWithdrawals;
 
     constructor(
-        address payable _proxy,
         CollateralState _state,
         address _owner,
         address _manager,
@@ -28,7 +27,6 @@ contract CollateralEth is Collateral, ICollateralEth {
     ) 
     public 
     Collateral(
-        _proxy,
         _state, 
         _owner, 
         _manager,
@@ -48,7 +46,7 @@ contract CollateralEth is Collateral, ICollateralEth {
     function close(uint id) external {
         uint256 collateral = closeInternal(msg.sender, id);
 
-        msg.sender.transfer(collateral);
+        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateral);
     }
 
     function deposit(address borrower, uint id) external payable {
@@ -58,7 +56,7 @@ contract CollateralEth is Collateral, ICollateralEth {
     function withdraw(uint id, uint withdrawAmount) external {
         uint amount = withdrawInternal(id, withdrawAmount);
 
-        pendingWithdrawals[msg.sender] += amount;
+        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
     }
 
     function repay(address account, uint id, uint amount) external {
@@ -68,13 +66,16 @@ contract CollateralEth is Collateral, ICollateralEth {
     function liquidate(address borrower, uint id, uint amount) external {
         uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 
-        pendingWithdrawals[msg.sender] += collateralLiquidated;
+        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateralLiquidated);
     }
 
     function claim(uint amount) public returns (bool success) {
         require(pendingWithdrawals[msg.sender] >= amount);
-        pendingWithdrawals[msg.sender] -= amount;
+
+        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
+
         msg.sender.transfer(amount);
+        
         return true;
     }
 }

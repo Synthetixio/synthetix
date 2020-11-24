@@ -14,13 +14,13 @@ contract CollateralManagerState is Owned, State {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    struct balance {
+    struct Balance {
         uint long;
         uint short;
     }
 
     // The total amount of long and short for a synth,
-    mapping(bytes32 => balance) public totalIssuedSynths;
+    mapping(bytes32 => Balance) public totalIssuedSynths;
 
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 

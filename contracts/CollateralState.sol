@@ -60,7 +60,7 @@ contract CollateralState is Owned, State, ILoan {
         for (uint i = 0; i < accountLoans.length; i++) {
             if (accountLoans[i].id == loan.id) {
                 loans[loan.account][i] = loan;
-             }
+            }
         }
     }
 
