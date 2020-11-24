@@ -16,14 +16,16 @@ contract AddressResolver is Owned, IAddressResolver {
     constructor(address _owner) public Owned(_owner) {}
 
     /* ========== RESTRICTED FUNCTIONS ========== */
-
     function importAddresses(bytes32[] calldata names, address[] calldata destinations) external onlyOwner {
         require(names.length == destinations.length, "Input lengths must match");
 
         for (uint i = 0; i < names.length; i++) {
             repository[names[i]] = destinations[i];
+        }
+
+        for (uint i = 0; i < destinations.length; i++) {
             // solhint-disable avoid-low-level-calls
-            (bool success, ) = address(destinations[i]).call(abi.encodePacked(MixinResolver(0).invalidateCache.selector));
+            (bool success, ) = address(destinations[i]).call(abi.encodePacked(MixinResolver(0).rebuildCache.selector));
             emit AddressImported(names[i], destinations[i], success);
         }
     }

@@ -65,5 +65,28 @@
 		},
 		"sources": ["Exchanger", "Synthetix"],
 		"sips": [94]
+	},
+	{
+		"name": "Adhara",
+		"version": {
+			"major": 2,
+			"minor": 33
+		},
+		"sources": [
+			"AddressResolver",
+			"BinaryOptionMarketFactory",
+			"BinaryOptionMarketManager",
+			"DebtCache",
+			"Exchanger",
+			"ExchangeRates",
+			"FeePool",
+			"Issuer",
+			"Liquidations",
+			"SynthsUSD",
+			"Synthetix",
+			"SystemSettings",
+			"TradingRewards"
+		],
+		"sips": []
 	}
 ]

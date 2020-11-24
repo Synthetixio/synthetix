@@ -1222,26 +1222,28 @@ const deploy = async ({
 			],
 		});
 
-		await runStep({
-			gasLimit: 9e6, // higher gas required
-			contract: `AddressResolver`,
-			target: addressResolver,
-			write: 'rebuildCaches',
-			writeArg: [
-				Object.entries(deployer.deployedContracts)
-					.filter(([, target]) =>
-						target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')
-					)
-					.map(
-						([
-							,
-							{
-								options: { address },
-							},
-						]) => address
-					),
-			],
-		});
+		// NOTE: Below is no longer needed - done as part of import addresess...
+
+		// await runStep({
+		// 	gasLimit: 9e6, // higher gas required
+		// 	contract: `AddressResolver`,
+		// 	target: addressResolver,
+		// 	write: 'rebuildCaches',
+		// 	writeArg: [
+		// 		Object.entries(deployer.deployedContracts)
+		// 			.filter(([, target]) =>
+		// 				target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')
+		// 			)
+		// 			.map(
+		// 				([
+		// 					,
+		// 					{
+		// 						options: { address },
+		// 					},
+		// 				]) => address
+		// 			),
+		// 	],
+		// });
 
 		// This is an ugly hack: we need to halt the rest of the script if importing addresses happens from the pDAO.
 		// This relies on the fact that runStep returns undefined if nothing needed to be done, a tx hash if the
