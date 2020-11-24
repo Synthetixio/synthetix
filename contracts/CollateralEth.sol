@@ -70,12 +70,12 @@ contract CollateralEth is Collateral, ICollateralEth {
     }
 
     function claim(uint amount) public returns (bool success) {
-        require(pendingWithdrawals[msg.sender] >= amount);
+        require(pendingWithdrawals[msg.sender] >= amount, "You cannot withdraw more than your total balance");
 
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
 
         msg.sender.transfer(amount);
-        
+
         return true;
     }
 }
