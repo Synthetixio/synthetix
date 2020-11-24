@@ -137,7 +137,7 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 					'decrementTotalDeposited',
 					'expireMarkets',
 					'incrementTotalDeposited',
-					'invalidateMarketCaches',
+					'rebuildMarketCaches',
 					'migrateMarkets',
 					'receiveMarkets',
 					'resolveMarket',

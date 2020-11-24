@@ -62,28 +62,27 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     /* ========== VIEWS ========== */
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function supplySchedule() internal view returns (SupplySchedule) {
-        return SupplySchedule(requireAndGetAddress(CONTRACT_SUPPLYSCHEDULE, "Missing SupplySchedule address"));
+        return SupplySchedule(requireAndGetAddress(CONTRACT_SUPPLYSCHEDULE));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
-        return
-            IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
+        return IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION));
     }
 
     function debtBalanceOf(address account, bytes32 currencyKey) external view returns (uint) {

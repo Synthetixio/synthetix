@@ -271,7 +271,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
             bids,
             [fees.poolFee, fees.creatorFee, fees.refundFee]
         );
-        market.setResolverAndSyncCache(resolver);
+        market.rebuildCache();
         _activeMarkets.add(address(market));
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
@@ -314,7 +314,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
 
     /* ---------- Upgrade and Administration ---------- */
 
-    function invalidateMarketCaches(BinaryOptionMarket[] calldata marketsToSync) external {
+    function rebuildMarketCaches(BinaryOptionMarket[] calldata marketsToSync) external {
         for (uint i = 0; i < marketsToSync.length; i++) {
             marketsToSync[i].rebuildCache();
         }
