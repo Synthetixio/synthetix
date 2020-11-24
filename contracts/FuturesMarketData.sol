@@ -189,6 +189,7 @@ contract FuturesMarketData {
     function _positionDetails(FuturesMarket market, address account) internal view returns (PositionData memory) {
         (bool orderPending, int orderMargin, uint orderLeverage, uint orderFee, uint orderRoundId) = market.orders(account);
         (int positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) = market.positions(account);
+        (uint liquidationPrice, ) = market.liquidationPrice(account, true);
 
         return
             PositionData(
@@ -198,7 +199,7 @@ contract FuturesMarketData {
                 _profitLoss(market, account),
                 _accruedFunding(market, account),
                 _remainingMargin(market, account),
-                market.liquidationPrice(account, true)
+                liquidationPrice
             );
     }
 
