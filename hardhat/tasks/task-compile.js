@@ -2,7 +2,7 @@ const path = require('path');
 
 const { subtask, task, internalTask } = require('hardhat/config');
 const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD } = require('hardhat/builtin-tasks/task-names');
-const { gray, red } = require('chalk');
+const { gray, yellow, red } = require('chalk');
 
 const { ovmIgnored } = require('../..');
 
@@ -13,7 +13,8 @@ const optimizeIfRequired = require('../util/optimizeIfRequired');
 
 // const { SOLC_OUTPUT_FILENAME } = require('hardhat/internal/constants');
 
-// const { logContractSizes } = require('./publish/src/contract-size');
+const { collectContractBytesCodes } = require('../util/collectContractBytecodes');
+const { logContractSizes } = require('../../publish/src/contract-size');
 
 task('compile')
 	.addFlag('showsize', 'Show size of compiled contracts')
@@ -41,39 +42,19 @@ task('compile')
 		await runSuper(taskArguments);
 
 		if (taskArguments.showsize || taskArguments.failOversize) {
-			// TODO: hardhat has different caching
-			// const compiled = require(path.resolve(
-			// 	__dirname,
-			// 	BUILD_FOLDER,
-			// 	CACHE_FOLDER,
-			// 	SOLC_OUTPUT_FILENAME
-			// ));
-			// const contracts = Object.entries(compiled.contracts).filter(([contractPath]) =>
-			// 	/^contracts\/[\w]+.sol/.test(contractPath)
-			// );
-			// const contractToObjectMap = contracts.reduce(
-			// 	(memo, [, entries]) =>
-			// 		Object.assign(
-			// 			{},
-			// 			memo,
-			// 			Object.entries(entries).reduce((_memo, [name, entry]) => {
-			// 				_memo[name] = entry.evm.deployedBytecode.object;
-			// 				return _memo;
-			// 			}, {})
-			// 		),
-			// 	{}
-			// );
-			// const sizes = logContractSizes({ contractToObjectMap });
-			// if (taskArguments.failOversize) {
-			// 	const offenders = sizes.filter(entry => +entry.pcent.split('%')[0] > 100);
-			// 	if (offenders.length > 0) {
-			// 		const names = offenders.map(o => o.file);
-			// 		console.log(red('Oversized contracts:'), yellow(`[${names}]`));
-			// 		throw new Error(
-			// 			'Compilation failed, because some contracts are too big to be deployed. See above.'
-			// 		);
-			// 	}
-			// }
+			const contractToObjectMap = collectContractBytesCodes();
+			const sizes = logContractSizes({ contractToObjectMap });
+
+			if (taskArguments.failOversize) {
+				const offenders = sizes.filter(entry => +entry.pcent.split('%')[0] > 100);
+				if (offenders.length > 0) {
+					const names = offenders.map(o => o.file);
+					console.log(red('Oversized contracts:'), yellow(`[${names}]`));
+					throw new Error(
+						'Compilation failed, because some contracts are too big to be deployed. See above.'
+					);
+				}
+			}
 		}
 	});
 
