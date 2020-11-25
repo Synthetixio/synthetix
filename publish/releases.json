@@ -78,7 +78,7 @@
 			"FuturesMarketLINK",
 			"FuturesMarketManager",
 			"FuturesMarketData",
-			"SynthSUSD",
+			"SynthsUSD",
 			"SystemSettings"
 		],
 		"sips": [80]

@@ -54,17 +54,8 @@ contract MultiCollateralSynth is Synth {
 
     /* ========== MODIFIERS ========== */
 
-    // Contracts directly interacting with multiCollateralSynth to issue and burn
-    modifier onlyInternalContracts() {
-        bool isFeePool = msg.sender == address(feePool());
-        bool isExchanger = msg.sender == address(exchanger());
-        bool isIssuer = msg.sender == address(issuer());
-        bool isMultiCollateral = msg.sender == address(multiCollateral());
-
-        require(
-            isFeePool || isExchanger || isIssuer || isMultiCollateral,
-            "Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed"
-        );
-        _;
+    // Overrides the parent's internal contract to change the set of contracts accepted by onlyInternalContracts
+    function _isInternalContract(address account) internal view returns (bool) {
+        return super._isInternalContract(account) || account == address(multiCollateral());
     }
 }

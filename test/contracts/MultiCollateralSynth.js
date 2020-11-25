@@ -20,10 +20,12 @@ contract('MultiCollateralSynth', accounts => {
 
 	let issuer, resolver;
 
+	const onlyInternalString = 'Only internal contracts allowed';
+
 	before(async () => {
 		({ AddressResolver: resolver, Issuer: issuer } = await setupAllContracts({
 			accounts,
-			mocks: { FeePool: true },
+			mocks: { FeePool: true, FuturesMarketManager: true },
 			contracts: ['AddressResolver', 'Synthetix', 'Issuer'],
 		}));
 	});
@@ -88,7 +90,14 @@ contract('MultiCollateralSynth', accounts => {
 			const actual = await this.synth.getResolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral']
+				[
+					'SystemStatus',
+					'Exchanger',
+					'Issuer',
+					'FeePool',
+					'FuturesMarketManager',
+					'EtherCollateral',
+				]
 					.concat(new Array(18).fill(''))
 					.map(toBytes32)
 			);
@@ -100,7 +109,7 @@ contract('MultiCollateralSynth', accounts => {
 					fnc: this.synth.issue,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
+					reason: onlyInternalString,
 				});
 			});
 		});
@@ -110,7 +119,7 @@ contract('MultiCollateralSynth', accounts => {
 					fnc: this.synth.burn,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
+					reason: onlyInternalString,
 				});
 			});
 		});

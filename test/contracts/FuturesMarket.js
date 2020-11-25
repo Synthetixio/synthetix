@@ -485,7 +485,7 @@ contract('FuturesMarket', accounts => {
 			assert.isTrue(false);
 		});
 
-		it.only('Can liquidate a position with less than the liquidation fee margin remaining', async () => {
+		it('Can liquidate a position with less than the liquidation fee margin remaining', async () => {
 			await futuresMarket.submitOrder(toUnit('1000'), toUnit('10'), { from: trader2 });
 			await futuresMarket.submitOrder(toUnit('-1000'), toUnit('10'), { from: trader3 });
 			await futuresMarket.submitOrder(toUnit('1000'), toUnit('10'), { from: trader });

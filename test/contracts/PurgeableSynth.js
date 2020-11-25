@@ -61,6 +61,7 @@ contract('PurgeableSynth', accounts => {
 			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
+			mocks: { FuturesMarketManager: true },
 			synths: ['sUSD', 'sAUD'],
 			contracts: [
 				'ExchangeRates',
@@ -142,7 +143,7 @@ contract('PurgeableSynth', accounts => {
 			const actual = await iETHContract.getResolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'ExchangeRates']
+				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'FuturesMarketManager', 'ExchangeRates']
 					.concat(new Array(18).fill(''))
 					.map(toBytes32)
 			);
