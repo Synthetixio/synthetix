@@ -1,7 +1,11 @@
 const path = require('path');
 
 const { subtask, task, internalTask } = require('hardhat/config');
-const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD } = require('hardhat/builtin-tasks/task-names');
+const {
+	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
+	TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS,
+	TASK_COMPILE_SOLIDITY_GET_DEPENDENCY_GRAPH,
+} = require('hardhat/builtin-tasks/task-names');
 const { gray, yellow, red } = require('chalk');
 
 const { ovmIgnored } = require('../..');
@@ -86,7 +90,7 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD).setAction(({ solcVersion }, hre, r
 // This overrides a buidler internal task, which is part of its compile task's lifecycle.
 // This allows us to filter out non OVM compatible contracts from the compilation list,
 // which are entries in publish/ovm-ignore.json.
-internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
+internalTask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS, async (_, { config }, runSuper) => {
 	let filePaths = await runSuper();
 
 	if (config.ignoreNonOvmContracts) {
@@ -105,24 +109,24 @@ internalTask('compile:get-source-paths', async (_, { config }, runSuper) => {
 	return filePaths;
 });
 
-// See internalTask('compile:get-source-paths') first.
+// See internalTask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS) first.
 // Filtering the right sources should be enough. However, knowing which are the right sources can be hard.
 // I.e. you may mark TradingRewards to be ignored, but it ends up in the compilation anyway
 // because test-helpers/FakeTradingRewards uses it.
 // We also override this task to more easily detect when this is happening.
-internalTask('compile:get-dependency-graph', async (_, { config }, runSuper) => {
+internalTask(TASK_COMPILE_SOLIDITY_GET_DEPENDENCY_GRAPH, async (_, { config }, runSuper) => {
 	const graph = await runSuper();
 
 	if (config.ignoreNonOvmContracts) {
 		// Iterate over the dependency graph, and check if an ignored contract
 		// is listed as a dependency of another contract.
-		for (const entry of graph.dependenciesPerFile.entries()) {
+		for (const entry of graph._resolvedFiles) {
 			const source = entry[0];
-			const sourceFilename = path.basename(source.globalName, '.sol');
+			const sourceFilename = path.basename(source, '.sol');
 
-			const dependencies = entry[1];
-			for (const dependency of dependencies.keys()) {
-				const filename = path.basename(dependency.globalName, '.sol');
+			const dependencies = entry[1].content.imports;
+			for (const dependency of dependencies) {
+				const filename = path.basename(dependency, '.sol');
 
 				const offender = ovmIgnored.find(ignored => filename === ignored);
 				if (offender) {
