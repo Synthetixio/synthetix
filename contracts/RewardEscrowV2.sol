@@ -28,8 +28,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         uint256 remainingAmount;
     }
 
-    /* Lists of (timestamp, quantity) pairs per account, sorted in ascending time order.
-     * These are the times at which each given quantity of SNX vests. */
     mapping(address => mapping(uint256 => VestingEntry)) public vestingSchedules;
 
     mapping(address => uint256[]) public accountVestingEntryIDs;
@@ -42,9 +40,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
     /* An account's total vested reward synthetix. */
     mapping(address => uint256) public totalVestedAccountBalance;
-
-    /* Mapping of accounts that are pending to migrate vesting entries from the old reward escrow to the new reward escrow */
-    mapping(address => bool) public accountEscrowMigrationPending;
 
     /* Mapping of nominated address to recieve account merging */
     mapping(address => address) public nominatedReciever;
@@ -224,11 +219,15 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     // TODO - Vesting no longer assumes that the vestingSchedules list is sorted, requires index to be passed in to vest.
 
     function _transferVestedTokens(address _account, uint256 _amount) internal {
-        totalEscrowedBalance = totalEscrowedBalance.sub(_amount);
-        totalEscrowedAccountBalance[_account] = totalEscrowedAccountBalance[_account].sub(_amount);
+        _reduceAccountEscrowBalances(_account, _amount);
         totalVestedAccountBalance[_account] = totalVestedAccountBalance[_account].add(_amount);
         IERC20(address(synthetix())).transfer(_account, _amount);
         emit Vested(_account, now, _amount);
+    }
+
+    function _reduceAccountEscrowBalances(address _account, uint256 _amount) internal {
+        totalEscrowedBalance = totalEscrowedBalance.sub(_amount);
+        totalEscrowedAccountBalance[_account] = totalEscrowedAccountBalance[_account].sub(_amount);
     }
 
     /* ========== ACCOUNT MERGING ========== */
@@ -348,18 +347,10 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
             uint256[] memory remainingAmounts
         )
     {
+        require(entryIDs.length > 0, "Entry IDs required");
+
         // check if account migrated on L1
         _checkEscrowMigrationPending(account);
-
-        // sub totalEscrowedAccountBalance migrated
-
-        // transfer the SNX to the L2 bridge
-        // update the totalEscrowedAccountBalance[account]
-        // update the totalVestedAccountBalance[account]
-
-        // Optional - delete the vesting entries to reclaim gas
-
-        escrowedAccountBalance = totalEscrowedAccountBalance[account];
 
         vestingTimestamps = new uint64[](entryIDs.length);
         durations = new uint64[](entryIDs.length);
@@ -367,12 +358,31 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         escrowAmounts = new uint256[](entryIDs.length);
         remainingAmounts = new uint256[](entryIDs.length);
 
-        if (escrowedAccountBalance > 0) {
-            for (uint i = 0; i < entryIDs.length; i++) {}
-            delete totalEscrowedAccountBalance[account];
+        for (uint i = 0; i < entryIDs.length; i++) {
+            VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
+
+            if (entry.remainingAmount > 0) {
+                vestingTimestamps[i] = entry.endTime;
+                durations[i] = entry.duration;
+                lastVested[i] = entry.lastVested;
+                escrowAmounts[i] = entry.escrowAmount;
+                remainingAmounts[i] = entry.remainingAmount;
+
+                escrowedAccountBalance = escrowedAccountBalance.add(entry.remainingAmount);
+
+                /* Delete the vesting entry being migrated */
+                delete vestingSchedules[account][entryIDs[i]];
+            }
         }
 
-        // return timestamps and amounts vested
+        /* update account total escrow balances for migration
+         *  transfer the escrowed SNX being migrated to the L2 deposit contract
+         */
+        if (escrowedAccountBalance > 0) {
+            _reduceAccountEscrowBalances(account, escrowedAccountBalance);
+            IERC20(address(synthetix())).transfer(synthetixBridgeToOptimism(), escrowedAccountBalance);
+        }
+
         return (escrowedAccountBalance, vestingTimestamps, durations, lastVested, escrowAmounts, remainingAmounts);
     }
 
