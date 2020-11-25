@@ -91,6 +91,7 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 const setupContract = async ({
 	accounts,
 	contract,
+	source = undefined, // if a separate source file should be used
 	mock = undefined, // if contract is GenericMock, this is the name of the contract being mocked
 	forContract = undefined, // when a contract is deployed for another (like Proxy for FeePool)
 	cache = {},
@@ -100,7 +101,7 @@ const setupContract = async ({
 }) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
-	const artifact = artifacts.require(contract);
+	const artifact = artifacts.require(source || contract);
 
 	const create = ({ constructorArgs }) => {
 		return artifact.new(
@@ -170,6 +171,13 @@ const setupContract = async ({
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
+		BaseSynthetix: [
+			tryGetAddressOf('ProxyERC20BaseSynthetix'),
+			tryGetAddressOf('TokenStateBaseSynthetix'),
+			owner,
+			SUPPLY_100M,
+			tryGetAddressOf('AddressResolver'),
+		],
 		Synthetix: [
 			tryGetAddressOf('ProxyERC20Synthetix'),
 			tryGetAddressOf('TokenStateSynthetix'),
@@ -239,8 +247,7 @@ const setupContract = async ({
 		if (process.env.DEBUG) {
 			log(
 				'Deployed',
-				contract,
-				forContract ? 'for ' + forContract : '',
+				contract + (source ? ` (${source})` : '') + (forContract ? ' for ' + forContract : ''),
 				mock ? 'mock of ' + mock : '',
 				'to',
 				instance.address
@@ -327,6 +334,42 @@ const setupContract = async ({
 							name: 'RewardsDistribution',
 							fncName: 'setSynthetixProxy',
 							args: [cache['ProxyERC20Synthetix'].address], // will fail if no Proxy instantiated for Synthetix
+						}) || []
+					)
+			);
+		},
+		async BaseSynthetix() {
+			// first give all SNX supply to the owner (using the hack that the deployerAccount was setup as the associatedContract via
+			// the constructor args)
+			await cache['TokenStateBaseSynthetix'].setBalanceOf(owner, SUPPLY_100M, {
+				from: deployerAccount,
+			});
+
+			// then configure everything else (including setting the associated contract of TokenState back to the Synthetix contract)
+			await Promise.all(
+				[
+					(cache['TokenStateBaseSynthetix'].setAssociatedContract(instance.address, {
+						from: owner,
+					}),
+					cache['ProxyBaseSynthetix'].setTarget(instance.address, { from: owner }),
+					cache['ProxyERC20BaseSynthetix'].setTarget(instance.address, { from: owner }),
+					instance.setProxy(cache['ProxyERC20BaseSynthetix'].address, {
+						from: owner,
+					})),
+				]
+					.concat(
+						// If there's a rewards distribution that's not a mock
+						tryInvocationIfNotMocked({
+							name: 'RewardsDistribution',
+							fncName: 'setAuthority',
+							args: [instance.address],
+						}) || []
+					)
+					.concat(
+						tryInvocationIfNotMocked({
+							name: 'RewardsDistribution',
+							fncName: 'setSynthetixProxy',
+							args: [cache['ProxyERC20BaseSynthetix'].address], // will fail if no Proxy instantiated for BaseSynthetix
 						}) || []
 					)
 			);
@@ -522,12 +565,15 @@ const setupAllContracts = async ({
 		{ contract: 'FixedSupplySchedule', deps: ['AddressResolver'] },
 		{ contract: 'ProxyERC20', forContract: 'Synthetix' },
 		{ contract: 'ProxyERC20', forContract: 'MintableSynthetix' },
+		{ contract: 'ProxyERC20', forContract: 'BaseSynthetix' },
 		{ contract: 'ProxyERC20', forContract: 'Synth' }, // for generic synth
 		{ contract: 'Proxy', forContract: 'Synthetix' },
 		{ contract: 'Proxy', forContract: 'MintableSynthetix' },
+		{ contract: 'Proxy', forContract: 'BaseSynthetix' },
 		{ contract: 'Proxy', forContract: 'FeePool' },
 		{ contract: 'TokenState', forContract: 'Synthetix' },
 		{ contract: 'TokenState', forContract: 'MintableSynthetix' },
+		{ contract: 'TokenState', forContract: 'BaseSynthetix' },
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
 		{ contract: 'RewardEscrowV2' },
@@ -576,6 +622,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Exchanger',
+			source: 'ExchangerWithVirtualSynth',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
 			deps: [
 				'AddressResolver',
@@ -594,6 +641,27 @@ const setupAllContracts = async ({
 		}, // a generic synth
 		{
 			contract: 'Synthetix',
+			mocks: [
+				'Exchanger',
+				'SupplySchedule',
+				'RewardEscrow',
+				'SynthetixEscrow',
+				'RewardsDistribution',
+				'Liquidations',
+			],
+			deps: [
+				'Issuer',
+				'SynthetixState',
+				'Proxy',
+				'ProxyERC20',
+				'AddressResolver',
+				'TokenState',
+				'SystemStatus',
+				'ExchangeRates',
+			],
+		},
+		{
+			contract: 'BaseSynthetix',
 			mocks: [
 				'Exchanger',
 				'SupplySchedule',
@@ -716,7 +784,7 @@ const setupAllContracts = async ({
 	);
 
 	// now setup each contract in serial in case we have deps we need to load
-	for (const { contract, mocks = [], forContract } of contractsToFetch) {
+	for (const { contract, source, mocks = [], forContract } of contractsToFetch) {
 		// mark each mock onto the returnObj as true when it doesn't exist, indicating it needs to be
 		// put through the AddressResolver
 		// for all mocks required for this contract
@@ -742,12 +810,13 @@ const setupAllContracts = async ({
 		// deploy the contract
 		// HACK: if MintableSynthetix is deployed then rename it
 		let contractRegistered = contract;
-		if (contract === 'MintableSynthetix') {
+		if (contract === 'MintableSynthetix' || contract === 'BaseSynthetix') {
 			contractRegistered = 'Synthetix';
 		}
 		returnObj[contractRegistered + forContractName] = await setupContract({
 			accounts,
 			contract,
+			source,
 			forContract,
 			// the cache is a combination of the mocks and any return objects
 			cache: Object.assign({}, mocks, returnObj),

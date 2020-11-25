@@ -5,11 +5,14 @@ const { wrap } = require('../../..');
 
 async function connectContract({ network, deploymentPath, contractName, abiName }) {
 	const { getTarget } = wrap({ network, fs, path });
-	const { address, source } = getTarget({ network, deploymentPath, contract: contractName });
+	const target = getTarget({ network, deploymentPath, contract: contractName });
+	if (!target) {
+		return undefined;
+	}
 
-	const Contract = artifacts.require(abiName || source);
+	const Contract = artifacts.require(abiName || target.source);
 
-	return Contract.at(address);
+	return Contract.at(target.address);
 }
 
 async function connectContracts({ network, deploymentPath, requests }) {

@@ -206,6 +206,7 @@ describe('deployments', () => {
 							[
 								'BinaryOptionMarketFactory',
 								'BinaryOptionMarketManager',
+								// 'DebtCache', // to be added once SIP-91 is implemented
 								'DelegateApprovals',
 								'Depot',
 								'EtherCollateral',
@@ -215,8 +216,9 @@ describe('deployments', () => {
 								'FeePool',
 								'FeePoolEternalStorage',
 								'FeePoolState',
-								// 'FlexibleStorage', to be added once SIP-64 is implemented
+								'FlexibleStorage',
 								'Issuer',
+								'Liquidations',
 								'RewardEscrow',
 								'RewardsDistribution',
 								'SupplySchedule',
@@ -225,7 +227,7 @@ describe('deployments', () => {
 								'SynthetixState',
 								'SynthsUSD',
 								'SynthsETH',
-								// 'SystemSettings',  to be added once SIP-64 is implemented
+								'SystemSettings',
 								'SystemStatus',
 							].forEach(name => {
 								it(`has correct address for ${name}`, async () => {
@@ -242,15 +244,30 @@ describe('deployments', () => {
 							([, { source }]) => !!sources[source].abi.find(({ name }) => name === 'resolver')
 						)
 						.forEach(([target, { source }]) => {
-							it(`${target} has correct address resolver`, async () => {
-								const Contract = getContract({
+							let Contract;
+							let foundResolver;
+							beforeEach(async () => {
+								Contract = getContract({
 									source,
 									target,
 								});
-								assert.strictEqual(
-									await Contract.methods.resolver().call(),
-									targets['AddressResolver'].address
+								foundResolver = await Contract.methods.resolver().call();
+							});
+							it(`${target} has correct address resolver`, async () => {
+								assert.ok(
+									foundResolver === targets['AddressResolver'].address ||
+										targets['ReadProxyAddressResolver'].address
 								);
+							});
+
+							it(`${target} isResolverCached is true`, async () => {
+								if ('isResolverCached' in Contract.methods) {
+									assert.ok(await Contract.methods.isResolverCached(foundResolver).call());
+									// Depot is the only contract not currently updated to the latest MixinResolver so it
+									// doesn't expose the is cached predicate
+								} else if (target !== 'Depot') {
+									throw Error(`${target} is missing isResolverCached() function`);
+								}
 							});
 						});
 				});

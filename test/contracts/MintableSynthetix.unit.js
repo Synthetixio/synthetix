@@ -17,8 +17,8 @@ contract('MintableSynthetix (unit tests)', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: MintableSynthetix.abi,
-			ignoreParents: ['Synthetix'],
-			expected: ['mintSecondary', 'mintSecondaryRewards', 'burnSecondary'],
+			ignoreParents: ['BaseSynthetix'],
+			expected: [],
 		});
 	});
 

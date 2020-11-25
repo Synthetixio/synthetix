@@ -15,9 +15,10 @@ const {
 	skipWaitingPeriod,
 	skipStakeTime,
 	writeSetting,
-	bootstrapLocal,
 	simulateExchangeRates,
 	takeDebtSnapshot,
+	mockOptimismBridge,
+	implementsVirtualSynths,
 } = require('./utils');
 
 const gasFromReceipt = ({ receipt }) =>
@@ -26,7 +27,7 @@ const gasFromReceipt = ({ receipt }) =>
 contract('Synthetix (prod tests)', accounts => {
 	const [, user1, user2] = accounts;
 
-	let owner, oracle;
+	let owner;
 
 	let network, deploymentPath;
 
@@ -39,23 +40,12 @@ contract('Synthetix (prod tests)', accounts => {
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
-		[owner, , , oracle] = getUsers({ network }).map(user => user.address);
+		owner = getUsers({ network, user: 'owner' }).address;
 
-		if (network === 'local') {
-			await bootstrapLocal({ deploymentPath });
-		} else {
-			if (config.simulateExchangeRates) {
-				await ensureAccountHasEther({
-					amount: toUnit('2'),
-					account: oracle,
-					fromAccount: accounts[7],
-					network,
-					deploymentPath,
-				});
-
-				await simulateExchangeRates({ deploymentPath, network, oracle });
-				await takeDebtSnapshot({ deploymentPath, network });
-			}
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await takeDebtSnapshot({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
 		}
 
 		({
@@ -82,21 +72,18 @@ contract('Synthetix (prod tests)', accounts => {
 		await ensureAccountHasEther({
 			amount: toUnit('1'),
 			account: owner,
-			fromAccount: accounts[7],
 			network,
 			deploymentPath,
 		});
 		await ensureAccountHassUSD({
 			amount: toUnit('100'),
 			account: user1,
-			fromAccount: owner,
 			network,
 			deploymentPath,
 		});
 		await ensureAccountHasSNX({
 			amount: toUnit('100'),
 			account: user1,
-			fromAccount: owner,
 			network,
 			deploymentPath,
 		});
@@ -227,11 +214,27 @@ contract('Synthetix (prod tests)', accounts => {
 	describe('exchanging with virtual synths', () => {
 		let Exchanger;
 		let vSynth;
+
+		const vSynthCreationEvent = txn => {
+			const vscEntry = Exchanger.abi.find(({ name }) => name === 'VirtualSynthCreated');
+			const log = txn.receipt.rawLogs.find(({ topics }) => topics[0] === vscEntry.signature);
+
+			return web3.eth.abi.decodeLog(vscEntry.inputs, log.data, log.topics.slice(1));
+		};
+
+		before('skip if there is no vSynth implementation', async function() {
+			const virtualSynths = await implementsVirtualSynths({ network, deploymentPath });
+			if (config.useOvm || !virtualSynths) {
+				this.skip();
+			}
+		});
+
 		before(async () => {
-			await skipWaitingPeriod({ network });
+			await skipWaitingPeriod({ network, deploymentPath });
 
 			Exchanger = await connectContract({
 				network,
+				deploymentPath,
 				contractName: 'Exchanger',
 			});
 
@@ -240,54 +243,105 @@ contract('Synthetix (prod tests)', accounts => {
 			await Exchanger.settle(user1, toBytes32('sBTC'), { from: user1 });
 		});
 
-		describe('with virtual synths', () => {
-			it('can exchange sUSD to sETH using a Virtual Synth', async () => {
-				const amount = toUnit('1');
-				const txn = await Synthetix.exchangeWithVirtual(
+		describe('when user exchanges sUSD into sETH using a Virtualynths', () => {
+			const amount = toUnit('100');
+			let txn;
+			let receipt;
+			let userBalanceOfsETHBefore;
+
+			before(async () => {
+				userBalanceOfsETHBefore = await SynthsETH.balanceOf(user1);
+
+				txn = await Synthetix.exchangeWithVirtual(
 					toBytes32('sUSD'),
 					amount,
 					toBytes32('sETH'),
+					toBytes32(),
 					{
 						from: user1,
 					}
 				);
 
-				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
-
+				receipt = await web3.eth.getTransactionReceipt(txn.tx);
 				console.log('Gas on exchange', gasFromReceipt({ receipt }));
+			});
 
-				const vSynthCreationEvent = Exchanger.abi.find(
-					({ name }) => name === 'VirtualSynthCreated'
-				);
-
-				const log = txn.receipt.rawLogs.find(
-					({ topics }) => topics[0] === vSynthCreationEvent.signature
-				);
-
-				const decoded = web3.eth.abi.decodeLog(vSynthCreationEvent.inputs, log.data, log.topics);
-
-				console.log('vSynth addy', decoded.vSynth);
+			it('creates the virtual synth as expected', async () => {
+				const decoded = vSynthCreationEvent(txn);
 
 				vSynth = await artifacts.require('VirtualSynth').at(decoded.vSynth);
 
-				console.log('vSynth name', await vSynth.name());
-				console.log('vSynth symbol', await vSynth.symbol());
-				console.log('vSynth total supply', fromUnit(await vSynth.totalSupply()));
-				console.log('vSynth balance of user1', fromUnit(await vSynth.balanceOf(user1)));
+				const trimUtf8EscapeChars = input => web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
+
+				assert.equal(trimUtf8EscapeChars(await vSynth.name()), 'Virtual Synth sETH');
+				assert.equal(trimUtf8EscapeChars(await vSynth.symbol()), 'vsETH');
+
+				assert.ok((await vSynth.totalSupply()).toString() > 0);
+				assert.ok((await vSynth.balanceOf(user1)).toString() > 0);
+
+				assert.ok(await SynthsETH.balanceOf(vSynth.address), '0');
+
+				assert.ok((await vSynth.secsLeftInWaitingPeriod()) > 0);
+				assert.notOk(await vSynth.readyToSettle());
+				assert.notOk(await vSynth.settled());
 			});
 
-			it('can be settled into the synth after the waiting period expires', async () => {
-				await skipWaitingPeriod({ network });
+			it('and the vSynth has a single settlement entry', async () => {
+				const { numEntries } = await Exchanger.settlementOwing(vSynth.address, toBytes32('sETH'));
 
-				const txn = await vSynth.settle(user1, { from: user1 });
+				assert.equal(numEntries.toString(), '1');
+			});
 
-				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+			it('and the user has no settlement entries', async () => {
+				const { numEntries } = await Exchanger.settlementOwing(user1, toBytes32('sETH'));
 
-				console.log('Gas on vSynth settlement', gasFromReceipt({ receipt }));
+				assert.equal(numEntries.toString(), '0');
+			});
 
-				const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
+			it('and the user has no more sETH after the exchanage', async () => {
+				assert.bnEqual(await SynthsETH.balanceOf(user1), userBalanceOfsETHBefore);
+			});
 
-				console.log('user1 has sETH:', fromUnit(user1BalanceAftersETH));
+			describe('when the waiting period expires', () => {
+				before(async () => {
+					await skipWaitingPeriod({ network, deploymentPath });
+				});
+				it('then the vSynth shows ready for settlement', async () => {
+					assert.equal(await vSynth.secsLeftInWaitingPeriod(), '0');
+					assert.ok(await vSynth.readyToSettle());
+				});
+				describe('when settled', () => {
+					before(async () => {
+						const txn = await vSynth.settle(user1, { from: user1 });
+						const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+
+						console.log('Gas on vSynth settlement', gasFromReceipt({ receipt }));
+					});
+					it('user has more sETH balance', async () => {
+						assert.bnGt(await SynthsETH.balanceOf(user1), userBalanceOfsETHBefore);
+					});
+					it('and the user has no settlement entries', async () => {
+						const { numEntries } = await Exchanger.settlementOwing(user1, toBytes32('sETH'));
+
+						assert.equal(numEntries.toString(), '0');
+					});
+					it('and the vSynth has no settlement entries', async () => {
+						const { numEntries } = await Exchanger.settlementOwing(
+							vSynth.address,
+							toBytes32('sETH')
+						);
+
+						assert.equal(numEntries.toString(), '0');
+					});
+					// NOTE: There seems to be an error with ganache-core forks.
+					// Skip until after hardhat migration or ganache-core fix.
+					// vSynth.settled() shows as false even though it should be true.
+					// Probably has to do with how the variable is stored and fork caching.
+					// Disabling caching in ganache-core yields it unusable.
+					it.skip('and the vSynth shows settled', async () => {
+						assert.equal(await vSynth.settled(), true);
+					});
+				});
 			});
 		});
 
@@ -296,9 +350,14 @@ contract('Synthetix (prod tests)', accounts => {
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 
+			before('skip if not on mainnet', async function() {
+				if (network !== 'mainnet') {
+					this.skip();
+				}
+			});
+
 			it('using virtual tokens', async () => {
 				// deploy SwapWithVirtualSynth
-
 				const swapContract = await artifacts.require('SwapWithVirtualSynth').new();
 
 				console.log('\n\n✅ Deploy SwapWithVirtualSynth at', swapContract.address);
@@ -331,15 +390,7 @@ contract('Synthetix (prod tests)', accounts => {
 					red(gasFromReceipt({ receipt }))
 				);
 
-				const vSynthCreationEvent = Exchanger.abi.find(
-					({ name }) => name === 'VirtualSynthCreated'
-				);
-
-				const log = txn.receipt.rawLogs.find(
-					({ topics }) => topics[0] === vSynthCreationEvent.signature
-				);
-
-				const decoded = web3.eth.abi.decodeLog(vSynthCreationEvent.inputs, log.data, log.topics);
+				const decoded = vSynthCreationEvent(txn);
 
 				const SynthsBTC = await connectContract({
 					network,
@@ -421,10 +472,11 @@ contract('Synthetix (prod tests)', accounts => {
 					)
 				);
 
-				require('fs').writeFileSync(
-					'prod-run.log',
-					require('util').inspect(settleTxn, false, null, true)
-				);
+				// output log of settlement txn if need be
+				// require('fs').writeFileSync(
+				// 	'prod-run.log',
+				// 	require('util').inspect(settleTxn, false, null, true)
+				// );
 			});
 		});
 	});

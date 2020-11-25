@@ -2411,8 +2411,9 @@
 			},
 			"Synthetix": {
 				"address": "0x3cA27cEEDA9A200f50C3Cf3802C6c60d43867977",
-				"status": "current",
-				"keccak256": "0xf92685622f5b8ea9c56041189b6c200314f72f08df4ff073a02896c849eb834f"
+				"status": "replaced",
+				"keccak256": "0xf92685622f5b8ea9c56041189b6c200314f72f08df4ff073a02896c849eb834f",
+				"replaced_in": "v2.31.1-beta"
 			},
 			"Exchanger": {
 				"address": "0x4c98d3277734f716B2d776DB148580079f88996F",
@@ -2496,23 +2497,83 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xb8f1aDdCf91E5ade0ad20cc50843d08BaA4FB6a9",
-				"status": "current",
-				"keccak256": "0xecc746e9363b1e4d2cda6b3bd5773268540a790a4f1f14909b2eaf441acaf6c4"
+				"status": "replaced",
+				"keccak256": "0xecc746e9363b1e4d2cda6b3bd5773268540a790a4f1f14909b2eaf441acaf6c4",
+				"replaced_in": "v2.31.1-beta"
 			},
 			"Exchanger": {
 				"address": "0xD90Fa2C12a34448090f0f313EA40e1f662C56B22",
-				"status": "current",
-				"keccak256": "0x5d6e11d4c9e1a785a435f44c861da9ed9ef4889db9151265145624a1cf64e512"
+				"status": "replaced",
+				"keccak256": "0x5d6e11d4c9e1a785a435f44c861da9ed9ef4889db9151265145624a1cf64e512",
+				"replaced_in": "v2.31.1-beta"
 			},
 			"Issuer": {
 				"address": "0xa27a8e30eD268959Ea969855F438478e4E7eb2a2",
-				"status": "current",
-				"keccak256": "0xd75e68a23fef19a0e8604bebe92baa040bfb590ae5259333aeb63ac413c94da1"
+				"status": "replaced",
+				"keccak256": "0xd75e68a23fef19a0e8604bebe92baa040bfb590ae5259333aeb63ac413c94da1",
+				"replaced_in": "v2.31.1-beta"
 			},
 			"SystemSettings": {
 				"address": "0xF220fC805602b3dA6B2c0C4C52aCb225b2E7933F",
 				"status": "current",
 				"keccak256": "0x0119b6d98214114e4c7c41b10e0cd5b58903143e6556156917772b4019c44335"
+			}
+		}
+	},
+	"v2.31.1-beta": {
+		"tag": "v2.31.1-beta",
+		"fulltag": "v2.31.1-beta",
+		"release": "Mimosa",
+		"network": "rinkeby",
+		"date": "2020-11-11T17:34:52-05:00",
+		"commit": "5b4dd86620bd5308e32a440e7e255418c3a119e4",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x3d65d0976C693e43Cd6FEfdcb8a7B086FD4f13BF",
+				"status": "current",
+				"keccak256": "0xb00ede4847d8725844e762151714f558e8b5d6fa3b34531cf29fe14d3e052884"
+			},
+			"Synthetix": {
+				"address": "0x65bAd0f094f2Cce90a2BD757372932CdaF079213",
+				"status": "replaced",
+				"keccak256": "0x02c3d358d6a0487f54ac56b33bf9f39f12c7af85564544f3d929a143ca96d9ea",
+				"replaced_in": "v2.32.1-beta"
+			},
+			"Exchanger": {
+				"address": "0xF973f1ab453a3fbf7Fac2Be80161A62c456c4350",
+				"status": "replaced",
+				"keccak256": "0xb4aec17ec72b273b7013d9042a231b06ed4b4246e8a77bc5f507598ebd77e396",
+				"replaced_in": "v2.32.1-beta"
+			},
+			"Issuer": {
+				"address": "0xba46d4cD44c9Eb5F2d5a2C72d53adD0782B3806f",
+				"status": "current",
+				"keccak256": "0xffc3175744de9a11cf1cc91ca6aad118b539e8ccad902d409ce853619f7168d4"
+			},
+			"DebtCache": {
+				"address": "0x473cc79c7085D148018F8C66d3F4355FB5785C9e",
+				"status": "current",
+				"keccak256": "0x35d36fdd6fa8ff932a8733f9583afaf396e33a59b1febc8b68a60d65f731a8a9"
+			}
+		}
+	},
+	"v2.32.1-beta": {
+		"tag": "v2.32.1-beta",
+		"fulltag": "v2.32.1-beta",
+		"release": "Regulus",
+		"network": "rinkeby",
+		"date": "2020-11-12T22:57:47-05:00",
+		"commit": "4bf36cad6cf120502949295b05c94e501cccb340",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x74598aF355c85f5050B5E05e5BAB5559a51C34ab",
+				"status": "current",
+				"keccak256": "0x1bfcc7247998d65ebfb5c17d978eafdef24825868b4d77df2bb5354d6aaf0e19"
+			},
+			"Exchanger": {
+				"address": "0xB99009c7bE322d98f3c8d615f1DC9310DAe03d36",
+				"status": "current",
+				"keccak256": "0xee1b7e9552a2b8e7da01a7932c36340a6a1e667b8b37f6eefd7a59ef6bbc5361"
 			}
 		}
 	}
