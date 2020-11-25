@@ -67,7 +67,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L2
-    function initiateWithdrawal(uint amount) external {
+    function initiateWithdrawal(uint256 amount) external {
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
 
@@ -84,18 +84,30 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     function importVestingEntries(
         address account,
-        uint64[52] calldata timestamps,
-        uint256[52] calldata amounts
+        uint256 escrowedAmount,
+        uint64[] calldata vestingTimestamps,
+        uint64[] calldata durations,
+        uint64[] calldata lastVested,
+        uint256[] calldata escrowAmounts,
+        uint256[] calldata remainingAmounts
     ) external onlyOptimismBridge {
-        rewardEscrowV2().importVestingEntries(account, timestamps, amounts);
-        emit ImportedVestingEntries(account, timestamps, amounts);
+        rewardEscrowV2().importVestingEntries(
+            account,
+            escrowedAmount,
+            vestingTimestamps,
+            durations,
+            lastVested,
+            escrowAmounts,
+            remainingAmounts
+        );
+        emit ImportedVestingEntries(account, vestingTimestamps, escrowAmounts);
     }
 
     // invoked by Messenger on L2
     function mintSecondaryFromDeposit(
         address account,
-        uint depositAmount,
-        uint escrowedAmount
+        uint256 depositAmount,
+        uint256 escrowedAmount
     ) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
         synthetix().mintSecondary(account, depositAmount);
@@ -108,7 +120,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     }
 
     // invoked by Messenger on L2
-    function mintSecondaryFromDepositForRewards(uint amount) external onlyOptimismBridge {
+    function mintSecondaryFromDepositForRewards(uint256 amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 
@@ -116,8 +128,8 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     }
 
     // ========== EVENTS ==========
-    event ImportedVestingEntries(address indexed account, uint64[52] timestamps, uint256[52] amounts);
-    event MintedSecondary(address indexed account, uint amount);
-    event MintedSecondaryRewards(uint amount);
-    event WithdrawalInitiated(address indexed account, uint amount);
+    event ImportedVestingEntries(address indexed account, uint64[] timestamps, uint256[] amounts);
+    event MintedSecondary(address indexed account, uint256 amount);
+    event MintedSecondaryRewards(uint256 amount);
+    event WithdrawalInitiated(address indexed account, uint256 amount);
 }

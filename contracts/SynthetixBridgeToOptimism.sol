@@ -78,7 +78,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         require(activated, "Function deactivated");
     }
 
-    function _rewardDeposit(uint amount) internal {
+    function _rewardDeposit(uint256 amount) internal {
         // create message payload for L2
         bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", amount);
 
@@ -97,49 +97,54 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
 
     // ========== PUBLIC FUNCTIONS =========
 
-    // invoked by user on L1
-    function deposit(uint depositAmount) external requireActive {
-        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
+    function deposit(uint256 _depositAmount) external requireActive {
+        _deposit(_depositAmount, 0);
+    }
 
+    function depositAndMigrateEscrow(uint256 _depositAmount, uint256[] calldata _entryIDs) external requireActive {
         // Burn their reward escrow first
         // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
-        uint256 escrowAmount;
-        uint64[52] memory vestingTimstamps;
-        uint256[52] memory vestingAmounts;
-        bytes memory messageData;
+        uint256 escrowedAccountBalance;
+        uint64[] memory vestingTimestamps;
+        uint64[] memory durations;
+        uint64[] memory lastVested;
+        uint256[] memory escrowAmounts;
+        uint256[] memory remainingAmounts;
 
-        (escrowAmount, vestingTimstamps, vestingAmounts) = rewardEscrowV2().burnForMigration(msg.sender);
+        (
+            escrowedAccountBalance,
+            vestingTimestamps,
+            durations,
+            lastVested,
+            escrowAmounts,
+            remainingAmounts
+        ) = rewardEscrowV2().burnForMigration(msg.sender, _entryIDs);
+
         // if there is an escrow amount to be migrated
-        if (escrowAmount > 0) {
+        if (escrowedAccountBalance > 0) {
             // create message payload for L2
-            messageData = abi.encodeWithSignature(
-                "importVestingEntries(address,uint64[52],uint256[52])",
+            bytes memory messageData = abi.encodeWithSignature(
+                "importVestingEntries(address,uint256,uint64[],uint64[],uint64[],uint256[],uint256[])",
                 msg.sender,
-                vestingTimstamps,
-                vestingAmounts
+                escrowedAccountBalance,
+                vestingTimestamps,
+                durations,
+                lastVested,
+                escrowAmounts,
+                remainingAmounts
             );
             // relay the message to this contract on L2 via L1 Messenger
             messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-            emit ExportedVestingEntries(msg.sender, vestingTimstamps, vestingAmounts);
+            emit ExportedVestingEntries(msg.sender, vestingTimestamps, escrowAmounts);
         }
 
-        // Transfer SNX to L2
-        // First, move the SNX into this contract
-        synthetixERC20().transferFrom(msg.sender, address(this), depositAmount);
-        // create message payload for L2
-        messageData = abi.encodeWithSignature(
-            "mintSecondaryFromDeposit(address,uint256,uint256)",
-            msg.sender,
-            depositAmount,
-            escrowAmount
-        );
-        // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-        emit Deposit(msg.sender, depositAmount);
+        if (_depositAmount > 0 && escrowedAccountBalance > 0) {
+            _deposit(_depositAmount, escrowedAccountBalance);
+        }
     }
 
     // invoked by a generous user on L1
-    function rewardDeposit(uint amount) external requireActive {
+    function rewardDeposit(uint256 amount) external requireActive {
         // move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), amount);
         _rewardDeposit(amount);
@@ -148,7 +153,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger on L1 after L2 waiting period elapses
-    function completeWithdrawal(address account, uint amount) external requireActive {
+    function completeWithdrawal(address account, uint256 amount) external requireActive {
         // ensure function only callable from L2 Bridge via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
         require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
@@ -167,25 +172,44 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
 
         IERC20 ERC20Synthetix = synthetixERC20();
         // get the current contract balance and transfer it to the new SynthetixL1ToL2Bridge contract
-        uint contractBalance = ERC20Synthetix.balanceOf(address(this));
+        uint256 contractBalance = ERC20Synthetix.balanceOf(address(this));
         ERC20Synthetix.transfer(newBridge, contractBalance);
 
         emit BridgeMigrated(address(this), newBridge, contractBalance);
     }
 
     // invoked by RewardsDistribution on L1 (takes SNX)
-    function notifyRewardAmount(uint256 amount) external requireActive {
+    function notifyRewardAmount(uint256 _amount) external requireActive {
         require(msg.sender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
         // to be here means I've been given an amount of SNX to distribute onto L2
-        _rewardDeposit(amount);
+        _rewardDeposit(_amount);
+    }
+
+    // ========== PRIVATE FUNCTIONS =========
+
+    function _deposit(uint256 _depositAmount, uint256 _escrowAmount) private {
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
+        // Transfer SNX to L2
+        // First, move the SNX into this contract
+        synthetixERC20().transferFrom(msg.sender, address(this), _depositAmount);
+        // create message payload for L2
+        bytes memory messageData = abi.encodeWithSignature(
+            "mintSecondaryFromDeposit(address,uint256,uint256)",
+            msg.sender,
+            _depositAmount,
+            _escrowAmount
+        );
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+        emit Deposit(msg.sender, _depositAmount, _escrowAmount);
     }
 
     // ========== EVENTS ==========
 
-    event BridgeMigrated(address oldBridge, address newBridge, uint amount);
-    event Deposit(address indexed account, uint amount);
-    event ExportedVestingEntries(address indexed account, uint64[52] timestamps, uint256[52] amounts);
-    event RewardDeposit(address indexed account, uint amount);
-    event WithdrawalCompleted(address indexed account, uint amount);
+    event BridgeMigrated(address oldBridge, address newBridge, uint256 amount);
+    event Deposit(address indexed account, uint256 amount, uint256 escrowAmount);
+    event ExportedVestingEntries(address indexed account, uint64[] timestamps, uint256[] amounts);
+    event RewardDeposit(address indexed account, uint256 amount);
+    event WithdrawalCompleted(address indexed account, uint256 amount);
 }
