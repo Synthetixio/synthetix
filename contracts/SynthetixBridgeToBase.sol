@@ -82,26 +82,26 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    function importVestingEntries(
-        address account,
-        uint256 escrowedAmount,
-        uint64[] calldata vestingTimestamps,
-        uint64[] calldata durations,
-        uint64[] calldata lastVested,
-        uint256[] calldata escrowAmounts,
-        uint256[] calldata remainingAmounts
-    ) external onlyOptimismBridge {
-        rewardEscrowV2().importVestingEntries(
-            account,
-            escrowedAmount,
-            vestingTimestamps,
-            durations,
-            lastVested,
-            escrowAmounts,
-            remainingAmounts
-        );
-        emit ImportedVestingEntries(account, vestingTimestamps, escrowAmounts);
-    }
+    // function importVestingEntries(
+    //     address account,
+    //     uint256 escrowedAmount,
+    //     uint64[] calldata vestingTimestamps,
+    //     uint64[] calldata durations,
+    //     uint64[] calldata lastVested,
+    //     uint256[] calldata escrowAmounts,
+    //     uint256[] calldata remainingAmounts
+    // ) external onlyOptimismBridge {
+    //     rewardEscrowV2().importVestingEntries(
+    //         account,
+    //         escrowedAmount,
+    //         vestingTimestamps,
+    //         durations,
+    //         lastVested,
+    //         escrowAmounts,
+    //         remainingAmounts
+    //     );
+    //     emit ImportedVestingEntries(account, vestingTimestamps, escrowAmounts);
+    // }
 
     // invoked by Messenger on L2
     function mintSecondaryFromDeposit(

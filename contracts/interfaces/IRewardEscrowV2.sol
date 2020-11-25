@@ -1,7 +1,16 @@
 pragma solidity >=0.4.24;
+pragma experimental ABIEncoderV2;
 
 
 interface IRewardEscrowV2 {
+    struct VestingEntry {
+        uint64 endTime;
+        uint64 duration;
+        uint64 lastVested;
+        uint256 escrowAmount;
+        uint256 remainingAmount;
+    }
+
     // Views
     function balanceOf(address account) external view returns (uint);
 
@@ -45,12 +54,5 @@ interface IRewardEscrowV2 {
     // Return amount of SNX transfered to SynthetixBridgeToOptimism deposit contract
     function burnForMigration(address account, uint[] calldata entryIDs)
         external
-        returns (
-            uint256 escrowedAccountBalance,
-            uint64[] memory vestingTimstamps,
-            uint64[] memory durations,
-            uint64[] memory lastVested,
-            uint256[] memory escrowAmounts,
-            uint256[] memory remainingAmounts
-        );
+        returns (uint256 escrowedAccountBalance, VestingEntry[] memory vestingEntries);
 }

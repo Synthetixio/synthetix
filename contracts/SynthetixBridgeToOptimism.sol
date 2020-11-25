@@ -105,38 +105,27 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         // Burn their reward escrow first
         // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
         uint256 escrowedAccountBalance;
-        uint64[] memory vestingTimestamps;
-        uint64[] memory durations;
-        uint64[] memory lastVested;
-        uint256[] memory escrowAmounts;
-        uint256[] memory remainingAmounts;
 
-        (
-            escrowedAccountBalance,
-            vestingTimestamps,
-            durations,
-            lastVested,
-            escrowAmounts,
-            remainingAmounts
-        ) = rewardEscrowV2().burnForMigration(msg.sender, _entryIDs);
+        IRewardEscrowV2.VestingEntry[] memory vestingEntries;
+        (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, _entryIDs);
 
         // if there is an escrow amount to be migrated
-        if (escrowedAccountBalance > 0) {
-            // create message payload for L2
-            bytes memory messageData = abi.encodeWithSignature(
-                "importVestingEntries(address,uint256,uint64[],uint64[],uint64[],uint256[],uint256[])",
-                msg.sender,
-                escrowedAccountBalance,
-                vestingTimestamps,
-                durations,
-                lastVested,
-                escrowAmounts,
-                remainingAmounts
-            );
-            // relay the message to this contract on L2 via L1 Messenger
-            messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-            emit ExportedVestingEntries(msg.sender, vestingTimestamps, escrowAmounts);
-        }
+        // if (escrowedAccountBalance > 0) {
+        //     // create message payload for L2
+        //     bytes memory messageData = abi.encodeWithSignature(
+        //         "importVestingEntries(address,uint256,uint64[],uint64[],uint64[],uint256[],uint256[])",
+        //         msg.sender,
+        //         escrowedAccountBalance,
+        //         vestingTimestamps,
+        //         durations,
+        //         lastVested,
+        //         escrowAmounts,
+        //         remainingAmounts
+        //     );
+        //     // relay the message to this contract on L2 via L1 Messenger
+        //     messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+        //     emit ExportedVestingEntries(msg.sender, vestingTimestamps, escrowAmounts);
+        // }
 
         if (_depositAmount > 0 && escrowedAccountBalance > 0) {
             _deposit(_depositAmount, escrowedAccountBalance);
