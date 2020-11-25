@@ -8,8 +8,8 @@ const path = require('path');
 // require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-node'); // add ability to start an OVM node
 
 require('solidity-coverage');
+require('hardhat-gas-reporter');
 // usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
-// usePlugin('buidler-gas-reporter');
 
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
