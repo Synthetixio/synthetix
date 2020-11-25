@@ -32,7 +32,7 @@ function collectContractBytesCodes() {
 	//   artifacts/contracts/Exchanger.sol/Exchanger.json
 	//   ...
 	const contractBytecodes = {};
-	for (let contractFolder of contractsFolders) {
+	for (const contractFolder of contractsFolders) {
 		const contractName = path.basename(contractFolder, '.sol');
 
 		const jsonFileName = `${contractName}.json`;
