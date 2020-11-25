@@ -361,6 +361,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         for (uint i = 0; i < entryIDs.length; i++) {
             VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
 
+            // check entry has remaining escrow amounts to migrate
             if (entry.remainingAmount > 0) {
                 vestingTimestamps[i] = entry.endTime;
                 durations[i] = entry.duration;
