@@ -79,7 +79,6 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.maxLeverage(), maxLeverage);
 			assert.bnEqual(await futuresMarket.maxMarketDebt(), maxMarketDebt);
 			assert.bnEqual(await futuresMarket.minInitialMargin(), minInitialMargin);
-			assert.bnEqual(await futuresMarket.liquidationFee(), liquidationFee);
 
 			const fundingParameters = await futuresMarket.fundingParameters();
 
@@ -185,6 +184,7 @@ contract('FuturesMarket', accounts => {
 		it('can successfully submit an order', async () => {
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');
+			const fee = await futuresMarket.orderFee(trader, margin, leverage);
 
 			const preBalance = await sUSD.balanceOf(trader);
 			const pendingOrderValue = await futuresMarket.pendingOrderValue();
@@ -197,7 +197,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, leverage);
 			assert.bnEqual(order.roundId, await futuresMarket.currentRoundId());
 
-			assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(margin));
+			assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(margin.add(fee)));
 			assert.bnEqual(await futuresMarket.pendingOrderValue(), pendingOrderValue.add(margin));
 		});
 
@@ -281,7 +281,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(position.margin, margin);
 			assert.bnEqual(position.size, size);
 			assert.bnEqual(position.entryPrice, price);
-			assert.bnEqual(position.entryIndex, toBN(0));
+			assert.bnEqual(position.entryIndex, toBN(2)); // submission and confirmation
 
 			// Skew, size, entry notional sum, pending order value are updated.
 			assert.bnEqual(await futuresMarket.marketSkew(), size);
@@ -346,7 +346,7 @@ contract('FuturesMarket', accounts => {
 
 			await futuresMarket.closePosition({ from: trader });
 
-			const price = toUnit('100');
+			const price = toUnit('199');
 			await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
 				from: oracle,
 			});
@@ -356,7 +356,7 @@ contract('FuturesMarket', accounts => {
 
 			assert.bnEqual(position.margin, toUnit(0));
 			assert.bnEqual(position.size, toUnit(0));
-			assert.bnEqual(position.entryPrice, price);
+			assert.bnEqual(position.entryPrice, toUnit(0));
 			assert.bnEqual(position.entryIndex, toBN(0));
 
 			// Skew, size, entry notional sum, pending order value are updated.
