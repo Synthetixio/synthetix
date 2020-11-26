@@ -128,8 +128,10 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
     function collateralRatio(Loan memory loan) public view returns (uint cratio) {
         uint cvalue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
+        uint debt = loan.amount.add(loan.accruedInterest);
+        uint dvalue = _exchangeRates().effectiveValue(loan.currency, debt, sUSD);
 
-        cratio = cvalue.divideDecimal(loan.amount.add(loan.accruedInterest));
+        cratio = cvalue.divideDecimal(dvalue);
     }
 
     function issuanceRatio() public view returns (uint ratio) {
