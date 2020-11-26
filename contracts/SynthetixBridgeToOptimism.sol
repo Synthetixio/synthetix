@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -110,22 +111,18 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, _entryIDs);
 
         // if there is an escrow amount to be migrated
-        // if (escrowedAccountBalance > 0) {
-        //     // create message payload for L2
-        //     bytes memory messageData = abi.encodeWithSignature(
-        //         "importVestingEntries(address,uint256,uint64[],uint64[],uint64[],uint256[],uint256[])",
-        //         msg.sender,
-        //         escrowedAccountBalance,
-        //         vestingTimestamps,
-        //         durations,
-        //         lastVested,
-        //         escrowAmounts,
-        //         remainingAmounts
-        //     );
-        //     // relay the message to this contract on L2 via L1 Messenger
-        //     messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-        //     emit ExportedVestingEntries(msg.sender, vestingTimestamps, escrowAmounts);
-        // }
+        if (escrowedAccountBalance > 0) {
+            // create message payload for L2
+            bytes memory messageData = abi.encodeWithSignature(
+                "importVestingEntries(address,uint256,bytes)",
+                msg.sender,
+                escrowedAccountBalance,
+                vestingEntries
+            );
+            // relay the message to this contract on L2 via L1 Messenger
+            messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+            emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
+        }
 
         if (_depositAmount > 0 && escrowedAccountBalance > 0) {
             _deposit(_depositAmount, escrowedAccountBalance);
@@ -198,7 +195,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
 
     event BridgeMigrated(address oldBridge, address newBridge, uint256 amount);
     event Deposit(address indexed account, uint256 amount, uint256 escrowAmount);
-    event ExportedVestingEntries(address indexed account, uint64[] timestamps, uint256[] amounts);
+    event ExportedVestingEntries(
+        address indexed account,
+        uint256 escrowedAccountBalance,
+        IRewardEscrowV2.VestingEntry[] vestingEntries
+    );
     event RewardDeposit(address indexed account, uint256 amount);
     event WithdrawalCompleted(address indexed account, uint256 amount);
 }
