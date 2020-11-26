@@ -1,0 +1,146 @@
+{
+	"AddressResolver": {
+		"deploy": false
+	},
+	"ReadProxyAddressResolver": {
+		"deploy": false
+	},
+	"DelegateApprovals": {
+		"deploy": false
+	},
+	"DelegateApprovalsEternalStorage": {
+		"deploy": false
+	},
+	"DebtCache": {
+		"deploy": false
+	},
+	"Depot": {
+		"deploy": false
+	},
+	"EscrowChecker": {
+		"deploy": false
+	},
+	"EtherCollateral": {
+		"deploy": false
+	},
+	"EtherCollateralsUSD": {
+		"deploy": false
+	},
+	"ExchangeRates": {
+		"deploy": false
+	},
+	"Exchanger": {
+		"deploy": false
+	},
+	"ExchangeState": {
+		"deploy": false
+	},
+	"FeePool": {
+		"deploy": false
+	},
+	"FeePoolState": {
+		"deploy": false
+	},
+	"FeePoolEternalStorage": {
+		"deploy": false
+	},
+	"FlexibleStorage": {
+		"deploy": false
+	},
+	"Issuer": {
+		"deploy": false
+	},
+	"EternalStorageLiquidations": {
+		"deploy": false
+	},
+	"FuturesMarketBTC": {
+		"deploy": false
+	},
+	"FuturesMarketETH": {
+		"deploy": false
+	},
+	"FuturesMarketLINK": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
+	"FuturesMarketData": {
+		"deploy": false
+	},
+	"Liquidations": {
+		"deploy": false
+	},
+	"RewardEscrow": {
+		"deploy": false
+	},
+	"RewardsDistribution": {
+		"deploy": false
+	},
+	"SupplySchedule": {
+		"deploy": false
+	},
+	"Synthetix": {
+		"deploy": false
+	},
+	"SynthetixEscrow": {
+		"deploy": false
+	},
+	"SynthetixState": {
+		"deploy": false
+	},
+	"SystemSettings": {
+		"deploy": false
+	},
+	"SystemStatus": {
+		"deploy": false
+	},
+	"SynthUtil": {
+		"deploy": false
+	},
+	"DappMaintenance": {
+		"deploy": false
+	},
+	"SynthsUSD": {
+		"deploy": false
+	},
+	"SynthsETH": {
+		"deploy": false
+	},
+	"ProxyERC20": {
+		"deploy": false
+	},
+	"ProxyFeePool": {
+		"deploy": false
+	},
+	"ProxySynthetix": {
+		"deploy": false
+	},
+	"ProxysUSD": {
+		"deploy": false
+	},
+	"SafeDecimalMath": {
+		"deploy": false
+	},
+	"Math": {
+		"deploy": false
+	},
+	"TokenStateSynthetix": {
+		"deploy": false
+	},
+	"TokenStatesUSD": {
+		"deploy": false
+	},
+	"TokenStatesETH": {
+		"deploy": false
+	},
+	"ProxyERC20sUSD": {
+		"deploy": false
+	},
+	"ProxysETH": {
+		"deploy": false
+	},
+	"TradingRewards": {
+		"deploy": false
+	}
+}
