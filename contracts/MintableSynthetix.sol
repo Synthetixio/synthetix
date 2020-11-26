@@ -14,9 +14,7 @@ contract MintableSynthetix is Synthetix {
         address _owner,
         uint _totalSupply,
         address _resolver
-    ) public Synthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {
-        appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE);
-    }
+    ) public Synthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
 
     /* ========== INTERNALS =================== */
 
@@ -38,6 +36,15 @@ contract MintableSynthetix is Synthetix {
     }
 
     /* ========== VIEWS ======================= */
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinResolver(this).resolverAddressesRequired();
+        addresses = new bytes32[](existingAddresses.length + 1);
+
+        for (uint i = 0; i < existingAddresses.length; i++) {
+            addresses[i] = existingAddresses[i];
+        }
+        addresses[existingAddresses.length] = CONTRACT_SYNTHETIX_BRIDGE;
+    }
 
     function synthetixBridge() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE);

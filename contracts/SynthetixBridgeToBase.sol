@@ -20,15 +20,9 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_EXT_MESSENGER,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM
-    ];
-
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     //
     // ========== INTERNALS ============
@@ -55,6 +49,15 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     modifier onlyOptimismBridge() {
         onlyAllowFromOptimism();
         _;
+    }
+
+    // ========== VIEWS ==========
+
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](3);
+        addresses[0] = CONTRACT_EXT_MESSENGER;
+        addresses[1] = CONTRACT_SYNTHETIX;
+        addresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
     }
 
     // ========== PUBLIC FUNCTIONS =========

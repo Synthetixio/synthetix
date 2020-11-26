@@ -74,6 +74,8 @@
 		},
 		"sources": [
 			"AddressResolver",
+			"BinaryOptionMarketFactory",
+			"BinaryOptionMarketManager",
 			"DebtCache",
 			"ExchangeRates",
 			"Exchanger",
@@ -82,6 +84,7 @@
 			"Liquidations",
 			"SystemSettings",
 			"Synthetix",
+			"TradingRewards",
 			"SynthsUSD",
 			"SynthsETH"
 		],

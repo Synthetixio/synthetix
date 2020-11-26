@@ -24,19 +24,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_OVM_SYNTHETIXBRIDGETOBASE = "ovm:SynthetixBridgeToBase";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_EXT_MESSENGER,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_ISSUER,
-        CONTRACT_REWARDSDISTRIBUTION,
-        CONTRACT_OVM_SYNTHETIXBRIDGETOBASE
-    ];
-
     bool public activated;
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
         activated = true;
     }
 
@@ -79,6 +71,17 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
 
         emit RewardDeposit(msg.sender, amount);
+    }
+
+    /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](5);
+        addresses[0] = CONTRACT_EXT_MESSENGER;
+        addresses[1] = CONTRACT_SYNTHETIX;
+        addresses[2] = CONTRACT_ISSUER;
+        addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
+        addresses[4] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
     }
 
     // ========== MODIFIERS ============

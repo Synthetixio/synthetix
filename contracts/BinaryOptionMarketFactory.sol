@@ -16,13 +16,16 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     bytes32 internal constant CONTRACT_BINARYOPTIONMARKETMANAGER = "BinaryOptionMarketManager";
 
-    bytes32[24] internal addressesToCache = [CONTRACT_BINARYOPTIONMARKETMANAGER];
-
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_BINARYOPTIONMARKETMANAGER;
+    }
 
     /* ---------- Related Contracts ---------- */
 

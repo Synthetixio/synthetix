@@ -39,16 +39,12 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
-    bytes32[24] private addressesToCache = [bytes32(0)];
-
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
 
     // ========== VIEWS ==========
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](0);
+    }
 
     // SIP-37 Fee Reclamation
     // The number of seconds after an exchange is executed that must be waited

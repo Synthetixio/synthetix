@@ -22,16 +22,15 @@ contract AddressResolver is Owned, IAddressResolver {
         // add everything first
         for (uint i = 0; i < names.length; i++) {
             repository[names[i]] = destinations[i];
+            emit AddressImported(names[i], destinations[i]);
         }
+    }
 
-        // then rebuild all the caches on everything that needs it
-
-        // NOTE: This will call rebuild twice on proxies and underlyings... need to address thi
-
+    function rebuildCaches(address[] calldata destinations) external {
         for (uint i = 0; i < destinations.length; i++) {
             // solhint-disable avoid-low-level-calls
             (bool success, ) = address(destinations[i]).call(abi.encodePacked(MixinResolver(0).rebuildCache.selector));
-            emit AddressImported(names[i], destinations[i], success);
+            success; // hide warning
         }
     }
 
@@ -62,5 +61,5 @@ contract AddressResolver is Owned, IAddressResolver {
     }
 
     /* ========== EVENTS ========== */
-    event AddressImported(bytes32 name, address destination, bool cacheRebuilt);
+    event AddressImported(bytes32 name, address destination);
 }

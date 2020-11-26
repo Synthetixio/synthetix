@@ -77,15 +77,13 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_SYNTHETIX];
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address _owner,
         address payable _fundsWallet,
         address _resolver
-    ) public Owned(_owner) Pausable() MixinResolver(_resolver, addressesToCache) {
+    ) public Owned(_owner) Pausable() MixinResolver(_resolver) {
         fundsWallet = _fundsWallet;
     }
 
@@ -464,6 +462,13 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     }
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](3);
+        addresses[0] = CONTRACT_SYNTHSUSD;
+        addresses[1] = CONTRACT_EXRATES;
+        addresses[2] = CONTRACT_SYNTHETIX;
+    }
 
     /**
      * @notice Calculate how many SNX you will receive if you transfer

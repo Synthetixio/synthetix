@@ -50,8 +50,6 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
 
-    bytes32[24] private addressesToCache = [CONTRACT_EXCHANGER];
-
     //
     // ========== CONSTRUCTOR ==========
 
@@ -61,7 +59,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
         address _resolver,
         bytes32[] memory _currencyKeys,
         uint[] memory _newRates
-    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
+    ) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {
         require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
 
         oracle = _oracle;
@@ -213,6 +211,11 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
     }
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_EXCHANGER;
+    }
 
     // SIP-75 View to determine if freezeRate can be called safely
     function canFreezeRate(bytes32 currencyKey) external view returns (bool) {

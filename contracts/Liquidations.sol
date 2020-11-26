@@ -35,28 +35,24 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_ETERNALSTORAGE_LIQUIDATIONS,
-        CONTRACT_ISSUER,
-        CONTRACT_EXRATES
-    ];
-
     /* ========== CONSTANTS ========== */
 
     // Storage keys
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
     bytes32 public constant LIQUIDATION_CALLER = "LiquidationCaller";
 
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](5);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_SYNTHETIX;
+        addresses[2] = CONTRACT_ETERNALSTORAGE_LIQUIDATIONS;
+        addresses[3] = CONTRACT_ISSUER;
+        addresses[4] = CONTRACT_EXRATES;
+    }
+
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }

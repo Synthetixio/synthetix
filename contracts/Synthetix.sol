@@ -37,15 +37,6 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_EXCHANGER,
-        CONTRACT_ISSUER,
-        CONTRACT_SUPPLYSCHEDULE,
-        CONTRACT_REWARDSDISTRIBUTION,
-        CONTRACT_SYNTHETIXSTATE
-    ];
-
     // ========== CONSTRUCTOR ==========
 
     constructor(
@@ -57,10 +48,19 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     )
         public
         ExternStateToken(_proxy, _tokenState, TOKEN_NAME, TOKEN_SYMBOL, _totalSupply, DECIMALS, _owner)
-        MixinResolver(_resolver, addressesToCache)
+        MixinResolver(_resolver)
     {}
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](6);
+        addresses[0] = CONTRACT_SYNTHETIXSTATE;
+        addresses[1] = CONTRACT_SYSTEMSTATUS;
+        addresses[2] = CONTRACT_EXCHANGER;
+        addresses[3] = CONTRACT_ISSUER;
+        addresses[4] = CONTRACT_SUPPLYSCHEDULE;
+        addresses[5] = CONTRACT_REWARDSDISTRIBUTION;
+    }
 
     function synthetixState() internal view returns (ISynthetixState) {
         return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));

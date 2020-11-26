@@ -43,23 +43,19 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_ISSUER,
-        CONTRACT_EXCHANGER,
-        CONTRACT_EXRATES,
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_ETHERCOLLATERAL,
-        CONTRACT_ETHERCOLLATERAL_SUSD
-    ];
-
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](6);
+        addresses[0] = CONTRACT_ISSUER;
+        addresses[1] = CONTRACT_EXCHANGER;
+        addresses[2] = CONTRACT_EXRATES;
+        addresses[3] = CONTRACT_SYSTEMSTATUS;
+        addresses[4] = CONTRACT_ETHERCOLLATERAL;
+        addresses[5] = CONTRACT_ETHERCOLLATERAL_SUSD;
+    }
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
