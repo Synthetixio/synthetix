@@ -287,45 +287,71 @@ contract('CollateralErc20', async accounts => {
 
 	// PUBLIC VIEW TESTS
 	describe('cratio test', async () => {
-		beforeEach(async () => {
-			tx = await cerc20.open(oneRenBTC, fiveThousandsUSD, sUSD, {
-				from: account1,
+		describe('sUSD loans', async () => {
+			beforeEach(async () => {
+				tx = await cerc20.open(oneRenBTC, fiveThousandsUSD, sUSD, {
+					from: account1,
+				});
+
+				id = await getid(tx);
+				loan = await state.getLoan(account1, id);
 			});
 
-			id = await getid(tx);
-			loan = await state.getLoan(account1, id);
-		});
-
-		it('when we issue at 200%, our c ratio is 200%', async () => {
-			const ratio = await cerc20.collateralRatio(loan);
-			assert.bnEqual(ratio, toUnit(2));
-		});
-
-		it('when the price falls by 25% our c ratio is 150%', async () => {
-			await exchangeRates.updateRates([sBTC], ['7500'].map(toUnit), await currentTime(), {
-				from: oracle,
+			it('when we issue at 200%, our c ratio is 200%', async () => {
+				const ratio = await cerc20.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(2));
 			});
 
-			const ratio = await cerc20.collateralRatio(loan);
-			assert.bnEqual(ratio, toUnit(1.5));
-		});
+			it('when the price falls by 25% our c ratio is 150%', async () => {
+				await exchangeRates.updateRates([sBTC], ['7500'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
 
-		it('when the price increases by 100% our c ratio is 400%', async () => {
-			await exchangeRates.updateRates([sBTC], ['20000'].map(toUnit), await currentTime(), {
-				from: oracle,
+				const ratio = await cerc20.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(1.5));
 			});
 
-			const ratio = await cerc20.collateralRatio(loan);
-			assert.bnEqual(ratio, toUnit(4));
-		});
+			it('when the price increases by 100% our c ratio is 400%', async () => {
+				await exchangeRates.updateRates([sBTC], ['20000'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
 
-		it('when the price fallsby 50% our cratio is 100%', async () => {
-			await exchangeRates.updateRates([sBTC], ['5000'].map(toUnit), await currentTime(), {
-				from: oracle,
+				const ratio = await cerc20.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(4));
 			});
 
-			const ratio = await cerc20.collateralRatio(loan);
-			assert.bnEqual(ratio, toUnit(1));
+			it('when the price fallsby 50% our cratio is 100%', async () => {
+				await exchangeRates.updateRates([sBTC], ['5000'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
+				const ratio = await cerc20.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(1));
+			});
+		});
+		describe('sBTC loans', async () => {
+			beforeEach(async () => {
+				tx = await cerc20.open(twoRenBTC, oneRenBTC, sBTC, {
+					from: account1,
+				});
+
+				id = await getid(tx);
+				loan = await state.getLoan(account1, id);
+			});
+
+			it('when we issue at 200%, our c ratio is 200%', async () => {
+				const ratio = await cerc20.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(2));
+			});
+
+			it('price changes should not change the cratio', async () => {
+				await exchangeRates.updateRates([sBTC], ['75'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
+				const ratio = await cerc20.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(2));
+			});
 		});
 	});
 

@@ -235,46 +235,73 @@ contract('CollateralEth', async accounts => {
 	// PUBLIC VIEW TESTS
 
 	describe('cratio test', async () => {
-		beforeEach(async () => {
-			tx = await ceth.open(oneHundredsUSD, sUSD, {
-				value: twoETH,
-				from: account1,
+		describe('sUSD loans', async () => {
+			beforeEach(async () => {
+				tx = await ceth.open(oneHundredsUSD, sUSD, {
+					value: twoETH,
+					from: account1,
+				});
+
+				id = await getid(tx);
+				loan = await state.getLoan(account1, id);
 			});
 
-			id = await getid(tx);
-			loan = await state.getLoan(account1, id);
-		});
-
-		it('when we issue at 200%, our c ratio is 200%', async () => {
-			const ratio = await ceth.collateralRatio(loan);
-			assert.bnEqual(ratio, toUnit(2));
-		});
-
-		it('when the price falls by 25% our c ratio is 150%', async () => {
-			await exchangeRates.updateRates([sETH], ['75'].map(toUnit), await currentTime(), {
-				from: oracle,
+			it('when we issue at 200%, our c ratio is 200%', async () => {
+				const ratio = await ceth.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(2));
 			});
 
-			const ratio = await ceth.collateralRatio(loan);
-			assert.bnEqual(ratio, toUnit(1.5));
-		});
+			it('when the price falls by 25% our c ratio is 150%', async () => {
+				await exchangeRates.updateRates([sETH], ['75'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
 
-		it('when the price increases by 100% our c ratio is 400%', async () => {
-			await exchangeRates.updateRates([sETH], ['200'].map(toUnit), await currentTime(), {
-				from: oracle,
+				const ratio = await ceth.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(1.5));
 			});
 
-			const ratio = await ceth.collateralRatio(loan);
-			assert.bnEqual(ratio, toUnit(4));
-		});
+			it('when the price increases by 100% our c ratio is 400%', async () => {
+				await exchangeRates.updateRates([sETH], ['200'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
 
-		it('when the price falls by 50% our cratio is 100%', async () => {
-			await exchangeRates.updateRates([sETH], ['50'].map(toUnit), await currentTime(), {
-				from: oracle,
+				const ratio = await ceth.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(4));
 			});
 
-			const ratio = await ceth.collateralRatio(loan);
-			assert.bnEqual(ratio, toUnit(1));
+			it('when the price falls by 50% our cratio is 100%', async () => {
+				await exchangeRates.updateRates([sETH], ['50'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
+				const ratio = await ceth.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(1));
+			});
+		});
+		describe('sETH loans', async () => {
+			beforeEach(async () => {
+				tx = await ceth.open(oneETH, sETH, {
+					value: twoETH,
+					from: account1,
+				});
+
+				id = await getid(tx);
+				loan = await state.getLoan(account1, id);
+			});
+
+			it('when we issue at 200%, our c ratio is 200%', async () => {
+				const ratio = await ceth.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(2));
+			});
+
+			it('price changes should not change the cratio', async () => {
+				await exchangeRates.updateRates([sETH], ['75'].map(toUnit), await currentTime(), {
+					from: oracle,
+				});
+
+				const ratio = await ceth.collateralRatio(loan);
+				assert.bnEqual(ratio, toUnit(2));
+			});
 		});
 	});
 
