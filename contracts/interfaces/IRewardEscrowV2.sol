@@ -44,11 +44,7 @@ interface IRewardEscrowV2 {
     function importVestingEntries(
         address account,
         uint256 escrowedAmount,
-        uint64[] calldata vestingTimstamps,
-        uint64[] calldata durations,
-        uint64[] calldata lastVested,
-        uint256[] calldata escrowAmounts,
-        uint256[] calldata remainingAmounts
+        VestingEntry[] calldata vestingEntries
     ) external;
 
     // Return amount of SNX transfered to SynthetixBridgeToOptimism deposit contract

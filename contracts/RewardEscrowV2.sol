@@ -165,33 +165,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         emit VestingEntryCreated(account, now, quantity, duration);
     }
 
-    function _importVestingEntry(
-        address account,
-        uint256 escrowAmount,
-        uint256 remainingAmount,
-        uint64 vestingTimestamp,
-        uint64 duration,
-        uint64 lastVested
-    ) internal {
-        /* No empty vesting entries allowed. */
-        require(escrowAmount != 0, "Quantity cannot be zero");
-
-        uint entryID = nextEntryId;
-        vestingSchedules[account][entryID] = VestingEntry({
-            endTime: vestingTimestamp,
-            duration: duration,
-            lastVested: lastVested,
-            escrowAmount: escrowAmount,
-            remainingAmount: remainingAmount
-        });
-
-        // append entryID to list of entries for account
-        accountVestingEntryIDs[account].push(entryID);
-
-        /* Increment the next entry id. */
-        nextEntryId = nextEntryId.add(1);
-    }
-
     /**
      * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
      * @dev A call to this should accompany a previous successful call to synthetix.transfer(rewardEscrow, amount),
@@ -366,11 +339,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     function importVestingEntries(
         address account,
         uint256 escrowedAmount,
-        uint64[] calldata vestingTimestamps,
-        uint64[] calldata durations,
-        uint64[] calldata lastVested,
-        uint256[] calldata escrowAmounts,
-        uint256[] calldata remainingAmounts
+        VestingEntry[] calldata vestingEntries
     ) external onlySynthetixBridgeToBase {
         // There must be enough balance in the contract to provide for the escrowed balance.
         totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
@@ -379,19 +348,26 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
             "Insufficient balance in the contract to provide for escrowed balance"
         );
 
-        for (uint i = 0; i < vestingTimestamps.length; i++) {
-            _importVestingEntry(
-                account,
-                escrowAmounts[i],
-                remainingAmounts[i],
-                vestingTimestamps[i],
-                durations[i],
-                lastVested[i]
-            );
+        for (uint i = 0; i < vestingEntries.length; i++) {
+            _importVestingEntry(account, vestingEntries[i]);
         }
 
         // Record account escrowed balance
         totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
+    }
+
+    function _importVestingEntry(address account, VestingEntry memory entry) internal {
+        /* No empty vesting entries allowed. */
+        require(entry.escrowAmount != 0, "Quantity cannot be zero");
+
+        uint entryID = nextEntryId;
+        vestingSchedules[account][entryID] = entry;
+
+        // append entryID to list of entries for account
+        accountVestingEntryIDs[account].push(entryID);
+
+        /* Increment the next entry id. */
+        nextEntryId = nextEntryId.add(1);
     }
 
     function _checkEscrowMigrationPending(address account) internal view {
