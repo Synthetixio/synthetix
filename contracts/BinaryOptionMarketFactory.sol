@@ -22,7 +22,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](1);
         addresses[0] = CONTRACT_BINARYOPTIONMARKETMANAGER;
     }

@@ -463,7 +463,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](3);
         addresses[0] = CONTRACT_SYNTHSUSD;
         addresses[1] = CONTRACT_EXRATES;

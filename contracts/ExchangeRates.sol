@@ -212,7 +212,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](2);
         addresses[0] = CONTRACT_EXCHANGER;
         addresses[1] = CONTRACT_FLEXIBLESTORAGE;

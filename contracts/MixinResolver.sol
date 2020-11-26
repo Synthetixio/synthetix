@@ -19,11 +19,14 @@ contract MixinResolver {
     }
 
     /* ========== ABSTRACT FUNCTIONS ========== */
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses);
+
+    // Note: this function is public in order for it to be overridden and invoked via super in subclasses
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses);
 
     /* ========== PUBLIC FUNCTIONS ========== */
+
     function rebuildCache() external {
-        bytes32[] memory requiredAddresses = this.resolverAddressesRequired();
+        bytes32[] memory requiredAddresses = resolverAddressesRequired();
         // The resolver must call this function whenver it updates its state
         for (uint i = 0; i < requiredAddresses.length; i++) {
             bytes32 name = requiredAddresses[i];
@@ -33,6 +36,21 @@ contract MixinResolver {
                 string(abi.encodePacked("Resolver missing target: ", name))
             );
         }
+    }
+
+    /* ========== VIEWS ========== */
+
+    function isResolverCached() external view returns (bool) {
+        bytes32[] memory requiredAddresses = resolverAddressesRequired();
+        for (uint i = 0; i < requiredAddresses.length; i++) {
+            bytes32 name = requiredAddresses[i];
+            // false if our cache is invalid or if the resolver doesn't have the required address
+            if (resolver.getAddress(name) != addressCache[name] || addressCache[name] == address(0)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

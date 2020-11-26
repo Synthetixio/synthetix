@@ -95,7 +95,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](4);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_SYNTHSUSD;

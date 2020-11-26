@@ -36,8 +36,8 @@ contract MintableSynthetix is Synthetix {
     }
 
     /* ========== VIEWS ======================= */
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = Synthetix(this).resolverAddressesRequired();
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = super.resolverAddressesRequired();
         addresses = new bytes32[](existingAddresses.length + 1);
 
         for (uint i = 0; i < existingAddresses.length; i++) {

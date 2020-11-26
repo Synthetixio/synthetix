@@ -1222,6 +1222,9 @@ const deploy = async ({
 			),
 		];
 
+		// Note: this will import and rebuild caches for everything, but everything has to
+		// be imported, even contracts that have no cache to rebuild...
+
 		await runStep({
 			gasLimit: 5e6, // higher gas required
 			contract: `AddressResolver`,
@@ -1229,41 +1232,9 @@ const deploy = async ({
 			read: 'areAddressesImported',
 			expected: input => input,
 			readArg: addressArgs,
-			// readArg: addressArgs.map(arr => arr.slice(i, i + pageSize)),
 			write: 'importAddresses',
 			writeArg: addressArgs,
-			// writeArg: addressArgs.map(arry => arry.slice(i, i + pageSize)),
 		});
-
-		// const contractsToBeRebuilt = Object.entries(deployer.deployedContracts)
-		// 	.filter(([, target]) =>
-		// 		target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')
-		// 	)
-		// 	.map(
-		// 		([
-		// 			,
-		// 			{
-		// 				options: { address },
-		// 			},
-		// 		]) => address
-		// 	);
-
-		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
-			if (target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')) {
-				console.log(contract, 'prep');
-				const resolverAddressesRequired = await target.methods.resolverAddressesRequired().call();
-
-				console.log(contract, 'requires', resolverAddressesRequired.map(w3utils.hexToUtf8));
-
-				await runStep({
-					gasLimit: 9e6, // higher gas required
-					contract: `AddressResolver`,
-					target: addressResolver,
-					write: 'rebuildCaches',
-					writeArg: [[target.options.address]],
-				});
-			}
-		}
 
 		// TODO 1: use-ovm deploy will fail due to addresses with ':' in them not existing
 

@@ -13,7 +13,7 @@ contract TestableMixinResolver is Owned, MixinResolver {
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses[0] = CONTRACT_EXAMPLE_1;
         addresses[1] = CONTRACT_EXAMPLE_2;
         addresses[2] = CONTRACT_EXAMPLE_3;

@@ -47,7 +47,7 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](7);
         addresses[0] = CONTRACT_ISSUER;
         addresses[1] = CONTRACT_EXCHANGER;

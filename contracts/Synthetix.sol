@@ -52,7 +52,9 @@ contract Synthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     {}
 
     /* ========== VIEWS ========== */
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+
+    // Note: use public visibility so that it can be invoked in a subclass
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](6);
         addresses[0] = CONTRACT_SYNTHETIXSTATE;
         addresses[1] = CONTRACT_SYSTEMSTATUS;

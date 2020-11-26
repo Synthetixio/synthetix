@@ -53,7 +53,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     // ========== VIEWS ==========
 
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](3);
         addresses[0] = CONTRACT_EXT_MESSENGER;
         addresses[1] = CONTRACT_SYNTHETIX;

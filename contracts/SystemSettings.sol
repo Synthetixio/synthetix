@@ -42,7 +42,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
 
     // ========== VIEWS ==========
-    function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](1);
         addresses[0] = CONTRACT_FLEXIBLESTORAGE;
     }
