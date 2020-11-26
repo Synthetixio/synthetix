@@ -89,7 +89,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](11);
+        addresses = new bytes32[](12);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_SYNTHETIX;
         addresses[2] = CONTRACT_FEEPOOLSTATE;
@@ -101,6 +101,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         addresses[8] = CONTRACT_DELEGATEAPPROVALS;
         addresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
         addresses[10] = CONTRACT_REWARDSDISTRIBUTION;
+        addresses[11] = CONTRACT_FLEXIBLESTORAGE;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {

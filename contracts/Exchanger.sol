@@ -105,7 +105,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](9);
+        addresses = new bytes32[](10);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGESTATE;
         addresses[2] = CONTRACT_EXRATES;
@@ -115,6 +115,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         addresses[6] = CONTRACT_DELEGATEAPPROVALS;
         addresses[7] = CONTRACT_ISSUER;
         addresses[8] = CONTRACT_DEBTCACHE;
+        addresses[9] = CONTRACT_FLEXIBLESTORAGE;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {

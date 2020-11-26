@@ -43,7 +43,8 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
 
     // ========== VIEWS ==========
     function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](0);
+        addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_FLEXIBLESTORAGE;
     }
 
     // SIP-37 Fee Reclamation

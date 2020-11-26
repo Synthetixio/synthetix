@@ -45,12 +45,13 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](5);
+        addresses = new bytes32[](6);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_SYNTHETIX;
         addresses[2] = CONTRACT_ETERNALSTORAGE_LIQUIDATIONS;
         addresses[3] = CONTRACT_ISSUER;
         addresses[4] = CONTRACT_EXRATES;
+        addresses[5] = CONTRACT_FLEXIBLESTORAGE;
     }
 
     function synthetix() internal view returns (ISynthetix) {

@@ -213,8 +213,9 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](1);
+        addresses = new bytes32[](2);
         addresses[0] = CONTRACT_EXCHANGER;
+        addresses[1] = CONTRACT_FLEXIBLESTORAGE;
     }
 
     // SIP-75 View to determine if freezeRate can be called safely

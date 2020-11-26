@@ -86,7 +86,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](13);
+        addresses = new bytes32[](14);
         addresses[0] = CONTRACT_SYNTHETIX;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_EXRATES;
@@ -100,6 +100,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         addresses[10] = CONTRACT_LIQUIDATIONS;
         addresses[11] = CONTRACT_FLEXIBLESTORAGE;
         addresses[12] = CONTRACT_DEBTCACHE;
+        addresses[13] = CONTRACT_FLEXIBLESTORAGE;
     }
 
     function synthetix() internal view returns (ISynthetix) {

@@ -34,7 +34,7 @@ contract PurgeableSynth is Synth {
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() external view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinResolver(this).resolverAddressesRequired();
+        bytes32[] memory existingAddresses = Synth(this).resolverAddressesRequired();
         addresses = new bytes32[](existingAddresses.length + 1);
 
         for (uint i = 0; i < existingAddresses.length; i++) {
