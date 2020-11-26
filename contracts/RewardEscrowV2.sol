@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -19,14 +20,6 @@ import "./interfaces/ISynthetix.sol";
 // https://docs.synthetix.io/contracts/RewardEscrow
 contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
     using SafeMath for uint;
-
-    struct VestingEntry {
-        uint64 endTime;
-        uint64 duration;
-        uint64 lastVested;
-        uint256 escrowAmount;
-        uint256 remainingAmount;
-    }
 
     mapping(address => mapping(uint256 => VestingEntry)) public vestingSchedules;
 
@@ -338,37 +331,20 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     function burnForMigration(address account, uint[] calldata entryIDs)
         external
         onlySynthetixBridge
-        returns (
-            uint256 escrowedAccountBalance,
-            uint64[] memory vestingTimestamps,
-            uint64[] memory durations,
-            uint64[] memory lastVested,
-            uint256[] memory escrowAmounts,
-            uint256[] memory remainingAmounts
-        )
+        returns (uint256 escrowedAccountBalance, VestingEntry[] memory vestingEntries)
     {
         require(entryIDs.length > 0, "Entry IDs required");
 
         // check if account migrated on L1
         _checkEscrowMigrationPending(account);
 
-        vestingTimestamps = new uint64[](entryIDs.length);
-        durations = new uint64[](entryIDs.length);
-        lastVested = new uint64[](entryIDs.length);
-        escrowAmounts = new uint256[](entryIDs.length);
-        remainingAmounts = new uint256[](entryIDs.length);
+        vestingEntries = new VestingEntry[](entryIDs.length);
 
         for (uint i = 0; i < entryIDs.length; i++) {
             VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
 
-            // check entry has remaining escrow amounts to migrate
             if (entry.remainingAmount > 0) {
-                vestingTimestamps[i] = entry.endTime;
-                durations[i] = entry.duration;
-                lastVested[i] = entry.lastVested;
-                escrowAmounts[i] = entry.escrowAmount;
-                remainingAmounts[i] = entry.remainingAmount;
-
+                vestingEntries[i] = entry;
                 escrowedAccountBalance = escrowedAccountBalance.add(entry.remainingAmount);
 
                 /* Delete the vesting entry being migrated */
@@ -384,7 +360,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
             IERC20(address(synthetix())).transfer(synthetixBridgeToOptimism(), escrowedAccountBalance);
         }
 
-        return (escrowedAccountBalance, vestingTimestamps, durations, lastVested, escrowAmounts, remainingAmounts);
+        return (escrowedAccountBalance, vestingEntries);
     }
 
     function importVestingEntries(
