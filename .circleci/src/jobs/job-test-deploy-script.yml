@@ -1,6 +1,5 @@
 # Validates that the deploy command is working as expected
 {{> job-header.yml}}
-resource_class: large
 steps:
   - checkout
   - attach_workspace:
