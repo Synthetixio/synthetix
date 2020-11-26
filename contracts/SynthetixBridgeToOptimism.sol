@@ -99,6 +99,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     // ========== PUBLIC FUNCTIONS =========
 
     function deposit(uint256 _depositAmount) external requireActive {
+        // escrow amount should beset to 0
         _deposit(_depositAmount, 0);
     }
 
@@ -114,7 +115,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         if (escrowedAccountBalance > 0) {
             // create message payload for L2
             bytes memory messageData = abi.encodeWithSignature(
-                "importVestingEntries(address,uint256,bytes)",
+                "importVestingEntries(address,uint256,(uint64,uint64,uint64,uint256,uint256)[])",
                 msg.sender,
                 escrowedAccountBalance,
                 vestingEntries

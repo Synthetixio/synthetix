@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -82,26 +83,14 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    // function importVestingEntries(
-    //     address account,
-    //     uint256 escrowedAmount,
-    //     uint64[] calldata vestingTimestamps,
-    //     uint64[] calldata durations,
-    //     uint64[] calldata lastVested,
-    //     uint256[] calldata escrowAmounts,
-    //     uint256[] calldata remainingAmounts
-    // ) external onlyOptimismBridge {
-    //     rewardEscrowV2().importVestingEntries(
-    //         account,
-    //         escrowedAmount,
-    //         vestingTimestamps,
-    //         durations,
-    //         lastVested,
-    //         escrowAmounts,
-    //         remainingAmounts
-    //     );
-    //     emit ImportedVestingEntries(account, vestingTimestamps, escrowAmounts);
-    // }
+    function importVestingEntries(
+        address account,
+        uint256 escrowedAmount,
+        IRewardEscrowV2.VestingEntry[] calldata vestingEntries
+    ) external onlyOptimismBridge {
+        rewardEscrowV2().importVestingEntries(account, escrowedAmount, vestingEntries);
+        emit ImportedVestingEntries(account, escrowedAmount, vestingEntries);
+    }
 
     // invoked by Messenger on L2
     function mintSecondaryFromDeposit(
@@ -128,7 +117,11 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     }
 
     // ========== EVENTS ==========
-    event ImportedVestingEntries(address indexed account, uint64[] timestamps, uint256[] amounts);
+    event ImportedVestingEntries(
+        address indexed account,
+        uint256 escrowedAmount,
+        IRewardEscrowV2.VestingEntry[] vestingEntries
+    );
     event MintedSecondary(address indexed account, uint256 amount);
     event MintedSecondaryRewards(uint256 amount);
     event WithdrawalInitiated(address indexed account, uint256 amount);

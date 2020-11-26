@@ -66,22 +66,20 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 		describe('when the target is deployed', () => {
 			let instance;
+			const escrowedAmount = 100;
 			beforeEach(async () => {
 				instance = await artifacts.require('SynthetixBridgeToBase').new(owner, resolver.address);
 				await instance.setResolverAndSyncCache(resolver.address, { from: owner });
 			});
 
 			describe('importVestingEntries', async () => {
-				const zeroArray = [];
-				for (let i = 0; i < 52; i++) {
-					zeroArray.push(0);
-				}
+				const emptyArray = [];
 
 				describe('failure modes', () => {
 					it('should only allow the relayer (aka messenger) to call importVestingEntries()', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.importVestingEntries,
-							args: [user1, zeroArray, zeroArray],
+							args: [user1, escrowedAmount, emptyArray],
 							accounts,
 							address: smockedMessenger,
 							reason: 'Only the relayer can call this',
@@ -92,7 +90,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.importVestingEntries(user1, zeroArray, zeroArray, {
+							instance.importVestingEntries(user1, escrowedAmount, emptyArray, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -105,17 +103,25 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					beforeEach('importVestingEntries is called', async () => {
 						importVestingEntriesTx = await instance.importVestingEntries(
 							user1,
-							zeroArray,
-							zeroArray,
+							escrowedAmount,
+							emptyArray,
 							{
 								from: smockedMessenger,
 							}
 						);
 					});
 
+					it('importVestingEntries is called (via rewardEscrowV2)', async () => {
+						assert.equal(rewardEscrow.smocked.importVestingEntries.calls[0][0], user1);
+						assert.bnEqual(rewardEscrow.smocked.importVestingEntries.calls[0][1], escrowedAmount);
+						assert.bnEqual(rewardEscrow.smocked.importVestingEntries.calls[0][2], emptyArray);
+					});
+
 					it('should emit a ImportedVestingEntries event', async () => {
 						assert.eventEqual(importVestingEntriesTx, 'ImportedVestingEntries', {
 							account: user1,
+							escrowedAmount: escrowedAmount,
+							vestingEntries: emptyArray,
 						});
 					});
 				});
