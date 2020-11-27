@@ -52,6 +52,8 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
     using SignedSafeMath for int;
     using SignedSafeDecimalMath for int;
 
+    int private constant _UNIT = int(10**uint(18));
+
     /* ========== TYPES ========== */
     // TODO: Move these into interface
 
@@ -72,6 +74,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         uint entryIndex;
     }
 
+    // TODO: Convert funding rate from daily to per-second
     struct FundingParameters {
         uint maxFundingRate;
         uint maxFundingRateSkew;
@@ -232,7 +235,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         }
 
         int functionFraction = _proportionalSkew().divideDecimalRound(maxFundingRateSkew);
-        return _min(_max(-1, functionFraction), 1).multiplyDecimalRound(maxFundingRate);
+        return _min(_max(-_UNIT, functionFraction), _UNIT).multiplyDecimalRound(maxFundingRate);
     }
 
     function currentFundingRate() external view returns (int) {

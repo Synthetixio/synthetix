@@ -1,7 +1,7 @@
 const { contract, web3 } = require('@nomiclabs/buidler');
 
 const { toBytes32 } = require('../..');
-const { currentTime, fastForward, toUnit, multiplyDecimalRound } = require('../utils')();
+const { currentTime, fastForward, toUnit, fromUnit, multiplyDecimalRound } = require('../utils')();
 const { toBN } = web3.utils;
 
 const { setupAllContracts } = require('./setup');
@@ -541,5 +541,47 @@ contract('FuturesMarket', accounts => {
 		it('Liquidation fee is remitted to the liquidator', async () => {
 			assert.isTrue(false);
 		});
+	});
+
+	describe('Funding rate', () => {
+		it('An empty market induces zero funding rate', async () => {
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+		});
+
+		it('A balanced market induces zero funding rate', async () => {
+			for (const marginTrader of [
+				['1000', trader],
+				['-1000', trader2],
+			]) {
+				await submitAndConfirmOrder({
+					market: futuresMarket,
+					account: marginTrader[1],
+					fillPrice: toUnit('100'),
+					margin: marginTrader[0],
+					leverage: toUnit('10'),
+				});
+			}
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+		});
+
+		for (const margin of ['1000', '-1000'].map(toUnit)) {
+			const side = parseInt(margin.toString()) > 0 ? 'long' : 'short';
+
+			describe(`${side}`, () => {
+				it('100% skew induces maximum funding rate', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: toUnit('1000'),
+						leverage: toUnit('10'),
+					});
+					assert.bnEqual(await futuresMarket.currentFundingRate(), maxFundingRate);
+				});
+
+				// TODO: Loop for other funding rate levels.
+				// TODO: Change funding rate parameters and see if the numbers are still accurate
+			});
+		}
 	});
 });
