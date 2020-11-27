@@ -6,7 +6,6 @@ const abiDecoder = require('abi-decoder');
 // load the data in explicitly (not programmatically) so webpack knows what to bundle
 const data = {
 	kovan: require('./publish/deployed/kovan'),
-	'kovan-futures': require('./publish/deployed/kovan-futures'),
 	rinkeby: require('./publish/deployed/rinkeby'),
 	ropsten: require('./publish/deployed/ropsten'),
 	mainnet: require('./publish/deployed/mainnet'),
@@ -17,7 +16,7 @@ const data = {
 const assets = require('./publish/assets.json');
 const ovmIgnored = require('./publish/ovm-ignore.json');
 
-const networks = ['local', 'kovan', 'kovan-futures', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
+const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
 const networkToChainId = {
 	mainnet: 1,
@@ -25,7 +24,6 @@ const networkToChainId = {
 	rinkeby: 4,
 	goerli: 5,
 	kovan: 42,
-	'kovan-futures': 42,
 };
 
 const constants = {
@@ -353,7 +351,6 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
 		}),
 		kovan: Object.assign({}, base),
-		'kovan-futures': Object.assign({}, base),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),

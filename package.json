@@ -57,7 +57,6 @@
 		"publish/assets.json",
 		"publish/ovm-ignore.json",
 		"publish/deployed/kovan/*",
-		"publish/deployed/kovan-futures/*",
 		"publish/deployed/rinkeby/*",
 		"publish/deployed/ropsten/*",
 		"publish/deployed/mainnet/*",
