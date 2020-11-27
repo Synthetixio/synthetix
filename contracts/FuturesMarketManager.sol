@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./Proxyable.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
@@ -14,7 +15,7 @@ import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/ISynth.sol";
 
 
-contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
+contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarketManager {
     using SafeMath for uint;
     using AddressListLib for AddressListLib.AddressList;
 
@@ -31,7 +32,11 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, _addressesToCache) {}
+    constructor(
+        address payable _proxy,
+        address _owner,
+        address _resolver
+    ) public Owned(_owner) Proxyable(_proxy) MixinResolver(_resolver, _addressesToCache) {}
 
     /* ========== VIEWS ========== */
 
@@ -80,7 +85,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function addMarkets(address[] calldata marketsToAdd) external onlyOwner {
+    function addMarkets(address[] calldata marketsToAdd) external optionalProxy_onlyOwner {
         uint numOfMarkets = marketsToAdd.length;
         for (uint i; i < numOfMarkets; i++) {
             address market = marketsToAdd[i];
@@ -90,7 +95,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             require(marketForAsset[key] == address(0), "Market already exists for this asset");
             marketForAsset[key] = market;
             _markets.push(market);
-            emit MarketAdded(market);
+            emitMarketAdded(market, key);
         }
     }
 
@@ -103,39 +108,54 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
             require(marketForAsset[key] != address(0), "No market exists for this asset");
             delete marketForAsset[key];
             _markets.remove(market);
-            emit MarketRemoved(market);
+            emitMarketRemoved(market, key);
         }
     }
 
-    function removeMarkets(address[] calldata marketsToRemove) external onlyOwner {
+    function removeMarkets(address[] calldata marketsToRemove) external optionalProxy_onlyOwner {
         return _removeMarkets(marketsToRemove);
     }
 
-    function removeMarketsByAsset(bytes32[] calldata assetsToRemove) external onlyOwner {
+    function removeMarketsByAsset(bytes32[] calldata assetsToRemove) external optionalProxy_onlyOwner {
         _removeMarkets(_marketsForAssets(assetsToRemove));
     }
 
-    function issueSUSD(address account, uint amount) external onlyMarkets(msg.sender) {
+    // Issuing and burn functions can't be called through the proxy
+    function issueSUSD(address account, uint amount) external onlyMarkets {
         _sUSD().issue(account, amount);
     }
 
-    function burnSUSD(address account, uint amount) external onlyMarkets(msg.sender) {
+    function burnSUSD(address account, uint amount) external onlyMarkets {
         _sUSD().burn(account, amount);
     }
 
     /* ========== MODIFIERS ========== */
 
-    function _requireIsMarket(address sender) internal view {
-        require(_markets.contains(sender), "Sender is not a market");
+    function _requireIsMarket() internal view {
+        require(_markets.contains(messageSender) || _markets.contains(msg.sender), "Sender is not a market");
     }
 
-    modifier onlyMarkets(address sender) {
-        _requireIsMarket(sender);
+    modifier onlyMarkets() {
+        _requireIsMarket();
         _;
     }
 
     /* ========== EVENTS ========== */
+    function addressToBytes32(address input) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(input)));
+    }
 
-    event MarketAdded(address market);
-    event MarketRemoved(address market);
+    event MarketAdded(address market, bytes32 indexed asset);
+    bytes32 internal constant MARKETADDED_SIG = keccak256("MarketAdded(address,bytes32)");
+
+    function emitMarketAdded(address market, bytes32 asset) internal {
+        proxy._emit(abi.encode(market), 2, MARKETADDED_SIG, asset, 0, 0);
+    }
+
+    event MarketRemoved(address market, bytes32 indexed asset);
+    bytes32 internal constant MARKETREMOVED_SIG = keccak256("MarketAdded(address,bytes32)");
+
+    function emitMarketRemoved(address market, bytes32 asset) internal {
+        proxy._emit(abi.encode(market), 2, MARKETADDED_SIG, asset, 0, 0);
+    }
 }

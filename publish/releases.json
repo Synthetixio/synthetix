@@ -76,6 +76,7 @@
 			"FuturesMarketBTC",
 			"FuturesMarketETH",
 			"FuturesMarketLINK",
+			"ProxyFuturesMarketManager",
 			"FuturesMarketManager",
 			"FuturesMarketData",
 			"SynthsUSD",

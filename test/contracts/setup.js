@@ -229,7 +229,11 @@ const setupContract = async ({
 			toWei('0.02'), // refund fee
 		],
 		BinaryOptionMarketData: [],
-		FuturesMarketManager: [owner, tryGetAddressOf('AddressResolver')],
+		FuturesMarketManager: [
+			tryGetAddressOf('ProxyFuturesMarketManager'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
 		FuturesMarket: [
 			owner,
 			tryGetAddressOf('AddressResolver'),
@@ -447,10 +451,17 @@ const setupContract = async ({
 				),
 			]);
 		},
+		async FuturesMarketManager() {
+			await Promise.all([
+				cache['ProxyFuturesMarketManager'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyFuturesMarketManager'].address, {
+					from: owner,
+				}),
+			]);
+		},
 		async FuturesMarket() {
 			await cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner });
 		},
-
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
@@ -700,6 +711,7 @@ const setupAllContracts = async ({
 			contract: 'BinaryOptionMarketData',
 			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
+		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
 		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
 		{ contract: 'FuturesMarket', deps: ['AddressResolver', 'FuturesMarketManager'] },
 		{ contract: 'FuturesMarketData', deps: [] },

@@ -62,6 +62,9 @@
 	"FuturesMarketLINK": {
 		"deploy": false
 	},
+	"ProxyFuturesMarketManager": {
+		"deploy": false
+	},
 	"FuturesMarketManager": {
 		"deploy": false
 	},

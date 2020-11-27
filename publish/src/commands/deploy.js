@@ -1173,10 +1173,27 @@ const deploy = async ({
 
 	console.log(gray(`\n------ DEPLOY FUTURES MARKETS ------\n`));
 
+	const proxyFuturesMarketManager = await deployer.deployContract({
+		name: 'ProxyFuturesMarketManager',
+		source: 'Proxy',
+		args: [account],
+	});
+
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesMarketManager',
-		args: [account, addressOf(readProxyForResolver)],
+		args: [addressOf(proxyFuturesMarketManager), account, addressOf(readProxyForResolver)],
 	});
+
+	if (proxyFuturesMarketManager && futuresMarketManager) {
+		await runStep({
+			contract: 'ProxyFuturesMarketManager',
+			target: proxyFuturesMarketManager,
+			read: 'target',
+			expected: input => input === addressOf(futuresMarketManager),
+			write: 'setTarget',
+			writeArg: addressOf(futuresMarketManager),
+		});
+	}
 
 	const futuresAssets = ['BTC', 'ETH', 'LINK'];
 	const deployedFuturesMarkets = [];
