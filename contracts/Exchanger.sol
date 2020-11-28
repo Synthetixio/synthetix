@@ -816,7 +816,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         // Get the exchange fee rate as per destination currencyKey
         exchangeFeeRate = getExchangeFeeRate(destinationCurrencyKey);
 
-        if (sourceCurrencyKey == "sUSD" || destinationCurrencyKey == "sUSD") {
+        if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
             return exchangeFeeRate;
         }
 
@@ -826,7 +826,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73)
         ) {
             // Double the exchange fee
-            exchangeFeeRate.mul(2);
+            exchangeFeeRate = exchangeFeeRate.mul(2);
         }
 
         return exchangeFeeRate;
