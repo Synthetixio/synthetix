@@ -235,6 +235,7 @@ const setupContract = async ({
 			tryGetAddressOf('AddressResolver'),
 		],
 		FuturesMarket: [
+			tryGetAddressOf('ProxyFuturesMarket'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset
@@ -460,7 +461,13 @@ const setupContract = async ({
 			]);
 		},
 		async FuturesMarket() {
-			await cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner });
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+				cache['ProxyFuturesMarket'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyFuturesMarket'].address, {
+					from: owner,
+				}),
+			]);
 		},
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
@@ -713,6 +720,7 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
 		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
+		{ contract: 'Proxy', forContract: 'FuturesMarket' },
 		{ contract: 'FuturesMarket', deps: ['AddressResolver', 'FuturesMarketManager'] },
 		{ contract: 'FuturesMarketData', deps: [] },
 	];

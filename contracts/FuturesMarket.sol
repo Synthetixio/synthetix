@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
+import "./Proxyable.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/IFuturesMarket.sol";
@@ -18,15 +19,18 @@ import "./interfaces/IERC20.sol";
 
 
 // Remaining Functionality
-//     Ensure funding accrues properly
+//     Separated state
+//     Parameters into struct
 //     Pay funding to pool
 //     Separate (simplified) close position function
 //     Modification of existing positions (order submission, order fill, order fee computation)
 //     Margin Adjustment
-//     Proxify / separated state
 //     Functionalise price retrieval for efficiency (only one call to exrates per invocation of any function)
 //     Pausable from SystemStatus (no funding charged in this period, but people can close orders)
 //         Circuit breaker (relies on pausable if a price divergence is detected, part of keeper)
+//     Ensure total system debt is being computed properly.
+//     Complete test coverage
+//     Merge in develop
 //
 // Future (non-testnet) Functionality
 //     Gas tank
@@ -36,6 +40,7 @@ import "./interfaces/IERC20.sol";
 //     Multi-liquidation
 //     Multi-confirmation
 //     max funding rate rate of change
+//     unified settings event/update framework
 
 interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
@@ -45,7 +50,7 @@ interface IFuturesMarketManagerInternal {
 
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarket
-contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMarket {
+contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, IFuturesMarket {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -118,9 +123,20 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         CONTRACT_FUTURESMARKETMANAGER
     ];
 
+    /* ---------- Parameter Names ---------- */
+
+    bytes32 internal constant PARAMETER_EXCHANGEFEE = "exchangeFee";
+    bytes32 internal constant PARAMETER_MAXLEVERAGE = "maxLeverage";
+    bytes32 internal constant PARAMETER_MAXMARKETDEBT = "maxMarketDebt";
+    bytes32 internal constant PARAMETER_MININITIALMARGIN = "minInitialMargin";
+    bytes32 internal constant PARAMETER_MAXFUNDINGRATE = "maxFundingRate";
+    bytes32 internal constant PARAMETER_MAXFUNDINGRATESKEW = "maxFundingRateSkew";
+    bytes32 internal constant PARAMETER_MAXFUNDINGRATEDELTA = "maxFundingRateDelta";
+
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
+        address payable _proxy,
         address _owner,
         address _resolver,
         bytes32 _baseAsset,
@@ -129,25 +145,27 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         uint _maxMarketDebt,
         uint _minInitialMargin,
         uint[3] memory _fundingParameters
-    ) public Owned(_owner) MixinResolver(_resolver, _addressesToCache) {
+    ) public Owned(_owner) Proxyable(_proxy) MixinResolver(_resolver, _addressesToCache) {
         baseAsset = _baseAsset;
 
         exchangeFee = _exchangeFee;
-        emit ExchangeFeeUpdated(_exchangeFee);
+        emit ParameterUpdated(PARAMETER_EXCHANGEFEE, _exchangeFee);
 
         maxLeverage = _maxLeverage;
-        emit MaxLeverageUpdated(_maxLeverage);
+        emit ParameterUpdated(PARAMETER_MAXLEVERAGE, _maxLeverage);
 
         maxMarketDebt = _maxMarketDebt;
-        emit MaxMarketDebtUpdated(_maxMarketDebt);
+        emit ParameterUpdated(PARAMETER_MAXMARKETDEBT, _maxMarketDebt);
 
         minInitialMargin = _minInitialMargin;
-        emit MinInitialMarginUpdated(_minInitialMargin);
+        emit ParameterUpdated(PARAMETER_MININITIALMARGIN, _minInitialMargin);
 
         fundingParameters.maxFundingRate = _fundingParameters[0];
         fundingParameters.maxFundingRateSkew = _fundingParameters[1];
         fundingParameters.maxFundingRateDelta = _fundingParameters[2];
-        emit FundingParametersUpdated(_fundingParameters[0], _fundingParameters[1], _fundingParameters[2]);
+        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATE, _fundingParameters[0]);
+        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATESKEW, _fundingParameters[1]);
+        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATEDELTA, _fundingParameters[2]);
 
         fundingSequence.push(0);
     }
@@ -484,35 +502,38 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
 
     /* ---------- Setters ---------- */
 
-    function setExchangeFee(uint fee) external onlyOwner {
+    function setExchangeFee(uint fee) external optionalProxy_onlyOwner {
         exchangeFee = fee;
-        emit ExchangeFeeUpdated(fee);
+        emit ParameterUpdated(PARAMETER_EXCHANGEFEE, fee);
     }
 
-    function setMaxLeverage(uint leverage) external onlyOwner {
+    function setMaxLeverage(uint leverage) external optionalProxy_onlyOwner {
         maxLeverage = leverage;
-        emit MaxLeverageUpdated(leverage);
+        emit ParameterUpdated(PARAMETER_MAXLEVERAGE, leverage);
     }
 
-    function setMaxMarketDebt(uint cap) external onlyOwner {
+    function setMaxMarketDebt(uint cap) external optionalProxy_onlyOwner {
         maxMarketDebt = cap;
-        emit MaxMarketDebtUpdated(cap);
+        emit ParameterUpdated(PARAMETER_MAXMARKETDEBT, cap);
     }
 
-    function setMinInitialMargin(uint minMargin) external onlyOwner {
+    function setMinInitialMargin(uint minMargin) external optionalProxy_onlyOwner {
         minInitialMargin = minMargin;
-        emit MinInitialMarginUpdated(minMargin);
+        emit ParameterUpdated(PARAMETER_MININITIALMARGIN, minMargin);
     }
 
     function setFundingParameters(
         uint maxFundingRate,
         uint maxFundingRateSkew,
         uint maxFundingRateDelta
-    ) external onlyOwner {
+    ) external optionalProxy_onlyOwner {
         fundingParameters.maxFundingRate = maxFundingRate;
         fundingParameters.maxFundingRateSkew = maxFundingRateSkew;
         fundingParameters.maxFundingRateDelta = maxFundingRateDelta;
-        emit FundingParametersUpdated(maxFundingRate, maxFundingRateSkew, maxFundingRateDelta);
+
+        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATE, maxFundingRate);
+        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATESKEW, maxFundingRateSkew);
+        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATEDELTA, maxFundingRateDelta);
     }
 
     /* ---------- Market Operations ---------- */
@@ -557,26 +578,31 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         pendingOrderValue = pendingOrderValue.sub(absoluteMargin);
 
         delete orders[account];
-        emit OrderCancelled(account);
+        emitOrderCancelled(account);
     }
 
-    function cancelOrder() external {
-        require(orders[msg.sender].pending, "No pending order");
-        (, bool liquidated) = _updateRemainingMargin(msg.sender);
+    function cancelOrder() external optionalProxy {
+        address sender = messageSender;
+        require(orders[sender].pending, "No pending order");
+        (, bool liquidated) = _updateRemainingMargin(sender);
         // Liquidations cancel pending orders.
         if (!liquidated) {
-            _cancelOrder(msg.sender);
+            _cancelOrder(sender);
         }
     }
 
     // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
     // TODO: If they are owed anything because the position is being closed, then remit it at confirmation.
     // TODO: What to do if an order already exists.
-    function _submitOrder(int margin, uint leverage) internal {
+    function _submitOrder(
+        address sender,
+        int margin,
+        uint leverage
+    ) internal {
         // First cancel any open order.
-        Order storage order = orders[msg.sender];
+        Order storage order = orders[sender];
         if (order.pending) {
-            _cancelOrder(msg.sender);
+            _cancelOrder(sender);
         }
 
         // Either argument being zero will cancel the whole order
@@ -588,11 +614,11 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         // Compute the fee owed.
         (uint price, bool isInvalid) = _priceAndInvalid(_exchangeRates());
         _requireNotInvalid(isInvalid);
-        uint fee = _orderFee(margin, leverage, positions[msg.sender].size, price);
+        uint fee = _orderFee(margin, leverage, positions[sender].size, price);
 
         // Check that they have sufficient sUSD balance to cover the desired margin plus fee, and burn it.
         uint absoluteMargin = _abs(margin);
-        uint balance = _sUSD().balanceOf(msg.sender);
+        uint balance = _sUSD().balanceOf(sender);
         uint totalCharge = absoluteMargin.add(fee);
         // TODO: This should not charge anything if they're DECREASING their position.
         require(totalCharge <= balance, "Insufficient balance");
@@ -606,7 +632,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
                 uint debt = _marketDebt(price);
                 require(debt <= maxMarketDebt, "Max market debt exceeded");
             }
-            _manager().burnSUSD(msg.sender, totalCharge);
+            _manager().burnSUSD(sender, totalCharge);
         }
 
         // Lodge the order, which can be confirmed at the next price update
@@ -616,26 +642,28 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         order.leverage = leverage;
         order.fee = fee;
         order.roundId = roundId;
-        emit OrderSubmitted(msg.sender, margin, leverage, fee, roundId);
+        emitOrderSubmitted(sender, margin, leverage, fee, roundId);
     }
 
-    function submitOrder(int margin, uint leverage) external {
+    function submitOrder(int margin, uint leverage) external optionalProxy {
         require(leverage <= maxLeverage, "Max leverage exceeded");
         require(minInitialMargin <= _abs(margin), "Insufficient margin");
-        _updateRemainingMargin(msg.sender);
-        _submitOrder(margin, leverage);
+        address sender = messageSender;
+        _updateRemainingMargin(sender);
+        _submitOrder(sender, margin, leverage);
     }
 
-    function closePosition() external {
-        (, bool liquidated) = _updateRemainingMargin(msg.sender);
+    function closePosition() external optionalProxy {
+        address sender = messageSender;
+        (, bool liquidated) = _updateRemainingMargin(sender);
         // No need to close the order if it was liquidated
         if (!liquidated) {
-            _submitOrder(0, 0);
+            _submitOrder(sender, 0, 0);
         }
     }
 
     // TODO: What to do if an order already exists.
-    function confirmOrder(address account) external {
+    function confirmOrder(address account) external optionalProxy {
         // TODO: Send the margin delta? How to handle pnl/funding accrued during order pending
         // TODO: Apply this difference to the pending margin
         (uint entryIndex, bool liquidated) = _updateRemainingMargin(account);
@@ -682,7 +710,7 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         }
 
         delete orders[account];
-        emit OrderConfirmed(account, order.margin, newSize, order.fee, entryPrice, entryIndex);
+        emitOrderConfirmed(account, order.margin, newSize, entryPrice, entryIndex);
     }
 
     function _liquidatePosition(
@@ -720,23 +748,89 @@ contract FuturesMarket is Owned, MixinResolver, MixinSystemSettings, IFuturesMar
         // Issue the reward to the liquidator.
         _manager().issueSUSD(liquidator, liquidationFee);
 
-        emit PositionLiquidated(account, liquidator, positionSize, price);
+        emitPositionLiquidated(account, liquidator, positionSize, price);
     }
 
-    function liquidatePosition(address account) external {
+    function liquidatePosition(address account) external optionalProxy {
         uint sequenceLength = _recomputeFunding();
-        _liquidatePosition(account, msg.sender, sequenceLength);
+        _liquidatePosition(account, messageSender, sequenceLength);
     }
 
     /* ========== EVENTS ========== */
+    function addressToBytes32(address input) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(input)));
+    }
 
-    event ExchangeFeeUpdated(uint fee);
-    event MaxLeverageUpdated(uint leverage);
-    event MaxMarketDebtUpdated(uint cap);
-    event MinInitialMarginUpdated(uint minMargin);
-    event FundingParametersUpdated(uint maxFundingRate, uint maxFundingRateSkew, uint maxFundingRateDelta);
+    event ParameterUpdated(bytes32 indexed parameter, uint value);
+    bytes32 internal constant PARAMETERUPDATED_SIG = keccak256("ParameterUpdated(bytes32,value)");
+
+    function emitParameterUpdated(bytes32 parameter, uint value) internal {
+        proxy._emit(abi.encode(value), 2, PARAMETERUPDATED_SIG, parameter, 0, 0);
+    }
+
     event OrderSubmitted(address indexed account, int margin, uint leverage, uint fee, uint indexed roundId);
-    event OrderConfirmed(address indexed account, int margin, int size, uint fee, uint entryPrice, uint entryIndex);
+    bytes32 internal constant ORDERSUBMITTED_SIG = keccak256("OrderSubmitted(address,int,uint,uint,uint)");
+
+    function emitOrderSubmitted(
+        address account,
+        int margin,
+        uint leverage,
+        uint fee,
+        uint roundId
+    ) internal {
+        proxy._emit(
+            abi.encode(margin, leverage, fee),
+            3,
+            ORDERSUBMITTED_SIG,
+            addressToBytes32(account),
+            bytes32(roundId),
+            0
+        );
+    }
+
+    event OrderConfirmed(address indexed account, int margin, int size, uint entryPrice, uint entryIndex);
+    bytes32 internal constant ORDERCONFIRMED_SIG = keccak256("OrderConfirmed(address,int,int,uint,uint)");
+
+    function emitOrderConfirmed(
+        address account,
+        int margin,
+        int size,
+        uint entryPrice,
+        uint entryIndex
+    ) internal {
+        proxy._emit(
+            abi.encode(margin, size, entryPrice, entryIndex),
+            2,
+            ORDERCONFIRMED_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
     event OrderCancelled(address indexed account);
-    event PositionLiquidated(address indexed account, address indexed liquidator, int size, uint liquidationPrice);
+    bytes32 internal constant ORDERCANCELLED_SIG = keccak256("OrderCancelled(address)");
+
+    function emitOrderCancelled(address account) internal {
+        proxy._emit(abi.encode(), 2, ORDERCANCELLED_SIG, addressToBytes32(account), 0, 0);
+    }
+
+    event PositionLiquidated(address indexed account, address indexed liquidator, int size, uint price);
+    bytes32 internal constant POSITIONLIQUIDATED_SIG = keccak256("PositionLiquidated(address,address,int,uint)");
+
+    function emitPositionLiquidated(
+        address account,
+        address liquidator,
+        int size,
+        uint price
+    ) internal {
+        proxy._emit(
+            abi.encode(size, price),
+            3,
+            POSITIONLIQUIDATED_SIG,
+            addressToBytes32(account),
+            addressToBytes32(liquidator),
+            0
+        );
+    }
 }

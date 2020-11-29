@@ -153,9 +153,6 @@ contract('FuturesMarket', accounts => {
 						leverage,
 					});
 
-					const { fromUnit } = require('../utils')();
-					console.log(fromUnit(await futuresMarket.marketSkew()));
-
 					const notional = multiplyDecimalRound(margin.abs(), leverage);
 					const fee = multiplyDecimalRound(notional, exchangeFee).div(toBN(2));
 					assert.bnEqual(await futuresMarket.orderFee(trader, margin, leverage), fee);
@@ -557,7 +554,7 @@ contract('FuturesMarket', accounts => {
 					market: futuresMarket,
 					account: marginTrader[1],
 					fillPrice: toUnit('100'),
-					margin: marginTrader[0],
+					margin: toUnit(marginTrader[0]),
 					leverage: toUnit('10'),
 				});
 			}

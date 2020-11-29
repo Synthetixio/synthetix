@@ -1210,10 +1210,20 @@ const deploy = async ({
 	];
 
 	for (const asset of futuresAssets) {
-		const result = await deployer.deployContract({
-			name: 'FuturesMarket' + asset,
+		const marketName = 'FuturesMarket' + asset;
+		const proxyName = 'Proxy' + marketName;
+
+		const proxyFuturesMarket = await deployer.deployContract({
+			name: proxyName,
+			source: 'Proxy',
+			args: [account],
+		});
+
+		const futuresMarket = await deployer.deployContract({
+			name: marketName,
 			source: 'FuturesMarket',
 			args: [
+				addressOf(proxyFuturesMarket),
 				account,
 				addressOf(readProxyForResolver),
 				toBytes32('s' + asset),
@@ -1225,14 +1235,25 @@ const deploy = async ({
 			],
 		});
 
-		if (result !== undefined) {
-			deployedFuturesMarkets.push(result.options.address);
+		if (futuresMarket) {
+			deployedFuturesMarkets.push(addressOf(futuresMarket));
+		}
+
+		if (proxyFuturesMarket && futuresMarket) {
+			await runStep({
+				contract: proxyName,
+				target: proxyFuturesMarket,
+				read: 'target',
+				expected: input => input === addressOf(futuresMarket),
+				write: 'setTarget',
+				writeArg: addressOf(futuresMarket),
+			});
 		}
 	}
 
 	// Now replace the relevant markets in the manager (if any)
 
-	if (deployedFuturesMarkets.length > 0) {
+	if (futuresMarketManager && deployedFuturesMarkets.length > 0) {
 		const numManagerKnownMarkets = await futuresMarketManager.methods.numMarkets().call();
 		const managerKnownMarkets = Array.from(
 			await futuresMarketManager.methods.markets(0, numManagerKnownMarkets).call()

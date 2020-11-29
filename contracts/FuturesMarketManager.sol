@@ -141,6 +141,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     }
 
     /* ========== EVENTS ========== */
+
     function addressToBytes32(address input) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(input)));
     }
