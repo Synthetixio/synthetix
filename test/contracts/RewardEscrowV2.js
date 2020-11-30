@@ -14,15 +14,15 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 // 	constants: { ZERO_ADDRESS },
 // } = require('../..');
 
-contract('BaseRewardEscrowV2', async accounts => {
+contract('RewardEscrowV2', async accounts => {
 	const [, owner, account1] = accounts;
-	let baseRewardEscrowV2;
+	let rewardEscrowV2;
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
-		({ BaseRewardEscrowV2: baseRewardEscrowV2 } = await setupAllContracts({
+		({ RewardEscrowV2: rewardEscrowV2 } = await setupAllContracts({
 			accounts,
-			contracts: ['BaseRewardEscrowV2'],
+			contracts: ['RewardEscrowV2'],
 		}));
 	});
 
@@ -30,32 +30,22 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 	it('ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: baseRewardEscrowV2.abi,
-			ignoreParents: ['MixinResolver'],
-			expected: [
-				'appendVestingEntry',
-				'startMergingWindow',
-				'setAccountMergingDuration',
-				'nominateAccountToMerge',
-				'mergeAccount',
-				'migrateVestingSchedule',
-				'migrateAccountEscrowBalances',
-				'burnForMigration',
-				'importVestingEntries',
-			],
+			abi: rewardEscrowV2.abi,
+			ignoreParents: ['BaseRewardEscrowV2'],
+			expected: [],
 		});
 	});
 
 	describe('Constructor & Settings ', async () => {
 		it('should set owner on contructor', async () => {
-			const ownerAddress = await baseRewardEscrowV2.owner();
+			const ownerAddress = await rewardEscrowV2.owner();
 			assert.equal(ownerAddress, owner);
 		});
 	});
 
 	describe('There are no escrow entries initially', async () => {
 		it('then numVestingEntries should return 0', async () => {
-			assert.equal(0, await baseRewardEscrowV2.numVestingEntries(account1));
+			assert.equal(0, await rewardEscrowV2.numVestingEntries(account1));
 		});
 	});
 });
