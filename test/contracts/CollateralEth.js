@@ -514,32 +514,77 @@ contract('CollateralEth', async accounts => {
 				it('should update the base interest rate', async () => {
 					assert.bnEqual(await ceth.baseInterestRate(), toUnit(2));
 				});
+				it('should allow the base interest rate to be  0', async () => {
+					await ceth.setBaseInterestRate(toUnit(0), { from: owner });
+					assert.bnEqual(await ceth.baseInterestRate(), toUnit(0));
+				});
 			});
 		});
 
 		describe('setLiquidationPenalty', async () => {
-			it('should fail if not called by the owner', async () => {
-				await assert.revert(
-					ceth.setLiquidationPenalty(toUnit(1), { from: account1 }),
-					'Only the contract owner may perform this action'
-				);
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						ceth.setLiquidationPenalty(toUnit(1), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+				it('should fail if 0 is passed', async () => {
+					await assert.revert(
+						ceth.setLiquidationPenalty(toUnit(0), { from: owner }),
+						'Must be greater than 0'
+					);
+				});
 			});
 			describe('when it succeeds', async () => {
 				beforeEach(async () => {
 					await ceth.setLiquidationPenalty(toUnit(0.2), { from: owner });
 				});
-				it(' should update the liquidation penalty', async () => {
+				it('should update the liquidation penalty', async () => {
 					assert.bnEqual(await ceth.liquidationPenalty(), toUnit(0.2));
 				});
 			});
 		});
 
+		describe('setIssueFeeRate', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						ceth.setIssueFeeRate(toUnit(1), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await ceth.setIssueFeeRate(toUnit(0.2), { from: owner });
+				});
+				it('should update the liquidation penalty', async () => {
+					assert.bnEqual(await ceth.issueFeeRate(), toUnit(0.2));
+				});
+				it('should allow the issue fee rate to be  0', async () => {
+					await ceth.setIssueFeeRate(toUnit(0), { from: owner });
+					assert.bnEqual(await ceth.issueFeeRate(), toUnit(0));
+				});
+			});
+		});
+
 		describe('setManager', async () => {
-			it('should fail if not called by the owner', async () => {
-				await assert.revert(
-					ceth.setManager(ZERO_ADDRESS, { from: account1 }),
-					'Only the contract owner may perform this action'
-				);
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						ceth.setManager(ZERO_ADDRESS, { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await ceth.setManager(ZERO_ADDRESS, { from: owner });
+				});
+				it('should update the manager', async () => {
+					assert.bnEqual(await ceth.manager(), ZERO_ADDRESS);
+				});
 			});
 		});
 	});
