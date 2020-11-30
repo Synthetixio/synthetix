@@ -33,6 +33,7 @@ import "./interfaces/IERC20.sol";
 //     Merge in develop
 //
 // Future (non-testnet) Functionality
+//     Consider settlements when issuing/burning
 //     Gas tank
 //     Multi order confirmation
 //     Debt caching
@@ -494,37 +495,37 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     function setExchangeFee(uint exchangeFee) external optionalProxy_onlyOwner {
         parameters.exchangeFee = exchangeFee;
-        emit ParameterUpdated(PARAMETER_EXCHANGEFEE, exchangeFee);
+        emitParameterUpdated(PARAMETER_EXCHANGEFEE, exchangeFee);
     }
 
     function setMaxLeverage(uint maxLeverage) external optionalProxy_onlyOwner {
         parameters.maxLeverage = maxLeverage;
-        emit ParameterUpdated(PARAMETER_MAXLEVERAGE, maxLeverage);
+        emitParameterUpdated(PARAMETER_MAXLEVERAGE, maxLeverage);
     }
 
     function setMaxMarketDebt(uint maxMarketDebt) external optionalProxy_onlyOwner {
         parameters.maxMarketDebt = maxMarketDebt;
-        emit ParameterUpdated(PARAMETER_MAXMARKETDEBT, maxMarketDebt);
+        emitParameterUpdated(PARAMETER_MAXMARKETDEBT, maxMarketDebt);
     }
 
     function setMinInitialMargin(uint minInitialMargin) external optionalProxy_onlyOwner {
         parameters.minInitialMargin = minInitialMargin;
-        emit ParameterUpdated(PARAMETER_MININITIALMARGIN, minInitialMargin);
+        emitParameterUpdated(PARAMETER_MININITIALMARGIN, minInitialMargin);
     }
 
     function setMaxFundingRate(uint maxFundingRate) external optionalProxy_onlyOwner {
         parameters.maxFundingRate = maxFundingRate;
-        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATE, maxFundingRate);
+        emitParameterUpdated(PARAMETER_MAXFUNDINGRATE, maxFundingRate);
     }
 
     function setMaxFundingRateSkew(uint maxFundingRateSkew) external optionalProxy_onlyOwner {
         parameters.maxFundingRateSkew = maxFundingRateSkew;
-        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATESKEW, maxFundingRateSkew);
+        emitParameterUpdated(PARAMETER_MAXFUNDINGRATESKEW, maxFundingRateSkew);
     }
 
     function setMaxFundingRateDelta(uint maxFundingRateDelta) external optionalProxy_onlyOwner {
         parameters.maxFundingRateDelta = maxFundingRateDelta;
-        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATEDELTA, maxFundingRateDelta);
+        emitParameterUpdated(PARAMETER_MAXFUNDINGRATEDELTA, maxFundingRateDelta);
     }
 
     /* ---------- Market Operations ---------- */
@@ -748,19 +749,20 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     /* ========== EVENTS ========== */
+
     function addressToBytes32(address input) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(input)));
     }
 
     event ParameterUpdated(bytes32 indexed parameter, uint value);
-    bytes32 internal constant PARAMETERUPDATED_SIG = keccak256("ParameterUpdated(bytes32,value)");
+    bytes32 internal constant SIG_PARAMETERUPDATED = keccak256("ParameterUpdated(bytes32,uint256)");
 
     function emitParameterUpdated(bytes32 parameter, uint value) internal {
-        proxy._emit(abi.encode(value), 2, PARAMETERUPDATED_SIG, parameter, 0, 0);
+        proxy._emit(abi.encode(value), 2, SIG_PARAMETERUPDATED, parameter, 0, 0);
     }
 
     event OrderSubmitted(address indexed account, int margin, uint leverage, uint fee, uint indexed roundId);
-    bytes32 internal constant ORDERSUBMITTED_SIG = keccak256("OrderSubmitted(address,int,uint,uint,uint)");
+    bytes32 internal constant SIG_ORDERSUBMITTED = keccak256("OrderSubmitted(address,int256,uint256,uint256,uint256)");
 
     function emitOrderSubmitted(
         address account,
@@ -772,7 +774,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         proxy._emit(
             abi.encode(margin, leverage, fee),
             3,
-            ORDERSUBMITTED_SIG,
+            SIG_ORDERSUBMITTED,
             addressToBytes32(account),
             bytes32(roundId),
             0
@@ -780,7 +782,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     event OrderConfirmed(address indexed account, int margin, int size, uint entryPrice, uint entryIndex);
-    bytes32 internal constant ORDERCONFIRMED_SIG = keccak256("OrderConfirmed(address,int,int,uint,uint)");
+    bytes32 internal constant SIG_ORDERCONFIRMED = keccak256("OrderConfirmed(address,int256,int256,uint256,uint256)");
 
     function emitOrderConfirmed(
         address account,
@@ -792,7 +794,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         proxy._emit(
             abi.encode(margin, size, entryPrice, entryIndex),
             2,
-            ORDERCONFIRMED_SIG,
+            SIG_ORDERCONFIRMED,
             addressToBytes32(account),
             0,
             0
@@ -800,14 +802,14 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     event OrderCancelled(address indexed account);
-    bytes32 internal constant ORDERCANCELLED_SIG = keccak256("OrderCancelled(address)");
+    bytes32 internal constant SIG_ORDERCANCELLED = keccak256("OrderCancelled(address)");
 
     function emitOrderCancelled(address account) internal {
-        proxy._emit(abi.encode(), 2, ORDERCANCELLED_SIG, addressToBytes32(account), 0, 0);
+        proxy._emit(abi.encode(), 2, SIG_ORDERCANCELLED, addressToBytes32(account), 0, 0);
     }
 
     event PositionLiquidated(address indexed account, address indexed liquidator, int size, uint price);
-    bytes32 internal constant POSITIONLIQUIDATED_SIG = keccak256("PositionLiquidated(address,address,int,uint)");
+    bytes32 internal constant SIG_POSITIONLIQUIDATED = keccak256("PositionLiquidated(address,address,int256,uint256)");
 
     function emitPositionLiquidated(
         address account,
@@ -818,7 +820,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         proxy._emit(
             abi.encode(size, price),
             3,
-            POSITIONLIQUIDATED_SIG,
+            SIG_POSITIONLIQUIDATED,
             addressToBytes32(account),
             addressToBytes32(liquidator),
             0

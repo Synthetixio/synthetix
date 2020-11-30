@@ -6,9 +6,17 @@ const { toBN } = web3.utils;
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { getDecodedLogs, decodedEventEqual } = require('./helpers');
 
 contract('FuturesMarket', accounts => {
-	let systemSettings, futuresMarketManager, futuresMarket, exchangeRates, oracle, sUSD;
+	let systemSettings,
+		futuresMarketManager,
+		proxyFuturesMarket,
+		futuresMarket,
+		exchangeRates,
+		oracle,
+		sUSD,
+		feePool;
 
 	const owner = accounts[1];
 	const trader = accounts[2];
@@ -39,15 +47,18 @@ contract('FuturesMarket', accounts => {
 	before(async () => {
 		({
 			FuturesMarketManager: futuresMarketManager,
+			ProxyFuturesMarket: proxyFuturesMarket,
 			FuturesMarket: futuresMarket,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSD,
+			FeePool: feePool,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
 			contracts: [
 				'FuturesMarketManager',
+				'ProxyFuturesMarket',
 				'FuturesMarket',
 				'AddressResolver',
 				'FeePool',
@@ -97,6 +108,49 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(result.assetPrice, price);
 			assert.isFalse(result.isInvalid);
 			assert.bnEqual(await futuresMarket.currentRoundId(), toBN(roundId).add(toBN(1)));
+		});
+
+		describe('Setters', async () => {
+			it('exchange fee', async () => {
+				const parameter = toBytes32('exchangeFee');
+				const value = toUnit('0.01');
+				const tx = await futuresMarket.setExchangeFee(value, { from: owner });
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
+
+				assert.equal(decodedLogs.length, 1);
+				decodedEventEqual({
+					event: 'ParameterUpdated',
+					emittedFrom: proxyFuturesMarket.address,
+					args: [parameter, value],
+					log: decodedLogs[0],
+				});
+
+				assert.bnEqual((await futuresMarket.parameters()).exchangeFee, value);
+			});
+
+			it('max leverage', async () => {
+				assert.isTrue(false);
+			});
+
+			it('max market debt', async () => {
+				assert.isTrue(false);
+			});
+
+			it('min initial margin', async () => {
+				assert.isTrue(false);
+			});
+
+			it('max funding rate', async () => {
+				assert.isTrue(false);
+			});
+
+			it('max funding rate skew', async () => {
+				assert.isTrue(false);
+			});
+
+			it('max funding rate delta', async () => {
+				assert.isTrue(false);
+			});
 		});
 	});
 
@@ -184,20 +238,33 @@ contract('FuturesMarket', accounts => {
 			const preBalance = await sUSD.balanceOf(trader);
 			const pendingOrderValue = await futuresMarket.pendingOrderValue();
 
-			await futuresMarket.submitOrder(margin, leverage, { from: trader });
+			const tx = await futuresMarket.submitOrder(margin, leverage, { from: trader });
 
+			const roundId = await futuresMarket.currentRoundId();
 			const order = await futuresMarket.orders(trader);
 			assert.isTrue(order.pending);
 			assert.bnEqual(order.margin, margin);
 			assert.bnEqual(order.leverage, leverage);
-			assert.bnEqual(order.roundId, await futuresMarket.currentRoundId());
+			assert.bnEqual(order.roundId, roundId);
 
 			assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(margin.add(fee)));
 			assert.bnEqual(await futuresMarket.pendingOrderValue(), pendingOrderValue.add(margin));
-		});
 
-		it('submitting orders emits events properly.', async () => {
-			assert.isTrue(false);
+			// And it properly emits the relevant events.
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			assert.equal(decodedLogs.length, 2);
+			decodedEventEqual({
+				event: 'Burned',
+				emittedFrom: sUSD.address,
+				args: [trader, margin.add(fee)],
+				log: decodedLogs[0],
+			});
+			decodedEventEqual({
+				event: 'OrderSubmitted',
+				emittedFrom: proxyFuturesMarket.address,
+				args: [trader, margin, leverage, fee, roundId],
+				log: decodedLogs[1],
+			});
 		});
 
 		it('submitting a second order cancels the first one.', async () => {
@@ -231,11 +298,12 @@ contract('FuturesMarket', accounts => {
 			const preBalance = await sUSD.balanceOf(trader);
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');
+			const fee = await futuresMarket.orderFee(trader, margin, leverage);
 			await futuresMarket.submitOrder(margin, leverage, { from: trader });
 
 			const pendingOrderValue = await futuresMarket.pendingOrderValue();
 
-			await futuresMarket.cancelOrder({ from: trader });
+			const tx = await futuresMarket.cancelOrder({ from: trader });
 
 			const order = await futuresMarket.orders(trader);
 			assert.isFalse(order.pending);
@@ -244,6 +312,22 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.roundId, toUnit(0));
 			assert.bnEqual(await sUSD.balanceOf(trader), preBalance);
 			assert.bnEqual(await futuresMarket.pendingOrderValue(), pendingOrderValue.sub(margin));
+
+			// And the relevant events are properly emitted
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			assert.equal(decodedLogs.length, 2);
+			decodedEventEqual({
+				event: 'Issued',
+				emittedFrom: sUSD.address,
+				args: [trader, margin.add(fee)],
+				log: decodedLogs[0],
+			});
+			decodedEventEqual({
+				event: 'OrderCancelled',
+				emittedFrom: proxyFuturesMarket.address,
+				args: [trader],
+				log: decodedLogs[1],
+			});
 		});
 
 		it('properly emits events', async () => {
@@ -259,6 +343,7 @@ contract('FuturesMarket', accounts => {
 		it('can confirm a pending order once a new price arrives', async () => {
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');
+			const fee = await futuresMarket.orderFee(trader, margin, leverage);
 			await futuresMarket.submitOrder(margin, leverage, { from: trader });
 
 			const price = toUnit('200');
@@ -267,7 +352,7 @@ contract('FuturesMarket', accounts => {
 				from: oracle,
 			});
 
-			await futuresMarket.confirmOrder(trader);
+			const tx = await futuresMarket.confirmOrder(trader);
 
 			const size = toUnit('50');
 
@@ -293,6 +378,22 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.margin, toUnit(0));
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
+
+			// And the relevant events are properly emitted
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			assert.equal(decodedLogs.length, 2);
+			decodedEventEqual({
+				event: 'Issued',
+				emittedFrom: sUSD.address,
+				args: [await feePool.FEE_ADDRESS(), fee],
+				log: decodedLogs[0],
+			});
+			decodedEventEqual({
+				event: 'OrderConfirmed',
+				emittedFrom: proxyFuturesMarket.address,
+				args: [trader, margin, size, price, toBN(2)],
+				log: decodedLogs[1],
+			});
 		});
 
 		it('cannot confirm a pending order before a price has arrived', async () => {
@@ -501,13 +602,6 @@ contract('FuturesMarket', accounts => {
 
 			const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
 
-			assert.eventEqual(tx.logs[0], 'PositionLiquidated', {
-				account: trader,
-				liquidator: noBalance,
-				size: positionSize,
-				liquidationPrice: price,
-			});
-
 			// TODO: Position is wiped out.
 			const position = await futuresMarket.positions(trader, { from: noBalance });
 			assert.bnEqual(position.margin, toUnit(0));
@@ -522,6 +616,25 @@ contract('FuturesMarket', accounts => {
 			// entrymargin minus notional skew
 			// market size
 			// market skew
+
+			// TODO: Ensure liquidation price is accurate here.
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+
+			console.log(decodedLogs[1]);
+
+			assert.equal(decodedLogs.length, 2);
+			decodedEventEqual({
+				event: 'Issued',
+				emittedFrom: sUSD.address,
+				args: [noBalance, liquidationFee],
+				log: decodedLogs[0],
+			});
+			decodedEventEqual({
+				event: 'PositionLiquidated',
+				emittedFrom: proxyFuturesMarket.address,
+				args: [trader, noBalance, positionSize, price],
+				log: decodedLogs[1],
+			});
 			assert.isTrue(false);
 		});
 
