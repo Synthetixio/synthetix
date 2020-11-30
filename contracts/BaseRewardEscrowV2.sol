@@ -20,7 +20,7 @@ import "./interfaces/ISynthetix.sol";
 contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
     using SafeMath for uint;
 
-    mapping(address => mapping(uint256 => VestingEntry)) public vestingSchedules;
+    mapping(address => mapping(uint256 => VestingEntries.VestingEntry)) public vestingSchedules;
 
     mapping(address => uint256[]) public accountVestingEntryIDs;
 
@@ -59,7 +59,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner) public Owned(_owner) {
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
         nextEntryId = 1;
     }
 
@@ -77,8 +77,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         revert("Cannot be run on this layer");
     }
 
-    /* ========== SETTERS ========== */
-
     /* ========== VIEW FUNCTIONS ========== */
 
     /**
@@ -86,10 +84,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
      */
     function balanceOf(address account) public view returns (uint) {
         return totalEscrowedAccountBalance[account];
-    }
-
-    function _numVestingEntries(address account) internal view returns (uint) {
-        return accountVestingEntryIDs[account].length;
     }
 
     /**
@@ -109,45 +103,11 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         return accountVestingEntryIDs[account].length;
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
-    function _appendVestingEntry(
-        address account,
-        uint quantity,
-        uint duration
-    ) internal {
-        /* No empty or already-passed vesting entries allowed. */
-        require(quantity != 0, "Quantity cannot be zero");
-
-        /* There must be enough balance in the contract to provide for the vesting entry. */
-        totalEscrowedBalance = totalEscrowedBalance.add(quantity);
-        require(
-            totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
-            "Must be enough balance in the contract to provide for the vesting entry"
-        );
-
-        /* Escrow the tokens for duration. */
-        uint endTime = now + duration;
-
-        /* Add quantity to account's escrowed balance */
-        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(quantity);
-
-        uint entryID = nextEntryId;
-        vestingSchedules[account][entryID] = VestingEntry({
-            endTime: uint64(endTime),
-            duration: uint64(duration),
-            lastVested: 0,
-            escrowAmount: quantity,
-            remainingAmount: quantity
-        });
-
-        accountVestingEntryIDs[account].push(entryID);
-
-        /* Increment the next entry id. */
-        nextEntryId = nextEntryId.add(1);
-
-        emit VestingEntryCreated(account, now, quantity, duration);
+    function vestingScheduleMigrationPending(address account) public view returns (bool) {
+        return totalEscrowedAccountBalance[account] > 0 && _numVestingEntries(account) == 0;
     }
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
      * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
@@ -220,22 +180,19 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         _notImplemented();
     }
 
-    /* Migration for owner to migrate escrowed and vested account balances */
     function migrateAccountEscrowBalances(
         address[] calldata accounts,
         uint256[] calldata escrowBalances,
         uint256[] calldata vestedBalances
-    ) external {}
-
-    function vestingScheduleMigrationPending(address account) public view returns (bool) {
-        return totalEscrowedAccountBalance[account] > 0 && _numVestingEntries(account) == 0;
+    ) external {
+        _notImplemented();
     }
 
     /* ========== L2 MIGRATION ========== */
 
     function burnForMigration(address account, uint[] calldata entryIDs)
         external
-        returns (uint256 escrowedAccountBalance, VestingEntry[] memory vestingEntries)
+        returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries)
     {
         _notImplemented();
     }
@@ -243,12 +200,52 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     function importVestingEntries(
         address account,
         uint256 escrowedAmount,
-        VestingEntry[] calldata vestingEntries
+        VestingEntries.VestingEntry[] calldata vestingEntries
     ) external {
         _notImplemented();
     }
 
-    function _importVestingEntry(address account, VestingEntry memory entry) internal {
+    /* ========== INTERNALS ========== */
+
+    function _appendVestingEntry(
+        address account,
+        uint quantity,
+        uint duration
+    ) internal {
+        /* No empty or already-passed vesting entries allowed. */
+        require(quantity != 0, "Quantity cannot be zero");
+
+        /* There must be enough balance in the contract to provide for the vesting entry. */
+        totalEscrowedBalance = totalEscrowedBalance.add(quantity);
+        require(
+            totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
+            "Must be enough balance in the contract to provide for the vesting entry"
+        );
+
+        /* Escrow the tokens for duration. */
+        uint endTime = now + duration;
+
+        /* Add quantity to account's escrowed balance */
+        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(quantity);
+
+        uint entryID = nextEntryId;
+        vestingSchedules[account][entryID] = VestingEntries.VestingEntry({
+            endTime: uint64(endTime),
+            duration: uint64(duration),
+            lastVested: 0,
+            escrowAmount: quantity,
+            remainingAmount: quantity
+        });
+
+        accountVestingEntryIDs[account].push(entryID);
+
+        /* Increment the next entry id. */
+        nextEntryId = nextEntryId.add(1);
+
+        emit VestingEntryCreated(account, now, quantity, duration);
+    }
+
+    function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
         uint entryID = nextEntryId;
         vestingSchedules[account][entryID] = entry;
 
@@ -257,6 +254,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
         /* Increment the next entry id. */
         nextEntryId = nextEntryId.add(1);
+    }
+
+    function _numVestingEntries(address account) internal view returns (uint) {
+        return accountVestingEntryIDs[account].length;
     }
 
     /* ========== MODIFIERS ========== */

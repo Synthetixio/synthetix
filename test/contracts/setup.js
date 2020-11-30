@@ -193,6 +193,7 @@ const setupContract = async ({
 			tryGetAddressOf('ProxyFeePool'),
 		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
+		BaseRewardEscrowV2: [owner, tryGetAddressOf('AddressResolver')],
 		SynthetixEscrow: [owner, tryGetAddressOf('Synthetix')],
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
@@ -529,6 +530,11 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'MintableSynthetix' },
 		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
 		{ contract: 'RewardEscrow' },
+		{
+			contract: 'BaseRewardEscrowV2',
+			deps: ['AddressResolver'],
+			mocks: ['Synthetix', 'FeePool'],
+		},
 		{ contract: 'SynthetixEscrow' },
 		{ contract: 'FeePoolEternalStorage' },
 		{ contract: 'FeePoolState', mocks: ['FeePool'] },

@@ -18,7 +18,11 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, IRewardEscrow _oldRewardEscrow) public BaseRewardEscrowV2(_owner) {
+    constructor(
+        address _owner,
+        address _resolver,
+        IRewardEscrow _oldRewardEscrow
+    ) public BaseRewardEscrowV2(_owner, _resolver) {
         oldRewardEscrow = _oldRewardEscrow;
         appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM);
     }
@@ -56,7 +60,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
             _importVestingEntry(
                 addressToMigrate,
-                VestingEntry({
+                VestingEntries.VestingEntry({
                     endTime: uint64(vestingSchedule[TIME_INDEX]),
                     duration: uint64(52 weeks),
                     lastVested: 0,
@@ -119,17 +123,17 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     function burnForMigration(address account, uint[] calldata entryIDs)
         external
         onlySynthetixBridge
-        returns (uint256 escrowedAccountBalance, VestingEntry[] memory vestingEntries)
+        returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries)
     {
         require(entryIDs.length > 0, "Entry IDs required");
 
         // check if account migrated on L1
         _checkEscrowMigrationPending(account);
 
-        vestingEntries = new VestingEntry[](entryIDs.length);
+        vestingEntries = new VestingEntries.VestingEntry[](entryIDs.length);
 
         for (uint i = 0; i < entryIDs.length; i++) {
-            VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
+            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
 
             if (entry.remainingAmount > 0) {
                 vestingEntries[i] = entry;

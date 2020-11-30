@@ -12,7 +12,7 @@ contract RewardEscrowV2Optimism is BaseRewardEscrowV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner) public BaseRewardEscrowV2(_owner) {
+    constructor(address _owner, address _resolver) public BaseRewardEscrowV2(_owner, _resolver) {
         appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE_BASE);
     }
 
@@ -27,7 +27,7 @@ contract RewardEscrowV2Optimism is BaseRewardEscrowV2 {
     function importVestingEntries(
         address account,
         uint256 escrowedAmount,
-        VestingEntry[] calldata vestingEntries
+        VestingEntries.VestingEntry[] calldata vestingEntries
     ) external onlySynthetixBridge {
         // There must be enough balance in the contract to provide for the escrowed balance.
         totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);

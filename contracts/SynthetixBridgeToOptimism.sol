@@ -107,7 +107,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
         uint256 escrowedAccountBalance;
 
-        IRewardEscrowV2.VestingEntry[] memory vestingEntries;
+        VestingEntries.VestingEntry[] memory vestingEntries;
         (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, _entryIDs);
 
         // if there is an escrow amount to be migrated
