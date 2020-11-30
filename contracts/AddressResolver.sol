@@ -16,32 +16,28 @@ contract AddressResolver is Owned, IAddressResolver {
     constructor(address _owner) public Owned(_owner) {}
 
     /* ========== RESTRICTED FUNCTIONS ========== */
+
     function importAddresses(bytes32[] calldata names, address[] calldata destinations) external onlyOwner {
         require(names.length == destinations.length, "Input lengths must match");
 
-        // add everything first
         for (uint i = 0; i < names.length; i++) {
-            repository[names[i]] = destinations[i];
-        }
-
-        // now rebuild the caches of all destinations if required
-        for (uint i = 0; i < destinations.length; i++) {
-            // solhint-disable avoid-low-level-calls
-            (bool success, ) = address(destinations[i]).call(abi.encodePacked(MixinResolver(0).rebuildCache.selector));
-            emit AddressImported(names[i], destinations[i], success);
+            bytes32 name = names[i];
+            address destination = destinations[i];
+            repository[name] = destination;
+            emit AddressImported(name, destination);
         }
     }
 
     /* ========= PUBLIC FUNCTIONS ========== */
-    function rebuildCaches(address[] calldata destinations) external {
+
+    function rebuildCaches(MixinResolver[] calldata destinations) external {
         for (uint i = 0; i < destinations.length; i++) {
-            // solhint-disable avoid-low-level-calls
-            (bool success, ) = address(destinations[i]).call(abi.encodePacked(MixinResolver(0).rebuildCache.selector));
-            success; // hide
+            destinations[i].rebuildCache();
         }
     }
 
     /* ========== VIEWS ========== */
+
     function areAddressesImported(bytes32[] calldata names, address[] calldata destinations) external view returns (bool) {
         for (uint i = 0; i < names.length; i++) {
             if (repository[names[i]] != destinations[i]) {
@@ -68,5 +64,6 @@ contract AddressResolver is Owned, IAddressResolver {
     }
 
     /* ========== EVENTS ========== */
-    event AddressImported(bytes32 name, address destination, bool cacheRebuilt);
+
+    event AddressImported(bytes32 name, address destination);
 }

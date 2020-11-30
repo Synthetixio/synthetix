@@ -1206,6 +1206,10 @@ const deploy = async ({
 
 	let addressesAreImported = true;
 
+	const contractsWithResolver = Object.entries(deployer.deployedContracts).filter(([, target]) =>
+		target.options.jsonInterface.find(({ name }) => name === 'isResolverCached')
+	);
+
 	if (addressResolver) {
 		// Now we need to add everything into the AddressResolver.
 		// We must add everything as some targets which do not use the resolver
@@ -1226,7 +1230,7 @@ const deploy = async ({
 		// be imported, even contracts that have no cache to rebuild...
 
 		await runStep({
-			gasLimit: 5e6, // higher gas required
+			gasLimit: 4e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			read: 'areAddressesImported',
@@ -1234,6 +1238,23 @@ const deploy = async ({
 			readArg: addressArgs,
 			write: 'importAddresses',
 			writeArg: addressArgs,
+		});
+
+		await runStep({
+			gasLimit: 7e6, // higher gas required
+			contract: `AddressResolver`,
+			target: addressResolver,
+			write: 'rebuildCaches',
+			writeArg: [
+				contractsWithResolver.map(
+					([
+						,
+						{
+							options: { address },
+						},
+					]) => address
+				),
+			],
 		});
 
 		// TODO 1: use-ovm deploy will fail due to addresses with ':' in them not existing
@@ -1249,6 +1270,35 @@ const deploy = async ({
 
 	if (addressesAreImported) {
 		console.log(gray('Addresses are correctly set up, continuing...'));
+
+		// now ensure all resolvers are set
+
+		const contractsWithResolverAndCachedResults = await Promise.all(
+			contractsWithResolver.map(([contract, target]) =>
+				target.methods
+					.isResolverCached()
+					.call()
+					.then(isCached => ({ contract, target, isCached }))
+			)
+		);
+
+		for (const { contract, target, isCached } of contractsWithResolverAndCachedResults) {
+			if (!isCached) {
+				console.log(
+					redBright(
+						`WARNING: ${contract} does not have its caches rebuilt! Explicitly recaching them now.`
+					)
+				);
+				await runStep({
+					gasLimit: 500e3, // higher gas required
+					contract,
+					target,
+					write: 'rebuildCache',
+				});
+
+				// TODO if not performed, return early.
+			}
+		}
 
 		// now after resolvers have been set
 
