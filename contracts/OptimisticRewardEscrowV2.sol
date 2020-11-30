@@ -6,7 +6,7 @@ import "./BaseRewardEscrowV2.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract RewardEscrowV2Optimism is BaseRewardEscrowV2 {
+contract OptimisticRewardEscrowV2 is BaseRewardEscrowV2 {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_BASE = "SynthetixBridgeToBase";
 
