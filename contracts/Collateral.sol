@@ -193,25 +193,25 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     }
 
     function setBaseInterestRate(uint _baseInterestRate) public onlyOwner {
-        require(_baseInterestRate >= 0, "Must be greater than 0");
+        require(_baseInterestRate >= 0, "Must be greater than or equal to 0");
         baseInterestRate = _baseInterestRate;
         emit BaseInterestRateUpdated(baseInterestRate);
     }
 
     function setLiquidationPenalty(uint _liquidationPenalty) public onlyOwner {
-        require(_liquidationPenalty >= 0, "Must be greater than 0");
+        require(_liquidationPenalty > 0, "Must be greater than 0");
         liquidationPenalty = _liquidationPenalty;
         emit LiquidationPenaltyUpdated(liquidationPenalty);
     }
 
     function setIssueFeeRate(uint _issueFeeRate) public onlyOwner {
-        require(_issueFeeRate >= 0, "Must be greater than 0");
-        issueFeeRate = issueFeeRate;
+        require(_issueFeeRate >= 0, "Must be greater than or equal to 0");
+        issueFeeRate = _issueFeeRate;
         emit IssueFeeRateUpdated(issueFeeRate);
     }
 
-    function setManager(address _manager) public onlyOwner {
-        manager = _manager;
+    function setManager(address _newManager) public onlyOwner {
+        manager = _newManager;
         emit ManagerUpdated(manager);
     }
 
