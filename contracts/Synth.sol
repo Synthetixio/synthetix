@@ -33,8 +33,6 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] internal addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_EXCHANGER, CONTRACT_ISSUER, CONTRACT_FEEPOOL];
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -49,7 +47,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     )
         public
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
-        MixinResolver(_resolver, addressesToCache)
+        MixinResolver(_resolver)
     {
         require(_proxy != address(0), "_proxy cannot be 0");
         require(_owner != address(0), "_owner cannot be 0");
@@ -175,6 +173,16 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     }
 
     /* ========== VIEWS ========== */
+
+    // Note: use public visibility so that it can be invoked in a subclass
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](4);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_EXCHANGER;
+        addresses[2] = CONTRACT_ISSUER;
+        addresses[3] = CONTRACT_FEEPOOL;
+    }
+
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }

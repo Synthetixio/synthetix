@@ -100,26 +100,23 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_EXCHANGESTATE,
-        CONTRACT_EXRATES,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_FEEPOOL,
-        CONTRACT_TRADING_REWARDS,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUER,
-        CONTRACT_DEBTCACHE
-    ];
-
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](10);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_EXCHANGESTATE;
+        addresses[2] = CONTRACT_EXRATES;
+        addresses[3] = CONTRACT_SYNTHETIX;
+        addresses[4] = CONTRACT_FEEPOOL;
+        addresses[5] = CONTRACT_TRADING_REWARDS;
+        addresses[6] = CONTRACT_DELEGATEAPPROVALS;
+        addresses[7] = CONTRACT_ISSUER;
+        addresses[8] = CONTRACT_DEBTCACHE;
+        addresses[9] = CONTRACT_FLEXIBLESTORAGE;
+    }
 
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));

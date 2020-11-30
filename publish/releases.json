@@ -77,15 +77,16 @@
 			"BinaryOptionMarketFactory",
 			"BinaryOptionMarketManager",
 			"DebtCache",
-			"Exchanger",
 			"ExchangeRates",
+			"Exchanger",
 			"FeePool",
 			"Issuer",
 			"Liquidations",
-			"SynthsUSD",
-			"Synthetix",
 			"SystemSettings",
-			"TradingRewards"
+			"Synthetix",
+			"TradingRewards",
+			"SynthsUSD",
+			"SynthsETH"
 		],
 		"sips": []
 	}

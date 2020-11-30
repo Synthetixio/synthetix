@@ -72,8 +72,6 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] internal addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_EXRATES, CONTRACT_SYNTHSUSD, CONTRACT_FEEPOOL];
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -87,7 +85,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         uint[3] memory _times, // [biddingEnd, maturity, expiry]
         uint[2] memory _bids, // [longBid, shortBid]
         uint[3] memory _fees // [poolFee, creatorFee, refundFee]
-    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
+    ) public Owned(_owner) MixinResolver(_resolver) {
         creator = _creator;
         creatorLimits = BinaryOptionMarketManager.CreatorLimits(_creatorLimits[0], _creatorLimits[1]);
 
@@ -120,6 +118,14 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     }
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](4);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_EXRATES;
+        addresses[2] = CONTRACT_SYNTHSUSD;
+        addresses[3] = CONTRACT_FEEPOOL;
+    }
 
     /* ---------- External Contracts ---------- */
 

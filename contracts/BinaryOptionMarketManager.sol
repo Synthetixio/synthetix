@@ -66,13 +66,6 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_BINARYOPTIONMARKETFACTORY = "BinaryOptionMarketFactory";
 
-    bytes32[24] internal addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHSUSD,
-        CONTRACT_EXRATES,
-        CONTRACT_BINARYOPTIONMARKETFACTORY
-    ];
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -86,7 +79,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
         uint _poolFee,
         uint _creatorFee,
         uint _refundFee
-    ) public Owned(_owner) Pausable() MixinResolver(_resolver, addressesToCache) {
+    ) public Owned(_owner) Pausable() MixinResolver(_resolver) {
         // Temporarily change the owner so that the setters don't revert.
         owner = msg.sender;
         setExpiryDuration(_expiryDuration);
@@ -101,6 +94,14 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
     }
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](4);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_SYNTHSUSD;
+        addresses[2] = CONTRACT_EXRATES;
+        addresses[3] = CONTRACT_BINARYOPTIONMARKETFACTORY;
+    }
 
     /* ---------- Related Contracts ---------- */
 

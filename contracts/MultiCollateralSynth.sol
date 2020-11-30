@@ -22,11 +22,19 @@ contract MultiCollateralSynth is Synth {
         bytes32 _multiCollateralKey
     ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
         multiCollateralKey = _multiCollateralKey;
-
-        appendToAddressCache(multiCollateralKey);
     }
 
     /* ========== VIEWS ======================= */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = super.resolverAddressesRequired();
+        addresses = new bytes32[](existingAddresses.length + 1);
+
+        for (uint i = 0; i < existingAddresses.length; i++) {
+            addresses[i] = existingAddresses[i];
+        }
+        addresses[existingAddresses.length] = multiCollateralKey;
+    }
 
     function multiCollateral() internal view returns (address) {
         return requireAndGetAddress(multiCollateralKey);

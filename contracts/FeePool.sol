@@ -73,20 +73,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
     bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_FEEPOOLSTATE,
-        CONTRACT_FEEPOOLETERNALSTORAGE,
-        CONTRACT_EXCHANGER,
-        CONTRACT_ISSUER,
-        CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_REWARDESCROW,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ETH_COLLATERAL_SUSD,
-        CONTRACT_REWARDSDISTRIBUTION
-    ];
-
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
@@ -95,20 +81,28 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         address payable _proxy,
         address _owner,
         address _resolver
-    )
-        public
-        Owned(_owner)
-        Proxyable(_proxy)
-        LimitedSetup(3 weeks)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {
+    ) public Owned(_owner) Proxyable(_proxy) LimitedSetup(3 weeks) MixinResolver(_resolver) MixinSystemSettings() {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
         _recentFeePeriodsStorage(0).startTime = uint64(now);
     }
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](12);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_SYNTHETIX;
+        addresses[2] = CONTRACT_FEEPOOLSTATE;
+        addresses[3] = CONTRACT_FEEPOOLETERNALSTORAGE;
+        addresses[4] = CONTRACT_EXCHANGER;
+        addresses[5] = CONTRACT_ISSUER;
+        addresses[6] = CONTRACT_SYNTHETIXSTATE;
+        addresses[7] = CONTRACT_REWARDESCROW;
+        addresses[8] = CONTRACT_DELEGATEAPPROVALS;
+        addresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
+        addresses[10] = CONTRACT_REWARDSDISTRIBUTION;
+        addresses[11] = CONTRACT_FLEXIBLESTORAGE;
+    }
 
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));

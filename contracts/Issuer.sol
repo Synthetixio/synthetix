@@ -82,30 +82,26 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYNTHETIX,
-        CONTRACT_EXCHANGER,
-        CONTRACT_EXRATES,
-        CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_FEEPOOL,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ETHERCOLLATERAL,
-        CONTRACT_ETHERCOLLATERAL_SUSD,
-        CONTRACT_REWARDESCROW,
-        CONTRACT_SYNTHETIXESCROW,
-        CONTRACT_LIQUIDATIONS,
-        CONTRACT_FLEXIBLESTORAGE,
-        CONTRACT_DEBTCACHE
-    ];
-
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](14);
+        addresses[0] = CONTRACT_SYNTHETIX;
+        addresses[1] = CONTRACT_EXCHANGER;
+        addresses[2] = CONTRACT_EXRATES;
+        addresses[3] = CONTRACT_SYNTHETIXSTATE;
+        addresses[4] = CONTRACT_FEEPOOL;
+        addresses[5] = CONTRACT_DELEGATEAPPROVALS;
+        addresses[6] = CONTRACT_ETHERCOLLATERAL;
+        addresses[7] = CONTRACT_ETHERCOLLATERAL_SUSD;
+        addresses[8] = CONTRACT_REWARDESCROW;
+        addresses[9] = CONTRACT_SYNTHETIXESCROW;
+        addresses[10] = CONTRACT_LIQUIDATIONS;
+        addresses[11] = CONTRACT_FLEXIBLESTORAGE;
+        addresses[12] = CONTRACT_DEBTCACHE;
+        addresses[13] = CONTRACT_FLEXIBLESTORAGE;
+    }
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));

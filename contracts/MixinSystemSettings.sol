@@ -25,11 +25,9 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_TRADING_REWARDS_ENABLED = "tradingRewardsEnabled";
     bytes32 internal constant SETTING_DEBT_SNAPSHOT_STALE_TIME = "debtSnapshotStaleTime";
 
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
+    bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
-    constructor() internal {
-        appendToAddressCache(CONTRACT_FLEXIBLESTORAGE);
-    }
+    constructor() internal {}
 
     function flexibleStorage() internal view returns (IFlexibleStorage) {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
