@@ -40,6 +40,9 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalEscrowedBalance;
 
+    uint internal constant TIME_INDEX = 0;
+    uint internal constant QUANTITY_INDEX = 1;
+
     uint public accountMergingDuration = 24 hours;
 
     uint public accountMergingEndTime;
@@ -169,10 +172,9 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
      * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
      * @dev A call to this should accompany a previous successful call to synthetix.transfer(rewardEscrow, amount),
      * to ensure that when the funds are withdrawn, there is enough balance.
-     * Note; although this function could technically be used to produce unbounded
-     * arrays, it's only withinn the 4 year period of the weekly inflation schedule.
      * @param account The account to append a new vesting entry to.
      * @param quantity The quantity of SNX that will be escrowed.
+     * @param duration The duration that SNX will be emitted.
      */
     function appendVestingEntry(
         address account,
@@ -181,8 +183,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     ) external onlyFeePool {
         _appendVestingEntry(account, quantity, duration);
     }
-
-    // TODO - Vesting no longer assumes that the vestingSchedules list is sorted, requires index to be passed in to vest.
 
     function _transferVestedTokens(address _account, uint256 _amount) internal {
         _reduceAccountEscrowBalances(_account, _amount);
@@ -242,20 +242,33 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
         // Calculate entries that can be vested and total vested to deduct from totalEscrowedAccountBalance
         (uint vestedEntries, uint totalVested) = _getVestedEntriesAndAmount(addressToMigrate, numEntries);
 
-        // transfer vested tokens
+        // transfer vested tokens to account
         if (totalVested != 0) {
             _transferVestedTokens(addressToMigrate, totalVested);
         }
 
-        // TODO - consider using appendVestingEntry for appending vesting schedules
-        uint remainingEntries = numEntries - vestedEntries;
-        for (uint i = vestedEntries - 1; i < remainingEntries; i++) {
-            // vestingSchedules[addressToMigrate].push([vestingSchedule[0], vestingSchedule[1]]);
+        // iterate and migrate old escrow schedules from vestingSchedules[vestedEntries - 1]
+        // stop at the end of the vesting schedule list
+        for (uint i = vestedEntries - 1; i < numEntries - 1; i++) {
+            uint[2] memory vestingSchedule = oldRewardEscrow.getVestingScheduleEntry(addressToMigrate, i);
+
+            _importVestingEntry(
+                addressToMigrate,
+                VestingEntry({
+                    endTime: uint64(vestingSchedule[TIME_INDEX]),
+                    duration: uint64(52 weeks),
+                    lastVested: 0,
+                    escrowAmount: vestingSchedule[QUANTITY_INDEX],
+                    remainingAmount: vestingSchedule[QUANTITY_INDEX]
+                })
+            );
         }
 
-        // emit event account has migrated vesting entries across
+        // TODO - emit event account has migrated vesting entries across
     }
 
+    // Determine which entries can be vested, based on the old escrow vest function
+    // return number of entries vested and amount
     function _getVestedEntriesAndAmount(address _account, uint _numEntries)
         internal
         view
@@ -357,9 +370,6 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
     }
 
     function _importVestingEntry(address account, VestingEntry memory entry) internal {
-        /* No empty vesting entries allowed. */
-        require(entry.escrowAmount != 0, "Quantity cannot be zero");
-
         uint entryID = nextEntryId;
         vestingSchedules[account][entryID] = entry;
 
