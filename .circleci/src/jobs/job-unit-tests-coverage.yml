@@ -1,6 +1,5 @@
 # Measures unit and spec test coverage
 {{> job-header.yml}}
-resource_class: xlarge
 steps:
   - checkout
   - attach_workspace:
