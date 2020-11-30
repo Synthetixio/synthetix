@@ -98,7 +98,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
     /* ========== VIEWS ========== */
 
-    /* ---------- External Contracts ---------- */
+    /* ---------- Related Contracts ---------- */
 
     function _systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
