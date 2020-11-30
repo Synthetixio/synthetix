@@ -15,6 +15,7 @@ const data = {
 
 const assets = require('./publish/assets.json');
 const ovmIgnored = require('./publish/ovm-ignore.json');
+const nonUpgradeable = require('./publish/non-upgradeable.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
@@ -42,6 +43,7 @@ const constants = {
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
 	OVM_IGNORE_FILENAME: 'ovm-ignore.json',
+	NON_UPGRADEABLE_FILENAME: 'non-upgradeable.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -504,4 +506,5 @@ module.exports = {
 	toBytes32,
 	wrap,
 	ovmIgnored,
+	nonUpgradeable,
 };
