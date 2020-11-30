@@ -14,15 +14,15 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 // 	constants: { ZERO_ADDRESS },
 // } = require('../..');
 
-contract('OptimisticRewardEscrowV2', async accounts => {
+contract('ImportableRewardEscrowV2', async accounts => {
 	const [, owner, account1] = accounts;
-	let optimisticRewardEscrowV2;
+	let importableRewardEscrowV2;
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
-		({ OptimisticRewardEscrowV2: optimisticRewardEscrowV2 } = await setupAllContracts({
+		({ ImportableRewardEscrowV2: importableRewardEscrowV2 } = await setupAllContracts({
 			accounts,
-			contracts: ['OptimisticRewardEscrowV2'],
+			contracts: ['ImportableRewardEscrowV2'],
 		}));
 	});
 
@@ -30,7 +30,7 @@ contract('OptimisticRewardEscrowV2', async accounts => {
 
 	it('ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: optimisticRewardEscrowV2.abi,
+			abi: importableRewardEscrowV2.abi,
 			ignoreParents: ['BaseRewardEscrowV2'],
 			expected: [],
 		});
@@ -38,14 +38,14 @@ contract('OptimisticRewardEscrowV2', async accounts => {
 
 	describe('Constructor & Settings ', async () => {
 		it('should set owner on contructor', async () => {
-			const ownerAddress = await optimisticRewardEscrowV2.owner();
+			const ownerAddress = await importableRewardEscrowV2.owner();
 			assert.equal(ownerAddress, owner);
 		});
 	});
 
 	describe('There are no escrow entries initially', async () => {
 		it('then numVestingEntries should return 0', async () => {
-			assert.equal(0, await optimisticRewardEscrowV2.numVestingEntries(account1));
+			assert.equal(0, await importableRewardEscrowV2.numVestingEntries(account1));
 		});
 	});
 });
