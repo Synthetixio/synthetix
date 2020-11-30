@@ -249,7 +249,7 @@ contract RewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinR
 
         // iterate and migrate old escrow schedules from vestingSchedules[vestedEntries - 1]
         // stop at the end of the vesting schedule list
-        for (uint i = vestedEntries - 1; i < numEntries - 1; i++) {
+        for (uint i = vestedEntries - 1; i < numEntries; i++) {
             uint[2] memory vestingSchedule = oldRewardEscrow.getVestingScheduleEntry(addressToMigrate, i);
 
             _importVestingEntry(
