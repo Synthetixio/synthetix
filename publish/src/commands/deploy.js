@@ -1207,7 +1207,7 @@ const deploy = async ({
 	let addressesAreImported = true;
 
 	const contractsWithResolver = Object.entries(deployer.deployedContracts).filter(([, target]) =>
-		target.options.jsonInterface.find(({ name }) => name === 'isResolverCached')
+		target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')
 	);
 
 	if (addressResolver) {
