@@ -23,6 +23,8 @@ const {
 	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
 } = require('../..');
 
+const BN = require('bn.js');
+
 const bnCloseVariance = '30';
 
 const MockAggregator = artifacts.require('MockAggregatorV2V3');
@@ -390,15 +392,31 @@ contract('Exchanger (spec tests)', async accounts => {
 			actualFeeRate = await exchanger.feeRateForExchange(sUSD, iBTC);
 			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
 		});
-		it('for an inverse synth and a long synth, returns regular exchange fee', async () => {
+		it('for an inverse synth and a long synth, returns double the regular exchange fee', async () => {
 			let actualFeeRate = await exchanger.feeRateForExchange(iBTC, sEUR);
-			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+			assert.bnEqual(
+				actualFeeRate,
+				exchangeFeeRate.mul(new BN(2)),
+				'Rate must be the exchange fee rate'
+			);
 			actualFeeRate = await exchanger.feeRateForExchange(sEUR, iBTC);
-			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+			assert.bnEqual(
+				actualFeeRate,
+				exchangeFeeRate.mul(new BN(2)),
+				'Rate must be the exchange fee rate'
+			);
 			actualFeeRate = await exchanger.feeRateForExchange(sBTC, iBTC);
-			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+			assert.bnEqual(
+				actualFeeRate,
+				exchangeFeeRate.mul(new BN(2)),
+				'Rate must be the exchange fee rate'
+			);
 			actualFeeRate = await exchanger.feeRateForExchange(iBTC, sBTC);
-			assert.bnEqual(actualFeeRate, exchangeFeeRate, 'Rate must be the exchange fee rate');
+			assert.bnEqual(
+				actualFeeRate,
+				exchangeFeeRate.mul(new BN(2)),
+				'Rate must be the exchange fee rate'
+			);
 		});
 	});
 
@@ -2091,7 +2109,6 @@ contract('Exchanger (spec tests)', async accounts => {
 									const assertExchangeSucceeded = async ({
 										amountExchanged,
 										txn,
-										exchangeFeeRateMultiplier = 1,
 										from = sUSD,
 										to = iBTC,
 										toContract = iBTCContract,
@@ -2099,11 +2116,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									}) => {
 										// Note: this presumes balance was empty before the exchange - won't work when
 										// exchanging into sUSD as there is an existing sUSD balance from minting
-										const exchangeFeeRate = await exchanger.feeRateForExchange(sUSD, iBTC);
-										const actualExchangeFee = multiplyDecimal(
-											exchangeFeeRate,
-											toUnit(exchangeFeeRateMultiplier)
-										);
+										const actualExchangeFee = await exchanger.feeRateForExchange(from, to);
 										const balance = await toContract.balanceOf(account1);
 										const effectiveValue = await exchangeRates.effectiveValue(
 											from,
@@ -2234,11 +2247,17 @@ contract('Exchanger (spec tests)', async accounts => {
 													from: account1,
 												});
 											});
-											it('then it exchanges correctly from iBTC to sBTC, not doubling the fee', async () => {
+											it('then it exchanges correctly from iBTC to sBTC, doubling the fee based on the destination Synth', async () => {
+												// get exchange fee for sUSD to sBTC (Base rate for destination synth)
+												const baseExchangeRate = await exchanger.feeRateForExchange(sUSD, sBTC);
+												const expectedExchangeRate = await exchanger.feeRateForExchange(iBTC, sBTC);
+
+												// swing trade should be double the base exchange fee
+												assert.bnEqual(expectedExchangeRate, baseExchangeRate.mul(new BN(2)));
+
 												await assertExchangeSucceeded({
 													amountExchanged: iBTCexchangeAmount,
 													txn,
-													exchangeFeeRateMultiplier: 1,
 													from: iBTC,
 													to: sBTC,
 													toContract: sBTCContract,
@@ -2252,11 +2271,20 @@ contract('Exchanger (spec tests)', async accounts => {
 														from: account1,
 													});
 												});
-												it('then it exchanges correctly from iBTC to sEUR, not doubling the fee', async () => {
+												it('then it exchanges correctly from iBTC to sEUR, doubling the fee', async () => {
+													// get exchange fee for sUSD to sEUR (Base rate for destination synth)
+													const baseExchangeRate = await exchanger.feeRateForExchange(sUSD, sEUR);
+													const expectedExchangeRate = await exchanger.feeRateForExchange(
+														iBTC,
+														sEUR
+													);
+
+													// swing trade should be double the base exchange fee
+													assert.bnEqual(expectedExchangeRate, baseExchangeRate.mul(new BN(2)));
+
 													await assertExchangeSucceeded({
 														amountExchanged: iBTCexchangeAmount,
 														txn,
-														exchangeFeeRateMultiplier: 1,
 														from: iBTC,
 														to: sEUR,
 														toContract: sEURContract,
@@ -2273,11 +2301,20 @@ contract('Exchanger (spec tests)', async accounts => {
 															from: account1,
 														});
 													});
-													it('then it exchanges correctly from sEUR to iBTC, not doubling the fee', async () => {
+													it('then it exchanges correctly from sEUR to iBTC, doubling the fee', async () => {
+														// get exchange fee for sUSD to iBTC (Base rate for destination synth)
+														const baseExchangeRate = await exchanger.feeRateForExchange(sUSD, iBTC);
+														const expectedExchangeRate = await exchanger.feeRateForExchange(
+															sEUR,
+															iBTC
+														);
+
+														// swing trade should be double the base exchange fee
+														assert.bnEqual(expectedExchangeRate, baseExchangeRate.mul(new BN(2)));
+
 														await assertExchangeSucceeded({
 															amountExchanged: sEURExchangeAmount,
 															txn,
-															exchangeFeeRateMultiplier: 1,
 															from: sEUR,
 															to: iBTC,
 															toContract: iBTCContract,
@@ -2299,6 +2336,13 @@ contract('Exchanger (spec tests)', async accounts => {
 												});
 											});
 											it('then it exchanges correctly out of iBTC, with the regular fee', async () => {
+												// get exchange fee for sETH to sUSD (Base rate for destination synth into sUSD)
+												const baseExchangeRate = await exchanger.feeRateForExchange(sETH, sUSD);
+												const expectedExchangeRate = await exchanger.feeRateForExchange(iBTC, sUSD);
+
+												// exchange fee should be the same base exchange fee
+												assert.bnEqual(expectedExchangeRate, baseExchangeRate);
+
 												await assertExchangeSucceeded({
 													amountExchanged: iBTCexchangeAmount,
 													txn,
