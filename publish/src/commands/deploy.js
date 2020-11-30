@@ -1287,6 +1287,7 @@ const deploy = async ({
 					JSON.stringify(markets.sort()) === JSON.stringify(deployedFuturesMarkets.sort()),
 				write: 'addMarkets',
 				writeArg: [toAdd],
+				gasLimit: 150e3 * toAdd.length, // extra gas per market
 			});
 		}
 	}
