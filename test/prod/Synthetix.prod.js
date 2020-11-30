@@ -88,7 +88,7 @@ contract('Synthetix (prod tests)', accounts => {
 			deploymentPath,
 		});
 	});
-	describe.only('important stuff', () => {
+	describe('core infrastructure', () => {
 		describe('misc state', () => {
 			it('has the expected resolver set', async () => {
 				assert.equal(await Synthetix.resolver(), ReadProxyAddressResolver.address);
