@@ -80,7 +80,11 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     // TODO: Convert funding rate from daily to per-second
-    struct FundingParameters {
+    struct Parameters {
+        uint exchangeFee;
+        uint maxLeverage;
+        uint maxMarketDebt;
+        uint minInitialMargin;
         uint maxFundingRate;
         uint maxFundingRateSkew;
         uint maxFundingRateDelta;
@@ -89,11 +93,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     /* ========== STATE VARIABLES ========== */
 
     bytes32 public baseAsset;
-    uint public exchangeFee;
-    uint public maxLeverage;
-    uint public maxMarketDebt;
-    uint public minInitialMargin;
-    FundingParameters public fundingParameters;
+    Parameters public parameters;
 
     uint public marketSize;
     int public marketSkew; // When positive, longs outweigh shorts. When negative, shorts outweigh longs.
@@ -148,25 +148,15 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     ) public Owned(_owner) Proxyable(_proxy) MixinResolver(_resolver, _addressesToCache) {
         baseAsset = _baseAsset;
 
-        exchangeFee = _exchangeFee;
-        emit ParameterUpdated(PARAMETER_EXCHANGEFEE, _exchangeFee);
+        parameters.exchangeFee = _exchangeFee;
+        parameters.maxLeverage = _maxLeverage;
+        parameters.maxMarketDebt = _maxMarketDebt;
+        parameters.minInitialMargin = _minInitialMargin;
+        parameters.maxFundingRate = _fundingParameters[0];
+        parameters.maxFundingRateSkew = _fundingParameters[1];
+        parameters.maxFundingRateDelta = _fundingParameters[2];
 
-        maxLeverage = _maxLeverage;
-        emit ParameterUpdated(PARAMETER_MAXLEVERAGE, _maxLeverage);
-
-        maxMarketDebt = _maxMarketDebt;
-        emit ParameterUpdated(PARAMETER_MAXMARKETDEBT, _maxMarketDebt);
-
-        minInitialMargin = _minInitialMargin;
-        emit ParameterUpdated(PARAMETER_MININITIALMARGIN, _minInitialMargin);
-
-        fundingParameters.maxFundingRate = _fundingParameters[0];
-        fundingParameters.maxFundingRateSkew = _fundingParameters[1];
-        fundingParameters.maxFundingRateDelta = _fundingParameters[2];
-        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATE, _fundingParameters[0]);
-        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATESKEW, _fundingParameters[1]);
-        emit ParameterUpdated(PARAMETER_MAXFUNDINGRATEDELTA, _fundingParameters[2]);
-
+        // Initialise the funding sequence with 0 initially accrued.
         fundingSequence.push(0);
     }
 
@@ -246,8 +236,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     function _currentFundingRate() internal view returns (int) {
-        int maxFundingRateSkew = int(fundingParameters.maxFundingRateSkew);
-        int maxFundingRate = int(fundingParameters.maxFundingRate);
+        int maxFundingRateSkew = int(parameters.maxFundingRateSkew);
+        int maxFundingRate = int(parameters.maxFundingRate);
         if (maxFundingRateSkew == 0) {
             return maxFundingRate;
         }
@@ -447,7 +437,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
             chargeableValue = notionalSkewInduced;
         }
 
-        return _abs(chargeableValue.multiplyDecimalRound(int(exchangeFee)));
+        return _abs(chargeableValue.multiplyDecimalRound(int(parameters.exchangeFee)));
     }
 
     function orderFee(
@@ -502,37 +492,38 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     /* ---------- Setters ---------- */
 
-    function setExchangeFee(uint fee) external optionalProxy_onlyOwner {
-        exchangeFee = fee;
-        emit ParameterUpdated(PARAMETER_EXCHANGEFEE, fee);
+    function setExchangeFee(uint exchangeFee) external optionalProxy_onlyOwner {
+        parameters.exchangeFee = exchangeFee;
+        emit ParameterUpdated(PARAMETER_EXCHANGEFEE, exchangeFee);
     }
 
-    function setMaxLeverage(uint leverage) external optionalProxy_onlyOwner {
-        maxLeverage = leverage;
-        emit ParameterUpdated(PARAMETER_MAXLEVERAGE, leverage);
+    function setMaxLeverage(uint maxLeverage) external optionalProxy_onlyOwner {
+        parameters.maxLeverage = maxLeverage;
+        emit ParameterUpdated(PARAMETER_MAXLEVERAGE, maxLeverage);
     }
 
-    function setMaxMarketDebt(uint cap) external optionalProxy_onlyOwner {
-        maxMarketDebt = cap;
-        emit ParameterUpdated(PARAMETER_MAXMARKETDEBT, cap);
+    function setMaxMarketDebt(uint maxMarketDebt) external optionalProxy_onlyOwner {
+        parameters.maxMarketDebt = maxMarketDebt;
+        emit ParameterUpdated(PARAMETER_MAXMARKETDEBT, maxMarketDebt);
     }
 
-    function setMinInitialMargin(uint minMargin) external optionalProxy_onlyOwner {
-        minInitialMargin = minMargin;
-        emit ParameterUpdated(PARAMETER_MININITIALMARGIN, minMargin);
+    function setMinInitialMargin(uint minInitialMargin) external optionalProxy_onlyOwner {
+        parameters.minInitialMargin = minInitialMargin;
+        emit ParameterUpdated(PARAMETER_MININITIALMARGIN, minInitialMargin);
     }
 
-    function setFundingParameters(
-        uint maxFundingRate,
-        uint maxFundingRateSkew,
-        uint maxFundingRateDelta
-    ) external optionalProxy_onlyOwner {
-        fundingParameters.maxFundingRate = maxFundingRate;
-        fundingParameters.maxFundingRateSkew = maxFundingRateSkew;
-        fundingParameters.maxFundingRateDelta = maxFundingRateDelta;
-
+    function setMaxFundingRate(uint maxFundingRate) external optionalProxy_onlyOwner {
+        parameters.maxFundingRate = maxFundingRate;
         emit ParameterUpdated(PARAMETER_MAXFUNDINGRATE, maxFundingRate);
+    }
+
+    function setMaxFundingRateSkew(uint maxFundingRateSkew) external optionalProxy_onlyOwner {
+        parameters.maxFundingRateSkew = maxFundingRateSkew;
         emit ParameterUpdated(PARAMETER_MAXFUNDINGRATESKEW, maxFundingRateSkew);
+    }
+
+    function setMaxFundingRateDelta(uint maxFundingRateDelta) external optionalProxy_onlyOwner {
+        parameters.maxFundingRateDelta = maxFundingRateDelta;
         emit ParameterUpdated(PARAMETER_MAXFUNDINGRATEDELTA, maxFundingRateDelta);
     }
 
@@ -630,7 +621,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
                 // This may be zero if the order is being cancelled.
                 pendingOrderValue = pendingOrderValue.add(absoluteMargin);
                 uint debt = _marketDebt(price);
-                require(debt <= maxMarketDebt, "Max market debt exceeded");
+                require(debt <= parameters.maxMarketDebt, "Max market debt exceeded");
             }
             _manager().burnSUSD(sender, totalCharge);
         }
@@ -646,8 +637,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     function submitOrder(int margin, uint leverage) external optionalProxy {
-        require(leverage <= maxLeverage, "Max leverage exceeded");
-        require(minInitialMargin <= _abs(margin), "Insufficient margin");
+        require(leverage <= parameters.maxLeverage, "Max leverage exceeded");
+        require(parameters.minInitialMargin <= _abs(margin), "Insufficient margin");
         address sender = messageSender;
         _updateRemainingMargin(sender);
         _submitOrder(sender, margin, leverage);

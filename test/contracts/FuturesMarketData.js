@@ -50,11 +50,19 @@ contract('FuturesMarketData', accounts => {
 		// Add a couple of additional markets.
 		const marketsToAdd = [];
 		for (const key of ['sETH', 'sLINK']) {
+			const proxy = await setupContract({
+				accounts,
+				contract: 'ProxyFuturesMarket' + key,
+				source: 'Proxy',
+				args: [accounts[1]],
+			});
+
 			const market = await setupContract({
 				accounts,
-				contract: 'FuturesMarketETH',
+				contract: 'FuturesMarket' + key,
 				source: 'FuturesMarket',
 				args: [
+					proxy.address,
 					accounts[1],
 					addressResolver.address,
 					toBytes32(key), // base asset
@@ -70,6 +78,7 @@ contract('FuturesMarketData', accounts => {
 				],
 			});
 
+			await proxy.setTarget(market.address, { from: accounts[1] });
 			await market.setResolverAndSyncCache(addressResolver.address, { from: accounts[1] });
 
 			marketsToAdd.push(market.address);
@@ -121,23 +130,18 @@ contract('FuturesMarketData', accounts => {
 		it('By address', async () => {
 			const details = await futuresMarketData.marketDetails(futuresMarket.address);
 
+			const params = await futuresMarket.parameters();
+
 			assert.equal(details.market, futuresMarket.address);
 			assert.equal(details.baseAsset, baseAsset);
-			assert.bnEqual(details.exchangeFee, await futuresMarket.exchangeFee());
-			assert.bnEqual(details.limits.maxLeverage, await futuresMarket.maxLeverage());
-			assert.bnEqual(details.limits.maxMarketDebt, await futuresMarket.maxMarketDebt());
-			assert.bnEqual(details.limits.minInitialMargin, await futuresMarket.minInitialMargin());
+			assert.bnEqual(details.exchangeFee, params.exchangeFee);
+			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
+			assert.bnEqual(details.limits.maxMarketDebt, params.maxMarketDebt);
+			assert.bnEqual(details.limits.minInitialMargin, params.minInitialMargin);
 
-			const fundingParameters = await futuresMarket.fundingParameters();
-			assert.bnEqual(details.fundingParameters.maxFundingRate, fundingParameters.maxFundingRate);
-			assert.bnEqual(
-				details.fundingParameters.maxFundingRateSkew,
-				fundingParameters.maxFundingRateSkew
-			);
-			assert.bnEqual(
-				details.fundingParameters.maxFundingRateDelta,
-				fundingParameters.maxFundingRateDelta
-			);
+			assert.bnEqual(details.fundingParameters.maxFundingRate, params.maxFundingRate);
+			assert.bnEqual(details.fundingParameters.maxFundingRateSkew, params.maxFundingRateSkew);
+			assert.bnEqual(details.fundingParameters.maxFundingRateDelta, params.maxFundingRateDelta);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());
 			const marketSizes = await futuresMarket.marketSizes();
@@ -198,10 +202,8 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details2.accruedFunding, accruedFunding.funding);
 			const remaining = await futuresMarket.remainingMargin(trader1);
 			assert.bnEqual(details2.remainingMargin, remaining.marginRemaining);
-			assert.bnEqual(
-				details2.liquidationPrice,
-				await futuresMarket.liquidationPrice(trader1, true)
-			);
+			const lp = await futuresMarket.liquidationPrice(trader1, true);
+			assert.bnEqual(details2.liquidationPrice, lp[0]);
 		});
 
 		it('By asset', async () => {
@@ -221,15 +223,17 @@ contract('FuturesMarketData', accounts => {
 				await futuresMarketData.marketSummariesForAssets([toBytes32('sETH')])
 			)[0];
 
+			const params = await sethMarket.parameters();
+
 			assert.equal(sETHSummary.market, sethMarket.address);
 			assert.equal(sETHSummary.asset, newAsset);
-			assert.equal(sETHSummary.maxLeverage, await sethMarket.maxLeverage());
+			assert.equal(sETHSummary.maxLeverage, params.maxLeverage);
 			const price = await sethMarket.priceAndInvalid();
 			assert.equal(sETHSummary.price, price.assetPrice);
 			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
 			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
-			assert.equal(sETHSummary.exchangeFee, await sethMarket.exchangeFee());
+			assert.equal(sETHSummary.exchangeFee, params.exchangeFee);
 		});
 
 		it('For assets', async () => {
@@ -250,25 +254,29 @@ contract('FuturesMarketData', accounts => {
 			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
 			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
 
+			const fmParams = await futuresMarket.parameters();
+
 			assert.equal(sBTCSummary.market, futuresMarket.address);
 			assert.equal(sBTCSummary.asset, baseAsset);
-			assert.equal(sBTCSummary.maxLeverage, await futuresMarket.maxLeverage());
+			assert.equal(sBTCSummary.maxLeverage, fmParams.maxLeverage);
 			let price = await futuresMarket.priceAndInvalid();
 			assert.equal(sBTCSummary.price, price.assetPrice);
 			assert.equal(sBTCSummary.marketSize, await futuresMarket.marketSize());
 			assert.equal(sBTCSummary.marketSkew, await futuresMarket.marketSkew());
 			assert.equal(sBTCSummary.currentFundingRate, await futuresMarket.currentFundingRate());
-			assert.equal(sBTCSummary.exchangeFee, await futuresMarket.exchangeFee());
+			assert.equal(sBTCSummary.exchangeFee, fmParams.exchangeFee);
+
+			const sETHParams = await sethMarket.parameters();
 
 			assert.equal(sETHSummary.market, sethMarket.address);
 			assert.equal(sETHSummary.asset, newAsset);
-			assert.equal(sETHSummary.maxLeverage, await sethMarket.maxLeverage());
+			assert.equal(sETHSummary.maxLeverage, sETHParams.maxLeverage);
 			price = await sethMarket.priceAndInvalid();
 			assert.equal(sETHSummary.price, price.assetPrice);
 			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
 			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
-			assert.equal(sETHSummary.exchangeFee, await sethMarket.exchangeFee());
+			assert.equal(sETHSummary.exchangeFee, sETHParams.exchangeFee);
 
 			assert.equal(
 				sLINKSummary.market,

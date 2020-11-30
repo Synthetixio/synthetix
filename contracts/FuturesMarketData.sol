@@ -49,6 +49,12 @@ contract FuturesMarketData {
         bool isInvalid;
     }
 
+    struct FundingParameters {
+        uint maxFundingRate;
+        uint maxFundingRateSkew;
+        uint maxFundingRateDelta;
+    }
+
     struct FundingDetails {
         int currentFundingRate;
         int unrecordedFunding;
@@ -60,7 +66,7 @@ contract FuturesMarketData {
         bytes32 baseAsset;
         uint exchangeFee;
         FuturesMarketData.MarketLimits limits;
-        FuturesMarket.FundingParameters fundingParameters;
+        FuturesMarketData.FundingParameters fundingParameters;
         FuturesMarketData.MarketSizeDetails marketSizeDetails;
         FuturesMarketData.PriceDetails priceDetails;
     }
@@ -94,25 +100,48 @@ contract FuturesMarketData {
             );
     }
 
+    function _getParameters(FuturesMarket market) internal view returns (FuturesMarket.Parameters memory) {
+        (
+            uint exchangeFee,
+            uint maxLeverage,
+            uint maxMarketDebt,
+            uint minInitialMargin,
+            uint maxFundingRate,
+            uint maxFundingRateSkew,
+            uint maxFundingRateDelta
+        ) = market.parameters();
+        return
+            FuturesMarket.Parameters(
+                exchangeFee,
+                maxLeverage,
+                maxMarketDebt,
+                minInitialMargin,
+                maxFundingRate,
+                maxFundingRateSkew,
+                maxFundingRateDelta
+            );
+    }
+
     function _marketSummaries(address[] memory markets) internal view returns (MarketSummary[] memory) {
         uint numMarkets = markets.length;
         MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
         for (uint i; i < numMarkets; i++) {
             FuturesMarket market = FuturesMarket(markets[i]);
 
+            FuturesMarket.Parameters memory parameters = _getParameters(market);
             (uint price, ) = market.priceAndInvalid();
             (uint debt, ) = market.marketDebt();
 
             summaries[i] = MarketSummary(
                 address(market),
                 market.baseAsset(),
-                market.maxLeverage(),
+                parameters.maxLeverage,
                 price,
                 market.marketSize(),
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                market.exchangeFee()
+                parameters.exchangeFee
             );
         }
 
@@ -131,23 +160,35 @@ contract FuturesMarketData {
         return _marketSummaries(_futuresMarketManager().allMarkets());
     }
 
-    function _marketDetails(FuturesMarket market) internal view returns (MarketData memory) {
-        (uint maxFundingRate, uint maxFundingRateSkew, uint maxFundingRateDelta) = market.fundingParameters();
-        (uint short, uint long) = market.marketSizes();
-        (uint price, bool isInvalid) = market.priceAndInvalid();
+    function _fundingParameters(FuturesMarket.Parameters memory parameters)
+        internal
+        pure
+        returns (FundingParameters memory)
+    {
+        return FundingParameters(parameters.maxFundingRate, parameters.maxFundingRateSkew, parameters.maxFundingRateDelta);
+    }
 
+    function _marketSizes(FuturesMarket market) internal view returns (Sides memory) {
+        (uint short, uint long) = market.marketSizes();
+        return Sides(short, long);
+    }
+
+    function _marketDetails(FuturesMarket market) internal view returns (MarketData memory) {
+        (uint price, bool isInvalid) = market.priceAndInvalid();
         (uint marketDebt, ) = market.marketDebt();
+
+        FuturesMarket.Parameters memory parameters = _getParameters(market);
 
         return
             MarketData(
                 address(market),
                 market.baseAsset(),
-                market.exchangeFee(),
-                MarketLimits(market.maxLeverage(), market.maxMarketDebt(), market.minInitialMargin()),
-                FuturesMarket.FundingParameters(maxFundingRate, maxFundingRateSkew, maxFundingRateDelta),
+                parameters.exchangeFee,
+                MarketLimits(parameters.maxLeverage, parameters.maxMarketDebt, parameters.minInitialMargin),
+                _fundingParameters(parameters),
                 MarketSizeDetails(
                     market.marketSize(),
-                    Sides(short, long),
+                    _marketSizes(market),
                     marketDebt,
                     market.marketSkew(),
                     market.proportionalSkew(),

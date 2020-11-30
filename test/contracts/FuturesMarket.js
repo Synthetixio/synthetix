@@ -74,17 +74,15 @@ contract('FuturesMarket', accounts => {
 
 	describe('Basic parameters', () => {
 		it('static parameters are set properly at construction', async () => {
+			const parameters = await futuresMarket.parameters();
 			assert.equal(await futuresMarket.baseAsset(), baseAsset);
-			assert.bnEqual(await futuresMarket.exchangeFee(), exchangeFee);
-			assert.bnEqual(await futuresMarket.maxLeverage(), maxLeverage);
-			assert.bnEqual(await futuresMarket.maxMarketDebt(), maxMarketDebt);
-			assert.bnEqual(await futuresMarket.minInitialMargin(), minInitialMargin);
-
-			const fundingParameters = await futuresMarket.fundingParameters();
-
-			assert.bnEqual(fundingParameters.maxFundingRate, maxFundingRate);
-			assert.bnEqual(fundingParameters.maxFundingRateSkew, maxFundingRateSkew);
-			assert.bnEqual(fundingParameters.maxFundingRateDelta, maxFundingRateDelta);
+			assert.bnEqual(parameters.exchangeFee, exchangeFee);
+			assert.bnEqual(parameters.maxLeverage, maxLeverage);
+			assert.bnEqual(parameters.maxMarketDebt, maxMarketDebt);
+			assert.bnEqual(parameters.minInitialMargin, minInitialMargin);
+			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
+			assert.bnEqual(parameters.maxFundingRateSkew, maxFundingRateSkew);
+			assert.bnEqual(parameters.maxFundingRateDelta, maxFundingRateDelta);
 		});
 
 		it('prices are properly fetched', async () => {
