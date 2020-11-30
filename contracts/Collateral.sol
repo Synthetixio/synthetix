@@ -521,32 +521,29 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         // 2. Get the timestamp of the last rate update.
         uint lastTime = state.rateLastUpdated(loan.currency);
 
-        // 3. Get the last cumulative rate. F_last
-        uint lastCumulativeRate = rates[rates.length - 1];
-
-        // 4. Get the instantaneous rate. i
+        // 4. Get the instantaneous rate. i = mU + b
         uint instantaneousRate = baseInterestRate.add(_manager().getScaledUtilisation());
 
         // 5. Get the time since we last updated the rate.
-        uint timeDelta = (block.timestamp - lastTime) * SafeDecimalMath.unit();
+        uint timeDelta = block.timestamp.sub(lastTime).mul(SafeDecimalMath.unit());
 
         // 6. Get the time its been applied for. F
         uint cumulativeRate = instantaneousRate.multiplyDecimal(timeDelta);
 
         // 7. Get the latest cumulative rate. F_n+1 = F_n + F_last
-        uint latestCumulative = lastCumulativeRate.add(cumulativeRate);
+        uint latestCumulative = rates[rates.length - 1].add(cumulativeRate);
 
-        // 8. Get the latest cumulative rate. F_n+1 = F_n + F_last
+        // 8. Get the cumulative rate when the loan was last interacted with.
         uint entryCumulativeRate = rates[loan.interestIndex];
 
-        // 9. Determine the interest that has accrued on the loan.
-        uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative - entryCumulativeRate);
+        // 9. If the loan was just opened, don't record any interest.
+        uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative.sub(entryCumulativeRate));
 
         // 10. Update rates with the lastest cumulative rate. This also updates the time.
         state.updateRates(loan.currency, latestCumulative);
 
         // 11. Update loan
-        loanAfter.accruedInterest = loan.accruedInterest + interest;
+        loanAfter.accruedInterest = loan.accruedInterest.add(interest);
         loanAfter.interestIndex = rates.length;
         state.updateLoan(loanAfter);
 
