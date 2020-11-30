@@ -2,7 +2,7 @@ pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
 
 
-interface IRewardEscrowV2 {
+library VestingEntries {
     struct VestingEntry {
         uint64 endTime;
         uint64 duration;
@@ -10,7 +10,10 @@ interface IRewardEscrowV2 {
         uint256 escrowAmount;
         uint256 remainingAmount;
     }
+}
 
+
+interface IRewardEscrowV2 {
     // Views
     function balanceOf(address account) external view returns (uint);
 
@@ -20,12 +23,12 @@ interface IRewardEscrowV2 {
 
     function totalVestedAccountBalance(address account) external view returns (uint);
 
-    function getVestingScheduleEntry(address account, uint index) external view returns (uint[2] memory);
-
     // Mutative functions
-    function appendVestingEntry(address account, uint quantity) external;
-
-    function vest(address account) external;
+    function appendVestingEntry(
+        address account,
+        uint quantity,
+        uint duration
+    ) external;
 
     function migrateVestingSchedule(address _addressToMigrate) external;
 
@@ -44,11 +47,11 @@ interface IRewardEscrowV2 {
     function importVestingEntries(
         address account,
         uint256 escrowedAmount,
-        VestingEntry[] calldata vestingEntries
+        VestingEntries.VestingEntry[] calldata vestingEntries
     ) external;
 
     // Return amount of SNX transfered to SynthetixBridgeToOptimism deposit contract
     function burnForMigration(address account, uint[] calldata entryIDs)
         external
-        returns (uint256 escrowedAccountBalance, VestingEntry[] memory vestingEntries);
+        returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries);
 }
