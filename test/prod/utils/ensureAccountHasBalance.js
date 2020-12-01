@@ -3,11 +3,7 @@ const path = require('path');
 const { connectContract } = require('./connectContract');
 const { web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
-const {
-	wrap,
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../../..');
+const { wrap, toBytes32 } = require('../../..');
 
 async function getUser({ network, deploymentPath, user }) {
 	const { getUsers } = wrap({ network, fs, path });
@@ -16,7 +12,11 @@ async function getUser({ network, deploymentPath, user }) {
 }
 
 async function ensureAccountHasEther({ network, deploymentPath, amount, account }) {
-	const fromAccount = ZERO_ADDRESS;
+	const fromAccount =
+		network === 'mainnet'
+			? // mainnet use wETH account, otherwise owner
+			  '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+			: getUser({ network, deploymentPath, user: 'owner' });
 
 	const balance = toBN(await web3.eth.getBalance(fromAccount));
 	if (balance.lt(amount)) {
@@ -33,7 +33,11 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 }
 
 async function ensureAccountHasSNX({ network, deploymentPath, amount, account }) {
-	const fromAccount = await getUser({ network, deploymentPath, user: 'sDAO' });
+	const fromAccount = await getUser({
+		network,
+		deploymentPath,
+		user: network === 'mainnet' ? 'sDAO' : 'owner',
+	});
 
 	const SNX = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
 
@@ -50,7 +54,11 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 }
 
 async function ensureAccountHassUSD({ network, deploymentPath, amount, account }) {
-	const fromAccount = await getUser({ network, deploymentPath, user: 'sDAO' });
+	const fromAccount = await getUser({
+		network,
+		deploymentPath,
+		user: network === 'mainnet' ? 'sDAO' : 'owner',
+	});
 
 	const sUSD = await connectContract({
 		network,
