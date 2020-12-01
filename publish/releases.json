@@ -73,6 +73,6 @@
 			"minor": 33
 		},
 		"sources": ["Exchanger"],
-		"sips": [98]
+		"sips": [98, 99]
 	}
 ]
