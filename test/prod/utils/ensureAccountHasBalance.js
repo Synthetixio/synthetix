@@ -3,16 +3,20 @@ const path = require('path');
 const { connectContract } = require('./connectContract');
 const { web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
-const { wrap, toBytes32 } = require('../../..');
+const {
+	wrap,
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../../..');
 
-async function getOwner({ network, deploymentPath }) {
+async function getUser({ network, deploymentPath, user }) {
 	const { getUsers } = wrap({ network, fs, path });
 
-	return getUsers({ network, deploymentPath, user: 'owner' }).address;
+	return getUsers({ network, deploymentPath, user }).address;
 }
 
 async function ensureAccountHasEther({ network, deploymentPath, amount, account }) {
-	const fromAccount = await getOwner({ network, deploymentPath });
+	const fromAccount = ZERO_ADDRESS;
 
 	const balance = toBN(await web3.eth.getBalance(fromAccount));
 	if (balance.lt(amount)) {
@@ -29,7 +33,7 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 }
 
 async function ensureAccountHasSNX({ network, deploymentPath, amount, account }) {
-	const fromAccount = await getOwner({ network, deploymentPath });
+	const fromAccount = await getUser({ network, deploymentPath, user: 'sDAO' });
 
 	const SNX = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
 
@@ -46,7 +50,7 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 }
 
 async function ensureAccountHassUSD({ network, deploymentPath, amount, account }) {
-	const fromAccount = await getOwner({ network, deploymentPath });
+	const fromAccount = await getUser({ network, deploymentPath, user: 'sDAO' });
 
 	const sUSD = await connectContract({
 		network,
@@ -81,7 +85,7 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 }
 
 async function ensureAccountHassETH({ network, deploymentPath, amount, account }) {
-	const sUSDAmount = amount.mul(toBN('10'));
+	const sUSDAmount = amount.mul(toBN('50'));
 	await ensureAccountHassUSD({ network, deploymentPath, amount: sUSDAmount, account });
 
 	const Synthetix = await connectContract({
