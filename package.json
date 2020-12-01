@@ -27,7 +27,8 @@
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",
 		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 90000\"",
-		"test:multi-same-chain": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/multi-same-chain --timeout 900000\""
+		"test:multi-same-chain": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/multi-same-chain --timeout 900000\"",
+		"test:ovm-docker-chain": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/ovm-docker-chain --timeout 900000\""
 	},
 	"husky": {
 		"hooks": {
