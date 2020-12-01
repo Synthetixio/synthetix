@@ -16,7 +16,7 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 		network === 'mainnet'
 			? // mainnet use wETH account, otherwise owner
 			  '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
-			: getUser({ network, deploymentPath, user: 'owner' });
+			: await getUser({ network, deploymentPath, user: 'owner' });
 
 	const balance = toBN(await web3.eth.getBalance(fromAccount));
 	if (balance.lt(amount)) {
