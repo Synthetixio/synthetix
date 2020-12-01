@@ -1269,7 +1269,7 @@ const deploy = async ({
 				target: futuresMarketManager,
 				read: 'markets',
 				readArg: [0, numManagerKnownMarkets],
-				expected: markets => JSON.stringify(markets.sort()) === JSON.stringify(toKeep),
+				expected: markets => JSON.stringify(markets.slice().sort()) === JSON.stringify(toKeep),
 				write: 'removeMarkets',
 				writeArg: [toRemove],
 			});
@@ -1284,7 +1284,8 @@ const deploy = async ({
 				read: 'markets',
 				readArg: [0, Math.max(numManagerKnownMarkets, deployedFuturesMarkets.length)],
 				expected: markets =>
-					JSON.stringify(markets.sort()) === JSON.stringify(deployedFuturesMarkets.sort()),
+					JSON.stringify(markets.slice().sort()) ===
+					JSON.stringify(deployedFuturesMarkets.slice().sort()),
 				write: 'addMarkets',
 				writeArg: [toAdd],
 				gasLimit: 150e3 * toAdd.length, // extra gas per market
