@@ -808,11 +808,28 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
-    function _feeRateForExchange(
-        bytes32, // API for source in case pricing model evolves to include source rate /* sourceCurrencyKey */
-        bytes32 destinationCurrencyKey
-    ) internal view returns (uint exchangeFeeRate) {
-        return getExchangeFeeRate(destinationCurrencyKey);
+    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        internal
+        view
+        returns (uint exchangeFeeRate)
+    {
+        // Get the exchange fee rate as per destination currencyKey
+        exchangeFeeRate = getExchangeFeeRate(destinationCurrencyKey);
+
+        if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
+            return exchangeFeeRate;
+        }
+
+        // Is this a swing trade? long to short or short to long skipping sUSD.
+        if (
+            (sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69) ||
+            (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73)
+        ) {
+            // Double the exchange fee
+            exchangeFeeRate = exchangeFeeRate.mul(2);
+        }
+
+        return exchangeFeeRate;
     }
 
     function getAmountsForExchange(
