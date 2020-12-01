@@ -348,7 +348,6 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			deployer: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
 			marketClosure: '0xC105Ea57Eb434Fbe44690d7Dec2702e4a2FBFCf7',
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
-			sDAO: '0x49BE88F0fcC3A8393a59d3688480d7D253C37D2A',
 		}),
 		kovan: Object.assign({}, base),
 		rinkeby: Object.assign({}, base),
