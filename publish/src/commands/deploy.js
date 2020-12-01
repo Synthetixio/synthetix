@@ -1206,9 +1206,23 @@ const deploy = async ({
 
 	let addressesAreImported = true;
 
-	const contractsWithResolver = Object.entries(deployer.deployedContracts).filter(([, target]) =>
-		target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')
-	);
+	const contractsWithResolver = Object.entries(deployer.deployedContracts)
+		.filter(([, target]) =>
+			target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')
+		)
+		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
+		.filter(([contract]) => {
+			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
+				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
+				console.log(
+					redBright(
+						`WARNING: Not invoking ${contract}.rebuildCache(). Run node publish connect-bridge after deployment.`
+					)
+				);
+				return false;
+			}
+			return true;
+		});
 
 	if (addressResolver) {
 		// Now we need to add everything into the AddressResolver.
@@ -1256,8 +1270,6 @@ const deploy = async ({
 				),
 			],
 		});
-
-		// TODO 1: use-ovm deploy will fail due to addresses with ':' in them not existing
 
 		// TODO 2: fix this ugly hack below
 
