@@ -86,6 +86,12 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 	describe('when an exchange is made', () => {
 		let waitingPeriod;
+		before('skip if there is no exchanging implementation', async function() {
+			if (config.useOvm) {
+				this.skip();
+			}
+		});
+
 		before(async () => {
 			await exchangeSynths({
 				network,

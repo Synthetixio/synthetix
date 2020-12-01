@@ -70,7 +70,7 @@
 		"name": "Adhara",
 		"version": {
 			"major": 2,
-			"minor": 33
+			"minor": 34
 		},
 		"sources": ["Exchanger"],
 		"sips": [98, 99]
