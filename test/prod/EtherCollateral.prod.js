@@ -88,7 +88,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 	});
 
 	describe('opening a loan', () => {
-		const amount = toUnit('5');
+		const amount = toUnit('1');
 
 		let ethBalance, sEthBalance;
 		let tx;
