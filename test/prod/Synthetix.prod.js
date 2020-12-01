@@ -172,6 +172,12 @@ contract('Synthetix (prod tests)', accounts => {
 	});
 
 	describe('exchanging', () => {
+		before('skip if there is no exchanging implementation', async function() {
+			if (config.useOvm) {
+				this.skip();
+			}
+		});
+
 		addSnapshotBeforeRestoreAfter();
 
 		it('can exchange sUSD to sETH', async () => {
