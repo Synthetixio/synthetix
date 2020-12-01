@@ -57,7 +57,7 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 
 	const balance = toBN(await sUSD.transferableSynths(fromAccount));
 	if (balance.lt(amount)) {
-		const snxToTransfer = amount.mul(toBN('5'));
+		const snxToTransfer = amount.mul(toBN('10'));
 		await ensureAccountHasSNX({
 			network,
 			deploymentPath,
