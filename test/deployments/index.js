@@ -200,13 +200,13 @@ describe('deployments', () => {
 
 							// Note: instead of manually managing this list, it would be better to read this
 							// on-chain for each environment when a contract had the MixinResolver function
-							// `getResolverAddressesRequired()` and compile and check these. The problem is then
+							// `resolverAddressesRequired()` and compile and check these. The problem is then
 							// that would omit the deps from Depot and EtherCollateral which were not
 							// redeployed in Hadar (v2.21)
 							[
 								'BinaryOptionMarketFactory',
 								'BinaryOptionMarketManager',
-								// 'DebtCache', // to be added once SIP-91 is implemented
+								'DebtCache',
 								'DelegateApprovals',
 								'Depot',
 								'EtherCollateral',
@@ -262,7 +262,7 @@ describe('deployments', () => {
 
 							it(`${target} isResolverCached is true`, async () => {
 								if ('isResolverCached' in Contract.methods) {
-									assert.ok(await Contract.methods.isResolverCached(foundResolver).call());
+									assert.ok(await Contract.methods.isResolverCached().call());
 									// Depot is the only contract not currently updated to the latest MixinResolver so it
 									// doesn't expose the is cached predicate
 								} else if (target !== 'Depot') {

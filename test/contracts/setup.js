@@ -867,6 +867,24 @@ const setupAllContracts = async ({
 		);
 	}
 
+	// now rebuild caches for all contracts that need it
+	await Promise.all(
+		Object.entries(returnObj)
+			// keep items not in mocks
+			.filter(([name]) => !(name in mocks))
+			// and only those with the setResolver function
+			.filter(([, instance]) => !!instance.rebuildCache)
+			.map(([contract, instance]) => {
+				return instance.rebuildCache().catch(err => {
+					if (/Resolver missing target/.test(err.toString())) {
+						throw Error(`Cannot resolve all resolver requirements for ${contract}`);
+					} else {
+						throw err;
+					}
+				});
+			})
+	);
+
 	// if deploying a real Synthetix, then we add the synths
 	if (returnObj['Issuer'] && !mocks['Issuer']) {
 		if (returnObj['Synth']) {

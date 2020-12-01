@@ -57,7 +57,7 @@ contract('MultiCollateralSynth', accounts => {
 				from: deployerAccount,
 			}
 		);
-		await synth.setResolverAndSyncCache(resolver.address, { from: owner });
+		await synth.rebuildCache();
 
 		return { synth, tokenState, proxy };
 	};
@@ -85,7 +85,7 @@ contract('MultiCollateralSynth', accounts => {
 		});
 
 		it('ensure the list of resolver addresses are as expected', async () => {
-			const actual = await this.synth.getResolverAddressesRequired();
+			const actual = await this.synth.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
 				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral']
@@ -120,7 +120,7 @@ contract('MultiCollateralSynth', accounts => {
 				// have the owner simulate being MultiCollateral so we can invoke issue and burn
 				await resolver.importAddresses([toBytes32(collateralKey)], [owner], { from: owner });
 				// now have the synth resync its cache
-				await this.synth.setResolverAndSyncCache(resolver.address, { from: owner });
+				await this.synth.rebuildCache();
 			});
 			describe('when multiCollateral tries to issue', () => {
 				it('then it can issue new synths', async () => {
@@ -160,7 +160,7 @@ contract('MultiCollateralSynth', accounts => {
 					// have account1 simulate being Issuer so we can invoke issue and burn
 					await resolver.importAddresses([toBytes32('Issuer')], [account1], { from: owner });
 					// now have the synth resync its cache
-					await this.synth.setResolverAndSyncCache(resolver.address, { from: owner });
+					await this.synth.rebuildCache();
 				});
 				it('then it can issue new synths as account1', async () => {
 					const accountToIssue = account1;

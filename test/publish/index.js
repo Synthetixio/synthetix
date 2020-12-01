@@ -1479,10 +1479,13 @@ describe('publish scripts', () => {
 							const readProxyAddress = ReadProxyAddressResolver.options.address;
 
 							for (const { contract, Contract } of contractsWithResolver) {
-								const isCached = await callMethodWithRetry(
-									Contract.methods.isResolverCached(readProxyAddress)
-								);
+								const isCached = await callMethodWithRetry(Contract.methods.isResolverCached());
 								assert.ok(isCached, `${contract}.isResolverCached() is false!`);
+								assert.strictEqual(
+									await callMethodWithRetry(Contract.methods.resolver()),
+									readProxyAddress,
+									`${contract}.resolver is not the ReadProxyAddressResolver`
+								);
 							}
 						});
 					});
