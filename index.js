@@ -466,7 +466,7 @@ const decode = ({ network = 'mainnet', fs, path, data, target, useOvm = false } 
 	return { method: abiDecoder.decodeMethod(data), contract };
 };
 
-const wrap = ({ network, fs, path, useOvm = false }) =>
+const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 	[
 		'decode',
 		'getAST',
@@ -481,7 +481,7 @@ const wrap = ({ network, fs, path, useOvm = false }) =>
 		'getVersions',
 	].reduce((memo, fnc) => {
 		memo[fnc] = (prop = {}) =>
-			module.exports[fnc](Object.assign({ network, useOvm, fs, path }, prop));
+			module.exports[fnc](Object.assign({ network, deploymentPath, fs, path, useOvm }, prop));
 		return memo;
 	}, {});
 

@@ -113,7 +113,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 		describe('closing a loan', () => {
 			before(async () => {
 				if (network === 'local') {
-					const amount = toUnit('100');
+					const amount = toUnit('1000');
 
 					const balance = await SynthsUSD.balanceOf(Depot.address);
 					if (balance.lt(amount)) {
