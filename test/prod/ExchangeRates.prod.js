@@ -86,7 +86,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 	describe('when an exchange is made', () => {
 		let waitingPeriod;
-		before(async () => {
+		before(async function() {
 			if (config.useOvm) {
 				this.skip();
 			}
@@ -101,6 +101,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 			});
 			waitingPeriod = Number(await SystemSettings.waitingPeriodSecs());
 		});
+
 		it('should settle', async () => {
 			await fastForward(waitingPeriod);
 			await Exchanger.settle(user, toBytes32('sETH'), { from: user });
