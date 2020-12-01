@@ -2405,8 +2405,8 @@
 		"fulltag": "v2.33.0",
 		"release": "Adhara",
 		"network": "mainnet",
-		"date": "2020-12-01T13:12:01+11:00",
-		"commit": "0de54808af511e54cd54d267bb65e9145b01ef88",
+		"date": "2020-12-01T03:01:54+00:00",
+		"commit": "12576807a21a7efa6b2cbb47c5a9082a956edc64",
 		"contracts": {
 			"Exchanger": {
 				"address": "0x93b434b2e21d0F4E3ed1e9efa3Aa254A6D863B2A",
