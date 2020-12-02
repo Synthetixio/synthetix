@@ -227,14 +227,18 @@ contract FuturesMarketData {
         return value;
     }
 
+    function _order(FuturesMarket market, address account) internal view returns (FuturesMarket.Order memory) {
+        (bool orderPending, uint orderId, int orderMargin, uint orderLeverage, uint orderFee, uint orderRoundId) = market
+            .orders(account);
+        return FuturesMarket.Order(orderPending, orderId, orderMargin, orderLeverage, orderFee, orderRoundId);
+    }
+
     function _positionDetails(FuturesMarket market, address account) internal view returns (PositionData memory) {
-        (bool orderPending, int orderMargin, uint orderLeverage, uint orderFee, uint orderRoundId) = market.orders(account);
         (int positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) = market.positions(account);
         (uint liquidationPrice, ) = market.liquidationPrice(account, true);
-
         return
             PositionData(
-                FuturesMarket.Order(orderPending, orderMargin, orderLeverage, orderFee, orderRoundId),
+                _order(market, account),
                 FuturesMarket.Position(positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
                 _notionalValue(market, account),
                 _profitLoss(market, account),

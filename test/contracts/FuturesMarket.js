@@ -240,9 +240,11 @@ contract('FuturesMarket', accounts => {
 
 			const tx = await futuresMarket.submitOrder(margin, leverage, { from: trader });
 
+			const id = toBN(1);
 			const roundId = await futuresMarket.currentRoundId();
 			const order = await futuresMarket.orders(trader);
 			assert.isTrue(order.pending);
+			assert.bnEqual(order.id, id);
 			assert.bnEqual(order.margin, margin);
 			assert.bnEqual(order.leverage, leverage);
 			assert.bnEqual(order.roundId, roundId);
@@ -262,12 +264,25 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [trader, margin, leverage, fee, roundId],
+				args: [id, trader, margin, leverage, fee, roundId],
 				log: decodedLogs[1],
 			});
 		});
 
+		it('submitting orders increments the order id', async () => {
+			const margin = toUnit('200');
+			const leverage = toUnit('5');
+
+			await futuresMarket.submitOrder(margin, leverage, { from: trader });
+			const id = (await futuresMarket.orders(trader)).id;
+			await futuresMarket.submitOrder(margin, leverage, { from: trader });
+			assert.bnEqual((await futuresMarket.orders(trader)).id, id.add(toBN(1)));
+			await futuresMarket.submitOrder(margin, leverage, { from: trader2 });
+			assert.bnEqual((await futuresMarket.orders(trader2)).id, id.add(toBN(2)));
+		});
+
 		it('submitting a second order cancels the first one.', async () => {
+			// TODO: And check that this increments the order id
 			assert.isTrue(false);
 		});
 
@@ -305,8 +320,10 @@ contract('FuturesMarket', accounts => {
 
 			const tx = await futuresMarket.cancelOrder({ from: trader });
 
+			const id = toBN(1);
 			const order = await futuresMarket.orders(trader);
 			assert.isFalse(order.pending);
+			assert.bnEqual(order.id, toUnit(0));
 			assert.bnEqual(order.margin, toUnit(0));
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
@@ -325,7 +342,7 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderCancelled',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [trader],
+				args: [id, trader],
 				log: decodedLogs[1],
 			});
 		});
@@ -380,6 +397,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.roundId, toUnit(0));
 
 			// And the relevant events are properly emitted
+			const id = toBN(1);
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 			assert.equal(decodedLogs.length, 2);
 			decodedEventEqual({
@@ -391,7 +409,7 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderConfirmed',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [trader, margin, size, price, toBN(2)],
+				args: [id, trader, margin, size, price, toBN(2)],
 				log: decodedLogs[1],
 			});
 		});
@@ -429,7 +447,7 @@ contract('FuturesMarket', accounts => {
 		});
 	});
 
-	describe('Closing orders', () => {
+	describe('Closing positions', () => {
 		it('can close an open position once a new price arrives', async () => {
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');

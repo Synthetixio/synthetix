@@ -30,6 +30,7 @@ import "./interfaces/IERC20.sol";
 //         Circuit breaker (relies on pausable if a price divergence is detected, part of keeper)
 //     Ensure total system debt is being computed properly.
 //     Complete test coverage
+//     Remove pending in favour of orderId being nonzero
 //     Merge in develop
 //
 // Future (non-testnet) Functionality
@@ -62,12 +63,14 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     int private constant _SECONDS_PER_DAY = 60 * 60 * 24;
 
     /* ========== TYPES ========== */
+
     // TODO: Move these into interface
 
     enum Side {Long, Short}
 
     struct Order {
         bool pending;
+        uint id;
         int margin;
         uint leverage;
         uint fee;
@@ -102,6 +105,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     int public entryMarginSumMinusNotionalSkew;
     int public entryNotionalSkew;
     uint public pendingOrderValue;
+
+    uint internal _nextOrderId = 1;
 
     mapping(address => Order) public orders;
     mapping(address => Position) public positions;
@@ -575,8 +580,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         _manager().issueSUSD(account, absoluteMargin.add(order.fee));
         pendingOrderValue = pendingOrderValue.sub(absoluteMargin);
 
+        emitOrderCancelled(order.id, account);
         delete orders[account];
-        emitOrderCancelled(account);
     }
 
     function cancelOrder() external optionalProxy {
@@ -635,12 +640,16 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
         // Lodge the order, which can be confirmed at the next price update
         uint roundId = _currentRoundId(_exchangeRates());
+        uint id = _nextOrderId;
+        _nextOrderId = _nextOrderId.add(1);
+
         order.pending = true;
+        order.id = id;
         order.margin = margin;
         order.leverage = leverage;
         order.fee = fee;
         order.roundId = roundId;
-        emitOrderSubmitted(sender, margin, leverage, fee, roundId);
+        emitOrderSubmitted(id, sender, margin, leverage, fee, roundId);
     }
 
     function submitOrder(int margin, uint leverage) external optionalProxy {
@@ -708,7 +717,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         }
 
         delete orders[account];
-        emitOrderConfirmed(account, order.margin, newSize, entryPrice, entryIndex);
+        emitOrderConfirmed(order.id, account, order.margin, newSize, entryPrice, entryIndex);
     }
 
     function _liquidatePosition(
@@ -767,10 +776,20 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         proxy._emit(abi.encode(value), 2, SIG_PARAMETERUPDATED, parameter, 0, 0);
     }
 
-    event OrderSubmitted(address indexed account, int margin, uint leverage, uint fee, uint indexed roundId);
-    bytes32 internal constant SIG_ORDERSUBMITTED = keccak256("OrderSubmitted(address,int256,uint256,uint256,uint256)");
+    event OrderSubmitted(
+        uint indexed id,
+        address indexed account,
+        int margin,
+        uint leverage,
+        uint fee,
+        uint indexed roundId
+    );
+    bytes32 internal constant SIG_ORDERSUBMITTED = keccak256(
+        "OrderSubmitted(uint256,address,int256,uint256,uint256,uint256)"
+    );
 
     function emitOrderSubmitted(
+        uint id,
         address account,
         int margin,
         uint leverage,
@@ -779,18 +798,21 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     ) internal {
         proxy._emit(
             abi.encode(margin, leverage, fee),
-            3,
+            4,
             SIG_ORDERSUBMITTED,
+            bytes32(id),
             addressToBytes32(account),
-            bytes32(roundId),
-            0
+            bytes32(roundId)
         );
     }
 
-    event OrderConfirmed(address indexed account, int margin, int size, uint entryPrice, uint entryIndex);
-    bytes32 internal constant SIG_ORDERCONFIRMED = keccak256("OrderConfirmed(address,int256,int256,uint256,uint256)");
+    event OrderConfirmed(uint indexed id, address indexed account, int margin, int size, uint entryPrice, uint entryIndex);
+    bytes32 internal constant SIG_ORDERCONFIRMED = keccak256(
+        "OrderConfirmed(uint256,address,int256,int256,uint256,uint256)"
+    );
 
     function emitOrderConfirmed(
+        uint id,
         address account,
         int margin,
         int size,
@@ -799,19 +821,19 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     ) internal {
         proxy._emit(
             abi.encode(margin, size, entryPrice, entryIndex),
-            2,
+            3,
             SIG_ORDERCONFIRMED,
+            bytes32(id),
             addressToBytes32(account),
-            0,
             0
         );
     }
 
-    event OrderCancelled(address indexed account);
-    bytes32 internal constant SIG_ORDERCANCELLED = keccak256("OrderCancelled(address)");
+    event OrderCancelled(uint indexed id, address indexed account);
+    bytes32 internal constant SIG_ORDERCANCELLED = keccak256("OrderCancelled(uint256,address)");
 
-    function emitOrderCancelled(address account) internal {
-        proxy._emit(abi.encode(), 2, SIG_ORDERCANCELLED, addressToBytes32(account), 0, 0);
+    function emitOrderCancelled(uint id, address account) internal {
+        proxy._emit(abi.encode(), 3, SIG_ORDERCANCELLED, bytes32(id), addressToBytes32(account), 0);
     }
 
     event PositionLiquidated(address indexed account, address indexed liquidator, int size, uint price);
