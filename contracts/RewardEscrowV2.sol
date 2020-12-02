@@ -76,7 +76,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             );
         }
 
-        /* reomove address for migration from old escrow */
+        /* remove address for migration from old escrow */
         delete escrowMigrationPending[addressToMigrate];
 
         // TODO - emit event account has migrated vesting entries across
@@ -105,7 +105,10 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         }
     }
 
-    /* Migration for owner to migrate escrowed and vested account balances */
+    /**
+     * Migration for owner to migrate escrowed and vested account balances
+     * Addresses with totalEscrowedAccountBalance == 0 will not be migrated as they have all vested
+     */
     function migrateAccountEscrowBalances(
         address[] calldata accounts,
         uint256[] calldata escrowBalances,
@@ -159,7 +162,8 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             }
         }
 
-        /* update account total escrow balances for migration
+        /**
+         *  update account total escrow balances for migration
          *  transfer the escrowed SNX being migrated to the L2 deposit contract
          */
         if (escrowedAccountBalance > 0) {
