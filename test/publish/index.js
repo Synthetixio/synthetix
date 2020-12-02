@@ -473,6 +473,50 @@ describe('publish scripts', () => {
 				});
 			});
 
+			describe('synths added to Issuer', () => {
+				it('then all synths are added to the issuer', async () => {
+					const keys = await Issuer.methods.availableCurrencyKeys().call();
+					assert.deepStrictEqual(
+						keys.map(web3.utils.hexToUtf8),
+						JSON.parse(synthsJSON).map(({ name }) => name)
+					);
+				});
+				describe('when only sUSD and sETH is chosen as a synth', () => {
+					beforeEach(async () => {
+						fs.writeFileSync(
+							synthsJSONPath,
+							JSON.stringify([
+								{ name: 'sUSD', asset: 'USD' },
+								{ name: 'sETH', asset: 'ETH' },
+							])
+						);
+					});
+					describe('when Issuer redeployed', () => {
+						beforeEach(async () => {
+							const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
+							const configForExrates = Object.keys(currentConfigFile).reduce((memo, cur) => {
+								memo[cur] = { deploy: cur === 'Issuer' };
+								return memo;
+							}, {});
+
+							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
+
+							await commands.deploy({
+								addNewSynths: true,
+								network,
+								yes: true,
+								privateKey: accounts.deployer.private,
+							});
+							targets = getTarget();
+							Issuer = getContract({ target: 'Issuer' });
+						});
+						it('then only sUSD is added to the issuer', async () => {
+							const keys = await Issuer.methods.availableCurrencyKeys().call();
+							assert.deepStrictEqual(keys.map(web3.utils.hexToUtf8), ['sUSD', 'sETH']);
+						});
+					});
+				});
+			});
 			describe('deploy-staking-rewards', () => {
 				beforeEach(async () => {
 					const rewardsToDeploy = [
