@@ -7,6 +7,7 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/IIssuer.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
@@ -18,11 +19,13 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
     bytes32[24] private addressesToCache = [
         CONTRACT_EXT_MESSENGER,
         CONTRACT_SYNTHETIX,
+        CONTRACT_ISSUER,
         CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM
     ];
 
@@ -39,6 +42,10 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
     function synthetixBridgeToOptimism() internal view returns (address) {
@@ -61,6 +68,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot withdraw with debt");
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
 

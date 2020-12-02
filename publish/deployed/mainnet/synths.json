@@ -380,9 +380,9 @@
 		"asset": "OIL",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 44.9459,
-			"upperLimit": 67.4189,
-			"lowerLimit": 22.473
+			"entryPoint": 45.087,
+			"upperLimit": 67.63,
+			"lowerLimit": 22.543
 		}
 	}
 ]
