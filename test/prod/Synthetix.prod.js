@@ -6,6 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common')
 const { toUnit, fromUnit } = require('../utils')();
 const { wrap, toBytes32 } = require('../..');
 const {
+	knownMainnetWallet,
 	detectNetworkName,
 	connectContracts,
 	connectContract,
@@ -180,6 +181,11 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		describe('exchanging', () => {
+			before('skip if there is no exchanging implementation', async function() {
+				if (config.useOvm) {
+					this.skip();
+				}
+			});
 			addSnapshotBeforeRestoreAfter();
 
 			it('can exchange sUSD to sETH', async () => {
@@ -237,14 +243,12 @@ contract('Synthetix (prod tests)', accounts => {
 			return web3.eth.abi.decodeLog(vscEntry.inputs, log.data, log.topics.slice(1));
 		};
 
-		before('skip if there is no vSynth implementation', async function() {
+		before(async function() {
 			const virtualSynths = await implementsVirtualSynths({ network, deploymentPath });
 			if (config.useOvm || !virtualSynths) {
 				this.skip();
 			}
-		});
 
-		before(async () => {
 			await skipWaitingPeriod({ network, deploymentPath });
 
 			Exchanger = await connectContract({
@@ -361,7 +365,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		describe('with virtual tokens and a custom swap contract', () => {
-			const usdcHolder = '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8';
+			const usdcHolder = knownMainnetWallet;
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 

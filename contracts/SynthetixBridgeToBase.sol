@@ -7,6 +7,7 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/IIssuer.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
@@ -18,6 +19,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
     // ========== CONSTRUCTOR ==========
@@ -33,6 +35,10 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    }
+
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function synthetixBridgeToOptimism() internal view returns (address) {
@@ -54,16 +60,18 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     // ========== VIEWS ==========
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](3);
+        addresses = new bytes32[](4);
         addresses[0] = CONTRACT_EXT_MESSENGER;
         addresses[1] = CONTRACT_SYNTHETIX;
         addresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
+        addresses[3] = CONTRACT_ISSUER;
     }
 
     // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot withdraw with debt");
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
 

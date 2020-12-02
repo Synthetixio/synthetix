@@ -32,17 +32,18 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let messenger;
 		let mintableSynthetix;
 		let resolver;
+		let issuer;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
 			});
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
-
+			issuer = await smockit(artifacts.require('IIssuer').abi);
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
-				['ext:Messenger', 'Synthetix', 'base:SynthetixBridgeToOptimism'].map(toBytes32),
-				[messenger.address, mintableSynthetix.address, snxBridgeToOptimism],
+				['ext:Messenger', 'Synthetix', 'base:SynthetixBridgeToOptimism', 'Issuer'].map(toBytes32),
+				[messenger.address, mintableSynthetix.address, snxBridgeToOptimism, issuer.address],
 				{ from: owner }
 			);
 		});
@@ -54,6 +55,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			mintableSynthetix.smocked.balanceOf.will.return.with(() => web3.utils.toWei('1'));
 			messenger.smocked.sendMessage.will.return.with(() => {});
 			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToOptimism);
+			issuer.smocked.debtBalanceOf.will.return.with(() => '0');
 		});
 
 		describe('when the target is deployed', () => {
@@ -64,6 +66,13 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			});
 
 			describe('initiateWithdrawal', () => {
+				describe('failure modes', () => {
+					it('does not work when user has debt', async () => {
+						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
+						await assert.revert(instance.initiateWithdrawal('1'), 'Cannot withdraw with debt');
+					});
+				});
+
 				describe('when invoked by a user', () => {
 					let withdrawalTx;
 					const amount = 100;

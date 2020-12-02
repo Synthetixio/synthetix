@@ -709,7 +709,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'SynthetixBridgeToBase',
 			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism'],
-			deps: ['AddressResolver'],
+			deps: ['AddressResolver', 'Issuer'],
 		},
 		{ contract: 'TradingRewards', deps: ['AddressResolver', 'Synthetix'] },
 		{
