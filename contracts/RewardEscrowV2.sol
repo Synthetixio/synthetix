@@ -12,6 +12,8 @@ import "./interfaces/IRewardEscrow.sol";
 contract RewardEscrowV2 is BaseRewardEscrowV2 {
     IRewardEscrow public oldRewardEscrow;
 
+    mapping(address => bool) public escrowMigrationPending;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM = "SynthetixBridgeToOptimism";
@@ -41,20 +43,24 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* Function to allow any address to migrate vesting entries from previous reward escrow */
     function migrateVestingSchedule(address addressToMigrate) external {
-        require(totalEscrowedAccountBalance[addressToMigrate] > 0, "Address escrow balance is 0");
+        require(escrowMigrationPending[addressToMigrate], "No escrow migration pending");
 
         uint numEntries = oldRewardEscrow.numVestingEntries(addressToMigrate);
 
-        // Calculate entries that can be vested and total vested to deduct from totalEscrowedAccountBalance
+        /* Ensure account escrow balance is not zero */
+        require(totalEscrowedAccountBalance[addressToMigrate] > 0, "Address escrow balance is 0");
+
+        /* Calculate entries that can be vested and total vested amount to deduct from
+         * totalEscrowedAccountBalance */
         (uint vestedEntries, uint totalVested) = _getVestedEntriesAndAmount(addressToMigrate, numEntries);
 
-        // transfer vested tokens to account
+        /* transfer vested tokens to account */
         if (totalVested != 0) {
             _transferVestedTokens(addressToMigrate, totalVested);
         }
 
-        // iterate and migrate old escrow schedules from vestingSchedules[vestedEntries - 1]
-        // stop at the end of the vesting schedule list
+        /* iterate and migrate old escrow schedules from vestingSchedules[vestedEntries - 1]
+         * stop at the end of the vesting schedule list */
         for (uint i = vestedEntries - 1; i < numEntries; i++) {
             uint[2] memory vestingSchedule = oldRewardEscrow.getVestingScheduleEntry(addressToMigrate, i);
 
@@ -70,6 +76,9 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             );
         }
 
+        /* remove address for migration from old escrow */
+        delete escrowMigrationPending[addressToMigrate];
+
         // TODO - emit event account has migrated vesting entries across
     }
 
@@ -81,7 +90,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         returns (uint vestedEntries, uint totalVestedAmount)
     {
         for (uint i = 0; i < _numEntries; i++) {
-            // get existing vesting entry [time, quantity]
+            /* get existing vesting entry [time, quantity] */
             uint[2] memory vestingSchedule = oldRewardEscrow.getVestingScheduleEntry(_account, i);
             /* The list is sorted on the old RewardEscrow; when we reach the first future time, bail out. */
             uint time = vestingSchedule[0];
@@ -96,7 +105,10 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         }
     }
 
-    /* Migration for owner to migrate escrowed and vested account balances */
+    /**
+     * Migration for owner to migrate escrowed and vested account balances
+     * Addresses with totalEscrowedAccountBalance == 0 will not be migrated as they have all vested
+     */
     function migrateAccountEscrowBalances(
         address[] calldata accounts,
         uint256[] calldata escrowBalances,
@@ -105,17 +117,23 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         require(accounts.length == escrowBalances.length, "Number of accounts and balances don't match");
         require(accounts.length == vestedBalances.length, "Number of accounts and vestedBalances don't match");
 
-        // TODO - consider adding checks that there is enough balance in contract to provide for the totalEscrowedAccountbalance
         for (uint i = 0; i < accounts.length; i++) {
-            totalEscrowedAccountBalance[accounts[i]] = escrowBalances[i];
-            totalVestedAccountBalance[accounts[i]] = vestedBalances[i];
+            address account = accounts[i];
+            uint escrowedAmount = escrowBalances[i];
+            uint vestedAmount = vestedBalances[i];
+
+            /* Update totalEscrowedBalance for tracking the Synthetix balance of this contract. */
+            totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
+
+            /* Update totalEscrowedAccountBalance and totalVestedAccountBalance for each account */
+            totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
+            totalVestedAccountBalance[account] = totalVestedAccountBalance[account].add(vestedBalances[i]);
+
+            /* flag address for migration from old escrow */
+            escrowMigrationPending[account] = true;
+
+            emit MigratedAccountEscrow(account, escrowedAmount, vestedAmount, now);
         }
-
-        // TODO enable contract after migrating all account escrow balances, prevent adding vesting entries and vesting until all account escrow balances migrated.
-    }
-
-    function vestingScheduleMigrationPending(address account) public view returns (bool) {
-        return totalEscrowedAccountBalance[account] > 0 && _numVestingEntries(account) == 0;
     }
 
     /* ========== L2 MIGRATION ========== */
@@ -144,7 +162,8 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             }
         }
 
-        /* update account total escrow balances for migration
+        /**
+         *  update account total escrow balances for migration
          *  transfer the escrowed SNX being migrated to the L2 deposit contract
          */
         if (escrowedAccountBalance > 0) {
@@ -156,7 +175,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     }
 
     function _checkEscrowMigrationPending(address account) internal view {
-        require(!vestingScheduleMigrationPending(account), "Escrow migration pending");
+        require(!escrowMigrationPending[account], "Escrow migration pending");
     }
 
     /* ========== MODIFIERS ========== */
@@ -165,4 +184,8 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         require(msg.sender == synthetixBridgeToOptimism(), "Can only be invoked by SynthetixBridgeToOptimism contract");
         _;
     }
+
+    /* ========== EVENTS ========== */
+    event MigratedAccountEscrow(address indexed account, uint escrowedAmount, uint vestedAmount, uint time);
+    event MigratedVestingSchedules(address indexed account, uint time);
 }
