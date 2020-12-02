@@ -1,7 +1,5 @@
 # Simulates a deployment of an ovm configuration in a local chain, and runs production tests against it
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
 steps:
   - checkout
   - attach_workspace:

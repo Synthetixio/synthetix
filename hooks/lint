@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+# Detect changes in js and sol files
+jsChangedFiles=$(git diff --name-only --exit-code --staged -- '***.js')
+solChangedFiles=$(git diff --name-only --exit-code --staged -- '***.sol' ':!contracts/interfaces/*.sol')
+isolChangedFiles=$(git diff --name-only --exit-code --staged -- 'contracts/interfaces/*.sol')
+
+# Lint Javascript, only on changed files
+if [[ ! -z $jsChangedFiles ]]; then
+	echo "Javascript changed files [$jsChangedFiles]"
+	stderrOutput=$(npx eslint $jsChangedFiles --ignore-pattern '!.*' 2>&1)
+	if [[ ! -z $stderrOutput ]]; then
+		echo "Javascript lint failed with: $stderrOutput"
+		exit 1
+	fi
+fi
+
+# Lint Solidity, only on changed files
+if [[ ! -z $solChangedFiles ]]; then
+	echo "Solidity changed files [$solChangedFiles]"
+	stderrOutput=$(npx solhint $solChangedFiles 2>&1)
+	if [[ ! -z $stderrOutput ]]; then
+		echo "Solidity lint failed with: $stderrOutput"
+		exit 1
+	fi
+fi
+if [[ ! -z $isolChangedFiles ]]; then
+	echo "Solidity interface files changed [$isolChangedFiles]"
+	stderrOutput=$(npx solhint $isolChangedFiles --config contracts/interfaces/.solhint.json 2>&1) # Capture stderr
+	if [[ ! -z $stderrOutput ]]; then
+		echo "Solidity interface lint failed with: $stderrOutput"
+		exit 1
+	fi
+fi

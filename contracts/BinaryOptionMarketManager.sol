@@ -7,7 +7,7 @@ import "./MixinResolver.sol";
 import "./interfaces/IBinaryOptionMarketManager.sol";
 
 // Libraries
-import "./AddressListLib.sol";
+import "./AddressSetLib.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
@@ -24,7 +24,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
-    using AddressListLib for AddressListLib.AddressList;
+    using AddressSetLib for AddressSetLib.AddressSet;
 
     /* ========== TYPES ========== */
 
@@ -54,8 +54,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
     bool public marketCreationEnabled = true;
     uint public totalDeposited;
 
-    AddressListLib.AddressList internal _activeMarkets;
-    AddressListLib.AddressList internal _maturedMarkets;
+    AddressSetLib.AddressSet internal _activeMarkets;
+    AddressSetLib.AddressSet internal _maturedMarkets;
 
     BinaryOptionMarketManager internal _migratingManager;
 
@@ -275,7 +275,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
             [fees.poolFee, fees.creatorFee, fees.refundFee]
         );
         market.setResolverAndSyncCache(resolver);
-        _activeMarkets.push(address(market));
+        _activeMarkets.add(address(market));
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the manager doesn't know its address in order to grant it permission.
@@ -290,7 +290,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
         require(_activeMarkets.contains(market), "Not an active market");
         BinaryOptionMarket(market).resolve();
         _activeMarkets.remove(market);
-        _maturedMarkets.push(market);
+        _maturedMarkets.add(market);
     }
 
     function cancelMarket(address market) external notPaused {
@@ -346,7 +346,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
         if (_numMarkets == 0) {
             return;
         }
-        AddressListLib.AddressList storage markets = active ? _activeMarkets : _maturedMarkets;
+        AddressSetLib.AddressSet storage markets = active ? _activeMarkets : _maturedMarkets;
 
         uint runningDepositTotal;
         for (uint i; i < _numMarkets; i++) {
@@ -375,7 +375,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
         if (_numMarkets == 0) {
             return;
         }
-        AddressListLib.AddressList storage markets = active ? _activeMarkets : _maturedMarkets;
+        AddressSetLib.AddressSet storage markets = active ? _activeMarkets : _maturedMarkets;
 
         uint runningDepositTotal;
         for (uint i; i < _numMarkets; i++) {
@@ -383,7 +383,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
             require(!_isKnownMarket(address(market)), "Market already known.");
 
             market.acceptOwnership();
-            markets.push(address(market));
+            markets.add(address(market));
             // Update the market with the new manager address,
             runningDepositTotal = runningDepositTotal.add(market.deposited());
         }
