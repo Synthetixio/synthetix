@@ -59,6 +59,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     using SignedSafeDecimalMath for int;
 
     int private constant _UNIT = int(10**uint(18));
+    int private constant _SECONDS_PER_DAY = 60 * 60 * 24;
 
     /* ========== TYPES ========== */
     // TODO: Move these into interface
@@ -236,6 +237,10 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return _proportionalSkew();
     }
 
+    function _currentFundingRatePerSecond() internal view returns (int) {
+        return _currentFundingRate() / _SECONDS_PER_DAY;
+    }
+
     function _currentFundingRate() internal view returns (int) {
         int maxFundingRateSkew = int(parameters.maxFundingRateSkew);
         int maxFundingRate = int(parameters.maxFundingRate);
@@ -244,7 +249,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         }
 
         int functionFraction = _proportionalSkew().divideDecimalRound(maxFundingRateSkew);
-        return _min(_max(-_UNIT, functionFraction), _UNIT).multiplyDecimalRound(maxFundingRate);
+        // Note the minus sign: funding flows in the opposite direction to the skew.
+        return _min(_max(-_UNIT, -functionFraction), _UNIT).multiplyDecimalRound(maxFundingRate);
     }
 
     function currentFundingRate() external view returns (int) {
@@ -254,7 +260,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     function _unrecordedFunding() internal view returns (int funding, bool isInvalid) {
         int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
         (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
-        return (_currentFundingRate().multiplyDecimalRound(int(price)).mul(elapsed), invalid);
+        return (_currentFundingRatePerSecond().multiplyDecimalRound(int(price)).mul(elapsed), invalid);
     }
 
     function unrecordedFunding() external view returns (int funding, bool isInvalid) {
@@ -314,7 +320,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         }
         uint sequenceLength = fundingSequence.length;
         (int net, bool invalid) = _netFundingPerUnit(entryIndex, fundingIndex, sequenceLength);
-        return (position.size.multiplyDecimalRound(net), invalid);
+        return (_signedAbs(position.size).multiplyDecimalRound(net), invalid);
     }
 
     function accruedFunding(address account) external view returns (int funding, bool isInvalid) {

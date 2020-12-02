@@ -620,8 +620,6 @@ contract('FuturesMarket', accounts => {
 			// TODO: Ensure liquidation price is accurate here.
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 
-			console.log(decodedLogs[1]);
-
 			assert.equal(decodedLogs.length, 2);
 			decodedEventEqual({
 				event: 'Issued',
@@ -681,10 +679,13 @@ contract('FuturesMarket', accounts => {
 						market: futuresMarket,
 						account: trader,
 						fillPrice: toUnit('100'),
-						margin: toUnit('1000'),
+						margin,
 						leverage: toUnit('10'),
 					});
-					assert.bnEqual(await futuresMarket.currentFundingRate(), maxFundingRate);
+
+					const expected = side === 'long' ? maxFundingRate : -maxFundingRate;
+
+					assert.bnEqual(await futuresMarket.currentFundingRate(), expected);
 				});
 
 				// TODO: Loop for other funding rate levels.
