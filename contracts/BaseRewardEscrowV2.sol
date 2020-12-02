@@ -42,7 +42,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     uint internal constant TIME_INDEX = 0;
     uint internal constant QUANTITY_INDEX = 1;
 
-    uint public accountMergingDuration = 24 hours;
+    uint public accountMergingDuration = 48 hours;
 
     uint public accountMergingEndTime;
 
@@ -105,6 +105,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     function vestingScheduleMigrationPending(address account) public view returns (bool) {
         return totalEscrowedAccountBalance[account] > 0 && _numVestingEntries(account) == 0;
+    }
+
+    function _numVestingEntries(address account) internal view returns (uint) {
+        return accountVestingEntryIDs[account].length;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -254,10 +258,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
         /* Increment the next entry id. */
         nextEntryId = nextEntryId.add(1);
-    }
-
-    function _numVestingEntries(address account) internal view returns (uint) {
-        return accountVestingEntryIDs[account].length;
     }
 
     /* ========== MODIFIERS ========== */

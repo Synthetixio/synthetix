@@ -105,13 +105,17 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         require(accounts.length == escrowBalances.length, "Number of accounts and balances don't match");
         require(accounts.length == vestedBalances.length, "Number of accounts and vestedBalances don't match");
 
-        // TODO - consider adding checks that there is enough balance in contract to provide for the totalEscrowedAccountbalance
         for (uint i = 0; i < accounts.length; i++) {
-            totalEscrowedAccountBalance[accounts[i]] = escrowBalances[i];
-            totalVestedAccountBalance[accounts[i]] = vestedBalances[i];
-        }
+            uint escrowedAmount = escrowBalances[i];
+            address account = accounts[i];
 
-        // TODO enable contract after migrating all account escrow balances, prevent adding vesting entries and vesting until all account escrow balances migrated.
+            /* Update totalEscrowedBalance for tracking the Synthetix balance of this contract. */
+            totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
+
+            /* Update totalEscrowedAccountBalance and totalVestedAccountBalance for each account */
+            totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
+            totalVestedAccountBalance[account] = totalVestedAccountBalance[account].add(vestedBalances[i]);
+        }
     }
 
     function vestingScheduleMigrationPending(address account) public view returns (bool) {
