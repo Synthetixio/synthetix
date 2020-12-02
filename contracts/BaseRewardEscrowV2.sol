@@ -253,7 +253,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         uint entryID = nextEntryId;
         vestingSchedules[account][entryID] = entry;
 
-        // append entryID to list of entries for account
+        /* append entryID to list of entries for account */
         accountVestingEntryIDs[account].push(entryID);
 
         /* Increment the next entry id. */

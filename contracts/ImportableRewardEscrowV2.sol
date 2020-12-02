@@ -36,12 +36,12 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
             "Insufficient balance in the contract to provide for escrowed balance"
         );
 
+        /* Add escrowedAmount to account's escrowed balance */
+        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
+
         for (uint i = 0; i < vestingEntries.length; i++) {
             _importVestingEntry(account, vestingEntries[i]);
         }
-
-        // Record account escrowed balance
-        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
     }
 
     modifier onlySynthetixBridge() {
