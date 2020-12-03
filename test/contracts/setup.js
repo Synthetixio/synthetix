@@ -113,6 +113,11 @@ const setupContract = async ({
 		);
 	};
 
+	// if it needs library linking
+	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
+		await artifact.link(await artifacts.require('SafeDecimalMath').new());
+	}
+
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
 
 	const tryGetProperty = ({ property, otherwise }) =>
