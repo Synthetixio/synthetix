@@ -12,5 +12,6 @@
 	"SupplySchedule",
 	"SynthetixEscrow",
 	"SynthetixState",
-	"TokenState"
+	"TokenState",
+	"ReadProxyAddressResolver"
 ]

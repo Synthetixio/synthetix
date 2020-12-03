@@ -109,9 +109,9 @@ const deploy = async ({
 			// Note: if nonDeployable = 'TokenState', this will match 'TokenStatesUSD'
 			nonUpgradeable.map(nonUpgradeableContract => {
 				contractsToDeploy.map(contractName => {
-					if (contractName.includes(nonUpgradeableContract)) {
+					if (contractName.match(new RegExp(`^${nonUpgradeableContract}`, 'g'))) {
 						throw new Error(
-							`You are attempting to deploy a contract marked as non-upgradeable: ${contractName}`
+							`You are attempting to deploy a contract marked as non-upgradeable: ${contractName}. This action could result in loss of state. Please verify and use --ignore-safety-checks if you really know what you're doing.`
 						);
 					}
 				});
