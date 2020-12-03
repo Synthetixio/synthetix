@@ -74,5 +74,14 @@
 		},
 		"sources": ["Exchanger"],
 		"sips": [98, 99]
+	},
+	{
+		"name": "Shaula",
+		"version": {
+			"major": 2,
+			"minor": 35
+		},
+		"sources": [],
+		"sips": []
 	}
 ]
