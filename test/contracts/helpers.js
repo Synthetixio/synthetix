@@ -174,10 +174,7 @@ module.exports = {
 		};
 
 		const combinedParentsABI = ignoreParents
-			.reduce(
-				(memo, parent) => memo.concat(artifacts.require(parent, { ignoreLegacy: true }).abi),
-				[]
-			)
+			.reduce((memo, parent) => memo.concat(artifacts.require(parent).abi), [])
 			.map(removeExcessParams);
 
 		const fncs = abi

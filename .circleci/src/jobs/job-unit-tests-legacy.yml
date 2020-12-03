@@ -1,8 +1,0 @@
-# Runs unit tests against legacy contracts
-{{> job-header.yml}}
-steps:
-  - checkout
-  - attach_workspace:
-      at: .
-  - run: npm run compile:legacy
-  - run: npx hardhat test:legacy

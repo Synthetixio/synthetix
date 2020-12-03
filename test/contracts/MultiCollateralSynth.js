@@ -4,6 +4,7 @@ const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
+const TokenState = artifacts.require('TokenState');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
@@ -31,8 +32,6 @@ contract('MultiCollateralSynth', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
-		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
-		const TokenState = artifacts.require('TokenState');
 		const Proxy = artifacts.require('Proxy');
 
 		tokenState =

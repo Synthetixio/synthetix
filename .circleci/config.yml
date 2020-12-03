@@ -242,19 +242,6 @@ jobs:
       - run: npm run test:gas && npx codechecks codechecks.unit.yml
       - store_artifacts:
           path: test-gas-used.log
-  job-unit-tests-legacy:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npm run compile:legacy
-      - run: npx hardhat test:legacy
   job-unit-tests-ovm:
     working_directory: ~/repo
     docker:
@@ -349,12 +336,6 @@ workflows:
           requires:
             - job-prepare
       - job-unit-tests-gas-report:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
-          requires:
-            - job-prepare
-      - job-unit-tests-legacy:
           filters:
             branches:
               only: /.*(develop|staging|master).*/
