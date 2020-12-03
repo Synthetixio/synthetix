@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, web3, log, linkWithLegacySupport } = require('hardhat');
+const { artifacts, web3, log } = require('hardhat');
 
 const { toWei } = web3.utils;
 const {
@@ -115,7 +115,7 @@ const setupContract = async ({
 
 	// if it needs library linking
 	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
-		await linkWithLegacySupport(artifact, 'SafeDecimalMath');
+		await artifact.link(await artifacts.require('SafeDecimalMath').new());
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
@@ -302,14 +302,6 @@ const setupContract = async ({
 						tryInvocationIfNotMocked({
 							name: 'SynthetixEscrow',
 							fncName: 'setSynthetix',
-							args: [instance.address],
-						}) || []
-					)
-					.concat(
-						// If there's an escrow that's the legacy version
-						tryInvocationIfNotMocked({
-							name: 'SynthetixEscrow',
-							fncName: 'setHavven',
 							args: [instance.address],
 						}) || []
 					)

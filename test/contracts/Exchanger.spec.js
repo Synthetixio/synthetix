@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy } = require('hardhat');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -1697,8 +1697,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						synthetix.exchange(sAUD, toUnit('1'), sUSD, {
 							from: account1,
 						}),
-						// Legacy safe math had no revert reasons
-						!legacy ? 'SafeMath: subtraction overflow' : undefined
+						'SafeMath: subtraction overflow'
 					);
 				});
 
@@ -1707,8 +1706,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						synthetix.exchange(sUSD, toUnit('1001'), sAUD, {
 							from: account1,
 						}),
-						// Legacy safe math had no revert reasons
-						!legacy ? 'SafeMath: subtraction overflow' : undefined
+						'SafeMath: subtraction overflow'
 					);
 				});
 
