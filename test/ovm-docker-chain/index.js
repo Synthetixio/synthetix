@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
 const ethers = require('ethers');
+const axios = require('axios');
 
 const { parseEther, parseUnits } = ethers.utils;
 
@@ -55,28 +56,17 @@ describe('deploy', () => {
 		return folderPath;
 	};
 
-	const switchL2Deployment = (network = 'local', deploymentPath, deployL1ToL2Bridge) => {
+	const prepareFreshDeployment = (network = 'local', deploymentPath) => {
 		ensureDeploymentPath(deploymentPath);
 		// get the (local) config file
 		const { config, configFile } = loadAndCheckRequiredSources({
 			deploymentPath,
 			network,
 		});
-
-		// fresh deployment
+		// switch to true
 		Object.keys(config).map(source => {
 			config[source] = { deploy: true };
 		});
-
-		// adjust deployment indicators and update config file
-		// if (deployL1ToL2Bridge) {
-		// 	delete config['SynthetixBridgeToBase'];
-		// 	config['SynthetixBridgeToOptimism'] = { deploy: true };
-		// } else {
-		// 	delete config['SynthetixBridgeToOptimism'];
-		// 	config['SynthetixBridgeToBase'] = { deploy: true };
-		// }
-
 		fs.writeFileSync(configFile, JSON.stringify(config));
 	};
 
@@ -89,12 +79,6 @@ describe('deploy', () => {
 			deploymentPath: deploymentPaths[instance],
 			wallet: user || wallet,
 		});
-
-	// before('compile contracts', async () => {
-	// 	// Note: Will use regular compilation for both instances
-	// 	// since they will be run in a regular local chain.
-	// 	await commands.build({ showContractSize: true, testHelpers: true });
-	// });
 
 	// before('deploy instance 1', async () => {
 	// 	deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-local-' }));
@@ -123,20 +107,34 @@ describe('deploy', () => {
 		// deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-local-ovm-' }));
 		const deploymentPath = createTempLocalCopy({ prefix: 'snx-docker-2-local-ovm-' });
 		// ensure that only SynthetixBridgeToBase is deployed on L2
-		switchL2Deployment(network, deploymentPath, false);
+		prepareFreshDeployment(network, deploymentPath, false);
+		// complie with the useOVM flag set
+		await commands.build({ showContractSize: true, useOvm: true });
 
-		await commands.deploy({
-			network,
-			freshDeploy: true,
-			yes: true,
-			privateKey: deployer.private,
-			useOvm: true,
-			ignoreSafetyChecks: false,
-			deploymentPath: deploymentPath,
-			methodCallGasLimit: '2500000',
-			contractDeploymentGasLimit: '11000000',
-			gasPrice: '0',
-		});
+		// await commands.deploy({
+		// 	network,
+		// 	freshDeploy: true,
+		// 	yes: true,
+		// 	privateKey: deployer.private,
+		// 	useOvm: true,
+		// 	ignoreSafetyChecks: false,
+		// 	deploymentPath: deploymentPath,
+		// 	methodCallGasLimit: '2500000',
+		// 	contractDeploymentGasLimit: '11000000',
+		// 	gasPrice: '0',
+		// });
+
+		let staticAddresses;
+		await axios.get('http://localhost:8080/addresses.json').then(
+			response => {
+				staticAddresses = response.data;
+			},
+			error => {
+				console.log(error);
+			}
+		);
+		const l2Messenger = staticAddresses['OVM_L2CrossDomainMessenger'];
+		console.log(l2Messenger);
 
 		// now set the external messenger contract
 		// const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 1 });
