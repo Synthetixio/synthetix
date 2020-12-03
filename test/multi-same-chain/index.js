@@ -11,7 +11,7 @@ const {
 	relayL2ToL1Messages,
 } = require('@eth-optimism/ovm-toolchain');
 
-const { assert } = require('../contracts/common');
+const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const testUtils = require('../utils');
 const { ensureDeploymentPath, loadAndCheckRequiredSources } = require('../../publish/src/util');
 
@@ -222,6 +222,32 @@ describe('deploy multiple instances', () => {
 			).wait();
 		});
 
+		describe('when the L1 system is suspended', () => {
+			let systemStatusL1;
+
+			before('connect to SystemStatus', async () => {
+				systemStatusL1 = fetchContract({
+					contract: 'SystemStatus',
+					source: 'SystemStatus',
+					instance: 0,
+				});
+			});
+
+			before('suspend the system', async () => {
+				const tx = await systemStatusL1.suspendSystem(1);
+				await tx.wait();
+			});
+
+			after('resume the system', async () => {
+				const tx = await systemStatusL1.resumeSystem();
+				await tx.wait();
+			});
+
+			it('reverts when trying to deposit', async () => {
+				await assert.revert(l1ToL2Bridge.deposit(1, overrides), 'Synthetix is suspended');
+			});
+		});
+
 		before('when the user deposits 100 SNX into the bridge contract', async () => {
 			// start the deposit by the user on L1
 			await (await l1ToL2Bridge.deposit(parseEther('100'), overrides)).wait();
@@ -253,27 +279,64 @@ describe('deploy multiple instances', () => {
 
 		describe('when the user withdraws back to L1', () => {
 			let l2ToL1Bridge;
-			before('initiate withdrawal', async () => {
+
+			before('connect to the l2 bridge', () => {
 				l2ToL1Bridge = fetchContract({ contract: 'SynthetixBridgeToBase', instance: 1, user });
-				// initiate withdrawal on L2
-				await l2ToL1Bridge.initiateWithdrawal(parseEther('100'), overrides);
-				// fast forward 1000s
-				await mineBlock(provider, 1000);
-				// wait for message to be relayed
-				await relayL2ToL1Messages(user);
 			});
 
-			it('the totalSupply on L2 decreases by 100', async () => {
-				assert.bnEqual(await synthetixAlt.totalSupply(), l2InitialTotalSupply);
+			describe('when the L2 system is suspended', () => {
+				let systemStatusL2;
+
+				addSnapshotBeforeRestoreAfter();
+
+				before('connect to SystemStatus', async () => {
+					systemStatusL2 = fetchContract({
+						contract: 'SystemStatus',
+						source: 'SystemStatus',
+						instance: 1,
+					});
+				});
+
+				before('suspend the system', async () => {
+					const tx = await systemStatusL2.suspendSystem(1);
+					await tx.wait();
+				});
+
+				after('resume the system', async () => {
+					const tx = await systemStatusL2.resumeSystem();
+					await tx.wait();
+				});
+
+				it('reverts when trying to withdraw', async () => {
+					await assert.revert(
+						l2ToL1Bridge.initiateWithdrawal(1, overrides),
+						'Synthetix is suspended'
+					);
+				});
 			});
 
-			it('the deposit contract has 0 balance', async () => {
-				assert.bnEqual(await synthetix.balanceOf(l1ToL2Bridge.address), 0);
-			});
+			describe('when the L2 system is not suspended', () => {
+				before('initiate withdrawal', async () => {
+					// initiate withdrawal on L2
+					await l2ToL1Bridge.initiateWithdrawal(parseEther('100'), overrides);
+					// fast forward 1000s
+					await mineBlock(provider, 1000);
+					// wait for message to be relayed
+					await relayL2ToL1Messages(user);
+				});
 
-			it('then the user has again 1000 SNX on L1', async () => {
-				const newL1Balance = await synthetix.balanceOf(user.address);
-				assert.bnEqual(newL1Balance, parseEther('1000'));
+				it('the totalSupply on L2 decreases by 100', async () => {
+					assert.bnEqual(await synthetixAlt.totalSupply(), l2InitialTotalSupply);
+				});
+
+				it('the deposit contract has 0 balance', async () => {
+					assert.bnEqual(await synthetix.balanceOf(l1ToL2Bridge.address), 0);
+				});
+
+				it('then the user has again 1000 SNX on L1', async () => {
+					const newL1Balance = await synthetix.balanceOf(user.address);
+					assert.bnEqual(newL1Balance, parseEther('1000'));
+				});
 			});
 		});
 	});
