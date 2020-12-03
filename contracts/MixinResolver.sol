@@ -64,5 +64,6 @@ contract MixinResolver {
     }
 
     /* ========== EVENTS ========== */
+
     event CacheUpdated(bytes32 name, address destination);
 }

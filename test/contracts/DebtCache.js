@@ -111,7 +111,7 @@ contract('DebtCache', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: debtCache.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'takeDebtSnapshot',
 				'purgeCachedSynthDebt',
@@ -352,6 +352,7 @@ contract('DebtCache', async accounts => {
 				await addressResolver.importAddresses([debtCacheName], [newDebtCache.address], {
 					from: owner,
 				});
+				await newDebtCache.rebuildCache();
 
 				assert.bnEqual(await newDebtCache.cachedDebt(), toUnit('0'));
 				assert.bnEqual(await newDebtCache.cachedSynthDebt(sUSD), toUnit('0'));
@@ -705,7 +706,7 @@ contract('DebtCache', async accounts => {
 				await addressResolver.importAddresses([debtCacheName], [newDebtCache.address], {
 					from: owner,
 				});
-
+				await newDebtCache.rebuildCache();
 				await newDebtCache.takeDebtSnapshot();
 				const issued = (await newDebtCache.cacheInfo())[0];
 
@@ -959,7 +960,11 @@ contract('DebtCache', async accounts => {
 				);
 
 				// rebuild the caches of those addresses not just added to the adress resolver
-				await Promise.all([issuer.rebuildCache(), exchanger.rebuildCache()]);
+				await Promise.all([
+					issuer.rebuildCache(),
+					exchanger.rebuildCache(),
+					realtimeDebtCache.rebuildCache(),
+				]);
 			});
 
 			it('Cached values report current numbers without cache resynchronisation', async () => {

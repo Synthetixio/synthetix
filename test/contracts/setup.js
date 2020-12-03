@@ -876,11 +876,7 @@ const setupAllContracts = async ({
 			.filter(([, instance]) => !!instance.rebuildCache)
 			.map(([contract, instance]) => {
 				return instance.rebuildCache().catch(err => {
-					if (/Resolver missing target/.test(err.toString())) {
-						throw Error(`Cannot resolve all resolver requirements for ${contract}`);
-					} else {
-						throw err;
-					}
+					throw err;
 				});
 			})
 	);
