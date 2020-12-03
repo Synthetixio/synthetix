@@ -40,6 +40,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalEscrowedBalance;
 
+    uint public constant MAX_DURATION = 5 years;
+
     /* ========== OLD ESCROW LOOKUP ========== */
 
     uint internal constant TIME_INDEX = 0;
@@ -153,7 +155,33 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         }
     }
 
-    function _amountClaimable(VestingEntries.VestingEntry memory entry) internal view returns (uint256 quantity) {}
+    function _amountClaimable(VestingEntries.VestingEntry memory entry) internal view returns (uint256 quantity) {
+        // Get the amount vested for the entry
+    }
+
+    /**
+     * Calculate the time in seconds between `block.timestamp` and lastVested
+     */
+    function _deltaOf(uint endTime, uint lastVested) internal view returns (uint256 delta) {}
+
+    /**
+     * @notice Create an escrow entry to lock SNX for given a given duration in seconds
+     * @dev This call expects that the depositor (msg.sender) has already approved the Reward escrow contract
+     to spend the the amount being escrowed.
+     */
+    function createEscrowEntry(
+        address beneficiary,
+        uint deposit,
+        uint duration
+    ) external {
+        require(beneficiary != address(0), "Cannot create escrow with address(0)");
+
+        /* Transfer SNX from msg.sender */
+        require(IERC20(address(synthetix())).transferFrom(msg.sender, address(this), deposit), "token transfer failed");
+
+        /* Append vesting entry for the beneficiary address */
+        _appendVestingEntry(beneficiary, deposit, duration);
+    }
 
     /**
      * @notice Add a new vesting entry at a given time and quantity to an account's schedule.
@@ -260,6 +288,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     ) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
+        require(duration > 0 && duration < MAX_DURATION, "Cannot escrow with 0 duration || above MAX_DURATION");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
@@ -288,7 +317,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         /* Increment the next entry id. */
         nextEntryId = nextEntryId.add(1);
 
-        emit VestingEntryCreated(account, now, quantity, duration);
+        emit VestingEntryCreated(account, now, quantity, duration, entryID);
     }
 
     function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
@@ -311,5 +340,5 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* ========== EVENTS ========== */
     event Vested(address indexed beneficiary, uint time, uint value);
 
-    event VestingEntryCreated(address indexed beneficiary, uint time, uint value, uint duration);
+    event VestingEntryCreated(address indexed beneficiary, uint time, uint value, uint duration, uint entryID);
 }
