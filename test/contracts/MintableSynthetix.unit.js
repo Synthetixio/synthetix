@@ -90,7 +90,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 							args: [user1, 100],
 							address: synthetixBridgeToBase,
 							accounts,
-							reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
+							reason: 'Can only be invoked by bridge',
 						});
 					});
 				});
@@ -131,7 +131,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 							args: [amount],
 							address: synthetixBridgeToBase,
 							accounts,
-							reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
+							reason: 'Can only be invoked by bridge',
 						});
 					});
 				});
@@ -176,7 +176,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 							args: [user1, amount],
 							address: synthetixBridgeToBase,
 							accounts,
-							reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
+							reason: 'Can only be invoked by bridge',
 						});
 					});
 				});

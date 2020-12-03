@@ -100,7 +100,7 @@ contract('Liquidations', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: liquidations.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'flagAccountForLiquidation',
 				'removeAccountInLiquidation',
