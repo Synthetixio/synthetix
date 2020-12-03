@@ -346,12 +346,6 @@ workflows:
               only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
-      - job-unit-tests-coverage:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
-          requires:
-            - job-prepare
       - job-unit-tests-gas-report:
           filters:
             branches:
