@@ -770,7 +770,7 @@ const deploy = async ({
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(addressResolver)],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const issuerAddress = addressOf(issuer);

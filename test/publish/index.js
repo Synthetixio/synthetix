@@ -1505,6 +1505,8 @@ describe('publish scripts', () => {
 							assert.strictEqual(actualExchanger, targets['Exchanger'].address);
 						});
 						it('and all have resolver cached correctly', async () => {
+							const targets = getTarget();
+
 							const contractsWithResolver = await Promise.all(
 								Object.entries(targets)
 									// Note: SynthetixBridgeToOptimism and SynthetixBridgeToBase  have ':' in their deps, instead of hardcoding the
