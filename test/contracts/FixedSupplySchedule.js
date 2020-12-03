@@ -30,7 +30,11 @@ contract('FixedSupplySchedule', async accounts => {
 	beforeEach(async () => {
 		addressResolver = await setupContract({ accounts, contract: 'AddressResolver' });
 
-		fixedSupplySchedule = await setupContract({ accounts, contract: 'FixedSupplySchedule' });
+		fixedSupplySchedule = await setupContract({
+			accounts,
+			contract: 'FixedSupplySchedule',
+			cache: { AddressResolver: addressResolver },
+		});
 
 		await addressResolver.importAddresses([toBytes32('Synthetix')], [synthetix], {
 			from: owner,
