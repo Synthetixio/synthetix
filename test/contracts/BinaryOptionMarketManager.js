@@ -388,8 +388,10 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 				{ from: initialCreator }
 			);
 
-			assert.eventEqual(result, 'OwnerChanged', { newOwner: manager.address });
-			assert.eventEqual(result, 'MarketCreated', {
+			assert.eventEqual(getEventByName({ tx: result, name: 'OwnerChanged' }), 'OwnerChanged', {
+				newOwner: manager.address,
+			});
+			assert.eventEqual(getEventByName({ tx: result, name: 'MarketCreated' }), 'MarketCreated', {
 				creator: initialCreator,
 				oracleKey: sAUDKey,
 				strikePrice: toUnit(1),
@@ -421,7 +423,9 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 				shortPrice: prices.short,
 			});
 
-			const market = await BinaryOptionMarket.at(result.logs[1].args.market);
+			const market = await BinaryOptionMarket.at(
+				getEventByName({ tx: result, name: 'MarketCreated' }).args.market
+			);
 
 			const times = await market.times();
 			assert.bnEqual(times.biddingEnd, toBN(now + 100));
@@ -711,7 +715,10 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 					from: initialCreator,
 				}
 			);
-			const localMarket = await BinaryOptionMarket.at(tx.logs[1].args.market);
+			const localMarket = await BinaryOptionMarket.at(
+				getEventByName({ tx, name: 'MarketCreated' }).args.market
+			);
+
 			assert.bnEqual((await localMarket.oracleDetails()).strikePrice, toUnit(1));
 		});
 
@@ -1308,7 +1315,7 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 					from: accounts[1],
 				}
 			);
-			await factory.rebuildCache();
+			await Promise.all([newManager.rebuildCache(), factory.rebuildCache()]);
 
 			await Promise.all(
 				markets.map(m => sUSDSynth.approve(m.address, toUnit(1000), { from: bidder }))
@@ -1581,9 +1588,35 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 			assert.equal(tx.logs[5].args.markets[0], markets[0].address);
 			assert.equal(tx.logs[5].args.markets[1], markets[1].address);
 		});
-	});
 
-	describe('resyncing cache', () => {
-		xit('TODO check each markets to sync has the cache rebuil', async () => {});
+		it('Can sync the caches of child markets.', async () => {
+			const statusMock = await setupContract({
+				accounts,
+				contract: 'GenericMock',
+				mock: 'SystemStatus',
+			});
+
+			await addressResolver.importAddresses([toBytes32('SystemStatus')], [statusMock.address], {
+				from: accounts[1],
+			});
+
+			// Only sets the resolver for the listed addresses
+			await manager.rebuildMarketCaches([markets[0].address], {
+				from: managerOwner,
+			});
+
+			assert.ok(await markets[0].isResolverCached());
+			assert.notOk(await markets[1].isResolverCached());
+			assert.notOk(await markets[2].isResolverCached());
+
+			// Only sets the resolver for the remaining addresses
+			await manager.rebuildMarketCaches([markets[1].address, markets[2].address], {
+				from: managerOwner,
+			});
+
+			assert.ok(await markets[0].isResolverCached());
+			assert.ok(await markets[1].isResolverCached());
+			assert.ok(await markets[2].isResolverCached());
+		});
 	});
 });
