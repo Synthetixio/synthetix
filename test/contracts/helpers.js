@@ -265,4 +265,8 @@ module.exports = {
 
 		return { mocks, resolver };
 	},
+
+	getEventByName({ tx, name }) {
+		return tx.logs.find(({ event }) => event === name);
+	},
 };

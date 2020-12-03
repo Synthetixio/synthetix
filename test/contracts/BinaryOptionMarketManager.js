@@ -17,6 +17,7 @@ const {
 	setStatus,
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
+	getEventByName,
 } = require('./helpers');
 
 const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
@@ -66,7 +67,7 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 		const tx = await man.createMarket(oracleKey, strikePrice, refundsEnabled, times, bids, {
 			from: creator,
 		});
-		return BinaryOptionMarket.at(tx.logs[1].args.market);
+		return BinaryOptionMarket.at(getEventByName({ tx, name: 'MarketCreated' }).args.market);
 	};
 
 	before(async () => {
@@ -387,8 +388,8 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 				{ from: initialCreator }
 			);
 
-			assert.eventEqual(result.logs[0], 'OwnerChanged', { newOwner: manager.address });
-			assert.eventEqual(result.logs[1], 'MarketCreated', {
+			assert.eventEqual(result, 'OwnerChanged', { newOwner: manager.address });
+			assert.eventEqual(result, 'MarketCreated', {
 				creator: initialCreator,
 				oracleKey: sAUDKey,
 				strikePrice: toUnit(1),

@@ -19,6 +19,7 @@ const {
 	onlyGivenAddressCanInvoke,
 	getDecodedLogs,
 	decodedEventEqual,
+	getEventByName,
 } = require('./helpers');
 
 const MockBinaryOptionMarketManager = artifacts.require('MockBinaryOptionMarketManager');
@@ -36,8 +37,6 @@ const computePrices = (longs, shorts, debt, fee) => {
 		short: divideDecimalRound(shorts, totalOptions),
 	};
 };
-
-const getEventByName = ({ tx, name }) => tx.logs.find(({ event }) => event === name);
 
 contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
 	const [initialBidder, newBidder, pauper] = accounts;
