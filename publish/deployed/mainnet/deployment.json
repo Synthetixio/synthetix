@@ -2367,6 +2367,21 @@
 				{
 					"constant": true,
 					"inputs": [],
+					"name": "lastPauseTime",
+					"outputs": [
+						{
+							"internalType": "uint256",
+							"name": "",
+							"type": "uint256"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function"
+				},
+				{
+					"constant": true,
+					"inputs": [],
 					"name": "lastTimeRewardApplicable",
 					"outputs": [
 						{"internalType": "uint256", "name": "", "type": "uint256"}
@@ -2553,6 +2568,21 @@
 					"constant": false,
 					"inputs": [
 						{"internalType": "bool", "name": "_paused", "type": "bool"}
+					],
+					"name": "setPaused",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"internalType": "bool",
+							"name": "_paused",
+							"type": "bool"
+						}
 					],
 					"name": "setPaused",
 					"outputs": [],
