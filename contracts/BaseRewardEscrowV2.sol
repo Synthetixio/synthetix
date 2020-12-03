@@ -157,6 +157,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         return _claimableAmount(entry);
     }
 
+    function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint quantity) {}
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
