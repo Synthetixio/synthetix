@@ -59,7 +59,7 @@ contract MixinResolver {
 
     function requireAndGetAddress(bytes32 name) internal view returns (address) {
         address _foundAddress = addressCache[name];
-        require(_foundAddress != address(0), string(abi.encodePacked("Missing ", name, " address")));
+        require(_foundAddress != address(0), string(abi.encodePacked("Missing address: ", name)));
         return _foundAddress;
     }
 

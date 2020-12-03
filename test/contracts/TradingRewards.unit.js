@@ -70,7 +70,7 @@ contract('TradingRewards (unit tests)', accounts => {
 		it('reverts when trying to record a fee', async () => {
 			await assert.revert(
 				this.rewards.recordExchangeFeeForAccount('1', mockAddress),
-				'Missing Exchanger address'
+				'Missing address: Exchanger'
 			);
 		});
 	});

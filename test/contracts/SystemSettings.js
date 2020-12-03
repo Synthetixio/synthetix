@@ -32,7 +32,7 @@ contract('SystemSettings', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: systemSettings.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'setWaitingPeriodSecs',
 				'setPriceDeviationThresholdFactor',
