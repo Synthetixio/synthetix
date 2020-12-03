@@ -46,7 +46,7 @@ interface IIssuerInternalDebtCache {
 
 
 // https://docs.synthetix.io/contracts/source/contracts/issuer
-contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
+contract Issuer is Owned, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -79,28 +79,27 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](14);
-        addresses[0] = CONTRACT_SYNTHETIX;
-        addresses[1] = CONTRACT_EXCHANGER;
-        addresses[2] = CONTRACT_EXRATES;
-        addresses[3] = CONTRACT_SYNTHETIXSTATE;
-        addresses[4] = CONTRACT_FEEPOOL;
-        addresses[5] = CONTRACT_DELEGATEAPPROVALS;
-        addresses[6] = CONTRACT_ETHERCOLLATERAL;
-        addresses[7] = CONTRACT_ETHERCOLLATERAL_SUSD;
-        addresses[8] = CONTRACT_REWARDESCROW;
-        addresses[9] = CONTRACT_SYNTHETIXESCROW;
-        addresses[10] = CONTRACT_LIQUIDATIONS;
-        addresses[11] = CONTRACT_FLEXIBLESTORAGE;
-        addresses[12] = CONTRACT_DEBTCACHE;
-        addresses[13] = CONTRACT_FLEXIBLESTORAGE;
+        bytes32[] memory existingAddresses = super.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](12);
+        newAddresses[0] = CONTRACT_SYNTHETIX;
+        newAddresses[1] = CONTRACT_EXCHANGER;
+        newAddresses[2] = CONTRACT_EXRATES;
+        newAddresses[3] = CONTRACT_SYNTHETIXSTATE;
+        newAddresses[4] = CONTRACT_FEEPOOL;
+        newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[6] = CONTRACT_ETHERCOLLATERAL;
+        newAddresses[7] = CONTRACT_ETHERCOLLATERAL_SUSD;
+        newAddresses[8] = CONTRACT_REWARDESCROW;
+        newAddresses[9] = CONTRACT_SYNTHETIXESCROW;
+        newAddresses[10] = CONTRACT_LIQUIDATIONS;
+        newAddresses[11] = CONTRACT_DEBTCACHE;
+        return combineArrays(existingAddresses, newAddresses);
     }
 
     function synthetix() internal view returns (ISynthetix) {

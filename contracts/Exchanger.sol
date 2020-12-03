@@ -66,7 +66,7 @@ interface IExchangerInternalDebtCache {
 
 
 // https://docs.synthetix.io/contracts/source/contracts/exchanger
-contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
+contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -100,22 +100,23 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](10);
-        addresses[0] = CONTRACT_SYSTEMSTATUS;
-        addresses[1] = CONTRACT_EXCHANGESTATE;
-        addresses[2] = CONTRACT_EXRATES;
-        addresses[3] = CONTRACT_SYNTHETIX;
-        addresses[4] = CONTRACT_FEEPOOL;
-        addresses[5] = CONTRACT_TRADING_REWARDS;
-        addresses[6] = CONTRACT_DELEGATEAPPROVALS;
-        addresses[7] = CONTRACT_ISSUER;
-        addresses[8] = CONTRACT_DEBTCACHE;
-        addresses[9] = CONTRACT_FLEXIBLESTORAGE;
+        bytes32[] memory existingAddresses = super.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](9);
+        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_EXCHANGESTATE;
+        newAddresses[2] = CONTRACT_EXRATES;
+        newAddresses[3] = CONTRACT_SYNTHETIX;
+        newAddresses[4] = CONTRACT_FEEPOOL;
+        newAddresses[5] = CONTRACT_TRADING_REWARDS;
+        newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[7] = CONTRACT_ISSUER;
+        newAddresses[8] = CONTRACT_DEBTCACHE;
+        return combineArrays(existingAddresses, newAddresses);
     }
 
     function systemStatus() internal view returns (ISystemStatus) {

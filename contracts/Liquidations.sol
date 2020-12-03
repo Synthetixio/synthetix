@@ -18,7 +18,7 @@ import "./interfaces/ISystemStatus.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/liquidations
-contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidations {
+contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -41,17 +41,18 @@ contract Liquidations is Owned, MixinResolver, MixinSystemSettings, ILiquidation
     bytes32 public constant LIQUIDATION_DEADLINE = "LiquidationDeadline";
     bytes32 public constant LIQUIDATION_CALLER = "LiquidationCaller";
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](6);
-        addresses[0] = CONTRACT_SYSTEMSTATUS;
-        addresses[1] = CONTRACT_SYNTHETIX;
-        addresses[2] = CONTRACT_ETERNALSTORAGE_LIQUIDATIONS;
-        addresses[3] = CONTRACT_ISSUER;
-        addresses[4] = CONTRACT_EXRATES;
-        addresses[5] = CONTRACT_FLEXIBLESTORAGE;
+        bytes32[] memory existingAddresses = super.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](5);
+        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_SYNTHETIX;
+        newAddresses[2] = CONTRACT_ETERNALSTORAGE_LIQUIDATIONS;
+        newAddresses[3] = CONTRACT_ISSUER;
+        newAddresses[4] = CONTRACT_EXRATES;
+        return combineArrays(existingAddresses, newAddresses);
     }
 
     function synthetix() internal view returns (ISynthetix) {

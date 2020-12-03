@@ -27,7 +27,12 @@ contract MixinSystemSettings is MixinResolver {
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
-    constructor() internal {}
+    constructor(address _resolver) internal MixinResolver(_resolver) {}
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_FLEXIBLESTORAGE;
+    }
 
     function flexibleStorage() internal view returns (IFlexibleStorage) {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));

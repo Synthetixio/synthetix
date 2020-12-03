@@ -18,12 +18,28 @@ contract MixinResolver {
         resolver = AddressResolver(_resolver);
     }
 
-    /* ========== ABSTRACT FUNCTIONS ========== */
+    /* ========== INTERNAL FUNCTIONS ========== */
 
-    // Note: this function is public in order for it to be overridden and invoked via super in subclasses
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses);
+    function combineArrays(bytes32[] memory first, bytes32[] memory second)
+        internal
+        pure
+        returns (bytes32[] memory combination)
+    {
+        combination = new bytes32[](first.length + second.length);
+
+        for (uint i = 0; i < first.length; i++) {
+            combination[i] = first[i];
+        }
+
+        for (uint j = 0; j < second.length; j++) {
+            combination[first.length + j] = second[j];
+        }
+    }
 
     /* ========== PUBLIC FUNCTIONS ========== */
+
+    // Note: this function is public not external in order for it to be overridden and invoked via super in subclasses
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {}
 
     function rebuildCache() external {
         bytes32[] memory requiredAddresses = resolverAddressesRequired();

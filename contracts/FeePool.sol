@@ -28,7 +28,7 @@ import "./interfaces/IEtherCollateralsUSD.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/feepool
-contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSettings, IFeePool {
+contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -81,7 +81,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         address payable _proxy,
         address _owner,
         address _resolver
-    ) public Owned(_owner) Proxyable(_proxy) LimitedSetup(3 weeks) MixinResolver(_resolver) MixinSystemSettings() {
+    ) public Owned(_owner) Proxyable(_proxy) LimitedSetup(3 weeks) MixinSystemSettings(_resolver) {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
         _recentFeePeriodsStorage(0).startTime = uint64(now);
@@ -89,19 +89,20 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](12);
-        addresses[0] = CONTRACT_SYSTEMSTATUS;
-        addresses[1] = CONTRACT_SYNTHETIX;
-        addresses[2] = CONTRACT_FEEPOOLSTATE;
-        addresses[3] = CONTRACT_FEEPOOLETERNALSTORAGE;
-        addresses[4] = CONTRACT_EXCHANGER;
-        addresses[5] = CONTRACT_ISSUER;
-        addresses[6] = CONTRACT_SYNTHETIXSTATE;
-        addresses[7] = CONTRACT_REWARDESCROW;
-        addresses[8] = CONTRACT_DELEGATEAPPROVALS;
-        addresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
-        addresses[10] = CONTRACT_REWARDSDISTRIBUTION;
-        addresses[11] = CONTRACT_FLEXIBLESTORAGE;
+        bytes32[] memory existingAddresses = super.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](11);
+        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_SYNTHETIX;
+        newAddresses[2] = CONTRACT_FEEPOOLSTATE;
+        newAddresses[3] = CONTRACT_FEEPOOLETERNALSTORAGE;
+        newAddresses[4] = CONTRACT_EXCHANGER;
+        newAddresses[5] = CONTRACT_ISSUER;
+        newAddresses[6] = CONTRACT_SYNTHETIXSTATE;
+        newAddresses[7] = CONTRACT_REWARDESCROW;
+        newAddresses[8] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
+        newAddresses[10] = CONTRACT_REWARDSDISTRIBUTION;
+        return combineArrays(existingAddresses, newAddresses);
     }
 
     function systemStatus() internal view returns (ISystemStatus) {

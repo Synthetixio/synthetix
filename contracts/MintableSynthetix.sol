@@ -38,12 +38,9 @@ contract MintableSynthetix is BaseSynthetix {
     /* ========== VIEWS ======================= */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = super.resolverAddressesRequired();
-        addresses = new bytes32[](existingAddresses.length + 1);
-
-        for (uint i = 0; i < existingAddresses.length; i++) {
-            addresses[i] = existingAddresses[i];
-        }
-        addresses[existingAddresses.length] = CONTRACT_SYNTHETIX_BRIDGE;
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_SYNTHETIX_BRIDGE;
+        return combineArrays(existingAddresses, newAddresses);
     }
 
     function synthetixBridge() internal view returns (address) {

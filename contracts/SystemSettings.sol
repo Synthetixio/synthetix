@@ -11,7 +11,7 @@ import "./SafeDecimalMath.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/systemsettings
-contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSettings {
+contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -39,13 +39,9 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) MixinSystemSettings() {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](1);
-        addresses[0] = CONTRACT_FLEXIBLESTORAGE;
-    }
 
     // SIP-37 Fee Reclamation
     // The number of seconds after an exchange is executed that must be waited
