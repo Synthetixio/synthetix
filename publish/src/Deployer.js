@@ -186,7 +186,7 @@ class Deployer {
 						// throw new Error(`Cannot deploy ${name}: the deployment cost exceeds the maximum limit`);
 						console.log(
 							red(
-								`Error: ${name} cannot be deployed in OVM due to excessive gas cost (Skipping for now and deploying anyway)`
+								`Error: ${name} cannot be deployed in OVM due to excessive gas cost (Skipping error and deploying anyway)`
 							)
 						);
 					}
