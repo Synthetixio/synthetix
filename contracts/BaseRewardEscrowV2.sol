@@ -129,7 +129,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         return _ratePerSecond(entry);
     }
 
-    function _ratePerSecond(VestingEntries.VestingEntry memory _entry) internal view returns (uint256) {
+    function _ratePerSecond(VestingEntries.VestingEntry memory _entry) internal pure returns (uint256) {
         /* Calculate the rate of emission for entry based on escrowAmount / duration seconds rounded */
         return _entry.escrowAmount.divideDecimalRound(_entry.duration);
     }
@@ -138,7 +138,19 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         return accountVestingEntryIDs[account].length;
     }
 
-    function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint quantity) {}
+    function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint total) {
+        for (uint i = 0; i < entryIDs.length - 1; i++) {
+            VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryIDs[i]];
+
+            /* Skip entry if remainingAmount == 0 */
+            if (entry.remainingAmount != 0) {
+                uint256 quantity = _claimableAmount(entry);
+
+                /* add quantity to total */
+                total = total.add(quantity);
+            }
+        }
+    }
 
     function getVestingEntryClaimable(address account, uint256 entryID) external view returns (uint) {
         VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryID];
@@ -156,6 +168,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         uint256 total;
         for (uint i = 0; i < entryIDs.length - 1; i++) {
             VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
+
             /* Skip entry if remainingAmount == 0 */
             if (entry.remainingAmount != 0) {
                 uint256 quantity = _claimableAmount(entry);
@@ -169,13 +182,14 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
             }
         }
 
+        /* Transfer vested tokens. Will revert if total > totalEscrowedAccountBalance */
         if (total != 0) {
             _transferVestedTokens(account, total);
         }
     }
 
     function _claimableAmount(VestingEntries.VestingEntry memory _entry) internal view returns (uint256 quantity) {
-        /* Return 0 if remainingAmount == 0 */
+        /* Return if remaining Amount is 0 */
         if (_entry.remainingAmount != 0) {
             /* Get the amount vesting for the entry */
             uint256 delta = _deltaOf(uint256(_entry.endTime), uint256(_entry.lastVested));
@@ -230,8 +244,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         _appendVestingEntry(account, quantity, duration);
     }
 
-    // TODO - Vesting no longer assumes that the vestingSchedules list is sorted, requires index to be passed in to vest.
-
+    /* Transfer vested tokens and update totalEscrowedAccountBalance, totalVestedAccountBalance */
     function _transferVestedTokens(address _account, uint256 _amount) internal {
         _reduceAccountEscrowBalances(_account, _amount);
         totalVestedAccountBalance[_account] = totalVestedAccountBalance[_account].add(_amount);
@@ -240,6 +253,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function _reduceAccountEscrowBalances(address _account, uint256 _amount) internal {
+        // Reverts if amount being vested is greater than the account's existing totalEscrowedAccountBalance
         totalEscrowedBalance = totalEscrowedBalance.sub(_amount);
         totalEscrowedAccountBalance[_account] = totalEscrowedAccountBalance[_account].sub(_amount);
     }

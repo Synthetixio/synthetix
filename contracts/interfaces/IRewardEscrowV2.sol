@@ -32,14 +32,14 @@ interface IRewardEscrowV2 {
 
     function createEscrowEntry(
         address beneficiary,
-        uint deposit,
-        uint duration
+        uint256 deposit,
+        uint256 duration
     ) external;
 
     function appendVestingEntry(
         address account,
-        uint quantity,
-        uint duration
+        uint256 quantity,
+        uint256 duration
     ) external;
 
     function migrateVestingSchedule(address _addressToMigrate) external;
