@@ -45,7 +45,6 @@ describe('deploy', () => {
 
 	const createTempLocalCopy = ({ prefix }) => {
 		const folderPath = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-		console.log(folderPath);
 		fs.copySync(getPathToNetwork({ network: 'goerli', useOvm: true }), folderPath);
 
 		fs.writeFileSync(
@@ -57,7 +56,6 @@ describe('deploy', () => {
 	};
 
 	const switchL2Deployment = (network = 'local', deploymentPath, deployL1ToL2Bridge) => {
-		console.log(deploymentPath);
 		ensureDeploymentPath(deploymentPath);
 		// get the (local) config file
 		const { config, configFile } = loadAndCheckRequiredSources({
@@ -123,21 +121,21 @@ describe('deploy', () => {
 
 	before('deploy instance 2', async () => {
 		// deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-local-ovm-' }));
-		const deploymentPath = createTempLocalCopy({ prefix: 'snx-multi-2-local-ovm-' });
-		console.log(deploymentPath);
+		const deploymentPath = createTempLocalCopy({ prefix: 'snx-docker-2-local-ovm-' });
 		// ensure that only SynthetixBridgeToBase is deployed on L2
 		switchL2Deployment(network, deploymentPath, false);
 
 		await commands.deploy({
 			network,
 			freshDeploy: true,
-			yes: false,
+			yes: true,
 			privateKey: deployer.private,
 			useOvm: true,
 			ignoreSafetyChecks: false,
 			deploymentPath: deploymentPath,
 			methodCallGasLimit: '2500000',
 			contractDeploymentGasLimit: '11000000',
+			gasPrice: '0',
 		});
 
 		// now set the external messenger contract
