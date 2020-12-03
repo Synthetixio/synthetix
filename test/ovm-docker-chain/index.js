@@ -103,7 +103,7 @@ describe('deploy', () => {
 	// 	);
 	// });
 
-	before('deploy instance 2', async () => {
+	before('deploy OVM instance', async () => {
 		// deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-2-local-ovm-' }));
 		const deploymentPath = createTempLocalCopy({ prefix: 'snx-docker-2-local-ovm-' });
 		// ensure that only SynthetixBridgeToBase is deployed on L2
@@ -111,18 +111,19 @@ describe('deploy', () => {
 		// complie with the useOVM flag set
 		await commands.build({ showContractSize: true, useOvm: true });
 
-		// await commands.deploy({
-		// 	network,
-		// 	freshDeploy: true,
-		// 	yes: true,
-		// 	privateKey: deployer.private,
-		// 	useOvm: true,
-		// 	ignoreSafetyChecks: false,
-		// 	deploymentPath: deploymentPath,
-		// 	methodCallGasLimit: '2500000',
-		// 	contractDeploymentGasLimit: '11000000',
-		// 	gasPrice: '0',
-		// });
+		await commands.deploy({
+			network,
+			freshDeploy: true,
+			yes: true,
+			privateKey: deployer.private,
+			useOvm: true,
+			ignoreSafetyChecks: false,
+			deploymentPath: deploymentPath,
+			methodCallGasLimit: '2500000',
+			contractDeploymentGasLimit: '11000000',
+			gasPrice: '0',
+			ensureOvmDeploymentGasLimit: true,
+		});
 
 		let staticAddresses;
 		await axios.get('http://localhost:8080/addresses.json').then(
@@ -134,7 +135,7 @@ describe('deploy', () => {
 			}
 		);
 		const l2Messenger = staticAddresses['OVM_L2CrossDomainMessenger'];
-		console.log(l2Messenger);
+		// console.log(l2Messenger);
 
 		// now set the external messenger contract
 		// const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 1 });

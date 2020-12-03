@@ -2,7 +2,7 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
-const { gray, green, yellow } = require('chalk');
+const { gray, green, yellow, red } = require('chalk');
 const fs = require('fs');
 const { getUsers } = require('../../index.js');
 const { stringify, getEtherscanLinkPrefix } = require('./util');
@@ -32,6 +32,7 @@ class Deployer {
 		useOvm,
 		ignoreSafetyChecks,
 		nonceManager,
+		ensureOvmDeploymentGasLimit,
 	}) {
 		this.compiled = compiled;
 		this.config = config;
@@ -46,6 +47,7 @@ class Deployer {
 		this.nonceManager = nonceManager;
 		this.useOvm = useOvm;
 		this.ignoreSafetyChecks = ignoreSafetyChecks;
+		this.ensureOvmDeploymentGasLimit = ensureOvmDeploymentGasLimit;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -179,7 +181,16 @@ class Deployer {
 					})
 					.send(await this.sendParameters('contract-deployment'))
 					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
-
+				if (this.useOvm && this.ensureOvmDeploymentGasLimit) {
+					if (gasUsed > 9000000) {
+						// throw new Error(`Cannot deploy ${name}: the deployment cost exceeds the maximum limit`);
+						console.log(
+							red(
+								`Error: ${name} cannot be deployed in OVM due to excessive gas cost (Skipping for now and deploying anyway)`
+							)
+						);
+					}
+				}
 				if (this.nonceManager) {
 					this.nonceManager.incrementNonce();
 				}

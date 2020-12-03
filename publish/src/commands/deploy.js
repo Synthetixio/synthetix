@@ -63,6 +63,7 @@ const deploy = async ({
 	manageNonces,
 	ignoreSafetyChecks,
 	ignoreCustomParameters,
+	ensureOvmDeploymentGasLimit,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -223,6 +224,7 @@ const deploy = async ({
 		useFork,
 		ignoreSafetyChecks,
 		nonceManager: manageNonces ? nonceManager : undefined,
+		ensureOvmDeploymentGasLimit,
 	});
 
 	const { account } = deployer;
@@ -1860,6 +1862,10 @@ module.exports = {
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+			)
+			.option(
+				'-e, --ensure-ovm-deployment-gas-limit <value>',
+				`Adds check for excessive gas cost during contract deployment in OVM`
 			)
 			.option(
 				'-f, --fee-auth <value>',
