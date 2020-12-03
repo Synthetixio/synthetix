@@ -40,7 +40,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint public totalEscrowedBalance;
 
-    uint public constant MAX_DURATION = 5 years;
+    /* Max escrow duration */
+    uint public constant MAX_DURATION = 5 * 52 weeks;
 
     /* ========== OLD ESCROW LOOKUP ========== */
 
@@ -117,7 +118,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         lastVested = vestingSchedules[account][entryID].lastVested;
         escrowAmount = vestingSchedules[account][entryID].escrowAmount;
         remainingAmount = vestingSchedules[account][entryID].remainingAmount;
-        ratePerSecond = this.ratePerSecond(account, entryID);
+        ratePerSecond = _ratePerSecond(vestingSchedules[account][entryID]);
     }
 
     /* rate of escrow emission per second */
@@ -125,8 +126,12 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         /* Retrieve the vesting entry */
         VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryID];
 
-        /* Calculate the rate of emission for entry based on escrowAmount / duration seconds */
-        return entry.escrowAmount.divideDecimalRound(entry.duration);
+        return _ratePerSecond(entry);
+    }
+
+    function _ratePerSecond(VestingEntries.VestingEntry memory _entry) internal view returns (uint256) {
+        /* Calculate the rate of emission for entry based on escrowAmount / duration seconds rounded */
+        return _entry.escrowAmount.divideDecimalRound(_entry.duration);
     }
 
     function _numVestingEntries(address account) internal view returns (uint) {
@@ -134,6 +139,11 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint quantity) {}
+
+    function getVestingEntryClaimable(address account, uint256 entryID) external view returns (uint) {
+        VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryID];
+        return _claimableAmount(entry);
+    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
@@ -143,26 +153,47 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
      */
 
     function vest(address account, uint256[] calldata entryIDs) external {
-        uint total;
+        uint256 total;
         for (uint i = 0; i < entryIDs.length - 1; i++) {
-            VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryIDs[i]];
+            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
+            /* Skip entry if remainingAmount == 0 */
+            if (entry.remainingAmount != 0) {
+                uint256 quantity = _claimableAmount(entry);
 
-            /* Only include entry if remainingAmount is > 0 */
-            if (entry.remainingAmount > 0) {
-                uint256 quantity = _amountClaimable(entry);
+                /* update entry */
+                entry.remainingAmount = entry.remainingAmount.sub(quantity);
+                entry.lastVested = uint64(now);
+
+                /* add quantity to total */
                 total = total.add(quantity);
             }
         }
+
+        if (total != 0) {
+            _transferVestedTokens(account, total);
+        }
     }
 
-    function _amountClaimable(VestingEntries.VestingEntry memory entry) internal view returns (uint256 quantity) {
-        // Get the amount vested for the entry
+    function _claimableAmount(VestingEntries.VestingEntry memory _entry) internal view returns (uint256 quantity) {
+        /* Return 0 if remainingAmount == 0 */
+        if (_entry.remainingAmount != 0) {
+            /* Get the amount vesting for the entry */
+            uint256 delta = _deltaOf(uint256(_entry.endTime), uint256(_entry.lastVested));
+            uint256 quantityEmitted = delta.multiplyDecimal(_ratePerSecond(_entry));
+
+            /* cap quantity to the remaining amount in vesting entry */
+            quantity = _entry.remainingAmount <= quantityEmitted ? _entry.remainingAmount : quantityEmitted;
+        }
     }
 
     /**
      * Calculate the time in seconds between `block.timestamp` and lastVested
+     * Returns seconds since lastVested and if the end time is after `block.timestamp`
+     * it will be the delta of the end time - last vested
      */
-    function _deltaOf(uint endTime, uint lastVested) internal view returns (uint256 delta) {}
+    function _deltaOf(uint256 endTime, uint256 lastVested) internal view returns (uint256 delta) {
+        return now < endTime ? now - lastVested : endTime - lastVested;
+    }
 
     /**
      * @notice Create an escrow entry to lock SNX for given a given duration in seconds
@@ -171,8 +202,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
      */
     function createEscrowEntry(
         address beneficiary,
-        uint deposit,
-        uint duration
+        uint256 deposit,
+        uint256 duration
     ) external {
         require(beneficiary != address(0), "Cannot create escrow with address(0)");
 
@@ -193,8 +224,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
      */
     function appendVestingEntry(
         address account,
-        uint quantity,
-        uint duration
+        uint256 quantity,
+        uint256 duration
     ) external onlyFeePool {
         _appendVestingEntry(account, quantity, duration);
     }
@@ -221,7 +252,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         // emit account merging window start
     }
 
-    function setAccountMergingDuration(uint duration) external onlyOwner {
+    function setAccountMergingDuration(uint256 duration) external onlyOwner {
         // TODO - some checks to ensure not above max
 
         accountMergingDuration = duration;
@@ -283,8 +314,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     function _appendVestingEntry(
         address account,
-        uint quantity,
-        uint duration
+        uint256 quantity,
+        uint256 duration
     ) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
