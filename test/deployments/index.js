@@ -231,8 +231,12 @@ describe('deployments', () => {
 								'SystemStatus',
 							].forEach(name => {
 								it(`has correct address for ${name}`, async () => {
-									const actual = await resolver.methods.getAddress(toBytes32(name)).call();
-									assert.strictEqual(actual, targets[name].address);
+									if (!targets[name]) {
+										console.log(`Skipping ${name} in ${network} as it isnt found`);
+									} else {
+										const actual = await resolver.methods.getAddress(toBytes32(name)).call();
+										assert.strictEqual(actual, targets[name].address);
+									}
 								});
 							});
 						});
