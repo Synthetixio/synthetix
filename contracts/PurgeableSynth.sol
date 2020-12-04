@@ -34,7 +34,7 @@ contract PurgeableSynth is Synth {
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = super.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_EXRATES;
         return combineArrays(existingAddresses, newAddresses);
