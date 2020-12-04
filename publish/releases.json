@@ -94,8 +94,7 @@
 			"SystemSettings",
 			"Synthetix",
 			"TradingRewards",
-			"SynthsUSD",
-			"SynthsETH"
+			"Synth(s|i).+"
 		],
 		"sips": []
 	}

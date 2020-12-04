@@ -15,6 +15,7 @@ const data = {
 
 const assets = require('./publish/assets.json');
 const ovmIgnored = require('./publish/ovm-ignore.json');
+const releases = require('./publish/releases.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
@@ -41,7 +42,6 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
-	OVM_IGNORE_FILENAME: 'ovm-ignore.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -504,4 +504,5 @@ module.exports = {
 	toBytes32,
 	wrap,
 	ovmIgnored,
+	releases,
 };
