@@ -207,7 +207,7 @@ const performTransactionalStep = async ({
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
-			return;
+			return { skipped: true };
 		}
 	}
 	// otherwise check the owner
@@ -250,7 +250,7 @@ const performTransactionalStep = async ({
 			)
 		);
 
-		return hash;
+		return { mined: true, hash };
 	}
 	let data;
 	if (ownerActions && ownerActionsFile) {
@@ -277,14 +277,14 @@ const performTransactionalStep = async ({
 		} else {
 			appendOwnerAction(ownerAction);
 		}
-		return true;
+		return { owned: true };
 	} else {
 		// otherwise wait for owner in real time
 		try {
 			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
 			if (encodeABI) {
 				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
-				return true;
+				return { owned: true };
 			}
 
 			await confirmAction(
@@ -295,9 +295,10 @@ const performTransactionalStep = async ({
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
 			);
 
-			return true;
+			return { owned: true };
 		} catch (err) {
 			console.log(gray('Cancelled'));
+			return {};
 		}
 	}
 };
