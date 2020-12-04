@@ -1206,10 +1206,12 @@ const deploy = async ({
 
 	let addressesAreImported = true;
 
-	const contractsWithResolver = Object.entries(deployer.deployedContracts)
-		.filter(([, target]) =>
-			target.options.jsonInterface.find(({ name }) => name === 'rebuildCache')
-		)
+	const filterTargetsWith = ({ prop }) =>
+		Object.entries(deployer.deployedContracts).filter(([, target]) =>
+			target.options.jsonInterface.find(({ name }) => name === prop)
+		);
+
+	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
 		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
 		.filter(([contract]) => {
 			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
@@ -1260,7 +1262,7 @@ const deploy = async ({
 			target: addressResolver,
 			write: 'rebuildCaches',
 			writeArg: [
-				contractsWithResolver.map(
+				contractsWithRebuildableCache.map(
 					([
 						,
 						{
@@ -1284,33 +1286,57 @@ const deploy = async ({
 		console.log(gray('Addresses are correctly set up, continuing...'));
 
 		// now ensure all resolvers are set
-
-		const contractsWithResolverAndCachedResults = await Promise.all(
-			contractsWithResolver.map(([contract, target]) =>
-				target.methods
-					.isResolverCached()
-					.call()
-					.then(isCached => ({ contract, target, isCached }))
-			)
-		);
-
-		for (const { contract, target, isCached } of contractsWithResolverAndCachedResults) {
-			if (!isCached) {
-				console.log(
-					redBright(
-						`WARNING: ${contract} does not have its caches rebuilt! Explicitly recaching them now.`
-					)
-				);
-				await runStep({
-					gasLimit: 500e3, // higher gas required
-					contract,
-					target,
-					write: 'rebuildCache',
-				});
-
-				// TODO if not performed, return early.
-			}
+		console.log(gray('Checking all contracts with rebuildCache() are rebuilt...'));
+		for (const [contract, target] of contractsWithRebuildableCache) {
+			await runStep({
+				gasLimit: 500e3, // higher gas required
+				contract,
+				target,
+				read: 'isResolverCached',
+				expected: input => input,
+				write: 'rebuildCache',
+			});
 		}
+
+		// Now perform a sync of legacy contracts that have not been replaced in Shaula (v2.35.x)
+		// EtherCollateral, EtherCollateralsUSD
+		console.log(
+			gray('Checking all legacy contracts with setResolverAndSyncCache() are rebuilt...')
+		);
+		const contractsWithLegacyResolverCaching = filterTargetsWith({
+			prop: 'setResolverAndSyncCache',
+		});
+		for (const [contract, target] of contractsWithLegacyResolverCaching) {
+			await runStep({
+				gasLimit: 500e3, // higher gas required
+				contract,
+				target,
+				read: 'isResolverCached',
+				readArg: addressOf(readProxyForResolver),
+				expected: input => input,
+				write: 'setResolverAndSyncCache',
+				writeArg: addressOf(readProxyForResolver),
+			});
+		}
+
+		// Finally set resolver on contracts even older than legacy (Depot)
+		console.log(gray('Checking all legacy contracts with setResolver() are rebuilt...'));
+		const contractsWithLegacyResolverNoCache = filterTargetsWith({
+			prop: 'setResolver',
+		});
+		for (const [contract, target] of contractsWithLegacyResolverNoCache) {
+			await runStep({
+				gasLimit: 500e3, // higher gas required
+				contract,
+				target,
+				read: 'resolver',
+				expected: input => addressOf(readProxyForResolver),
+				write: 'setResolver',
+				writeArg: addressOf(readProxyForResolver),
+			});
+		}
+
+		console.log(gray('All caches are rebuilt. Continuing.'));
 
 		// now after resolvers have been set
 
