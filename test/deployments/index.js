@@ -262,7 +262,15 @@ describe('deployments', () => {
 
 							it(`${target} isResolverCached is true`, async () => {
 								if ('isResolverCached' in Contract.methods) {
-									assert.ok(await Contract.methods.isResolverCached().call());
+									// prior to Shaula (v2.35.x), contracts with isResolverCached took the old resolver as an argument
+									const usesLegacy = !!Contract.options.jsonInterface.find(
+										({ name }) => name === 'isResolverCached'
+									).inputs.length;
+									assert.ok(
+										await Contract.methods
+											.isResolverCached(...[].concat(usesLegacy ? foundResolver : []))
+											.call()
+									);
 									// Depot is the only contract not currently updated to the latest MixinResolver so it
 									// doesn't expose the is cached predicate
 								} else if (target !== 'Depot') {
