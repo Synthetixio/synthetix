@@ -1240,7 +1240,7 @@ const deploy = async ({
 			),
 		];
 
-		({ mined: addressesAreImported } = await runStep({
+		const { pending } = await runStep({
 			gasLimit: 4e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
@@ -1249,7 +1249,9 @@ const deploy = async ({
 			readArg: addressArgs,
 			write: 'importAddresses',
 			writeArg: addressArgs,
-		}));
+		});
+
+		addressesAreImported = !pending;
 	}
 
 	// Whewn addresses
