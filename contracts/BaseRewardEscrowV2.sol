@@ -41,7 +41,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     uint public totalEscrowedBalance;
 
     /* Max escrow duration */
-    uint public constant MAX_DURATION = 5 * 52 weeks;
+    uint public MAX_DURATION = 5 * 52 weeks;
 
     /* ========== OLD ESCROW LOOKUP ========== */
 
@@ -268,9 +268,13 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     function setAccountMergingDuration(uint256 duration) external onlyOwner {
         // TODO - some checks to ensure not above max
-
         accountMergingDuration = duration;
-        // TODO - emit account merging duration updated
+        emit AccountMergingDurationUpdated(duration);
+    }
+
+    function setMaxEscrowDuration(uint256 duration) external onlyOwner {
+        MAX_DURATION = duration;
+        emit MaxEscrowDurationUpdated(duration);
     }
 
     /* Nominate an account to merge escrow and vesting schedule */
@@ -384,6 +388,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* ========== EVENTS ========== */
     event Vested(address indexed beneficiary, uint time, uint value);
-
     event VestingEntryCreated(address indexed beneficiary, uint time, uint value, uint duration, uint entryID);
+    event MaxEscrowDurationUpdated(uint256 newDuration);
+    event AccountMergingDurationUpdated(uint256 newDuration);
 }

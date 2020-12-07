@@ -36,12 +36,15 @@ contract('BaseRewardEscrowV2', async accounts => {
 				'appendVestingEntry',
 				'startMergingWindow',
 				'setAccountMergingDuration',
+				'setMaxEscrowDuration',
 				'nominateAccountToMerge',
 				'mergeAccount',
 				'migrateVestingSchedule',
 				'migrateAccountEscrowBalances',
 				'burnForMigration',
 				'importVestingEntries',
+				'createEscrowEntry',
+				'vest',
 			],
 		});
 	});
