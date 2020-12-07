@@ -337,7 +337,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     ) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
-        require(duration > 0 && duration < MAX_DURATION, "Cannot escrow with 0 duration || above MAX_DURATION");
+        require(duration > 0 && duration < MAX_DURATION, "Cannot escrow with 0 duration OR above MAX_DURATION");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
@@ -382,7 +382,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* ========== MODIFIERS ========== */
     modifier onlyFeePool() {
-        require(msg.sender == address(feePool()), "Only the FeePool contracts can perform this action");
+        require(msg.sender == address(feePool()), "Only the FeePool can perform this action");
         _;
     }
 
