@@ -17,7 +17,7 @@ const deployOvmPair = async () => {
 	const mnemonic =
 		'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 	const masterKey = ethers.utils.HDNode.fromMnemonic(mnemonic);
-	const privateKey = masterKey.derivePath(`m/44'/60'/0'/0/${14}`);
+	const privateKey = masterKey.derivePath(`m/44'/60'/0'/0/${15}`);
 
 	// await deployInstance({ useOvm: false, privateKey });
 	await deployInstance({ useOvm: true, privateKey });

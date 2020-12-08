@@ -148,12 +148,22 @@ class Deployer {
 		let deployedContract;
 
 		const areBytesSafeForOVM = bytes => {
-			const idx = bytes.toLowerCase().indexOf('5b');
+			for (let i = 0; i < bytes.length; i+=2) {
+  			const curByte = bytes.substr(i, 2)
+  			const opNum = parseInt(curByte, 16)
 
-			const containsJumpdestOpcode = idx >= 0;
-			const isOpcodeAtAnEvenLoc = idx % 2 === 0;
+  			// opNum is >=0x60 and <0x80
+  			if(opNum >= 96 && opNum < 128) {
+    			i += 2 * (opNum - 95) //For PUSH##, OpNum - 0x5f = ##
+    			continue;
+  			}
 
-			return !(containsJumpdestOpcode && isOpcodeAtAnEvenLoc);
+  			if(curByte === '5b') {
+    			return false;
+  			}
+
+  			return true;
+			}
 		};
 
 		const getEncodedDeploymentParameters = ({ abi, params }) => {
