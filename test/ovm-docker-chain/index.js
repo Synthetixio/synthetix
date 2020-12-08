@@ -32,7 +32,7 @@ describe('L1/L2 integration', () => {
 	const deploymentPaths = [];
 	let currentDeploymentPath;
 	let deployerPrivateKey;
-	let l1Provider;
+	let l1Provider, l2Provider;
 
 	const createTempLocalCopy = ({ prefix, useOvm }) => {
 		const folderPath = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -103,9 +103,10 @@ describe('L1/L2 integration', () => {
 	before('setup providers and deployer wallets', async () => {
 		({ wallet: wallets[0], provider: l1Provider } = setupProvider({
 			providerUrl: 'http://127.0.0.1:9545',
+			privateKey: '0x6fcb386bca1dd44b31a33e371a2cc26a039f72732396f2bbc88d8a50ba13fcc4',
 		}));
 
-		({ wallet: wallets[1] } = setupProvider({
+		({ wallet: wallets[1], provider: l2Provider } = setupProvider({
 			providerUrl: 'http://127.0.0.1:8545',
 			privateKey: wallets[0].privateKey,
 		}));
@@ -115,7 +116,9 @@ describe('L1/L2 integration', () => {
 
 	before('deploy instance on L1', async () => {
 		currentDeploymentPath = createTempLocalCopy({ prefix: 'snx-docker-local-1-' });
-		// console.log(currentDeploymentPath);
+		// currentDeploymentPath =
+		// 	'/var/folders/fc/sr3_lv5x4bvdj688l8c20pn40000gp/T/snx-docker-local-1-5n7XTn';
+		console.log(currentDeploymentPath);
 		deploymentPaths.push(currentDeploymentPath);
 		// ensure that we do a fresh deployment
 		prepareFreshDeployment(network, currentDeploymentPath);
@@ -138,7 +141,9 @@ describe('L1/L2 integration', () => {
 			prefix: 'snx-docker-local-2-ovm-',
 			useOvm: true,
 		});
-		// console.log(currentDeploymentPath);
+		// currentDeploymentPath =
+		// 	'/var/folders/fc/sr3_lv5x4bvdj688l8c20pn40000gp/T/snx-docker-local-2-ovm-c78ag4';
+		console.log(currentDeploymentPath);
 		deploymentPaths.push(currentDeploymentPath);
 		// ensure that we do a fresh deployment
 		prepareFreshDeployment(network, currentDeploymentPath);
@@ -196,8 +201,10 @@ describe('L1/L2 integration', () => {
 					}
 				);
 				// fetch messenger
-				const l1ToL2MessengerAddress = predeployedContracts['OVM_L2CrossDomainMessenger'];
-				const l2ToL1MessengerAddress = predeployedContracts['OVM_L1CrossDomainMessenger'];
+				const l1ToL2MessengerAddress = predeployedContracts['Proxy__OVM_L1CrossDomainMessenger'];
+				assert.equal(l1ToL2MessengerAddress, '0x6418E5Da52A3d7543d393ADD3Fa98B0795d27736'); // expected address sanity check
+				// const l2ToL1MessengerAddress = predeployedContracts['OVM_L2CrossDomainMessenger'];
+				const l2ToL1MessengerAddress = '0x4200000000000000000000000000000000000007'; // hardcoded address
 				// fetch bridges
 				const l1ToL2Bridge = fetchContract({ contract: 'SynthetixBridgeToOptimism', instance: 0 });
 				const l2ToL1Bridge = fetchContract({ contract: 'SynthetixBridgeToBase', instance: 1 });
@@ -211,16 +218,16 @@ describe('L1/L2 integration', () => {
 			});
 
 			describe('when a user owns SNX on L1', () => {
-				let accounts, user;
+				let accounts, l1User;
 
 				before('transfer SNX to user', async () => {
 					accounts = await l1Provider.listAccounts();
-					user = l1Provider.getSigner(accounts[3]); // use 3rd account to avoid conflicts with the sequencer
-					await (await synthetix.transfer(user._address, parseEther('100'), overrides)).wait();
+					l1User = l1Provider.getSigner(accounts[3]); // use 3rd account to avoid conflicts with the sequencer
+					await (await synthetix.transfer(l1User._address, parseEther('100'), overrides)).wait();
 				});
 
 				it('should update the user balance', async () => {
-					assert.bnEqual(await synthetix.balanceOf(user._address), parseEther('100'));
+					assert.bnEqual(await synthetix.balanceOf(l1User._address), parseEther('100'));
 				});
 
 				describe('when a user deposits SNX into the L1 bridge', () => {
@@ -229,11 +236,11 @@ describe('L1/L2 integration', () => {
 						l1ToL2Bridge = fetchContract({
 							contract: 'SynthetixBridgeToOptimism',
 							instance: 0,
-							user,
+							l1User,
 						});
 						// user must approve SynthetixBridgeToOptimism to transfer SNX on their behalf
 						await (
-							await fetchContract({ contract: 'Synthetix', instance: 0, user }).approve(
+							await fetchContract({ contract: 'Synthetix', instance: 0, l1User }).approve(
 								l1ToL2Bridge.address,
 								parseEther('10'),
 								overrides
@@ -245,45 +252,46 @@ describe('L1/L2 integration', () => {
 
 					it('the balances should be updated accordingly', async () => {
 						assert.bnEqual(await synthetix.balanceOf(l1ToL2Bridge.address), parseEther('10'));
-						assert.bnEqual(await synthetix.balanceOf(user._address), parseEther('90'));
+						assert.bnEqual(await synthetix.balanceOf(l1User._address), parseEther('90'));
 					});
 
 					describe('when the message is relayed to L2', () => {
 						it('the amount should be credited', async () => {
-							assert.bnEqual(await mintableSynthetix.balanceOf(user._address), parseEther('10'));
+							assert.bnEqual(await mintableSynthetix.balanceOf(l1User._address), parseEther('10'));
 						});
 					});
 
-					describe('when the user initiates a withdrawal', () => {
-						let l2ToL1Bridge;
-						describe('when the user owns SNX', () => {
-							before('credit user with SNX', async () => {
-								await (
-									await mintableSynthetix.transfer(user._address, parseEther('100'), overrides)
-								).wait();
+					describe('when the user owns SNX on L2', () => {
+						let l2User;
+						before('credit user with SNX', async () => {
+							accounts = await l2Provider.listAccounts();
+							l2User = l2Provider.getSigner(accounts[0]); // use the same account as in L1
+							await (
+								await mintableSynthetix.transfer(l2User._address, parseEther('100'), overrides)
+							).wait();
+						});
+
+						it('the user balance should be updated accordingly', async () => {
+							assert.bnEqual(await mintableSynthetix.balanceOf(l2User._address), parseEther('100'));
+						});
+
+						describe('when the user tries to withdraw', () => {
+							let l2ToL1Bridge;
+							before('initiate withdrawal', async () => {
+								l2ToL1Bridge = fetchContract({
+									contract: 'SynthetixBridgeToBase',
+									instance: 1,
+									l2User,
+								});
+								// initiate withdrawal on L2
+								await l2ToL1Bridge.initiateWithdrawal(parseEther('10'), overrides);
 							});
 
-							it('the user balance should be updated accordingly', async () => {
-								assert.bnEqual(await mintableSynthetix.balanceOf(user._address), parseEther('100'));
-							});
-
-							describe('when the user tries to withdraw', () => {
-								before('initiate withdrawal', async () => {
-									l2ToL1Bridge = fetchContract({
-										contract: 'SynthetixBridgeToBase',
-										instance: 1,
-										user,
-									});
-									// initiate withdrawal on L2
-									await l2ToL1Bridge.initiateWithdrawal(parseEther('10'), overrides);
-								});
-
-								it('the balances should be updated accordingly', async () => {
-									assert.bnEqual(
-										await mintableSynthetix.balanceOf(user._address),
-										parseEther('90')
-									);
-								});
+							it('the balances should be updated accordingly', async () => {
+								assert.bnEqual(
+									await mintableSynthetix.balanceOf(l2User._address),
+									parseEther('90')
+								);
 							});
 						});
 					});
