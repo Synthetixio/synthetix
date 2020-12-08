@@ -30,14 +30,18 @@ contract PurgeableSynth is Synth {
         bytes32 _currencyKey,
         uint _totalSupply,
         address _resolver
-    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
-        appendToAddressCache(CONTRACT_EXRATES);
-    }
+    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {}
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_EXRATES;
+        return combineArrays(existingAddresses, newAddresses);
+    }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

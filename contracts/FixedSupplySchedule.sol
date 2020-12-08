@@ -54,8 +54,6 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYNTHETIX];
-
     constructor(
         address _owner,
         address _resolver,
@@ -67,7 +65,7 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
         uint _fixedPeriodicSupply,
         uint _supplyEnd,
         uint _minterReward
-    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
+    ) public Owned(_owner) MixinResolver(_resolver) {
         // inflationStartDate: 0 defaults to current timestamp
         if (_inflationStartDate != 0) {
             inflationStartDate = _inflationStartDate;
@@ -100,8 +98,13 @@ contract FixedSupplySchedule is Owned, MixinResolver, ISupplySchedule {
 
     // ========== VIEWS ==========
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_SYNTHETIX;
+    }
+
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     /**
