@@ -1,5 +1,4 @@
 const axios = require('axios');
-const ethers = require('ethers');
 const { red } = require('chalk');
 const commands = {
 	build: require('./build').build,
@@ -12,12 +11,9 @@ const L2_PROVIDER_URL = 'http://localhost:8545';
 const DATA_PROVIDER_URL = 'http://localhost:8080';
 
 const deployOvmPair = async () => {
-	// This is the mnemonic used by optimism-integration.
-	// Using a mnemonic here allows us to choose one of those addresses by index
-	const mnemonic =
-		'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
-	const masterKey = ethers.utils.HDNode.fromMnemonic(mnemonic);
-	const privateKey = masterKey.derivePath(`m/44'/60'/0'/0/${42}`);
+	// This private key is #4 displayed when starting optimism-integration.
+	// When used on a fresh L2 chain, it passes all safety checks.
+	const privateKey = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
 
 	await deployInstance({ useOvm: false, privateKey });
 	await deployInstance({ useOvm: true, privateKey });
@@ -33,11 +29,14 @@ const deployOvmPair = async () => {
 		l2Messenger,
 		l1PrivateKey: privateKey,
 		l2PrivateKey: privateKey,
+		l1GasPrice: 0,
+		l2GasPrice: 0,
+		gasLimit: 8000000,
 	});
 };
 
 const deployInstance = async ({ useOvm, privateKey }) => {
-	// await commands.build({ useOvm });
+	await commands.build({ useOvm });
 
 	await commands.deploy({
 		network: 'local',

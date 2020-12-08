@@ -13,6 +13,7 @@ const {
 const connectBridge = async ({
 	l1Network,
 	l2Network,
+	l1ProviderUrl,
 	l2ProviderUrl,
 	l1DeploymentPath,
 	l2DeploymentPath,
@@ -38,6 +39,7 @@ const connectBridge = async ({
 		account: accountL1,
 	} = await setupInstance({
 		network: l1Network,
+		providerUrl: l1ProviderUrl,
 		deploymentPath: l1DeploymentPath,
 		privateKey: l1PrivateKey,
 		useFork: l1UseFork,
@@ -149,10 +151,10 @@ const connectLayer = async ({
 	};
 
 	if (!dryRun) {
-		console.log(yellow('  > AddressResolver.importAddresses()...'));
-		tx = await AddressResolver.methods
-			.importAddresses(names.map(toBytes32), addresses)
-			.send(params);
+		const ids = names.map(toBytes32);
+
+		console.log(yellow(`  > AddressResolver.importAddresses([${ids}], [${addresses}])`));
+		tx = await AddressResolver.methods.importAddresses(ids, addresses).send(params);
 		console.log(JSON.stringify(tx, null, 2));
 
 		console.log(yellow('  > SynthetixBridge.rebuildCache()...'));
@@ -189,8 +191,9 @@ const setupInstance = async ({
 
 	let account;
 	if (privateKey) {
+		const idx = web3.eth.accounts.wallet.length;
 		web3.eth.accounts.wallet.add(privateKey);
-		web3.eth.defaultAccount = web3.eth.accounts.wallet[0].address;
+		web3.eth.defaultAccount = web3.eth.accounts.wallet[idx].address;
 		account = web3.eth.defaultAccount;
 	}
 	console.log(gray('  > account:', account));
@@ -290,6 +293,7 @@ module.exports = {
 			.description('Configures the bridge between an L1-L2 instance pair.')
 			.option('--l1-network <value>', 'The name of the target L1 network', 'goerli')
 			.option('--l2-network <value>', 'The name of the target L2 network', 'goerli')
+			.option('--l1-provider-url <value>', 'The L1 provider to use', undefined)
 			.option('--l2-provider-url <value>', 'The L2 provider to use', 'https://goerli.optimism.io')
 			.option('--l1-deployment-path <value>', 'The path of the L1 deployment to target')
 			.option('--l2-deployment-path <value>', 'The path of the L2 deployment to target')
