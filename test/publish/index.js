@@ -1505,6 +1505,8 @@ describe('publish scripts', () => {
 							assert.strictEqual(actualExchanger, targets['Exchanger'].address);
 						});
 						it('and all have resolver cached correctly', async () => {
+							const targets = getTarget();
+
 							const contractsWithResolver = await Promise.all(
 								Object.entries(targets)
 									// Note: SynthetixBridgeToOptimism and SynthetixBridgeToBase  have ':' in their deps, instead of hardcoding the
@@ -1523,10 +1525,13 @@ describe('publish scripts', () => {
 							const readProxyAddress = ReadProxyAddressResolver.options.address;
 
 							for (const { contract, Contract } of contractsWithResolver) {
-								const isCached = await callMethodWithRetry(
-									Contract.methods.isResolverCached(readProxyAddress)
-								);
+								const isCached = await callMethodWithRetry(Contract.methods.isResolverCached());
 								assert.ok(isCached, `${contract}.isResolverCached() is false!`);
+								assert.strictEqual(
+									await callMethodWithRetry(Contract.methods.resolver()),
+									readProxyAddress,
+									`${contract}.resolver is not the ReadProxyAddressResolver`
+								);
 							}
 						});
 					});

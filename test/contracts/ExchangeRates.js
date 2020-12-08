@@ -102,7 +102,7 @@ contract('Exchange Rates', async accounts => {
 	it('only expected functions should be mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: instance.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'addAggregator',
 				'deleteRate',

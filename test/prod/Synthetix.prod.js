@@ -89,132 +89,146 @@ contract('Synthetix (prod tests)', accounts => {
 			deploymentPath,
 		});
 	});
-
-	describe('misc state', () => {
-		it('has the expected resolver set', async () => {
-			assert.equal(await Synthetix.resolver(), ReadProxyAddressResolver.address);
-		});
-
-		it('has the expected owner set', async () => {
-			assert.equal(await Synthetix.owner(), owner);
-		});
-
-		it('does not report any rate to be stale or invalid', async () => {
-			assert.isFalse(await Synthetix.anySynthOrSNXRateIsInvalid());
-		});
-
-		it('reports matching totalIssuedSynths and debtLedger', async () => {
-			const totalIssuedSynths = await Synthetix.totalIssuedSynths(toBytes32('sUSD'));
-			const debtLedgerLength = await SynthetixState.debtLedgerLength();
-
-			assert.isFalse(debtLedgerLength > 0 && totalIssuedSynths === 0);
-		});
-	});
-
-	describe('erc20 functionality', () => {
-		addSnapshotBeforeRestoreAfter();
-
-		it('can transfer SNX', async () => {
-			const user1BalanceBefore = await Synthetix.balanceOf(user1);
-			const user2BalanceBefore = await Synthetix.balanceOf(user2);
-
-			const amount = toUnit('10');
-			await Synthetix.transfer(user2, amount, {
-				from: user1,
+	describe('core infrastructure', () => {
+		describe('misc state', () => {
+			it('has the expected resolver set', async () => {
+				assert.equal(await Synthetix.resolver(), ReadProxyAddressResolver.address);
 			});
 
-			const user1BalanceAfter = await Synthetix.balanceOf(user1);
-			const user2BalanceAfter = await Synthetix.balanceOf(user2);
+			it('has the expected owner set', async () => {
+				assert.equal(await Synthetix.owner(), owner);
+			});
 
-			assert.bnEqual(user1BalanceAfter, user1BalanceBefore.sub(amount));
-			assert.bnEqual(user2BalanceAfter, user2BalanceBefore.add(amount));
-		});
-	});
+			it('does not report any rate to be stale or invalid', async () => {
+				assert.isFalse(await Synthetix.anySynthOrSNXRateIsInvalid());
+			});
 
-	describe('minting', () => {
-		addSnapshotBeforeRestoreAfter();
+			it('reports matching totalIssuedSynths and debtLedger', async () => {
+				const totalIssuedSynths = await Synthetix.totalIssuedSynths(toBytes32('sUSD'));
+				const debtLedgerLength = await SynthetixState.debtLedgerLength();
 
-		before(async () => {
-			await writeSetting({
-				setting: 'setMinimumStakeTime',
-				value: '60',
-				owner,
-				network,
-				deploymentPath,
+				assert.isFalse(debtLedgerLength > 0 && totalIssuedSynths === 0);
 			});
 		});
 
-		it('can issue sUSD', async () => {
-			const user1BalanceBefore = await SynthsUSD.balanceOf(user1);
+		describe('erc20 functionality', () => {
+			addSnapshotBeforeRestoreAfter();
 
-			const amount = toUnit('10');
-			await Synthetix.issueSynths(amount, {
-				from: user1,
+			it('can transfer SNX', async () => {
+				const user1BalanceBefore = await Synthetix.balanceOf(user1);
+				const user2BalanceBefore = await Synthetix.balanceOf(user2);
+
+				const amount = toUnit('10');
+				const txn = await Synthetix.transfer(user2, amount, {
+					from: user1,
+				});
+
+				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+				console.log('Gas on transfer', gasFromReceipt({ receipt }));
+
+				const user1BalanceAfter = await Synthetix.balanceOf(user1);
+				const user2BalanceAfter = await Synthetix.balanceOf(user2);
+
+				assert.bnEqual(user1BalanceAfter, user1BalanceBefore.sub(amount));
+				assert.bnEqual(user2BalanceAfter, user2BalanceBefore.add(amount));
 			});
-
-			const user1BalanceAfter = await SynthsUSD.balanceOf(user1);
-
-			assert.bnEqual(user1BalanceAfter, user1BalanceBefore.add(amount));
 		});
 
-		it('can burn sUSD', async () => {
-			await skipStakeTime({ network, deploymentPath });
+		describe('minting', () => {
+			addSnapshotBeforeRestoreAfter();
 
-			const user1BalanceBefore = await SynthsUSD.balanceOf(user1);
-
-			await Synthetix.burnSynths(user1BalanceBefore, {
-				from: user1,
+			before(async () => {
+				await writeSetting({
+					setting: 'setMinimumStakeTime',
+					value: '60',
+					owner,
+					network,
+					deploymentPath,
+				});
 			});
 
-			const user1BalanceAfter = await SynthsUSD.balanceOf(user1);
+			it('can issue sUSD', async () => {
+				const user1BalanceBefore = await SynthsUSD.balanceOf(user1);
 
-			assert.bnLt(user1BalanceAfter, user1BalanceBefore);
-		});
-	});
+				const amount = toUnit('10');
+				const txn = await Synthetix.issueSynths(amount, {
+					from: user1,
+				});
+				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+				console.log('Gas on issue', gasFromReceipt({ receipt }));
 
-	describe('exchanging', () => {
-		before('skip if there is no exchanging implementation', async function() {
-			if (config.useOvm) {
-				this.skip();
-			}
-		});
+				const user1BalanceAfter = await SynthsUSD.balanceOf(user1);
 
-		addSnapshotBeforeRestoreAfter();
-
-		it('can exchange sUSD to sETH', async () => {
-			await skipWaitingPeriod({ network, deploymentPath });
-
-			const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
-			const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
-
-			const amount = toUnit('10');
-			await Synthetix.exchange(toBytes32('sUSD'), amount, toBytes32('sETH'), {
-				from: user1,
+				assert.bnEqual(user1BalanceAfter, user1BalanceBefore.add(amount));
 			});
 
-			const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
-			const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
+			it('can burn sUSD', async () => {
+				await skipStakeTime({ network, deploymentPath });
 
-			assert.bnLt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
-			assert.bnGt(user1BalanceAftersETH, user1BalanceBeforesETH);
+				const user1BalanceBefore = await SynthsUSD.balanceOf(user1);
+
+				const txn = await Synthetix.burnSynths(user1BalanceBefore, {
+					from: user1,
+				});
+
+				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+				console.log('Gas on burn', gasFromReceipt({ receipt }));
+
+				const user1BalanceAfter = await SynthsUSD.balanceOf(user1);
+
+				assert.bnLt(user1BalanceAfter, user1BalanceBefore);
+			});
 		});
 
-		it('can exchange sETH to sUSD', async () => {
-			await skipWaitingPeriod({ network, deploymentPath });
+		describe('exchanging', () => {
+			before('skip if there is no exchanging implementation', async function() {
+				if (config.useOvm) {
+					this.skip();
+				}
+			});
+			addSnapshotBeforeRestoreAfter();
 
-			const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
-			const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
+			it('can exchange sUSD to sETH', async () => {
+				await skipWaitingPeriod({ network, deploymentPath });
 
-			const amount = toUnit('1');
-			await Synthetix.exchange(toBytes32('sETH'), amount, toBytes32('sUSD'), {
-				from: user1,
+				const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
+				const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
+
+				const amount = toUnit('10');
+				const txn = await Synthetix.exchange(toBytes32('sUSD'), amount, toBytes32('sETH'), {
+					from: user1,
+				});
+
+				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+				console.log('Gas on exchange', gasFromReceipt({ receipt }));
+
+				const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
+				const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
+
+				assert.bnLt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
+				assert.bnGt(user1BalanceAftersETH, user1BalanceBeforesETH);
 			});
 
-			const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
-			const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
+			it('can exchange sETH to sUSD', async () => {
+				await skipWaitingPeriod({ network, deploymentPath });
 
-			assert.bnLt(user1BalanceAftersETH, user1BalanceBeforesETH);
-			assert.bnGt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
+				const user1BalanceBeforesUSD = await SynthsUSD.balanceOf(user1);
+				const user1BalanceBeforesETH = await SynthsETH.balanceOf(user1);
+
+				const amount = toUnit('1');
+				const txn = await Synthetix.exchange(toBytes32('sETH'), amount, toBytes32('sUSD'), {
+					from: user1,
+				});
+
+				const receipt = await web3.eth.getTransactionReceipt(txn.tx);
+				console.log('Gas on exchange', gasFromReceipt({ receipt }));
+
+				const user1BalanceAftersUSD = await SynthsUSD.balanceOf(user1);
+				const user1BalanceAftersETH = await SynthsETH.balanceOf(user1);
+
+				assert.bnLt(user1BalanceAftersETH, user1BalanceBeforesETH);
+				assert.bnGt(user1BalanceAftersUSD, user1BalanceBeforesUSD);
+			});
 		});
 	});
 
@@ -229,14 +243,12 @@ contract('Synthetix (prod tests)', accounts => {
 			return web3.eth.abi.decodeLog(vscEntry.inputs, log.data, log.topics.slice(1));
 		};
 
-		before('skip if there is no vSynth implementation', async function() {
+		before(async function() {
 			const virtualSynths = await implementsVirtualSynths({ network, deploymentPath });
 			if (config.useOvm || !virtualSynths) {
 				this.skip();
 			}
-		});
 
-		before(async () => {
 			await skipWaitingPeriod({ network, deploymentPath });
 
 			Exchanger = await connectContract({

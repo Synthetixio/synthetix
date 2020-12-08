@@ -176,13 +176,11 @@ const connectLayer = async ({
 	}
 
 	if (needToSyncCacheOnBridge) {
-		console.log(yellow('  > Syncing cache on bridge...'));
+		console.log(yellow('  > Rebuilding cache on bridge...'));
 
 		if (!dryRun) {
-			console.log(yellow('  > SynthetixBridge.setResolverAndSyncCache()...'));
-			tx = await SynthetixBridge.methods
-				.setResolverAndSyncCache(AddressResolver.options.address)
-				.send(params);
+			console.log(yellow('  > SynthetixBridge.rebuildCache()...'));
+			tx = await SynthetixBridge.methods.rebuildCache().send(params);
 			console.log(JSON.stringify(tx, null, 2));
 		} else {
 			console.log(yellow('  > Skipping, since this is a DRY RUN'));
