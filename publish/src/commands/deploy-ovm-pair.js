@@ -17,23 +17,23 @@ const deployOvmPair = async () => {
 	const mnemonic =
 		'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 	const masterKey = ethers.utils.HDNode.fromMnemonic(mnemonic);
-	const privateKey = masterKey.derivePath(`m/44'/60'/0'/0/${15}`);
+	const privateKey = masterKey.derivePath(`m/44'/60'/0'/0/${42}`);
 
-	// await deployInstance({ useOvm: false, privateKey });
+	await deployInstance({ useOvm: false, privateKey });
 	await deployInstance({ useOvm: true, privateKey });
 
-	// const { l1Messenger, l2Messenger } = await getMessengers();
+	const { l1Messenger, l2Messenger } = await getMessengers();
 
-	// await commands.connectBridge({
-	// 	l1Network: 'local',
-	// 	l2Network: 'local',
-	// 	l1ProviderUrl: L1_PROVIDER_URL,
-	// 	l2ProviderUrl: L2_PROVIDER_URL,
-	// 	l1Messenger,
-	// 	l2Messenger,
-	// 	l1PrivateKey: privateKey,
-	// 	l2PrivateKey: privateKey,
-	// });
+	await commands.connectBridge({
+		l1Network: 'local',
+		l2Network: 'local',
+		l1ProviderUrl: L1_PROVIDER_URL,
+		l2ProviderUrl: L2_PROVIDER_URL,
+		l1Messenger,
+		l2Messenger,
+		l1PrivateKey: privateKey,
+		l2PrivateKey: privateKey,
+	});
 };
 
 const deployInstance = async ({ useOvm, privateKey }) => {
@@ -44,7 +44,7 @@ const deployInstance = async ({ useOvm, privateKey }) => {
 		freshDeploy: true,
 		yes: true,
 		providerUrl: useOvm ? L2_PROVIDER_URL : L1_PROVIDER_URL,
-		// gasPrice: '0',
+		gasPrice: '0',
 		useOvm,
 		methodCallGasLimit: '3500000',
 		contractDeploymentGasLimit: useOvm ? '11000000' : '9500000',

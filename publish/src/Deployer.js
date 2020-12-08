@@ -148,35 +148,33 @@ class Deployer {
 		let deployedContract;
 
 		const areBytesSafeForOVM = bytes => {
-			for (let i = 0; i < bytes.length; i+=2) {
-  			const curByte = bytes.substr(i, 2)
-  			const opNum = parseInt(curByte, 16)
+			for (let i = 0; i < bytes.length; i += 2) {
+				const curByte = bytes.substr(i, 2);
+				const opNum = parseInt(curByte, 16);
 
-  			// opNum is >=0x60 and <0x80
-  			if(opNum >= 96 && opNum < 128) {
-    			i += 2 * (opNum - 95) //For PUSH##, OpNum - 0x5f = ##
-    			continue;
-  			}
+				// opNum is >=0x60 and <0x80
+				if (opNum >= 96 && opNum < 128) {
+					i += 2 * (opNum - 95); // For PUSH##, OpNum - 0x5f = ##
+					continue;
+				}
 
-  			if(curByte === '5b') {
-    			return false;
-  			}
+				if (curByte === '5b') {
+					return false;
+				}
 
-  			return true;
+				return true;
 			}
 		};
 
 		const getEncodedDeploymentParameters = ({ abi, params }) => {
-			let encodedParams = '0x';
-
 			const constructorABI = abi.find(item => item.type === 'constructor');
 			if (!constructorABI) {
-				return encodedParams;
+				return '0x';
 			}
 
 			const inputs = constructorABI.inputs;
 			if (!inputs || inputs.length === 0) {
-				return encodedParams;
+				return '0x';
 			}
 
 			const types = inputs.map(input => input.type);
@@ -237,7 +235,7 @@ class Deployer {
 				const code = await this.web3.eth.getCode(deployedContract.options.address);
 
 				if (code.length === 2) {
-					throw new Error('Contract deployment resulted in a contract with no bytecode');
+					throw new Error(`Contract deployment resulted in a contract with no bytecode: ${code}`);
 				}
 			}
 
