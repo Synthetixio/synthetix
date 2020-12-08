@@ -130,8 +130,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function _ratePerSecond(VestingEntries.VestingEntry memory _entry) internal pure returns (uint256) {
-        /* Calculate the rate of emission for entry based on escrowAmount / duration seconds rounded */
-        return _entry.escrowAmount.divideDecimalRound(_entry.duration);
+        /* Calculate the rate of emission for entry based on escrowAmount / duration seconds */
+        return _entry.escrowAmount.div(_entry.duration);
     }
 
     function _numVestingEntries(address account) internal view returns (uint) {

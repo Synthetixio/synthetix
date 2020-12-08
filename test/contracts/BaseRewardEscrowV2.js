@@ -10,16 +10,15 @@ const { mockToken, setupAllContracts } = require('./setup');
 
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const { toUnit } = require('../utils')();
+const { toUnit, currentTime } = require('../utils')();
 
 const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
+const BN = require('bn.js');
+
 contract('BaseRewardEscrowV2', async accounts => {
-	const SECOND = 1000;
-	const DAY = 86400;
-	const WEEK = 604800;
 	const YEAR = 31556926;
 
 	const [, owner, feePoolAccount, account1] = accounts;
@@ -158,6 +157,64 @@ contract('BaseRewardEscrowV2', async accounts => {
 					}),
 					'Cannot escrow with 0 duration OR above MAX_DURATION'
 				);
+			});
+
+			describe('When successfully appending new escrow entry for account 1', () => {
+				let entryID, nextEntryIdAfter, now, escrowAmount;
+				beforeEach(async () => {
+					duration = 1 * YEAR;
+
+					entryID = await baseRewardEscrowV2.nextEntryId();
+
+					now = await currentTime();
+
+					escrowAmount = toUnit('10');
+					// Transfer of SNX to the escrow must occur before creating an entry
+					await synthetix.transfer(baseRewardEscrowV2.address, escrowAmount, {
+						from: owner,
+					});
+
+					// Append vesting entry
+					await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount, duration, {
+						from: feePoolAccount,
+					});
+
+					nextEntryIdAfter = await baseRewardEscrowV2.nextEntryId();
+				});
+				it('Should return the vesting entry for account 1 and entryID', async () => {
+					const vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
+
+					// endTime is 1 year after
+					assert.isTrue(vestingEntry.endTime.gte(now + duration));
+
+					// escrowAmount is 10
+					assert.bnEqual(vestingEntry.escrowAmount, escrowAmount);
+				});
+				it('Should increment the nextEntryID', async () => {
+					assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
+				});
+			});
+		});
+		describe('Calculating the ratePerSecond emission of each entry', () => {
+			beforeEach(async () => {
+				// Transfer of SNX to the escrow must occur before creating an entry
+				await synthetix.transfer(baseRewardEscrowV2.address, toUnit('31556926'), {
+					from: owner,
+				});
+			});
+			it('should be 1 SNX per second with entry of 31556926 SNX for 1 year (31556926 seconds) duration', async () => {
+				const duration = 1 * YEAR;
+				const expectedRatePerSecond = toUnit(1);
+
+				const entryID = await baseRewardEscrowV2.nextEntryId();
+
+				await baseRewardEscrowV2.appendVestingEntry(account1, toUnit('31556926'), duration, {
+					from: feePoolAccount,
+				});
+
+				const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
+
+				assert.bnEqual(ratePerSecond, expectedRatePerSecond);
 			});
 		});
 	});
