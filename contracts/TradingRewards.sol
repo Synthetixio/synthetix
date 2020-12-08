@@ -45,15 +45,13 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
-    bytes32[24] private _addressesToCache = [CONTRACT_EXCHANGER, CONTRACT_SYNTHETIX];
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address owner,
         address periodController,
         address resolver
-    ) public Owned(owner) MixinResolver(resolver, _addressesToCache) {
+    ) public Owned(owner) MixinResolver(resolver) {
         require(periodController != address(0), "Invalid period controller");
 
         _periodController = periodController;
@@ -61,12 +59,18 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
 
     /* ========== VIEWS ========== */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](2);
+        addresses[0] = CONTRACT_EXCHANGER;
+        addresses[1] = CONTRACT_SYNTHETIX;
+    }
+
     function synthetix() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function getAvailableRewards() external view returns (uint) {

@@ -7,9 +7,8 @@ const { red, gray, yellow } = require('chalk');
 
 const {
 	constants: { CONFIG_FILENAME },
+	releases,
 } = require('../../../.');
-
-const releases = require('../../releases.json');
 
 const DEFAULTS = {
 	network: 'kovan',
@@ -35,7 +34,15 @@ const prepareDeploy = async ({ network = DEFAULTS.network }) => {
 	// (1) make sure they have an entry in config.json and,
 	// (2) its deploy value is set to true.
 	release.sources.map(source => {
-		config[source] = { deploy: true };
+		// If any non alpha characters in the name, assume regex and match existing names
+		if (/[^\w]/.test(source)) {
+			Object.keys(config)
+				.filter(contract => new RegExp(`^${source}$`).test(contract))
+				.forEach(contract => (config[contract] = { deploy: true }));
+		} else {
+			// otherwise upsert this entry into the config file
+			config[source] = { deploy: true };
+		}
 	});
 
 	// Update config file

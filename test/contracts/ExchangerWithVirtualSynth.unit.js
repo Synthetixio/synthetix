@@ -16,7 +16,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: ExchangerWithVirtualSynth.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'exchange',
 				'exchangeOnBehalf',

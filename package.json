@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.33.2",
+	"version": "2.35.0-ovm",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -55,8 +55,7 @@
 		"bin.js",
 		"build/ast",
 		"contracts/**/*.sol",
-		"publish/assets.json",
-		"publish/ovm-ignore.json",
+		"publish/*.json",
 		"publish/deployed/kovan/*",
 		"publish/deployed/rinkeby/*",
 		"publish/deployed/ropsten/*",

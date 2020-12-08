@@ -14,9 +14,7 @@ contract MintableSynthetix is BaseSynthetix {
         address _owner,
         uint _totalSupply,
         address _resolver
-    ) public BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {
-        appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE);
-    }
+    ) public BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
 
     /* ========== INTERNALS =================== */
 
@@ -27,7 +25,7 @@ contract MintableSynthetix is BaseSynthetix {
     }
 
     function onlyAllowFromBridge() internal view {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixBridgeToBase contract");
+        require(msg.sender == synthetixBridge(), "Can only be invoked by bridge");
     }
 
     /* ========== MODIFIERS =================== */
@@ -38,9 +36,15 @@ contract MintableSynthetix is BaseSynthetix {
     }
 
     /* ========== VIEWS ======================= */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = BaseSynthetix.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_SYNTHETIX_BRIDGE;
+        return combineArrays(existingAddresses, newAddresses);
+    }
 
     function synthetixBridge() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixBridgeToBase address");
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */

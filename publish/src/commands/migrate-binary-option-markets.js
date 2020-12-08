@@ -198,18 +198,14 @@ const migrateBinaryOptionMarkets = async ({
 
 		console.log(
 			gray(
-				`Attempting to invoke BinaryOptionMarketManager.setResolverAndSyncCacheOnMarkets(${resolverAddress}, ${stringify(
-					chunk
-				)}).`
+				`Attempting to invoke BinaryOptionMarketManager.rebuildMarketCaches(${stringify(chunk)}).`
 			)
 		);
-		let result = await sourceContract.methods
-			.setResolverAndSyncCacheOnMarkets(resolverAddress, chunk)
-			.send({
-				from: account,
-				gasLimit: Number(gasLimit),
-				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			});
+		let result = await sourceContract.methods.rebuildMarketCaches(chunk).send({
+			from: account,
+			gasLimit: Number(gasLimit),
+			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		});
 		console.log(
 			green(
 				`Successfully synchronised markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`
@@ -261,18 +257,14 @@ const migrateBinaryOptionMarkets = async ({
 
 		console.log(
 			gray(
-				`Attempting to invoke BinaryOptionMarketManager.setResolverAndSyncCacheOnMarkets(${resolverAddress}, ${stringify(
-					chunk
-				)}).`
+				`Attempting to invoke BinaryOptionMarketManager.rebuildMarketCaches(${stringify(chunk)}).`
 			)
 		);
-		let result = await sourceContract.methods
-			.setResolverAndSyncCacheOnMarkets(resolverAddress, chunk)
-			.send({
-				from: account,
-				gasLimit: Number(gasLimit),
-				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			});
+		let result = await sourceContract.methods.rebuildMarketCaches(chunk).send({
+			from: account,
+			gasLimit: Number(gasLimit),
+			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		});
 		console.log(
 			green(
 				`Successfully synchronised markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`
