@@ -200,13 +200,18 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         }
     }
 
+    function deltaOf(address account, uint256 entryID) external view returns (uint256 delta) {
+        VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryID];
+        return _deltaOf(entry.endTime, entry.lastVested);
+    }
+
     /**
      * Calculate the time in seconds between `block.timestamp` and lastVested
      * Returns seconds since lastVested and if the end time is after `block.timestamp`
-     * it will be the delta of the end time - last vested
+     * it will be the delta of the current `block.timestamp` - lastVested
      */
-    function _deltaOf(uint256 endTime, uint256 lastVested) internal view returns (uint256 delta) {
-        return now < endTime ? now - lastVested : endTime - lastVested;
+    function _deltaOf(uint256 endTime, uint256 startTime) internal view returns (uint256 delta) {
+        return now < endTime ? now - startTime : endTime - startTime;
     }
 
     /**

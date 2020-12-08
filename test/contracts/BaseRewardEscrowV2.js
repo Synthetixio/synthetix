@@ -10,7 +10,7 @@ const { mockToken, setupAllContracts } = require('./setup');
 
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const { toUnit, currentTime } = require('../utils')();
+const { toUnit, currentTime, fastForward } = require('../utils')();
 
 const {
 	constants: { ZERO_ADDRESS },
@@ -159,7 +159,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				);
 			});
 
-			describe('When successfully appending new escrow entry for account 1', () => {
+			describe.only('When successfully appending new escrow entry for account 1', () => {
 				let entryID, nextEntryIdAfter, now, escrowAmount;
 				beforeEach(async () => {
 					duration = 1 * YEAR;
@@ -189,9 +189,31 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 					// escrowAmount is 10
 					assert.bnEqual(vestingEntry.escrowAmount, escrowAmount);
+
+					// remainingAmount is 10
+					assert.bnEqual(vestingEntry.remainingAmount, escrowAmount);
+
+					// duration is 1 year
+					assert.bnEqual(vestingEntry.duration, duration);
+
+					// last vested timestamp is 0
+					assert.bnEqual(vestingEntry.lastVested, new BN(0));
 				});
 				it('Should increment the nextEntryID', async () => {
 					assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
+				});
+				describe('When one year has passed', () => {
+					beforeEach(async () => {
+						await fastForward(YEAR + 1);
+					});
+					it('then the deltaOf the vesting entry is the whole duration (1 year)', async () => {
+						const delta = await baseRewardEscrowV2.deltaOf(account1, entryID);
+						assert.bnEqual(delta, duration);
+					});
+					it('then the vesting entry is fully claimable', async () => {
+						const claimable = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
+						assert.bnEqual(claimable, escrowAmount);
+					});
 				});
 			});
 		});
