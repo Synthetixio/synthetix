@@ -2,7 +2,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
 const ethers = require('ethers');
-// const axios = require('axios');
+const axios = require('axios');
 
 const { parseEther } = ethers.utils;
 
@@ -10,44 +10,33 @@ const { assert } = require('../contracts/common');
 const testUtils = require('../utils');
 const { ensureDeploymentPath, loadAndCheckRequiredSources } = require('../../publish/src/util');
 
-const { wrap, constants } = require('../..');
+const { wrap, constants, toBytes32 } = require('../..');
 
 const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: require('../../publish/src/commands/deploy').deploy,
 };
 
-describe('deploy', () => {
-	let deployer;
+describe('L1/L2 integration', () => {
+	let setupProvider, getContract;
 
-	let loadLocalUsers, setupProvider, getContract;
-
-	let wallet;
-
-	let users;
+	const overrides = {
+		gasPrice: '0',
+		gasLimit: 1.5e6,
+	};
 
 	const network = 'local';
 	const { getPathToNetwork } = wrap({ path, fs, network });
 
+	const wallets = [];
+	const deploymentPaths = [];
 	let currentDeploymentPath;
+	let deployerPrivateKey;
+	let l1Provider;
 
-	before('set up test utils', async () => {
-		({ loadLocalUsers, setupProvider, getContract } = testUtils());
-	});
-
-	before('connect to local chain with accounts', async () => {
-		users = loadLocalUsers();
-		deployer = users[0];
-		({ wallet } = setupProvider({
-			providerUrl: 'http://127.0.0.1:8545',
-			privateKey: deployer.private,
-		}));
-	});
-
-	const createTempLocalCopy = ({ prefix }) => {
+	const createTempLocalCopy = ({ prefix, useOvm }) => {
 		const folderPath = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-		fs.copySync(getPathToNetwork({ network: 'goerli', useOvm: true }), folderPath);
-
+		fs.copySync(getPathToNetwork({ network: 'goerli', useOvm: useOvm }), folderPath);
 		fs.writeFileSync(
 			path.join(folderPath, constants.DEPLOYMENT_FILENAME),
 			JSON.stringify({ targets: {}, sources: {} }, null, '\t')
@@ -71,88 +60,235 @@ describe('deploy', () => {
 	};
 
 	// fetches an array of both instance contracts
-	const fetchContract = ({ contract, source = contract, deploymentPath, user }) =>
+	const fetchContract = ({ contract, source = contract, instance, user }) =>
 		getContract({
 			contract,
 			source,
 			network,
-			deploymentPath: deploymentPath,
-			wallet: user || wallet,
+			deploymentPath: deploymentPaths[instance],
+			wallet: user || wallets[instance],
 		});
 
-	// before('deploy instance 1', async () => {
-	// 	deploymentPaths.push(createTempLocalCopy({ prefix: 'snx-multi-1-local-' }));
+	const connectBridgesAndSyncCaches = async (
+		l1MessengerAddress,
+		l2MessengerAddress,
+		l1ToL2Bridge,
+		l2ToL1Bridge
+	) => {
+		let importedContracts = ['ext:Messenger', 'ovm:SynthetixBridgeToBase'];
+		let importedAddresses = [l1MessengerAddress, l2ToL1Bridge.address];
+		let addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
+		await addressResolver.importAddresses(
+			importedContracts.map(toBytes32),
+			importedAddresses,
+			overrides
+		);
+		await l1ToL2Bridge.setResolverAndSyncCache(addressResolver.address, overrides);
 
-	// 	// ensure that only SynthetixBridgeToOptimism is deployed on L1
-	// 	switchL2Deployment(network, deploymentPaths[0], true);
+		importedContracts = ['ext:Messenger', 'base:SynthetixBridgeToOptimism'];
+		importedAddresses = [l2MessengerAddress, l1ToL2Bridge.address];
+		addressResolver = fetchContract({ contract: 'AddressResolver', instance: 1 });
+		await addressResolver.importAddresses(
+			importedContracts.map(toBytes32),
+			importedAddresses,
+			overrides
+		);
+		await l2ToL1Bridge.setResolverAndSyncCache(addressResolver.address, overrides);
+	};
 
-	// 	await commands.deploy({
-	// 		network,
-	// 		freshDeploy: true,
-	// 		yes: true,
-	// 		privateKey: deployer.private,
-	// 		ignoreSafetyChecks: true,
-	// 		deploymentPath: deploymentPaths[0],
-	// 	});
+	before('set up test utils', async () => {
+		({ setupProvider, getContract } = testUtils());
+	});
 
-	// 	// now set the external messenger contract
-	// 	const addressResolver = fetchContract({ contract: 'AddressResolver', instance: 0 });
-	// 	await addressResolver.importAddresses(
-	// 		[toBytes32('ext:Messenger')],
-	// 		[messengers.l1CrossDomainMessenger.address]
-	// 	);
-	// });
+	before('setup providers and deployer wallets', async () => {
+		({ wallet: wallets[0], provider: l1Provider } = setupProvider({
+			providerUrl: 'http://127.0.0.1:9545',
+		}));
 
-	before('deploy an OVM instance', async () => {
-		currentDeploymentPath = createTempLocalCopy({ prefix: 'snx-docker-2-local-ovm-' });
+		({ wallet: wallets[1] } = setupProvider({
+			providerUrl: 'http://127.0.0.1:8545',
+			privateKey: wallets[0].privateKey,
+		}));
+
+		deployerPrivateKey = wallets[0].privateKey;
+	});
+
+	before('deploy instance on L1', async () => {
+		currentDeploymentPath = createTempLocalCopy({ prefix: 'snx-docker-local-1-' });
+		// console.log(currentDeploymentPath);
+		deploymentPaths.push(currentDeploymentPath);
 		// ensure that we do a fresh deployment
-		prepareFreshDeployment(network, currentDeploymentPath, false);
-		// complie with the useOVM flag set
-		// await commands.build({ showContractSize: true, useOvm: true });
+		prepareFreshDeployment(network, currentDeploymentPath);
+		// compile contracts
+		await commands.build({ showContractSize: true });
 
 		await commands.deploy({
 			network,
 			freshDeploy: true,
 			yes: true,
-			privateKey: deployer.private,
+			providerUrl: 'http://127.0.0.1:9545',
+			privateKey: deployerPrivateKey,
+			deploymentPath: currentDeploymentPath,
+			gasPrice: '0',
+		});
+	});
+
+	before('deploy an OVM instance', async () => {
+		currentDeploymentPath = createTempLocalCopy({
+			prefix: 'snx-docker-local-2-ovm-',
 			useOvm: true,
-			ignoreSafetyChecks: false,
+		});
+		// console.log(currentDeploymentPath);
+		deploymentPaths.push(currentDeploymentPath);
+		// ensure that we do a fresh deployment
+		prepareFreshDeployment(network, currentDeploymentPath);
+		// compile with the useOVM flag set
+		await commands.build({ showContractSize: true, useOvm: true });
+
+		await commands.deploy({
+			network,
+			freshDeploy: true,
+			yes: true,
+			providerUrl: 'http://127.0.0.1:8545',
+			privateKey: deployerPrivateKey,
+			useOvm: true,
 			deploymentPath: currentDeploymentPath,
 			methodCallGasLimit: '2500000',
 			contractDeploymentGasLimit: '11000000',
 			gasPrice: '0',
 			ensureOvmDeploymentGasLimit: true,
 		});
-
-		// let staticAddresses;
-		// await axios.get('http://localhost:8080/addresses.json').then(
-		// 	response => {
-		// 		staticAddresses = response.data;
-		// 	},
-		// 	error => {
-		// 		console.log(error);
-		// 	}
-		// );
-		// const l2Messenger = staticAddresses['OVM_L2CrossDomainMessenger'];
-		// console.log(l2Messenger);
 	});
 
-	describe('when all contracts are deployed', () => {
-		let synthetixAlt;
+	describe('when both instances are deployed', () => {
+		let mintableSynthetix, synthetix;
 		let l2InitialTotalSupply;
 
-		before('when MintableSynthetix is deployed on L2', async () => {
-			synthetixAlt = fetchContract({
+		before('fetch Synthetix instances', async () => {
+			synthetix = fetchContract({
 				contract: 'Synthetix',
-				source: 'MintableSynthetix',
-				deploymentPath: currentDeploymentPath,
+				source: 'Synthetix',
+				instance: 0,
 			});
 
-			l2InitialTotalSupply = await synthetixAlt.totalSupply();
+			mintableSynthetix = fetchContract({
+				contract: 'Synthetix',
+				source: 'MintableSynthetix',
+				instance: 1,
+			});
+
+			l2InitialTotalSupply = await mintableSynthetix.totalSupply();
 		});
 
 		it('the totalSupply on L2 should be right', async () => {
 			assert.bnEqual(l2InitialTotalSupply, parseEther('100000000'));
+		});
+
+		describe('the address resolver is updated and the caches are synched on both layers', () => {
+			before('fetch the required addresses and connect bridges', async () => {
+				let predeployedContracts;
+				await axios.get('http://localhost:8080/addresses.json').then(
+					response => {
+						predeployedContracts = response.data;
+					},
+					error => {
+						console.log(error);
+					}
+				);
+				// fetch messenger
+				const l1ToL2MessengerAddress = predeployedContracts['OVM_L2CrossDomainMessenger'];
+				const l2ToL1MessengerAddress = predeployedContracts['OVM_L1CrossDomainMessenger'];
+				// fetch bridges
+				const l1ToL2Bridge = fetchContract({ contract: 'SynthetixBridgeToOptimism', instance: 0 });
+				const l2ToL1Bridge = fetchContract({ contract: 'SynthetixBridgeToBase', instance: 1 });
+
+				await connectBridgesAndSyncCaches(
+					l1ToL2MessengerAddress,
+					l2ToL1MessengerAddress,
+					l1ToL2Bridge,
+					l2ToL1Bridge
+				);
+			});
+
+			describe('when a user owns SNX on L1', () => {
+				let accounts, user;
+
+				before('transfer SNX to user', async () => {
+					accounts = await l1Provider.listAccounts();
+					user = l1Provider.getSigner(accounts[3]); // use 3rd account to avoid conflicts with the sequencer
+					await (await synthetix.transfer(user._address, parseEther('100'), overrides)).wait();
+				});
+
+				it('should update the user balance', async () => {
+					assert.bnEqual(await synthetix.balanceOf(user._address), parseEther('100'));
+				});
+
+				describe('when a user deposits SNX into the L1 bridge', () => {
+					let l1ToL2Bridge;
+					before('approve and deposit 100 SNX', async () => {
+						l1ToL2Bridge = fetchContract({
+							contract: 'SynthetixBridgeToOptimism',
+							instance: 0,
+							user,
+						});
+						// user must approve SynthetixBridgeToOptimism to transfer SNX on their behalf
+						await (
+							await fetchContract({ contract: 'Synthetix', instance: 0, user }).approve(
+								l1ToL2Bridge.address,
+								parseEther('10'),
+								overrides
+							)
+						).wait();
+
+						await (await l1ToL2Bridge.deposit(parseEther('10'), overrides)).wait();
+					});
+
+					it('the balances should be updated accordingly', async () => {
+						assert.bnEqual(await synthetix.balanceOf(l1ToL2Bridge.address), parseEther('10'));
+						assert.bnEqual(await synthetix.balanceOf(user._address), parseEther('90'));
+					});
+
+					describe('when the message is relayed to L2', () => {
+						it('the amount should be credited', async () => {
+							assert.bnEqual(await mintableSynthetix.balanceOf(user._address), parseEther('10'));
+						});
+					});
+
+					describe('when the user initiates a withdrawal', () => {
+						let l2ToL1Bridge;
+						describe('when the user owns SNX', () => {
+							before('credit user with SNX', async () => {
+								await (
+									await mintableSynthetix.transfer(user._address, parseEther('100'), overrides)
+								).wait();
+							});
+
+							it('the user balance should be updated accordingly', async () => {
+								assert.bnEqual(await mintableSynthetix.balanceOf(user._address), parseEther('100'));
+							});
+
+							describe('when the user tries to withdraw', () => {
+								before('initiate withdrawal', async () => {
+									l2ToL1Bridge = fetchContract({
+										contract: 'SynthetixBridgeToBase',
+										instance: 1,
+										user,
+									});
+									// initiate withdrawal on L2
+									await l2ToL1Bridge.initiateWithdrawal(parseEther('10'), overrides);
+								});
+
+								it('the balances should be updated accordingly', async () => {
+									assert.bnEqual(
+										await mintableSynthetix.balanceOf(user._address),
+										parseEther('90')
+									);
+								});
+							});
+						});
+					});
+				});
+			});
 		});
 	});
 });

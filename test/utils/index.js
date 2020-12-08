@@ -517,7 +517,6 @@ module.exports = ({ web3 } = {}) => {
 	const isCompileRequired = () => {
 		// get last modified sol file
 		const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
-
 		// get last build
 		const { earliestCompiledTimestamp } = loadCompiledFiles({ buildPath });
 
@@ -531,8 +530,10 @@ module.exports = ({ web3 } = {}) => {
 		if (publicKey) {
 			wallet = provider.getSigner(publicKey);
 			wallet.address = publicKey;
-		} else if (privateKey) {
-			wallet = new ethers.Wallet(privateKey || ethers.Wallet.createRandom().privateKey, provider);
+		} else {
+			const walletPrivateKey = privateKey || ethers.Wallet.createRandom().privateKey;
+			wallet = new ethers.Wallet(walletPrivateKey, provider);
+			wallet.privateKey = walletPrivateKey;
 		}
 
 		return {
