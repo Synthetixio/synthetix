@@ -18,7 +18,7 @@ import "./interfaces/IExchanger.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
-contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRates {
+contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -50,8 +50,6 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
 
-    bytes32[24] private addressesToCache = [CONTRACT_EXCHANGER];
-
     //
     // ========== CONSTRUCTOR ==========
 
@@ -61,7 +59,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
         address _resolver,
         bytes32[] memory _currencyKeys,
         uint[] memory _newRates
-    ) public Owned(_owner) MixinResolver(_resolver, addressesToCache) MixinSystemSettings() {
+    ) public Owned(_owner) MixinSystemSettings(_resolver) {
         require(_currencyKeys.length == _newRates.length, "Currency key length and rate length must match.");
 
         oracle = _oracle;
@@ -213,6 +211,13 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
     }
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_EXCHANGER;
+        return combineArrays(existingAddresses, newAddresses);
+    }
 
     // SIP-75 View to determine if freezeRate can be called safely
     function canFreezeRate(bytes32 currencyKey) external view returns (bool) {
@@ -443,7 +448,7 @@ contract ExchangeRates is Owned, MixinResolver, MixinSystemSettings, IExchangeRa
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function getFlagsForRates(bytes32[] memory currencyKeys) internal view returns (bool[] memory flagList) {

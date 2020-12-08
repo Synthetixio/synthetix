@@ -11,10 +11,10 @@ async function mockAddressIfNeeded({ alias, AddressResolver }) {
 	}
 }
 
-async function syncCacheIfNeeded({ contract, resolver }) {
-	const isCached = await contract.isResolverCached(resolver);
+async function syncCacheIfNeeded({ contract }) {
+	const isCached = await contract.isResolverCached();
 	if (!isCached) {
-		await contract.setResolverAndSyncCache(resolver);
+		await contract.rebuildCache();
 	}
 }
 
@@ -41,7 +41,7 @@ async function mockOptimismBridge({ network, deploymentPath }) {
 	await mockAddressIfNeeded({ alias: 'base:SynthetixBridgeToOptimism', AddressResolver });
 	await mockAddressIfNeeded({ alias: 'ext:Messenger', AddressResolver });
 
-	await syncCacheIfNeeded({ contract: SynthetixBridgeToBase, resolver: AddressResolver.address });
+	await syncCacheIfNeeded({ contract: SynthetixBridgeToBase });
 }
 
 module.exports = {
