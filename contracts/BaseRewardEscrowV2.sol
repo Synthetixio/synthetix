@@ -339,6 +339,9 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         require(quantity != 0, "Quantity cannot be zero");
         require(duration > 0 && duration < MAX_DURATION, "Cannot escrow with 0 duration OR above MAX_DURATION");
 
+        /* Escrow quantity needs to be larger than duration as ratePerSecond division will result in 0 if less */
+        require(quantity > duration, "Escrow quantity less than duration");
+
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
         require(

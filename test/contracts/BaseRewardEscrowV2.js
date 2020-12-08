@@ -222,7 +222,13 @@ contract('BaseRewardEscrowV2', async accounts => {
 		const duration = YEAR;
 		beforeEach(async () => {
 			// approve rewardEscrow to spend SNX
-			await synthetix.approve(baseRewardEscrowV2.address, toUnit('10'));
+			await synthetix.approve(baseRewardEscrowV2.address, toUnit('10'), { from: owner });
+		});
+		it('should revert if escrow quanity is less than duration seconds, as will result in 0 ratePerSecond', async () => {
+			await assert.revert(
+				baseRewardEscrowV2.createEscrowEntry(account1, new BN('1000'), duration, { from: owner }),
+				'Escrow quantity less than duration'
+			);
 		});
 		it('should revert when beneficiary is address zero', async () => {
 			await assert.revert(
