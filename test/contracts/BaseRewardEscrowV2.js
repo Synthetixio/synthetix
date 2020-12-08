@@ -219,8 +219,16 @@ contract('BaseRewardEscrowV2', async accounts => {
 		});
 	});
 	describe('Creating a new escrow entry by approval', async () => {
+		const duration = YEAR;
 		beforeEach(async () => {
 			// approve rewardEscrow to spend SNX
+			await synthetix.approve(baseRewardEscrowV2.address, toUnit('10'));
+		});
+		it('should revert when beneficiary is address zero', async () => {
+			await assert.revert(
+				baseRewardEscrowV2.createEscrowEntry(ZERO_ADDRESS, toUnit('1'), duration),
+				'Cannot create escrow with address(0)'
+			);
 		});
 	});
 });
