@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -216,6 +216,48 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 				assert.bnEqual(ratePerSecond, expectedRatePerSecond);
 			});
+			it('should be 0.5 SNX per second with entry of 15,778,463 SNX for 1 year (31556926 seconds) duration', async () => {
+				const duration = 1 * YEAR;
+				const expectedRatePerSecond = toUnit('0.5');
+
+				const entryID = await baseRewardEscrowV2.nextEntryId();
+
+				await baseRewardEscrowV2.appendVestingEntry(account1, toUnit('15778463'), duration, {
+					from: feePoolAccount,
+				});
+
+				const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
+
+				assert.bnEqual(ratePerSecond, expectedRatePerSecond);
+			});
+			it('should be 0.25 SNX per second with entry of 7,889,231.5 SNX for 1 year (31556926 seconds) duration', async () => {
+				const duration = 1 * YEAR;
+				const expectedRatePerSecond = toUnit('0.25');
+
+				const entryID = await baseRewardEscrowV2.nextEntryId();
+
+				await baseRewardEscrowV2.appendVestingEntry(account1, toUnit('7889231.5'), duration, {
+					from: feePoolAccount,
+				});
+
+				const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
+
+				assert.bnEqual(ratePerSecond, expectedRatePerSecond);
+			});
+			it('should return very small amount SNX per second with escrow amount of 31556927 wei for 1 year (31556926 seconds) duration', async () => {
+				const duration = 1 * YEAR;
+				const expectedRatePerSecond = web3.utils.toWei('1', 'wei');
+
+				const entryID = await baseRewardEscrowV2.nextEntryId();
+
+				await baseRewardEscrowV2.appendVestingEntry(account1, new BN(31556927), duration, {
+					from: feePoolAccount,
+				});
+
+				const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
+
+				assert.bnEqual(ratePerSecond, expectedRatePerSecond);
+			});
 		});
 	});
 	describe('Creating a new escrow entry by approval', async () => {
@@ -224,9 +266,9 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// approve rewardEscrow to spend SNX
 			await synthetix.approve(baseRewardEscrowV2.address, toUnit('10'), { from: owner });
 		});
-		it('should revert if escrow quanity is less than duration seconds, as will result in 0 ratePerSecond', async () => {
+		it('should revert if escrow quanity is equal or less than duration seconds, as will result in 0 ratePerSecond', async () => {
 			await assert.revert(
-				baseRewardEscrowV2.createEscrowEntry(account1, new BN('1000'), duration, { from: owner }),
+				baseRewardEscrowV2.createEscrowEntry(account1, new BN(1000), duration, { from: owner }),
 				'Escrow quantity less than duration'
 			);
 		});
