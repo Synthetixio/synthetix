@@ -52,7 +52,7 @@ class Deployer {
 
 		if (useFork) {
 			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
-		} else if (network === 'local') {
+		} else if (!privateKey && network === 'local') {
 			// Deterministic account #0 when using `npx buidler node`
 			this.web3.eth.defaultAccount = '0xc783df8a850f42e7F7e57013759C285caa701eB6';
 		} else {
@@ -147,6 +147,32 @@ class Deployer {
 
 		let deployedContract;
 
+		const areBytesSafeForOVM = bytes => {
+			const idx = bytes.toLowerCase().indexOf('5b');
+
+			const containsJumpdestOpcode = idx >= 0;
+			const isOpcodeAtAnEvenLoc = idx % 2 === 0;
+
+			return !(containsJumpdestOpcode && isOpcodeAtAnEvenLoc);
+		};
+
+		const getEncodedDeploymentParameters = ({ abi, params }) => {
+			let encodedParams = '0x';
+
+			const constructorABI = abi.find(item => item.type === 'constructor');
+			if (!constructorABI) {
+				return encodedParams;
+			}
+
+			const inputs = constructorABI.inputs;
+			if (!inputs || inputs.length === 0) {
+				return encodedParams;
+			}
+
+			const types = inputs.map(input => input.type);
+			return this.web3.eth.abi.encodeParameters(types, params);
+		};
+
 		if (deploy) {
 			console.log(gray(` - Attempting to deploy ${name}`));
 			let gasUsed;
@@ -165,11 +191,26 @@ class Deployer {
 				deployedContract.options.address = '0x' + this._dryRunCounter.toString().padStart(40, '0');
 			} else {
 				const newContract = new this.web3.eth.Contract(compiled.abi);
-				deployedContract = await newContract
-					.deploy({
-						data: '0x' + bytecode,
-						arguments: args,
-					})
+				const deployTx = await newContract.deploy({
+					data: '0x' + bytecode,
+					arguments: args,
+				});
+
+				// Check if the deployment parameters are safe in OVM
+				// (No need to check the metadata hash since its stripped with the OVM compiler)
+				if (this.useOvm) {
+					const encodedParameters = getEncodedDeploymentParameters({
+						abi: compiled.abi,
+						params: args,
+					});
+					if (!areBytesSafeForOVM(encodedParameters)) {
+						throw new Error(
+							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. ${encodedParameters}`
+						);
+					}
+				}
+
+				deployedContract = await deployTx
 					.send(await this.sendParameters('contract-deployment'))
 					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
 
@@ -178,6 +219,29 @@ class Deployer {
 				}
 			}
 			deployedContract.options.deployed = true; // indicate a fresh deployment occurred
+
+			// Deployment in OVM could result in empty bytecode if
+			// the contract's constructor parameters are unsafe.
+			// This check is probably redundant given the previous check, but just in case...
+			if (this.useOvm) {
+				const code = await this.web3.eth.getCode(deployedContract.options.address);
+
+				if (code.length === 2) {
+					throw new Error('Contract deployment resulted in a contract with no bytecode');
+				}
+			}
+
+			// If the resulting contract address is unsafe for OVM,
+			// it is possible that the address may be used as a constructor parameter of
+			// another contract. If it is unsafe, warn but don't fail.
+			if (this.useOvm && !areBytesSafeForOVM(deployedContract.options.address)) {
+				console.log(
+					yellow(
+						`⚠ WARNING: Deployed contract address ${deployedContract.options.address} contains unsafe opcodes for OVM. If it is used as a constructor argument in the deployment of another contract, it will make that deployment fail.`
+					)
+				);
+			}
+
 			console.log(
 				green(
 					`${dryRun ? '[DRY RUN] - Simulated deployment of' : '- Deployed'} ${name} to ${

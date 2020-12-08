@@ -1,4 +1,5 @@
 const axios = require('axios');
+const ethers = require('ethers');
 const { red } = require('chalk');
 const commands = {
 	build: require('./build').build,
@@ -11,17 +12,43 @@ const L2_PROVIDER_URL = 'http://localhost:8545';
 const DATA_PROVIDER_URL = 'http://localhost:8080';
 
 const deployOvmPair = async () => {
-	await deployInstance({ useOvm: false });
-	await deployInstance({ useOvm: true });
+	// This is the mnemonic used by optimism-integration.
+	// Using a mnemonic here allows us to choose one of those addresses by index
+	const mnemonic =
+		'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+	const masterKey = ethers.utils.HDNode.fromMnemonic(mnemonic);
+	const privateKey = masterKey.derivePath(`m/44'/60'/0'/0/${14}`);
 
-	const { l1Messenger, l2Messenger } = await getMessengers();
-	await commands.connectBridge({
-		l1Network: 'local',
-		l2Network: 'local',
-		l1ProviderUrl: L1_PROVIDER_URL,
-		l2ProviderUrl: L2_PROVIDER_URL,
-		l1Messenger,
-		l2Messenger,
+	// await deployInstance({ useOvm: false, privateKey });
+	await deployInstance({ useOvm: true, privateKey });
+
+	// const { l1Messenger, l2Messenger } = await getMessengers();
+
+	// await commands.connectBridge({
+	// 	l1Network: 'local',
+	// 	l2Network: 'local',
+	// 	l1ProviderUrl: L1_PROVIDER_URL,
+	// 	l2ProviderUrl: L2_PROVIDER_URL,
+	// 	l1Messenger,
+	// 	l2Messenger,
+	// 	l1PrivateKey: privateKey,
+	// 	l2PrivateKey: privateKey,
+	// });
+};
+
+const deployInstance = async ({ useOvm, privateKey }) => {
+	// await commands.build({ useOvm });
+
+	await commands.deploy({
+		network: 'local',
+		freshDeploy: true,
+		yes: true,
+		providerUrl: useOvm ? L2_PROVIDER_URL : L1_PROVIDER_URL,
+		// gasPrice: '0',
+		useOvm,
+		methodCallGasLimit: '3500000',
+		contractDeploymentGasLimit: useOvm ? '11000000' : '9500000',
+		privateKey,
 	});
 };
 
@@ -35,21 +62,6 @@ const getMessengers = async () => {
 		l1Messenger: addresses['OVM_L2CrossDomainMessenger'],
 		l2Messenger: addresses['OVM_L1CrossDomainMessenger'],
 	};
-};
-
-const deployInstance = async ({ useOvm }) => {
-	await commands.build({ useOvm });
-
-	await commands.deploy({
-		network: 'local',
-		freshDeploy: true,
-		yes: true,
-		providerUrl: useOvm ? L1_PROVIDER_URL : L2_PROVIDER_URL,
-		gasPrice: 0,
-		useOvm,
-		methodCallGasLimit: 2500000,
-		contractDeploymentGasLimit: 11000000,
-	});
 };
 
 module.exports = {
