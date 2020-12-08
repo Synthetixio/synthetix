@@ -37,7 +37,7 @@ const getMessengers = async () => {
 	};
 };
 
-const deployInstance = async ({ useOvm, providerUrl }) => {
+const deployInstance = async ({ useOvm }) => {
 	await commands.build({ useOvm });
 
 	await commands.deploy({
