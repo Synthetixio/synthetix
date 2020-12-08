@@ -191,10 +191,12 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         IExchangeRates exRates = exchangeRates();
 
-        // Add total issued synths from Ether Collateral back into the total if not excluded
+        // Add total issued synths from non snx collateral back into the total if not excluded
         if (!excludeCollateral) {
             // Get the sUSD equivalent amount of all the MC issued synths.
-            debt = debt.add(collateralManager().totalLong());
+            (uint nonSnxDebt, bool invalid) = collateralManager().totalLong();
+            debt = debt.add(nonSnxDebt);
+            anyRateIsInvalid = invalid;
         }
 
         if (currencyKey == sUSD) {

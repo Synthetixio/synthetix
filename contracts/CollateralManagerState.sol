@@ -19,10 +19,17 @@ contract CollateralManagerState is Owned, State {
         uint short;
     }
 
+    uint[] public borrowRates;
+
+    uint public borrowRatesLastUpdated;
+
     // The total amount of long and short for a synth,
     mapping(bytes32 => Balance) public totalIssuedSynths;
 
-    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
+    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {
+        borrowRates.push(0);
+        borrowRatesLastUpdated = block.timestamp;
+    }
 
     function long(bytes32 synth) external view onlyAssociatedContract returns (uint) {
         return totalIssuedSynths[synth].long;
@@ -46,5 +53,29 @@ contract CollateralManagerState is Owned, State {
 
     function decrementShorts(bytes32 synth, uint256 amount) external onlyAssociatedContract {
         totalIssuedSynths[synth].short = totalIssuedSynths[synth].short.sub(amount);
+    }
+
+    function getRateAt(uint index) public view returns(uint) {
+        return borrowRates[index];
+    }
+
+    function getRatesLength() public view returns(uint) {
+        return borrowRates.length;
+    }
+
+    function updateBorrowRates(uint rate) public {
+        borrowRates.push(rate);
+        borrowRatesLastUpdated = block.timestamp;
+    }
+
+    function ratesLastUpdated() public view returns(uint) {
+        return borrowRatesLastUpdated;
+    }
+
+    function getRatesAndTime(uint index) external view returns(uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) {
+        newIndex = getRatesLength();
+        entryRate = getRateAt(index);
+        lastRate = getRateAt(newIndex - 1);
+        lastUpdated = ratesLastUpdated();
     }
 }

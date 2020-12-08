@@ -4,13 +4,14 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Collateral.sol";
+import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/ICollateral.sol";
 
 // Internal references
 import "./CollateralState.sol";
 
 // This contract handles the payable aspects of eth loans.
-contract CollateralEth is Collateral, ICollateralEth {
+contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
 
     mapping(address => uint) public pendingWithdrawals;
 
@@ -63,17 +64,22 @@ contract CollateralEth is Collateral, ICollateralEth {
         repayInternal(account, msg.sender, id, amount);
     }
 
+    function draw(uint id, uint amount) external {
+        drawInternal(id, amount);
+    }
+
     function liquidate(address borrower, uint id, uint amount) external {
         uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateralLiquidated);
     }
 
-    function claim(uint amount) external {
+    function claim(uint amount) external nonReentrant {
         require(pendingWithdrawals[msg.sender] >= amount, "You cannot withdraw more than your total balance");
 
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
 
-        msg.sender.transfer(amount);
+        (bool success, ) = msg.sender.call.value(amount)("");
+        require(success, "Transfer failed");
     }
 }

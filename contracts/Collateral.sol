@@ -45,12 +45,18 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     // ========== SETTER STATE VARIABLES ==========
 
     uint public minimumCollateralisation;
-    
+
     uint public baseInterestRate;
 
     uint public liquidationPenalty;
-    
+
     uint public issueFeeRate;
+
+    uint public minCollateral;
+
+    uint public maxDebt = SafeDecimalMath.unit() * 10000000;
+
+    uint public maxLoasPerAccount;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -228,8 +234,11 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         // 1. We can only issue certain synths.
         require(synths[currency] > 0, "Not allowed to issue this synth");
 
+        // Make sure the rate is not invalid.
+        require(!_exchangeRates().rateIsInvalid(currency), "Currency rate is invalid");
+
         // 2. Collateral > minimum collateral size.
-        require(collateral > 0, "Not enough collateral to create a loan");
+        require(collateral > minCollateral, "Not enough collateral to create a loan");
 
         // 3. Calculate max possible loan from collateral provided
         uint max = maxLoan(collateral, currency);
@@ -276,7 +285,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         emit LoanCreated(msg.sender, id, amount, collateral, currency, issueFee);
     }
 
-    function closeInternal(address borrower, uint id) internal returns(uint collateral) {
+    function closeInternal(address borrower, uint id) internal CollateralRateNotInvalid returns(uint collateral) {
         _systemStatus().requireIssuanceActive();
 
         // 1. Get the loan.
@@ -316,7 +325,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         emit LoanClosed(borrower, id);
     }
 
-    function closeByLiquidationInternal(address borrower, address liquidator, Loan memory loan) internal returns(uint collateral) {
+    function closeByLiquidationInternal(address borrower, address liquidator, Loan memory loan) internal CollateralRateNotInvalid returns(uint collateral) {
         // 1. Work out the total amount owing on the loan.
         uint total = loan.amount.add(loan.accruedInterest);
 
@@ -372,7 +381,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     }
 
     // Withdraws collateral from the specified loan
-    function withdrawInternal(uint id, uint amount) internal returns (uint withdraw) {
+    function withdrawInternal(uint id, uint amount) internal CollateralRateNotInvalid returns (uint withdraw) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -409,7 +418,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         emit CollateralWithdrawn(msg.sender, id, amount, loan.collateral);
     }
     
-    function liquidateInternal(address borrower, uint id, uint payment) internal returns (uint) {
+    function liquidateInternal(address borrower, uint id, uint payment) internal CollateralRateNotInvalid returns (uint) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -473,7 +482,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         return collateralLiquidated;
     }
 
-    function repayInternal(address borrower, address repayer, uint id, uint payment) internal {
+    function repayInternal(address borrower, address repayer, uint id, uint payment) internal CollateralRateNotInvalid {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -511,40 +520,67 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
     }
 
+    function drawInternal(uint id, uint amount) internal CollateralRateNotInvalid {
+        // 0. Check the system is active.
+        _systemStatus().requireIssuanceActive();
+
+        // 2. Get loan
+        Loan memory loan = state.getLoan(msg.sender, id);
+
+        // 3. Check the loan is still open
+        _checkLoanIsOpen(loan);
+
+        // 4. Accrue interest.
+        loan = accrueInterest(loan);
+
+        loan.amount = loan.amount.add(amount);
+
+        // 6. Get the collateral ratio.
+        uint cratio = collateralRatio(loan);
+
+        require(cratio > minimumCollateralisation, "Drawing this much would put the loan under minimum collateralisation");
+
+        // 12. Issue synths to the borrower.
+        _synths(synths[loan.currency]).issue(msg.sender, amount);
+        
+        // 13. Tell the manager.
+        _manager().incrementLongs(loan.currency, amount);
+
+        // 10. Store the loan
+        state.updateLoan(loan);
+
+        emit LoanDrawnDown(msg.sender, id, amount);
+
+    }
+
      // Update the cumulative interest rate for the currency that was interacted with.
     function accrueInterest(Loan memory loan) internal returns (Loan memory loanAfter) {
         loanAfter = loan;
 
-        // 1. Get the rates time series for this currency.
-        uint[] memory rates = state.getRates(loan.currency);
+        // 1. Get the rates we need.
+        (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) = _manager().getRatesAndTime(loan.interestIndex);
 
-        // 2. Get the timestamp of the last rate update.
-        uint lastTime = state.rateLastUpdated(loan.currency);
-
-        // 4. Get the instantaneous rate. i = mU + b
+        // 2. Get the instantaneous rate. i = mU + b
         uint instantaneousRate = baseInterestRate.add(_manager().getScaledUtilisation());
 
-        // 5. Get the time since we last updated the rate.
-        uint timeDelta = block.timestamp.sub(lastTime).mul(SafeDecimalMath.unit());
+        // 3. Get the time since we last updated the rate.
+        uint timeDelta = block.timestamp.sub(lastUpdated).mul(SafeDecimalMath.unit());
 
-        // 6. Get the time its been applied for. F
+        // 4. Get the time its been applied for. F
         uint cumulativeRate = instantaneousRate.multiplyDecimal(timeDelta);
 
-        // 7. Get the latest cumulative rate. F_n+1 = F_n + F_last
-        uint latestCumulative = rates[rates.length - 1].add(cumulativeRate);
+        // 5. Get the latest cumulative rate. F_n+1 = F_n + F_last
+        uint latestCumulative = lastRate.add(cumulativeRate);
 
-        // 8. Get the cumulative rate when the loan was last interacted with.
-        uint entryCumulativeRate = rates[loan.interestIndex];
+        // 6. If the loan was just opened, don't record any interest. Otherwise multiple by the amount outstanding. Simple interest.
+        uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative.sub(entryRate));
 
-        // 9. If the loan was just opened, don't record any interest.
-        uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative.sub(entryCumulativeRate));
+        // 7. Update rates with the lastest cumulative rate. This also updates the time.
+        _manager().updateRates(latestCumulative);
 
-        // 10. Update rates with the lastest cumulative rate. This also updates the time.
-        state.updateRates(loan.currency, latestCumulative);
-
-        // 11. Update loan
+        // 8. Update loan
         loanAfter.accruedInterest = loan.accruedInterest.add(interest);
-        loanAfter.interestIndex = rates.length;
+        loanAfter.interestIndex = newIndex;
         state.updateLoan(loanAfter);
 
         return loanAfter;
@@ -608,6 +644,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     event CollateralDeposited(address indexed account, uint id, uint amountDeposited, uint collateralAfter);
     event CollateralWithdrawn(address indexed account, uint id, uint amountWithdrawn, uint collateralAfter);
     event LoanRepaymentMade(address indexed account, address indexed repayer, uint id, uint amountRepaid, uint amountAfter);
+    event LoanDrawnDown(address indexed account, uint id, uint amount);
     event LoanPartiallyLiquidated(
         address indexed account,
         uint id,

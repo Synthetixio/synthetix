@@ -76,6 +76,10 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         repayInternal(borrower, msg.sender, id, amount);
     }
 
+    function draw(uint id, uint amount) external {
+        drawInternal(id, amount);
+    }
+
     function liquidate(address borrower, uint id, uint amount) external {
         uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 

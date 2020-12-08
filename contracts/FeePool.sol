@@ -742,7 +742,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
         bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
-        bool isCollateral = collateralManager().collateralByAddress(msg.sender);
+        bool isCollateral = collateralManager().hasCollateral(msg.sender);
 
         require(isExchanger || isSynth || isEtherCollateralsUSD || isCollateral, "Only Internal Contracts");
         _;

@@ -82,11 +82,11 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
     /* ---------- Manager ---------- */
 
-    function collateralByAddress(address collateral) public view returns (bool) {
+    function hasCollateral(address collateral) public view returns (bool) {
         return _collaterals.contains(collateral);
     }
 
-    function synthByAddress(address synth) public view returns (bool) {
+    function hasSynth(address synth) public view returns (bool) {
         return _synths.contains(synth);
     }
 
@@ -98,7 +98,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         return state.short(synth);
     }
 
-    function totalLong() public view returns (uint debt) {
+    function totalLong() public view returns (uint debt, bool anyRateIsInvalid) {
         address[] memory synths = _synths.elements;
 
         for (uint i = 0; i < synths.length; i++) {
@@ -106,8 +106,10 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
             if (synth == sUSD) {
                 debt = debt.add(state.long(synth));
             } else {
-                uint amount = _exchangeRates().effectiveValue(synth, state.long(synth), sUSD);
+                (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
+                uint amount = state.long(synth).multiplyDecimal(rate);
                 debt = debt.add(amount);
+                anyRateIsInvalid = invalid;
             }
         }
     }
@@ -117,7 +119,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         uint snxDebt = _issuer().totalIssuedSynths(sUSD, true);
 
         // now get the non snx backed debt.
-        uint nonSnxDebt = totalLong();
+        (uint nonSnxDebt, ) = totalLong();
 
         // the total.
         uint totalDebt = snxDebt.add(nonSnxDebt);
@@ -127,6 +129,14 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
         // finally, scale it by the utilisation multiplier.
         scaledUtilisation = utilisation.multiplyDecimal(utilisationMultiplier);
+    }
+
+    function getRatesAndTime(uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex)  {
+        (entryRate, lastRate, lastUpdated, newIndex) = state.getRatesAndTime(index);
+    }
+
+    function updateRates(uint rate) external {
+        state.updateBorrowRates(rate);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -185,7 +195,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     /* ========== MODIFIERS ========== */
     
     modifier onlyCollateral {
-        bool isMultiCollateral = collateralByAddress(msg.sender);
+        bool isMultiCollateral = hasCollateral(msg.sender);
 
         require(isMultiCollateral, "Only collateral contracts");
         _;

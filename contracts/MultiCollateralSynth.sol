@@ -60,7 +60,7 @@ contract MultiCollateralSynth is Synth {
         bool isFeePool = msg.sender == address(feePool());
         bool isExchanger = msg.sender == address(exchanger());
         bool isIssuer = msg.sender == address(issuer());
-        bool isMultiCollateral = _multiCollateralManager().collateralByAddress(msg.sender);
+        bool isMultiCollateral = _multiCollateralManager().hasCollateral(msg.sender);
 
         require(
             isFeePool || isExchanger || isIssuer || isMultiCollateral,
