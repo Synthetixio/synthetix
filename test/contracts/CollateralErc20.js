@@ -272,7 +272,7 @@ contract('CollateralErc20', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: cerc20.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
-			expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate'],
+			expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'draw'],
 		});
 	});
 
@@ -1316,6 +1316,83 @@ contract('CollateralErc20', async accounts => {
 					account: account1,
 					id: id,
 				});
+			});
+		});
+	});
+
+	describe('drawing', async () => {
+		beforeEach(async () => {
+			// make a loan here so we have a valid ID to pass to the blockers and reverts.
+			tx = await cerc20.open(oneRenBTC, fiveThousandsUSD, sUSD, {
+				from: account1,
+			});
+
+			id = await getid(tx);
+		});
+
+		describe('potential blocking conditions', async () => {
+			['System', 'Issuance'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
+					beforeEach(async () => {
+						await setStatus({ owner, systemStatus, section, suspend: true });
+					});
+					it('then calling draw() reverts', async () => {
+						await assert.revert(
+							cerc20.draw(id, onesUSD, { from: account1 }),
+							'Operation prohibited'
+						);
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, systemStatus, section, suspend: false });
+						});
+						it('then calling draw() succeeds', async () => {
+							await cerc20.draw(id, onesUSD, {
+								from: account1,
+							});
+						});
+					});
+				});
+			});
+			describe('when rates have gone stale', () => {
+				beforeEach(async () => {
+					await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+				});
+				it('then calling draw() reverts', async () => {
+					await assert.revert(
+						cerc20.draw(id, onesUSD, { from: account1 }),
+						'Blocked as collateral rate is invalid'
+					);
+				});
+				describe('when BTC gets a rate', () => {
+					beforeEach(async () => {
+						await updateRatesWithDefaults();
+					});
+					it('then calling draw() succeeds', async () => {
+						await cerc20.draw(id, onesUSD, { from: account1 });
+					});
+				});
+			});
+		});
+
+		describe('revert conditions', async () => {
+			it('should revert if the draw would under collateralise the loan', async () => {
+				await assert.revert(
+					cerc20.draw(id, toUnit(3000), { from: account1 }),
+					'Drawing this much would put the loan under minimum collateralisation'
+				);
+			});
+		});
+
+		describe('should draw the loan down', async () => {
+			beforeEach(async () => {
+				tx = await cerc20.draw(id, oneThousandsUSD, { from: account1 });
+
+				loan = await state.getLoan(account1, id);
+			});
+
+			it('should update the amount on the loan', async () => {
+				assert.equal(loan.amount, toUnit(6000).toString());
 			});
 		});
 	});

@@ -219,7 +219,7 @@ contract('CollateralEth', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: ceth.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
-			expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'claim'],
+			expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'claim', 'draw'],
 		});
 	});
 
@@ -643,6 +643,14 @@ contract('CollateralEth', async accounts => {
 				await assert.revert(
 					ceth.open(onesUSD, toBytes32('sJPY'), { value: oneETH, from: account1 }),
 					'Not allowed to issue this synth'
+				);
+			});
+
+			xit('should revert if the requested currency rate is invalid', async () => {
+				await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+				await assert.revert(
+					ceth.open(oneETH, sETH, { value: fiveETH, from: account1 }),
+					'Currency rate is invalid"'
 				);
 			});
 
@@ -1317,6 +1325,81 @@ contract('CollateralEth', async accounts => {
 					account: account1,
 					id: id,
 				});
+			});
+		});
+	});
+
+	describe('drawing', async () => {
+		beforeEach(async () => {
+			// make a loan here so we have a valid ID to pass to the blockers and reverts.
+			tx = await ceth.open(oneHundredsUSD, sUSD, {
+				value: twoETH,
+				from: account1,
+			});
+
+			id = await getid(tx);
+		});
+
+		describe('potential blocking conditions', async () => {
+			['System', 'Issuance'].forEach(section => {
+				describe(`when ${section} is suspended`, () => {
+					beforeEach(async () => {
+						await setStatus({ owner, systemStatus, section, suspend: true });
+					});
+					it('then calling draw() reverts', async () => {
+						await assert.revert(ceth.draw(id, onesUSD, { from: account1 }), 'Operation prohibited');
+					});
+					describe(`when ${section} is resumed`, () => {
+						beforeEach(async () => {
+							await setStatus({ owner, systemStatus, section, suspend: false });
+						});
+						it('then calling draw() succeeds', async () => {
+							await ceth.draw(id, onesUSD, {
+								from: account1,
+							});
+						});
+					});
+				});
+			});
+			describe('when rates have gone stale', () => {
+				beforeEach(async () => {
+					await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
+				});
+				it('then calling draw() reverts', async () => {
+					await assert.revert(
+						ceth.draw(id, onesUSD, { from: account1 }),
+						'Blocked as collateral rate is invalid'
+					);
+				});
+				describe('when ETH gets a rate', () => {
+					beforeEach(async () => {
+						await updateRatesWithDefaults();
+					});
+					it('then calling draw() succeeds', async () => {
+						await ceth.draw(id, onesUSD, { from: account1 });
+					});
+				});
+			});
+		});
+
+		describe('revert conditions', async () => {
+			it('should revert if the draw would under collateralise the loan', async () => {
+				await assert.revert(
+					ceth.draw(id, oneHundredsUSD, { from: account1 }),
+					'Drawing this much would put the loan under minimum collateralisation'
+				);
+			});
+		});
+
+		describe('should draw the loan down', async () => {
+			beforeEach(async () => {
+				tx = await ceth.draw(id, toUnit(30), { from: account1 });
+
+				loan = await state.getLoan(account1, id);
+			});
+
+			it('should update the amount on the loan', async () => {
+				assert.equal(loan.amount, toUnit(130).toString());
 			});
 		});
 	});
