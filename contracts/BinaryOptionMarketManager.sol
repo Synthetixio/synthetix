@@ -317,7 +317,23 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
 
     function rebuildMarketCaches(BinaryOptionMarket[] calldata marketsToSync) external {
         for (uint i = 0; i < marketsToSync.length; i++) {
-            marketsToSync[i].rebuildCache();
+            address market = address(marketsToSync[i]);
+
+            // solhint-disable avoid-low-level-calls
+            bytes memory payload = abi.encodeWithSignature("rebuildCache()");
+            (bool success, ) = market.call(payload);
+
+            if (!success) {
+                // handle legacy markets that used an old cache rebuilding logic
+                bytes memory payloadForLegacyCache = abi.encodeWithSignature(
+                    "setResolverAndSyncCache(address)",
+                    address(resolver)
+                );
+
+                // solhint-disable avoid-low-level-calls
+                (bool legacySuccess, ) = market.call(payloadForLegacyCache);
+                require(legacySuccess, "Cannot rebuild cache for market");
+            }
         }
     }
 
