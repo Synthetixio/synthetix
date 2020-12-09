@@ -1300,7 +1300,7 @@ const deploy = async ({
 		]) => address
 	);
 	if (useOvm) {
-		const chunks = splitArrayIntoChunks(addressesToCache, 5);
+		const chunks = splitArrayIntoChunks(addressesToCache, 4);
 		for (let i = 0; i < chunks.length; i++) {
 			const chunk = chunks[i];
 			await runStep({

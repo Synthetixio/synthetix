@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const Web3 = require('web3');
-const { gray, red, yellow } = require('chalk');
+const { gray, red, yellow, green } = require('chalk');
 const { wrap, toBytes32 } = require('../../..');
 const {
 	ensureNetwork,
@@ -163,6 +163,8 @@ const connectLayer = async ({
 	} else {
 		console.log(yellow('  > Skipping, since this is a DRY RUN'));
 	}
+
+	console.log(green('All good!'));
 };
 
 const setupInstance = async ({

@@ -2,6 +2,7 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
+const RLP = require('rlp');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
 const { getUsers } = require('../../index.js');
@@ -68,6 +69,63 @@ class Deployer {
 
 		// Keep track of newly deployed contracts
 		this.newContractsDeployed = [];
+	}
+
+	async evaluateNextDeployedContractAddress() {
+		const nonce = await this.web3.eth.getTransactionCount(this.account);
+		const rlpEncoded = RLP.encode([this.account, nonce]);
+		const hashed = this.web3.utils.sha3(rlpEncoded);
+
+		return `0x${hashed.slice(12).substring(14)}`;
+	}
+
+	checkBytesAreSafeForOVM(bytes) {
+		for (let i = 0; i < bytes.length; i += 2) {
+			const curByte = bytes.substr(i, 2);
+			const opNum = parseInt(curByte, 16);
+
+			// opNum is >=0x60 and <0x80
+			if (opNum >= 96 && opNum < 128) {
+				i += 2 * (opNum - 95); // For PUSH##, OpNum - 0x5f = ##
+				continue;
+			}
+
+			if (curByte === '5b') {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	getEncodedDeploymentParameters({ abi, params }) {
+		const constructorABI = abi.find(item => item.type === 'constructor');
+		if (!constructorABI) {
+			return '0x';
+		}
+
+		const inputs = constructorABI.inputs;
+		if (!inputs || inputs.length === 0) {
+			return '0x';
+		}
+
+		const types = inputs.map(input => input.type);
+		return this.web3.eth.abi.encodeParameters(types, params);
+	}
+
+	async sendDummyTx() {
+		await this.web3.eth.sendTransaction({
+			from: this.account,
+			to: '0x0000000000000000000000000000000000000001',
+			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
+			value: 0,
+			gas: 1000000,
+			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
+		});
+
+		if (this.nonceManager) {
+			this.nonceManager.incrementNonce();
+		}
 	}
 
 	async sendParameters(type = 'method-call') {
@@ -147,40 +205,6 @@ class Deployer {
 
 		let deployedContract;
 
-		const areBytesSafeForOVM = bytes => {
-			for (let i = 0; i < bytes.length; i += 2) {
-				const curByte = bytes.substr(i, 2);
-				const opNum = parseInt(curByte, 16);
-
-				// opNum is >=0x60 and <0x80
-				if (opNum >= 96 && opNum < 128) {
-					i += 2 * (opNum - 95); // For PUSH##, OpNum - 0x5f = ##
-					continue;
-				}
-
-				if (curByte === '5b') {
-					return false;
-				}
-
-				return true;
-			}
-		};
-
-		const getEncodedDeploymentParameters = ({ abi, params }) => {
-			const constructorABI = abi.find(item => item.type === 'constructor');
-			if (!constructorABI) {
-				return '0x';
-			}
-
-			const inputs = constructorABI.inputs;
-			if (!inputs || inputs.length === 0) {
-				return '0x';
-			}
-
-			const types = inputs.map(input => input.type);
-			return this.web3.eth.abi.encodeParameters(types, params);
-		};
-
 		if (deploy) {
 			console.log(gray(` - Attempting to deploy ${name}`));
 			let gasUsed;
@@ -198,27 +222,63 @@ class Deployer {
 				});
 				deployedContract.options.address = '0x' + this._dryRunCounter.toString().padStart(40, '0');
 			} else {
-				const newContract = new this.web3.eth.Contract(compiled.abi);
-				const deployTx = await newContract.deploy({
-					data: '0x' + bytecode,
-					arguments: args,
-				});
+				const nonce = await this.web3.eth.getTransactionCount(this.account);
+
+				// Known OVM bug. EOA nonces start with 0, when they should start with 1.
+				// Compensate by sending a dummy tx.
+				if (this.useOvm && nonce === 0) {
+					console.log(
+						yellow(
+							`⚠ WARNING: Deployer nonce is 0. This will cause problems in deployments. Sending a dummy tx to increase the nonce...`
+						)
+					);
+
+					await this.sendDummyTx();
+				}
+
+				// If the contract creation will result in an address that's unsafe for OVM,
+				// increment the tx nonce until its not.
+				// Quite commonly, deployed contract addresses will be used as constructor arguments of
+				// other contracts.
+				if (this.useOvm) {
+					let addressIsSafe = false;
+
+					while (!addressIsSafe) {
+						const calculatedAddress = await this.evaluateNextDeployedContractAddress();
+						addressIsSafe = this.checkBytesAreSafeForOVM(calculatedAddress);
+
+						if (!addressIsSafe) {
+							console.log(
+								yellow(
+									`⚠ WARNING: Deploying this contract would result in the unsafe ${calculatedAddress} address for OVM. Sending a dummy transaction to increase the nonce...`
+								)
+							);
+
+							await this.sendDummyTx();
+						}
+					}
+				}
 
 				// Check if the deployment parameters are safe in OVM
 				// (No need to check the metadata hash since its stripped with the OVM compiler)
 				if (this.useOvm) {
-					const encodedParameters = getEncodedDeploymentParameters({
+					const encodedParameters = this.getEncodedDeploymentParameters({
 						abi: compiled.abi,
 						params: args,
 					});
-					if (!areBytesSafeForOVM(encodedParameters)) {
+					if (!this.checkBytesAreSafeForOVM(encodedParameters)) {
 						throw new Error(
 							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. ${encodedParameters}`
 						);
 					}
 				}
 
-				deployedContract = await deployTx
+				const newContract = new this.web3.eth.Contract(compiled.abi);
+				deployedContract = await newContract
+					.deploy({
+						data: '0x' + bytecode,
+						arguments: args,
+					})
 					.send(await this.sendParameters('contract-deployment'))
 					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
 
@@ -237,17 +297,6 @@ class Deployer {
 				if (code.length === 2) {
 					throw new Error(`Contract deployment resulted in a contract with no bytecode: ${code}`);
 				}
-			}
-
-			// If the resulting contract address is unsafe for OVM,
-			// it is possible that the address may be used as a constructor parameter of
-			// another contract. If it is unsafe, warn but don't fail.
-			if (this.useOvm && !areBytesSafeForOVM(deployedContract.options.address)) {
-				console.log(
-					yellow(
-						`⚠ WARNING: Deployed contract address ${deployedContract.options.address} contains unsafe opcodes for OVM. If it is used as a constructor argument in the deployment of another contract, it will make that deployment fail.`
-					)
-				);
 			}
 
 			console.log(
