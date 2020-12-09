@@ -271,7 +271,7 @@ const replaceSynths = async ({
 		});
 
 		// Ensure this new synth has its resolver cache set
-		await replacementSynth.methods.setResolverAndSyncCache(resolverAddress).send({
+		await replacementSynth.methods.rebuildCache().send({
 			from: account,
 			gas: Number(methodCallGasLimit),
 			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),

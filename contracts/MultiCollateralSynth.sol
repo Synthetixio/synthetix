@@ -33,6 +33,12 @@ contract MultiCollateralSynth is Synth {
         return ICollateralManager(collateralManager);
     }
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        return combineArrays(existingAddresses, newAddresses);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
