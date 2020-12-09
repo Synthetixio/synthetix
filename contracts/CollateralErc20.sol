@@ -24,8 +24,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         bytes32 _collateralKey,
         bytes32[] memory _synths,
         uint _collateralisationRatio,
-        uint _interestRate,
-        uint _liquidationPenalty,
+        uint _baseInterestRate,
         address _underlyingContract
     ) 
     public 
@@ -37,8 +36,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         _collateralKey, 
         _synths, 
         _collateralisationRatio, 
-        _interestRate, 
-        _liquidationPenalty
+        _baseInterestRate
         )
     {
         underlyingContract = _underlyingContract;

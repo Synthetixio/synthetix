@@ -16,10 +16,6 @@ contract CollateralState is Owned, State, ILoan {
  
     uint public totalLoans;
 
-    mapping(bytes32 => uint) public rateLastUpdated;
-    
-    mapping(bytes32 => uint[]) public rates;
-
     mapping(address => Loan[]) public loans;
 
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
@@ -35,21 +31,11 @@ contract CollateralState is Owned, State, ILoan {
         }
     }
 
-    function getRates(bytes32 currency) external view returns (uint[] memory) {
-        return rates[currency];
+    function getNumLoans(address account) external view returns (uint numLoans) {
+        return loans[account].length;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-
-    function addCurrency(bytes32 _synth) external onlyOwner {
-        rates[_synth].push(0);
-        rateLastUpdated[_synth] = block.timestamp;
-    }
-
-    function updateRates(bytes32 currency, uint rate) external onlyAssociatedContract {
-        rates[currency].push(rate);
-        rateLastUpdated[currency] = block.timestamp;
-    }
     
     function createLoan(Loan memory loan) public onlyAssociatedContract {
         loans[loan.account].push(loan);

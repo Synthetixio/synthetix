@@ -28,4 +28,8 @@ interface ICollateralManager {
     function getRatesAndTime(uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex);
 
     function updateRates(uint rate) external;
+
+    function getLiquidationPenalty() external view returns (uint liquidationPenalty);
+
+    function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue);
 }

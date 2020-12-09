@@ -23,8 +23,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         bytes32 _collateralKey,
         bytes32[] memory _synths,
         uint _minimumCollateralisation,
-        uint _interestRate,
-        uint _liquidationPenalty
+        uint _baseInterestRate
     ) 
     public 
     Collateral(
@@ -35,8 +34,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         _collateralKey, 
         _synths, 
         _minimumCollateralisation, 
-        _interestRate, 
-        _liquidationPenalty
+        _baseInterestRate
         )
     { }
 

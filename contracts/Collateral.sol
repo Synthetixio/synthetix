@@ -44,19 +44,20 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
     // ========== SETTER STATE VARIABLES ==========
 
-    uint public minimumCollateralisation;
+    // The minimum collateral ratio required to avoid liquidation.
+    uint public minCratio;
 
-    uint public baseInterestRate;
-
-    uint public liquidationPenalty;
-
-    uint public issueFeeRate;
-
+    // The minimum amount of collateral to create a loan.
     uint public minCollateral;
 
-    uint public maxDebt = SafeDecimalMath.unit() * 10000000;
+    // The base interest rate applied to all loans of this collateral regardless of utilisation.
+    uint public baseInterestRate;
 
-    uint public maxLoasPerAccount;
+    // The fee charged for issuing a loan.
+    uint public issueFeeRate;
+
+    // The maximum number of loans that an account can create with this collateral.
+    uint public maxLoansPerAccount = 50;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -76,9 +77,8 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         address _resolver,
         bytes32 _collateralKey,
         bytes32[] memory _synths,
-        uint _minimumCollateralisation,
-        uint _interestRate,
-        uint _liquidationPenalty
+        uint _minCratio,
+        uint _baseInterestRate
         ) public
         Owned(_owner)
         Pausable()
@@ -89,9 +89,8 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         manager = _manager;
         state = _state;
         collateralKey = _collateralKey;
-        setMinimumCollateralisation(_minimumCollateralisation);
-        setBaseInterestRate(_interestRate);
-        setLiquidationPenalty(_liquidationPenalty);
+        setMinCratio(_minCratio);
+        setBaseInterestRate(_baseInterestRate);
 
         for (uint i = 0; i < _synths.length; i++) {
             appendToAddressCache(_synths[i]);
@@ -131,7 +130,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     }
 
     /* ---------- Public Views ---------- */
-
+    
     function collateralRatio(Loan memory loan) public view returns (uint cratio) {
         uint cvalue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
         uint debt = loan.amount.add(loan.accruedInterest);
@@ -142,7 +141,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
     function issuanceRatio() public view returns (uint ratio) {
         // this rounds so you get slightly more rather than slightly less
-        ratio = SafeDecimalMath.unit().divideDecimalRound(minimumCollateralisation);
+        ratio = SafeDecimalMath.unit().divideDecimalRound(minCratio);
     }
 
     // The maximum number of synths issuable for this amount of collateral
@@ -158,11 +157,12 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
     function liquidationAmount(Loan memory loan) public view returns (uint amount) {
+        uint liquidationPenalty = _manager().getLiquidationPenalty();
         uint debtValue = loan.amount.add(loan.accruedInterest).multiplyDecimal(_exchangeRates().rateForCurrency(loan.currency));
         uint collateralValue = loan.collateral.multiplyDecimal(_exchangeRates().rateForCurrency(collateralKey));
 
         uint unit = SafeDecimalMath.unit();
-        uint ratio = minimumCollateralisation;
+        uint ratio = minCratio;
 
         uint dividend = debtValue.sub(collateralValue.divideDecimal(ratio));
         uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(ratio));
@@ -172,6 +172,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
     // amount is the amount of synths we are liquidating
     function collateralRedeemed(bytes32 currency, uint amount) public view returns (uint collateral) {
+        uint liquidationPenalty = _manager().getLiquidationPenalty();
         collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
 
         collateral = collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
@@ -192,10 +193,16 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
     /* ---------- SETTERS ---------- */
 
-    function setMinimumCollateralisation(uint _minimumCollateralisation) public onlyOwner {
-        require(_minimumCollateralisation > 1e18, "Minimum collateralisation must be greater than 1");
-        minimumCollateralisation = _minimumCollateralisation;
-        emit MinimumCollateralisationRatioUpdated(minimumCollateralisation);  
+    function setMinCratio(uint _minCratio) public onlyOwner {
+        require(_minCratio > 1e18, "Minimum collateralisation must be greater than 1");
+        minCratio = _minCratio;
+        emit MinCratioRatioUpdated(minCratio);  
+    }
+
+    function setMinCollateral(uint _minCollateral) public onlyOwner {
+        require(_minCollateral > 1e18, "Minimum collateral must be greater than 1");
+        minCollateral = _minCollateral;
+        emit MinCollateralUpdated(minCollateral);  
     }
 
     function setBaseInterestRate(uint _baseInterestRate) public onlyOwner {
@@ -204,16 +211,16 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         emit BaseInterestRateUpdated(baseInterestRate);
     }
 
-    function setLiquidationPenalty(uint _liquidationPenalty) public onlyOwner {
-        require(_liquidationPenalty > 0, "Must be greater than 0");
-        liquidationPenalty = _liquidationPenalty;
-        emit LiquidationPenaltyUpdated(liquidationPenalty);
-    }
-
     function setIssueFeeRate(uint _issueFeeRate) public onlyOwner {
         require(_issueFeeRate >= 0, "Must be greater than or equal to 0");
         issueFeeRate = _issueFeeRate;
         emit IssueFeeRateUpdated(issueFeeRate);
+    }
+
+    function setMaxLoansPerAccount(uint _maxLoansPerAccount) public onlyOwner {
+        require(_maxLoansPerAccount > 0, "Must be greater than 0");
+        maxLoansPerAccount = _maxLoansPerAccount;
+        emit MaxLoansPerAccountUpdated(maxLoansPerAccount);
     }
 
     function setManager(address _newManager) public onlyOwner {
@@ -239,6 +246,14 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
         // 2. Collateral > minimum collateral size.
         require(collateral > minCollateral, "Not enough collateral to create a loan");
+
+        // Max num loans.
+        require(state.getNumLoans(msg.sender) < maxLoansPerAccount, "You have reached the maximum number of loans");
+
+        // MAX DEBT.
+        bool canIssue = _manager().exceedsDebtLimit(amount, currency);
+
+        require(canIssue, "The debt limit has been reached");
 
         // 3. Calculate max possible loan from collateral provided
         uint max = maxLoan(collateral, currency);
@@ -325,7 +340,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         emit LoanClosed(borrower, id);
     }
 
-    function closeByLiquidationInternal(address borrower, address liquidator, Loan memory loan) internal CollateralRateNotInvalid returns(uint collateral) {
+    function closeByLiquidationInternal(address borrower, address liquidator, Loan memory loan) internal notPaused CollateralRateNotInvalid returns(uint collateral) {
         // 1. Work out the total amount owing on the loan.
         uint total = loan.amount.add(loan.accruedInterest);
 
@@ -354,7 +369,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         emit LoanClosedByLiquidation(borrower, loan.id, liquidator, amount, collateral);
     }
 
-    function depositInternal(address account, uint id, uint amount) internal {
+    function depositInternal(address account, uint id, uint amount) internal notPaused CollateralRateNotInvalid {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -381,7 +396,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     }
 
     // Withdraws collateral from the specified loan
-    function withdrawInternal(uint id, uint amount) internal CollateralRateNotInvalid returns (uint withdraw) {
+    function withdrawInternal(uint id, uint amount) internal notPaused CollateralRateNotInvalid returns (uint withdraw) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -407,7 +422,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         uint cratioAfter = collateralRatio(loan);
 
         // 8. Check that the new amount does not put them under the minimum c ratio.
-        require(cratioAfter > minimumCollateralisation, "Collateral ratio below liquidation after withdraw");
+        require(cratioAfter > minCratio, "Collateral ratio below liquidation after withdraw");
 
         // 9. Store the loan.
         state.updateLoan(loan);
@@ -418,7 +433,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         emit CollateralWithdrawn(msg.sender, id, amount, loan.collateral);
     }
     
-    function liquidateInternal(address borrower, uint id, uint payment) internal CollateralRateNotInvalid returns (uint) {
+    function liquidateInternal(address borrower, uint id, uint payment) internal notPaused CollateralRateNotInvalid returns (uint) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -441,7 +456,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         uint cratio = collateralRatio(loan);
 
         // 7 Check they are eligible for liquidation.
-        require(cratio < minimumCollateralisation, "Collateral ratio above liquidation ratio");
+        require(cratio < minCratio, "Collateral ratio above liquidation ratio");
 
         // 8. Determine how much needs to be liquidated to fix their c ratio.
         uint liquidationAmount = liquidationAmount(loan);
@@ -482,7 +497,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         return collateralLiquidated;
     }
 
-    function repayInternal(address borrower, address repayer, uint id, uint payment) internal CollateralRateNotInvalid {
+    function repayInternal(address borrower, address repayer, uint id, uint payment) internal notPaused CollateralRateNotInvalid {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -538,7 +553,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         // 6. Get the collateral ratio.
         uint cratio = collateralRatio(loan);
 
-        require(cratio > minimumCollateralisation, "Drawing this much would put the loan under minimum collateralisation");
+        require(cratio > minCratio, "Drawing this much would put the loan under minimum collateralisation");
 
         // 12. Issue synths to the borrower.
         _synths(synths[loan.currency]).issue(msg.sender, amount);
@@ -626,16 +641,17 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     /* ========== MODIFIERS ========== */
 
     modifier CollateralRateNotInvalid() {
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Blocked as collateral rate is invalid");
+        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
         _;
     }
 
     // ========== EVENTS ==========
     // Setters
-    event MinimumCollateralisationRatioUpdated(uint minimumCollateralisation);
+    event MinCratioRatioUpdated(uint minCratio);
+    event MinCollateralUpdated(uint minCollateral);
     event BaseInterestRateUpdated(uint baseInterestRate);
-    event LiquidationPenaltyUpdated(uint liquidationPenalty);
     event IssueFeeRateUpdated(uint issueFeeRate);
+    event MaxLoansPerAccountUpdated(uint maxLoansPerAccount);
     event ManagerUpdated(address manager);
 
     // Loans

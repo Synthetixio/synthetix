@@ -45,6 +45,12 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     // The factor that will scale the utilisation ratio.
     uint public utilisationMultiplier = 1e18; 
 
+    // The maximum amount of debt in sUSD that can be issued by non snx collateral.
+    uint public maxDebt;
+
+    // The percentage of collateral that is paid to incentivise a liquidation.
+    uint public liquidationPenalty;
+
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -55,14 +61,29 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_ISSUER, CONTRACT_EXRATES, CONTRACT_DEBTCACHE];
 
     /* ========== CONSTRUCTOR ========== */
-    constructor(CollateralManagerState _state, address _owner, address _resolver) Owned(_owner) Pausable() MixinResolver(_resolver, addressesToCache) public {
+    constructor(
+        CollateralManagerState _state, 
+        address _owner, 
+        address _resolver,
+        uint _maxDebt,
+        uint _liquidationPenalty
+    ) public
+    Owned(_owner) 
+    Pausable() 
+    MixinResolver(_resolver, addressesToCache) 
+    {
+        owner = msg.sender;
+        state = _state; 
 
-        state = _state;    
+        setMaxDebt(_maxDebt);
+        setLiquidationPenalty(_liquidationPenalty);
+
+        owner = _owner;
     }
 
     /* ========== VIEWS ========== */
 
-    /* ---------- External Contracts ---------- */
+    /* ---------- Related Contracts ---------- */
 
     function _systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
@@ -88,6 +109,11 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
     function hasSynth(address synth) public view returns (bool) {
         return _synths.contains(synth);
+        
+    }
+
+    function getLiquidationPenalty() external view returns (uint) {
+        return liquidationPenalty;
     }
 
     function long(bytes32 synth) external view returns (uint amount) {
@@ -135,8 +161,12 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         (entryRate, lastRate, lastUpdated, newIndex) = state.getRatesAndTime(index);
     }
 
-    function updateRates(uint rate) external {
-        state.updateBorrowRates(rate);
+    function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue) {
+        uint usdAmount = _exchangeRates().effectiveValue(currency, amount, sUSD);
+
+        (uint total, ) = totalLong();
+
+        return total.add(usdAmount) <= maxDebt;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -144,7 +174,20 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     /* ---------- SETTERS ---------- */
 
     function setUtilisationMultiplier(uint _utilisationMultiplier) public onlyOwner {
+        require(_utilisationMultiplier > 0, "Must be greater than 0");
         utilisationMultiplier = _utilisationMultiplier;
+    }
+
+    function setMaxDebt(uint _maxDebt) public onlyOwner {
+        require(_maxDebt > 0, "Must be greater than 0");
+        maxDebt = _maxDebt;
+        emit MaxDebtUpdated(maxDebt);
+    }
+
+    function setLiquidationPenalty(uint _liquidationPenalty) public onlyOwner {
+        require(_liquidationPenalty > 0, "Must be greater than 0");
+        liquidationPenalty = _liquidationPenalty;
+        emit LiquidationPenaltyUpdated(liquidationPenalty);
     }
 
     /* ---------- MANAGER ---------- */
@@ -175,6 +218,12 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
         emit SynthAdded(synth);
     }
+
+    /* ---------- STATE MUTATIONS ---------- */
+
+    function updateRates(uint rate) external {
+        state.updateBorrowRates(rate);
+    }
     
     function incrementLongs(bytes32 synth, uint amount) external onlyCollateral {
         state.incrementLongs(synth, amount);
@@ -202,6 +251,8 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     }
 
     // ========== EVENTS ==========
+    event MaxDebtUpdated(uint maxDebt);
+    event LiquidationPenaltyUpdated(uint liquidationPenalty);
     event CollateralAdded(address collateral);
     event SynthAdded(address synth);
 }
