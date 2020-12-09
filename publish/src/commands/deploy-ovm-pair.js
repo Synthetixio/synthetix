@@ -19,8 +19,9 @@ const deployOvmPair = async () => {
 
 	await deployInstance({ useOvm: true, privateKey });
 	const l2provider = new ethers.providers.JsonRpcProvider(L2_PROVIDER_URL);
-	const l2wallet = new ethers.Wallet(
-		'0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7',
+	const l2wallet = new ethers.Wallet(privateKey, l2provider);
+	const otherWallet = new ethers.Wallet(
+		'0x7c33db2d8d02370d351befb50ecf774b7162ceeaa74df2e2555ff02315404a44',
 		l2provider
 	);
 	const Synthetix = new ethers.Contract(
@@ -33,14 +34,43 @@ const deployOvmPair = async () => {
 		synthABI,
 		l2wallet
 	);
-	const snxBalance = await Synthetix.balanceOf(l2wallet.address);
-	console.log(`SNX balance of ${l2wallet.address}`, snxBalance.toString());
+	console.log(
+		`SNX balance of ${l2wallet.address}`,
+		(await Synthetix.balanceOf(l2wallet.address)).toString()
+	);
 	let susdBalance = await ProxySUSD.balanceOf(l2wallet.address);
-	console.log(`SUSD balance of ${l2wallet.address}`, susdBalance.toString());
+	console.log(
+		`SUSD balance of ${l2wallet.address}`,
+		(await ProxySUSD.balanceOf(l2wallet.address)).toString()
+	);
 	await (await Synthetix.issueMaxSynths()).wait();
 	console.log('issued max synths');
 	susdBalance = await ProxySUSD.balanceOf(l2wallet.address);
 	console.log(`SUSD balance of ${l2wallet.address}`, susdBalance.toString());
+	await (await Synthetix.burnSynths(susdBalance)).wait();
+	console.log('burned all synths');
+	console.log(
+		`SUSD balance of ${l2wallet.address}`,
+		(await ProxySUSD.balanceOf(l2wallet.address)).toString()
+	);
+	console.log(
+		`SNX balance of ${l2wallet.address}`,
+		(await Synthetix.balanceOf(l2wallet.address)).toString()
+	);
+	console.log(
+		`SNX balance of ${otherWallet.address}`,
+		(await Synthetix.balanceOf(otherWallet.address)).toString()
+	);
+	await (await Synthetix.transfer(otherWallet.address, 100000)).wait();
+	console.log(`transferred 100000 SNX to ${otherWallet.address}`);
+	console.log(
+		`SNX balance of ${l2wallet.address}`,
+		(await Synthetix.balanceOf(l2wallet.address)).toString()
+	);
+	console.log(
+		`SNX balance of ${otherWallet.address}`,
+		(await Synthetix.balanceOf(otherWallet.address)).toString()
+	);
 };
 
 const deployInstance = async ({ useOvm, privateKey }) => {
