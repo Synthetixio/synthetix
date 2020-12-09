@@ -412,6 +412,9 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 	describe('Vesting', () => {
 		beforeEach(async () => {});
+		describe('Vesting partial number of account1 vesting entries', () => {
+			beforeEach(async () => {});
+		});
 	});
 
 	describe('Read Vesting Schedule', () => {
