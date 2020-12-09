@@ -125,12 +125,11 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     function ratePerSecond(address account, uint256 entryID) public view returns (uint256) {
         /* Retrieve the vesting entry */
         VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryID];
-
         return _ratePerSecond(entry);
     }
 
+    /* returns the rate per second based on escrow amount divided by duration  */
     function _ratePerSecond(VestingEntries.VestingEntry memory _entry) internal pure returns (uint256) {
-        /* Calculate the rate of emission for entry based on escrowAmount / duration seconds */
         return _entry.escrowAmount.div(_entry.duration);
     }
 
@@ -191,18 +190,20 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     function _claimableAmount(VestingEntries.VestingEntry memory _entry) internal view returns (uint256 quantity) {
         /* Return if remaining Amount is 0 */
         if (_entry.remainingAmount != 0) {
+            /* Remaining amounts claimable if block.timestamp equal to or after entry endTime */
+            if (block.timestamp >= _entry.endTime) return _entry.remainingAmount;
+
             /* Get the amount vesting for the entry */
-            uint256 delta = _deltaOf(uint256(_entry.endTime), uint256(_entry.lastVested));
-            uint256 quantityEmitted = delta.multiplyDecimal(_ratePerSecond(_entry));
+            uint256 timeSinceLastVested = _timeSinceLastVested(_entry);
+            uint256 quantityEmitted = timeSinceLastVested.mul(_ratePerSecond(_entry));
 
             /* cap quantity to the remaining amount in vesting entry */
             quantity = _entry.remainingAmount <= quantityEmitted ? _entry.remainingAmount : quantityEmitted;
         }
     }
 
-    function deltaOf(address account, uint256 entryID) external view returns (uint256 delta) {
-        VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryID];
-        return _deltaOf(entry.endTime, entry.lastVested);
+    function timeSinceLastVested(address account, uint256 entryID) external view returns (uint256 delta) {
+        return _timeSinceLastVested(vestingSchedules[account][entryID]);
     }
 
     /**
@@ -210,8 +211,12 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
      * Returns seconds since lastVested and if the end time is after `block.timestamp`
      * it will be the delta of the current `block.timestamp` - lastVested
      */
-    function _deltaOf(uint256 endTime, uint256 startTime) internal view returns (uint256 delta) {
-        return now < endTime ? now - startTime : endTime - startTime;
+    function _timeSinceLastVested(VestingEntries.VestingEntry memory _entry) internal view returns (uint256 delta) {
+        uint256 lastVestingTimestamp = _entry.lastVested > 0 ? _entry.lastVested : _entry.endTime - _entry.duration;
+
+        delta = block.timestamp < _entry.endTime
+            ? block.timestamp - lastVestingTimestamp
+            : _entry.endTime - lastVestingTimestamp;
     }
 
     /**

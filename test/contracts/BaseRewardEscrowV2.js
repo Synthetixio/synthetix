@@ -10,7 +10,7 @@ const { mockToken, setupAllContracts } = require('./setup');
 
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const { toUnit, currentTime, fastForward } = require('../utils')();
+const { toUnit, currentTime, fastForward, divideDecimal } = require('../utils')();
 
 const {
 	constants: { ZERO_ADDRESS },
@@ -159,7 +159,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				);
 			});
 
-			describe.only('When successfully appending new escrow entry for account 1', () => {
+			describe.only('When successfully appending new escrow entry for account 1 with 10 SNX', () => {
 				let entryID, nextEntryIdAfter, now, escrowAmount;
 				beforeEach(async () => {
 					duration = 1 * YEAR;
@@ -202,13 +202,45 @@ contract('BaseRewardEscrowV2', async accounts => {
 				it('Should increment the nextEntryID', async () => {
 					assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
 				});
+				describe('When 6 months has passed', () => {
+					let vestingEntry, timeElapsed;
+					beforeEach(async () => {
+						timeElapsed = YEAR / 2;
+						await fastForward(timeElapsed);
+						vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
+					});
+					it('last vested timestamp on entry is 0', async () => {
+						assert.bnEqual(vestingEntry.lastVested, new BN(0));
+					});
+					it('remaining amount is same as the escrowAmount', async () => {
+						assert.bnEqual(vestingEntry.remainingAmount, escrowAmount);
+					});
+					it('then the timeSinceLastVested the vesting entry is 1/2 year', async () => {
+						const delta = await baseRewardEscrowV2.timeSinceLastVested(account1, entryID);
+						assert.bnEqual(delta, vestingEntry.duration.div(new BN(2)));
+					});
+					it('then the vesting entry has 1/2 year * ratePerSecond claimable', async () => {
+						const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
+						const expectedAmount = ratePerSecond.mul(new BN(timeElapsed));
+						const claimable = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
+						assert.bnEqual(claimable, expectedAmount);
+					});
+				});
 				describe('When one year has passed', () => {
+					let vestingEntry;
 					beforeEach(async () => {
 						await fastForward(YEAR + 1);
+						vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
 					});
-					it('then the deltaOf the vesting entry is the whole duration (1 year)', async () => {
-						const delta = await baseRewardEscrowV2.deltaOf(account1, entryID);
-						assert.bnEqual(delta, duration);
+					it('last vested timestamp on entry is 0', async () => {
+						assert.bnEqual(vestingEntry.lastVested, new BN(0));
+					});
+					it('remaining amount is same as the escrowAmount', async () => {
+						assert.bnEqual(vestingEntry.remainingAmount, escrowAmount);
+					});
+					it('then the timeSinceLastVested the vesting entry is the whole duration (1 year)', async () => {
+						const delta = await baseRewardEscrowV2.timeSinceLastVested(account1, entryID);
+						assert.bnEqual(delta, vestingEntry.duration);
 					});
 					it('then the vesting entry is fully claimable', async () => {
 						const claimable = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
@@ -217,7 +249,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				});
 			});
 		});
-		describe('Calculating the ratePerSecond emission of each entry', () => {
+		describe.only('Calculating the ratePerSecond emission of each entry', () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
 				await synthetix.transfer(baseRewardEscrowV2.address, toUnit('31556926'), {
