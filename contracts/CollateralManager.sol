@@ -101,7 +101,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         return IDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE, "Missing DebtCache address"));
     }
 
-    /* ---------- Manager ---------- */
+    /* ---------- Manager Information ---------- */
 
     function hasCollateral(address collateral) public view returns (bool) {
         return _collaterals.contains(collateral);
@@ -115,6 +115,8 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     function getLiquidationPenalty() external view returns (uint) {
         return liquidationPenalty;
     }
+
+    /* ---------- State Information ---------- */
 
     function long(bytes32 synth) external view returns (uint amount) {
         return state.long(synth);
