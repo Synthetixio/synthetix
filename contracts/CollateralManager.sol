@@ -7,7 +7,7 @@ import "./MixinResolver.sol";
 import "./interfaces/ICollateralManager.sol";
 
 // Libraries
-import "./AddressListLib.sol";
+import "./AddressSetLib.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
@@ -23,7 +23,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
-    using AddressListLib for AddressListLib.AddressList;
+    using AddressSetLib for AddressSetLib.AddressSet;
 
     /* ========== CONSTANTS ========== */
 
@@ -37,10 +37,10 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     CollateralManagerState public state;
 
     // The set of all collateral contracts.
-    AddressListLib.AddressList internal _collaterals;
+    AddressSetLib.AddressSet internal _collaterals;
 
     // The set of all synths issuable by the various collateral contracts
-    AddressListLib.AddressList internal _synths;
+    AddressSetLib.AddressSet internal _synths;
 
     // The factor that will scale the utilisation ratio.
     uint public utilisationMultiplier = 1e18; 
@@ -70,7 +70,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     ) public
     Owned(_owner) 
     Pausable() 
-    MixinResolver(_resolver, addressesToCache) 
+    MixinResolver(_resolver) 
     {
         owner = msg.sender;
         state = _state; 
@@ -82,6 +82,14 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     }
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory newAddresses = new bytes32[](6);
+        newAddresses[0] = CONTRACT_ISSUER;
+        newAddresses[2] = CONTRACT_EXRATES;
+        newAddresses[3] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[4] = CONTRACT_DEBTCACHE;
+    }
 
     /* ---------- Related Contracts ---------- */
 
