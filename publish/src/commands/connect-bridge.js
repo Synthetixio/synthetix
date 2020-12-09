@@ -155,11 +155,11 @@ const connectLayer = async ({
 
 		console.log(yellow(`  > AddressResolver.importAddresses([${ids}], [${addresses}])`));
 		tx = await AddressResolver.methods.importAddresses(ids, addresses).send(params);
-		console.log(JSON.stringify(tx, null, 2));
+		console.log(gray(`    > tx hash: ${tx.transactionHash}`));
 
 		console.log(yellow('  > SynthetixBridge.rebuildCache()...'));
 		tx = await SynthetixBridge.methods.rebuildCache().send(params);
-		console.log(JSON.stringify(tx, null, 2));
+		console.log(gray(`    > tx hash: ${tx.transactionHash}`));
 	} else {
 		console.log(yellow('  > Skipping, since this is a DRY RUN'));
 	}
