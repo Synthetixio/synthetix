@@ -1,6 +1,10 @@
 [
 	{
 		"name": "INITIAL_ISSUANCE",
+		"value": "100000000000000000000000"
+	},
+	{
+		"name": "MINIMUM_STAKE_TIME",
 		"value": "0"
 	}
 ]
