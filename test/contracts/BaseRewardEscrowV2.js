@@ -89,6 +89,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			assert.equal(0, await baseRewardEscrowV2.totalVestedAccountBalance(account1));
 		});
 	});
+
 	describe('Creating vesting Schedule', async () => {
 		describe('When appending vesting entry via feePool', async () => {
 			let duration = YEAR;
@@ -158,8 +159,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					'Cannot escrow with 0 duration OR above MAX_DURATION'
 				);
 			});
-
-			describe.only('When successfully appending new escrow entry for account 1 with 10 SNX', () => {
+			describe('When successfully appending new escrow entry for account 1 with 10 SNX', () => {
 				let entryID, nextEntryIdAfter, now, escrowAmount;
 				beforeEach(async () => {
 					duration = 1 * YEAR;
@@ -201,6 +201,18 @@ contract('BaseRewardEscrowV2', async accounts => {
 				});
 				it('Should increment the nextEntryID', async () => {
 					assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
+				});
+				it('Account 1 should have balance of 10 SNX', async () => {
+					assert.bnEqual(await baseRewardEscrowV2.balanceOf(account1), escrowAmount);
+				});
+				it('totalEscrowedBalance of the contract should be 10 SNX', async () => {
+					assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), escrowAmount);
+				});
+				it('Account1 should have totalVested Account Balance of 0', async () => {
+					assert.bnEqual(await baseRewardEscrowV2.totalVestedAccountBalance(account1), new BN(0));
+				});
+				it('Account1 numVestingEntries is 1', async () => {
+					assert.bnEqual(await baseRewardEscrowV2.numVestingEntries(account1), new BN(1));
 				});
 				describe('When 6 months has passed', () => {
 					let vestingEntry, timeElapsed;
@@ -249,6 +261,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				});
 			});
 		});
+
 		describe('Calculating the ratePerSecond emission of each entry', () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
@@ -314,11 +327,14 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 		});
 	});
+
 	describe('Creating a new escrow entry by approval', async () => {
-		const duration = YEAR;
+		let duration, entryID;
 		beforeEach(async () => {
 			// approve rewardEscrow to spend SNX
 			await synthetix.approve(baseRewardEscrowV2.address, toUnit('10'), { from: owner });
+
+			duration = 1 * YEAR;
 		});
 		it('should revert if escrow quanity is equal or less than duration seconds, as will result in 0 ratePerSecond', async () => {
 			await assert.revert(
@@ -332,5 +348,77 @@ contract('BaseRewardEscrowV2', async accounts => {
 				'Cannot create escrow with address(0)'
 			);
 		});
+		it('should revert when msg.sender has no approval to spend', async () => {
+			await assert.revert(
+				baseRewardEscrowV2.createEscrowEntry(ZERO_ADDRESS, toUnit('10'), duration, {
+					from: account1,
+				})
+			);
+		});
+		describe('when successfully creating a new escrow entry for acount 1', () => {
+			let vestingEntry, escrowAmount, now, nextEntryIdAfter;
+			beforeEach(async () => {
+				now = currentTime();
+				escrowAmount = toUnit('10');
+
+				const expectedEntryID = await baseRewardEscrowV2.nextEntryId();
+
+				await baseRewardEscrowV2.createEscrowEntry(account1, escrowAmount, duration, {
+					from: owner,
+				});
+
+				// retrieve the vesting entryID from account 1's list of account vesting entrys
+				entryID = await baseRewardEscrowV2.accountVestingEntryIDs(account1, 0);
+
+				assert.bnEqual(entryID, expectedEntryID);
+
+				nextEntryIdAfter = await baseRewardEscrowV2.nextEntryId();
+			});
+			it('Should have created a new vesting entry for account 1', async () => {
+				vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
+
+				// endTime is 1 year after
+				assert.isTrue(vestingEntry.endTime.gte(now + duration));
+
+				// escrowAmount is 10
+				assert.bnEqual(vestingEntry.escrowAmount, escrowAmount);
+
+				// remainingAmount is 10
+				assert.bnEqual(vestingEntry.remainingAmount, escrowAmount);
+
+				// duration is 1 year
+				assert.bnEqual(vestingEntry.duration, duration);
+
+				// last vested timestamp is 0
+				assert.bnEqual(vestingEntry.lastVested, new BN(0));
+			});
+			it('Should increment the nextEntryID', async () => {
+				assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
+			});
+			it('totalEscrowedBalance of the contract should be 10 SNX', async () => {
+				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), escrowAmount);
+			});
+			it('Account1 should have balance of 10 SNX', async () => {
+				assert.bnEqual(await baseRewardEscrowV2.balanceOf(account1), escrowAmount);
+			});
+			it('Account1 should have totalVested Account Balance of 0', async () => {
+				assert.bnEqual(await baseRewardEscrowV2.totalVestedAccountBalance(account1), new BN(0));
+			});
+			it('Account1 numVestingEntries is 1', async () => {
+				assert.bnEqual(await baseRewardEscrowV2.numVestingEntries(account1), new BN(1));
+			});
+		});
+	});
+
+	describe('Vesting', () => {
+		beforeEach(async () => {});
+	});
+
+	describe('Read Vesting Schedule', () => {
+		beforeEach(async () => {});
+	});
+
+	describe('Account vesting schedule merging', () => {
+		beforeEach(async () => {});
 	});
 });

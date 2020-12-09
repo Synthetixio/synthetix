@@ -38,7 +38,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     mapping(address => address) public nominatedReciever;
 
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
-    uint public totalEscrowedBalance;
+    uint256 public totalEscrowedBalance;
 
     /* Max escrow duration */
     uint public MAX_DURATION = 5 * 52 weeks;
@@ -174,7 +174,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
                 /* update entry */
                 entry.remainingAmount = entry.remainingAmount.sub(quantity);
-                entry.lastVested = uint64(now);
+                entry.lastVested = uint64(block.timestamp);
 
                 /* add quantity to total */
                 total = total.add(quantity);
@@ -259,7 +259,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         _reduceAccountEscrowBalances(_account, _amount);
         totalVestedAccountBalance[_account] = totalVestedAccountBalance[_account].add(_amount);
         IERC20(address(synthetix())).transfer(_account, _amount);
-        emit Vested(_account, now, _amount);
+        emit Vested(_account, block.timestamp, _amount);
     }
 
     function _reduceAccountEscrowBalances(address _account, uint256 _amount) internal {
@@ -271,7 +271,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* ========== ACCOUNT MERGING ========== */
 
     function startMergingWindow() external onlyOwner {
-        accountMergingEndTime = now.add(accountMergingDuration);
+        accountMergingEndTime = block.timestamp.add(accountMergingDuration);
 
         // emit account merging window start
     }
@@ -289,7 +289,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* Nominate an account to merge escrow and vesting schedule */
     function nominateAccountToMerge(address account) external {
-        require(accountMergingEndTime < now, "Account merging has ended");
+        require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(totalEscrowedAccountBalance[msg.sender] > 0, "Address escrow balance is 0");
 
         nominatedReciever[msg.sender] = account;
@@ -298,8 +298,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function mergeAccount(address accountToMerge) external {
-        require(accountMergingEndTime < now, "Account merging has ended");
-        require(accountMergingEndTime < now, "Account merging has ended");
+        require(accountMergingEndTime < block.timestamp, "Account merging has ended");
+        require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(nominatedReciever[accountToMerge] == msg.sender, "Address is not nominated to merge");
 
         // delete totalEscrowedAccountBalance for merged account
@@ -360,7 +360,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         );
 
         /* Escrow the tokens for duration. */
-        uint endTime = now + duration;
+        uint endTime = block.timestamp + duration;
 
         /* Add quantity to account's escrowed balance */
         totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(quantity);
@@ -379,7 +379,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         /* Increment the next entry id. */
         nextEntryId = nextEntryId.add(1);
 
-        emit VestingEntryCreated(account, now, quantity, duration, entryID);
+        emit VestingEntryCreated(account, block.timestamp, quantity, duration, entryID);
     }
 
     function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
