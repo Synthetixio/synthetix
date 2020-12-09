@@ -35,7 +35,7 @@ describe('L1/L2 prod tests', () => {
 	before('setup providers and deployer wallets', async () => {
 		({ wallet: wallets[0], provider: l1Provider } = setupProvider({
 			providerUrl: 'http://127.0.0.1:9545',
-			privateKey: '0x6fcb386bca1dd44b31a33e371a2cc26a039f72732396f2bbc88d8a50ba13fcc4',
+			privateKey: '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7',
 		}));
 
 		({ wallet: wallets[1], provider: l2Provider } = setupProvider({
