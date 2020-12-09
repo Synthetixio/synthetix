@@ -10,7 +10,7 @@ const { mockToken, setupAllContracts } = require('./setup');
 
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const { toUnit, currentTime, fastForward, divideDecimal } = require('../utils')();
+const { toUnit, currentTime, fastForward } = require('../utils')();
 
 const {
 	constants: { ZERO_ADDRESS },
@@ -249,7 +249,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				});
 			});
 		});
-		describe.only('Calculating the ratePerSecond emission of each entry', () => {
+		describe('Calculating the ratePerSecond emission of each entry', () => {
 			beforeEach(async () => {
 				// Transfer of SNX to the escrow must occur before creating an entry
 				await synthetix.transfer(baseRewardEscrowV2.address, toUnit('31556926'), {
