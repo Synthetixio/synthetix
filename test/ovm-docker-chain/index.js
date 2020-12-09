@@ -236,11 +236,11 @@ describe('L1/L2 integration', () => {
 						l1ToL2Bridge = fetchContract({
 							contract: 'SynthetixBridgeToOptimism',
 							instance: 0,
-							l1User,
+							user: l1User,
 						});
 						// user must approve SynthetixBridgeToOptimism to transfer SNX on their behalf
 						await (
-							await fetchContract({ contract: 'Synthetix', instance: 0, l1User }).approve(
+							await fetchContract({ contract: 'Synthetix', instance: 0, user: l1User }).approve(
 								l1ToL2Bridge.address,
 								parseEther('10'),
 								overrides
@@ -281,7 +281,7 @@ describe('L1/L2 integration', () => {
 								l2ToL1Bridge = fetchContract({
 									contract: 'SynthetixBridgeToBase',
 									instance: 1,
-									l2User,
+									user: l2User,
 								});
 								// initiate withdrawal on L2
 								await l2ToL1Bridge.initiateWithdrawal(parseEther('10'), overrides);
