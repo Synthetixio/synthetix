@@ -83,12 +83,11 @@ contract('CollateralEth', async accounts => {
 		synths,
 		minColat,
 		intRate,
-		liqPen,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [state, owner, manager, resolver, collatKey, synths, minColat, intRate, liqPen],
+			args: [state, owner, manager, resolver, collatKey, synths, minColat, intRate],
 		});
 	};
 
@@ -119,9 +118,19 @@ contract('CollateralEth', async accounts => {
 
 		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		manager = await CollateralManager.new(managerState.address, owner, addressResolver.address, {
-			from: deployerAccount,
-		});
+		const maxDebt = toUnit(10000000);
+		const liqPen = toUnit(0.1);
+
+		manager = await CollateralManager.new(
+			managerState.address,
+			owner,
+			addressResolver.address,
+			maxDebt,
+			liqPen,
+			{
+				from: deployerAccount,
+			}
+		);
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -140,8 +149,9 @@ contract('CollateralEth', async accounts => {
 			minColat: toUnit(1.5),
 			// 5% / 31536000 (seconds in common year)
 			intRate: 1585489599,
-			liqPen: toUnit(0.1),
 		});
+
+		await state.setAssociatedContract(ceth.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
@@ -150,10 +160,6 @@ contract('CollateralEth', async accounts => {
 				from: owner,
 			}
 		);
-
-		await state.addCurrency(sUSD, { from: owner });
-		await state.addCurrency(sETH, { from: owner });
-		await state.setAssociatedContract(ceth.address, { from: owner });
 
 		await ceth.setResolverAndSyncCache(addressResolver.address, { from: owner });
 		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
@@ -209,10 +215,9 @@ contract('CollateralEth', async accounts => {
 		assert.equal(await ceth.collateralKey(), sETH);
 		assert.equal(await ceth.synths(sUSD), toBytes32('SynthsUSD'));
 		assert.equal(await ceth.synths(sETH), toBytes32('SynthsETH'));
-		assert.bnEqual(await ceth.minimumCollateralisation(), toUnit(1.5));
+		assert.bnEqual(await ceth.minCratio(), toUnit(1.5));
+		assert.bnEqual(await ceth.minCollateral(), toUnit(0));
 		assert.bnEqual(await ceth.baseInterestRate(), 1585489599);
-		assert.bnEqual(await ceth.liquidationPenalty(), toUnit(0.1));
-		// assert.bnEqual(await ceth.debtCeiling(), 0);
 	});
 
 	it('should ensure only expected functions are mutative', async () => {
@@ -473,27 +478,27 @@ contract('CollateralEth', async accounts => {
 	// SETTER TESTS
 
 	describe('setting variables', async () => {
-		describe('setMinimumCollateralisation', async () => {
+		describe('setMinCratio', async () => {
 			describe('revert condtions', async () => {
 				it('should fail if not called by the owner', async () => {
 					await assert.revert(
-						ceth.setMinimumCollateralisation(toUnit(1), { from: account1 }),
+						ceth.setMinCratio(toUnit(1), { from: account1 }),
 						'Only the contract owner may perform this action'
 					);
 				});
 				it('should fail if the minimum is less than 1', async () => {
 					await assert.revert(
-						ceth.setMinimumCollateralisation(toUnit(0.99), { from: owner }),
+						ceth.setMinCratio(toUnit(0.99), { from: owner }),
 						'Minimum collateralisation must be greater than 1'
 					);
 				});
 			});
 			describe('when it succeeds', async () => {
 				beforeEach(async () => {
-					await ceth.setMinimumCollateralisation(toUnit(2), { from: owner });
+					await ceth.setMinCratio(toUnit(2), { from: owner });
 				});
 				it('should update the minimum collateralisation', async () => {
-					assert.bnEqual(await ceth.minimumCollateralisation(), toUnit(2));
+					assert.bnEqual(await ceth.minCratio(), toUnit(2));
 				});
 			});
 		});
@@ -517,31 +522,6 @@ contract('CollateralEth', async accounts => {
 				it('should allow the base interest rate to be  0', async () => {
 					await ceth.setBaseInterestRate(toUnit(0), { from: owner });
 					assert.bnEqual(await ceth.baseInterestRate(), toUnit(0));
-				});
-			});
-		});
-
-		describe('setLiquidationPenalty', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						ceth.setLiquidationPenalty(toUnit(1), { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-				it('should fail if 0 is passed', async () => {
-					await assert.revert(
-						ceth.setLiquidationPenalty(toUnit(0), { from: owner }),
-						'Must be greater than 0'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await ceth.setLiquidationPenalty(toUnit(0.2), { from: owner });
-				});
-				it('should update the liquidation penalty', async () => {
-					assert.bnEqual(await ceth.liquidationPenalty(), toUnit(0.2));
 				});
 			});
 		});
@@ -624,7 +604,7 @@ contract('CollateralEth', async accounts => {
 				it('then calling openLoan() reverts', async () => {
 					await assert.revert(
 						ceth.open(onesUSD, sUSD, { value: oneETH, from: account1 }),
-						'Blocked as collateral rate is invalid'
+						'Collateral rate is invalid'
 					);
 				});
 				describe('when ETH gets a rate', () => {
@@ -643,14 +623,6 @@ contract('CollateralEth', async accounts => {
 				await assert.revert(
 					ceth.open(onesUSD, toBytes32('sJPY'), { value: oneETH, from: account1 }),
 					'Not allowed to issue this synth'
-				);
-			});
-
-			xit('should revert if the requested currency rate is invalid', async () => {
-				await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
-				await assert.revert(
-					ceth.open(oneETH, sETH, { value: fiveETH, from: account1 }),
-					'Currency rate is invalid"'
 				);
 			});
 
@@ -1368,7 +1340,7 @@ contract('CollateralEth', async accounts => {
 				it('then calling draw() reverts', async () => {
 					await assert.revert(
 						ceth.draw(id, onesUSD, { from: account1 }),
-						'Blocked as collateral rate is invalid'
+						'Collateral rate is invalid'
 					);
 				});
 				describe('when ETH gets a rate', () => {
@@ -1448,7 +1420,7 @@ contract('CollateralEth', async accounts => {
 
 			assert.equal(interest, 14.0942);
 
-			// after two years we should have accrued
+			// after two years we should have accrued (this math is rough)
 			// 5% + (100/2100) = 0.09761904762 +
 			// 5% + (200/2200) = 0.1409090909 +
 			//                 = 0.2385281385

@@ -20,8 +20,6 @@ const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
 contract('CollateralManager', async accounts => {
-	const YEAR = 31556926;
-
 	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
@@ -42,12 +40,11 @@ contract('CollateralManager', async accounts => {
 		synths,
 		minColat,
 		intRate,
-		liqPen,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [mcState, owner, manager, resolver, collatKey, synths, minColat, intRate, liqPen],
+			args: [mcState, owner, manager, resolver, collatKey, synths, minColat, intRate],
 		});
 	};
 
@@ -60,24 +57,12 @@ contract('CollateralManager', async accounts => {
 		synths,
 		minColat,
 		intRate,
-		liqPen,
 		underCon,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralErc20',
-			args: [
-				mcState,
-				owner,
-				manager,
-				resolver,
-				collatKey,
-				synths,
-				minColat,
-				intRate,
-				liqPen,
-				underCon,
-			],
+			args: [mcState, owner, manager, resolver, collatKey, synths, minColat, intRate, underCon],
 		});
 	};
 
@@ -98,6 +83,8 @@ contract('CollateralManager', async accounts => {
 		sETHSynth,
 		sBTCSynth,
 		synths,
+		maxDebt,
+		liqPen,
 		debtCache;
 
 	let tx, id;
@@ -147,9 +134,19 @@ contract('CollateralManager', async accounts => {
 
 		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		manager = await CollateralManager.new(managerState.address, owner, addressResolver.address, {
-			from: deployerAccount,
-		});
+		maxDebt = toUnit(10000000);
+		liqPen = toUnit(0.1);
+
+		manager = await CollateralManager.new(
+			managerState.address,
+			owner,
+			addressResolver.address,
+			maxDebt,
+			liqPen,
+			{
+				from: deployerAccount,
+			}
+		);
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -165,7 +162,6 @@ contract('CollateralManager', async accounts => {
 			minColat: toUnit(1.5),
 			// 5% / 31536000 (seconds in common year)
 			intRate: 1585489599,
-			liqPen: toUnit(0.1),
 		});
 
 		mcstateErc20 = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
@@ -212,7 +208,6 @@ contract('CollateralManager', async accounts => {
 			minColat: toUnit(1.5),
 			// 5% / 31536000 (seconds in common year)
 			intRate: 1585489599,
-			liqPen: toUnit(0.1),
 			underCon: renBTC.address,
 		});
 
@@ -223,11 +218,6 @@ contract('CollateralManager', async accounts => {
 				from: owner,
 			}
 		);
-
-		await mcstate.addCurrency(sUSD, { from: owner });
-		await mcstateErc20.addCurrency(sUSD, { from: owner });
-		await mcstate.addCurrency(sETH, { from: owner });
-		await mcstateErc20.addCurrency(sBTC, { from: owner });
 
 		await mcstate.setAssociatedContract(ceth.address, { from: owner });
 		await mcstateErc20.setAssociatedContract(cerc20.address, { from: owner });
@@ -282,6 +272,8 @@ contract('CollateralManager', async accounts => {
 		assert.equal(await manager.state(), managerState.address);
 		assert.equal(await manager.owner(), owner);
 		assert.equal(await manager.resolver(), addressResolver.address);
+		assert.bnEqual(await manager.maxDebt(), maxDebt);
+		assert.bnEqual(await manager.liquidationPenalty(), liqPen);
 	});
 
 	it('should ensure only expected functions are mutative', async () => {
@@ -296,6 +288,9 @@ contract('CollateralManager', async accounts => {
 				'decrementLongs',
 				'incrementShorts',
 				'decrementShorts',
+				'setMaxDebt',
+				'setLiquidationPenalty',
+				'updateRates',
 			],
 		});
 	});
@@ -311,8 +306,8 @@ contract('CollateralManager', async accounts => {
 
 	describe('getting collaterals', async () => {
 		it('should add the collaterals during construction', async () => {
-			assert.isTrue(await manager.collateralByAddress(ceth.address));
-			assert.isTrue(await manager.collateralByAddress(cerc20.address));
+			assert.isTrue(await manager.hasCollateral(ceth.address));
+			assert.isTrue(await manager.hasCollateral(cerc20.address));
 		});
 	});
 
@@ -339,7 +334,10 @@ contract('CollateralManager', async accounts => {
 		});
 
 		it('should get the total balance in sUSD correctly', async () => {
-			assert.bnEqual(await manager.totalLong(), toUnit(400));
+			const total = await manager.totalLong();
+			const debt = total.debt;
+
+			assert.bnEqual(debt, toUnit(400));
 		});
 
 		it('should reduce the sUSD balance when a loan is closed', async () => {
@@ -353,24 +351,10 @@ contract('CollateralManager', async accounts => {
 			issuesUSDToAccount(toUnit(10), account1);
 			await ceth.close(id, { from: account1 });
 
-			assert.bnEqual(await manager.totalLong(), toUnit(300));
-		});
-	});
+			const total = await manager.totalLong();
+			const debt = total.debt;
 
-	describe('getting utilisation', async () => {
-		beforeEach(async () => {
-			tx = await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
-			await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
-			await cerc20.open(toUnit(1), toUnit(100), sUSD, { from: account1 });
-			await cerc20.open(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
-
-			id = await getid(tx);
-		});
-
-		xit('should get the scaled utilisation correctly', async () => {
-			const ratio = (400 / 3400) * YEAR;
-
-			assert.bnEqual(await manager.getScaledUtilisation(), ratio);
+			assert.bnEqual(debt, toUnit(300));
 		});
 	});
 
@@ -383,10 +367,10 @@ contract('CollateralManager', async accounts => {
 						'Only the contract owner may perform this action'
 					);
 				});
-				xit('should fail if the minimum is less than 1', async () => {
+				it('should fail if the minimum is 0', async () => {
 					await assert.revert(
-						manager.setUtilisationMultiplier(toUnit(0.99), { from: owner }),
-						'Minimum collateralisation must be greater than 1'
+						manager.setUtilisationMultiplier(toUnit(0), { from: owner }),
+						'Must be greater than 0'
 					);
 				});
 			});
@@ -396,6 +380,31 @@ contract('CollateralManager', async accounts => {
 				});
 				it('should update the utilisation multiplier', async () => {
 					assert.bnEqual(await manager.utilisationMultiplier(), toUnit(2));
+				});
+			});
+		});
+
+		describe('setLiquidationPenalty', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						manager.setLiquidationPenalty(toUnit(1), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+				it('should fail if 0 is passed', async () => {
+					await assert.revert(
+						manager.setLiquidationPenalty(toUnit(0), { from: owner }),
+						'Must be greater than 0'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await manager.setLiquidationPenalty(toUnit(0.2), { from: owner });
+				});
+				it('should update the liquidation penalty', async () => {
+					assert.bnEqual(await manager.liquidationPenalty(), toUnit(0.2));
 				});
 			});
 		});
@@ -417,17 +426,17 @@ contract('CollateralManager', async accounts => {
 			});
 
 			it('should add the collateral', async () => {
-				assert.isTrue(await manager.collateralByAddress(ZERO_ADDRESS));
+				assert.isTrue(await manager.hasCollateral(ZERO_ADDRESS));
 			});
 		});
 
 		describe('retreiving collateral by address', async () => {
 			it('if a collateral is in the manager, it should return true', async () => {
-				assert.isTrue(await manager.collateralByAddress(ceth.address));
+				assert.isTrue(await manager.hasCollateral(ceth.address));
 			});
 
 			it('if a collateral is not in the manager, it should return false', async () => {
-				assert.isFalse(await manager.collateralByAddress(ZERO_ADDRESS));
+				assert.isFalse(await manager.hasCollateral(ZERO_ADDRESS));
 			});
 		});
 	});
@@ -448,17 +457,17 @@ contract('CollateralManager', async accounts => {
 			});
 
 			it('should add the collateral', async () => {
-				assert.isTrue(await manager.synthByAddress(ZERO_ADDRESS));
+				assert.isTrue(await manager.hasSynth(ZERO_ADDRESS));
 			});
 		});
 
 		describe('retreiving synth by address', async () => {
 			it('if a synth is in the manager, it should return true', async () => {
-				assert.isTrue(await manager.synthByAddress(sUSDSynth.address));
+				assert.isTrue(await manager.hasSynth(sUSDSynth.address));
 			});
 
 			it('if a collateral is not in the manager, it should return false', async () => {
-				assert.isFalse(await manager.synthByAddress(ZERO_ADDRESS));
+				assert.isFalse(await manager.hasSynth(ZERO_ADDRESS));
 			});
 		});
 	});
