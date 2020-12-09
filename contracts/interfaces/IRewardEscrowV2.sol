@@ -24,14 +24,22 @@ interface IRewardEscrowV2 {
     function totalVestedAccountBalance(address account) external view returns (uint);
 
     function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint);
-    
+
+    function getVestingEntryClaimable(address account, uint256 entryID) external view returns (uint);
+
     // Mutative functions
     function vest(address account, uint256[] calldata entryIDs) external;
 
+    function createEscrowEntry(
+        address beneficiary,
+        uint256 deposit,
+        uint256 duration
+    ) external;
+
     function appendVestingEntry(
         address account,
-        uint quantity,
-        uint duration
+        uint256 quantity,
+        uint256 duration
     ) external;
 
     function migrateVestingSchedule(address _addressToMigrate) external;

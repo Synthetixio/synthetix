@@ -82,8 +82,10 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         // TODO - emit event account has migrated vesting entries across
     }
 
-    // Determine which entries can be vested, based on the old escrow vest function
-    // return number of entries vested and amount
+    /**
+    * Determine which entries can be vested, based on the old escrow vest function
+    * return number of entries vested and amount
+    */
     function _getVestedEntriesAndAmount(address _account, uint _numEntries)
         internal
         view
