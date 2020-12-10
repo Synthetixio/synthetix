@@ -39,12 +39,13 @@ contract('CollateralManager', async accounts => {
 		collatKey,
 		synths,
 		minColat,
+		minSize,
 		intRate,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [mcState, owner, manager, resolver, collatKey, synths, minColat, intRate],
+			args: [mcState, owner, manager, resolver, collatKey, synths, minColat, minSize, intRate],
 		});
 	};
 
@@ -56,13 +57,25 @@ contract('CollateralManager', async accounts => {
 		collatKey,
 		synths,
 		minColat,
+		minSize,
 		intRate,
 		underCon,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralErc20',
-			args: [mcState, owner, manager, resolver, collatKey, synths, minColat, intRate, underCon],
+			args: [
+				mcState,
+				owner,
+				manager,
+				resolver,
+				collatKey,
+				synths,
+				minColat,
+				minSize,
+				intRate,
+				underCon,
+			],
 		});
 	};
 
@@ -160,6 +173,7 @@ contract('CollateralManager', async accounts => {
 			collatKey: sETH,
 			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsETH')],
 			minColat: toUnit(1.5),
+			minSize: toUnit(1),
 			// 5% / 31536000 (seconds in common year)
 			intRate: 1585489599,
 		});
@@ -206,6 +220,7 @@ contract('CollateralManager', async accounts => {
 			collatKey: sBTC,
 			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsBTC')],
 			minColat: toUnit(1.5),
+			minSize: toUnit(0.1),
 			// 5% / 31536000 (seconds in common year)
 			intRate: 1585489599,
 			underCon: renBTC.address,
@@ -222,12 +237,15 @@ contract('CollateralManager', async accounts => {
 		await mcstate.setAssociatedContract(ceth.address, { from: owner });
 		await mcstateErc20.setAssociatedContract(cerc20.address, { from: owner });
 
-		await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await ceth.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await cerc20.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await debtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await manager.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await issuer.rebuildCache();
+		await ceth.rebuildCache();
+		await cerc20.rebuildCache();
+		await debtCache.rebuildCache();
+		await feePool.rebuildCache();
+		await manager.rebuildCache();
+
+		await ceth.setCurrencies();
+		await cerc20.setCurrencies();
 
 		await manager.addCollateral(ceth.address, { from: owner });
 		await manager.addCollateral(cerc20.address, { from: owner });

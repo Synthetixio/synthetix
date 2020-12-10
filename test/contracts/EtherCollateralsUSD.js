@@ -150,6 +150,7 @@ contract('EtherCollateralsUSD', async accounts => {
 				'ExchangeRates',
 				'SystemStatus',
 				'EtherCollateralsUSD',
+				'CollateralManager',
 			],
 		}));
 

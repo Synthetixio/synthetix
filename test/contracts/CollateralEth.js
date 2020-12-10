@@ -82,12 +82,13 @@ contract('CollateralEth', async accounts => {
 		collatKey,
 		synths,
 		minColat,
+		minSize,
 		intRate,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [state, owner, manager, resolver, collatKey, synths, minColat, intRate],
+			args: [state, owner, manager, resolver, collatKey, synths, minColat, minSize, intRate],
 		});
 	};
 
@@ -147,11 +148,10 @@ contract('CollateralEth', async accounts => {
 			collatKey: sETH,
 			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsETH')],
 			minColat: toUnit(1.5),
+			minSize: toUnit(1),
 			// 5% / 31536000 (seconds in common year)
 			intRate: 1585489599,
 		});
-
-		await state.setAssociatedContract(ceth.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
@@ -161,11 +161,18 @@ contract('CollateralEth', async accounts => {
 			}
 		);
 
-		await ceth.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await manager.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await debtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await ceth.rebuildCache();
+
+		await ceth.setCurrencies({ from: owner });
+
+		await state.setAssociatedContract(ceth.address, { from: owner });
+
+
+		await ceth.rebuildCache();
+		await feePool.rebuildCache();
+		await manager.rebuildCache();
+		await issuer.rebuildCache();
+		await debtCache.rebuildCache();
 
 		await manager.addCollateral(ceth.address, { from: owner });
 
@@ -213,10 +220,10 @@ contract('CollateralEth', async accounts => {
 		assert.equal(await ceth.owner(), owner);
 		assert.equal(await ceth.resolver(), addressResolver.address);
 		assert.equal(await ceth.collateralKey(), sETH);
-		assert.equal(await ceth.synths(sUSD), toBytes32('SynthsUSD'));
-		assert.equal(await ceth.synths(sETH), toBytes32('SynthsETH'));
+		assert.equal(await ceth.synths(0), toBytes32('SynthsUSD'));
+		assert.equal(await ceth.synths(1), toBytes32('SynthsETH'));
 		assert.bnEqual(await ceth.minCratio(), toUnit(1.5));
-		assert.bnEqual(await ceth.minCollateral(), toUnit(0));
+		assert.bnEqual(await ceth.minCollateral(), toUnit(1));
 		assert.bnEqual(await ceth.baseInterestRate(), 1585489599);
 	});
 

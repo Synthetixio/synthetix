@@ -18,19 +18,23 @@ const { setupAllContracts } = require('./setup');
 contract('MultiCollateralSynth', accounts => {
 	const [deployerAccount, owner, , , account1] = accounts;
 
-	let issuer, resolver;
+	let issuer, resolver, collateralManager;
 
 	before(async () => {
-		({ AddressResolver: resolver, Issuer: issuer } = await setupAllContracts({
+		({
+			AddressResolver: resolver,
+			Issuer: issuer,
+			CollateralMannager: collateralManager,
+		} = await setupAllContracts({
 			accounts,
 			mocks: { FeePool: true },
-			contracts: ['AddressResolver', 'Synthetix', 'Issuer'],
+			contracts: ['AddressResolver', 'Synthetix', 'Issuer', 'CollateralManager'],
 		}));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
+	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
 		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
 		const TokenState = artifacts.require('TokenState');
 		const Proxy = artifacts.require('Proxy');
@@ -52,7 +56,6 @@ contract('MultiCollateralSynth', accounts => {
 			toBytes32(currencyKey),
 			web3.utils.toWei('0'),
 			resolver.address,
-			toBytes32(multiCollateralKey),
 			{
 				from: deployerAccount,
 			}
@@ -63,12 +66,9 @@ contract('MultiCollateralSynth', accounts => {
 	};
 
 	describe('when a MultiCollateral synth is added and connected to Synthetix', () => {
-		const collateralKey = 'EtherCollateral';
-
 		beforeEach(async () => {
 			const { synth, tokenState, proxy } = await deploySynth({
 				currencyKey: 'sCollateral',
-				multiCollateralKey: collateralKey,
 			});
 			await tokenState.setAssociatedContract(synth.address, { from: owner });
 			await proxy.setTarget(synth.address, { from: owner });
@@ -88,7 +88,7 @@ contract('MultiCollateralSynth', accounts => {
 			const actual = await this.synth.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral'].map(toBytes32)
+				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'CollateralManager'].map(toBytes32)
 			);
 		});
 
@@ -116,7 +116,7 @@ contract('MultiCollateralSynth', accounts => {
 		describe('when multiCollateral is set to the owner', () => {
 			beforeEach(async () => {
 				// have the owner simulate being MultiCollateral so we can invoke issue and burn
-				await resolver.importAddresses([toBytes32(collateralKey)], [owner], { from: owner });
+				await resolver.importAddresses([toBytes32('CollateralManager')], [owner], { from: owner });
 				// now have the synth resync its cache
 				await this.synth.rebuildCache();
 			});

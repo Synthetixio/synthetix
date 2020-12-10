@@ -112,13 +112,25 @@ contract('CollateralErc20', async accounts => {
 		collatKey,
 		synths,
 		minColat,
+		minSize,
 		intRate,
 		underCon,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralErc20',
-			args: [state, owner, manager, resolver, collatKey, synths, minColat, intRate, underCon],
+			args: [
+				state,
+				owner,
+				manager,
+				resolver,
+				collatKey,
+				synths,
+				minColat,
+				minSize,
+				intRate,
+				underCon,
+			],
 		});
 	};
 
@@ -203,6 +215,7 @@ contract('CollateralErc20', async accounts => {
 			collatKey: sBTC,
 			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsBTC')],
 			minColat: toUnit(1.5),
+			minSize: toUnit(0.1),
 			// 5% / 31536000 (seconds in common year)
 			intRate: 1585489599,
 			underCon: renBTC.address,
@@ -216,13 +229,16 @@ contract('CollateralErc20', async accounts => {
 			}
 		);
 
+		await cerc20.rebuildCache();
+		await cerc20.setCurrencies();
+
 		await state.setAssociatedContract(cerc20.address, { from: owner });
 
-		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await cerc20.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await manager.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
-		await debtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await cerc20.rebuildCache();
+		await feePool.rebuildCache();
+		await manager.rebuildCache();
+		await issuer.rebuildCache();
+		await debtCache.rebuildCache();
 
 		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
 
@@ -252,9 +268,10 @@ contract('CollateralErc20', async accounts => {
 		assert.equal(await cerc20.owner(), owner);
 		assert.equal(await cerc20.resolver(), addressResolver.address);
 		assert.equal(await cerc20.collateralKey(), sBTC);
-		assert.equal(await cerc20.synths(sUSD), toBytes32('SynthsUSD'));
-		assert.equal(await cerc20.synths(sBTC), toBytes32('SynthsBTC'));
+		assert.equal(await cerc20.synths(0), toBytes32('SynthsUSD'));
+		assert.equal(await cerc20.synths(1), toBytes32('SynthsBTC'));
 		assert.bnEqual(await cerc20.minCratio(), toUnit(1.5));
+		assert.bnEqual(await cerc20.minCollateral(), toUnit(0.1));
 		assert.bnEqual(await cerc20.baseInterestRate(), 1585489599);
 		assert.equal(await cerc20.underlyingContract(), renBTC.address);
 	});
