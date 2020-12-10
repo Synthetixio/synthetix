@@ -89,33 +89,36 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     // ========== PUBLIC FUNCTIONS =========
 
     function deposit(uint256 depositAmount) external requireActive {
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
         // escrow amount should beset to 0
         _deposit(depositAmount, 0);
     }
 
     function depositAndMigrateEscrow(uint256 depositAmount, uint256[] calldata entryIDs) external requireActive {
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
         // Burn their reward escrow first
         // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
         uint256 escrowedAccountBalance;
 
-        VestingEntries.VestingEntry[] memory vestingEntries;
-        (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, entryIDs);
+        if (entryIDs.length > 0) {
+            VestingEntries.VestingEntry[] memory vestingEntries;
+            (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, entryIDs);
 
-        // if there is an escrow amount to be migrated
-        if (escrowedAccountBalance > 0) {
-            // create message payload for L2
-            bytes memory messageData = abi.encodeWithSignature(
-                "importVestingEntries(address,uint256,(uint64,uint64,uint64,uint256,uint256)[])",
-                msg.sender,
-                escrowedAccountBalance,
-                vestingEntries
-            );
-            // relay the message to this contract on L2 via L1 Messenger
-            messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-            emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
+            // if there is an escrow amount to be migrated
+            if (escrowedAccountBalance > 0) {
+                // create message payload for L2
+                bytes memory messageData = abi.encodeWithSignature(
+                    "importVestingEntries(address,uint256,(uint64,uint64,uint64,uint256,uint256)[])",
+                    msg.sender,
+                    escrowedAccountBalance,
+                    vestingEntries
+                );
+                // relay the message to this contract on L2 via L1 Messenger
+                messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+                emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
+            }
         }
-
-        if (depositAmount > 0 && escrowedAccountBalance > 0) {
+        if (depositAmount > 0) {
             _deposit(depositAmount, escrowedAccountBalance);
         }
     }
@@ -176,7 +179,6 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     }
 
     function _deposit(uint256 _depositAmount, uint256 _escrowAmount) private {
-        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
         // Transfer SNX to L2
         // First, move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), _depositAmount);
