@@ -59,7 +59,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     }
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
     function synthetixBridgeToBase() internal view returns (address) {
@@ -73,12 +73,13 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](5);
+        addresses = new bytes32[](6);
         addresses[0] = CONTRACT_EXT_MESSENGER;
         addresses[1] = CONTRACT_SYNTHETIX;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
         addresses[4] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
+        addresses[5] = CONTRACT_REWARDESCROW;
     }
 
     // ========== MODIFIERS ============

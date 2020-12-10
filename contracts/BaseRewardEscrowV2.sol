@@ -65,22 +65,20 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_FEEPOOL];
-
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
         nextEntryId = 1;
     }
 
     /* ========== VIEWS ======================= */
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function _notImplemented() internal pure {
@@ -88,6 +86,13 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     /* ========== VIEW FUNCTIONS ========== */
+
+    // Note: use public visibility so that it can be invoked in a subclass
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](2);
+        addresses[0] = CONTRACT_SYNTHETIX;
+        addresses[1] = CONTRACT_FEEPOOL;
+    }
 
     /**
      * @notice A simple alias to totalEscrowedAccountBalance: provides ERC20 balance integration.

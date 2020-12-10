@@ -12,14 +12,19 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public BaseRewardEscrowV2(_owner, _resolver) {
-        appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE_BASE);
-    }
+    constructor(address _owner, address _resolver) public BaseRewardEscrowV2(_owner, _resolver) {}
 
     /* ========== VIEWS ======================= */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = BaseRewardEscrowV2.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_SYNTHETIX_BRIDGE_BASE;
+        return combineArrays(existingAddresses, newAddresses);
+    }
+
     function synthetixBridgeToBase() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_BASE, "Resolver is missing SynthetixBridgeToBase address");
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_BASE);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
