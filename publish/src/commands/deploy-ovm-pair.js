@@ -13,6 +13,7 @@ const DATA_PROVIDER_URL = 'http://localhost:8080';
 const deployOvmPair = async () => {
 	// This private key is #4 displayed when starting optimism-integration.
 	// When used on a fresh L2 chain, it passes all safety checks.
+	// publicKey: 0x640e7cc27b750144ED08bA09515F3416A988B6a3
 	const privateKey = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
 
 	await deployInstance({ useOvm: false, privateKey });
