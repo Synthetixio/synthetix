@@ -172,6 +172,43 @@ describe('Layer 2 production tests', () => {
 									cache.user1.l2.balance.add(amountToDeposit)
 								);
 							});
+
+							describe.skip('when a user has debt in L2', () => {});
+
+							describe.skip('when a user doesnt have debt in L2', () => {
+								describe('when a user initiates a withdrawal on L2', () => {
+									before('record current values', async () => {
+										cache.user1.l1.balance = await SynthetixL1.balanceOf(USER1_ADDRESS);
+										cache.user1.l2.balance = await SynthetixL2.balanceOf(USER1_ADDRESS);
+									});
+
+									before('initiate withdrawal', async () => {
+										SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
+
+										await SynthetixBridgeToBaseL2.initiateWithdrawal(amountToDeposit);
+									});
+
+									it('reduces the users balance', async () => {
+										assert.bnEqual(
+											await SynthetixL2.balanceOf(USER1_ADDRESS),
+											cache.user1.l2.balance.sub(amountToDeposit)
+										);
+									});
+
+									describe('when a small period of time has elapsed', () => {
+										before('wait', async () => {
+											await wait(10);
+										});
+
+										it('shows that the users L1 balance increased', async () => {
+											assert.bnEqual(
+												await SynthetixL1.balanceOf(USER1_ADDRESS),
+												cache.user1.l1.balance.add(amountToDeposit)
+											);
+										});
+									});
+								});
+							});
 						});
 					});
 				});
