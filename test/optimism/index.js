@@ -11,6 +11,7 @@ const L2_PROVIDER_URL = 'http://localhost:8545';
 // These addresses are set up by optimism-integration in the local chains.
 // See publish/src/commands/deploy-ovm-pair.js
 const OWNER_ADDRESS = '0x640e7cc27b750144ED08bA09515F3416A988B6a3';
+const USER1_PRIVATE_KEY = '0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c';
 const USER1_ADDRESS = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
 
 describe('Layer 2 production tests', () => {
@@ -58,6 +59,12 @@ describe('Layer 2 production tests', () => {
 		});
 	}
 
+	async function fastForward(seconds, provider) {
+		await provider.send('evm_increaseTime', [seconds]);
+
+		await provider.send('evm_mine', []);
+	}
+
 	before('set up providers', () => {
 		providerL1 = new ethers.providers.JsonRpcProvider(L1_PROVIDER_URL);
 		providerL2 = new ethers.providers.JsonRpcProvider(L2_PROVIDER_URL);
@@ -67,7 +74,7 @@ describe('Layer 2 production tests', () => {
 		ownerL1 = providerL1.getSigner(OWNER_ADDRESS);
 		// ownerL2 = providerL2.getSigner(OWNER_ADDRESS);
 		user1L1 = providerL1.getSigner(USER1_ADDRESS);
-		user1L2 = providerL2.getSigner(USER1_ADDRESS);
+		user1L2 = new ethers.Wallet(USER1_PRIVATE_KEY, providerL2);
 	});
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
@@ -164,7 +171,7 @@ describe('Layer 2 production tests', () => {
 
 						describe('when a small period of time has elapsed', () => {
 							before('wait', async () => {
-								await wait(5);
+								await wait(10);
 							});
 
 							it('shows that the users L2 balance increased', async () => {
@@ -176,7 +183,7 @@ describe('Layer 2 production tests', () => {
 
 							describe.skip('when a user has debt in L2', () => {});
 
-							describe.skip('when a user doesnt have debt in L2', () => {
+							describe('when a user doesnt have debt in L2', () => {
 								describe('when a user initiates a withdrawal on L2', () => {
 									before('record current values', async () => {
 										cache.user1.l1.balance = await SynthetixL1.balanceOf(USER1_ADDRESS);
@@ -186,7 +193,8 @@ describe('Layer 2 production tests', () => {
 									before('initiate withdrawal', async () => {
 										SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
-										await SynthetixBridgeToBaseL2.initiateWithdrawal(amountToDeposit);
+										const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(amountToDeposit);
+										await tx.wait();
 									});
 
 									it('reduces the users balance', async () => {
@@ -198,7 +206,8 @@ describe('Layer 2 production tests', () => {
 
 									describe('when a small period of time has elapsed', () => {
 										before('wait', async () => {
-											await wait(10);
+											await fastForward(5, providerL1);
+											await wait(60);
 										});
 
 										it('shows that the users L1 balance increased', async () => {
