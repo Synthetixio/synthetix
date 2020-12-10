@@ -119,7 +119,7 @@ module.exports = {
 			from: owner,
 		});
 		// now have the synth resync its cache
-		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await synthContract.rebuildCache();
 
 		await synthContract.issue(user, amount, {
 			from: owner,
@@ -129,7 +129,7 @@ module.exports = {
 		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [issuer.address], {
 			from: owner,
 		});
-		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await synthContract.rebuildCache();
 	},
 
 	async setExchangeWaitingPeriod({ owner, systemSettings, secs }) {
@@ -264,5 +264,9 @@ module.exports = {
 		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
 
 		return { mocks, resolver };
+	},
+
+	getEventByName({ tx, name }) {
+		return tx.logs.find(({ event }) => event === name);
 	},
 };

@@ -851,7 +851,10 @@ const setupAllContracts = async ({
 
 	// now invoke AddressResolver to set all addresses
 	if (returnObj['AddressResolver']) {
-		// TODO - this should only import the ones set as required in contracts
+		if (process.env.DEBUG) {
+			log(`Importing into AddressResolver:\n\t - ${Object.keys(returnObj).join('\n\t - ')}`);
+		}
+
 		await returnObj['AddressResolver'].importAddresses(
 			Object.keys(returnObj).map(toBytes32),
 			Object.values(returnObj).map(entry =>
@@ -864,23 +867,17 @@ const setupAllContracts = async ({
 		);
 	}
 
-	// now set resolver and sync cache for all contracts that need it
+	// now rebuild caches for all contracts that need it
 	await Promise.all(
 		Object.entries(returnObj)
 			// keep items not in mocks
 			.filter(([name]) => !(name in mocks))
 			// and only those with the setResolver function
-			.filter(([, instance]) => !!instance.setResolverAndSyncCache)
+			.filter(([, instance]) => !!instance.rebuildCache)
 			.map(([contract, instance]) => {
-				return instance
-					.setResolverAndSyncCache(returnObj['AddressResolver'].address, { from: owner })
-					.catch(err => {
-						if (/Resolver missing target/.test(err.toString())) {
-							throw Error(`Cannot resolve all resolver requirements for ${contract}`);
-						} else {
-							throw err;
-						}
-					});
+				return instance.rebuildCache().catch(err => {
+					throw err;
+				});
 			})
 	);
 

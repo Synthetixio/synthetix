@@ -62,7 +62,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			let instance;
 			beforeEach(async () => {
 				instance = await artifacts.require('SynthetixBridgeToBase').new(owner, resolver.address);
-				await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+				await instance.rebuildCache();
 			});
 
 			describe('initiateWithdrawal', () => {

@@ -175,7 +175,7 @@ describe('deploy multiple instances', () => {
 				);
 			}
 			// sync the cache both for this alt and for the ext:Messenger added earlier
-			await contract.setResolverAndSyncCache(resolver.address);
+			await contract.rebuildCache();
 		}
 	});
 

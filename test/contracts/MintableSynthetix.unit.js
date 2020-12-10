@@ -73,7 +73,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 				instance = await artifacts
 					.require('MintableSynthetix')
 					.new(proxy.address, tokenState.address, owner, SYNTHETIX_TOTAL_SUPPLY, resolver.address);
-				await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+				await instance.rebuildCache();
 			});
 
 			it('should set constructor params on deployment', async () => {
@@ -92,7 +92,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 							args: [user1, 100],
 							address: synthetixBridgeToBase,
 							accounts,
-							reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
+							reason: 'Can only be invoked by bridge',
 						});
 					});
 				});
@@ -133,7 +133,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 							args: [amount],
 							address: synthetixBridgeToBase,
 							accounts,
-							reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
+							reason: 'Can only be invoked by bridge',
 						});
 					});
 				});
@@ -178,7 +178,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 							args: [user1, amount],
 							address: synthetixBridgeToBase,
 							accounts,
-							reason: 'Can only be invoked by the SynthetixBridgeToBase contract',
+							reason: 'Can only be invoked by bridge',
 						});
 					});
 				});

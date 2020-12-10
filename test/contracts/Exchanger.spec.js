@@ -2742,7 +2742,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				await resolver.importAddresses([toBytes32('ExchangeRates')], [account1], {
 					from: owner,
 				});
-				await exchanger.setResolverAndSyncCache(resolver.address, { from: owner });
+				await exchanger.rebuildCache();
 			});
 			it('reverts when invoked by ExchangeRates with a 0 rate', async () => {
 				await assert.revert(

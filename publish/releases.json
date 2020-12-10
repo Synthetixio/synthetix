@@ -81,7 +81,21 @@
 			"major": 2,
 			"minor": 35
 		},
-		"sources": [],
+		"sources": [
+			"AddressResolver",
+			"BinaryOptionMarketFactory",
+			"BinaryOptionMarketManager",
+			"DebtCache",
+			"ExchangeRates",
+			"Exchanger",
+			"FeePool",
+			"Issuer",
+			"Liquidations",
+			"SystemSettings",
+			"Synthetix",
+			"TradingRewards",
+			"Synth(s|i).+"
+		],
 		"sips": []
 	}
 ]
