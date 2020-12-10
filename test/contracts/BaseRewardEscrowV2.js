@@ -19,6 +19,7 @@ const {
 const BN = require('bn.js');
 
 contract('BaseRewardEscrowV2', async accounts => {
+	const WEEK = 604800;
 	const YEAR = 31556926;
 
 	const [, owner, feePoolAccount, account1] = accounts;
@@ -410,10 +411,54 @@ contract('BaseRewardEscrowV2', async accounts => {
 		});
 	});
 
-	describe('Vesting', () => {
-		beforeEach(async () => {});
-		describe('Vesting partial number of account1 vesting entries', () => {
-			beforeEach(async () => {});
+	describe.only('Vesting', () => {
+		beforeEach(async () => {
+			// Transfer of SNX to the escrow must occur before creating a vestinng entry
+			await synthetix.transfer(baseRewardEscrowV2.address, toUnit('6000'), {
+				from: owner,
+			});
+		});
+		describe('Partial vesting of vesting entry after 6 months', () => {
+			const duration = 1 * YEAR;
+
+			let escrowAmount, timeElapsed, entryID, ratePerSecond, claimableSNX;
+			beforeEach(async () => {
+				escrowAmount = toUnit('1000');
+				timeElapsed = 26 * WEEK;
+
+				entryID = await baseRewardEscrowV2.nextEntryId();
+
+				// Add a few vesting entries as the feepool address
+				await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount, duration, {
+					from: feePoolAccount,
+				});
+
+				// Need to go into the future to vest
+				await fastForward(timeElapsed);
+
+				ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
+			});
+			it('should have 50% of the vesting entry claimable', async () => {
+				const expectedAmount = ratePerSecond.mul(new BN(timeElapsed));
+				assert.bnEqual(
+					await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID),
+					expectedAmount
+				);
+			});
+
+			it('should vest and transfer snx from contract to the user', async () => {
+				claimableSNX = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
+
+				const escrowBalanceBefore = await await synthetix.balanceOf(baseRewardEscrowV2.address);
+
+				await baseRewardEscrowV2.vest(account1, [entryID], { from: account1 });
+
+				// Check user has the claimable vested SNX
+				assert.bnGte(await synthetix.balanceOf(account1), claimableSNX);
+
+				// Check rewardEscrow contract has less SNX
+				assert.bnLte(await synthetix.balanceOf(baseRewardEscrowV2.address), escrowBalanceBefore);
+			});
 		});
 	});
 

@@ -15,6 +15,8 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 
+import "@nomiclabs/buidler/console.sol";
+
 
 // https://docs.synthetix.io/contracts/RewardEscrow
 contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
@@ -165,7 +167,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     function vest(address account, uint256[] calldata entryIDs) external {
         uint256 total;
-        for (uint i = 0; i < entryIDs.length - 1; i++) {
+        for (uint i = 0; i < entryIDs.length; i++) {
             VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
 
             /* Skip entry if remainingAmount == 0 */
@@ -299,8 +301,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         // emit account nominated as reciever
     }
 
-    function mergeAccount(address accountToMerge) external {
-        // TODO - require account to merge has debt balance of 0
+    function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external {
+        // TODO - require account to merge from has debt balance of 0
 
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
