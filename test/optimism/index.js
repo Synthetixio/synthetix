@@ -6,7 +6,7 @@ const { getSource, getTarget } = require('../..');
 
 const L1_PROVIDER_URL = 'http://localhost:9545';
 const L2_PROVIDER_URL = 'http://localhost:8545';
-const DATA_PROVIDER_URL = 'http://localhost:8080';
+// const DATA_PROVIDER_URL = 'http://localhost:8080';
 
 // These addresses are set up by optimism-integration in the local chains.
 // See publish/src/commands/deploy-ovm-pair.js
@@ -16,12 +16,13 @@ const USER1_ADDRESS = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
 describe('Layer 2 production tests', () => {
 	let providerL1, providerL2;
 
-	let ownerL1, ownerL2, user1L1, user1L2;
+	let ownerL1, user1L1, user1L2;
+	// let ownerL1, ownerL2, user1L1, user1L2;
 
 	let SynthetixL1, SynthetixBridgeToOptimismL1;
 	let SynthetixL2, SynthetixBridgeToBaseL2;
 
-	const zero = ethers.utils.parseEther('0');
+	// const zero = ethers.utils.parseEther('0');
 
 	const cache = {
 		bridge: {
@@ -64,7 +65,7 @@ describe('Layer 2 production tests', () => {
 
 	before('set up signers', () => {
 		ownerL1 = providerL1.getSigner(OWNER_ADDRESS);
-		ownerL2 = providerL2.getSigner(OWNER_ADDRESS);
+		// ownerL2 = providerL2.getSigner(OWNER_ADDRESS);
 		user1L1 = providerL1.getSigner(USER1_ADDRESS);
 		user1L2 = providerL2.getSigner(USER1_ADDRESS);
 	});
