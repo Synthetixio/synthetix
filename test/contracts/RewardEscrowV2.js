@@ -4,7 +4,7 @@ const { contract } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { setupAllContracts } = require('./setup');
+const { mockToken, setupAllContracts } = require('./setup');
 
 // const { toUnit } = require('../utils')();
 
@@ -15,14 +15,23 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 // } = require('../..');
 
 contract('RewardEscrowV2', async accounts => {
-	const [, owner, account1] = accounts;
-	let rewardEscrowV2;
+	const [, owner, feePoolAccount, account1] = accounts;
+	let rewardEscrowV2, synthetix, feePool;
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
+		// Mock SNX
+		({ token: synthetix } = await mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }));
+
+		feePool = { address: feePoolAccount }; // mock contract with address
+
 		({ RewardEscrowV2: rewardEscrowV2 } = await setupAllContracts({
 			accounts,
 			contracts: ['RewardEscrowV2'],
+			mocks: {
+				Synthetix: synthetix,
+				FeePool: feePool,
+			},
 		}));
 	});
 
@@ -44,6 +53,16 @@ contract('RewardEscrowV2', async accounts => {
 	});
 
 	describe('There are no escrow entries initially', async () => {
+		it('then numVestingEntries should return 0', async () => {
+			assert.equal(0, await rewardEscrowV2.numVestingEntries(account1));
+		});
+	});
+
+	describe('When the system is inactive', () => {
+		beforeEach(async () => {});
+	});
+
+	describe('When account is pending escrow migration to new contract', async () => {
 		it('then numVestingEntries should return 0', async () => {
 			assert.equal(0, await rewardEscrowV2.numVestingEntries(account1));
 		});

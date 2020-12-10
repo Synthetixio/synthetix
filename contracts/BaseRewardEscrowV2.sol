@@ -15,6 +15,8 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 
+import "@nomiclabs/buidler/console.sol";
+
 
 // https://docs.synthetix.io/contracts/RewardEscrow
 contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
@@ -41,7 +43,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     uint256 public totalEscrowedBalance;
 
     /* Max escrow duration */
-    uint public MAX_DURATION = 5 * 52 weeks;
+    uint public MAX_DURATION = 5 * 52 weeks; // Default max 5 years duration
 
     /* ========== OLD ESCROW LOOKUP ========== */
 
@@ -138,7 +140,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint total) {
-        for (uint i = 0; i < entryIDs.length - 1; i++) {
+        for (uint i = 0; i < entryIDs.length; i++) {
             VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryIDs[i]];
 
             /* Skip entry if remainingAmount == 0 */
@@ -165,7 +167,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     function vest(address account, uint256[] calldata entryIDs) external {
         uint256 total;
-        for (uint i = 0; i < entryIDs.length - 1; i++) {
+        for (uint i = 0; i < entryIDs.length; i++) {
             VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
 
             /* Skip entry if remainingAmount == 0 */
@@ -289,6 +291,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* Nominate an account to merge escrow and vesting schedule */
     function nominateAccountToMerge(address account) external {
+        // TODO - require account to merge has debt balance of 0
+
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(totalEscrowedAccountBalance[msg.sender] > 0, "Address escrow balance is 0");
 
@@ -297,7 +301,9 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         // emit account nominated as reciever
     }
 
-    function mergeAccount(address accountToMerge) external {
+    function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external {
+        // TODO - require account to merge from has debt balance of 0
+
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(nominatedReciever[accountToMerge] == msg.sender, "Address is not nominated to merge");

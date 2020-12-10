@@ -79,13 +79,13 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         /* remove address for migration from old escrow */
         delete escrowMigrationPending[addressToMigrate];
 
-        // TODO - emit event account has migrated vesting entries across
+        emit MigratedVestingSchedules(addressToMigrate, block.timestamp);
     }
 
     /**
-    * Determine which entries can be vested, based on the old escrow vest function
-    * return number of entries vested and amount
-    */
+     * Determine which entries can be vested, based on the old escrow vest function
+     * return number of entries vested and amount
+     */
     function _getVestedEntriesAndAmount(address _account, uint _numEntries)
         internal
         view
@@ -147,7 +147,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     {
         require(entryIDs.length > 0, "Entry IDs required");
 
-        // check if account migrated on L1
+        /* check if account migrated on L1 */
         _checkEscrowMigrationPending(account);
 
         vestingEntries = new VestingEntries.VestingEntry[](entryIDs.length);
