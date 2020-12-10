@@ -114,14 +114,14 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         return combineArrays(addresses, synths);
     }
 
-    function setCurrencies() public {
+    function setCurrencies() external {
         for (uint i = 0; i < synths.length; i++) {
             ISynth synth = ISynth(requireAndGetAddress(synths[i]));
             currencies[synth.currencyKey()] = synths[i];
         }
     }
 
-    function addSynth(bytes32 _synth) public onlyOwner {
+    function addSynth(bytes32 _synth) external onlyOwner {
         synths.push(_synth);
         ISynth synth = ISynth(requireAndGetAddress(_synth));
         currencies[synth.currencyKey()] = _synth;
@@ -563,33 +563,35 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
-        // 2. Get loan
+        // 1. Get loan
         Loan memory loan = state.getLoan(msg.sender, id);
 
-        // 3. Check the loan is still open
+        // 2. Check the loan is still open
         _checkLoanIsOpen(loan);
 
-        // 4. Accrue interest.
+        // 3. Accrue interest.
         loan = accrueInterest(loan);
 
+        // 4. Add the requested amount.
         loan.amount = loan.amount.add(amount);
 
-        // 6. Get the collateral ratio.
+        // 5. Get the new c ratio.
         uint cratio = collateralRatio(loan);
 
+        // 6. If it is below the minimum, don't allow this draw.
         require(cratio > minCratio, "Drawing this much would put the loan under minimum collateralisation");
 
-        // 12. Issue synths to the borrower.
+        // 7. Issue synths to the borrower.
         _synths(currencies[loan.currency]).issue(msg.sender, amount);
         
-        // 13. Tell the manager.
+        // 8. Tell the manager.
         _manager().incrementLongs(loan.currency, amount);
 
-        // 10. Store the loan
+        // 9. Store the loan
         state.updateLoan(loan);
 
+        // 10. Emit the event.
         emit LoanDrawnDown(msg.sender, id, amount);
-
     }
 
      // Update the cumulative interest rate for the currency that was interacted with.
