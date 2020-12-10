@@ -167,7 +167,6 @@ contract('CollateralEth', async accounts => {
 
 		await state.setAssociatedContract(ceth.address, { from: owner });
 
-
 		await ceth.rebuildCache();
 		await feePool.rebuildCache();
 		await manager.rebuildCache();

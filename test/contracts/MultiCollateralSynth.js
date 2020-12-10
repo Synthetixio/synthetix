@@ -18,14 +18,10 @@ const { setupAllContracts } = require('./setup');
 contract('MultiCollateralSynth', accounts => {
 	const [deployerAccount, owner, , , account1] = accounts;
 
-	let issuer, resolver, collateralManager;
+	let issuer, resolver;
 
 	before(async () => {
-		({
-			AddressResolver: resolver,
-			Issuer: issuer,
-			CollateralMannager: collateralManager,
-		} = await setupAllContracts({
+		({ AddressResolver: resolver, Issuer: issuer } = await setupAllContracts({
 			accounts,
 			mocks: { FeePool: true },
 			contracts: ['AddressResolver', 'Synthetix', 'Issuer', 'CollateralManager'],
