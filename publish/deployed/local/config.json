@@ -2,6 +2,9 @@
 	"SystemSettings": {
 		"deploy": true
 	},
+	"SynthetixBridgeToOptimism": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},

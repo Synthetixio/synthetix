@@ -279,7 +279,7 @@
 		"asset": "OIL",
 		"category": "commodity",
 		"sign": "$",
-		"description": "Brent Crude Oil"
+		"description": "Perpetual Oil Futures"
 	},
 	"FTSE100": {
 		"asset": "FTSE100",

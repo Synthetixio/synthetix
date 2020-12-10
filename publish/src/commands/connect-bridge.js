@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const Web3 = require('web3');
-const { gray, red } = require('chalk');
+const { gray, red, yellow } = require('chalk');
 const { wrap, toBytes32 } = require('../../..');
 const {
 	ensureNetwork,
@@ -13,6 +13,7 @@ const {
 const connectBridge = async ({
 	l1Network,
 	l2Network,
+	l1ProviderUrl,
 	l2ProviderUrl,
 	l1DeploymentPath,
 	l2DeploymentPath,
@@ -27,13 +28,18 @@ const connectBridge = async ({
 	l2GasPrice,
 	gasLimit,
 }) => {
-	console.log(gray('> Connecting with L1 instance...'));
+	// ---------------------------------
+	// Setup L1 instance
+	// ---------------------------------
+
+	console.log(gray('> Setting up L1 instance...'));
 	const {
 		AddressResolver: AddressResolverL1,
 		SynthetixBridge: SynthetixBridgeToOptimism,
 		account: accountL1,
-	} = await connectInstance({
+	} = await setupInstance({
 		network: l1Network,
+		providerUrl: l1ProviderUrl,
 		deploymentPath: l1DeploymentPath,
 		privateKey: l1PrivateKey,
 		useFork: l1UseFork,
@@ -41,12 +47,16 @@ const connectBridge = async ({
 		useOvm: false,
 	});
 
-	console.log(gray('> Connecting with L2 instance...'));
+	// ---------------------------------
+	// Setup L2 instance
+	// ---------------------------------
+
+	console.log(gray('> Setting up L2 instance...'));
 	const {
 		AddressResolver: AddressResolverL2,
 		SynthetixBridge: SynthetixBridgeToBase,
 		account: accountL2,
-	} = await connectInstance({
+	} = await setupInstance({
 		network: l2Network,
 		providerUrl: l2ProviderUrl,
 		deploymentPath: l2DeploymentPath,
@@ -56,62 +66,106 @@ const connectBridge = async ({
 		useOvm: true,
 	});
 
-	let tx;
-	let names;
-	let addresses;
+	// ---------------------------------
+	// Connect L1 instance
+	// ---------------------------------
 
 	console.log(gray('> Connecting bridge on L1...'));
-	names = ['ext:Messenger', 'ovm:SynthetixBridgeToBase'];
-	addresses = [l1Messenger, SynthetixBridgeToBase.options.address];
-	console.log(gray(names, addresses));
-	if (!dryRun) {
-		const params = {
-			from: accountL1,
-			gasPrice: Web3.utils.toWei(l1GasPrice.toString(), 'gwei'),
-			gas: gasLimit,
-		};
-		console.log(gray('> tx params:', JSON.stringify(params)));
+	await connectLayer({
+		account: accountL1,
+		gasPrice: l1GasPrice,
+		gasLimit,
+		names: ['ext:Messenger', 'ovm:SynthetixBridgeToBase'],
+		addresses: [l1Messenger, SynthetixBridgeToBase.options.address],
+		AddressResolver: AddressResolverL1,
+		SynthetixBridge: SynthetixBridgeToOptimism,
+		dryRun,
+	});
 
-		console.log('AddressResolverL1.importAddresses()...');
-		tx = await AddressResolverL1.methods
-			.importAddresses(names.map(toBytes32), addresses)
-			.send(params);
-		console.log(JSON.stringify(tx, null, 2));
-
-		console.log('SynthetixBridgeToOptimism.setResolverAndSyncCache()...');
-		tx = await SynthetixBridgeToOptimism.methods
-			.setResolverAndSyncCache(AddressResolverL1.options.address)
-			.send(params);
-		console.log(JSON.stringify(tx, null, 2));
-	}
+	// ---------------------------------
+	// Connect L2 instance
+	// ---------------------------------
 
 	console.log(gray('> Connecting bridge on L2...'));
-	names = ['ext:Messenger', 'base:SynthetixBridgeToOptimism'];
-	addresses = [l2Messenger, SynthetixBridgeToOptimism.options.address];
-	console.log(gray(names, addresses));
+	await connectLayer({
+		account: accountL2,
+		gasPrice: l2GasPrice,
+		gasLimit,
+		names: ['ext:Messenger', 'base:SynthetixBridgeToOptimism'],
+		addresses: [l2Messenger, SynthetixBridgeToOptimism.options.address],
+		AddressResolver: AddressResolverL2,
+		SynthetixBridge: SynthetixBridgeToBase,
+		dryRun,
+	});
+};
+
+const connectLayer = async ({
+	account,
+	gasPrice,
+	gasLimit,
+	names,
+	addresses,
+	AddressResolver,
+	SynthetixBridge,
+	dryRun,
+}) => {
+	// ---------------------------------
+	// Compare with on-chain values
+	// ---------------------------------
+
+	const filteredNames = [];
+	const filteredAddresses = [];
+	for (let i = 0; i < names.length; i++) {
+		const name = names[i];
+		const address = addresses[i];
+		console.log(gray(`  > Checking if ${name} is already set to ${address}`));
+
+		const readAddress = await AddressResolver.methods.getAddress(toBytes32(name)).call();
+
+		if (readAddress.toLowerCase() !== address.toLowerCase()) {
+			console.log(yellow(`  > ${name} is not set, including it...`));
+			filteredNames.push(name);
+			filteredAddresses.push(address);
+		}
+	}
+
+	// ---------------------------------
+	// Update on-chain values
+	// ---------------------------------
+
+	let tx;
+
+	if (filteredNames.length === 0) {
+		console.log(gray('  > Bridge is already connected on this layer. Skipping...'));
+		return;
+	}
+
+	console.log(yellow('  > Setting these values:'));
+	console.log(yellow(`  > ${names[0]} => ${addresses[0]}`));
+	console.log(yellow(`  > ${names[1]} => ${addresses[1]}`));
+
+	const params = {
+		from: account,
+		gasPrice: Web3.utils.toWei(gasPrice.toString(), 'gwei'),
+		gas: gasLimit,
+	};
+
 	if (!dryRun) {
-		const params = {
-			from: accountL2,
-			gasPrice: Web3.utils.toWei(l2GasPrice.toString(), 'gwei'),
-			gas: gasLimit,
-		};
-		console.log(gray('> tx params:', JSON.stringify(params)));
+		const ids = names.map(toBytes32);
 
-		console.log('AddressResolverL2.importAddresses()...');
-		tx = await AddressResolverL2.methods
-			.importAddresses(names.map(toBytes32), addresses)
-			.send(params);
-		console.log(JSON.stringify(tx, null, 2));
+		console.log(yellow(`  > AddressResolver.importAddresses([${ids}], [${addresses}])`));
+		tx = await AddressResolver.methods.importAddresses(ids, addresses).send(params);
+		console.log(gray(`    > tx hash: ${tx.transactionHash}`));
 
-		console.log('SynthetixBridgeToBase.setResolverAndSyncCache()...');
-		tx = await SynthetixBridgeToBase.methods
-			.setResolverAndSyncCache(AddressResolverL2.options.address)
-			.send(params);
-		console.log(JSON.stringify(tx, null, 2));
+		console.log(yellow('  > SynthetixBridge.rebuildCache()...'));
+		tx = await SynthetixBridge.methods.rebuildCache().send(params);
+		console.log(gray(`    > tx hash: ${tx.transactionHash}`));
+	} else {
+		console.log(yellow('  > Skipping, since this is a DRY RUN'));
 	}
 };
 
-const connectInstance = async ({
+const setupInstance = async ({
 	network,
 	providerUrl: specifiedProviderUrl,
 	deploymentPath,
@@ -137,8 +191,9 @@ const connectInstance = async ({
 
 	let account;
 	if (privateKey) {
+		const idx = web3.eth.accounts.wallet.length;
 		web3.eth.accounts.wallet.add(privateKey);
-		web3.eth.defaultAccount = web3.eth.accounts.wallet[0].address;
+		web3.eth.defaultAccount = web3.eth.accounts.wallet[idx].address;
 		account = web3.eth.defaultAccount;
 	}
 	console.log(gray('  > account:', account));
@@ -238,6 +293,7 @@ module.exports = {
 			.description('Configures the bridge between an L1-L2 instance pair.')
 			.option('--l1-network <value>', 'The name of the target L1 network', 'goerli')
 			.option('--l2-network <value>', 'The name of the target L2 network', 'goerli')
+			.option('--l1-provider-url <value>', 'The L1 provider to use', undefined)
 			.option('--l2-provider-url <value>', 'The L2 provider to use', 'https://goerli.optimism.io')
 			.option('--l1-deployment-path <value>', 'The path of the L1 deployment to target')
 			.option('--l2-deployment-path <value>', 'The path of the L2 deployment to target')

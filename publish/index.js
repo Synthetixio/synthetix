@@ -25,5 +25,6 @@ require('./src/commands/fork').cmd(program);
 require('./src/commands/prepare-deploy').cmd(program);
 require('./src/commands/prepare-deploy-detect-diff').cmd(program);
 require('./src/commands/connect-bridge').cmd(program);
+require('./src/commands/deploy-ovm-pair').cmd(program);
 
 program.parse(process.argv);

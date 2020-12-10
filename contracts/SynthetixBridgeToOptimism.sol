@@ -27,20 +27,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_OVM_SYNTHETIXBRIDGETOBASE = "ovm:SynthetixBridgeToBase";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_EXT_MESSENGER,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_ISSUER,
-        CONTRACT_REWARDSDISTRIBUTION,
-        CONTRACT_REWARDESCROW,
-        CONTRACT_OVM_SYNTHETIXBRIDGETOBASE
-    ];
-
     bool public activated;
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {
         activated = true;
     }
 
@@ -48,23 +39,23 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     // ========== INTERNALS ============
 
     function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
-        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
+        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function rewardsDistribution() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address");
+        return requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION);
     }
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
@@ -72,11 +63,22 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     }
 
     function synthetixBridgeToBase() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_OVM_SYNTHETIXBRIDGETOBASE, "Missing Bridge address");
+        return requireAndGetAddress(CONTRACT_OVM_SYNTHETIXBRIDGETOBASE);
     }
 
     function isActive() internal view {
         require(activated, "Function deactivated");
+    }
+
+    /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](5);
+        addresses[0] = CONTRACT_EXT_MESSENGER;
+        addresses[1] = CONTRACT_SYNTHETIX;
+        addresses[2] = CONTRACT_ISSUER;
+        addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
+        addresses[4] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
     }
 
     // ========== MODIFIERS ============

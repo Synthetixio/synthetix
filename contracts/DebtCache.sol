@@ -20,7 +20,7 @@ import "./interfaces/IERC20.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
-contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
+contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -43,47 +43,44 @@ contract DebtCache is Owned, MixinResolver, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_ISSUER,
-        CONTRACT_EXCHANGER,
-        CONTRACT_EXRATES,
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_ETHERCOLLATERAL,
-        CONTRACT_ETHERCOLLATERAL_SUSD
-    ];
-
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](6);
+        newAddresses[0] = CONTRACT_ISSUER;
+        newAddresses[1] = CONTRACT_EXCHANGER;
+        newAddresses[2] = CONTRACT_EXRATES;
+        newAddresses[3] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[4] = CONTRACT_ETHERCOLLATERAL;
+        newAddresses[5] = CONTRACT_ETHERCOLLATERAL_SUSD;
+        return combineArrays(existingAddresses, newAddresses);
+    }
+
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
+        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL));
     }
 
     function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return
-            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
+        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD));
     }
 
     function debtSnapshotStaleTime() external view returns (uint) {

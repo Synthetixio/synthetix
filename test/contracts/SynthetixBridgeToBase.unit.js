@@ -34,6 +34,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let mintableSynthetix;
 		let resolver;
 		let rewardEscrow;
+		let issuer;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
@@ -42,14 +43,24 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			rewardEscrow = await smockit(artifacts.require('IRewardEscrowV2').abi);
 
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
-
+			issuer = await smockit(artifacts.require('IIssuer').abi);
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
-				['ext:Messenger', 'Synthetix', 'base:SynthetixBridgeToOptimism', 'RewardEscrowV2'].map(
-					toBytes32
-				),
-				[messenger.address, mintableSynthetix.address, snxBridgeToOptimism, rewardEscrow.address],
+				[
+					'ext:Messenger',
+					'Synthetix',
+					'base:SynthetixBridgeToOptimism',
+					'RewardEscrowV2',
+					'Issuer',
+				].map(toBytes32),
+				[
+					messenger.address,
+					mintableSynthetix.address,
+					snxBridgeToOptimism,
+					rewardEscrow.address,
+					issuer.address,
+				],
 				{ from: owner }
 			);
 		});
@@ -62,6 +73,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			messenger.smocked.sendMessage.will.return.with(() => {});
 			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToOptimism);
 			rewardEscrow.smocked.importVestingEntries.will.return.with(() => {});
+			issuer.smocked.debtBalanceOf.will.return.with(() => '0');
 		});
 
 		describe('when the target is deployed', () => {
@@ -69,7 +81,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			const escrowedAmount = 100;
 			beforeEach(async () => {
 				instance = await artifacts.require('SynthetixBridgeToBase').new(owner, resolver.address);
-				await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+				await instance.rebuildCache();
 			});
 
 			describe('importVestingEntries', async () => {
@@ -128,6 +140,13 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			});
 
 			describe('initiateWithdrawal', () => {
+				describe('failure modes', () => {
+					it('does not work when user has debt', async () => {
+						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
+						await assert.revert(instance.initiateWithdrawal('1'), 'Cannot withdraw with debt');
+					});
+				});
+
 				describe('when invoked by a user', () => {
 					let withdrawalTx;
 					const amount = 100;

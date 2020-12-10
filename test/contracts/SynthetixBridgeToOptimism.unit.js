@@ -102,7 +102,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					.require('SynthetixBridgeToOptimism')
 					.new(owner, resolver.address);
 
-				await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+				await instance.rebuildCache();
 			});
 
 			describe('deposit', () => {

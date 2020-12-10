@@ -174,7 +174,7 @@ contract('EtherCollateralsUSD', async accounts => {
 		});
 
 		// Sync feePool with imported mockIssuer
-		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await feePool.rebuildCache();
 	});
 
 	addSnapshotBeforeRestoreAfterEach();

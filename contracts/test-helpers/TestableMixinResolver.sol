@@ -11,5 +11,12 @@ contract TestableMixinResolver is Owned, MixinResolver {
 
     bytes32[24] private addressesToCache = [CONTRACT_EXAMPLE_1, CONTRACT_EXAMPLE_2, CONTRACT_EXAMPLE_3];
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](3);
+        addresses[0] = CONTRACT_EXAMPLE_1;
+        addresses[1] = CONTRACT_EXAMPLE_2;
+        addresses[2] = CONTRACT_EXAMPLE_3;
+    }
 }

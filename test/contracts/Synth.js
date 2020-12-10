@@ -323,7 +323,7 @@ contract('Synth', async accounts => {
 			// Overwrite Synthetix address to the owner to allow us to invoke issue on the Synth
 			await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], { from: owner });
 			// now have the synth resync its cache
-			await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+			await sUSDContract.rebuildCache();
 		});
 		it('should issue successfully when called by Issuer', async () => {
 			const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
@@ -479,8 +479,8 @@ contract('Synth', async accounts => {
 					from: owner,
 				});
 				// now have synthetix resync its cache
-				await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
-				await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				await synthetix.rebuildCache();
+				await sUSDContract.rebuildCache();
 			});
 			it('then transferableSynths should be the total amount', async () => {
 				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('1000'));

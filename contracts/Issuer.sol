@@ -46,7 +46,7 @@ interface IIssuerInternalDebtCache {
 
 
 // https://docs.synthetix.io/contracts/source/contracts/issuer
-contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
+contract Issuer is Owned, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -79,81 +79,75 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYNTHETIX,
-        CONTRACT_EXCHANGER,
-        CONTRACT_EXRATES,
-        CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_FEEPOOL,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ETHERCOLLATERAL,
-        CONTRACT_ETHERCOLLATERAL_SUSD,
-        CONTRACT_REWARDESCROW,
-        CONTRACT_SYNTHETIXESCROW,
-        CONTRACT_LIQUIDATIONS,
-        CONTRACT_FLEXIBLESTORAGE,
-        CONTRACT_DEBTCACHE
-    ];
-
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](12);
+        newAddresses[0] = CONTRACT_SYNTHETIX;
+        newAddresses[1] = CONTRACT_EXCHANGER;
+        newAddresses[2] = CONTRACT_EXRATES;
+        newAddresses[3] = CONTRACT_SYNTHETIXSTATE;
+        newAddresses[4] = CONTRACT_FEEPOOL;
+        newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[6] = CONTRACT_ETHERCOLLATERAL;
+        newAddresses[7] = CONTRACT_ETHERCOLLATERAL_SUSD;
+        newAddresses[8] = CONTRACT_REWARDESCROW;
+        newAddresses[9] = CONTRACT_SYNTHETIXESCROW;
+        newAddresses[10] = CONTRACT_LIQUIDATIONS;
+        newAddresses[11] = CONTRACT_DEBTCACHE;
+        return combineArrays(existingAddresses, newAddresses);
+    }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function liquidations() internal view returns (ILiquidations) {
-        return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS, "Missing Liquidations address"));
+        return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
-        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
     function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
+        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL));
     }
 
     function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return
-            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
+        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD));
     }
 
     function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
     function synthetixEscrow() internal view returns (IHasBalance) {
-        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
+        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW));
     }
 
     function debtCache() internal view returns (IIssuerInternalDebtCache) {
-        return IIssuerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE, "Missing DebtCache address"));
+        return IIssuerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
     }
 
     function issuanceRatio() external view returns (uint) {
