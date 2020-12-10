@@ -523,6 +523,15 @@ const deploy = async ({
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
 	});
 
+	await deployer.deployContract({
+		name: 'RewardEscrowV2',
+		source: useOvm ? 'ImportableRewardEscrowV2' : 'RewardEscrowV2',
+		args: useOvm
+			? [account, addressOf(addressResolver)]
+			: [account, addressOf(addressResolver), addressOf(rewardEscrow)],
+		deps: useOvm ? ['AddressResolver'] : ['AddressResolver', 'RewardEscrow'],
+	});
+
 	const synthetixEscrow = await deployer.deployContract({
 		name: 'SynthetixEscrow',
 		args: [account, ZERO_ADDRESS],
