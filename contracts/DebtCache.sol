@@ -53,7 +53,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -89,7 +89,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
     }
 
     function collateralManager() internal view returns (ICollateralManager) {
-        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER);
+        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
 
     function debtSnapshotStaleTime() external view returns (uint) {
@@ -137,6 +137,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
             if (collateralSynths[synthAddress]) {
                 uint collateralIssued = collateralManager().long(key);
                 
+                // this is an edge case --
                 // if a synth other than sUSD is only issued by MC
                 // the long value will exceed the supply if there was a minting fee, 
                 // so we check explicitly and 0 it out to prevent 
@@ -147,6 +148,15 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
                 } else {
                     supply = supply.sub(collateralIssued);
                 }
+            }
+
+            bool isSUSD = key == sUSD;
+            if (isSUSD || key == sETH) {
+                IEtherCollateral etherCollateralContract = isSUSD
+                    ? IEtherCollateral(address(etherCollateralsUSD()))
+                    : etherCollateral();
+                uint etherCollateralSupply = etherCollateralContract.totalIssuedSynths();
+                supply = supply.sub(etherCollateralSupply);
             }
 
             values[i] = supply.multiplyDecimalRound(rates[i]);

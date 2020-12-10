@@ -9,7 +9,9 @@ import "./interfaces/ICollateralManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
-    address public collateralManager;
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -21,21 +23,19 @@ contract MultiCollateralSynth is Synth {
         address _owner,
         bytes32 _currencyKey,
         uint _totalSupply,
-        address _resolver,
-        address _collateralManager
-    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
-        collateralManager = _collateralManager;
-    }
+        address _resolver
+    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {}
 
     /* ========== VIEWS ======================= */
 
-    function _multiCollateralManager() internal view returns (ICollateralManager) {
-        return ICollateralManager(collateralManager);
+    function collateralManager() internal view returns (ICollateralManager) {
+        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_COLLATERALMANAGER;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -66,7 +66,7 @@ contract MultiCollateralSynth is Synth {
         bool isFeePool = msg.sender == address(feePool());
         bool isExchanger = msg.sender == address(exchanger());
         bool isIssuer = msg.sender == address(issuer());
-        bool isMultiCollateral = _multiCollateralManager().hasCollateral(msg.sender);
+        bool isMultiCollateral = collateralManager().hasCollateral(msg.sender);
 
         require(
             isFeePool || isExchanger || isIssuer || isMultiCollateral,

@@ -23,7 +23,8 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         address _resolver,
         bytes32 _collateralKey,
         bytes32[] memory _synths,
-        uint _collateralisationRatio,
+        uint _minCratio,
+        uint _minCollateral,
         uint _baseInterestRate,
         address _underlyingContract
     ) 
@@ -35,7 +36,8 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         _resolver, 
         _collateralKey, 
         _synths, 
-        _collateralisationRatio, 
+        _minCratio,
+        _minCollateral,
         _baseInterestRate
         )
     {

@@ -67,10 +67,10 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         address _resolver,
         uint _maxDebt,
         uint _liquidationPenalty
-    ) public
-    Owned(_owner) 
-    Pausable() 
-    MixinResolver(_resolver) 
+        ) public
+        Owned(_owner)
+        Pausable()
+        MixinResolver(_resolver)
     {
         owner = msg.sender;
         state = _state; 
@@ -84,29 +84,29 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory newAddresses = new bytes32[](6);
-        newAddresses[0] = CONTRACT_ISSUER;
-        newAddresses[2] = CONTRACT_EXRATES;
-        newAddresses[3] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[4] = CONTRACT_DEBTCACHE;
+        addresses = new bytes32[](4);
+        addresses[0] = CONTRACT_ISSUER;
+        addresses[1] = CONTRACT_EXRATES;
+        addresses[2] = CONTRACT_SYSTEMSTATUS;
+        addresses[3] = CONTRACT_DEBTCACHE;
     }
 
     /* ---------- Related Contracts ---------- */
 
     function _systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function _issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function _debtCache() internal view returns (IDebtCache) {
-        return IDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE, "Missing DebtCache address"));
+        return IDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
     }
 
     /* ---------- Manager Information ---------- */
@@ -145,7 +145,9 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
                 (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
                 uint amount = state.long(synth).multiplyDecimal(rate);
                 debt = debt.add(amount);
-                anyRateIsInvalid = invalid;
+                if (invalid) {
+                    anyRateIsInvalid = true;
+                }
             }
         }
     }
@@ -209,7 +211,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         require(!_collaterals.contains(collateral), "Collateral already added");
 
         // Add it to the address list lib.
-        _collaterals.push(collateral);
+        _collaterals.add(collateral);
 
         emit CollateralAdded(collateral);
     }
@@ -221,7 +223,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         require(!_synths.contains(synth), "Synth already added");
         
         // Add it to the address list lib.
-        _synths.push(synth);
+        _synths.add(synth);
 
         // Now tell the debt cache about it.
         _debtCache().addCollateralSynths(synth);

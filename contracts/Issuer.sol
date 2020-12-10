@@ -88,7 +88,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](12);
+        bytes32[] memory newAddresses = new bytes32[](13);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -142,7 +142,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function collateralManager() internal view returns (ICollateralManager) {
-        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER);
+        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
 
     function rewardEscrow() internal view returns (IRewardEscrow) {
@@ -191,6 +191,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             (uint nonSnxDebt, bool invalid) = collateralManager().totalLong();
             debt = debt.add(nonSnxDebt);
             anyRateIsInvalid = invalid;
+
+            // Now add the ether collateral stuff as we are still supporting it.
+            debt = debt.add(etherCollateralsUSD().totalIssuedSynths());
+
+            // Add ether collateral sETH
+            (uint ethRate, bool ethRateInvalid) = exRates.rateAndInvalid(sETH);
+            uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
+            debt = debt.add(ethIssuedDebt);
+            anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
         }
 
         if (currencyKey == sUSD) {

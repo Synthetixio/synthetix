@@ -22,7 +22,8 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         address _resolver,
         bytes32 _collateralKey,
         bytes32[] memory _synths,
-        uint _minimumCollateralisation,
+        uint _minCratio,
+        uint _minCollateral,
         uint _baseInterestRate
     ) 
     public 
@@ -32,8 +33,9 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         _manager,
         _resolver, 
         _collateralKey, 
-        _synths, 
-        _minimumCollateralisation, 
+        _synths,
+        _minCratio,
+        _minCollateral,
         _baseInterestRate
         )
     { }

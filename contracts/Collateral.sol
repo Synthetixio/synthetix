@@ -40,7 +40,10 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     address public manager;
 
     // The synths that this contract can issue.
-    mapping(bytes32 => bytes32) public synths;
+    bytes32[] public synths;
+
+    // Map from currency key to synth.
+    mapping (bytes32 => bytes32) currencies;
 
     // ========== SETTER STATE VARIABLES ==========
 
@@ -66,8 +69,6 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_EXRATES, CONTRACT_FEEPOOL, CONTRACT_SYNTHSUSD];
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -78,11 +79,12 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         bytes32 _collateralKey,
         bytes32[] memory _synths,
         uint _minCratio,
+        uint _minCollateral,
         uint _baseInterestRate
         ) public
         Owned(_owner)
         Pausable()
-        MixinResolver(_resolver, addressesToCache)
+        MixinResolver(_resolver)
     {
         owner = msg.sender;
 
@@ -90,12 +92,11 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         state = _state;
         collateralKey = _collateralKey;
         setMinCratio(_minCratio);
+        setMinCollateral(_minCollateral);
         setBaseInterestRate(_baseInterestRate);
 
         for (uint i = 0; i < _synths.length; i++) {
-            appendToAddressCache(_synths[i]);
-            ISynth synth = ISynth(requireAndGetAddress(_synths[i], "Missing address"));
-            synths[synth.currencyKey()] = _synths[i];
+            synths.push(_synths[i]);
         }
 
         owner = _owner;
@@ -103,26 +104,49 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
 
     /* ========== VIEWS ========== */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](4);
+        addresses[0] = CONTRACT_FEEPOOL;
+        addresses[1] = CONTRACT_EXRATES;
+        addresses[2] = CONTRACT_SYSTEMSTATUS;
+        addresses[3] = CONTRACT_SYNTHSUSD;
+
+        return combineArrays(addresses, synths);
+    }
+
+    function setCurrencies() public {
+        for (uint i = 0; i < synths.length; i++) {
+            ISynth synth = ISynth(requireAndGetAddress(synths[i]));
+            currencies[synth.currencyKey()] = synths[i];
+        }
+    }
+
+    function addSynth(bytes32 _synth) public onlyOwner {
+        synths.push(_synth);
+        ISynth synth = ISynth(requireAndGetAddress(_synth));
+        currencies[synth.currencyKey()] = _synth;
+    }
+
     /* ---------- Related Contracts ---------- */
 
     function _systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function _synths(bytes32 synth) internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(synth, "Missing synths address"));
+        return ISynth(requireAndGetAddress(synth));
     }
 
     function _synthsUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing synthsUSD address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function _feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function _manager() internal view returns (ICollateralManager) {
@@ -182,7 +206,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     
     // Check the account has enough of the synth to make the payment
     function _checkSynthBalance(address payer, bytes32 _synth, uint amount) internal view returns (bool) {
-        require(IERC20(address(_synths(synths[_synth]))).balanceOf(payer) >= amount, "Not enough synth balance");
+        require(IERC20(address(_synths(currencies[_synth]))).balanceOf(payer) >= amount, "Not enough synth balance");
     }
 
     function _checkLoanIsOpen(Loan memory _loan) internal pure {
@@ -200,7 +224,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
     }
 
     function setMinCollateral(uint _minCollateral) public onlyOwner {
-        require(_minCollateral > 1e18, "Minimum collateral must be greater than 1");
+        require(_minCollateral > 0, "Minimum collateral must be greater than 0");
         minCollateral = _minCollateral;
         emit MinCollateralUpdated(minCollateral);  
     }
@@ -239,13 +263,13 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         _systemStatus().requireIssuanceActive();
 
         // 1. We can only issue certain synths.
-        require(synths[currency] > 0, "Not allowed to issue this synth");
+        require(currencies[currency] > 0, "Not allowed to issue this synth");
 
         // Make sure the rate is not invalid.
         require(!_exchangeRates().rateIsInvalid(currency), "Currency rate is invalid");
 
-        // 2. Collateral > minimum collateral size.
-        require(collateral > minCollateral, "Not enough collateral to create a loan");
+        // 2. Collateral >= minimum collateral size.
+        require(collateral >= minCollateral, "Not enough collateral to create a loan");
 
         // Max num loans.
         require(state.getNumLoans(msg.sender) < maxLoansPerAccount, "You have reached the maximum number of loans");
@@ -291,7 +315,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         _payFees(issueFee, currency); 
         
         // 12. Issue synths to the borrower.
-        _synths(synths[currency]).issue(msg.sender, loanAmountMinusFee);
+        _synths(currencies[currency]).issue(msg.sender, loanAmountMinusFee);
         
         // 13. Tell the manager.
         _manager().incrementLongs(currency, amount);
@@ -319,7 +343,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         _checkSynthBalance(loan.account, loan.currency, total);
 
         // 6. Burn the synths
-        _synths(synths[loan.currency]).burn(borrower, total);
+        _synths(currencies[loan.currency]).burn(borrower, total);
 
         // 7. Tell the manager.
         _manager().decrementLongs(loan.currency, loan.amount);
@@ -351,7 +375,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         collateral = loan.collateral;
         
         // 4. Burn the synths
-        _synths(synths[loan.currency]).burn(liquidator, total);
+        _synths(currencies[loan.currency]).burn(liquidator, total);
 
         // 5. Tell the manager.
         _manager().decrementLongs(loan.currency, loan.amount);
@@ -480,7 +504,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
         // 12. burn synths from msg.sender for amount to liquidate
-        _synths(synths[loan.currency]).burn(msg.sender, amountToLiquidate);
+        _synths(currencies[loan.currency]).burn(msg.sender, amountToLiquidate);
 
         // 13. Store the loan.
         state.updateLoan(loan);
@@ -526,7 +550,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         loan = _processPayment(loan, payment);
 
         // 9. Burn synths from the payer
-        _synths(synths[loan.currency]).burn(repayer, payment);
+        _synths(currencies[loan.currency]).burn(repayer, payment);
 
         // 10. Store the loan
         state.updateLoan(loan);
@@ -556,7 +580,7 @@ contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
         require(cratio > minCratio, "Drawing this much would put the loan under minimum collateralisation");
 
         // 12. Issue synths to the borrower.
-        _synths(synths[loan.currency]).issue(msg.sender, amount);
+        _synths(currencies[loan.currency]).issue(msg.sender, amount);
         
         // 13. Tell the manager.
         _manager().incrementLongs(loan.currency, amount);
