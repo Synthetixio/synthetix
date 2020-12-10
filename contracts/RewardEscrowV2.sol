@@ -147,7 +147,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     {
         require(entryIDs.length > 0, "Entry IDs required");
 
-        // check if account migrated on L1
+        /* check if account migrated on L1 */
         _checkEscrowMigrationPending(account);
 
         vestingEntries = new VestingEntries.VestingEntry[](entryIDs.length);

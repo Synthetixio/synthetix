@@ -41,7 +41,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     uint256 public totalEscrowedBalance;
 
     /* Max escrow duration */
-    uint public MAX_DURATION = 5 * 52 weeks;
+    uint public MAX_DURATION = 5 * 52 weeks; // Default max 5 years duration
 
     /* ========== OLD ESCROW LOOKUP ========== */
 
@@ -289,6 +289,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* Nominate an account to merge escrow and vesting schedule */
     function nominateAccountToMerge(address account) external {
+        // TODO - require account to merge has debt balance of 0
+
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(totalEscrowedAccountBalance[msg.sender] > 0, "Address escrow balance is 0");
 
@@ -298,6 +300,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function mergeAccount(address accountToMerge) external {
+        // TODO - require account to merge has debt balance of 0
+
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(nominatedReciever[accountToMerge] == msg.sender, "Address is not nominated to merge");
