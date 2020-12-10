@@ -79,16 +79,6 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         require(activated, "Function deactivated");
     }
 
-    function _rewardDeposit(uint256 amount) internal {
-        // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", amount);
-
-        // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-
-        emit RewardDeposit(msg.sender, amount);
-    }
-
     // ========== MODIFIERS ============
 
     modifier requireActive() {
@@ -98,18 +88,18 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
 
     // ========== PUBLIC FUNCTIONS =========
 
-    function deposit(uint256 _depositAmount) external requireActive {
+    function deposit(uint256 depositAmount) external requireActive {
         // escrow amount should beset to 0
-        _deposit(_depositAmount, 0);
+        _deposit(depositAmount, 0);
     }
 
-    function depositAndMigrateEscrow(uint256 _depositAmount, uint256[] calldata _entryIDs) external requireActive {
+    function depositAndMigrateEscrow(uint256 depositAmount, uint256[] calldata entryIDs) external requireActive {
         // Burn their reward escrow first
         // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
         uint256 escrowedAccountBalance;
 
-        IRewardEscrowV2.VestingEntry[] memory vestingEntries;
-        (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, _entryIDs);
+        VestingEntries.VestingEntry[] memory vestingEntries;
+        (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, entryIDs);
 
         // if there is an escrow amount to be migrated
         if (escrowedAccountBalance > 0) {
@@ -125,8 +115,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
             emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
         }
 
-        if (_depositAmount > 0 && escrowedAccountBalance > 0) {
-            _deposit(_depositAmount, escrowedAccountBalance);
+        if (depositAmount > 0 && escrowedAccountBalance > 0) {
+            _deposit(depositAmount, escrowedAccountBalance);
         }
     }
 
@@ -166,14 +156,24 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     }
 
     // invoked by RewardsDistribution on L1 (takes SNX)
-    function notifyRewardAmount(uint256 _amount) external requireActive {
+    function notifyRewardAmount(uint256 amount) external requireActive {
         require(msg.sender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
         // to be here means I've been given an amount of SNX to distribute onto L2
-        _rewardDeposit(_amount);
+        _rewardDeposit(amount);
     }
 
-    // ========== PRIVATE FUNCTIONS =========
+    // ========== PRIVATE/INTERNAL FUNCTIONS =========
+
+    function _rewardDeposit(uint256 _amount) internal {
+        // create message payload for L2
+        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", _amount);
+
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+
+        emit RewardDeposit(msg.sender, _amount);
+    }
 
     function _deposit(uint256 _depositAmount, uint256 _escrowAmount) private {
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
@@ -199,7 +199,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     event ExportedVestingEntries(
         address indexed account,
         uint256 escrowedAccountBalance,
-        IRewardEscrowV2.VestingEntry[] vestingEntries
+        VestingEntries.VestingEntry[] vestingEntries
     );
     event RewardDeposit(address indexed account, uint256 amount);
     event WithdrawalCompleted(address indexed account, uint256 amount);

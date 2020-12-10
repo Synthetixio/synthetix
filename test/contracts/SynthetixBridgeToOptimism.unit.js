@@ -49,9 +49,6 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let rewardEscrow;
 		const escrowAmount = 100;
 		const emptyArray = [];
-		// for (let i = 0; i < 52; i++) {
-		// 	zeroArray.push(0);
-		// }
 
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {

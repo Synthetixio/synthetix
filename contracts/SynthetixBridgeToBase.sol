@@ -86,7 +86,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     function importVestingEntries(
         address account,
         uint256 escrowedAmount,
-        IRewardEscrowV2.VestingEntry[] calldata vestingEntries
+        VestingEntries.VestingEntry[] calldata vestingEntries
     ) external onlyOptimismBridge {
         rewardEscrowV2().importVestingEntries(account, escrowedAmount, vestingEntries);
         emit ImportedVestingEntries(account, escrowedAmount, vestingEntries);
@@ -120,7 +120,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     event ImportedVestingEntries(
         address indexed account,
         uint256 escrowedAmount,
-        IRewardEscrowV2.VestingEntry[] vestingEntries
+        VestingEntries.VestingEntry[] vestingEntries
     );
     event MintedSecondary(address indexed account, uint256 amount);
     event MintedSecondaryRewards(uint256 amount);
