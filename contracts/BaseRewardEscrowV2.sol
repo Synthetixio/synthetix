@@ -140,7 +140,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint total) {
-        for (uint i = 0; i < entryIDs.length - 1; i++) {
+        for (uint i = 0; i < entryIDs.length; i++) {
             VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryIDs[i]];
 
             /* Skip entry if remainingAmount == 0 */
