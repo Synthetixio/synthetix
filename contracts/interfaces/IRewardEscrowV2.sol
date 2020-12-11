@@ -53,6 +53,8 @@ interface IRewardEscrowV2 {
     // Account Merging
     function startMergingWindow() external;
 
+    function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external;
+
     function nominateAccountToMerge(address account) external;
 
     // L2 Migration

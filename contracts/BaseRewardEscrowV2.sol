@@ -14,6 +14,7 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/IIssuer.sol";
 
 import "@nomiclabs/buidler/console.sol";
 
@@ -37,7 +38,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     mapping(address => uint256) public totalVestedAccountBalance;
 
     /* Mapping of nominated address to recieve account merging */
-    mapping(address => address) public nominatedReciever;
+    mapping(address => address) public nominatedReceiver;
 
     /* The total remaining escrowed balance, for verifying the actual synthetix balance of this contract against. */
     uint256 public totalEscrowedBalance;
@@ -52,7 +53,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* ========== ACCOUNT MERGING CONFIGURATION ========== */
 
-    uint public accountMergingDuration = 48 hours;
+    uint public accountMergingDuration = 1 weeks;
 
     uint public accountMergingEndTime;
 
@@ -63,6 +64,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     bytes32[24] private addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_FEEPOOL];
@@ -81,6 +83,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
     function _notImplemented() internal pure {
@@ -291,26 +297,25 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* Nominate an account to merge escrow and vesting schedule */
     function nominateAccountToMerge(address account) external {
-        // TODO - require account to merge has debt balance of 0
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot merge accounts with debt");
 
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(totalEscrowedAccountBalance[msg.sender] > 0, "Address escrow balance is 0");
 
-        nominatedReciever[msg.sender] = account;
+        nominatedReceiver[msg.sender] = account;
 
         // emit account nominated as reciever
     }
 
     function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external {
-        // TODO - require account to merge from has debt balance of 0
+        require(issuer().debtBalanceOf(accountToMerge, "sUSD") == 0, "Cannot merge accounts with debt");
 
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
-        require(accountMergingEndTime < block.timestamp, "Account merging has ended");
-        require(nominatedReciever[accountToMerge] == msg.sender, "Address is not nominated to merge");
+        require(nominatedReceiver[accountToMerge] == msg.sender, "Address is not nominated to merge");
 
         // delete totalEscrowedAccountBalance for merged account
         // delete totalVestedAccountBalance for merged acctoun
-        // delete nominatedReciever once merged
+        // delete nominatedReceiver once merged
     }
 
     /* ========== MIGRATION OLD ESCROW ========== */

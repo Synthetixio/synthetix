@@ -1,18 +1,19 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { mockToken, setupAllContracts } = require('./setup');
 
-// const { toUnit } = require('../utils')();
+const { smockit } = require('@eth-optimism/smock');
 
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { toUnit, currentTime, fastForward } = require('../utils')();
 
 const {
+	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
@@ -22,8 +23,8 @@ contract('BaseRewardEscrowV2', async accounts => {
 	const WEEK = 604800;
 	const YEAR = 31556926;
 
-	const [, owner, feePoolAccount, account1, account2] = accounts;
-	let baseRewardEscrowV2, synthetix, feePool;
+	const [, owner, feePoolAccount, account1, account2, issuerAddress] = accounts;
+	let baseRewardEscrowV2, synthetix, feePool, issuer, resolver;
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
@@ -40,6 +41,22 @@ contract('BaseRewardEscrowV2', async accounts => {
 				FeePool: feePool,
 			},
 		}));
+
+		issuer = await smockit(artifacts.require('IIssuer').abi, { address: issuerAddress });
+
+		resolver = await artifacts.require('AddressResolver').new(owner);
+
+		await resolver.importAddresses(
+			['Issuer', 'Synthetix', 'FeePool'].map(toBytes32),
+			[issuer.address, synthetix.address, feePool.address],
+			{ from: owner }
+		);
+
+		// update the resolver for baseRewardEscrowV2
+		await baseRewardEscrowV2.setResolverAndSyncCache(resolver.address, { from: owner });
+
+		// stubs
+		issuer.smocked.debtBalanceOf.will.return.with(() => '0');
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -780,7 +797,58 @@ contract('BaseRewardEscrowV2', async accounts => {
 		beforeEach(async () => {});
 	});
 
-	describe('Account vesting schedule merging', () => {
-		beforeEach(async () => {});
+	describe.only('Vesting Schedule merging', () => {
+		const duration = 1 * YEAR;
+		let escrowAmount1, escrowAmount2, escrowAmount3, entryID1, entryID2, entryID3;
+
+		beforeEach(async () => {
+			// Transfer of SNX to the escrow must occur before creating a vestinng entry
+			await synthetix.transfer(baseRewardEscrowV2.address, toUnit('1000'), {
+				from: owner,
+			});
+
+			escrowAmount1 = toUnit('200');
+			escrowAmount2 = toUnit('300');
+			escrowAmount3 = toUnit('500');
+
+			// Add a few vesting entries as the feepool address
+			entryID1 = await baseRewardEscrowV2.nextEntryId();
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount1, duration, {
+				from: feePoolAccount,
+			});
+			await fastForward(WEEK);
+			entryID2 = await baseRewardEscrowV2.nextEntryId();
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount2, duration, {
+				from: feePoolAccount,
+			});
+			await fastForward(WEEK);
+			entryID3 = await baseRewardEscrowV2.nextEntryId();
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount3, duration, {
+				from: feePoolAccount,
+			});
+		});
+
+		it('should have no nominated address for account1 initially', async () => {
+			assert.equal(await baseRewardEscrowV2.nominatedReceiver(account1), ZERO_ADDRESS);
+		});
+
+		it('should revert when account is not nominated to merge another', async () => {
+			await assert.revert(
+				baseRewardEscrowV2.mergeAccount(account1, [entryID1], { from: account2 }),
+				'Address is not nominated to merge'
+			);
+		});
+
+		it('reverts when user nominating has any debt', async () => {
+			issuer.smocked.debtBalanceOf.will.return.with(() => '1');
+			await assert.revert(baseRewardEscrowV2.nominateAccountToMerge(account1, { from: account2 }));
+		});
+		it('should revert nominating and merging when account merging has not started', async () => {
+			await assert.revert(baseRewardEscrowV2.nominateAccountToMerge(account1, { from: account2 }));
+
+			await assert.revert(
+				baseRewardEscrowV2.mergeAccount(account1, [entryID1], { from: account2 })
+			);
+		});
 	});
 });
