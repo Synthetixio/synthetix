@@ -804,7 +804,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		beforeEach(async () => {});
 	});
 
-	describe.only('Vesting Schedule merging', () => {
+	describe('Vesting Schedule merging', () => {
 		const duration = 1 * YEAR;
 		let escrowAmount1, escrowAmount2, escrowAmount3, entryID1, entryID2, entryID3;
 
@@ -834,6 +834,15 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 			// ensure Issuer.debtBalanceOf returns 0
 			mocks['Issuer'].smocked.debtBalanceOf.will.return.with('0');
+		});
+
+		it('user should have three vesting entries', async () => {
+			assert.bnEqual(await baseRewardEscrowV2.numVestingEntries(account1), new BN(3));
+
+			// check accountVestingEntryIDs match the entryIDs
+			assert.bnEqual(await baseRewardEscrowV2.accountVestingEntryIDs(account1, 0), entryID1);
+			assert.bnEqual(await baseRewardEscrowV2.accountVestingEntryIDs(account1, 1), entryID2);
+			assert.bnEqual(await baseRewardEscrowV2.accountVestingEntryIDs(account1, 2), entryID3);
 		});
 		it('initially account merging is not open', async () => {
 			assert.isFalse(await baseRewardEscrowV2.accountMergingIsOpen());
