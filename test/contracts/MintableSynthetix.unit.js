@@ -27,6 +27,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 		let tokenState;
 		let proxy;
 		let rewardsDistribution;
+		let systemStatus;
 		const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
 		beforeEach(async () => {
@@ -34,6 +35,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 			proxy = await smockit(artifacts.require('Proxy').abi);
 			rewardsDistribution = await smockit(artifacts.require('IRewardsDistribution').abi);
 			resolver = await artifacts.require('AddressResolver').new(owner);
+			systemStatus = await artifacts.require('SystemStatus').new(owner);
 			await resolver.importAddresses(
 				[
 					'SynthetixBridgeToBase',
@@ -47,7 +49,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 				[
 					synthetixBridgeToBase,
 					tokenState.address,
-					mockAddress,
+					systemStatus.address,
 					mockAddress,
 					mockAddress,
 					mockAddress,
