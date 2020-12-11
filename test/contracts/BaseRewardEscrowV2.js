@@ -40,13 +40,13 @@ contract('BaseRewardEscrowV2', async accounts => {
 		baseRewardEscrowV2 = await artifacts.require('BaseRewardEscrowV2').new(owner, resolver.address);
 
 		// update the resolver for baseRewardEscrowV2
-		await baseRewardEscrowV2.setResolverAndSyncCache(resolver.address, { from: owner });
+		await baseRewardEscrowV2.rebuildCache({ from: owner });
 	});
 
 	it('ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: baseRewardEscrowV2.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['MixinResolver', 'Owned'],
 			expected: [
 				'appendVestingEntry',
 				'startMergingWindow',
@@ -426,8 +426,13 @@ contract('BaseRewardEscrowV2', async accounts => {
 				{ from: owner }
 			);
 
-			// update the resolver for baseRewardEscrowV2
-			await baseRewardEscrowV2.setResolverAndSyncCache(newResolver.address, { from: owner });
+			// update a new baseRewardEscrowV2 with new resolver
+			baseRewardEscrowV2 = await artifacts
+				.require('BaseRewardEscrowV2')
+				.new(owner, newResolver.address);
+
+			// rebuild cache
+			await baseRewardEscrowV2.rebuildCache({ from: owner });
 
 			// Transfer of SNX to the escrow must occur before creating a vestinng entry
 			await mockedSynthetix.transfer(baseRewardEscrowV2.address, toUnit('1000'), {
