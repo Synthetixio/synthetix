@@ -244,13 +244,13 @@ describe('deploy multiple instances', () => {
 			});
 
 			it('reverts when trying to deposit', async () => {
-				await assert.revert(l1ToL2Bridge.deposit(1, overrides), 'Synthetix is suspended');
+				await assert.revert(l1ToL2Bridge.initiateDeposit(1, overrides), 'Synthetix is suspended');
 			});
 		});
 
 		before('when the user deposits 100 SNX into the bridge contract', async () => {
 			// start the deposit by the user on L1
-			await (await l1ToL2Bridge.deposit(parseEther('100'), overrides)).wait();
+			await (await l1ToL2Bridge.initiateDeposit(parseEther('100'), overrides)).wait();
 		});
 
 		it('then the deposit contract has 100 SNX', async () => {
