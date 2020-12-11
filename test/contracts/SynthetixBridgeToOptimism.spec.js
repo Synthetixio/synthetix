@@ -37,7 +37,7 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 					});
 
 					before('perform a deposit', async () => {
-						await synthetixBridgeToOptimism.deposit(amountToDeposit, {
+						await synthetixBridgeToOptimism.initiateDeposit(amountToDeposit, {
 							from: owner,
 						});
 					});
@@ -58,7 +58,7 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 			});
 		});
 
-		describe('rewardDeposit', () => {
+		describe('initiateRewardDeposit', () => {
 			describe('when a user has provided allowance to the bridge contract', () => {
 				const amountToDeposit = 1;
 
@@ -75,8 +75,8 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 						userBalanceBefore = await synthetix.balanceOf(owner);
 					});
 
-					before('perform a rewardDeposit', async () => {
-						await synthetixBridgeToOptimism.rewardDeposit(amountToDeposit, {
+					before('perform a initiateRewardDeposit', async () => {
+						await synthetixBridgeToOptimism.initiateRewardDeposit(amountToDeposit, {
 							from: owner,
 						});
 					});

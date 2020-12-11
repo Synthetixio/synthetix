@@ -224,7 +224,7 @@ describe('deploy multiple instances', () => {
 
 		before('when the user deposits 100 SNX into the bridge contract', async () => {
 			// start the deposit by the user on L1
-			await (await l1ToL2Bridge.deposit(parseEther('100'), overrides)).wait();
+			await (await l1ToL2Bridge.initiateDeposit(parseEther('100'), overrides)).wait();
 		});
 
 		it('then the deposit contract has 100 SNX', async () => {
