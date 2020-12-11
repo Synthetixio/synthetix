@@ -6,17 +6,22 @@ const { toBN } = web3.utils;
 contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 	const [, owner, newBridge] = accounts;
 
-	let synthetix, synthetixBridgeToOptimism;
+	let synthetix, synthetixBridgeToOptimism, systemSettings;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: synthetix,
 				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
+				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
 				contracts: ['Synthetix', 'Issuer', 'RewardEscrow', 'SynthetixBridgeToOptimism'],
 			}));
+		});
+
+		it('shows the expected cross domain message gas limit', async () => {
+			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(), 3e6);
 		});
 
 		describe('deposit', () => {
