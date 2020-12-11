@@ -804,7 +804,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		beforeEach(async () => {});
 	});
 
-	describe('Vesting Schedule merging', () => {
+	describe.only('Vesting Schedule merging', () => {
 		const duration = 1 * YEAR;
 		let escrowAmount1, escrowAmount2, escrowAmount3, entryID1, entryID2, entryID3;
 
@@ -874,6 +874,23 @@ contract('BaseRewardEscrowV2', async accounts => {
 					baseRewardEscrowV2.mergeAccount(account1, [entryID1], { from: account2 }),
 					'Cannot merge accounts with debt'
 				);
+			});
+
+			it('should allow account to nominate another destination account', async () => {
+				await baseRewardEscrowV2.nominateAccountToMerge(account2, { from: account1 });
+
+				assert.equal(await baseRewardEscrowV2.nominatedReceiver(account1), account2);
+			});
+
+			it('should emit an event on nominating a destination account', async () => {
+				const tx = await baseRewardEscrowV2.nominateAccountToMerge(account2, { from: account1 });
+
+				// NominateAccountToMerge(msg.sender, account);
+				const nominatedEvent = tx.logs.find(log => log.event === 'NominateAccountToMerge');
+				assert.eventEqual(nominatedEvent, 'NominateAccountToMerge', {
+					account: account1,
+					destination: account2,
+				});
 			});
 
 			it('should revert nominating and merging when account merging has ended', async () => {

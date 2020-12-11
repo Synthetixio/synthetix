@@ -309,7 +309,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         require(accountMergingIsOpen(), "Account merging has ended");
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot merge accounts with debt");
         nominatedReceiver[msg.sender] = account;
-        // emit account nominated as reciever
+        emit NominateAccountToMerge(msg.sender, account);
     }
 
     function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external {
@@ -421,4 +421,5 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     event MaxEscrowDurationUpdated(uint newDuration);
     event AccountMergingDurationUpdated(uint newDuration);
     event AccountMergingStarted(uint time, uint endTime);
+    event NominateAccountToMerge(address indexed account, address destination);
 }
