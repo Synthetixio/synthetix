@@ -4,7 +4,7 @@ const { assert } = require('./common');
 const { toBN } = web3.utils;
 
 contract('SynthetixBridgeToBase (spec tests)', accounts => {
-	const [, owner] = accounts;
+	const [, owner, user] = accounts;
 
 	let mintableSynthetix, synthetixBridgeToBase;
 
@@ -17,6 +17,15 @@ contract('SynthetixBridgeToBase (spec tests)', accounts => {
 				accounts,
 				contracts: ['MintableSynthetix', 'SynthetixBridgeToBase'],
 			}));
+		});
+
+		describe('when a user does not have the required balance', () => {
+			it('the withdrawal should fail', async () => {
+				await assert.revert(
+					synthetixBridgeToBase.initiateWithdrawal('1', { from: user }),
+					'SafeMath: subtraction overflow'
+				);
+			});
 		});
 
 		describe('when a user has the required balance', () => {

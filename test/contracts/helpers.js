@@ -119,7 +119,7 @@ module.exports = {
 			from: owner,
 		});
 		// now have the synth resync its cache
-		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await synthContract.rebuildCache();
 
 		await synthContract.issue(user, amount, {
 			from: owner,
@@ -129,7 +129,7 @@ module.exports = {
 		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [issuer.address], {
 			from: owner,
 		});
-		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await synthContract.rebuildCache();
 	},
 
 	async setExchangeWaitingPeriod({ owner, systemSettings, secs }) {
@@ -156,11 +156,20 @@ module.exports = {
 		expected = [],
 		ignoreParents = [],
 	}) {
-		const removeSignatureProp = abiEntry => {
+		const removeExcessParams = abiEntry => {
 			// Clone to not mutate anything processed by truffle
 			const clone = JSON.parse(JSON.stringify(abiEntry));
 			// remove the signature in the cases where it's in the parent ABI but not the subclass
 			delete clone.signature;
+			// remove input and output named params
+			(clone.inputs || []).map(input => {
+				delete input.name;
+				return input;
+			});
+			(clone.outputs || []).map(input => {
+				delete input.name;
+				return input;
+			});
 			return clone;
 		};
 
@@ -169,14 +178,14 @@ module.exports = {
 				(memo, parent) => memo.concat(artifacts.require(parent, { ignoreLegacy: true }).abi),
 				[]
 			)
-			.map(removeSignatureProp);
+			.map(removeExcessParams);
 
 		const fncs = abi
 			.filter(
 				({ type, stateMutability }) =>
 					type === 'function' && stateMutability !== 'view' && stateMutability !== 'pure'
 			)
-			.map(removeSignatureProp)
+			.map(removeExcessParams)
 			.filter(
 				entry =>
 					!combinedParentsABI.find(
@@ -255,5 +264,9 @@ module.exports = {
 		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
 
 		return { mocks, resolver };
+	},
+
+	getEventByName({ tx, name }) {
+		return tx.logs.find(({ event }) => event === name);
 	},
 };

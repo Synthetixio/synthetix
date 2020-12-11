@@ -1,7 +1,5 @@
 # Compiles all contracts and fails with oversized contracts
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
 steps:
   - checkout
   - attach_workspace:

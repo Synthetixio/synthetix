@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -7,6 +8,8 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
+import "./interfaces/IRewardEscrowV2.sol";
+import "./interfaces/IIssuer.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
@@ -18,31 +21,35 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
+    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
-
-    bytes32[24] private addressesToCache = [
-        CONTRACT_EXT_MESSENGER,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM
-    ];
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     //
     // ========== INTERNALS ============
 
     function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
-        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
+        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    }
+
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
+    }
+
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
     function synthetixBridgeToOptimism() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM, "Missing Bridge address");
+        return requireAndGetAddress(CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM);
     }
 
     function onlyAllowFromOptimism() internal view {
@@ -57,10 +64,22 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
         _;
     }
 
+    // ========== VIEWS ==========
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](5);
+        addresses[0] = CONTRACT_EXT_MESSENGER;
+        addresses[1] = CONTRACT_SYNTHETIX;
+        addresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
+        addresses[3] = CONTRACT_ISSUER;
+        addresses[4] = CONTRACT_REWARDESCROW;
+    }
+
     // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot withdraw with debt");
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
 
@@ -75,16 +94,33 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    // invoked by Messenger on L2
-    function mintSecondaryFromDeposit(address account, uint amount) external onlyOptimismBridge {
-        // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
-        synthetix().mintSecondary(account, amount);
-
-        emit MintedSecondary(account, amount);
+    function importVestingEntries(
+        address account,
+        uint256 escrowedAmount,
+        VestingEntries.VestingEntry[] calldata vestingEntries
+    ) external onlyOptimismBridge {
+        rewardEscrowV2().importVestingEntries(account, escrowedAmount, vestingEntries);
+        emit ImportedVestingEntries(account, escrowedAmount, vestingEntries);
     }
 
     // invoked by Messenger on L2
-    function mintSecondaryFromDepositForRewards(uint amount) external onlyOptimismBridge {
+    function mintSecondaryFromDeposit(
+        address account,
+        uint256 depositAmount,
+        uint256 escrowedAmount
+    ) external onlyOptimismBridge {
+        // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
+        synthetix().mintSecondary(account, depositAmount);
+        emit MintedSecondary(account, depositAmount);
+        if (escrowedAmount > 0) {
+            // Mint also the escrowed amount and transfer it to the RewarEscrow contract
+            synthetix().mintSecondary(address(rewardEscrowV2()), escrowedAmount);
+            emit MintedSecondary(address(rewardEscrowV2()), escrowedAmount);
+        }
+    }
+
+    // invoked by Messenger on L2
+    function mintSecondaryFromDepositForRewards(uint256 amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 
@@ -92,7 +128,12 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     }
 
     // ========== EVENTS ==========
-    event MintedSecondary(address indexed account, uint amount);
-    event MintedSecondaryRewards(uint amount);
-    event WithdrawalInitiated(address indexed account, uint amount);
+    event ImportedVestingEntries(
+        address indexed account,
+        uint256 escrowedAmount,
+        VestingEntries.VestingEntry[] vestingEntries
+    );
+    event MintedSecondary(address indexed account, uint256 amount);
+    event MintedSecondaryRewards(uint256 amount);
+    event WithdrawalInitiated(address indexed account, uint256 amount);
 }

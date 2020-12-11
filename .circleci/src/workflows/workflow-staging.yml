@@ -1,99 +1,67 @@
 jobs:
   - job-prepare:
-      filters:
-        branches:
-          only: /.*(staging|master).*/
+      {{> filter-staging.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Packaging
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-pack-browser:
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Deployment validation
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-validate-deployments:
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-prod-tests:
       name: job-prod-tests-mainnet
-      filters:
-        branches:
-          only: /.*(staging|master).*/
       network: mainnet
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
   - job-prod-tests:
       name: job-prod-tests-rinkeby
-      filters:
-        branches:
-          only: /.*(staging|master).*/
       network: rinkeby
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
   - job-prod-tests:
       name: job-prod-tests-kovan
-      filters:
-        branches:
-          only: /.*(staging|master).*/
       network: kovan
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Differential local production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-diff-prod-tests-local:
       name: job-diff-prod-tests-local
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
   - job-diff-prod-tests-local-ovm:
       name: job-diff-prod-tests-local-ovm
-      filters:
-        branches:
-          only: /.*(staging|master).*/
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Differential production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-diff-prod-tests:
       name: job-diff-prod-tests-mainnet
-      filters:
-        branches:
-          only: /.*(staging|master).*/
       network: mainnet
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
   - job-diff-prod-tests:
       name: job-diff-prod-tests-rinkeby
-      filters:
-        branches:
-          only: /.*(staging|master).*/
       network: rinkeby
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
   - job-diff-prod-tests:
       name: job-diff-prod-tests-kovan
-      filters:
-        branches:
-          only: /.*(staging|master).*/
       network: kovan
-      requires:
-        - job-prepare
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
