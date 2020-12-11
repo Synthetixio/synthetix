@@ -27,6 +27,10 @@ interface IRewardEscrowV2 {
 
     function getVestingEntryClaimable(address account, uint256 entryID) external view returns (uint);
 
+    function timeSinceLastVested(address account, uint256 entryID) external view returns (uint);
+
+    function ratePerSecond(address account, uint256 entryID) external view returns (uint);
+
     // Mutative functions
     function vest(address account, uint256[] calldata entryIDs) external;
 

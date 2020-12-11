@@ -67,7 +67,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_FEEPOOL];
+    bytes32[24] private addressesToCache = [CONTRACT_SYNTHETIX, CONTRACT_FEEPOOL, CONTRACT_ISSUER];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -130,7 +130,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     /* rate of escrow emission per second */
-    function ratePerSecond(address account, uint256 entryID) public view returns (uint256) {
+    function ratePerSecond(address account, uint256 entryID) external view returns (uint256) {
         /* Retrieve the vesting entry */
         VestingEntries.VestingEntry memory entry = vestingSchedules[account][entryID];
         return _ratePerSecond(entry);
@@ -298,7 +298,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* Nominate an account to merge escrow and vesting schedule */
     function nominateAccountToMerge(address account) external {
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot merge accounts with debt");
-
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(totalEscrowedAccountBalance[msg.sender] > 0, "Address escrow balance is 0");
 
@@ -309,7 +308,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external {
         require(issuer().debtBalanceOf(accountToMerge, "sUSD") == 0, "Cannot merge accounts with debt");
-
         require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(nominatedReceiver[accountToMerge] == msg.sender, "Address is not nominated to merge");
 
@@ -365,6 +363,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
+
         require(
             totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
