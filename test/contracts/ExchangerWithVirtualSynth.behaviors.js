@@ -35,7 +35,7 @@ module.exports = function({ accounts }) {
 			describe(`when instantiated`, () => {
 				beforeEach(async () => {
 					this.instance = await ExchangerWithVirtualSynth.new(owner, this.resolver.address);
-					await this.instance.setResolverAndSyncCache(this.resolver.address, { from: owner });
+					await this.instance.rebuildCache();
 				});
 				cb();
 			});

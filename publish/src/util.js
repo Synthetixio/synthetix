@@ -207,7 +207,7 @@ const performTransactionalStep = async ({
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
-			return;
+			return { noop: true };
 		}
 	}
 	// otherwise check the owner
@@ -215,6 +215,7 @@ const performTransactionalStep = async ({
 	if (owner === account) {
 		// perform action
 		let hash;
+		let gasUsed = 0;
 		if (dryRun) {
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
@@ -230,7 +231,9 @@ const performTransactionalStep = async ({
 			}
 
 			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
+
 			hash = txn.transactionHash;
+			gasUsed = txn.gasUsed;
 
 			if (nonceManager) {
 				nonceManager.incrementNonce();
@@ -238,10 +241,16 @@ const performTransactionalStep = async ({
 		}
 
 		console.log(
-			green(`${dryRun ? '[DRY RUN] ' : ''}Successfully completed ${action} in hash: ${hash}`)
+			green(
+				`${
+					dryRun ? '[DRY RUN] ' : ''
+				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
+					2
+				)}m `
+			)
 		);
 
-		return hash;
+		return { mined: true, hash };
 	}
 	let data;
 	if (ownerActions && ownerActionsFile) {
@@ -268,14 +277,14 @@ const performTransactionalStep = async ({
 		} else {
 			appendOwnerAction(ownerAction);
 		}
-		return true;
+		return { pending: true };
 	} else {
 		// otherwise wait for owner in real time
 		try {
 			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
 			if (encodeABI) {
 				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
-				return true;
+				return { pending: true };
 			}
 
 			await confirmAction(
@@ -286,9 +295,10 @@ const performTransactionalStep = async ({
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
 			);
 
-			return true;
+			return { pending: true };
 		} catch (err) {
 			console.log(gray('Cancelled'));
+			return {};
 		}
 	}
 };

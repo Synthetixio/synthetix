@@ -15,14 +15,23 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['Synthetix', 'Issuer', 'RewardEscrow', 'SynthetixBridgeToOptimism'],
+				contracts: ['Synthetix', 'Issuer', 'SynthetixBridgeToOptimism'],
 			}));
 		});
 
 		describe('deposit', () => {
-			describe('when a user has provided allowance to the bridge contract', () => {
-				const amountToDeposit = 1;
+			const amountToDeposit = 1;
 
+			describe('when a user has not provided allowance to the bridge contract', () => {
+				it('the deposit should fail', async () => {
+					await assert.revert(
+						synthetixBridgeToOptimism.deposit(amountToDeposit, { from: owner }),
+						'SafeMath: subtraction overflow'
+					);
+				});
+			});
+
+			describe('when a user has provided allowance to the bridge contract', () => {
 				before('approve SynthetixBridgeToOptimism', async () => {
 					await synthetix.approve(synthetixBridgeToOptimism.address, amountToDeposit, {
 						from: owner,

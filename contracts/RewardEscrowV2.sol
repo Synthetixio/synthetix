@@ -26,17 +26,19 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         IRewardEscrow _oldRewardEscrow
     ) public BaseRewardEscrowV2(_owner, _resolver) {
         oldRewardEscrow = _oldRewardEscrow;
-        appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM);
     }
 
     /* ========== VIEWS ======================= */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = BaseRewardEscrowV2.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM;
+        return combineArrays(existingAddresses, newAddresses);
+    }
+
     function synthetixBridgeToOptimism() internal view returns (address) {
-        return
-            requireAndGetAddress(
-                CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM,
-                "Resolver is missing SynthetixBridgeToOptimism address"
-            );
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM);
     }
 
     /* ========== MIGRATION OLD ESCROW ========== */
