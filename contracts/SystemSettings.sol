@@ -128,7 +128,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // ========== RESTRICTED ==========
 
-    function setCrossDomainMessageGasLImit(uint _crossDomainMessageGasLimit) external onlyOwner {
+    function setCrossDomainMessageGasLimit(uint _crossDomainMessageGasLimit) external onlyOwner {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             SETTING_CROSS_DOMAIN_MESSAGE_GAS_LIMIT,

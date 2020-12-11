@@ -1724,7 +1724,7 @@ const deploy = async ({
 			target: systemSettings,
 			read: 'crossDomainMessageGasLimit',
 			expected: input => input !== '0', // only change if zero
-			write: 'setCrossDomainMessageGasLImit',
+			write: 'setCrossDomainMessageGasLimit',
 			writeArg: await getDeployParameter('CROSS_DOMAIN_MESSAGE_GAS_LIMIT'),
 		});
 

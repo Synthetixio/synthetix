@@ -902,7 +902,7 @@ const setupAllContracts = async ({
 				{ from: owner }
 			),
 			returnObj['SystemSettings'].setIssuanceRatio(ISSUANCE_RATIO, { from: owner }),
-			returnObj['SystemSettings'].setCrossDomainMessageGasLImit(CROSS_DOMAIN_MESSAGE_GAS_LIMIT, {
+			returnObj['SystemSettings'].setCrossDomainMessageGasLimit(CROSS_DOMAIN_MESSAGE_GAS_LIMIT, {
 				from: owner,
 			}),
 			returnObj['SystemSettings'].setFeePeriodDuration(FEE_PERIOD_DURATION, { from: owner }),
