@@ -24,7 +24,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 	const YEAR = 31556926;
 
 	const [, owner, account1, account2] = accounts;
-	let baseRewardEscrowV2, synthetix, mocks, feePoolAccount, resolver;
+	let baseRewardEscrowV2, mocks, feePoolAccount, resolver;
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	beforeEach(async () => {
