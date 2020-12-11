@@ -55,7 +55,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     uint public accountMergingDuration = 1 weeks;
 
-    uint public accountMergingEndTime;
+    uint public accountMergingStartTime;
 
     /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
      * There are 5 years of the supply schedule */
@@ -278,10 +278,13 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* ========== ACCOUNT MERGING ========== */
 
-    function startMergingWindow() external onlyOwner {
-        accountMergingEndTime = block.timestamp.add(accountMergingDuration);
+    function accountMergingIsOpen() public view returns (bool) {
+        return accountMergingStartTime.add(accountMergingDuration) > block.timestamp;
+    }
 
-        // emit account merging window start
+    function startMergingWindow() external onlyOwner {
+        accountMergingStartTime = block.timestamp;
+        emit AccountMergingStarted(accountMergingStartTime, accountMergingStartTime.add(accountMergingDuration));
     }
 
     function setAccountMergingDuration(uint256 duration) external onlyOwner {
@@ -297,18 +300,15 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* Nominate an account to merge escrow and vesting schedule */
     function nominateAccountToMerge(address account) external {
+        require(accountMergingIsOpen(), "Account merging has ended");
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot merge accounts with debt");
-        require(accountMergingEndTime < block.timestamp, "Account merging has ended");
-        require(totalEscrowedAccountBalance[msg.sender] > 0, "Address escrow balance is 0");
-
         nominatedReceiver[msg.sender] = account;
-
         // emit account nominated as reciever
     }
 
     function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external {
+        require(accountMergingIsOpen(), "Account merging has ended");
         require(issuer().debtBalanceOf(accountToMerge, "sUSD") == 0, "Cannot merge accounts with debt");
-        require(accountMergingEndTime < block.timestamp, "Account merging has ended");
         require(nominatedReceiver[accountToMerge] == msg.sender, "Address is not nominated to merge");
 
         // delete totalEscrowedAccountBalance for merged account
@@ -412,6 +412,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* ========== EVENTS ========== */
     event Vested(address indexed beneficiary, uint time, uint value);
     event VestingEntryCreated(address indexed beneficiary, uint time, uint value, uint duration, uint entryID);
-    event MaxEscrowDurationUpdated(uint256 newDuration);
-    event AccountMergingDurationUpdated(uint256 newDuration);
+    event MaxEscrowDurationUpdated(uint newDuration);
+    event AccountMergingDurationUpdated(uint newDuration);
+    event AccountMergingStarted(uint time, uint endTime);
 }
