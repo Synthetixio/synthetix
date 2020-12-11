@@ -59,7 +59,7 @@ contract MintableSynthetix is BaseSynthetix {
         _rewardsDistribution.distributeRewards(amount);
     }
 
-    function burnSecondary(address account, uint amount) external onlyBridge {
+    function burnSecondary(address account, uint amount) external onlyBridge systemActive {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         emitTransfer(account, address(0), amount);
         totalSupply = totalSupply.sub(amount);

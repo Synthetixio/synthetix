@@ -108,7 +108,7 @@ const connectLayer = async ({
 	dryRun,
 }) => {
 	// ---------------------------------
-	// Compare with on-chain values
+	// Check if the AddressResolver has all the correct addresses
 	// ---------------------------------
 
 	const filteredNames = [];
@@ -127,20 +127,11 @@ const connectLayer = async ({
 		}
 	}
 
+	const needToImportAddresses = filteredNames.length > 0;
+
 	// ---------------------------------
-	// Update on-chain values
+	// Update AddressResolver if needed
 	// ---------------------------------
-
-	let tx;
-
-	if (filteredNames.length === 0) {
-		console.log(gray('  > Bridge is already connected on this layer. Skipping...'));
-		return;
-	}
-
-	console.log(yellow('  > Setting these values:'));
-	console.log(yellow(`  > ${names[0]} => ${addresses[0]}`));
-	console.log(yellow(`  > ${names[1]} => ${addresses[1]}`));
 
 	const params = {
 		from: account,
@@ -148,18 +139,54 @@ const connectLayer = async ({
 		gas: gasLimit,
 	};
 
-	if (!dryRun) {
-		console.log(yellow('  > AddressResolver.importAddresses()...'));
-		tx = await AddressResolver.methods
-			.importAddresses(names.map(toBytes32), addresses)
-			.send(params);
-		console.log(JSON.stringify(tx, null, 2));
+	let tx;
 
-		console.log(yellow('  > SynthetixBridge.rebuildCache()...'));
-		tx = await SynthetixBridge.methods.rebuildCache().send(params);
-		console.log(JSON.stringify(tx, null, 2));
+	if (needToImportAddresses) {
+		console.log(yellow('  > Setting these values:'));
+		console.log(yellow(`  > ${names[0]} => ${addresses[0]}`));
+		console.log(yellow(`  > ${names[1]} => ${addresses[1]}`));
+
+		if (!dryRun) {
+			console.log(yellow('  > AddressResolver.importAddresses()...'));
+			tx = await AddressResolver.methods
+				.importAddresses(names.map(toBytes32), addresses)
+				.send(params);
+			console.log(JSON.stringify(tx, null, 2));
+		} else {
+			console.log(yellow('  > Skipping, since this is a DRY RUN'));
+		}
 	} else {
-		console.log(yellow('  > Skipping, since this is a DRY RUN'));
+		console.log(
+			gray('  > Bridge is already does not need to import any addresses in this layer. Skipping...')
+		);
+	}
+
+	// ---------------------------------
+	// Sync cache on bridge if needed
+	// ---------------------------------
+
+	let needToSyncCacheOnBridge = needToImportAddresses;
+	if (!needToSyncCacheOnBridge) {
+		const isResolverCached = await SynthetixBridge.methods
+			.isResolverCached(AddressResolver.options.address)
+			.call();
+		if (!isResolverCached) {
+			needToSyncCacheOnBridge = true;
+		}
+	}
+
+	if (needToSyncCacheOnBridge) {
+		console.log(yellow('  > Rebuilding cache on bridge...'));
+
+		if (!dryRun) {
+			console.log(yellow('  > SynthetixBridge.rebuildCache()...'));
+			tx = await SynthetixBridge.methods.rebuildCache().send(params);
+			console.log(JSON.stringify(tx, null, 2));
+		} else {
+			console.log(yellow('  > Skipping, since this is a DRY RUN'));
+		}
+	} else {
+		console.log(gray('  > Bridge cache is synced in this layer. Skipping...'));
 	}
 };
 
