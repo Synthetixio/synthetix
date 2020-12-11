@@ -73,6 +73,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot withdraw with debt");
+
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
 
@@ -88,7 +89,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger on L2
-    function mintSecondaryFromDeposit(address account, uint amount) external onlyOptimismBridge {
+    function completeDeposit(address account, uint amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
         synthetix().mintSecondary(account, amount);
 
@@ -96,7 +97,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     }
 
     // invoked by Messenger on L2
-    function mintSecondaryFromDepositForRewards(uint amount) external onlyOptimismBridge {
+    function completeRewardDeposit(uint amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 
