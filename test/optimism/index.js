@@ -1,8 +1,6 @@
-const fs = require('fs');
-const path = require('path');
 const ethers = require('ethers');
 const { assert, assertRevert } = require('../contracts/common');
-const { getSource, getTarget } = require('../..');
+const { wait, fastForward, takeSnapshot, restoreSnapshot, connectContract } = require('./utils');
 
 const L1_PROVIDER_URL = 'http://localhost:9545';
 const L2_PROVIDER_URL = 'http://localhost:8545';
@@ -52,16 +50,21 @@ describe('Layer 2 production tests', () => {
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
 		before('connect to contracts', async () => {
-			SynthetixL1 = connectContract({ contract: 'Synthetix' });
+			SynthetixL1 = connectContract({ contract: 'Synthetix', provider: providerL1 });
 			SynthetixL2 = connectContract({
 				contract: 'Synthetix',
 				source: 'MintableSynthetix',
 				useOvm: true,
+				provider: providerL2,
 			});
-			SynthetixBridgeToOptimismL1 = connectContract({ contract: 'SynthetixBridgeToOptimism' });
+			SynthetixBridgeToOptimismL1 = connectContract({
+				contract: 'SynthetixBridgeToOptimism',
+				provider: providerL1,
+			});
 			SynthetixBridgeToBaseL2 = connectContract({
 				contract: 'SynthetixBridgeToBase',
 				useOvm: true,
+				provider: providerL2,
 			});
 		});
 
@@ -105,10 +108,7 @@ describe('Layer 2 production tests', () => {
 				it('reverts if the user attempts to depost', async () => {
 					SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
-					assertRevert(
-						SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
-						'?'
-					);
+					assertRevert(SynthetixBridgeToOptimismL1.deposit(amountToDeposit), '?');
 				});
 			});
 
@@ -125,8 +125,12 @@ describe('Layer 2 production tests', () => {
 				describe.skip('when the system is suspended in L1', () => {});
 
 				describe('when a user has debt in L1', () => {
-					before('take snapshot in L1', async () => { snapshotId = await takeSnapshot({ provider: providerL1 }) });
-					after('restore snapshot in L1', async () => { await restoreSnapshot({ id: snapshotId, provider: providerL1 }) });
+					before('take snapshot in L1', async () => {
+						snapshotId = await takeSnapshot({ provider: providerL1 });
+					});
+					after('restore snapshot in L1', async () => {
+						await restoreSnapshot({ id: snapshotId, provider: providerL1 });
+					});
 
 					before('issue sUSD', async () => {
 						SynthetixL1 = SynthetixL1.connect(USER1_ADDRESS);
@@ -148,7 +152,7 @@ describe('Layer 2 production tests', () => {
 					describe('when a user deposits SNX in the L1 bridge', () => {
 						before('record current values', async () => {
 							cache.bridge.l1.balance = await SynthetixL1.balanceOf(
-								SynthetixBridgeToOptimismL1.address
+								SynthetixBridgeToBaseL2.address
 							);
 
 							cache.user1.l1.balance = await SynthetixL1.balanceOf(USER1_ADDRESS);
@@ -190,8 +194,12 @@ describe('Layer 2 production tests', () => {
 							});
 
 							describe('when a user has debt in L2', () => {
-								before('take snapshot in L1', async () => { snapshotId = await takeSnapshot({ provider: providerL1 }) });
-								after('restore snapshot in L1', async () => { await restoreSnapshot({ id: snapshotId, provider: providerL1 }) });
+								before('take snapshot in L1', async () => {
+									snapshotId = await takeSnapshot({ provider: providerL1 });
+								});
+								after('restore snapshot in L1', async () => {
+									await restoreSnapshot({ id: snapshotId, provider: providerL1 });
+								});
 
 								before('issue sUSD', async () => {
 									SynthetixL2 = SynthetixL2.connect(USER1_ADDRESS);
@@ -264,49 +272,15 @@ describe('Layer 2 production tests', () => {
 		// --------------------------
 
 		describe.skip('when depositing rewards', () => {});
+
+		// --------------------------
+		// Deposit migration
+		// --------------------------
+
+		describe.skip('when migrating the L1 bridge', () => {});
 	});
 
 	// --------------------------
 	// Utilities
 	// --------------------------
-
-	function connectContract({ contract, source = contract, useOvm = false }) {
-		const params = {
-			path,
-			fs,
-			network: 'local',
-			useOvm,
-		};
-
-		return new ethers.Contract(
-			getTarget({ ...params, contract }).address,
-			getSource({ ...params, contract: source }).abi,
-			useOvm ? providerL2 : providerL1
-		);
-	}
-
-	async function wait(seconds) {
-		return new Promise(resolve => {
-			setTimeout(() => {
-				resolve();
-			}, seconds * 1000);
-		});
-	}
-
-	async function fastForward({ seconds, provider }) {
-		await provider.send('evm_increaseTime', [seconds]);
-		await provider.send('evm_mine', []);
-	}
-
-	async function takeSnapshot({ provider }) {
-		const id = await provider.send('evm_snapshot', []);
-		await provider.send('evm_mine', []);
-
-		return id;
-	}
-
-	async function restoreSnapshot({ id, provider }) {
-		await provider.send('evm_revert', [id]);
-		await provider.send('evm_mine', []);
-	}
 });
