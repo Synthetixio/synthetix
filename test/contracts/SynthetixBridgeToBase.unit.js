@@ -29,17 +29,31 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let mintableSynthetix;
 		let resolver;
 		let issuer;
+		let flexibleStorage;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
 			});
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
 			issuer = await smockit(artifacts.require('IIssuer').abi);
+			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
-				['ext:Messenger', 'Synthetix', 'base:SynthetixBridgeToOptimism', 'Issuer'].map(toBytes32),
-				[messenger.address, mintableSynthetix.address, snxBridgeToOptimism, issuer.address],
+				[
+					'FlexibleStorage',
+					'ext:Messenger',
+					'Synthetix',
+					'base:SynthetixBridgeToOptimism',
+					'Issuer',
+				].map(toBytes32),
+				[
+					flexibleStorage.address,
+					messenger.address,
+					mintableSynthetix.address,
+					snxBridgeToOptimism,
+					issuer.address,
+				],
 				{ from: owner }
 			);
 		});
@@ -52,6 +66,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			messenger.smocked.sendMessage.will.return.with(() => {});
 			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToOptimism);
 			issuer.smocked.debtBalanceOf.will.return.with(() => '0');
+			flexibleStorage.smocked.getUIntValue.will.return.with(() => '3000000');
 		});
 
 		describe('when the target is deployed', () => {

@@ -45,6 +45,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let synthetix;
 		let issuer;
 		let resolver;
+		let flexibleStorage;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
@@ -53,11 +54,13 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);
 			issuer = await smockit(artifacts.require('IIssuer').abi);
+			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
 				[
+					'FlexibleStorage',
 					'ext:Messenger',
 					'Synthetix',
 					'Issuer',
@@ -65,6 +68,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					'ovm:SynthetixBridgeToBase',
 				].map(toBytes32),
 				[
+					flexibleStorage.address,
 					messenger.address,
 					synthetix.address,
 					issuer.address,
@@ -83,6 +87,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			messenger.smocked.sendMessage.will.return.with(() => {});
 			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToBase);
 			issuer.smocked.debtBalanceOf.will.return.with(() => '0');
+			flexibleStorage.smocked.getUIntValue.will.return.with(() => '3000000');
 		});
 
 		describe('when the target is deployed', () => {
