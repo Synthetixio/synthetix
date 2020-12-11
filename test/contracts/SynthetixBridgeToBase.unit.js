@@ -14,11 +14,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToBase.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: [
-				'initiateWithdrawal',
-				'mintSecondaryFromDeposit',
-				'mintSecondaryFromDepositForRewards',
-			],
+			expected: ['initiateWithdrawal', 'completeDeposit', 'completeRewardDeposit'],
 		});
 	});
 
@@ -108,11 +104,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 			});
 
-			describe('mintSecondaryFromDeposit', async () => {
+			describe('completeDeposit', async () => {
 				describe('failure modes', () => {
-					it('should only allow the relayer (aka messenger) to call mintSecondaryFromDeposit()', async () => {
+					it('should only allow the relayer (aka messenger) to call completeDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: instance.mintSecondaryFromDeposit,
+							fnc: instance.completeDeposit,
 							args: [user1, 100],
 							accounts,
 							address: smockedMessenger,
@@ -120,11 +116,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						});
 					});
 
-					it('should only allow the L1 bridge to invoke mintSecondaryFromDeposit() via the messenger', async () => {
+					it('should only allow the L1 bridge to invoke completeDeposit() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.mintSecondaryFromDeposit(user1, 100, {
+							instance.completeDeposit(user1, 100, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -135,8 +131,8 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				describe('when invoked by the messenger (aka relayer)', async () => {
 					let mintSecondaryTx;
 					const mintSecondaryAmount = 100;
-					beforeEach('mintSecondaryFromDeposit is called', async () => {
-						mintSecondaryTx = await instance.mintSecondaryFromDeposit(user1, mintSecondaryAmount, {
+					beforeEach('completeDeposit is called', async () => {
+						mintSecondaryTx = await instance.completeDeposit(user1, mintSecondaryAmount, {
 							from: smockedMessenger,
 						});
 					});
@@ -159,11 +155,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 			});
 
-			describe('mintSecondaryFromDepositForRewards', async () => {
+			describe('completeRewardDeposit', async () => {
 				describe('failure modes', () => {
-					it('should only allow the relayer (aka messenger) to call mintSecondaryFromDepositForRewards()', async () => {
+					it('should only allow the relayer (aka messenger) to call completeRewardDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: instance.mintSecondaryFromDepositForRewards,
+							fnc: instance.completeRewardDeposit,
 							args: [100],
 							accounts,
 							address: smockedMessenger,
@@ -171,11 +167,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						});
 					});
 
-					it('should only allow the L1 bridge to invoke mintSecondaryFromDepositForRewards() via the messenger', async () => {
+					it('should only allow the L1 bridge to invoke completeRewardDeposit() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.mintSecondaryFromDeposit(user1, 100, {
+							instance.completeDeposit(user1, 100, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -186,13 +182,10 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				describe('when invoked by the bridge on the other layer', async () => {
 					let mintSecondaryTx;
 					const mintSecondaryAmount = 100;
-					beforeEach('mintSecondaryFromDepositForRewards is called', async () => {
-						mintSecondaryTx = await instance.mintSecondaryFromDepositForRewards(
-							mintSecondaryAmount,
-							{
-								from: smockedMessenger,
-							}
-						);
+					beforeEach('completeRewardDeposit is called', async () => {
+						mintSecondaryTx = await instance.completeRewardDeposit(mintSecondaryAmount, {
+							from: smockedMessenger,
+						});
 					});
 
 					it('should emit a MintedSecondaryRewards event', async () => {
