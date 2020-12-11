@@ -33,7 +33,7 @@ const migrateBridge = async ({
 	console.log(gray(`  > Deployment path: ${deploymentPath}`));
 
 	// -----------------------------------
-	// Confirm bridge addresses
+	// Get the old bridge address from versions.js
 	// -----------------------------------
 
 	const { getVersions } = wrap({ network, fs, path });
@@ -47,10 +47,14 @@ const migrateBridge = async ({
 			)
 		);
 	}
-	const [secondLastEntry, lastEntry] = bridgeVersions.slice(-2);
 
-	const newBridgeAddress = lastEntry.address;
-	const oldBridgeAddress = secondLastEntry.address;
+	const oldBridgeAddress = bridgeVersions[bridgeVersions.length - 1].address;
+
+	// -----------------------------------
+	// Get the new bridge address from deployment.js
+	// -----------------------------------
+
+	const newBridgeAddress = getTarget({ deploymentPath, contract: 'SynthetixBridgeToOptimism' });
 
 	// -----------------------------------
 	// Ultra-paranoid validation
