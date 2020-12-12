@@ -24,6 +24,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
     bytes32 internal constant SETTING_TRADING_REWARDS_ENABLED = "tradingRewardsEnabled";
     bytes32 internal constant SETTING_DEBT_SNAPSHOT_STALE_TIME = "debtSnapshotStaleTime";
+    bytes32 internal constant SETTING_CROSS_DOMAIN_MESSAGE_GAS_LIMIT = "crossDomainMessageGasLimit";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -36,6 +37,10 @@ contract MixinSystemSettings is MixinResolver {
 
     function flexibleStorage() internal view returns (IFlexibleStorage) {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
+    }
+
+    function getCrossDomainMessageGasLimit() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
     }
 
     function getTradingRewardsEnabled() internal view returns (bool) {

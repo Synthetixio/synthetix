@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // Internal references
@@ -13,9 +14,7 @@ import "./interfaces/IIssuer.sol";
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
 
-contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
-    uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: make this updateable
-
+contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeToBase {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -24,7 +23,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     //
     // ========== INTERNALS ============
@@ -59,12 +58,14 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     // ========== VIEWS ==========
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](4);
+    function resolverAddressesRequired() public view returns (bytes32[] memory) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory addresses = new bytes32[](4);
         addresses[0] = CONTRACT_EXT_MESSENGER;
         addresses[1] = CONTRACT_SYNTHETIX;
         addresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
         addresses[3] = CONTRACT_ISSUER;
+        return combineArrays(existingAddresses, addresses);
     }
 
     // ========== PUBLIC FUNCTIONS =========
@@ -80,7 +81,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
         bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
-        messenger().sendMessage(synthetixBridgeToOptimism(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+        messenger().sendMessage(synthetixBridgeToOptimism(), messageData, uint32(getCrossDomainMessageGasLimit()));
 
         emit WithdrawalInitiated(msg.sender, amount);
     }
