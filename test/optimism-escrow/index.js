@@ -1,21 +1,21 @@
-const fs = require('fs');
-const path = require('path');
-const ethers = require('ethers');
-const { assert } = require('../contracts/common');
-const { getSource, getTarget } = require('../..');
+// const fs = require('fs');
+// const path = require('path');
+// const ethers = require('ethers');
+// const { assert } = require('../contracts/common');
+// const { getSource, getTarget } = require('../..');
 
-const L1_PROVIDER_URL = 'http://localhost:9545';
-const L2_PROVIDER_URL = 'http://localhost:8545';
-// const DATA_PROVIDER_URL = 'http://localhost:8080';
+// const L1_PROVIDER_URL = 'http://localhost:9545';
+// const L2_PROVIDER_URL = 'http://localhost:8545';
+// // const DATA_PROVIDER_URL = 'http://localhost:8080';
 
-// These addresses are set up by optimism-integration in the local chains.
-// See publish/src/commands/deploy-ovm-pair.js
-const OWNER_ADDRESS = '0x640e7cc27b750144ED08bA09515F3416A988B6a3';
-const USER1_PRIVATE_KEY = '0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c';
-const USER1_ADDRESS = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
+// // These addresses are set up by optimism-integration in the local chains.
+// // See publish/src/commands/deploy-ovm-pair.js
+// const OWNER_ADDRESS = '0x640e7cc27b750144ED08bA09515F3416A988B6a3';
+// const USER1_PRIVATE_KEY = '0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c';
+// const USER1_ADDRESS = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
 
-const SECOND = 1000;
-const MINUTE = SECOND * 60;
+// const SECOND = 1000;
+// const MINUTE = SECOND * 60;
 
 // describe('Layer 2 production tests', () => {
 // 	let providerL1, providerL2;
