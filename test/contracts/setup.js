@@ -738,6 +738,7 @@ const setupAllContracts = async ({
 				'Issuer',
 				'SynthetixState',
 				'RewardEscrow',
+				'RewardEscrowV2',
 				'DelegateApprovals',
 				'FeePoolEternalStorage',
 				'RewardsDistribution',
