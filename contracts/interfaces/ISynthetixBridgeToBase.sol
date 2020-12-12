@@ -9,14 +9,14 @@ interface ISynthetixBridgeToBase {
     function initiateWithdrawal(uint amount) external;
 
     // invoked by the xDomain messenger on L2
-    function mintSecondaryFromDeposit(
+    function completeDeposit(
         address account,
-        uint amount,
-        uint escrowAmount
+        uint depositAmount,
+        uint escrowedAmount
     ) external;
 
     // invoked by the xDomain messenger on L2
-    function mintSecondaryFromDepositForRewards(uint amount) external;
+    function completeRewardDeposit(uint amount) external;
 
     // invoked by the xDomain messenger on L2
     function importVestingEntries(
