@@ -91,11 +91,14 @@
 			"FeePool",
 			"Issuer",
 			"Liquidations",
+			"RewardEscrowV2",
 			"SystemSettings",
 			"Synthetix",
 			"TradingRewards",
-			"Synth(s|i).+"
+			"Synth(s|i).+",
+			"SynthetixBridgeToOptimism",
+			"SynthetixBridgeToBase"
 		],
-		"sips": []
+		"sips": [60, 100, 102]
 	}
 ]

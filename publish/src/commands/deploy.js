@@ -527,8 +527,8 @@ const deploy = async ({
 		name: 'RewardEscrowV2',
 		source: useOvm ? 'ImportableRewardEscrowV2' : 'RewardEscrowV2',
 		args: useOvm
-			? [account, addressOf(addressResolver)]
-			: [account, addressOf(addressResolver), addressOf(rewardEscrow)],
+			? [account, addressOf(readProxyForResolver)]
+			: [account, addressOf(readProxyForResolver), addressOf(rewardEscrow)],
 		deps: useOvm ? ['AddressResolver'] : ['AddressResolver', 'RewardEscrow'],
 	});
 
@@ -1131,6 +1131,7 @@ const deploy = async ({
 		});
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToBase',
+			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
 	} else {
@@ -1146,6 +1147,7 @@ const deploy = async ({
 		});
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
+			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
 	}
