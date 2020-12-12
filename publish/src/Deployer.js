@@ -222,20 +222,6 @@ class Deployer {
 				});
 				deployedContract.options.address = '0x' + this._dryRunCounter.toString().padStart(40, '0');
 			} else {
-				const nonce = await this.web3.eth.getTransactionCount(this.account);
-
-				// Known OVM bug. EOA nonces start with 0, when they should start with 1.
-				// Compensate by sending a dummy tx.
-				if (this.useOvm && nonce === 0) {
-					console.log(
-						yellow(
-							`⚠ WARNING: Deployer nonce is 0. This will cause problems in deployments. Sending a dummy tx to increase the nonce...`
-						)
-					);
-
-					await this.sendDummyTx();
-				}
-
 				// If the contract creation will result in an address that's unsafe for OVM,
 				// increment the tx nonce until its not.
 				// Quite commonly, deployed contract addresses will be used as constructor arguments of
