@@ -4,4 +4,4 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npm run test:multi-same-chain
+  - run: npm run test:prod:ovm
