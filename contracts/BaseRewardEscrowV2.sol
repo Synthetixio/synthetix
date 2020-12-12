@@ -44,7 +44,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     uint256 public totalEscrowedBalance;
 
     /* Max escrow duration */
-    uint public MAX_DURATION = 5 * 52 weeks; // Default max 5 years duration
+    uint public MAX_DURATION = 2 * 52 weeks; // Default max 2 years duration
 
     /* ========== OLD ESCROW LOOKUP ========== */
 
@@ -317,6 +317,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         require(issuer().debtBalanceOf(accountToMerge, "sUSD") == 0, "Cannot merge accounts with debt");
         require(nominatedReceiver[accountToMerge] == msg.sender, "Address is not nominated to merge");
 
+        for (uint i = 0; i < entryIDs.length; i++) {
+            // retrieve entries
+            // VestingEntries.VestingEntry memory entry = vestingSchedules[accountToMerge][entryIDs[i]];
+        }
         // delete totalEscrowedAccountBalance for merged account
         // delete totalVestedAccountBalance for merged acctoun
         // delete nominatedReceiver once merged
