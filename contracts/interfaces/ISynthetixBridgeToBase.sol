@@ -11,8 +11,8 @@ interface ISynthetixBridgeToBase {
     // invoked by the xDomain messenger on L2
     function completeDeposit(
         address account,
-        uint amount,
-        uint escrowAmount
+        uint depositAmount,
+        uint escrowedAmount
     ) external;
 
     // invoked by the xDomain messenger on L2
