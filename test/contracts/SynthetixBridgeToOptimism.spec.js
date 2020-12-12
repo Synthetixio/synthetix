@@ -24,7 +24,7 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(), 3e6);
 		});
 
-		describe('deposit', () => {
+		describe('initiateDeposit', () => {
 			const amountToDeposit = 1;
 
 			describe('when a user has not provided allowance to the bridge contract', () => {
