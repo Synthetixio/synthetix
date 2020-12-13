@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Collateral.sol";
-import "./interfaces/ICollateral.sol";
+import "./interfaces/ICollateralErc20.sol";
 
 // Internal references
 import "./CollateralState.sol";
@@ -26,15 +26,15 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         uint _minCratio,
         uint _minCollateral,
         address _underlyingContract
-    ) 
-    public 
+    )
+    public
     Collateral(
-        _state, 
-        _owner, 
+        _state,
+        _owner,
         _manager,
-        _resolver, 
-        _collateralKey, 
-        _synths, 
+        _resolver,
+        _collateralKey,
+        _synths,
         _minCratio,
         _minCollateral
         )
@@ -66,7 +66,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
 
     function withdraw(uint id, uint amount) external {
         withdrawInternal(id, amount);
-        
+
         IERC20(underlyingContract).transfer(msg.sender, amount);
     }
 

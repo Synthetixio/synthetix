@@ -7,6 +7,7 @@ import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./Pausable.sol";
 import "./interfaces/ICollateral.sol";
+import "./interfaces/ICollateralLoan.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -20,7 +21,7 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
-contract Collateral is ICollateral, ILoan, Owned, MixinResolver, Pausable {
+contract Collateral is ICollateral, ICollateralLoan, Owned, MixinResolver, Pausable {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;

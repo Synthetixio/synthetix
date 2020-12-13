@@ -6,14 +6,15 @@ pragma experimental ABIEncoderV2;
 import "./Owned.sol";
 import "./State.sol";
 import "./interfaces/ICollateral.sol";
+import "./interfaces/ICollateralLoan.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
 
-contract CollateralState is Owned, State, ILoan {
+contract CollateralState is Owned, State, ICollateralLoan {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
- 
+
     uint public totalLoans;
 
     mapping(address => Loan[]) public loans;
@@ -36,7 +37,7 @@ contract CollateralState is Owned, State, ILoan {
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
-    
+
     function createLoan(Loan memory loan) public onlyAssociatedContract {
         loans[loan.account].push(loan);
     }

@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Collateral.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
-import "./interfaces/ICollateral.sol";
+import "./interfaces/ICollateralEth.sol";
 
 // Internal references
 import "./CollateralState.sol";
@@ -24,14 +24,14 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         bytes32[] memory _synths,
         uint _minCratio,
         uint _minCollateral
-    ) 
-    public 
+    )
+    public
     Collateral(
-        _state, 
-        _owner, 
+        _state,
+        _owner,
         _manager,
-        _resolver, 
-        _collateralKey, 
+        _resolver,
+        _collateralKey,
         _synths,
         _minCratio,
         _minCollateral
@@ -41,7 +41,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
     function open(uint amount, bytes32 currency) external payable {
         openInternal(msg.value, amount, currency, false);
     }
-    
+
     function close(uint id) external {
         uint256 collateral = closeInternal(msg.sender, id);
 
