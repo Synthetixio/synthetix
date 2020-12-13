@@ -1719,6 +1719,15 @@ const deploy = async ({
 			writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
 		});
 
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: await getDeployParameter('CROSS_DOMAIN_MESSAGE_GAS_LIMIT'),
+		});
+
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
 		if (aggregatorWarningFlags) {
 			await runStep({

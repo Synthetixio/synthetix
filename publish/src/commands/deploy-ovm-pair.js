@@ -65,10 +65,11 @@ const getMessengers = async () => {
 	const response = await axios.get(`${DATA_PROVIDER_URL}/addresses.json`);
 	const addresses = response.data;
 
-	// we should use the messenger proxy on L1
-	// on L2 we hardcode the messenger address since it is not included in addresses.json
+	// These might appear to be inverted, but their not.
+	// Optimism uses a slightly different naming convention.
+	// Note: At the moment, the L2 messenger is hardcoded
 	return {
-		l1Messenger: addresses['Proxy__OVM_L1CrossDomainMessenger'],
+		l1Messenger: addresses['OVM_L2CrossDomainMessenger'],
 		l2Messenger: '0x4200000000000000000000000000000000000007',
 	};
 };
