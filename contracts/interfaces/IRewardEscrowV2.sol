@@ -25,6 +25,12 @@ interface IRewardEscrowV2 {
 
     function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint);
 
+    function getVestingSchedules(
+        address account,
+        uint256 index,
+        uint256 pageSize
+    ) external view returns (VestingEntries.VestingEntry[] memory);
+
     function getVestingEntryClaimable(address account, uint256 entryID) external view returns (uint);
 
     function timeSinceLastVested(address account, uint256 entryID) external view returns (uint);
