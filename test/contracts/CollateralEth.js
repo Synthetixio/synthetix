@@ -83,12 +83,11 @@ contract('CollateralEth', async accounts => {
 		synths,
 		minColat,
 		minSize,
-		intRate,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [state, owner, manager, resolver, collatKey, synths, minColat, minSize, intRate],
+			args: [state, owner, manager, resolver, collatKey, synths, minColat, minSize],
 		});
 	};
 
@@ -128,6 +127,9 @@ contract('CollateralEth', async accounts => {
 			addressResolver.address,
 			maxDebt,
 			liqPen,
+			// 5% / 31536000 (seconds in common year)
+			1585489599,
+			0,
 			{
 				from: deployerAccount,
 			}
@@ -149,8 +151,6 @@ contract('CollateralEth', async accounts => {
 			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsETH')],
 			minColat: toUnit(1.5),
 			minSize: toUnit(1),
-			// 5% / 31536000 (seconds in common year)
-			intRate: 1585489599,
 		});
 
 		await addressResolver.importAddresses(
@@ -223,7 +223,6 @@ contract('CollateralEth', async accounts => {
 		assert.equal(await ceth.synths(1), toBytes32('SynthsETH'));
 		assert.bnEqual(await ceth.minCratio(), toUnit(1.5));
 		assert.bnEqual(await ceth.minCollateral(), toUnit(1));
-		assert.bnEqual(await ceth.baseInterestRate(), 1585489599);
 	});
 
 	it('should ensure only expected functions are mutative', async () => {
@@ -505,29 +504,6 @@ contract('CollateralEth', async accounts => {
 				});
 				it('should update the minimum collateralisation', async () => {
 					assert.bnEqual(await ceth.minCratio(), toUnit(2));
-				});
-			});
-		});
-
-		describe('setBaseInterestRate', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						ceth.setBaseInterestRate(toUnit(1), { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await ceth.setBaseInterestRate(toUnit(2), { from: owner });
-				});
-				it('should update the base interest rate', async () => {
-					assert.bnEqual(await ceth.baseInterestRate(), toUnit(2));
-				});
-				it('should allow the base interest rate to be  0', async () => {
-					await ceth.setBaseInterestRate(toUnit(0), { from: owner });
-					assert.bnEqual(await ceth.baseInterestRate(), toUnit(0));
 				});
 			});
 		});
