@@ -829,7 +829,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		});
 		it('should return the vesting schedules for account1', async () => {
 			const entries = await baseRewardEscrowV2.getVestingSchedules(account1, 0, 3);
-			assert.equal(entries.length(), 3);
+			assert.equal(entries.length, 3);
 		});
 	});
 
