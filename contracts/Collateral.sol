@@ -587,7 +587,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinResolver, Pausa
             _manager().incrementShorts(loan.currency, loan.amount);
         } else {
             _manager().incrementLongs(loan.currency, loan.amount);
-             _synths(currencies[loan.currency]).issue(msg.sender, amount);
+            _synths(currencies[loan.currency]).issue(msg.sender, amount);
         }
 
         // 8. Store the loan
