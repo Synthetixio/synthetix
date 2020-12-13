@@ -42,6 +42,7 @@ const deployOvmPair = async () => {
 		l1GasPrice: 0,
 		l2GasPrice: 0,
 		gasLimit: 8000000,
+		ignoreCustomParameters: true,
 	});
 };
 

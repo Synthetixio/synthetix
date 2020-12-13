@@ -3,6 +3,7 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { toBytes32 } = require('../..');
 const { itCanPerformDeposits } = require('./deposits.test');
+const { itCanPerformWithdrawals } = require('./withdrawals.test');
 
 describe('Layer 2 production tests', () => {
 	// --------------------------
@@ -38,19 +39,23 @@ describe('Layer 2 production tests', () => {
 		});
 
 		before('simulate exchange rates and debt cache', async () => {
-			async function simulateExchangeRates({ provider, owner }) {
+			async function simulateExchangeRates({ provider, owner, useOvm }) {
 				const Issuer = connectContract({
 					contract: 'Issuer',
 					provider,
+					useOvm,
 				});
 				let ExchangeRates = connectContract({
 					contract: 'ExchangeRates',
 					provider,
+					useOvm,
 				});
-				// let DebtCache = connectContract({
-				// 	contract: 'DebtCache',
-				// 	provider,
-				// });
+				let DebtCache = connectContract({
+					contract: 'DebtCache',
+					source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
+					provider,
+					useOvm,
+				});
 
 				let currencyKeys = await Issuer.availableCurrencyKeys();
 				currencyKeys = currencyKeys.filter(key => key !== toBytes32('sUSD'));
@@ -69,12 +74,12 @@ describe('Layer 2 production tests', () => {
 				// TODO: is this needed?
 				// It appears to be needed to be called at least once in the lifetime
 				// of a pair of instances, but calling it every time triggers some weird nonce error.
-				// DebtCache = DebtCache.connect(owner);
-				// await DebtCache.takeDebtSnapshot();
+				DebtCache = DebtCache.connect(owner);
+				await DebtCache.takeDebtSnapshot();
 			}
 
-			await simulateExchangeRates({ provider: this.providerL1, owner: this.ownerL1 });
-			await simulateExchangeRates({ provider: this.providerL2, owner: this.ownerL2 });
+			await simulateExchangeRates({ provider: this.providerL1, owner: this.ownerL1, useOvm: false });
+			await simulateExchangeRates({ provider: this.providerL2, owner: this.ownerL2, useOvm: true });
 		});
 
 		// --------------------------
@@ -89,9 +94,7 @@ describe('Layer 2 production tests', () => {
 
 			it('shows the instances have the expected total supplies', async () => {
 				assert.bnEqual(await SynthetixL1.totalSupply(), ethers.utils.parseEther('100000000'));
-
-				assert.bnGte(await SynthetixL2.totalSupply(), ethers.utils.parseEther('0'));
-				assert.bnLt(await SynthetixL2.totalSupply(), ethers.utils.parseEther('1000000'));
+				assert.bnEqual(await SynthetixL2.totalSupply(), ethers.utils.parseEther('100000000'));
 			});
 		});
 
@@ -100,9 +103,9 @@ describe('Layer 2 production tests', () => {
 		// --------------------------
 
 		itCanPerformDeposits({ ctx: this });
+		itCanPerformWithdrawals({ ctx: this });
 
 		// TODO
-		// itCanPerformWithdrawals();
 		// itCanPerformRewardDeposits();
 		// itCanMigrateL1Bridges();
 	});

@@ -4,7 +4,7 @@ const { connectContract } = require('./utils/connectContract');
 const { wait, takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
 const itCanPerformDeposits = ({ ctx }) => {
-	describe('when migrating SNX from L1 to L2', () => {
+	describe.only('when migrating SNX from L1 to L2', () => {
 		// --------------------------
 		// Setup
 		// --------------------------
