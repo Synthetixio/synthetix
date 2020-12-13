@@ -1,10 +1,10 @@
 const ethers = require('ethers');
 const { assert } = require('../contracts/common');
+const { assertRevertOptimism } = require('./utils/revertOptimism');
 const { connectContract } = require('./utils/connectContract');
-const { wait, takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
 const itCanPerformWithdrawals = ({ ctx }) => {
-	describe.skip('Withdrawals - when migrating SNX from L2 to L1', () => {
+	describe.only('Withdrawals - when migrating SNX from L2 to L1', () => {
 		// --------------------------
 		// Setup
 		// --------------------------
@@ -15,6 +15,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 		let SynthetixL1, SynthetixL2;
 		let SynthetixBridgeToOptimismL1, SynthetixBridgeToBaseL2;
+		let IssuerL2;
 
 		let snapshotId;
 
@@ -58,6 +59,11 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
+			IssuerL2 = connectContract({
+				contract: 'Issuer',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
 		});
 
 		// --------------------------
@@ -83,31 +89,35 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 				);
 			});
 
-			// --------------------------
 			// With debt
+			// --------------------------
 			// --------------------------
 
 			describe('when a user has debt in L2', () => {
-				before('take snapshot in L1', async () => {
-					snapshotId = await takeSnapshot({ provider: ctx.providerL1 });
-				});
-				after('restore snapshot in L1', async () => {
-					await restoreSnapshot({ id: snapshotId, provider: ctx.providerL1 });
-				});
-
 				before('issue sUSD', async () => {
 					SynthetixL2 = SynthetixL2.connect(user1L2);
 
-					await SynthetixL2.issueSynths(1);
+					const tx = await SynthetixL2.issueSynths(1);
+					await tx.wait();
 				});
 
-				it('reverts when the user attempts to withdraw', async () => {
+				it('shows the user has debt', async () => {
+					assert.bnGte(
+						await IssuerL2.debtBalanceOf(user1Address, ethers.utils.formatBytes32String('sUSD')),
+						1
+					);
+				});
+
+				it('reverts if the user attemtps to withdraw to L1', async () => {
 					SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
-					await assert.revert(
-						SynthetixBridgeToBaseL2.initiateWithdrawal(1),
-						'Cannot withdraw with debt'
-					);
+					const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(1);
+
+					await assertRevertOptimism({
+						tx,
+						reason: 'Cannot withdraw with debt',
+						provider: ctx.providerL2
+					});
 				});
 			});
 		});

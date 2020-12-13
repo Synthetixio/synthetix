@@ -50,31 +50,31 @@ describe('Layer 2 production tests', () => {
 					provider,
 					useOvm,
 				});
+				let DebtCache = connectContract({
+					contract: 'DebtCache',
+					source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
+					provider,
+					useOvm,
+				});
 
 				let currencyKeys = await Issuer.availableCurrencyKeys();
 				currencyKeys = currencyKeys.filter(key => key !== toBytes32('sUSD'));
-				const additionalKeys = ['ETH'].map(toBytes32); // The Depot uses the key "ETH" as opposed to "sETH" for its ether price
+				const additionalKeys = ['SNX', 'ETH'].map(toBytes32); // The Depot uses the key "ETH" as opposed to "sETH" for its ether price
 				currencyKeys.push(...additionalKeys);
 
 				const { timestamp } = await provider.getBlock();
 
 				ExchangeRates = ExchangeRates.connect(owner);
-				await ExchangeRates.updateRates(
+				let tx = await ExchangeRates.updateRates(
 					currencyKeys,
 					currencyKeys.map(() => ethers.utils.parseEther('1')),
 					timestamp
 				);
+				await tx.wait();
 
-				if (!useOvm) {
-					let DebtCache = connectContract({
-						contract: 'DebtCache',
-						source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
-						provider,
-						useOvm,
-					});
-					DebtCache = DebtCache.connect(owner);
-					await DebtCache.takeDebtSnapshot();
-				}
+				DebtCache = DebtCache.connect(owner);
+				tx = await DebtCache.takeDebtSnapshot();
+				await tx.wait();
 			}
 
 			await simulateExchangeRates({ provider: this.providerL1, owner: this.ownerL1, useOvm: false });

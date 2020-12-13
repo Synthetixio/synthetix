@@ -72,7 +72,8 @@ const itCanPerformDeposits = ({ ctx }) => {
 			before('ensure that the user has the expected SNX balance', async () => {
 				SynthetixL1 = SynthetixL1.connect(ctx.ownerL1);
 
-				await SynthetixL1.transfer(user1Address, amountToDeposit);
+				const tx = await SynthetixL1.transfer(user1Address, amountToDeposit);
+				await tx.wait();
 			});
 
 			it('shows the user has SNX', async () => {
@@ -90,10 +91,11 @@ const itCanPerformDeposits = ({ ctx }) => {
 				before('make sure approval is zero', async () => {
 					SynthetixL1 = SynthetixL1.connect(user1L1);
 
-					await SynthetixL1.approve(
+					const tx = await SynthetixL1.approve(
 						SynthetixBridgeToOptimismL1.address,
 						ethers.utils.parseEther('0')
 					);
+					await tx.wait();
 				});
 
 				it('reverts if the user attempts to initiate a deposit', async () => {
@@ -114,10 +116,11 @@ const itCanPerformDeposits = ({ ctx }) => {
 				before('approve', async () => {
 					SynthetixL1 = SynthetixL1.connect(user1L1);
 
-					await SynthetixL1.approve(
+					const tx = await SynthetixL1.approve(
 						SynthetixBridgeToOptimismL1.address,
 						ethers.utils.parseEther('100000000')
 					);
+					await tx.wait();
 				});
 
 				// --------------------------
@@ -143,7 +146,8 @@ const itCanPerformDeposits = ({ ctx }) => {
 					before('issue sUSD', async () => {
 						SynthetixL1 = SynthetixL1.connect(user1L1);
 
-						await SynthetixL1.issueSynths(1);
+						const tx = await SynthetixL1.issueSynths(1);
+						await tx.wait();
 					});
 
 					it('reverts when the user attempts to deposit', async () => {
@@ -178,7 +182,8 @@ const itCanPerformDeposits = ({ ctx }) => {
 						before('deposit', async () => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
-							await SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit);
+							const tx = await SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit);
+							await tx.wait();
 						});
 
 						// TODO: Implement
