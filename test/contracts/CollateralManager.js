@@ -328,21 +328,25 @@ contract('CollateralManager', async accounts => {
 		assert.bnEqual(await manager.liquidationPenalty(), liqPen);
 	});
 
-	xit('should ensure only expected functions are mutative', async () => {
+	it('should ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: manager.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy'],
 			expected: [
 				'setUtilisationMultiplier',
+				'setMaxDebt',
+				'setLiquidationPenalty',
+				'setBaseBorrowRate',
+				'setBaseShortRate',
 				'addCollateral',
 				'addSynth',
+				'addShortableSynth',
+				'updateBorrowRates',
+				'updateShortRates',
 				'incrementLongs',
 				'decrementLongs',
 				'incrementShorts',
 				'decrementShorts',
-				'setMaxDebt',
-				'setLiquidationPenalty',
-				'updateRates',
 			],
 		});
 	});
@@ -544,87 +548,6 @@ contract('CollateralManager', async accounts => {
 			it('if a collateral is not in the manager, it should return false', async () => {
 				assert.isFalse(await manager.hasSynth(ZERO_ADDRESS));
 			});
-		});
-	});
-
-	describe('counting values', async () => {
-		beforeEach(async () => {
-			tx = await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
-			await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
-			await cerc20.open(toUnit(1), toUnit(100), sUSD, { from: account1 });
-			await cerc20.open(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
-
-			await debtCache.takeDebtSnapshot();
-		});
-
-		it('what values does issuer return', async () => {
-			const include = await issuer.totalIssuedSynths(sUSD, false);
-			const exclude = await issuer.totalIssuedSynths(sUSD, true);
-
-			console.log('Including: ' + include);
-			console.log('Excluding: ' + exclude);
-		});
-
-		it('what values does issuer return when we add a short', async () => {
-
-			// $1000 sUSD
-			// $1000 sETH
-			// $1000 sBTC
-
-			// $200 sUSD
-			// $100 sETH
-			// $100 sBTC
-
-			// == $3400.
-
-			await short.openShort(toUnit(200), toUnit(1), sETH, { from: account1 });
-			await debtCache.takeDebtSnapshot();
-
-			// $1100 sUSD
-			// $1000 sETH
-			// $1000 sBTC
-
-			// $200 sUSD
-			// $100 sETH
-			// $100 sBTC
-
-			// == $3500.
-
-			let total = await manager.totalShort();
-			const shortValue = total.shortValue;
-
-
-			total = await manager.totalLong();
-			const debt = total.debt;
-
-			console.log("total debt " + fromUnit(debt));
-			console.log("total short " + fromUnit(shortValue));
-
-
-			let include = await issuer.totalIssuedSynths(sUSD, false);
-			let exclude = await issuer.totalIssuedSynths(sUSD, true);
-
-			console.log('Including: ' + include);
-			console.log('Excluding: ' + exclude);
-
-			const timestamp = await currentTime();
-
-			await exchangeRates.updateRates([sETH], ['80'].map(toUnit), timestamp, {
-				from: oracle,
-			});
-
-			await debtCache.takeDebtSnapshot();
-
-			include = await issuer.totalIssuedSynths(sUSD, false);
-			exclude = await issuer.totalIssuedSynths(sUSD, true);
-
-			console.log('Including: ' + include);
-			console.log('Excluding: ' + exclude);
-
-		});
-
-		it('should have the right stuff in the debt cache', async () => {
-			assert.isTrue(await debtCache.collateralSynths(sUSDSynth.address), true);
 		});
 	});
 });
