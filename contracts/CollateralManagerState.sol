@@ -20,8 +20,10 @@ contract CollateralManagerState is Owned, State {
     }
 
     uint[] public borrowRates;
-
     uint public borrowRatesLastUpdated;
+
+    mapping(bytes32 => uint[]) shortRates;
+    mapping(bytes32 => uint) shortRatesLastUpdated;
 
     // The total amount of long and short for a synth,
     mapping(bytes32 => Balance) public totalIssuedSynths;
@@ -37,7 +39,7 @@ contract CollateralManagerState is Owned, State {
 
     function short(bytes32 synth) external view onlyAssociatedContract returns (uint) {
         return totalIssuedSynths[synth].short;
-    } 
+    }
 
     function incrementLongs(bytes32 synth, uint256 amount) external onlyAssociatedContract {
         totalIssuedSynths[synth].long = totalIssuedSynths[synth].long.add(amount);
@@ -55,6 +57,8 @@ contract CollateralManagerState is Owned, State {
         totalIssuedSynths[synth].short = totalIssuedSynths[synth].short.sub(amount);
     }
 
+    // Borrow rates.
+
     function getRateAt(uint index) public view returns(uint) {
         return borrowRates[index];
     }
@@ -63,7 +67,7 @@ contract CollateralManagerState is Owned, State {
         return borrowRates.length;
     }
 
-    function updateBorrowRates(uint rate) public {
+    function updateBorrowRates(uint rate) external onlyAssociatedContract {
         borrowRates.push(rate);
         borrowRatesLastUpdated = block.timestamp;
     }
@@ -77,5 +81,36 @@ contract CollateralManagerState is Owned, State {
         entryRate = getRateAt(index);
         lastRate = getRateAt(newIndex - 1);
         lastUpdated = ratesLastUpdated();
+    }
+
+    // Short rates.
+
+    function addShortCurrency(bytes32 currency) external onlyAssociatedContract {
+        shortRates[currency].push(0);
+        shortRatesLastUpdated[currency] = block.timestamp;
+    }
+
+    function getShortRateAt(bytes32 currency, uint index) internal view returns(uint) {
+        return shortRates[currency][index];
+    }
+
+    function getShortRatesLength(bytes32 currency) internal view returns(uint) {
+        return shortRates[currency].length;
+    }
+
+    function updateShortRates(bytes32 currency, uint rate) external onlyAssociatedContract {
+        shortRates[currency].push(rate);
+        shortRatesLastUpdated[currency] = block.timestamp;
+    }
+
+    function shortRateLastUpdated(bytes32 currency) internal view returns(uint) {
+        return shortRatesLastUpdated[currency];
+    }
+
+    function getShortRatesAndTime(bytes32 currency, uint index) external view returns(uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) {
+        newIndex = getShortRatesLength(currency);
+        entryRate = getShortRateAt(currency, index);
+        lastRate = getShortRateAt(currency, newIndex - 1);
+        lastUpdated = shortRateLastUpdated(currency);
     }
 }

@@ -17,7 +17,8 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/ICollateral.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IDebtCache.sol";
-
+import "./interfaces/IERC20.sol";
+import "./interfaces/ISynth.sol";
 
 contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable {
     /* ========== LIBRARIES ========== */
@@ -42,14 +43,23 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     // The set of all synths issuable by the various collateral contracts
     AddressSetLib.AddressSet internal _synths;
 
+    // The set of all synths that are shortable.
+    AddressSetLib.AddressSet internal _shortableSynths;
+
     // The factor that will scale the utilisation ratio.
-    uint public utilisationMultiplier = 1e18; 
+    uint public utilisationMultiplier = 1e18;
 
     // The maximum amount of debt in sUSD that can be issued by non snx collateral.
     uint public maxDebt;
 
     // The percentage of collateral that is paid to incentivise a liquidation.
     uint public liquidationPenalty;
+
+    // The base interest rate applied to all borrows.
+    uint public baseBorrowRate;
+
+    // The base interest rate applied to all shorts.
+    uint public baseShortRate;
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -62,21 +72,25 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
     /* ========== CONSTRUCTOR ========== */
     constructor(
-        CollateralManagerState _state, 
-        address _owner, 
+        CollateralManagerState _state,
+        address _owner,
         address _resolver,
         uint _maxDebt,
-        uint _liquidationPenalty
+        uint _liquidationPenalty,
+        uint _baseBorrowRate,
+        uint _baseShortRate
         ) public
         Owned(_owner)
         Pausable()
         MixinResolver(_resolver)
     {
         owner = msg.sender;
-        state = _state; 
+        state = _state;
 
         setMaxDebt(_maxDebt);
         setLiquidationPenalty(_liquidationPenalty);
+        setBaseBorrowRate(_baseBorrowRate);
+        setBaseShortRate(_baseShortRate);
 
         owner = _owner;
     }
@@ -117,7 +131,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
     function hasSynth(address synth) public view returns (bool) {
         return _synths.contains(synth);
-        
+
     }
 
     function getLiquidationPenalty() external view returns (uint) {
@@ -152,7 +166,21 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         }
     }
 
-    function getScaledUtilisation() external view returns (uint scaledUtilisation) {
+    function totalShort() public view returns (uint shortValue, bool anyRateIsInvalid) {
+        address[] memory synths = _shortableSynths.elements;
+
+        for (uint i = 0; i < synths.length; i++) {
+            bytes32 synth = ISynth(synths[i]).currencyKey();
+            (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
+            uint amount = state.short(synth).multiplyDecimal(rate);
+            shortValue = shortValue.add(amount);
+            if (invalid) {
+                anyRateIsInvalid = true;
+            }
+        }
+    }
+
+    function getBorrowRate() external view returns (uint borrowRate) {
         // get the snx backed debt.
         uint snxDebt = _issuer().totalIssuedSynths(sUSD, true);
 
@@ -166,11 +194,35 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         uint utilisation = nonSnxDebt.divideDecimal(totalDebt).divideDecimal(SECONDS_IN_A_YEAR);
 
         // finally, scale it by the utilisation multiplier.
-        scaledUtilisation = utilisation.multiplyDecimal(utilisationMultiplier);
+        uint scaledUtilisation = utilisation.multiplyDecimal(utilisationMultiplier);
+
+        borrowRate = scaledUtilisation.add(baseBorrowRate);
+    }
+
+    function getShortRate(address _synth) external view returns (uint shortRate) {
+        IERC20 synth = IERC20(_synth);
+        bytes32 synthKey = ISynth(_synth).currencyKey();
+
+        uint longSupply = synth.totalSupply();
+        uint shortSupply = state.short(synthKey);
+
+        if (longSupply > shortSupply) {
+            return 0;
+        }
+
+        uint skew = shortSupply.sub(longSupply);
+
+        uint proportionalSkew = skew.divideDecimal(longSupply.add(shortSupply)).divideDecimal(SECONDS_IN_A_YEAR);
+
+        shortRate = proportionalSkew.add(baseShortRate);
     }
 
     function getRatesAndTime(uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex)  {
         (entryRate, lastRate, lastUpdated, newIndex) = state.getRatesAndTime(index);
+    }
+
+    function getShortRatesAndTime(bytes32 currency, uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex)  {
+        (entryRate, lastRate, lastUpdated, newIndex) = state.getShortRatesAndTime(currency, index);
     }
 
     function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue) {
@@ -202,6 +254,19 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         emit LiquidationPenaltyUpdated(liquidationPenalty);
     }
 
+    function setBaseBorrowRate(uint _baseBorrowRate) public onlyOwner {
+        require(_baseBorrowRate >= 0, "Must be greater than or equal to 0");
+        baseBorrowRate = _baseBorrowRate;
+        emit baseBorrowRateUpdated(baseBorrowRate);
+    }
+
+
+    function setBaseShortRate(uint _baseShortRate) public onlyOwner {
+        require(_baseShortRate >= 0, "Must be greater than or equal to 0");
+        baseShortRate = _baseShortRate;
+        emit BaseShortRateUpdated(baseShortRate);
+    }
+
     /* ---------- MANAGER ---------- */
 
     function addCollateral(address collateral) external onlyOwner {
@@ -210,7 +275,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         // Has one of the other contracts already added the collateral?
         require(!_collaterals.contains(collateral), "Collateral already added");
 
-        // Add it to the address list lib.
+        // Add it to the address set lib.
         _collaterals.add(collateral);
 
         emit CollateralAdded(collateral);
@@ -221,8 +286,8 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
         // Has one of the other contracts already added the synth?
         require(!_synths.contains(synth), "Synth already added");
-        
-        // Add it to the address list lib.
+
+        // Add it to the address set lib.
         _synths.add(synth);
 
         // Now tell the debt cache about it.
@@ -231,12 +296,30 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         emit SynthAdded(synth);
     }
 
+    function addShortableSynth(address synth) external onlyOwner {
+        _systemStatus().requireSystemActive();
+
+        // Has one of the other contracts already added the synth?
+        require(!_shortableSynths.contains(synth), "Synth already added");
+
+        // Add it to the address set lib.
+        _shortableSynths.add(synth);
+
+        bytes32 synthKey = ISynth(synth).currencyKey();
+
+        state.addShortCurrency(synthKey);
+    }
+
     /* ---------- STATE MUTATIONS ---------- */
 
-    function updateRates(uint rate) external {
+    function updateBorrowRates(uint rate) external {
         state.updateBorrowRates(rate);
     }
-    
+
+    function updateShortRates(bytes32 currency, uint rate) external {
+        state.updateShortRates(currency, rate);
+    }
+
     function incrementLongs(bytes32 synth, uint amount) external onlyCollateral {
         state.incrementLongs(synth, amount);
     }
@@ -254,7 +337,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     }
 
     /* ========== MODIFIERS ========== */
-    
+
     modifier onlyCollateral {
         bool isMultiCollateral = hasCollateral(msg.sender);
 
@@ -265,6 +348,9 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     // ========== EVENTS ==========
     event MaxDebtUpdated(uint maxDebt);
     event LiquidationPenaltyUpdated(uint liquidationPenalty);
+    event baseBorrowRateUpdated(uint baseBorrowRate);
+    event BaseShortRateUpdated(uint baseShortRate);
+
     event CollateralAdded(address collateral);
     event SynthAdded(address synth);
 }
