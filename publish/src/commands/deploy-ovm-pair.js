@@ -42,7 +42,6 @@ const deployOvmPair = async () => {
 		l1GasPrice: 0,
 		l2GasPrice: 0,
 		gasLimit: 8000000,
-		ignoreCustomParameters: true,
 	});
 };
 
@@ -59,6 +58,7 @@ const deployInstance = async ({ useOvm, privateKey }) => {
 		methodCallGasLimit: '3500000',
 		contractDeploymentGasLimit: useOvm ? '11000000' : '9500000',
 		privateKey,
+		ignoreCustomParameters: true,
 	});
 };
 
@@ -66,13 +66,9 @@ const getMessengers = async () => {
 	const response = await axios.get(`${DATA_PROVIDER_URL}/addresses.json`);
 	const addresses = response.data;
 
-	// These might appear to be inverted, but their not.
-	// Optimism uses a slightly different naming convention.
 	return {
-		l1Messenger: addresses['OVM_L2CrossDomainMessenger'],
-		// Note: At the moment, the L2 messenger is hardcoded
+		l1Messenger: addresses['Proxy__OVM_L1CrossDomainMessenger'],
 		l2Messenger: '0x4200000000000000000000000000000000000007',
-		// l2Messenger: addresses['OVM_L1CrossDomainMessenger'],
 	};
 };
 

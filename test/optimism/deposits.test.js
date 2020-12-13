@@ -4,7 +4,7 @@ const { connectContract } = require('./utils/connectContract');
 const { wait, takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
 const itCanPerformDeposits = ({ ctx }) => {
-	describe.only('when migrating SNX from L1 to L2', () => {
+	describe('Deposits - when migrating SNX from L1 to L2', () => {
 		// --------------------------
 		// Setup
 		// --------------------------
@@ -203,10 +203,10 @@ const itCanPerformDeposits = ({ ctx }) => {
 						// --------------------------
 
 						// TODO: Relayer doesn't seem to be passing messages...
-						describe.skip('when a small period of time has elapsed', () => {
+						// TODO: Use watcher instead of random wait
+						describe('when a small period of time has elapsed', () => {
 							before('wait', async () => {
-								// await fastForward({ seconds: 5, provider: providerL1 });
-								await wait(10);
+								await wait(20);
 							});
 
 							it('shows that the users L2 balance increased', async () => {

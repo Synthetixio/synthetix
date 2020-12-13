@@ -50,12 +50,6 @@ describe('Layer 2 production tests', () => {
 					provider,
 					useOvm,
 				});
-				let DebtCache = connectContract({
-					contract: 'DebtCache',
-					source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
-					provider,
-					useOvm,
-				});
 
 				let currencyKeys = await Issuer.availableCurrencyKeys();
 				currencyKeys = currencyKeys.filter(key => key !== toBytes32('sUSD'));
@@ -71,11 +65,16 @@ describe('Layer 2 production tests', () => {
 					timestamp
 				);
 
-				// TODO: is this needed?
-				// It appears to be needed to be called at least once in the lifetime
-				// of a pair of instances, but calling it every time triggers some weird nonce error.
-				DebtCache = DebtCache.connect(owner);
-				await DebtCache.takeDebtSnapshot();
+				if (!useOvm) {
+					let DebtCache = connectContract({
+						contract: 'DebtCache',
+						source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
+						provider,
+						useOvm,
+					});
+					DebtCache = DebtCache.connect(owner);
+					await DebtCache.takeDebtSnapshot();
+				}
 			}
 
 			await simulateExchangeRates({ provider: this.providerL1, owner: this.ownerL1, useOvm: false });

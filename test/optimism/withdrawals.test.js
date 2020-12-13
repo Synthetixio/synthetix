@@ -4,7 +4,7 @@ const { connectContract } = require('./utils/connectContract');
 const { wait, takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
 const itCanPerformWithdrawals = ({ ctx }) => {
-	describe('when migrating SNX from L2 to L1', () => {
+	describe.skip('Withdrawals - when migrating SNX from L2 to L1', () => {
 		// --------------------------
 		// Setup
 		// --------------------------
@@ -72,7 +72,8 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			before('ensure that the user has the expected SNX balance', async () => {
 				SynthetixL2 = SynthetixL2.connect(ctx.ownerL2);
 
-				await SynthetixL2.transfer(user1Address, amountToWithdraw);
+				const tx = await SynthetixL2.transfer(user1Address, amountToWithdraw);
+				await tx.wait();
 			});
 
 			it('shows the user has SNX', async () => {
@@ -81,6 +82,34 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					cache.user1.l2.balance.add(amountToWithdraw)
 				);
 			});
+
+			// --------------------------
+			// With debt
+			// --------------------------
+
+			describe('when a user has debt in L2', () => {
+				before('take snapshot in L1', async () => {
+					snapshotId = await takeSnapshot({ provider: ctx.providerL1 });
+				});
+				after('restore snapshot in L1', async () => {
+					await restoreSnapshot({ id: snapshotId, provider: ctx.providerL1 });
+				});
+
+				before('issue sUSD', async () => {
+					SynthetixL2 = SynthetixL2.connect(user1L2);
+
+					await SynthetixL2.issueSynths(1);
+				});
+
+				it('reverts when the user attempts to withdraw', async () => {
+					SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
+
+					await assert.revert(
+						SynthetixBridgeToBaseL2.initiateWithdrawal(1),
+						'Cannot withdraw with debt'
+					);
+				});
+			});
 		});
 	});
 };
@@ -88,31 +117,6 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 module.exports = {
 	itCanPerformWithdrawals,
 };
-
-// 							// TODO
-// 							describe.skip('when a user has debt in L2', () => {
-// 								before('take snapshot in L1', async () => {
-// 									snapshotId = await takeSnapshot({ provider: providerL1 });
-// 								});
-// 								after('restore snapshot in L1', async () => {
-// 									await restoreSnapshot({ id: snapshotId, provider: providerL1 });
-// 								});
-
-// 								before('issue sUSD', async () => {
-// 									SynthetixL2 = SynthetixL2.connect(user1L1);
-
-// 									await SynthetixL2.issueSynths(1);
-// 								});
-
-// 								it('reverts when the user attempts to withdraw', async () => {
-// 									SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
-
-// 									await assert.revert(
-// 										SynthetixBridgeToBaseL2.initiateWithdrawal(1),
-// 										'Cannot withdraw with debt'
-// 									);
-// 								});
-// 							});
 
 						// describe('when a user doesnt have debt in L2', () => {
 						// 	describe.skip('when the system is suspended in L2', () => {});
