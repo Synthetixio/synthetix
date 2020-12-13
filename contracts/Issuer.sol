@@ -190,7 +190,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             // Get the sUSD equivalent amount of all the MC issued synths.
             (uint nonSnxDebt, bool invalid) = collateralManager().totalLong();
             debt = debt.add(nonSnxDebt);
-            anyRateIsInvalid = invalid;
+            anyRateIsInvalid = anyRateIsInvalid || invalid;
 
             // Now add the ether collateral stuff as we are still supporting it.
             debt = debt.add(etherCollateralsUSD().totalIssuedSynths());

@@ -30,7 +30,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
     mapping(bytes32 => uint) internal _cachedSynthDebt;
     uint internal _cacheTimestamp;
     bool internal _cacheInvalid = true;
-    mapping(address => bool) internal collateralSynths;
+    mapping(address => bool) internal _collateralSynths;
 
     /* ========== ENCODED NAMES ========== */
 
@@ -126,7 +126,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates) internal view returns (uint[] memory) {
         uint numValues = currencyKeys.length;
         uint[] memory values = new uint[](numValues);
-        ISynth[] memory synths = issuer().getSynths(currencyKeys);        
+        ISynth[] memory synths = issuer().getSynths(currencyKeys);
 
         for (uint i = 0; i < numValues; i++) {
             bytes32 key = currencyKeys[i];
@@ -136,13 +136,13 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
 
             if (collateralSynths[synthAddress]) {
                 uint collateralIssued = collateralManager().long(key);
-                
+
                 // this is an edge case --
-                // if a synth other than sUSD is only issued by MC
-                // the long value will exceed the supply if there was a minting fee, 
-                // so we check explicitly and 0 it out to prevent 
+                // if a synth other than sUSD is only issued by non SNX collateral
+                // the long value will exceed the supply if there was a minting fee,
+                // so we check explicitly and 0 it out to prevent
                 // a safesub overflow.
-                
+
                 if (collateralIssued > supply) {
                     supply = 0;
                 } else {
@@ -275,7 +275,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
     }
 
     function addCollateralSynths(address synth) external onlyCollateralManager {
-        collateralSynths[synth] = true;    
+        collateralSynths[synth] = true;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -340,7 +340,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function _onlyIssuer() internal view {
         require(msg.sender == address(issuer()), "Sender is not Issuer");
-    } 
+    }
 
     modifier onlyIssuer() {
         _onlyIssuer();
