@@ -801,7 +801,36 @@ contract('BaseRewardEscrowV2', async accounts => {
 	});
 
 	describe('Read Vesting Schedule', () => {
-		beforeEach(async () => {});
+		const duration = 1 * YEAR;
+		let escrowAmount1, escrowAmount2, escrowAmount3;
+		beforeEach(async () => {
+			// Transfer of SNX to the escrow must occur before creating a vestinng entry
+			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1000'));
+
+			escrowAmount1 = toUnit('200');
+			escrowAmount2 = toUnit('300');
+			escrowAmount3 = toUnit('500');
+
+			// Add a few vesting entries as the feepool address
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount1, duration, {
+				from: feePoolAccount,
+			});
+			await fastForward(WEEK);
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount2, duration, {
+				from: feePoolAccount,
+			});
+			await fastForward(WEEK);
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount3, duration, {
+				from: feePoolAccount,
+			});
+
+			// ensure Issuer.debtBalanceOf returns 0
+			mocks['Issuer'].smocked.debtBalanceOf.will.return.with('0');
+		});
+		it('should return the vesting schedules for account1', async () => {
+			const entries = await baseRewardEscrowV2.getVestingSchedules(account1, 0, 3);
+			assert.equal(entries.length, 3);
+		});
 	});
 
 	describe('Vesting Schedule merging', () => {

@@ -115,6 +115,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         return accountVestingEntryIDs[account].length;
     }
 
+    /**
+     * @notice Get a particular schedule entry for an account.
+     * @return The vesting entry object and rate per second emission.
+     */
     function getVestingEntry(address account, uint256 entryID)
         external
         view
@@ -135,6 +139,32 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         ratePerSecond = _ratePerSecond(vestingSchedules[account][entryID]);
     }
 
+    function getVestingSchedules(
+        address account,
+        uint256 index,
+        uint256 pageSize
+    ) external view returns (VestingEntries.VestingEntry[] memory) {
+        uint256 endIndex = index + pageSize;
+
+        // If index starts after the endIndex return no results
+        if (endIndex <= index) {
+            return new VestingEntries.VestingEntry[](0);
+        }
+
+        // If the page extends past the end of the accountVestingEntryIDs, truncate it.
+        if (endIndex > accountVestingEntryIDs[account].length) {
+            endIndex = accountVestingEntryIDs[account].length;
+        }
+
+        uint256 n = endIndex - index;
+        VestingEntries.VestingEntry[] memory vestingEntries = new VestingEntries.VestingEntry[](n);
+        for (uint256 i; i < n; i++) {
+            uint256 entryID = accountVestingEntryIDs[account][i + index];
+            vestingEntries[i] = vestingSchedules[account][entryID];
+        }
+        return vestingEntries;
+    }
+
     /* rate of escrow emission per second */
     function ratePerSecond(address account, uint256 entryID) external view returns (uint256) {
         /* Retrieve the vesting entry */
@@ -145,10 +175,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* returns the rate per second based on escrow amount divided by duration  */
     function _ratePerSecond(VestingEntries.VestingEntry memory _entry) internal pure returns (uint256) {
         return _entry.escrowAmount.div(_entry.duration);
-    }
-
-    function _numVestingEntries(address account) internal view returns (uint) {
-        return accountVestingEntryIDs[account].length;
     }
 
     function getVestingQuantity(address account, uint256[] calldata entryIDs) external view returns (uint total) {
