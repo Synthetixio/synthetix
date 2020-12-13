@@ -67,10 +67,11 @@ const getMessengers = async () => {
 
 	// These might appear to be inverted, but their not.
 	// Optimism uses a slightly different naming convention.
-	// Note: At the moment, the L2 messenger is hardcoded
 	return {
 		l1Messenger: addresses['OVM_L2CrossDomainMessenger'],
+		// Note: At the moment, the L2 messenger is hardcoded
 		l2Messenger: '0x4200000000000000000000000000000000000007',
+		// l2Messenger: addresses['OVM_L1CrossDomainMessenger'],
 	};
 };
 
