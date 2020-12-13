@@ -1,12 +1,14 @@
 const ethers = require('ethers');
-const { assert, assertRevert } = require('../contracts/common');
+const { assert } = require('../contracts/common');
 const { wait, fastForward, takeSnapshot, restoreSnapshot, connectContract } = require('./utils');
+const { toBytes32 } = require('../..');
 
 const L1_PROVIDER_URL = 'http://localhost:9545';
 const L2_PROVIDER_URL = 'http://localhost:8545';
 
 // These addresses are set up by optimism-integration in the local chains.
 // See publish/src/commands/deploy-ovm-pair.js
+const OWNER_PRIVATE_KEY = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
 const OWNER_ADDRESS = '0x640e7cc27b750144ED08bA09515F3416A988B6a3';
 const USER1_PRIVATE_KEY = '0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c';
 const USER1_ADDRESS = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
@@ -14,7 +16,7 @@ const USER1_ADDRESS = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
 describe('Layer 2 production tests', () => {
 	let providerL1, providerL2;
 
-	let ownerL1, user1L1, user1L2;
+	let ownerL1, ownerL2, user1L1, user1L2;
 
 	let SynthetixL1, SynthetixBridgeToOptimismL1;
 	let SynthetixL2, SynthetixBridgeToBaseL2;
@@ -42,30 +44,73 @@ describe('Layer 2 production tests', () => {
 	});
 
 	before('set up signers', () => {
+		// owner
 		ownerL1 = providerL1.getSigner(OWNER_ADDRESS);
+		ownerL2 = new ethers.Wallet(OWNER_PRIVATE_KEY, providerL2);
 
+		// users
 		user1L1 = providerL1.getSigner(USER1_ADDRESS);
 		user1L2 = new ethers.Wallet(USER1_PRIVATE_KEY, providerL2);
 	});
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
 		before('connect to contracts', async () => {
+			// L1
 			SynthetixL1 = connectContract({ contract: 'Synthetix', provider: providerL1 });
+			SynthetixBridgeToOptimismL1 = connectContract({
+				contract: 'SynthetixBridgeToOptimism',
+				provider: providerL1,
+			});
+
+			// L2
 			SynthetixL2 = connectContract({
 				contract: 'Synthetix',
 				source: 'MintableSynthetix',
 				useOvm: true,
 				provider: providerL2,
 			});
-			SynthetixBridgeToOptimismL1 = connectContract({
-				contract: 'SynthetixBridgeToOptimism',
-				provider: providerL1,
-			});
 			SynthetixBridgeToBaseL2 = connectContract({
 				contract: 'SynthetixBridgeToBase',
 				useOvm: true,
 				provider: providerL2,
 			});
+		});
+
+		before('simulate exchange rates and debt cache', async () => {
+			async function simulateExchangeRates({ provider, owner }) {
+				const Issuer = connectContract({
+					contract: 'Issuer',
+					provider,
+				});
+				let ExchangeRates = connectContract({
+					contract: 'ExchangeRates',
+					provider,
+				});
+				let DebtCache = connectContract({
+					contract: 'DebtCache',
+					provider,
+				});
+
+				let currencyKeys = await Issuer.availableCurrencyKeys();
+				currencyKeys = currencyKeys.filter(key => key !== toBytes32('sUSD'));
+				const additionalKeys = ['ETH'].map(toBytes32); // The Depot uses the key "ETH" as opposed to "sETH" for its ether price
+				currencyKeys.push(...additionalKeys);
+
+				const { timestamp } = await provider.getBlock();
+
+				ExchangeRates = ExchangeRates.connect(owner);
+				await ExchangeRates.updateRates(
+					currencyKeys,
+					currencyKeys.map(() => ethers.utils.parseEther('1')),
+					timestamp
+				);
+
+				DebtCache = DebtCache.connect(owner);
+				await DebtCache.takeDebtSnapshot();
+			}
+
+			await simulateExchangeRates({ provider: providerL1, owner: ownerL1 });
+			await simulateExchangeRates({ provider: providerL2, owner: ownerL2 });
 		});
 
 		it('shows the expected owners', async () => {
@@ -105,10 +150,22 @@ describe('Layer 2 production tests', () => {
 			});
 
 			describe('before a user approves the L1 bridge to transfer its SNX', () => {
-				it('reverts if the user attempts to depost', async () => {
+				before('make sure approval is zero', async () => {
+					SynthetixL1 = SynthetixL1.connect(user1L1);
+
+					await SynthetixL1.approve(
+						SynthetixBridgeToOptimismL1.address,
+						ethers.utils.parseEther('0')
+					);
+				});
+
+				it('reverts if the user attempts to initiate a deposit', async () => {
 					SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
-					assertRevert(SynthetixBridgeToOptimismL1.deposit(amountToDeposit), '?');
+					await assert.revert(
+						SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit),
+						'subtraction overflow'
+					);
 				});
 			});
 
@@ -128,21 +185,22 @@ describe('Layer 2 production tests', () => {
 					before('take snapshot in L1', async () => {
 						snapshotId = await takeSnapshot({ provider: providerL1 });
 					});
+
 					after('restore snapshot in L1', async () => {
 						await restoreSnapshot({ id: snapshotId, provider: providerL1 });
 					});
 
 					before('issue sUSD', async () => {
-						SynthetixL1 = SynthetixL1.connect(USER1_ADDRESS);
+						SynthetixL1 = SynthetixL1.connect(user1L1);
 
 						await SynthetixL1.issueSynths(1);
 					});
 
-					it('reverts when the user attempts to deposit', async () => {
+					it.only('reverts when the user attempts to deposit', async () => {
 						SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
-						assertRevert(
-							SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
+						await assert.revert(
+							SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit),
 							'Cannot deposit with debt'
 						);
 					});
@@ -162,7 +220,7 @@ describe('Layer 2 production tests', () => {
 						before('deposit', async () => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
-							await SynthetixBridgeToOptimismL1.deposit(amountToDeposit);
+							await SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit);
 						});
 
 						it.skip('emitted a Deposit event', async () => {});
@@ -210,7 +268,7 @@ describe('Layer 2 production tests', () => {
 								it('reverts when the user attempts to withdraw', async () => {
 									SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
-									assertRevert(
+									await assert.revert(
 										SynthetixBridgeToBaseL2.initiateWithdrawal(1),
 										'Cannot withdraw with debt'
 									);
