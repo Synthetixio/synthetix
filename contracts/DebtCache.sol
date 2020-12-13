@@ -134,7 +134,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
 
-            if (collateralSynths[synthAddress]) {
+            if (_collateralSynths[synthAddress]) {
                 uint collateralIssued = collateralManager().long(key);
 
                 // this is an edge case --
@@ -275,7 +275,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
     }
 
     function addCollateralSynths(address synth) external onlyCollateralManager {
-        collateralSynths[synth] = true;
+        _collateralSynths[synth] = true;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
