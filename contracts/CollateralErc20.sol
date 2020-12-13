@@ -25,7 +25,6 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         bytes32[] memory _synths,
         uint _minCratio,
         uint _minCollateral,
-        uint _baseInterestRate,
         address _underlyingContract
     ) 
     public 
@@ -37,8 +36,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         _collateralKey, 
         _synths, 
         _minCratio,
-        _minCollateral,
-        _baseInterestRate
+        _minCollateral
         )
     {
         underlyingContract = _underlyingContract;
@@ -47,7 +45,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     function open(uint collateral, uint requestedLoan, bytes32 currency) external {
         require(collateral <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
 
-        openInternal(collateral, requestedLoan, currency);
+        openInternal(collateral, requestedLoan, currency, false);
 
         IERC20(underlyingContract).transferFrom(msg.sender, address(this), collateral);
     }

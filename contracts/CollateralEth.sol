@@ -23,8 +23,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         bytes32 _collateralKey,
         bytes32[] memory _synths,
         uint _minCratio,
-        uint _minCollateral,
-        uint _baseInterestRate
+        uint _minCollateral
     ) 
     public 
     Collateral(
@@ -35,13 +34,12 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         _collateralKey, 
         _synths,
         _minCratio,
-        _minCollateral,
-        _baseInterestRate
+        _minCollateral
         )
     { }
 
     function open(uint amount, bytes32 currency) external payable {
-        openInternal(msg.value, amount, currency);
+        openInternal(msg.value, amount, currency, false);
     }
     
     function close(uint id) external {
