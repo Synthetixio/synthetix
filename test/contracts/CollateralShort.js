@@ -335,15 +335,23 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			id = await getid(tx);
 
-			loan = await state.getLoan(account1, id);
+			await short.draw(id, toUnit(5), { from: account1 });
 		});
 
-		it('should allow us to draw more of a position', async () => {
-			await short.draw(id, toUnit(5), { from: account1 });
-
+		it('should update the loan', async () => {
 			loan = await state.getLoan(account1, id);
-
 			assert.equal(loan.amount, toUnit(6).toString());
+		});
+
+		it('should transfer the proceeds to the user', async () => {
+			assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(600));
+		});
+
+		it('should not let them draw too much', async () => {
+			await assert.revert(
+				short.draw(id, toUnit(8), { from: account1 }),
+				'Drawing this much would put the loan under minimum collateralisation'
+			);
 		});
 	});
 
@@ -363,7 +371,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			await fastForwardAndUpdateRates(YEAR);
 
-			// deposit some eth to trigger the interest accrual.
+			// deposit some collateral to trigger the interest accrual.
 
 			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
 

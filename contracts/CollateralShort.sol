@@ -46,8 +46,8 @@ contract CollateralShort is CollateralErc20 {
     }
 
     function draw(uint id, uint amount) external {
-        drawInternal(id, amount);
+        uint issued = drawInternal(id, amount);
 
-        IERC20(underlyingContract).transferFrom(msg.sender, address(this), amount);
+        IERC20(underlyingContract).transfer(msg.sender, issued);
     }
 }

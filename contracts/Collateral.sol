@@ -559,7 +559,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinResolver, Pausa
         emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
     }
 
-    function drawInternal(uint id, uint amount) internal notPaused CollateralRateNotInvalid {
+    function drawInternal(uint id, uint amount) internal notPaused CollateralRateNotInvalid returns (uint issued) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -584,6 +584,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinResolver, Pausa
         // 7. If its short, let the child handle it, otherwise issue the synths.
         if (loan.short) {
             _manager().incrementShorts(loan.currency, loan.amount);
+            issued = _exchangeRates().effectiveValue(loan.currency, amount, sUSD);
         } else {
             _manager().incrementLongs(loan.currency, loan.amount);
             _synths(currencies[loan.currency]).issue(msg.sender, amount);
