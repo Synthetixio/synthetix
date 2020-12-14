@@ -23,7 +23,7 @@ describe('Layer 2 production tests', () => {
 	let ownerL1, user1L1, user1L2;
 
 	let RewardEscrowV2L1, SynthetixBridgeToOptimismL1, SynthetixL1;
-	let RewardEscrowV2L2, SynthetixBridgeToBaseL2;
+	let RewardEscrowV2L2, SynthetixBridgeToBaseL2, SynthetixL2;
 
 	const cache = {
 		bridge: {
@@ -79,6 +79,11 @@ describe('Layer 2 production tests', () => {
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
 		before('connect to contracts', async () => {
 			SynthetixL1 = connectContract({ contract: 'Synthetix' });
+			SynthetixL2 = connectContract({
+				contract: 'Synthetix',
+				source: 'MintableSynthetix',
+				useOvm: true,
+			});
 			RewardEscrowV2L1 = connectContract({ contract: 'RewardEscrowV2' });
 			RewardEscrowV2L2 = connectContract({
 				contract: 'RewardEscrowV2',
@@ -162,12 +167,15 @@ describe('Layer 2 production tests', () => {
 								});
 
 								describe('when the user deposits SNX along with the migration', () => {
+									let tx;
 									before('call depositAndMigrateEscrow', async () => {
 										SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
-										await SynthetixBridgeToOptimismL1.depositAndMigrateEscrow(
+										tx = await SynthetixBridgeToOptimismL1.depositAndMigrateEscrow(
 											depositAmount,
 											userEntries
 										);
+										console.log(tx);
+										// await tx.wait();
 									});
 
 									it('should update the L1 escrow state', async () => {
@@ -185,9 +193,18 @@ describe('Layer 2 production tests', () => {
 										);
 									});
 
+									it('should emit two events', async () => {
+										// assert.eventEqual(tx.logs[0], 'ExportedVestingEntries', [
+										// 	USER1_ADDRESS,
+										// 	totalEscrowed,
+										// 	[],
+										// ]);
+										assert.eventEqual(tx, 'Deposit', [USER1_ADDRESS, depositAmount]);
+									});
+
 									describe('when a small period of time has elapsed', () => {
 										before('wait', async () => {
-											await wait(10);
+											await wait(5);
 										});
 
 										it('should update the L2 escrow state', async () => {
@@ -203,6 +220,15 @@ describe('Layer 2 production tests', () => {
 											assert.bnEqual(
 												await RewardEscrowV2L2.totalVestedAccountBalance(USER1_ADDRESS),
 												'0'
+											);
+										});
+
+										it('should update the L2 Synthetix state', async () => {
+											SynthetixL2 = SynthetixL2.connect(user1L2);
+											assert.bnEqual(await SynthetixL2.balanceOf(USER1_ADDRESS), depositAmount);
+											assert.bnEqual(
+												await SynthetixL2.balanceOf(RewardEscrowV2L2.address),
+												escrowNum.toString()
 											);
 										});
 									});
