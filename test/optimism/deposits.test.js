@@ -19,10 +19,8 @@ const itCanPerformDeposits = ({ ctx }) => {
 		// --------------------------
 
 		before('identify signers', async () => {
-			// See publish/src/commands/deploy-ovm-pair
-			const user1Address = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
-			user1L1 = ctx.providerL1.getSigner(user1Address);
-			user1L1.address = user1Address;
+			user1L1 = ctx.providerL1.getSigner(ctx.user1Address);
+			user1L1.address = ctx.user1Address;
 		});
 
 		before('connect to contracts', async () => {

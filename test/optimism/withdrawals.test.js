@@ -18,12 +18,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 		// --------------------------
 
 		before('identify signers', async () => {
-			// See publish/src/commands/deploy-ovm-pair
-			user1L2 = new ethers.Wallet(
-				'0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c',
-				ctx.providerL2
-			);
-			// Public key: '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131'
+			user1L2 = new ethers.Wallet(ctx.user1PrivateKey, ctx.providerL2);
 		});
 
 		before('connect to contracts', async () => {
