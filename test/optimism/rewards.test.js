@@ -4,7 +4,7 @@ const { connectContract } = require('./utils/connectContract');
 const { wait } = require('./utils/rpc');
 
 const itCanPerformRewardDeposits = ({ ctx }) => {
-	describe.only('[REWARDS] when migrating SNX rewards from L1 to L2', () => {
+	describe('[REWARDS] when migrating SNX rewards from L1 to L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1;

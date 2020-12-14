@@ -33,7 +33,7 @@ describe('Layer 2 production tests', () => {
 		// See publish/src/commands/deploy-ovm-pair.js
 		this.ownerAddress = '0x640e7cc27b750144ED08bA09515F3416A988B6a3';
 		this.ownerPrivateKey = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
-		this.user1Address = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
+		this.user1Address = '0x5eEaBfDD0F31CeBf32f8Abf22DA451fE46eAc131';
 		this.user1PrivateKey = '0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c';
 
 		// These are set up in L1 but not in L2,
@@ -122,7 +122,7 @@ describe('Layer 2 production tests', () => {
 		// General properties
 		// --------------------------
 
-		describe('GENERAL properties', () => {
+		describe('[GENERAL] properties', () => {
 			it('shows the expected owners', async () => {
 				assert.equal(await SynthetixL1.owner(), this.ownerAddress);
 				assert.equal(await SynthetixL2.owner(), this.ownerAddress);

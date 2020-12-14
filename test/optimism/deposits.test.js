@@ -147,6 +147,8 @@ const itCanPerformDeposits = ({ ctx }) => {
 				// --------------------------
 
 				describe('when a user doesnt have debt in L1', () => {
+					let depositReceipt;
+
 					describe('when a user deposits SNX in the L1 bridge', () => {
 						let user1BalanceL2;
 						let bridgeBalanceL1;
@@ -166,11 +168,16 @@ const itCanPerformDeposits = ({ ctx }) => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 							const tx = await SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit);
-							await tx.wait();
+							depositReceipt = await tx.wait();
 						});
 
-						// TODO: Implement
-						it.skip('emitted a Deposit event', async () => {});
+						it('emitted a Deposit event', async () => {
+							const event = depositReceipt.events.find(e => e.event === 'Deposit');
+							assert.exists(event);
+
+							assert.bnEqual(event.args.amount, amountToDeposit);
+							assert.equal(event.args.account, user1L1.address);
+						});
 
 						it('shows that the users new balance L1 is reduced', async () => {
 							assert.bnEqual(

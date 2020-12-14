@@ -154,6 +154,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 				describe('when a user initiates a withdrawal on L2', () => {
 					let user1BalanceL1;
+					let withdrawalReceipt;
 
 					before('record current values', async () => {
 						user1BalanceL1 = await SynthetixL1.balanceOf(user1L2.address);
@@ -164,11 +165,16 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 						SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
 						const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(amountToWithdraw);
-						await tx.wait();
+						withdrawalReceipt = await tx.wait();
 					});
 
-					// TODO: Implement
-					it.skip('emitted a Withdrawal event', async () => {});
+					it('emitted a Withdrawal event', async () => {
+						const event = withdrawalReceipt.events.find(e => e.event === 'WithdrawalInitiated');
+						assert.exists(event);
+
+						assert.bnEqual(event.args.amount, amountToWithdraw);
+						assert.equal(event.args.account, user1L2.address);
+					});
 
 					it('reduces the users balance', async () => {
 						assert.bnEqual(
