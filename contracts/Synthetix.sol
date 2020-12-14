@@ -26,7 +26,7 @@ contract Synthetix is BaseSynthetix {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseSynthetix.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](1);
+        bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_REWARD_ESCROW;
         newAddresses[1] = CONTRACT_REWARDESCROW_V2;
         return combineArrays(existingAddresses, newAddresses);
