@@ -3,9 +3,17 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./BaseSynthetix.sol";
 
+// Internal references
+import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IRewardEscrowV2.sol";
+
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetix
 contract Synthetix is BaseSynthetix {
+    // ========== ADDRESS RESOLVER CONFIGURATION ==========
+    bytes32 private constant CONTRACT_REWARD_ESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
+
     // ========== CONSTRUCTOR ==========
 
     constructor(
@@ -15,6 +23,24 @@ contract Synthetix is BaseSynthetix {
         uint _totalSupply,
         address _resolver
     ) public BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = BaseSynthetix.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_REWARD_ESCROW;
+        newAddresses[1] = CONTRACT_REWARDESCROW_V2;
+        return combineArrays(existingAddresses, newAddresses);
+    }
+
+    // ========== VIEWS ==========
+
+    function rewardEscrow() internal view returns (IRewardEscrow) {
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARD_ESCROW));
+    }
+
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
+    }
 
     // ========== OVERRIDDEN FUNCTIONS ==========
 
@@ -169,6 +195,18 @@ contract Synthetix is BaseSynthetix {
         // Transfer SNX redeemed to messageSender
         // Reverts if amount to redeem is more than balanceOf account, ie due to escrowed balance
         return _transferByProxy(account, messageSender, totalRedeemed);
+    }
+
+    /* Once off function for SIP-60 to migrate SNX balances in the RewardEscrow contract
+     * To the new RewardEscrowV2 contract
+     */
+    function migrateEscrowBalanceToRewardEscrowV2() external onlyOwner {
+        // Record balanceOf(RewardEscrow) contract
+        uint rewardEscrowBalance = tokenState.balanceOf(address(rewardEscrow()));
+
+        // transfer all of RewardEscrow's balance to RewardEscrowV2
+        // _internalTransfer emits the transfer event
+        _internalTransfer(address(rewardEscrow()), address(rewardEscrowV2()), rewardEscrowBalance);
     }
 
     // ========== EVENTS ==========
