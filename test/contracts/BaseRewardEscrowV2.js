@@ -804,25 +804,21 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 	describe('Read Vesting Schedule', () => {
 		const duration = 1 * YEAR;
-		let escrowAmount1, escrowAmount2, escrowAmount3;
+		const escrowAmounts = [toUnit('200'), toUnit('300'), toUnit('500')];
 		beforeEach(async () => {
 			// Transfer of SNX to the escrow must occur before creating a vestinng entry
 			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1000'));
 
-			escrowAmount1 = toUnit('200');
-			escrowAmount2 = toUnit('300');
-			escrowAmount3 = toUnit('500');
-
 			// Add a few vesting entries as the feepool address
-			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount1, duration, {
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmounts[0], duration, {
 				from: feePoolAccount,
 			});
 			await fastForward(WEEK);
-			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount2, duration, {
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmounts[1], duration, {
 				from: feePoolAccount,
 			});
 			await fastForward(WEEK);
-			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount3, duration, {
+			await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmounts[2], duration, {
 				from: feePoolAccount,
 			});
 
@@ -831,7 +827,13 @@ contract('BaseRewardEscrowV2', async accounts => {
 		});
 		it('should return the vesting schedules for account1', async () => {
 			const entries = await baseRewardEscrowV2.getVestingSchedules(account1, 0, 3);
+			// should be 3 entries
 			assert.equal(entries.length, 3);
+
+			// escrowAmounts should match for the entries in order
+			entries.forEach((entry, i) => {
+				assert.bnEqual(entry.escrowAmount, escrowAmounts[i]);
+			});
 		});
 	});
 
@@ -922,6 +924,12 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.equal(await baseRewardEscrowV2.nominatedReceiver(account1), account2);
 			});
 
+			it('should allow account to nominate destination account as zero address', async () => {
+				await baseRewardEscrowV2.nominateAccountToMerge(ZERO_ADDRESS, { from: account1 });
+
+				assert.equal(await baseRewardEscrowV2.nominatedReceiver(account1), ZERO_ADDRESS);
+			});
+
 			it('should emit an event on nominating a destination account', async () => {
 				const tx = await baseRewardEscrowV2.nominateAccountToMerge(account2, { from: account1 });
 
@@ -943,6 +951,183 @@ contract('BaseRewardEscrowV2', async accounts => {
 					baseRewardEscrowV2.nominateAccountToMerge(account2, { from: account1 }),
 					'Account merging has ended'
 				);
+			});
+
+			describe('when given 1 entryID to merge from account1 into account2', () => {
+				let account1BalanceBefore;
+				let account2BalanceBefore;
+				let totalEscrowedBalanceBefore;
+				let entry1;
+				beforeEach(async () => {
+					// check account 1 totalEscrowedAccountBalance before
+					account1BalanceBefore = await baseRewardEscrowV2.totalEscrowedAccountBalance(account1);
+
+					totalEscrowedBalanceBefore = await baseRewardEscrowV2.totalEscrowedBalance();
+
+					entry1 = await baseRewardEscrowV2.getVestingEntry(account1, entryID1);
+
+					// nominate account 2 as destination
+					await baseRewardEscrowV2.nominateAccountToMerge(account2, { from: account1 });
+
+					// check account 2 has no totalEscrowedAccountBalance before
+					account2BalanceBefore = await baseRewardEscrowV2.totalEscrowedAccountBalance(account2);
+					assert.bnEqual(account2BalanceBefore, 0);
+
+					// merge entryID1 to account 2
+					await baseRewardEscrowV2.mergeAccount(account1, [entryID1], { from: account2 });
+				});
+
+				it('should merge entry1 into account 2', async () => {
+					// account 2 totalEscrowedAccountBalance should be increased by entryID1 remainingAmount
+					assert.bnEqual(
+						await baseRewardEscrowV2.totalEscrowedAccountBalance(account2),
+						entry1.remainingAmount
+					);
+
+					// account 1 totalEscrowedAccountBalance should be less entryID1 remainingAmount
+					assert.bnEqual(
+						await baseRewardEscrowV2.totalEscrowedAccountBalance(account1),
+						account1BalanceBefore.sub(entry1.remainingAmount)
+					);
+
+					// account1's entry for entryID1 should be 0 (not set)
+					const entry1After = await baseRewardEscrowV2.getVestingEntry(account1, entryID1);
+					assert.bnEqual(entry1After.remainingAmount, 0);
+					assert.bnEqual(entry1After.ratePerSecond, 0);
+				});
+
+				it('should have the same totalEscrowedBalance before and after', async () => {
+					// totalEscrowedBalanceBefore is same before and after
+					assert.bnEqual(
+						await baseRewardEscrowV2.totalEscrowedBalance(),
+						totalEscrowedBalanceBefore
+					);
+				});
+
+				it('should be able to get entry1 from account 2 vestingSchedule', async () => {
+					const entry1OnAccount2 = await baseRewardEscrowV2.getVestingEntry(account2, entryID1);
+					assert.bnEqual(entry1OnAccount2.endTime, entry1.endTime);
+					assert.bnEqual(entry1OnAccount2.duration, entry1.duration);
+					assert.bnEqual(entry1OnAccount2.escrowAmount, entry1.escrowAmount);
+					assert.bnEqual(entry1OnAccount2.ratePerSecond, entry1.ratePerSecond);
+				});
+
+				it('should have added the entryID to account2 accountVestingEntryIDs', async () => {
+					assert.bnEqual(await baseRewardEscrowV2.numVestingEntries(account2), new BN(1));
+					assert.bnEqual(await baseRewardEscrowV2.accountVestingEntryIDs(account2, 0), entryID1);
+				});
+
+				it('should ignore merging entryID1 again from account1 as the entry is no longer set', async () => {
+					// record acc2, acc1 totalEscrowedAccountBalance before 2nd attempt
+					const totalEscrowedBalanceAcc2 = await baseRewardEscrowV2.totalEscrowedAccountBalance(
+						account2
+					);
+					const totalEscrowedBalanceAcc1 = await baseRewardEscrowV2.totalEscrowedAccountBalance(
+						account1
+					);
+
+					const numVestingEntriesBefore = await baseRewardEscrowV2.numVestingEntries(account2);
+
+					// merge entryID1 to account 2
+					await baseRewardEscrowV2.mergeAccount(account1, [entryID1], { from: account2 });
+
+					// totalEscrowedBalance should still be the same as before
+					assert.bnEqual(
+						await baseRewardEscrowV2.totalEscrowedAccountBalance(account2),
+						totalEscrowedBalanceAcc2
+					);
+
+					assert.bnEqual(
+						await baseRewardEscrowV2.totalEscrowedAccountBalance(account1),
+						totalEscrowedBalanceAcc1
+					);
+
+					// no new entryID's appended to account2's accountVestingEntryIDs
+					assert.bnEqual(
+						await baseRewardEscrowV2.numVestingEntries(account2),
+						numVestingEntriesBefore
+					);
+				});
+			});
+
+			describe('when merging multiple vesting entries from account 1 to account 2', () => {
+				let account1BalanceBefore;
+				let account2BalanceBefore;
+				let totalEscrowedBalanceBefore;
+				let entry1;
+				let entry2;
+				beforeEach(async () => {
+					// check account 1 totalEscrowedAccountBalance before
+					account1BalanceBefore = await baseRewardEscrowV2.totalEscrowedAccountBalance(account1);
+
+					totalEscrowedBalanceBefore = await baseRewardEscrowV2.totalEscrowedBalance();
+
+					entry1 = await baseRewardEscrowV2.getVestingEntry(account1, entryID1);
+					entry2 = await baseRewardEscrowV2.getVestingEntry(account1, entryID2);
+
+					// nominate account 2 as destination
+					await baseRewardEscrowV2.nominateAccountToMerge(account2, { from: account1 });
+
+					// check account 2 has no totalEscrowedAccountBalance before
+					account2BalanceBefore = await baseRewardEscrowV2.totalEscrowedAccountBalance(account2);
+					assert.bnEqual(account2BalanceBefore, 0);
+
+					// merge entryID1, entryID2 to account 2
+					await baseRewardEscrowV2.mergeAccount(account1, [entryID1, entryID2], { from: account2 });
+				});
+				it('should merge entry1, entry2 into account 2', async () => {
+					const combinedRemainingAmounts = entry1.remainingAmount.add(entry2.remainingAmount);
+
+					// account 2 totalEscrowedAccountBalance should be increased by entryID1 & entryID2 remainingAmount
+					assert.bnEqual(
+						await baseRewardEscrowV2.totalEscrowedAccountBalance(account2),
+						account2BalanceBefore.add(combinedRemainingAmounts)
+					);
+
+					// account 1 totalEscrowedAccountBalance should be less entryID1 & entryID2 remainingAmount
+					assert.bnEqual(
+						await baseRewardEscrowV2.totalEscrowedAccountBalance(account1),
+						account1BalanceBefore.sub(combinedRemainingAmounts)
+					);
+
+					// account1's entry for entryID1 should be 0 (not set)
+					const entry1After = await baseRewardEscrowV2.getVestingEntry(account1, entryID1);
+					assert.bnEqual(entry1After.remainingAmount, 0);
+					assert.bnEqual(entry1After.ratePerSecond, 0);
+
+					// account1's entry for entryID2 should be 0 (not set)
+					const entry2After = await baseRewardEscrowV2.getVestingEntry(account1, entryID2);
+					assert.bnEqual(entry2After.remainingAmount, 0);
+					assert.bnEqual(entry2After.ratePerSecond, 0);
+				});
+				it('should have the same totalEscrowedBalance on escrow contract before and after', async () => {
+					// totalEscrowedBalanceBefore is same before and after
+					assert.bnEqual(
+						await baseRewardEscrowV2.totalEscrowedBalance(),
+						totalEscrowedBalanceBefore
+					);
+				});
+				it('should be able to get entry1 from account 2 vestingSchedule', async () => {
+					const entry1OnAccount2 = await baseRewardEscrowV2.getVestingEntry(account2, entryID1);
+					assert.bnEqual(entry1OnAccount2.endTime, entry1.endTime);
+					assert.bnEqual(entry1OnAccount2.duration, entry1.duration);
+					assert.bnEqual(entry1OnAccount2.escrowAmount, entry1.escrowAmount);
+					assert.bnEqual(entry1OnAccount2.remainingAmount, entry1.remainingAmount);
+					assert.bnEqual(entry1OnAccount2.ratePerSecond, entry1.ratePerSecond);
+				});
+				it('should be able to get entry2 from account 2 vestingSchedule', async () => {
+					const entry2OnAccount2 = await baseRewardEscrowV2.getVestingEntry(account2, entryID2);
+					assert.bnEqual(entry2OnAccount2.endTime, entry2.endTime);
+					assert.bnEqual(entry2OnAccount2.duration, entry2.duration);
+					assert.bnEqual(entry2OnAccount2.escrowAmount, entry2.escrowAmount);
+					assert.bnEqual(entry2OnAccount2.remainingAmount, entry2.remainingAmount);
+					assert.bnEqual(entry2OnAccount2.ratePerSecond, entry2.ratePerSecond);
+				});
+				it('should have added the entryIDs to account2 accountVestingEntryIDs', async () => {
+					assert.bnEqual(await baseRewardEscrowV2.numVestingEntries(account2), new BN(2));
+					assert.bnEqual(await baseRewardEscrowV2.accountVestingEntryIDs(account2, 0), entryID1);
+					assert.bnEqual(await baseRewardEscrowV2.accountVestingEntryIDs(account2, 1), entryID2);
+				});
 			});
 		});
 	});
