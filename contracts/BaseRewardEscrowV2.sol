@@ -203,10 +203,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
      * Public function allows any account to be vested by another account
      */
 
-    function vest(address account, uint256[] calldata entryIDs) external {
+    function vest(uint256[] calldata entryIDs) external {
         uint256 total;
         for (uint i = 0; i < entryIDs.length; i++) {
-            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
+            VestingEntries.VestingEntry storage entry = vestingSchedules[msg.sender][entryIDs[i]];
 
             /* Skip entry if remainingAmount == 0 */
             if (entry.remainingAmount != 0) {
@@ -223,7 +223,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
         /* Transfer vested tokens. Will revert if total > totalEscrowedAccountBalance */
         if (total != 0) {
-            _transferVestedTokens(account, total);
+            _transferVestedTokens(msg.sender, total);
         }
     }
 
@@ -354,31 +354,28 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* ========== MIGRATION OLD ESCROW ========== */
 
-    function migrateVestingSchedule(address addressToMigrate) external {
+    function migrateVestingSchedule(address) external {
         _notImplemented();
     }
 
     function migrateAccountEscrowBalances(
-        address[] calldata accounts,
-        uint256[] calldata escrowBalances,
-        uint256[] calldata vestedBalances
+        address[] calldata,
+        uint256[] calldata,
+        uint256[] calldata
     ) external {
         _notImplemented();
     }
 
     /* ========== L2 MIGRATION ========== */
 
-    function burnForMigration(address account, uint[] calldata entryIDs)
-        external
-        returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries)
-    {
+    function burnForMigration(address, uint[] calldata) external returns (uint256, VestingEntries.VestingEntry[] memory) {
         _notImplemented();
     }
 
     function importVestingEntries(
-        address account,
-        uint256 escrowedAmount,
-        VestingEntries.VestingEntry[] calldata vestingEntries
+        address,
+        uint256,
+        VestingEntries.VestingEntry[] calldata
     ) external {
         _notImplemented();
     }

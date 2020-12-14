@@ -462,7 +462,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 			it('should vest 0 amount if entryID does not exist for user', async () => {
 				const randomID = 200;
-				await baseRewardEscrowV2.vest(account1, [randomID], { from: account1 });
+				await baseRewardEscrowV2.vest([randomID], { from: account1 });
 
 				// Check user has no vested SNX
 				assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('0'));
@@ -504,7 +504,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				);
 
 				// Vest
-				await baseRewardEscrowV2.vest(account1, [entryID], { from: account1 });
+				await baseRewardEscrowV2.vest([entryID], { from: account1 });
 
 				// Check user has the claimable vested SNX
 				assert.bnGte(await mockedSynthetix.balanceOf(account1), claimableSNX);
@@ -542,7 +542,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				const now = await currentTime();
 
 				// Vest
-				await baseRewardEscrowV2.vest(account1, [entryID], { from: account1 });
+				await baseRewardEscrowV2.vest([entryID], { from: account1 });
 
 				// Get vesting entry after
 				const vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
@@ -555,7 +555,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			it('should vest and emit a Vest event', async () => {
-				const vestTransaction = await baseRewardEscrowV2.vest(account1, [entryID], {
+				const vestTransaction = await baseRewardEscrowV2.vest([entryID], {
 					from: account1,
 				});
 
@@ -589,7 +589,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				fastForward(duration + 10);
 			});
 			it('should vest and transfer all the snx to the user', async () => {
-				await baseRewardEscrowV2.vest(account1, [entryID], {
+				await baseRewardEscrowV2.vest([entryID], {
 					from: account1,
 				});
 
@@ -601,7 +601,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			it('should vest and emit a Vest event', async () => {
-				const vestTransaction = await baseRewardEscrowV2.vest(account1, [entryID], {
+				const vestTransaction = await baseRewardEscrowV2.vest([entryID], {
 					from: account1,
 				});
 
@@ -619,7 +619,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(escrowedAccountBalance, escrowAmount);
 
 				// Vest
-				await baseRewardEscrowV2.vest(account1, [entryID], {
+				await baseRewardEscrowV2.vest([entryID], {
 					from: account1,
 				});
 
@@ -636,7 +636,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(totalVestedAccountBalance, toUnit('0'));
 
 				// Vest
-				await baseRewardEscrowV2.vest(account1, [entryID], {
+				await baseRewardEscrowV2.vest([entryID], {
 					from: account1,
 				});
 
@@ -646,7 +646,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			it('should vest and update totalEscrowedBalance', async () => {
-				await baseRewardEscrowV2.vest(account1, [entryID], {
+				await baseRewardEscrowV2.vest([entryID], {
 					from: account1,
 				});
 
@@ -691,26 +691,28 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(numOfEntries, new BN(3));
 			});
 
-			describe('When another user vests all entries for account1', () => {
-				beforeEach(async () => {
-					await baseRewardEscrowV2.vest(account1, [entryID1, entryID2, entryID3], {
+			describe('When another user vests all entries but dont exist for them', () => {
+				it('should vest all entries and transfer snx to the user', async () => {
+					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 						from: account2,
 					});
-				});
-				it('should vest all entries and transfer snx to the user', async () => {
-					// Check user has all their vested SNX
-					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('1000'));
 
-					// Check account2 has no SNX
+					// Check account1 has no SNX in their balance
+					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('0'));
+
+					// Check account2 has no SNX in their balance
 					assert.bnEqual(await mockedSynthetix.balanceOf(account2), toUnit('0'));
 
-					// Check rewardEscrow does not have any SNX
-					assert.bnEqual(await mockedSynthetix.balanceOf(baseRewardEscrowV2.address), toUnit('0'));
+					// Check rewardEscrow has all the SNX
+					assert.bnEqual(
+						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
+						toUnit('1000')
+					);
 				});
 			});
 
 			it('should vest all entries and transfer snx from contract to the user', async () => {
-				await baseRewardEscrowV2.vest(account1, [entryID1, entryID2, entryID3], {
+				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 
@@ -722,7 +724,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			it('should vest and emit a Vest event', async () => {
-				const vestTx = await baseRewardEscrowV2.vest(account1, [entryID1, entryID2, entryID3], {
+				const vestTx = await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 
@@ -740,7 +742,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(escrowedAccountBalance, toUnit('1000'));
 
 				// Vest
-				await baseRewardEscrowV2.vest(account1, [entryID1, entryID2, entryID3], {
+				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 
@@ -757,7 +759,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(totalVestedAccountBalance, toUnit('0'));
 
 				// Vest
-				await baseRewardEscrowV2.vest(account1, [entryID1, entryID2, entryID3], {
+				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 
@@ -767,7 +769,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 			});
 
 			it('should vest and update totalEscrowedBalance', async () => {
-				await baseRewardEscrowV2.vest(account1, [entryID1, entryID2, entryID3], {
+				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 				// There should be no Escrowed balance left in the contract
@@ -776,7 +778,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 			it('should vest all entries and ignore duplicate attempts to vest same entries again', async () => {
 				// Vest attempt 1
-				await baseRewardEscrowV2.vest(account1, [entryID1, entryID2, entryID3], {
+				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 
@@ -787,7 +789,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(await mockedSynthetix.balanceOf(baseRewardEscrowV2.address), toUnit('0'));
 
 				// Vest attempt 2
-				await baseRewardEscrowV2.vest(account1, [entryID1, entryID2, entryID3], {
+				await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 					from: account1,
 				});
 
