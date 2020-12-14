@@ -41,7 +41,6 @@ contract('EtherCollateralsUSD', async accounts => {
 	const [, owner, oracle, address1, address2, address3] = accounts;
 
 	let etherCollateral,
-		synthetix,
 		feePool,
 		exchangeRates,
 		addressResolver,

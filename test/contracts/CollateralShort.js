@@ -1,16 +1,14 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const BN = require('bn.js');
-
-const { fastForward, getEthBalance, toUnit, fromUnit, currentTime } = require('../utils')();
+const { fastForward, toUnit, fromUnit, currentTime } = require('../utils')();
 
 const { setupAllContracts, setupContract } = require('./setup');
 
-const { ensureOnlyExpectedMutativeFunctions, setStatus } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const {
 	toBytes32,
@@ -28,7 +26,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 	const sETH = toBytes32('sETH');
 	const sBTC = toBytes32('sBTC');
 
-	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
+	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	let short,
 		state,
@@ -39,7 +37,6 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		sUSDSynth,
 		sBTCSynth,
 		sETHSynth,
-		systemStatus,
 		synths,
 		manager,
 		issuer,
@@ -107,7 +104,6 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 	const setupShort = async () => {
 		synths = ['sUSD', 'sBTC', 'sETH'];
 		({
-			SystemStatus: systemStatus,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
 			SynthsBTC: sBTCSynth,

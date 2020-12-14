@@ -4,7 +4,7 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { toUnit, currentTime, fromUnit } = require('../utils')();
+const { toUnit, currentTime } = require('../utils')();
 
 const { setupAllContracts, setupContract } = require('./setup');
 
