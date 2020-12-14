@@ -98,6 +98,7 @@ describe('Layer 2 production tests', () => {
 		});
 
 		it('the initial values are the expected ones', async () => {
+			assert.equal(await RewardEscrowV2L1.totalEscrowedBalance(), 0);
 			assert.equal(await RewardEscrowV2L1.numVestingEntries(USER1_ADDRESS), 0);
 			assert.equal(await RewardEscrowV2L1.totalEscrowedAccountBalance(USER1_ADDRESS), 0);
 			assert.equal(await RewardEscrowV2L1.totalVestedAccountBalance(USER1_ADDRESS), 0);
@@ -145,7 +146,8 @@ describe('Layer 2 production tests', () => {
 						assert.bnEqual(await RewardEscrowV2L1.nextEntryId(), (escrowNum + 1).toString());
 					});
 
-					it('should update the L1 escrow balances', async () => {
+					it('should update the L1 escrow state', async () => {
+						assert.bnEqual(await RewardEscrowV2L1.totalEscrowedBalance(), totalEscrowed);
 						assert.bnEqual(
 							await RewardEscrowV2L1.numVestingEntries(USER1_ADDRESS),
 							escrowNum.toString()
@@ -163,7 +165,11 @@ describe('Layer 2 production tests', () => {
 								const depositAmount = ethers.utils.parseEther('20');
 								before('approve L1 bridge', async () => {
 									SynthetixL1 = SynthetixL1.connect(user1L1);
-									await SynthetixL1.approve(SynthetixBridgeToOptimismL1.address, depositAmount);
+									const tx = await SynthetixL1.approve(
+										SynthetixBridgeToOptimismL1.address,
+										depositAmount
+									);
+									await tx.wait();
 								});
 
 								describe('when the user deposits SNX along with the migration', () => {
@@ -207,6 +213,7 @@ describe('Layer 2 production tests', () => {
 
 										it('should update the L2 escrow state', async () => {
 											RewardEscrowV2L2 = RewardEscrowV2L2.connect(user1L2);
+											assert.bnEqual(await RewardEscrowV2L2.totalEscrowedBalance(), totalEscrowed);
 											assert.bnEqual(
 												await RewardEscrowV2L2.numVestingEntries(USER1_ADDRESS),
 												escrowNum.toString()
