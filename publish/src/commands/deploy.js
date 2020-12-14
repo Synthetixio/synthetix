@@ -1112,6 +1112,11 @@ const deploy = async ({
 			name: 'SynthetixBridgeToBase',
 			args: [account, addressOf(readProxyForResolver)],
 		});
+		await deployer.deployContract({
+			name: 'CollateralManager',
+			source: 'EmptyCollateralManager',
+			args: [],
+		});
 	} else {
 		await deployer.deployContract({
 			name: 'EtherCollateral',

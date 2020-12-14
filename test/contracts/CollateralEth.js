@@ -494,7 +494,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 				it('should fail if the minimum is less than 1', async () => {
 					await assert.revert(
 						ceth.setMinCratio(toUnit(0.99), { from: owner }),
-						'Minimum collateralisation must be greater than 1'
+						'Must be greater than 1'
 					);
 				});
 			});
