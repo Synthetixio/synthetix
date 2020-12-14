@@ -29,7 +29,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	beforeEach(async () => {
 		({ mocks, resolver } = await prepareSmocks({
-			contracts: ['FeePool', 'Issuer', 'Synthetix'],
+			contracts: ['FeePool', 'Issuer', 'Synthetix', 'RewardEscrow'],
 			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
 
@@ -136,11 +136,11 @@ contract('BaseRewardEscrowV2', async accounts => {
 					baseRewardEscrowV2.appendVestingEntry(account1, toUnit('10'), duration, {
 						from: feePoolAccount,
 					}),
-					'Cannot escrow with 0 duration OR above MAX_DURATION'
+					'Cannot escrow with 0 duration OR above max_duration'
 				);
 			});
-			it('should revert appending a vesting entry if the duration is > MAX_DURATION', async () => {
-				duration = (await baseRewardEscrowV2.MAX_DURATION()).add(toUnit(1));
+			it('should revert appending a vesting entry if the duration is > max_duration', async () => {
+				duration = (await baseRewardEscrowV2.max_duration()).add(toUnit(1));
 
 				// Transfer of SNX to the escrow must occur before creating an entry
 				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('10'));
@@ -149,7 +149,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 					baseRewardEscrowV2.appendVestingEntry(account1, toUnit('10'), duration, {
 						from: feePoolAccount,
 					}),
-					'Cannot escrow with 0 duration OR above MAX_DURATION'
+					'Cannot escrow with 0 duration OR above max_duration'
 				);
 			});
 			describe('When successfully appending new escrow entry for account 1 with 10 SNX', () => {

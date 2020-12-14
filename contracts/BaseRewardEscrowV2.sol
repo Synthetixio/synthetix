@@ -44,7 +44,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     uint256 public totalEscrowedBalance;
 
     /* Max escrow duration */
-    uint public MAX_DURATION = 2 * 52 weeks; // Default max 2 years duration
+    uint public max_duration = 2 * 52 weeks; // Default max 2 years duration
 
     /* ========== OLD ESCROW LOOKUP ========== */
 
@@ -56,10 +56,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     uint public accountMergingDuration = 1 weeks;
 
     uint public accountMergingStartTime;
-
-    /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
-     * There are 5 years of the supply schedule */
-    uint public constant MAX_VESTING_ENTRIES = 52 * 5;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -326,7 +322,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function setMaxEscrowDuration(uint256 duration) external onlyOwner {
-        MAX_DURATION = duration;
+        max_duration = duration;
         emit MaxEscrowDurationUpdated(duration);
     }
 
@@ -389,7 +385,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     ) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
-        require(duration > 0 && duration < MAX_DURATION, "Cannot escrow with 0 duration OR above MAX_DURATION");
+        require(duration > 0 && duration < max_duration, "Cannot escrow with 0 duration OR above max_duration");
 
         /* Escrow quantity needs to be larger than duration as ratePerSecond division will result in 0 if less */
         require(quantity > duration, "Escrow quantity less than duration");
