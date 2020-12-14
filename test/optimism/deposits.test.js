@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
-const { wait, takeSnapshot, restoreSnapshot } = require('./utils/rpc');
+const { takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
 const itCanPerformDeposits = ({ ctx }) => {
 	describe('[DEPOSITS] when migrating SNX from L1 to L2', () => {
@@ -241,11 +241,12 @@ const itCanPerformDeposits = ({ ctx }) => {
 						// Wait...
 						// --------------------------
 
-						// TODO: Use watcher instead of random wait
-						const time = 15;
-						describe(`when ${time} seconds have elapsed`, () => {
-							before('wait', async () => {
-								await wait(time);
+						describe('when waiting for the tx to complete on L2', () => {
+							before('listen for completion', async () => {
+								const [transactionHashL2] = await ctx.watcher.getMessageHashesFromL1Tx(
+									depositReceipt.transactionHash
+								);
+								await ctx.watcher.getL2TransactionReceipt(transactionHashL2);
 							});
 
 							before('stop listening to events on L2', async () => {
