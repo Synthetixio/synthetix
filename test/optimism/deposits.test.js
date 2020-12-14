@@ -4,7 +4,7 @@ const { connectContract } = require('./utils/connectContract');
 const { wait, takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
 const itCanPerformDeposits = ({ ctx }) => {
-	describe('DEPOSITS - when migrating SNX from L1 to L2', () => {
+	describe('[DEPOSITS] when migrating SNX from L1 to L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		let user1L1;

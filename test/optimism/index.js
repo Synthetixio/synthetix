@@ -3,6 +3,7 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { toBytes32 } = require('../..');
 const { itCanPerformDeposits } = require('./deposits.test');
+const { itCanPerformRewardDeposits } = require('./rewards.test');
 const { itCanPerformWithdrawals } = require('./withdrawals.test');
 
 /*
@@ -139,9 +140,9 @@ describe('Layer 2 production tests', () => {
 
 		itCanPerformDeposits({ ctx: this });
 		itCanPerformWithdrawals({ ctx: this });
+		itCanPerformRewardDeposits({ ctx: this });
 
 		// TODO
-		// itCanPerformRewardDeposits();
 		// itCanMigrateL1Bridges();
 	});
 });

@@ -5,7 +5,7 @@ const { connectContract } = require('./utils/connectContract');
 const { wait } = require('./utils/rpc');
 
 const itCanPerformWithdrawals = ({ ctx }) => {
-	describe('WITHDRAWALS - when migrating SNX from L2 to L1', () => {
+	describe('[WITHDRAWALS] when migrating SNX from L2 to L1', () => {
 		const amountToWithdraw = ethers.utils.parseEther('100');
 
 		let user1L2;

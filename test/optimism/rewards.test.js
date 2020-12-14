@@ -1,0 +1,153 @@
+const ethers = require('ethers');
+const { assert } = require('../contracts/common');
+const { connectContract } = require('./utils/connectContract');
+const { wait } = require('./utils/rpc');
+
+const itCanPerformRewardDeposits = ({ ctx }) => {
+	describe.only('[REWARDS] when migrating SNX rewards from L1 to L2', () => {
+		const amountToDeposit = ethers.utils.parseEther('100');
+
+		let SynthetixL1, SynthetixBridgeToOptimismL1;
+		let FeePoolL2;
+
+		// --------------------------
+		// Setup
+		// --------------------------
+
+		before('connect to contracts', async () => {
+			// L1
+			SynthetixL1 = connectContract({ contract: 'Synthetix', provider: ctx.providerL1 });
+			SynthetixBridgeToOptimismL1 = connectContract({
+				contract: 'SynthetixBridgeToOptimism',
+				provider: ctx.providerL1,
+			});
+
+			// L2
+			FeePoolL2 = connectContract({
+				contract: 'FeePool',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
+		});
+
+		// --------------------------
+		// No approval
+		// --------------------------
+
+		describe('before the owner approves the L1 bridge to transfer its SNX', () => {
+			before('make sure approval is zero', async () => {
+				SynthetixL1 = SynthetixL1.connect(ctx.ownerL1);
+
+				const tx = await SynthetixL1.approve(
+					SynthetixBridgeToOptimismL1.address,
+					ethers.utils.parseEther('0')
+				);
+				await tx.wait();
+			});
+
+			it('reverts if the user attempts to initiate a deposit', async () => {
+				SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
+
+				await assert.revert(
+					SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit),
+					'subtraction overflow'
+				);
+			});
+		});
+
+		// --------------------------
+		// Approval
+		// --------------------------
+
+		describe('when the owner approves the L1 bridge to transfer its SNX', () => {
+			before('approve', async () => {
+				SynthetixL1 = SynthetixL1.connect(ctx.ownerL1);
+
+				const tx = await SynthetixL1.approve(
+					SynthetixBridgeToOptimismL1.address,
+					ethers.utils.parseEther('100000000')
+				);
+				await tx.wait();
+			});
+
+			// --------------------------
+			// Suspended
+			// --------------------------
+
+			// TODO: Implement
+			describe.skip('when the system is suspended in L1', () => {});
+
+			// --------------------------
+			// Deposit rewards
+			// --------------------------
+
+			describe('when the owner deposits SNX in the L1 bridge', () => {
+				let ownerBalanceL1, bridgeBalanceL1;
+				let rewardsToDistributeL2;
+				let rewardDepositReceipt;
+
+				before('record current values', async () => {
+					bridgeBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address);
+					ownerBalanceL1 = await SynthetixL1.balanceOf(ctx.ownerAddress);
+
+					const period = await FeePoolL2.recentFeePeriods(0);
+					rewardsToDistributeL2 = period.rewardsToDistribute;
+				});
+
+				before('deposit rewards', async () => {
+					SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
+
+					const tx = await SynthetixBridgeToOptimismL1.initiateRewardDeposit(amountToDeposit);
+					rewardDepositReceipt = await tx.wait();
+				});
+
+				it('emitted a RewardsDeposit event', async () => {
+					const event = rewardDepositReceipt.events.find(e => e.event === 'RewardDeposit');
+					assert.exists(event);
+
+					assert.bnEqual(event.args.amount, amountToDeposit);
+					assert.equal(event.args.account, ctx.ownerAddress);
+				});
+
+				it('shows that the owners new balance L1 is reduced', async () => {
+					assert.bnEqual(
+						await SynthetixL1.balanceOf(ctx.ownerAddress),
+						ownerBalanceL1.sub(amountToDeposit)
+					);
+				});
+
+				it('shows that the L1 bridge received the SNX', async () => {
+					assert.bnEqual(
+						await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address),
+						bridgeBalanceL1.add(amountToDeposit)
+					);
+				});
+
+				// --------------------------
+				// Wait...
+				// --------------------------
+
+				// TODO: Use watcher instead of random wait
+				const time = 15;
+				describe(`when ${time} seconds have elapsed`, () => {
+					before('wait', async () => {
+						await wait(time);
+					});
+
+					// TODO
+					it.skip('shows that a RewardsDistributed event was emitted', async () => {});
+
+					it('shows that the fee pool has registered rewards to distribute', async () => {
+						const period = await FeePoolL2.recentFeePeriods(0);
+
+						assert.bnEqual(period.rewardsToDistribute, rewardsToDistributeL2.add(amountToDeposit));
+					});
+				});
+			});
+		});
+	});
+};
+
+module.exports = {
+	itCanPerformRewardDeposits,
+};
