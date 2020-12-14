@@ -43,6 +43,18 @@ const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
 
+function splitArrayIntoChunks(array, chunkSize) {
+	const chunks = [];
+	for (let i = 0; i < array.length; i += chunkSize) {
+		const chunk = array.slice(i, i + chunkSize);
+		if (chunk.length > 0) {
+			chunks.push(chunk);
+		}
+	}
+
+	return chunks;
+}
+
 const deploy = async ({
 	addNewSynths,
 	gasPrice = DEFAULTS.gasPrice,
@@ -1279,22 +1291,37 @@ const deploy = async ({
 	console.log(gray('Addresses are correctly set up, continuing...'));
 
 	// now ensure all resolvers are set
-	await runStep({
-		gasLimit: 7e6, // higher gas required
-		contract: `AddressResolver`,
-		target: addressResolver,
-		write: 'rebuildCaches',
-		writeArg: [
-			contractsWithRebuildableCache.map(
-				([
-					,
-					{
-						options: { address },
-					},
-				]) => address
-			),
-		],
-	});
+	// NOTE: If using OVM, split the array of addresses to cache,
+	// since things spend signifficantly more gas in OVM
+	const addressesToCache = contractsWithRebuildableCache.map(
+		([
+			,
+			{
+				options: { address },
+			},
+		]) => address
+	);
+	if (useOvm) {
+		const chunks = splitArrayIntoChunks(addressesToCache, 4);
+		for (let i = 0; i < chunks.length; i++) {
+			const chunk = chunks[i];
+			await runStep({
+				gasLimit: 7e6, // higher gas required
+				contract: `AddressResolver`,
+				target: addressResolver,
+				write: 'rebuildCaches',
+				writeArg: [chunk],
+			});
+		}
+	} else {
+		await runStep({
+			gasLimit: 7e6, // higher gas required
+			contract: `AddressResolver`,
+			target: addressResolver,
+			write: 'rebuildCaches',
+			writeArg: [addressesToCache],
+		});
+	}
 
 	console.log(gray('Double check all contracts with rebuildCache() are rebuilt...'));
 	for (const [contract, target] of contractsWithRebuildableCache) {
@@ -1692,6 +1719,15 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if zero
 			write: 'setDebtSnapshotStaleTime',
 			writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: await getDeployParameter('CROSS_DOMAIN_MESSAGE_GAS_LIMIT'),
 		});
 
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
