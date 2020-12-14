@@ -74,23 +74,7 @@ const deployOvmPair = async () => {
 };
 
 const deployInstance = async ({ useOvm, privateKey }) => {
-	await commands.build({ useOvm });
-	try {
-		await commands.deploy({
-			network: 'local',
-			freshDeploy: true,
-			yes: true,
-			providerUrl: useOvm ? L2_PROVIDER_URL : L1_PROVIDER_URL,
-			gasPrice: '0',
-			useOvm,
-			methodCallGasLimit: '3500000',
-			contractDeploymentGasLimit: useOvm ? '11000000' : '9500000',
-			privateKey,
-		});
-	} catch (error) {
-		console.log('deploy failed, trying again...');
-	}
-	// lol the first deploy always fails so... yeah
+	// await commands.build({ useOvm });
 	await commands.deploy({
 		network: 'local',
 		freshDeploy: true,
@@ -99,7 +83,7 @@ const deployInstance = async ({ useOvm, privateKey }) => {
 		gasPrice: '0',
 		useOvm,
 		methodCallGasLimit: '3500000',
-		contractDeploymentGasLimit: useOvm ? '11000000' : '9500000',
+		contractDeploymentGasLimit: useOvm ? '8900000' : '9500000',
 		privateKey,
 	});
 };
