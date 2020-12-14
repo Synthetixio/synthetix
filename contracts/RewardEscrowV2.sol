@@ -124,12 +124,15 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             uint escrowedAmount = escrowBalances[i];
             uint vestedAmount = vestedBalances[i];
 
+            // ensure account doesn't have escrow migratio pending / being imported more than once
+            require(!escrowMigrationPending[account], "Account migration is pending already");
+
             /* Update totalEscrowedBalance for tracking the Synthetix balance of this contract. */
             totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
 
             /* Update totalEscrowedAccountBalance and totalVestedAccountBalance for each account */
             totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
-            totalVestedAccountBalance[account] = totalVestedAccountBalance[account].add(vestedBalances[i]);
+            totalVestedAccountBalance[account] = totalVestedAccountBalance[account].add(vestedAmount);
 
             /* flag address for migration from old escrow */
             escrowMigrationPending[account] = true;
