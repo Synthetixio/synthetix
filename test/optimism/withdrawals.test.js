@@ -97,7 +97,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			// With debt
 			// --------------------------
 
-			// Not working because of Optimism's issues with "now"
+			// TODO: Not working because of Optimism's issues with "now"
 			describe.skip('when a user has debt in L2', () => {
 				before('issue sUSD', async () => {
 					SynthetixL2 = SynthetixL2.connect(user1L2);
@@ -191,6 +191,17 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 				describe('when a user initiates a withdrawal on L2', () => {
 					let user1BalanceL1;
 					let withdrawalReceipt;
+					let withdrawalCompletedEvent;
+
+					const eventListener = (from, value, event) => {
+						if (event && event.event === 'WithdrawalCompleted') {
+							withdrawalCompletedEvent = event;
+						}
+					};
+
+					before('listen to events on l1', async () => {
+						SynthetixBridgeToOptimismL1.on('WithdrawalCompleted', eventListener);
+					});
 
 					before('record current values', async () => {
 						user1BalanceL1 = await SynthetixL1.balanceOf(user1L2.address);
@@ -224,6 +235,16 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					describe(`when ${time} seconds have elapsed`, () => {
 						before('wait', async () => {
 							await wait(time);
+						});
+
+						before('stop listening to events on L1', async () => {
+							SynthetixBridgeToOptimismL1.off('WithdrawalCompleted', eventListener);
+						});
+
+						it('emitted a WithdrawalCompleted event', async () => {
+							assert.exists(withdrawalCompletedEvent);
+							assert.bnEqual(withdrawalCompletedEvent.args.amount, amountToWithdraw);
+							assert.equal(withdrawalCompletedEvent.args.account, user1L2.address);
 						});
 
 						it('shows that the users L1 balance increased', async () => {

@@ -8,7 +8,7 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1, SystemStatusL1;
-		let FeePoolL2;
+		let FeePoolL2, SynthetixBridgeToBaseL2;
 
 		// --------------------------
 		// Setup
@@ -29,6 +29,11 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 			// L2
 			FeePoolL2 = connectContract({
 				contract: 'FeePool',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
+			SynthetixBridgeToBaseL2 = connectContract({
+				contract: 'SynthetixBridgeToBase',
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
@@ -109,6 +114,17 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 				let ownerBalanceL1, bridgeBalanceL1;
 				let rewardsToDistributeL2;
 				let rewardDepositReceipt;
+				let mintedSecondaryEvent;
+
+				const eventListener = (value, event) => {
+					if (event && event.event === 'MintedSecondaryRewards') {
+						mintedSecondaryEvent = event;
+					}
+				};
+
+				before('listen to events on l2', async () => {
+					SynthetixBridgeToBaseL2.on('MintedSecondaryRewards', eventListener);
+				});
 
 				before('record current values', async () => {
 					bridgeBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address);
@@ -158,8 +174,14 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 						await wait(time);
 					});
 
-					// TODO
-					it.skip('shows that a RewardsDistributed event was emitted', async () => {});
+					before('stop listening to events on L2', async () => {
+						SynthetixBridgeToBaseL2.off('MintedSecondaryRewards', eventListener);
+					});
+
+					it('emitted a MintedSecondary event', async () => {
+						assert.exists(mintedSecondaryEvent);
+						assert.bnEqual(mintedSecondaryEvent.args.amount, amountToDeposit);
+					});
 
 					it('shows that the fee pool has registered rewards to distribute', async () => {
 						const period = await FeePoolL2.recentFeePeriods(0);

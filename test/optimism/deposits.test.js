@@ -10,7 +10,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 		let user1L1;
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1, SystemStatusL1;
-		let SynthetixL2;
+		let SynthetixL2, SynthetixBridgeToBaseL2;
 
 		let snapshotId;
 
@@ -39,6 +39,11 @@ const itCanPerformDeposits = ({ ctx }) => {
 			SynthetixL2 = connectContract({
 				contract: 'Synthetix',
 				source: 'MintableSynthetix',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
+			SynthetixBridgeToBaseL2 = connectContract({
+				contract: 'SynthetixBridgeToBase',
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
@@ -180,6 +185,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 					describe('when a user deposits SNX in the L1 bridge', () => {
 						let user1BalanceL2;
 						let bridgeBalanceL1;
+						let mintedSecondaryEvent;
 
 						before('record current values', async () => {
 							bridgeBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address);
@@ -191,6 +197,16 @@ const itCanPerformDeposits = ({ ctx }) => {
 						// --------------------------
 						// Deposit
 						// --------------------------
+
+						const eventListener = (from, value, event) => {
+							if (event && event.event === 'MintedSecondary') {
+								mintedSecondaryEvent = event;
+							}
+						};
+
+						before('listen to events on l2', async () => {
+							SynthetixBridgeToBaseL2.on('MintedSecondary', eventListener);
+						});
 
 						before('deposit', async () => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
@@ -230,6 +246,16 @@ const itCanPerformDeposits = ({ ctx }) => {
 						describe(`when ${time} seconds have elapsed`, () => {
 							before('wait', async () => {
 								await wait(time);
+							});
+
+							before('stop listening to events on L2', async () => {
+								SynthetixBridgeToBaseL2.off('MintedSecondary', eventListener);
+							});
+
+							it('emitted a MintedSecondary event', async () => {
+								assert.exists(mintedSecondaryEvent);
+								assert.bnEqual(mintedSecondaryEvent.args.amount, amountToDeposit);
+								assert.equal(mintedSecondaryEvent.args.account, user1L1.address);
 							});
 
 							it('shows that the users L2 balance increased', async () => {

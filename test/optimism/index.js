@@ -141,8 +141,5 @@ describe('Layer 2 production tests', () => {
 		itCanPerformDeposits({ ctx: this });
 		itCanPerformWithdrawals({ ctx: this });
 		itCanPerformRewardDeposits({ ctx: this });
-
-		// TODO
-		// itCanMigrateL1Bridges();
 	});
 });
