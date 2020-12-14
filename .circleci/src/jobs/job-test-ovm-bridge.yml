@@ -1,7 +1,0 @@
-# Tests the ovm bridge in a same chain environment
-{{> job-header.yml}}
-steps:
-  - checkout
-  - attach_workspace:
-      at: .
-  - run: npm run test:multi-same-chain
