@@ -11,5 +11,7 @@ interface ICollateralErc20 {
 
     function repay(address borrower, uint id, uint amount) external;
 
+    function draw(uint id, uint amount) external;
+
     function liquidate(address borrower, uint id, uint amount) external;
 }

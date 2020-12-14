@@ -42,10 +42,10 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         underlyingContract = _underlyingContract;
     }
 
-    function open(uint collateral, uint requestedLoan, bytes32 currency) external {
+    function open(uint collateral, uint amount, bytes32 currency) external {
         require(collateral <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
 
-        openInternal(collateral, requestedLoan, currency, false);
+        openInternal(collateral, amount, currency, false);
 
         IERC20(underlyingContract).transferFrom(msg.sender, address(this), collateral);
     }

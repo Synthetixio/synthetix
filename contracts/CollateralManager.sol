@@ -193,9 +193,10 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         // now work out the utilisation ratio, and divide through to get a per second value.
         uint utilisation = nonSnxDebt.divideDecimal(totalDebt).divideDecimal(SECONDS_IN_A_YEAR);
 
-        // finally, scale it by the utilisation multiplier.
+        // scale it by the utilisation multiplier.
         uint scaledUtilisation = utilisation.multiplyDecimal(utilisationMultiplier);
 
+        // finally, add the base borrow rate.
         borrowRate = scaledUtilisation.add(baseBorrowRate);
     }
 
@@ -203,17 +204,22 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         IERC20 synth = IERC20(_synth);
         bytes32 synthKey = ISynth(_synth).currencyKey();
 
+        // get the spot supply of the synth and the outstanding short balance
         uint longSupply = synth.totalSupply();
         uint shortSupply = state.short(synthKey);
 
+        // in this case, the market is skewed long so its free to short.
         if (longSupply > shortSupply) {
             return 0;
         }
 
+        // otherwise workout the skew towards the short side.
         uint skew = shortSupply.sub(longSupply);
 
+        // divide through by the size of the market
         uint proportionalSkew = skew.divideDecimal(longSupply.add(shortSupply)).divideDecimal(SECONDS_IN_A_YEAR);
 
+        // finally, add the base short rate.
         shortRate = proportionalSkew.add(baseShortRate);
     }
 
@@ -257,9 +263,8 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     function setBaseBorrowRate(uint _baseBorrowRate) public onlyOwner {
         require(_baseBorrowRate >= 0, "Must be greater than or equal to 0");
         baseBorrowRate = _baseBorrowRate;
-        emit baseBorrowRateUpdated(baseBorrowRate);
+        emit BaseBorrowRateUpdated(baseBorrowRate);
     }
-
 
     function setBaseShortRate(uint _baseShortRate) public onlyOwner {
         require(_baseShortRate >= 0, "Must be greater than or equal to 0");
@@ -312,11 +317,11 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
     /* ---------- STATE MUTATIONS ---------- */
 
-    function updateBorrowRates(uint rate) external {
+    function updateBorrowRates(uint rate) external onlyCollateral {
         state.updateBorrowRates(rate);
     }
 
-    function updateShortRates(bytes32 currency, uint rate) external {
+    function updateShortRates(bytes32 currency, uint rate) external onlyCollateral {
         state.updateShortRates(currency, rate);
     }
 
@@ -348,7 +353,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     // ========== EVENTS ==========
     event MaxDebtUpdated(uint maxDebt);
     event LiquidationPenaltyUpdated(uint liquidationPenalty);
-    event baseBorrowRateUpdated(uint baseBorrowRate);
+    event BaseBorrowRateUpdated(uint baseBorrowRate);
     event BaseShortRateUpdated(uint baseShortRate);
 
     event CollateralAdded(address collateral);
