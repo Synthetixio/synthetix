@@ -1,10 +1,13 @@
 const ethers = require('ethers');
+const axios = require('axios');
+const { Watcher } = require('@eth-optimism/watcher');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { toBytes32 } = require('../..');
 const { itCanPerformDeposits } = require('./deposits.test');
 const { itCanPerformRewardDeposits } = require('./rewards.test');
 const { itCanPerformWithdrawals } = require('./withdrawals.test');
+const { itCanPerformEscrowMigration } = require('./migrateEscrow.test');
 
 /*
  * ===== L2 GOTCHAS =====
@@ -42,6 +45,27 @@ describe('Layer 2 production tests', () => {
 		// and it doesn't matter if they don't have Ether.
 		this.ownerL1 = this.providerL1.getSigner(this.ownerAddress);
 		this.ownerL2 = new ethers.Wallet(this.ownerPrivateKey, this.providerL2);
+	});
+
+	before('set up watchers', async () => {
+		const response = await axios.get('http://localhost:8080/addresses.json');
+		const addresses = response.data;
+
+		this.watcher = new Watcher({
+			l1: {
+				provider: this.providerL1,
+				messengerAddress: addresses['Proxy__OVM_L1CrossDomainMessenger'],
+			},
+			l2: {
+				provider: this.providerL2,
+				messengerAddress: '0x4200000000000000000000000000000000000007',
+			},
+		});
+	});
+
+	after('exit', async () => {
+		// TODO: Optimism watchers leave the process open, so we explicitely kill it
+		process.exit(0);
 	});
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
@@ -141,5 +165,6 @@ describe('Layer 2 production tests', () => {
 		itCanPerformDeposits({ ctx: this });
 		itCanPerformWithdrawals({ ctx: this });
 		itCanPerformRewardDeposits({ ctx: this });
+		itCanPerformEscrowMigration({ ctx: this });
 	});
 });
