@@ -7,7 +7,7 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 	describe('[REWARDS] when migrating SNX rewards from L1 to L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
-		let SynthetixL1, SynthetixBridgeToOptimismL1;
+		let SynthetixL1, SynthetixBridgeToOptimismL1, SystemStatusL1;
 		let FeePoolL2;
 
 		// --------------------------
@@ -19,6 +19,10 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 			SynthetixL1 = connectContract({ contract: 'Synthetix', provider: ctx.providerL1 });
 			SynthetixBridgeToOptimismL1 = connectContract({
 				contract: 'SynthetixBridgeToOptimism',
+				provider: ctx.providerL1,
+			});
+			SystemStatusL1 = connectContract({
+				contract: 'SystemStatus',
 				provider: ctx.providerL1,
 			});
 
@@ -74,8 +78,28 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 			// Suspended
 			// --------------------------
 
-			// TODO: Implement
-			describe.skip('when the system is suspended in L1', () => {});
+			describe('when the system is suspended in L1', () => {
+				before('suspend the system', async () => {
+					SystemStatusL1 = SystemStatusL1.connect(ctx.ownerL1);
+
+					await SystemStatusL1.suspendSystem(1);
+				});
+
+				after('resume the system', async () => {
+					SystemStatusL1 = SystemStatusL1.connect(ctx.ownerL1);
+
+					await SystemStatusL1.resumeSystem();
+				});
+
+				it('reverts when the user attempts to initiate a deposit', async () => {
+					SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
+
+					await assert.revert(
+						SynthetixBridgeToOptimismL1.initiateRewardDeposit(amountToDeposit),
+						'Synthetix is suspended'
+					);
+				});
+			});
 
 			// --------------------------
 			// Deposit rewards

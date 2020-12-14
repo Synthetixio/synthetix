@@ -11,7 +11,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 		let user1L2;
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1;
-		let SynthetixL2, SynthetixBridgeToBaseL2, IssuerL2;
+		let SynthetixL2, SynthetixBridgeToBaseL2, IssuerL2, SystemStatusL2;
 
 		// --------------------------
 		// Setup
@@ -43,6 +43,11 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			});
 			IssuerL2 = connectContract({
 				contract: 'Issuer',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
+			SystemStatusL2 = connectContract({
+				contract: 'SystemStatus',
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
@@ -142,15 +147,46 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			// --------------------------
 
 			describe('when a user doesnt have debt in L2', () => {
-				// TODO: Implement
-				describe.skip('when the system is suspended in L2', () => {});
-
 				it('shows that the user does not have debt', async () => {
 					assert.bnEqual(
 						await IssuerL2.debtBalanceOf(user1L2.address, ethers.utils.formatBytes32String('sUSD')),
 						0
 					);
 				});
+
+				// --------------------------
+				// Suspended
+				// --------------------------
+
+				describe('when the system is suspended in L2', () => {
+					before('suspend the system', async () => {
+						SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
+
+						await SystemStatusL2.suspendSystem(1);
+					});
+
+					after('resume the system', async () => {
+						SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
+
+						await SystemStatusL2.resumeSystem();
+					});
+
+					it('reverts when the user attempts to initiate a deposit', async () => {
+						SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
+
+						const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(1);
+
+						await assertRevertOptimism({
+							tx,
+							reason: 'Synthetix is suspended',
+							provider: ctx.providerL2,
+						});
+					});
+				});
+
+				// --------------------------
+				// Not suspended
+				// --------------------------
 
 				describe('when a user initiates a withdrawal on L2', () => {
 					let user1BalanceL1;

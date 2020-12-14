@@ -9,7 +9,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 
 		let user1L1;
 
-		let SynthetixL1, SynthetixBridgeToOptimismL1;
+		let SynthetixL1, SynthetixBridgeToOptimismL1, SystemStatusL1;
 		let SynthetixL2;
 
 		let snapshotId;
@@ -28,6 +28,10 @@ const itCanPerformDeposits = ({ ctx }) => {
 			SynthetixL1 = connectContract({ contract: 'Synthetix', provider: ctx.providerL1 });
 			SynthetixBridgeToOptimismL1 = connectContract({
 				contract: 'SynthetixBridgeToOptimism',
+				provider: ctx.providerL1,
+			});
+			SystemStatusL1 = connectContract({
+				contract: 'SystemStatus',
 				provider: ctx.providerL1,
 			});
 
@@ -106,13 +110,6 @@ const itCanPerformDeposits = ({ ctx }) => {
 				});
 
 				// --------------------------
-				// Suspended
-				// --------------------------
-
-				// TODO: Implement
-				describe.skip('when the system is suspended in L1', () => {});
-
-				// --------------------------
 				// With debt
 				// --------------------------
 
@@ -148,6 +145,37 @@ const itCanPerformDeposits = ({ ctx }) => {
 
 				describe('when a user doesnt have debt in L1', () => {
 					let depositReceipt;
+
+					// --------------------------
+					// Suspended
+					// --------------------------
+
+					describe('when the system is suspended in L1', () => {
+						before('suspend the system', async () => {
+							SystemStatusL1 = SystemStatusL1.connect(ctx.ownerL1);
+
+							await SystemStatusL1.suspendSystem(1);
+						});
+
+						after('resume the system', async () => {
+							SystemStatusL1 = SystemStatusL1.connect(ctx.ownerL1);
+
+							await SystemStatusL1.resumeSystem();
+						});
+
+						it('reverts when the user attempts to initiate a deposit', async () => {
+							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
+
+							await assert.revert(
+								SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit),
+								'Synthetix is suspended'
+							);
+						});
+					});
+
+					// --------------------------
+					// Not suspended
+					// --------------------------
 
 					describe('when a user deposits SNX in the L1 bridge', () => {
 						let user1BalanceL2;
