@@ -16,9 +16,6 @@ jobs:
   - job-test-deploy-script:
       {{> filter-develop.yml}}
       {{> require-prepare.yml}}
-  - job-test-ovm-bridge:
-      {{> filter-develop.yml}}
-      {{> require-prepare.yml}}
   - job-unit-tests-ovm:
       {{> filter-develop.yml}}
       {{> require-prepare.yml}}
