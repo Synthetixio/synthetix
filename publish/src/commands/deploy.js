@@ -526,10 +526,8 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'RewardEscrowV2',
 		source: useOvm ? 'ImportableRewardEscrowV2' : 'RewardEscrowV2',
-		args: useOvm
-			? [account, addressOf(readProxyForResolver)]
-			: [account, addressOf(readProxyForResolver), addressOf(rewardEscrow)],
-		deps: useOvm ? ['AddressResolver'] : ['AddressResolver', 'RewardEscrow'],
+		args: [account, addressOf(readProxyForResolver)],
+		deps: ['AddressResolver'],
 	});
 
 	const synthetixEscrow = await deployer.deployContract({
