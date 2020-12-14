@@ -25,7 +25,7 @@ const CollateralState = artifacts.require(`CollateralState`);
 const ProxyERC20 = artifacts.require(`ProxyERC20`);
 const TokenState = artifacts.require(`TokenState`);
 
-contract('CollateralErc20', async accounts => {
+contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 	const YEAR = 31536000;
 
 	const sUSD = toBytes32('sUSD');

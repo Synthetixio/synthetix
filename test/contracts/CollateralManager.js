@@ -19,12 +19,37 @@ const CollateralManager = artifacts.require(`CollateralManager`);
 const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-contract('CollateralManager', async accounts => {
+contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
 	const sBTC = toBytes32('sBTC');
+
+	let ceth,
+		mcstate,
+		mcstateErc20,
+		cerc20,
+		proxy,
+		renBTC,
+		tokenState,
+		manager,
+		managerState,
+		addressResolver,
+		issuer,
+		exchangeRates,
+		feePool,
+		sUSDSynth,
+		sETHSynth,
+		sBTCSynth,
+		synths,
+		maxDebt,
+		liqPen,
+		short,
+		shortState,
+		debtCache,
+		tx,
+		id;
 
 	const getid = async tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
@@ -83,31 +108,6 @@ contract('CollateralManager', async accounts => {
 			args: [state, owner, manager, resolver, collatKey, synths, minColat, minSize, underCon],
 		});
 	};
-
-	let ceth,
-		mcstate,
-		mcstateErc20,
-		cerc20,
-		proxy,
-		renBTC,
-		tokenState,
-		manager,
-		managerState,
-		addressResolver,
-		issuer,
-		exchangeRates,
-		feePool,
-		sUSDSynth,
-		sETHSynth,
-		sBTCSynth,
-		synths,
-		maxDebt,
-		liqPen,
-		short,
-		shortState,
-		debtCache;
-
-	let tx, id;
 
 	const issueRenBTCtoAccount = async (issueAmount, receiver) => {
 		await renBTC.transfer(receiver, issueAmount, { from: owner });
