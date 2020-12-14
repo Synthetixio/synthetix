@@ -16,8 +16,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IIssuer.sol";
 
-import "@nomiclabs/buidler/console.sol";
-
 
 // https://docs.synthetix.io/contracts/RewardEscrow
 contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
@@ -44,7 +42,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     uint256 public totalEscrowedBalance;
 
     /* Max escrow duration */
-    uint public MAX_DURATION = 2 * 52 weeks; // Default max 2 years duration
+    uint public max_duration = 2 * 52 weeks; // Default max 2 years duration
 
     /* ========== OLD ESCROW LOOKUP ========== */
 
@@ -56,10 +54,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     uint public accountMergingDuration = 1 weeks;
 
     uint public accountMergingStartTime;
-
-    /* Limit vesting entries to disallow unbounded iteration over vesting schedules.
-     * There are 5 years of the supply schedule */
-    uint public constant MAX_VESTING_ENTRIES = 52 * 5;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -174,6 +168,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* returns the rate per second based on escrow amount divided by duration  */
     function _ratePerSecond(VestingEntries.VestingEntry memory _entry) internal pure returns (uint256) {
+        // if duration or escrowAmount is 0 return 0 (entry isn't set)
+        if (_entry.duration == 0 || _entry.escrowAmount == 0) return 0;
         return _entry.escrowAmount.div(_entry.duration);
     }
 
@@ -203,10 +199,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
      * Public function allows any account to be vested by another account
      */
 
-    function vest(address account, uint256[] calldata entryIDs) external {
+    function vest(uint256[] calldata entryIDs) external {
         uint256 total;
         for (uint i = 0; i < entryIDs.length; i++) {
-            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
+            VestingEntries.VestingEntry storage entry = vestingSchedules[msg.sender][entryIDs[i]];
 
             /* Skip entry if remainingAmount == 0 */
             if (entry.remainingAmount != 0) {
@@ -223,7 +219,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
         /* Transfer vested tokens. Will revert if total > totalEscrowedAccountBalance */
         if (total != 0) {
-            _transferVestedTokens(account, total);
+            _transferVestedTokens(msg.sender, total);
         }
     }
 
@@ -326,7 +322,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function setMaxEscrowDuration(uint256 duration) external onlyOwner {
-        MAX_DURATION = duration;
+        max_duration = duration;
         emit MaxEscrowDurationUpdated(duration);
     }
 
@@ -343,42 +339,60 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         require(issuer().debtBalanceOf(accountToMerge, "sUSD") == 0, "Cannot merge accounts with debt");
         require(nominatedReceiver[accountToMerge] == msg.sender, "Address is not nominated to merge");
 
+        uint256 totalEscrowAmountMerged;
         for (uint i = 0; i < entryIDs.length; i++) {
-            // retrieve entries
-            // VestingEntries.VestingEntry memory entry = vestingSchedules[accountToMerge][entryIDs[i]];
+            // retrieve entry
+            VestingEntries.VestingEntry memory entry = vestingSchedules[accountToMerge][entryIDs[i]];
+
+            /* ignore vesting entries with zero remainingAmount */
+            if (entry.remainingAmount != 0) {
+                /* copy entry to msg.sender (destination address) */
+                vestingSchedules[msg.sender][entryIDs[i]] = entry;
+
+                /* Add the remainingAmount of entry to the totalEscrowAmountMerged */
+                totalEscrowAmountMerged = totalEscrowAmountMerged.add(entry.remainingAmount);
+
+                /* append entryID to list of entries for account */
+                accountVestingEntryIDs[msg.sender].push(entryIDs[i]);
+
+                /* Delete entry from accountToMerge */
+                delete vestingSchedules[accountToMerge][entryIDs[i]];
+            }
         }
-        // delete totalEscrowedAccountBalance for merged account
-        // delete totalVestedAccountBalance for merged acctoun
-        // delete nominatedReceiver once merged
+
+        /* update totalEscrowedAccountBalance for merged account and accountToMerge */
+        totalEscrowedAccountBalance[accountToMerge] = totalEscrowedAccountBalance[accountToMerge].sub(
+            totalEscrowAmountMerged
+        );
+        totalEscrowedAccountBalance[msg.sender] = totalEscrowedAccountBalance[msg.sender].add(totalEscrowAmountMerged);
+
+        emit AccountMerged(accountToMerge, msg.sender, totalEscrowAmountMerged, entryIDs, block.timestamp);
     }
 
     /* ========== MIGRATION OLD ESCROW ========== */
 
-    function migrateVestingSchedule(address addressToMigrate) external {
+    function migrateVestingSchedule(address) external {
         _notImplemented();
     }
 
     function migrateAccountEscrowBalances(
-        address[] calldata accounts,
-        uint256[] calldata escrowBalances,
-        uint256[] calldata vestedBalances
+        address[] calldata,
+        uint256[] calldata,
+        uint256[] calldata
     ) external {
         _notImplemented();
     }
 
     /* ========== L2 MIGRATION ========== */
 
-    function burnForMigration(address account, uint[] calldata entryIDs)
-        external
-        returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries)
-    {
+    function burnForMigration(address, uint[] calldata) external returns (uint256, VestingEntries.VestingEntry[] memory) {
         _notImplemented();
     }
 
     function importVestingEntries(
-        address account,
-        uint256 escrowedAmount,
-        VestingEntries.VestingEntry[] calldata vestingEntries
+        address,
+        uint256,
+        VestingEntries.VestingEntry[] calldata
     ) external {
         _notImplemented();
     }
@@ -392,7 +406,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     ) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
-        require(duration > 0 && duration < MAX_DURATION, "Cannot escrow with 0 duration OR above MAX_DURATION");
+        require(duration > 0 && duration < max_duration, "Cannot escrow with 0 duration OR above max_duration");
 
         /* Escrow quantity needs to be larger than duration as ratePerSecond division will result in 0 if less */
         require(quantity > duration, "Escrow quantity less than duration");
@@ -451,5 +465,12 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     event MaxEscrowDurationUpdated(uint newDuration);
     event AccountMergingDurationUpdated(uint newDuration);
     event AccountMergingStarted(uint time, uint endTime);
+    event AccountMerged(
+        address indexed accountToMerge,
+        address destinationAddress,
+        uint escrowAmountMerged,
+        uint[] entryIDs,
+        uint time
+    );
     event NominateAccountToMerge(address indexed account, address destination);
 }

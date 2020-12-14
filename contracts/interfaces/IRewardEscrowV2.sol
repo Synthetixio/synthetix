@@ -38,7 +38,7 @@ interface IRewardEscrowV2 {
     function ratePerSecond(address account, uint256 entryID) external view returns (uint);
 
     // Mutative functions
-    function vest(address account, uint256[] calldata entryIDs) external;
+    function vest(uint256[] calldata entryIDs) external;
 
     function createEscrowEntry(
         address beneficiary,
