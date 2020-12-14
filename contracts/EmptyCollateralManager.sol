@@ -21,9 +21,9 @@ contract EmptyCollateralManager is ICollateralManager {
 
     function getBorrowRate() external view returns (uint scaledUtilisation) { return 0; }
 
-    function getRatesAndTime(uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) { return (0,0,0,0); }
+    function getRatesAndTime(uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) { return (0, 0, 0, 0); }
 
-    function getShortRatesAndTime(bytes32 currency, uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) { return (0,0,0,0); }
+    function getShortRatesAndTime(bytes32 currency, uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) { return (0, 0, 0, 0); }
 
     function getShortRate(address currency) external view returns (uint shortRate) { return 0; }
 
