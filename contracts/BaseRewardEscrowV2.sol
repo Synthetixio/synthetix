@@ -44,11 +44,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* Max escrow duration */
     uint public max_duration = 2 * 52 weeks; // Default max 2 years duration
 
-    /* ========== OLD ESCROW LOOKUP ========== */
-
-    uint internal constant TIME_INDEX = 0;
-    uint internal constant QUANTITY_INDEX = 1;
-
     /* ========== ACCOUNT MERGING CONFIGURATION ========== */
 
     uint public accountMergingDuration = 1 weeks;

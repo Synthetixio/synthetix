@@ -46,6 +46,11 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
+    /* ========== OLD ESCROW LOOKUP ========== */
+
+    uint internal constant TIME_INDEX = 0;
+    uint internal constant QUANTITY_INDEX = 1;
+
     /* ========== MIGRATION OLD ESCROW ========== */
 
     /* Function to allow any address to migrate vesting entries from previous reward escrow */
@@ -62,16 +67,16 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
         /* Calculate entries that can be vested and total vested amount to deduct from
          * totalEscrowedAccountBalance */
-        (uint vestedEntries, uint totalVested) = _getVestedEntriesAndAmount(addressToMigrate, numEntries);
+        (uint lastVestedIndex, uint totalVested) = _getVestedEntriesAndAmount(addressToMigrate, numEntries);
 
         /* transfer vested tokens to account */
         if (totalVested != 0) {
             _transferVestedTokens(addressToMigrate, totalVested);
         }
 
-        /* iterate and migrate old escrow schedules from vestingSchedules[vestedEntries - 1]
+        /* iterate and migrate old escrow schedules from vestingSchedules[lastVestedIndex]
          * stop at the end of the vesting schedule list */
-        for (uint i = vestedEntries - 1; i < numEntries; i++) {
+        for (uint i = lastVestedIndex + 1; i < numEntries; i++) {
             uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(addressToMigrate, i);
 
             _importVestingEntry(
@@ -91,14 +96,17 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /**
      * Determine which entries can be vested, based on the old escrow vest function
-     * return number of entries vested and amount
+     * return last vested entry index and amount
      */
     function _getVestedEntriesAndAmount(address _account, uint _numEntries)
         internal
         view
-        returns (uint vestedEntries, uint totalVestedAmount)
+        returns (uint lastVestedIndex, uint totalVestedAmount)
     {
-        for (uint i = 0; i < _numEntries; i++) {
+        /* skip to nextVestingIndex for iterating through account's existing vesting schedule */
+        uint nextVestingIndex = oldRewardEscrow().getNextVestingIndex(_account);
+
+        for (uint i = nextVestingIndex; i < _numEntries; i++) {
             /* get existing vesting entry [time, quantity] */
             uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(_account, i);
             /* The list is sorted on the old RewardEscrow; when we reach the first future time, bail out. */
@@ -108,9 +116,46 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             }
             uint qty = vestingSchedule[1];
             if (qty > 0) {
-                vestedEntries++;
                 totalVestedAmount = totalVestedAmount.add(qty);
             }
+            /* return index of last vested entry */
+            lastVestedIndex = i;
+        }
+    }
+
+    /**
+     * Import function for owner to import vesting schedule
+     * Addresses with totalEscrowedAccountBalance == 0 will not be migrated as they have all vested
+     */
+    function importVestingSchedule(
+        address[] calldata accounts,
+        uint256[] calldata vestingTimestamps,
+        uint256[] calldata escrowAmounts
+    ) external onlyDuringSetup onlyOwner {
+        require(accounts.length == vestingTimestamps.length, "Account and vestingTimestamps Length mismatch");
+        require(accounts.length == escrowAmounts.length, "Account and escrowAmounts Length mismatch");
+
+        for (uint i = 0; i < accounts.length; i++) {
+            address addressToMigrate = accounts[i];
+            uint256 vestingTimestamp = vestingTimestamps[i];
+            uint256 escrowAmount = escrowAmounts[i];
+
+            // ensure account have escrow migration pending
+            require(escrowMigrationPending[addressToMigrate], "No escrow migration pending");
+
+            /* Import vesting entry with endTime as vestingTimestamp and escrowAmount */
+            _importVestingEntry(
+                addressToMigrate,
+                VestingEntries.VestingEntry({
+                    endTime: uint64(vestingTimestamp),
+                    duration: uint64(52 weeks),
+                    lastVested: 0,
+                    escrowAmount: escrowAmount,
+                    remainingAmount: escrowAmount
+                })
+            );
+
+            emit ImportedVestingSchedule(addressToMigrate, vestingTimestamp, escrowAmount);
         }
     }
 
@@ -122,7 +167,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         address[] calldata accounts,
         uint256[] calldata escrowBalances,
         uint256[] calldata vestedBalances
-    ) external onlyOwner {
+    ) external onlyDuringSetup onlyOwner {
         require(accounts.length == escrowBalances.length, "Number of accounts and balances don't match");
         require(accounts.length == vestedBalances.length, "Number of accounts and vestedBalances don't match");
 
@@ -131,7 +176,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             uint escrowedAmount = escrowBalances[i];
             uint vestedAmount = vestedBalances[i];
 
-            // ensure account doesn't have escrow migratio pending / being imported more than once
+            // ensure account doesn't have escrow migration pending / being imported more than once
             require(!escrowMigrationPending[account], "Account migration is pending already");
 
             /* Update totalEscrowedBalance for tracking the Synthetix balance of this contract. */
@@ -207,5 +252,6 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     /* ========== EVENTS ========== */
     event MigratedAccountEscrow(address indexed account, uint escrowedAmount, uint vestedAmount, uint time);
     event MigratedVestingSchedules(address indexed account, uint time);
+    event ImportedVestingSchedule(address indexed account, uint time, uint escrowAmount);
     event BurnedForMigrationToL2(address indexed account, uint[] entryIDs, uint escrowedAmountMigrated, uint time);
 }
