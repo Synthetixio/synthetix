@@ -2,41 +2,28 @@ const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { assertRevertOptimism } = require('./utils/revertOptimism');
 const { connectContract } = require('./utils/connectContract');
+const { wait } = require('./utils/rpc');
 
 const itCanPerformWithdrawals = ({ ctx }) => {
-	describe.only('Withdrawals - when migrating SNX from L2 to L1', () => {
+	describe('WITHDRAWALS - when migrating SNX from L2 to L1', () => {
+		const amountToWithdraw = ethers.utils.parseEther('100');
+
+		let user1L2;
+
+		let SynthetixL1, SynthetixBridgeToOptimismL1;
+		let SynthetixL2, SynthetixBridgeToBaseL2, IssuerL2;
+
 		// --------------------------
 		// Setup
 		// --------------------------
 
-		const amountToWithdraw = ethers.utils.parseEther('100');
-
-		let user1Address, user1L1, user1L2;
-
-		let SynthetixL1, SynthetixL2;
-		let SynthetixBridgeToOptimismL1, SynthetixBridgeToBaseL2;
-		let IssuerL2;
-
-		let snapshotId;
-
-		const cache = {
-			bridge: {
-				l1: { balance: 0 },
-				l2: { balance: 0 },
-			},
-			user1: {
-				l1: { balance: 0 },
-				l2: { balance: 0 },
-			},
-		};
-
 		before('identify signers', async () => {
-			// users
-			// See publish/src/commands/deploy-ovm-pair.js
-			user1Address = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
-
-			user1L1 = ctx.providerL1.getSigner(user1Address);
-			user1L2 = new ethers.Wallet('0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c', ctx.providerL2);
+			// See publish/src/commands/deploy-ovm-pair
+			user1L2 = new ethers.Wallet(
+				'0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c',
+				ctx.providerL2
+			);
+			// Public key: '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131'
 		});
 
 		before('connect to contracts', async () => {
@@ -66,34 +53,52 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			});
 		});
 
+		before('make a deposit', async () => {
+			// Make a deposit so that
+			// 1. There is SNX in the bridge for withdrawals,
+			// 2. Counter a known bug in Optimism, where "now" is always 0 unless a message has been relayed
+
+			SynthetixL1 = SynthetixL1.connect(ctx.ownerL1);
+			await SynthetixL1.approve(
+				SynthetixBridgeToOptimismL1.address,
+				ethers.utils.parseEther(amountToWithdraw.toString())
+			);
+
+			SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
+			await SynthetixBridgeToOptimismL1.initiateDeposit(amountToWithdraw);
+		});
+
 		// --------------------------
 		// Get SNX
 		// --------------------------
 
 		describe('when a user has the expected amount of SNX in L2', () => {
+			let user1BalanceL2;
+
 			before('record current values', async () => {
-				cache.user1.l2.balance = await SynthetixL2.balanceOf(user1Address);
+				user1BalanceL2 = await SynthetixL2.balanceOf(user1L2.address);
 			});
 
 			before('ensure that the user has the expected SNX balance', async () => {
 				SynthetixL2 = SynthetixL2.connect(ctx.ownerL2);
 
-				const tx = await SynthetixL2.transfer(user1Address, amountToWithdraw);
+				const tx = await SynthetixL2.transfer(user1L2.address, amountToWithdraw);
 				await tx.wait();
 			});
 
 			it('shows the user has SNX', async () => {
 				assert.bnEqual(
-					await SynthetixL2.balanceOf(user1Address),
-					cache.user1.l2.balance.add(amountToWithdraw)
+					await SynthetixL2.balanceOf(user1L2.address),
+					user1BalanceL2.add(amountToWithdraw)
 				);
 			});
 
+			// --------------------------
 			// With debt
 			// --------------------------
-			// --------------------------
 
-			describe('when a user has debt in L2', () => {
+			// Not working because of Optimism's issues with "now"
+			describe.skip('when a user has debt in L2', () => {
 				before('issue sUSD', async () => {
 					SynthetixL2 = SynthetixL2.connect(user1L2);
 
@@ -101,9 +106,25 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					await tx.wait();
 				});
 
+				after('remove all debt', async () => {
+					const time = (await IssuerL2.minimumStakeTime()).toString();
+					await wait(time);
+
+					SynthetixL2 = SynthetixL2.connect(user1L2);
+
+					const debt = await IssuerL2.debtBalanceOf(
+						user1L2.address,
+						ethers.utils.formatBytes32String('sUSD')
+					);
+					console.log('debt', debt.toString());
+
+					const tx = await SynthetixL2.burnSynths(debt);
+					await tx.wait();
+				});
+
 				it('shows the user has debt', async () => {
 					assert.bnGte(
-						await IssuerL2.debtBalanceOf(user1Address, ethers.utils.formatBytes32String('sUSD')),
+						await IssuerL2.debtBalanceOf(user1L2.address, ethers.utils.formatBytes32String('sUSD')),
 						1
 					);
 				});
@@ -116,7 +137,64 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					await assertRevertOptimism({
 						tx,
 						reason: 'Cannot withdraw with debt',
-						provider: ctx.providerL2
+						provider: ctx.providerL2,
+					});
+				});
+			});
+
+			// --------------------------
+			// Without debt
+			// --------------------------
+
+			describe('when a user doesnt have debt in L2', () => {
+				// TODO: Implement
+				describe.skip('when the system is suspended in L2', () => {});
+
+				it('shows that the user does not have debt', async () => {
+					assert.bnEqual(
+						await IssuerL2.debtBalanceOf(user1L2.address, ethers.utils.formatBytes32String('sUSD')),
+						0
+					);
+				});
+
+				describe('when a user initiates a withdrawal on L2', () => {
+					let user1BalanceL1;
+
+					before('record current values', async () => {
+						user1BalanceL1 = await SynthetixL1.balanceOf(user1L2.address);
+						user1BalanceL2 = await SynthetixL2.balanceOf(user1L2.address);
+					});
+
+					before('initiate withdrawal', async () => {
+						SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
+
+						const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(amountToWithdraw);
+						await tx.wait();
+					});
+
+					// TODO: Implement
+					it.skip('emitted a Withdrawal event', async () => {});
+
+					it('reduces the users balance', async () => {
+						assert.bnEqual(
+							await SynthetixL2.balanceOf(user1L2.address),
+							user1BalanceL2.sub(amountToWithdraw)
+						);
+					});
+
+					// TODO: Probably a service to query here too
+					const time = 30;
+					describe(`when ${time} seconds have elapsed`, () => {
+						before('wait', async () => {
+							await wait(time);
+						});
+
+						it('shows that the users L1 balance increased', async () => {
+							assert.bnEqual(
+								await SynthetixL1.balanceOf(user1L2.address),
+								user1BalanceL1.add(amountToWithdraw)
+							);
+						});
 					});
 				});
 			});
@@ -127,44 +205,3 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 module.exports = {
 	itCanPerformWithdrawals,
 };
-
-						// describe('when a user doesnt have debt in L2', () => {
-						// 	describe.skip('when the system is suspended in L2', () => {});
-
-						// 	describe('when a user initiates a withdrawal on L2', () => {
-						// 		before('record current values', async () => {
-						// 			cache.user1.l1.balance = await SynthetixL1.balanceOf(USER1_ADDRESS);
-						// 			cache.user1.l2.balance = await SynthetixL2.balanceOf(USER1_ADDRESS);
-						// 		});
-
-						// 		before('initiate withdrawal', async () => {
-						// 			SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
-
-						// 			const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(amountToDeposit);
-						// 			await tx.wait();
-						// 		});
-
-						// 		it.skip('emitted a Withdrawal event', async () => {});
-
-						// 		it('reduces the users balance', async () => {
-						// 			assert.bnEqual(
-						// 				await SynthetixL2.balanceOf(USER1_ADDRESS),
-						// 				cache.user1.l2.balance.sub(amountToDeposit)
-						// 			);
-						// 		});
-
-						// 		describe('when a small period of time has elapsed', () => {
-						// 			before('wait', async () => {
-						// 				await fastForward({ seconds: 5, provider: providerL1 });
-						// 				await wait(60);
-						// 			});
-
-						// 			it('shows that the users L1 balance increased', async () => {
-						// 				assert.bnEqual(
-						// 					await SynthetixL1.balanceOf(USER1_ADDRESS),
-						// 					cache.user1.l1.balance.add(amountToDeposit)
-						// 				);
-						// 			});
-						// 		});
-						// 	});
-						// });

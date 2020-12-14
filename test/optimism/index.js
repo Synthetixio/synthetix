@@ -5,14 +5,25 @@ const { toBytes32 } = require('../..');
 const { itCanPerformDeposits } = require('./deposits.test');
 const { itCanPerformWithdrawals } = require('./withdrawals.test');
 
-describe('Layer 2 production tests', () => {
-	// --------------------------
-	// Setup
-	// --------------------------
+/*
+ * ===== L2 GOTCHAS =====
+ * Please make sure to read this before you work with these tests. It will save you time!
+ *
+ * 1) No fast forward, snapshots, or other rpc methods of that sort
+ * 2) Revert reasons are harder to get on L2. See 'utils/revertOptimism'
+ * 3) The underlying local chains allow txs to be mined with gasPrice = 0
+ * 4) Atm, "now" in L2 contracts is always zero
+ * 5) The L2 local chain is created with no accounts
+ * */
 
+describe('Layer 2 production tests', () => {
 	let ownerAddress;
 
 	let SynthetixL1, SynthetixL2;
+
+	// --------------------------
+	// Setup
+	// --------------------------
 
 	before('set up providers', () => {
 		this.providerL1 = new ethers.providers.JsonRpcProvider('http://localhost:9545');
@@ -24,7 +35,10 @@ describe('Layer 2 production tests', () => {
 		// See publish/src/commands/deploy-ovm-pair.js
 		ownerAddress = '0x640e7cc27b750144ED08bA09515F3416A988B6a3';
 		this.ownerL1 = this.providerL1.getSigner(ownerAddress);
-		this.ownerL2 = new ethers.Wallet('0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7', this.providerL2);
+		this.ownerL2 = new ethers.Wallet(
+			'0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7',
+			this.providerL2
+		);
 	});
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
@@ -77,23 +91,43 @@ describe('Layer 2 production tests', () => {
 				await tx.wait();
 			}
 
-			await simulateExchangeRates({ provider: this.providerL1, owner: this.ownerL1, useOvm: false });
+			await simulateExchangeRates({
+				provider: this.providerL1,
+				owner: this.ownerL1,
+				useOvm: false,
+			});
 			await simulateExchangeRates({ provider: this.providerL2, owner: this.ownerL2, useOvm: true });
+		});
+
+		before('tweak system settings for tests', async () => {
+			async function tweakSettings({ provider, owner, useOvm }) {
+				let SystemSettings = connectContract({
+					contract: 'SystemSettings',
+					provider,
+					useOvm,
+				});
+				SystemSettings = SystemSettings.connect(owner);
+
+				await SystemSettings.setMinimumStakeTime(1);
+			}
+
+			await tweakSettings({ provider: this.providerL1, owner: this.ownerL1, useOvm: false });
+			await tweakSettings({ provider: this.providerL2, owner: this.ownerL2, useOvm: true });
 		});
 
 		// --------------------------
 		// General properties
 		// --------------------------
 
-		describe('general properties', () => {
+		describe('GENERAL properties', () => {
 			it('shows the expected owners', async () => {
 				assert.equal(await SynthetixL1.owner(), ownerAddress);
 				assert.equal(await SynthetixL2.owner(), ownerAddress);
 			});
 
 			it('shows the instances have the expected total supplies', async () => {
-				assert.bnEqual(await SynthetixL1.totalSupply(), ethers.utils.parseEther('100000000'));
-				assert.bnEqual(await SynthetixL2.totalSupply(), ethers.utils.parseEther('100000000'));
+				assert.bnGte(await SynthetixL1.totalSupply(), ethers.utils.parseEther('0'));
+				assert.bnGte(await SynthetixL2.totalSupply(), ethers.utils.parseEther('0'));
 			});
 		});
 

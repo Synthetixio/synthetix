@@ -23,9 +23,14 @@ async function restoreSnapshot({ id, provider }) {
 	await provider.send('evm_mine', []);
 }
 
+async function mineBlock({ provider }) {
+	await provider.send('evm_mine', []);
+}
+
 module.exports = {
 	takeSnapshot,
 	restoreSnapshot,
 	fastForward,
 	wait,
+	mineBlock,
 };

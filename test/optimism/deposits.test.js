@@ -4,38 +4,25 @@ const { connectContract } = require('./utils/connectContract');
 const { wait, takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
 const itCanPerformDeposits = ({ ctx }) => {
-	describe('Deposits - when migrating SNX from L1 to L2', () => {
+	describe('DEPOSITS - when migrating SNX from L1 to L2', () => {
+		const amountToDeposit = ethers.utils.parseEther('100');
+
+		let user1L1;
+
+		let SynthetixL1, SynthetixBridgeToOptimismL1;
+		let SynthetixL2;
+
+		let snapshotId;
+
 		// --------------------------
 		// Setup
 		// --------------------------
 
-		const amountToDeposit = ethers.utils.parseEther('100');
-
-		let user1Address, user1L1, user1L2;
-
-		let SynthetixL1, SynthetixL2;
-		let SynthetixBridgeToOptimismL1, SynthetixBridgeToBaseL2;
-
-		let snapshotId;
-
-		const cache = {
-			bridge: {
-				l1: { balance: 0 },
-				l2: { balance: 0 },
-			},
-			user1: {
-				l1: { balance: 0 },
-				l2: { balance: 0 },
-			},
-		};
-
 		before('identify signers', async () => {
-			// users
-			// See publish/src/commands/deploy-ovm-pair.js
-			user1Address = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
-
+			// See publish/src/commands/deploy-ovm-pair
+			const user1Address = '0x5eeabfdd0f31cebf32f8abf22da451fe46eac131';
 			user1L1 = ctx.providerL1.getSigner(user1Address);
-			user1L2 = new ethers.Wallet('0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c', ctx.providerL2);
+			user1L1.address = user1Address;
 		});
 
 		before('connect to contracts', async () => {
@@ -53,11 +40,6 @@ const itCanPerformDeposits = ({ ctx }) => {
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
-			SynthetixBridgeToBaseL2 = connectContract({
-				contract: 'SynthetixBridgeToBase',
-				useOvm: true,
-				provider: ctx.providerL2,
-			});
 		});
 
 		// --------------------------
@@ -65,21 +47,23 @@ const itCanPerformDeposits = ({ ctx }) => {
 		// --------------------------
 
 		describe('when a user has the expected amount of SNX in L1', () => {
+			let user1BalanceL1;
+
 			before('record current values', async () => {
-				cache.user1.l1.balance = await SynthetixL1.balanceOf(user1Address);
+				user1BalanceL1 = await SynthetixL1.balanceOf(user1L1.address);
 			});
 
 			before('ensure that the user has the expected SNX balance', async () => {
 				SynthetixL1 = SynthetixL1.connect(ctx.ownerL1);
 
-				const tx = await SynthetixL1.transfer(user1Address, amountToDeposit);
+				const tx = await SynthetixL1.transfer(user1L1.address, amountToDeposit);
 				await tx.wait();
 			});
 
 			it('shows the user has SNX', async () => {
 				assert.bnEqual(
-					await SynthetixL1.balanceOf(user1Address),
-					cache.user1.l1.balance.add(amountToDeposit)
+					await SynthetixL1.balanceOf(user1L1.address),
+					user1BalanceL1.add(amountToDeposit)
 				);
 			});
 
@@ -166,13 +150,14 @@ const itCanPerformDeposits = ({ ctx }) => {
 
 				describe('when a user doesnt have debt in L1', () => {
 					describe('when a user deposits SNX in the L1 bridge', () => {
-						before('record current values', async () => {
-							cache.bridge.l1.balance = await SynthetixL1.balanceOf(
-								SynthetixBridgeToOptimismL1.address
-							);
+						let user1BalanceL2;
+						let bridgeBalanceL1;
 
-							cache.user1.l1.balance = await SynthetixL1.balanceOf(user1Address);
-							cache.user1.l2.balance = await SynthetixL2.balanceOf(user1Address);
+						before('record current values', async () => {
+							bridgeBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address);
+
+							user1BalanceL1 = await SynthetixL1.balanceOf(user1L1.address);
+							user1BalanceL2 = await SynthetixL2.balanceOf(user1L1.address);
 						});
 
 						// --------------------------
@@ -191,15 +176,15 @@ const itCanPerformDeposits = ({ ctx }) => {
 
 						it('shows that the users new balance L1 is reduced', async () => {
 							assert.bnEqual(
-								await SynthetixL1.balanceOf(user1Address),
-								cache.user1.l1.balance.sub(amountToDeposit)
+								await SynthetixL1.balanceOf(user1L1.address),
+								user1BalanceL1.sub(amountToDeposit)
 							);
 						});
 
 						it('shows that the L1 bridge received the SNX', async () => {
 							assert.bnEqual(
 								await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address),
-								cache.bridge.l1.balance.add(amountToDeposit)
+								bridgeBalanceL1.add(amountToDeposit)
 							);
 						});
 
@@ -207,17 +192,17 @@ const itCanPerformDeposits = ({ ctx }) => {
 						// Wait...
 						// --------------------------
 
-						// TODO: Relayer doesn't seem to be passing messages...
 						// TODO: Use watcher instead of random wait
-						describe('when a small period of time has elapsed', () => {
+						const time = 15;
+						describe(`when ${time} seconds have elapsed`, () => {
 							before('wait', async () => {
-								await wait(20);
+								await wait(time);
 							});
 
 							it('shows that the users L2 balance increased', async () => {
 								assert.bnEqual(
-									await SynthetixL2.balanceOf(user1Address),
-									cache.user1.l2.balance.add(amountToDeposit)
+									await SynthetixL2.balanceOf(user1L1.address),
+									user1BalanceL2.add(amountToDeposit)
 								);
 							});
 						});

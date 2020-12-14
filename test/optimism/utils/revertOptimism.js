@@ -16,7 +16,7 @@ async function getOptimismRevertReason({ tx, provider }) {
 				try {
 					const parsed = ethers.utils.toUtf8String(`0x${chunk}00`);
 					reason += parsed;
-				} catch(error) {}
+				} catch (error) {}
 			});
 		}
 
@@ -31,7 +31,7 @@ async function assertRevertOptimism({ tx, reason, provider }) {
 	let revertReason;
 	try {
 		receipt = await tx.wait();
-	} catch(error) {
+	} catch (error) {
 		revertReason = await getOptimismRevertReason({ tx, provider });
 	}
 
@@ -39,7 +39,9 @@ async function assertRevertOptimism({ tx, reason, provider }) {
 		throw new Error(`Transaction was expected to revert with "${reason}", but it did not revert.`);
 	} else {
 		if (!revertReason.includes(reason)) {
-			throw new Error(`Transaction was expected to revert with "${reason}", but it reverted with "${revertReason}" instead.`);
+			throw new Error(
+				`Transaction was expected to revert with "${reason}", but it reverted with "${revertReason}" instead.`
+			);
 		}
 	}
 }
