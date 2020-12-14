@@ -106,6 +106,20 @@ const deploy = async ({
 			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
 		}
 
+		// Every transaction in Optimism needs to be below 9m gas, to ensure
+		// there are no deployment out of gas errors during fraud proofs.
+		if (useOvm) {
+			const maxOptimismGasLimit = 8900000;
+			if (
+				contractDeploymentGasLimit > maxOptimismGasLimit ||
+				methodCallGasLimit > maxOptimismGasLimit
+			) {
+				throw new Error(
+					`Maximum transaction gas limit for OVM is ${maxOptimismGasLimit} gas, and specified contractDeploymentGasLimit and/or methodCallGasLimit are over such limit. Please make sure that these values are below the maximum gas limit to guarantee that fraud proofs can be done in L1.`
+				);
+			}
+		}
+
 		// Deploying on OVM and not using an OVM deployment path?
 		const isOvmPath = deploymentPath.includes('ovm');
 		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);

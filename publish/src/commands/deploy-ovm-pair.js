@@ -56,7 +56,7 @@ const deployInstance = async ({ useOvm, privateKey }) => {
 		gasPrice: '0',
 		useOvm,
 		methodCallGasLimit: '3500000',
-		contractDeploymentGasLimit: useOvm ? '11000000' : '9500000',
+		contractDeploymentGasLimit: useOvm ? '8900000' : '9500000',
 		privateKey,
 		ignoreCustomParameters: true,
 	});
