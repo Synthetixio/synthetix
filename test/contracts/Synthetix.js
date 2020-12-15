@@ -82,6 +82,7 @@ contract('Synthetix', async accounts => {
 				'emitExchangeReclaim',
 				'emitSynthExchange',
 				'emitExchangeTracking',
+				'migrateEscrowBalanceToRewardEscrowV2',
 			],
 		});
 	});
@@ -714,4 +715,10 @@ contract('Synthetix', async accounts => {
 			await assert.revert(synthetix.mint(), 'No supply is mintable');
 		});
 	});
+
+	// describe('migration - transfer escrow balances to reward escrow v2', () => {
+	// 	beforeEach(async () => {
+
+	// 	});
+	// });
 });

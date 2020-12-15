@@ -662,6 +662,7 @@ const setupAllContracts = async ({
 				'Exchanger',
 				'SupplySchedule',
 				'RewardEscrow',
+				'RewardEscrowV2',
 				'SynthetixEscrow',
 				'RewardsDistribution',
 				'Liquidations',
