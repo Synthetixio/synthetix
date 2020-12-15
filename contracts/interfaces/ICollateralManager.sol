@@ -6,8 +6,6 @@ interface ICollateralManager {
 
     function hasSynth(address synth) external view returns (bool);
 
-    function getLiquidationPenalty() external view returns (uint liquidationPenalty);
-
     // State information
     function long(bytes32 synth) external view returns (uint amount);
 

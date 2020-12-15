@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
-import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/ICollateralManager.sol";
 
 // Libraries
@@ -20,7 +20,7 @@ import "./interfaces/IDebtCache.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ISynth.sol";
 
-contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable {
+contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -31,6 +31,11 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     bytes32 private constant sUSD = "sUSD";
 
     uint private constant SECONDS_IN_A_YEAR = 31556926 * 1e18;
+
+    // Flexible storage names
+
+    bytes32 public constant CONTRACT_NAME = "CollateralManager";
+    bytes32 internal constant COLLATERAL_SYNTHS = "collateralSynth";
 
     /* ========== STATE VARIABLES ========== */
 
@@ -82,7 +87,7 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
         ) public
         Owned(_owner)
         Pausable()
-        MixinResolver(_resolver)
+        MixinSystemSettings(_resolver)
     {
         owner = msg.sender;
         state = _state;
@@ -98,11 +103,14 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](4);
-        addresses[0] = CONTRACT_ISSUER;
-        addresses[1] = CONTRACT_EXRATES;
-        addresses[2] = CONTRACT_SYSTEMSTATUS;
-        addresses[3] = CONTRACT_DEBTCACHE;
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](4);
+        newAddresses[0] = CONTRACT_ISSUER;
+        newAddresses[1] = CONTRACT_EXRATES;
+        newAddresses[2] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[3] = CONTRACT_DEBTCACHE;
+
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     /* ---------- Related Contracts ---------- */
@@ -132,10 +140,6 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
     function hasSynth(address synth) public view returns (bool) {
         return _synths.contains(synth);
 
-    }
-
-    function getLiquidationPenalty() external view returns (uint) {
-        return liquidationPenalty;
     }
 
     /* ---------- State Information ---------- */
@@ -309,6 +313,8 @@ contract CollateralManager is ICollateralManager, Owned, MixinResolver, Pausable
 
         // Add it to the address set lib.
         _shortableSynths.add(synth);
+
+        flexibleStorage().setBoolValue(CONTRACT_NAME, keccak256(abi.encodePacked(COLLATERAL_SYNTHS, synth)), true);
 
         bytes32 synthKey = ISynth(synth).currencyKey();
 

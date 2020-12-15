@@ -976,14 +976,6 @@ const deploy = async ({
 			}
 		}
 
-		// MultiCollateral needs additionalConstructorArgs to be ordered
-		const additionalConstructorArgsMap = {
-			MultiCollateralSynthsETH: [toBytes32('EtherCollateral')],
-			MultiCollateralSynthsUSD: [toBytes32('EtherCollateralsUSD')],
-			// future subclasses...
-			// future specific synths args...
-		};
-
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
 		if (synthConfig.deploy && !yes && originalTotalSupply > 0) {
 			try {
@@ -1015,7 +1007,7 @@ const deploy = async ({
 				currencyKeyInBytes,
 				originalTotalSupply,
 				addressOf(readProxyForResolver),
-			].concat(additionalConstructorArgsMap[sourceContract + currencyKey] || []),
+			],
 			force: addNewSynths,
 		});
 

@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./Pausable.sol";
 import "./interfaces/ICollateral.sol";
 import "./interfaces/ICollateralLoan.sol";
@@ -21,7 +21,7 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
-contract Collateral is ICollateral, ICollateralLoan, Owned, MixinResolver, Pausable {
+contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings, Pausable {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -81,7 +81,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinResolver, Pausa
         ) public
         Owned(_owner)
         Pausable()
-        MixinResolver(_resolver)
+        MixinSystemSettings(_resolver)
     {
         owner = msg.sender;
 
@@ -101,13 +101,16 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinResolver, Pausa
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](4);
-        addresses[0] = CONTRACT_FEEPOOL;
-        addresses[1] = CONTRACT_EXRATES;
-        addresses[2] = CONTRACT_SYSTEMSTATUS;
-        addresses[3] = CONTRACT_SYNTHSUSD;
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](4);
+        newAddresses[0] = CONTRACT_FEEPOOL;
+        newAddresses[1] = CONTRACT_EXRATES;
+        newAddresses[2] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[3] = CONTRACT_SYNTHSUSD;
 
-        return combineArrays(addresses, synths);
+        bytes32[] memory combined = combineArrays(existingAddresses, newAddresses);
+
+        addresses = combineArrays(combined, synths);
     }
 
     /* ---------- Related Contracts ---------- */
@@ -163,7 +166,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinResolver, Pausa
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      */
     function liquidationAmount(Loan memory loan) public view returns (uint amount) {
-        uint liquidationPenalty = _manager().getLiquidationPenalty();
+        uint liquidationPenalty = getLiquidationPenalty();
         uint debtValue = loan.amount.add(loan.accruedInterest).multiplyDecimal(_exchangeRates().rateForCurrency(loan.currency));
         uint collateralValue = loan.collateral.multiplyDecimal(_exchangeRates().rateForCurrency(collateralKey));
         uint unit = SafeDecimalMath.unit();
@@ -176,7 +179,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinResolver, Pausa
 
     // amount is the amount of synths we are liquidating
     function collateralRedeemed(bytes32 currency, uint amount) public view returns (uint collateral) {
-        uint liquidationPenalty = _manager().getLiquidationPenalty();
+        uint liquidationPenalty = getLiquidationPenalty();
         collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
 
         collateral = collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
