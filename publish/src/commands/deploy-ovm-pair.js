@@ -46,7 +46,7 @@ const deployOvmPair = async () => {
 };
 
 const deployInstance = async ({ useOvm, privateKey }) => {
-	await commands.build({ useOvm });
+	await commands.build({ useOvm, optimizerRuns: useOvm ? 1 : 200 });
 
 	await commands.deploy({
 		network: 'local',

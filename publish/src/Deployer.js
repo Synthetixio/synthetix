@@ -206,7 +206,9 @@ class Deployer {
 		let deployedContract;
 
 		if (deploy) {
-			console.log(gray(` - Attempting to deploy ${name}`));
+			console.log(
+				gray(` - Attempting to deploy ${name}${name !== source ? ` (with source ${source})` : ''}`)
+			);
 			let gasUsed;
 			if (dryRun) {
 				this._dryRunCounter++;
