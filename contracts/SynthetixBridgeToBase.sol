@@ -65,7 +65,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         addresses[1] = CONTRACT_SYNTHETIX;
         addresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
         addresses[3] = CONTRACT_ISSUER;
-        return combineArrays(existingAddresses, addresses);
+        addresses = combineArrays(existingAddresses, addresses);
     }
 
     // ========== PUBLIC FUNCTIONS =========

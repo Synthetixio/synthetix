@@ -82,7 +82,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
         addresses[4] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
-        return combineArrays(existingAddresses, addresses);
+        addresses = combineArrays(existingAddresses, addresses);
     }
 
     // ========== MODIFIERS ============
