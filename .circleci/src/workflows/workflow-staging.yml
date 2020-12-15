@@ -65,3 +65,11 @@ jobs:
       network: kovan
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Differential production tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-prod-tests-ovm:
+      name: job-prod-tests-ovm
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
