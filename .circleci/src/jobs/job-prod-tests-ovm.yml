@@ -6,6 +6,7 @@ steps:
       at: .
   - run: git clone git@github.com:ethereum-optimism/optimism-integration.git
   - run: cd optimism-integration
+  - run: ls -la
   - run: docker-compose pull
   - run: ./up.sh
   - run: cd ..
