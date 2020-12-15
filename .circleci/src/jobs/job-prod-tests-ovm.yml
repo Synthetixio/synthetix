@@ -6,15 +6,18 @@ steps:
       at: .
   - setup_remote_docker
   - run:
-      name: Start chains
-      background: true
+      name: Prepare docker
       command: |
         git clone git@github.com:ethereum-optimism/optimism-integration.git
         cd optimism-integration
         ls -la
         docker-compose pull
+  - run:
+      name: Start chains
+      background: true
+      command: |
         ./up.sh
-  - run: sleep 20
+  - run: sleep 5
   - run:
       name: Deploy Synthetix instances and run production tests
       command: |
