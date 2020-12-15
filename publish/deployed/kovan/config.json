@@ -8,6 +8,9 @@
 	"BinaryOptionMarketManager": {
 		"deploy": false
 	},
+	"BinaryOptionMarketData": {
+		"deploy": false
+	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
@@ -17,6 +20,9 @@
 	"DelegateApprovalsEternalStorage": {
 		"deploy": false
 	},
+	"DebtCache": {
+		"deploy": false
+	},
 	"Depot": {
 		"deploy": false
 	},
@@ -24,6 +30,9 @@
 		"deploy": false
 	},
 	"EtherCollateral": {
+		"deploy": false
+	},
+	"EtherCollateralsUSD": {
 		"deploy": false
 	},
 	"ExchangeRates": {
@@ -44,10 +53,10 @@
 	"FeePoolEternalStorage": {
 		"deploy": false
 	},
-	"Issuer": {
+	"FlexibleStorage": {
 		"deploy": false
 	},
-	"IssuanceEternalStorage": {
+	"Issuer": {
 		"deploy": false
 	},
 	"EternalStorageLiquidations": {
@@ -74,7 +83,16 @@
 	"SynthetixState": {
 		"deploy": false
 	},
+	"SystemSettings": {
+		"deploy": false
+	},
 	"SystemStatus": {
+		"deploy": false
+	},
+	"SynthUtil": {
+		"deploy": false
+	},
+	"DappMaintenance": {
 		"deploy": false
 	},
 	"SynthsUSD": {
@@ -456,6 +474,9 @@
 		"deploy": false
 	},
 	"SynthiADA": {
+		"deploy": false
+	},
+	"TradingRewards": {
 		"deploy": false
 	}
 }

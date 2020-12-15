@@ -1,11 +1,13 @@
 pragma solidity >=0.4.24;
 
-import "../interfaces/ISynth.sol";
+import "./ISynth.sol";
+import "./IVirtualSynth.sol";
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/isynthetix
 interface ISynthetix {
     // Views
-    function anySynthOrSNXRateIsStale() external view returns (bool anyRateStale);
+    function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);
 
     function availableCurrencyKeys() external view returns (bytes32[] memory);
 
@@ -64,6 +66,30 @@ interface ISynthetix {
         bytes32 destinationCurrencyKey
     ) external returns (uint amountReceived);
 
+    function exchangeWithTracking(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address originator,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived);
+
+    function exchangeOnBehalfWithTracking(
+        address exchangeForAddress,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address originator,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived);
+
+    function exchangeWithVirtual(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived, IVirtualSynth vSynth);
+
     function issueMaxSynths() external;
 
     function issueMaxSynthsOnBehalf(address issueForAddress) external;
@@ -83,4 +109,12 @@ interface ISynthetix {
         );
 
     function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool);
+
+    // Restricted Functions
+
+    function mintSecondary(address account, uint amount) external;
+
+    function mintSecondaryRewards(uint amount) external;
+
+    function burnSecondary(address account, uint amount) external;
 }

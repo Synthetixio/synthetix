@@ -15,7 +15,7 @@ contract ISynth is IERC20 {}
 contract IExchangeRates {
     function rateForCurrency(bytes32 currencyKey) external view returns (uint);
 
-    function rateIsStale(bytes32 currencyKey) external view returns (bool);
+    function rateIsInvalid(bytes32 currencyKey) external view returns (bool);
 }
 
 
@@ -136,7 +136,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
         public
         payable
         nonReentrant
-        rateNotStale(ETH)
+        rateNotInvalid(ETH)
         notPaused
         returns (
             uint // Returns the number of Synths (sUSD) received
@@ -262,7 +262,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     function exchangeEtherForSynthsAtRate(uint guaranteedRate)
         public
         payable
-        rateNotStale(ETH)
+        rateNotInvalid(ETH)
         notPaused
         returns (
             uint // Returns the number of Synths (sUSD) received
@@ -279,8 +279,8 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     function exchangeEtherForSNX()
         public
         payable
-        rateNotStale(SNX)
-        rateNotStale(ETH)
+        rateNotInvalid(SNX)
+        rateNotInvalid(ETH)
         notPaused
         returns (
             uint // Returns the number of SNX received
@@ -309,8 +309,8 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
     function exchangeEtherForSNXAtRate(uint guaranteedEtherRate, uint guaranteedSynthetixRate)
         public
         payable
-        rateNotStale(SNX)
-        rateNotStale(ETH)
+        rateNotInvalid(SNX)
+        rateNotInvalid(ETH)
         notPaused
         returns (
             uint // Returns the number of SNX received
@@ -331,7 +331,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
      */
     function exchangeSynthsForSNX(uint synthAmount)
         public
-        rateNotStale(SNX)
+        rateNotInvalid(SNX)
         notPaused
         returns (
             uint // Returns the number of SNX received
@@ -361,7 +361,7 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
      */
     function exchangeSynthsForSNXAtRate(uint synthAmount, uint guaranteedRate)
         public
-        rateNotStale(SNX)
+        rateNotInvalid(SNX)
         notPaused
         returns (
             uint // Returns the number of SNX received
@@ -505,8 +505,8 @@ contract Depot is SelfDestructible, Pausable, ReentrancyGuard, MixinResolver {
 
     // ========== MODIFIERS ==========
 
-    modifier rateNotStale(bytes32 currencyKey) {
-        require(!exchangeRates().rateIsStale(currencyKey), "Rate stale or not a synth");
+    modifier rateNotInvalid(bytes32 currencyKey) {
+        require(!exchangeRates().rateIsInvalid(currencyKey), "Rate stale or not a synth");
         _;
     }
 

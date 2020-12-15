@@ -1857,7 +1857,8 @@
 			},
 			"EtherCollateral": {
 				"address": "0xF90B2e12Ec94fAe43e52619d6329f44ccE8C233f",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2-rc0"
 			}
 		}
 	},
@@ -1905,7 +1906,8 @@
 			},
 			"SynthsUSD": {
 				"address": "0x1b642a124CDFa1E5835276A6ddAA6CFC4B35d52c",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.28.4-alpha"
 			},
 			"SynthsEUR": {
 				"address": "0xb5EB2118a64c5BcF5B0eAa812fB95D5dfFA80040",
@@ -2255,7 +2257,8 @@
 			},
 			"Liquidations": {
 				"address": "0x3BB144f5544e059Bb0091bc8428bb0cF2204e0c5",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			},
 			"EternalStorageLiquidations": {
 				"address": "0x7FC688836A927a7751847Dd45e0c5dc93ac65dFD",
@@ -2273,11 +2276,13 @@
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x400C4f98DAa68291254d76F83b2F8116Ea0577B1",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			},
 			"FeePool": {
 				"address": "0xc72db00dC2BfD49F4f4b1057EB821f5d3FD16524",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			},
 			"Synthetix": {
 				"address": "0x37bBABE672180899318C3f7f642Ec7dB8C788B4E",
@@ -2290,11 +2295,13 @@
 			},
 			"Exchanger": {
 				"address": "0x4977AeB0a31eb89A20b919C96769Fe76B65A9aE2",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.26.2-rc0"
 			},
 			"Issuer": {
 				"address": "0xBF03c37ACa885C92312476cbdBE9bCaEB5b11AA7",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			},
 			"BinaryOptionMarketFactory": {
 				"address": "0x11cE3807b975cFF979c91CC7e09047F560555D57",
@@ -2318,7 +2325,8 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x0812fd72DA3f29198163C5092F7601acabDa6A40",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
 			}
 		}
 	},
@@ -2337,6 +2345,235 @@
 			"BinaryOptionMarketManager": {
 				"address": "0x55C3840A361c43f1Ab83Cd4CbD858f588C4acD97",
 				"status": "current"
+			}
+		}
+	},
+	"v2.26.2-rc0": {
+		"tag": "v2.26.2-rc0",
+		"fulltag": "v2.26.2-rc0",
+		"release": "Spica",
+		"network": "rinkeby",
+		"date": "2020-07-29T13:34:32-06:00",
+		"commit": "b9de0ac84b7eee33e1cf214005e6160443efd687",
+		"contracts": {
+			"Exchanger": {
+				"address": "0x7250b53fdBB14DBED9964F54ECA087433ED647D8",
+				"status": "replaced",
+				"replaced_in": "v2.27.2"
+			},
+			"EtherCollateral": {
+				"address": "0x0e633c2a342A41cE84c6D746c91f290A90955F8e",
+				"status": "current"
+			}
+		}
+	},
+	"v2.26.3": {
+		"tag": "v2.26.3",
+		"fulltag": "v2.26.3",
+		"release": "Spica",
+		"network": "rinkeby",
+		"date": "2020-08-10T09:49:02+10:00",
+		"commit": "d33265f15cff05eeab06ab4947da6960c834da0d",
+		"contracts": {
+			"BinaryOptionMarketData": {
+				"address": "0x87a0dc569076b00E2866eA9673C1007d4362300f",
+				"status": "current"
+			},
+			"SynthUtil": {
+				"address": "0xdb6315F68dce5aF7D26a5055B3E94d0c59C1a62A",
+				"status": "current"
+			},
+			"DappMaintenance": {
+				"address": "0x0D6B9f0fDa088DF19fa8c2594F1c37B3a8DbA3D1",
+				"status": "current"
+			}
+		}
+	},
+	"v2.27.2": {
+		"tag": "v2.27.2",
+		"fulltag": "v2.27.2",
+		"release": "Pollux",
+		"network": "rinkeby",
+		"date": "2020-09-01T18:32:44+12:00",
+		"commit": "62408a24161f041e1e484af92e1dbb232dfc4065",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xDdb4a989869A51870e99494fcbF3D19ef9622227",
+				"status": "replaced",
+				"keccak256": "0x01a2b00da817c983b1bd19e0af4d554a690f5cdd8aa54ff6536c76f1728377e0",
+				"replaced_in": "v2.28.4-alpha"
+			},
+			"FeePool": {
+				"address": "0xc6F404c96Aa136b0Ba11d40dB17394F09B0f20F1",
+				"status": "replaced",
+				"keccak256": "0x89fe01b2c0707be51cdfc9d44205efcffb0134ed60a92a9056940dd442fb1908",
+				"replaced_in": "v2.28.4-alpha"
+			},
+			"Synthetix": {
+				"address": "0x3cA27cEEDA9A200f50C3Cf3802C6c60d43867977",
+				"status": "replaced",
+				"keccak256": "0xf92685622f5b8ea9c56041189b6c200314f72f08df4ff073a02896c849eb834f",
+				"replaced_in": "v2.31.1-beta"
+			},
+			"Exchanger": {
+				"address": "0x4c98d3277734f716B2d776DB148580079f88996F",
+				"status": "replaced",
+				"keccak256": "0x737fcda1e8b492524c2a643bca60667f28f6b8107f310b4d5a0f8e3056dddc73",
+				"replaced_in": "v2.30.0"
+			},
+			"Issuer": {
+				"address": "0x655dD565cc967270Bb31035D3C5078A4c9b7f9Aa",
+				"status": "replaced",
+				"keccak256": "0x723b38bb915f02c16cf004d09469b1d3024064f4c9438a01dbe7b2185dc6c236",
+				"replaced_in": "v2.28.4-alpha"
+			},
+			"Liquidations": {
+				"address": "0xedB25C86E656EbE05D7F4CD551c1E4Ec8EE2231F",
+				"status": "current",
+				"keccak256": "0xf4020bcebac1bd7291e495284dd4a6efa22f5d1c009c04f178b9a4e1304759dc"
+			},
+			"FlexibleStorage": {
+				"address": "0x776d4C87640426a22C50DD2a07B7141dDb9b71D8",
+				"status": "current",
+				"keccak256": "0x952f7c2f536ec424f53fc741cb4384b5d9ea94934de777ead382bf84e3c1e757"
+			},
+			"SystemSettings": {
+				"address": "0x62Fff452f6bD0D49635eC361038Ab428364aaFf4",
+				"status": "replaced",
+				"keccak256": "0x59393d6ea3c81732896d77b91ca890a4e69abe8ff8019bbdd3c09a2b1eb02eef",
+				"replaced_in": "v2.30.0"
+			},
+			"TradingRewards": {
+				"address": "0x1ee9C5d45396051101FB530324A6228b1FfAF8De",
+				"status": "current",
+				"keccak256": "0xee0b5025064a29a55fa474b59f7c646f08dd4820d259cf134b3f26fe5b2e0941"
+			}
+		}
+	},
+	"v2.28.4-alpha": {
+		"tag": "v2.28.4-alpha",
+		"fulltag": "v2.28.4-alpha",
+		"release": "Fomalhaut",
+		"network": "rinkeby",
+		"date": "2020-09-24T12:27:58+10:00",
+		"commit": "835edbdbd4d0e89eb07ea4b99129a31fd880f918",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x68Ce67aE06ec627e550d1F8EE2f0491B64543926",
+				"status": "replaced",
+				"keccak256": "0x9b7626bb44a60f17f989367a27bbc71b7b86d63a03033c7ed5c7fb5d3eedc743",
+				"replaced_in": "v2.30.0"
+			},
+			"FeePool": {
+				"address": "0x021386d58d13AA7Eb6e0321D70c257D0ff1A863f",
+				"status": "current",
+				"keccak256": "0x1b5c5a7be8072e6d9e89d218345a7692365a4236fd3d82ea85476d0fad9c30c1"
+			},
+			"SynthsUSD": {
+				"address": "0x1b4B648Cc36c3c693f916A4b3EEd3114C46BD3c8",
+				"status": "current",
+				"keccak256": "0x153f392299fac48cc06ca86dd544a0d67fb9056f588e0f63609461d457787804"
+			},
+			"Issuer": {
+				"address": "0x54C88Ca6a6B811766daf1960ce54205729D9ffE3",
+				"status": "replaced",
+				"keccak256": "0xf6b38cc555bf11c4c5a5b13316a65f4ec59230524ca1b8c969fcdcbc20c2c922",
+				"replaced_in": "v2.30.0"
+			},
+			"EtherCollateralsUSD": {
+				"address": "0xBF893F0010b8fd8E45369C4E35eE73237DD421bf",
+				"status": "current",
+				"keccak256": "0x85918fcd0515828e0a6698e27e43151d5e0333d936ea6b5a9f6f9341a9b68266"
+			}
+		}
+	},
+	"v2.30.0": {
+		"tag": "v2.30.0",
+		"fulltag": "v2.30.0",
+		"release": "Deneb",
+		"network": "rinkeby",
+		"date": "2020-10-08T19:34:02+11:00",
+		"commit": "6e6b68ae14eee0c6246b5bbe6bdd0b181ba7df94",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0xb8f1aDdCf91E5ade0ad20cc50843d08BaA4FB6a9",
+				"status": "replaced",
+				"keccak256": "0xecc746e9363b1e4d2cda6b3bd5773268540a790a4f1f14909b2eaf441acaf6c4",
+				"replaced_in": "v2.31.1-beta"
+			},
+			"Exchanger": {
+				"address": "0xD90Fa2C12a34448090f0f313EA40e1f662C56B22",
+				"status": "replaced",
+				"keccak256": "0x5d6e11d4c9e1a785a435f44c861da9ed9ef4889db9151265145624a1cf64e512",
+				"replaced_in": "v2.31.1-beta"
+			},
+			"Issuer": {
+				"address": "0xa27a8e30eD268959Ea969855F438478e4E7eb2a2",
+				"status": "replaced",
+				"keccak256": "0xd75e68a23fef19a0e8604bebe92baa040bfb590ae5259333aeb63ac413c94da1",
+				"replaced_in": "v2.31.1-beta"
+			},
+			"SystemSettings": {
+				"address": "0xF220fC805602b3dA6B2c0C4C52aCb225b2E7933F",
+				"status": "current",
+				"keccak256": "0x0119b6d98214114e4c7c41b10e0cd5b58903143e6556156917772b4019c44335"
+			}
+		}
+	},
+	"v2.31.1-beta": {
+		"tag": "v2.31.1-beta",
+		"fulltag": "v2.31.1-beta",
+		"release": "Mimosa",
+		"network": "rinkeby",
+		"date": "2020-11-11T17:34:52-05:00",
+		"commit": "5b4dd86620bd5308e32a440e7e255418c3a119e4",
+		"contracts": {
+			"ExchangeRates": {
+				"address": "0x3d65d0976C693e43Cd6FEfdcb8a7B086FD4f13BF",
+				"status": "current",
+				"keccak256": "0xb00ede4847d8725844e762151714f558e8b5d6fa3b34531cf29fe14d3e052884"
+			},
+			"Synthetix": {
+				"address": "0x65bAd0f094f2Cce90a2BD757372932CdaF079213",
+				"status": "replaced",
+				"keccak256": "0x02c3d358d6a0487f54ac56b33bf9f39f12c7af85564544f3d929a143ca96d9ea",
+				"replaced_in": "v2.32.1-beta"
+			},
+			"Exchanger": {
+				"address": "0xF973f1ab453a3fbf7Fac2Be80161A62c456c4350",
+				"status": "replaced",
+				"keccak256": "0xb4aec17ec72b273b7013d9042a231b06ed4b4246e8a77bc5f507598ebd77e396",
+				"replaced_in": "v2.32.1-beta"
+			},
+			"Issuer": {
+				"address": "0xba46d4cD44c9Eb5F2d5a2C72d53adD0782B3806f",
+				"status": "current",
+				"keccak256": "0xffc3175744de9a11cf1cc91ca6aad118b539e8ccad902d409ce853619f7168d4"
+			},
+			"DebtCache": {
+				"address": "0x473cc79c7085D148018F8C66d3F4355FB5785C9e",
+				"status": "current",
+				"keccak256": "0x35d36fdd6fa8ff932a8733f9583afaf396e33a59b1febc8b68a60d65f731a8a9"
+			}
+		}
+	},
+	"v2.32.1-beta": {
+		"tag": "v2.32.1-beta",
+		"fulltag": "v2.32.1-beta",
+		"release": "Regulus",
+		"network": "rinkeby",
+		"date": "2020-11-12T22:57:47-05:00",
+		"commit": "4bf36cad6cf120502949295b05c94e501cccb340",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x74598aF355c85f5050B5E05e5BAB5559a51C34ab",
+				"status": "current",
+				"keccak256": "0x1bfcc7247998d65ebfb5c17d978eafdef24825868b4d77df2bb5354d6aaf0e19"
+			},
+			"Exchanger": {
+				"address": "0xB99009c7bE322d98f3c8d615f1DC9310DAe03d36",
+				"status": "current",
+				"keccak256": "0xee1b7e9552a2b8e7da01a7932c36340a6a1e667b8b37f6eefd7a59ef6bbc5361"
 			}
 		}
 	}

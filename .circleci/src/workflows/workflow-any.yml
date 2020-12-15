@@ -1,0 +1,8 @@
+jobs:
+  - job-prepare
+  - job-lint:
+      {{> require-prepare.yml}}
+  - job-compile:
+      {{> require-prepare.yml}}
+  - job-static-analysis:
+      {{> require-prepare.yml}}

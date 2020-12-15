@@ -72,6 +72,8 @@ contract('Rewards Integration Tests', async accounts => {
 				from: oracle,
 			}
 		);
+
+		await debtCache.takeDebtSnapshot();
 	};
 
 	const fastForwardAndCloseFeePeriod = async () => {
@@ -135,10 +137,11 @@ contract('Rewards Integration Tests', async accounts => {
 		synthetix,
 		exchangeRates,
 		exchanger,
+		debtCache,
 		supplySchedule,
+		systemSettings,
 		rewardEscrow,
 		periodOneMintableSupplyMinusMinterReward,
-		issuer,
 		sUSDContract,
 		MINTER_SNX_REWARD;
 
@@ -148,12 +151,13 @@ contract('Rewards Integration Tests', async accounts => {
 		({
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
+			DebtCache: debtCache,
 			FeePool: feePool,
-			Issuer: issuer,
 			RewardEscrow: rewardEscrow,
 			SupplySchedule: supplySchedule,
 			Synthetix: synthetix,
 			SynthsUSD: sUSDContract,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'],
@@ -164,12 +168,12 @@ contract('Rewards Integration Tests', async accounts => {
 				'FeePool',
 				'FeePoolEternalStorage', // necessary to claimFees()
 				'FeePoolState', // necessary to claimFees()
-				'IssuanceEternalStorage', // required to ensure issuing and burning succeed
-				'Issuer',
+				'DebtCache',
 				'RewardEscrow',
 				'RewardsDistribution', // required for Synthetix.mint()
 				'SupplySchedule',
 				'Synthetix',
+				'SystemSettings',
 			],
 		}));
 
@@ -177,7 +181,7 @@ contract('Rewards Integration Tests', async accounts => {
 
 		await setExchangeFeeRateForSynths({
 			owner,
-			feePool,
+			systemSettings,
 			synthKeys,
 			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
 		});
@@ -207,7 +211,10 @@ contract('Rewards Integration Tests', async accounts => {
 		await synthetix.mint({ from: deployerAccount });
 
 		// set minimumStakeTime on issue and burning to 0
-		await issuer.setMinimumStakeTime(0, { from: owner });
+		await systemSettings.setMinimumStakeTime(0, { from: owner });
+
+		// set default issuanceRatio to 0.2
+		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
 	});
 
 	describe('3 accounts with 33.33% SNX all issue MAX and claim rewards', async () => {
@@ -605,6 +612,7 @@ contract('Rewards Integration Tests', async accounts => {
 			await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
 				from: oracle,
 			});
+			await debtCache.takeDebtSnapshot();
 
 			// Account 3 (enters the system and) mints 10K sUSD (minus half of an exchange fee - to balance the fact
 			// that the other two holders have doubled their sBTC holdings) and should have 20% of the debt not 33.33%

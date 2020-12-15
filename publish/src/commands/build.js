@@ -8,6 +8,7 @@ const { findSolFiles, flatten, compile } = require('../solidity');
 
 const {
 	constants: { COMPILED_FOLDER, CONTRACTS_FOLDER, FLATTENED_FOLDER, BUILD_FOLDER },
+	ovmIgnored,
 } = require('../../..');
 
 const { stringify } = require('../util');
@@ -31,12 +32,19 @@ const build = async ({
 	testHelpers,
 	showWarnings,
 	showContractSize,
+	useOvm,
+	cleanBuild,
 } = {}) => {
-	console.log(gray('Starting build...'));
+	console.log(gray(`Starting build${useOvm ? ' using OVM' : ''}...`));
+
+	if (cleanBuild && fs.existsSync(buildPath)) {
+		fs.rmdirSync(buildPath, { recursive: true });
+	}
 
 	if (!fs.existsSync(buildPath)) {
 		fs.mkdirSync(buildPath);
 	}
+
 	// Flatten all the contracts.
 	// Start with the libraries, then copy our own contracts on top to ensure
 	// if there's a naming clash our code wins.
@@ -46,6 +54,22 @@ const build = async ({
 		sourcePath: CONTRACTS_FOLDER,
 		ignore: [].concat(!testHelpers ? /^test-helpers\// : []),
 	});
+
+	if (useOvm) {
+		console.log(gray(`  Sources to be ignored for OVM compilation (see publish/ovm-ignore.json):`));
+
+		const contractPaths = Object.keys(contracts);
+		contractPaths.map(contractPath => {
+			const filename = path.basename(contractPath, '.sol');
+			const isIgnored = ovmIgnored.some(ignored => filename === ignored);
+
+			if (isIgnored) {
+				console.log(gray(`    > ${filename}`));
+
+				delete contracts[contractPath];
+			}
+		});
+	}
 
 	const allSolFiles = { ...libraries, ...contracts };
 	console.log(
@@ -130,6 +154,7 @@ const build = async ({
 				[contract]: sources[contract],
 			},
 			runs,
+			useOvm,
 		});
 
 		Object.assign(allArtifacts, artifacts);
@@ -197,6 +222,7 @@ module.exports = {
 			.command('build')
 			.description('Build (flatten and compile) solidity files')
 			.option('-b, --build-path <value>', 'Build path for built files', DEFAULTS.buildPath)
+			.option('-c, --clean-build', 'Delete previously existing files', false)
 			.option(
 				'-k, --skip-unchanged',
 				'Skip any contracts that seem as though they have not changed (infers from flattened file and does not strictly check bytecode. ⚠⚠⚠ DO NOT USE FOR PRODUCTION BUILDS.'
@@ -209,5 +235,6 @@ module.exports = {
 			.option('-s, --show-contract-size', 'Show contract sizes')
 			.option('-t, --test-helpers', 'Also compile the test-helpers')
 			.option('-w, --show-warnings', 'Show warnings')
+			.option('-z, --use-ovm', 'Use Optimism OVM-compatible compiler')
 			.action(build),
 };

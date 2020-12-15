@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 
-// https://docs.synthetix.io/contracts/Owned
+// https://docs.synthetix.io/contracts/source/contracts/owned
 contract Owned {
     address public owner;
     address public nominatedOwner;
@@ -25,8 +25,12 @@ contract Owned {
     }
 
     modifier onlyOwner {
-        require(msg.sender == owner, "Only the contract owner may perform this action");
+        _onlyOwner();
         _;
+    }
+
+    function _onlyOwner() private view {
+        require(msg.sender == owner, "Only the contract owner may perform this action");
     }
 
     event OwnerNominated(address newOwner);

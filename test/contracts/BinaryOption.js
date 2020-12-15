@@ -13,7 +13,7 @@ const BinaryOption = artifacts.require('BinaryOption');
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
-contract('BinaryOption @gas-skip', accounts => {
+contract('BinaryOption @gas-skip @ovm-skip', accounts => {
 	const [account, bidder, recipient] = accounts;
 
 	const biddingTime = 100;

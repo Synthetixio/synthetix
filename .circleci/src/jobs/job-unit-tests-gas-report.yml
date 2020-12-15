@@ -1,0 +1,9 @@
+# Measures deployment and transaction gas usage in unit tests
+{{> job-header.yml}}
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - run: npm run test:gas && npx codechecks codechecks.unit.yml
+  - store_artifacts:
+      path: test-gas-used.log

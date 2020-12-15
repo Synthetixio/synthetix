@@ -1,6 +1,5 @@
 # Synthetix
 
-[![Build Status](https://travis-ci.org/Synthetixio/synthetix.svg?branch=master)](https://travis-ci.org/Synthetixio/synthetix)
 [![CircleCI](https://circleci.com/gh/Synthetixio/synthetix.svg?style=svg)](https://circleci.com/gh/Synthetixio/synthetix)
 [![codecov](https://codecov.io/gh/Synthetixio/synthetix/branch/develop/graph/badge.svg)](https://codecov.io/gh/Synthetixio/synthetix)
 [![npm version](https://badge.fury.io/js/synthetix.svg)](https://badge.fury.io/js/synthetix)
@@ -49,7 +48,6 @@ When a new version of the contracts makes its way through all testnets, it event
 
 ### Testing
 
-[![Build Status](https://travis-ci.org/Synthetixio/synthetix.svg?branch=master)](https://travis-ci.org/Synthetixio/synthetix)
 [![CircleCI](https://circleci.com/gh/Synthetixio/synthetix.svg?style=svg)](https://circleci.com/gh/Synthetixio/synthetix)
 [![codecov](https://codecov.io/gh/Synthetixio/synthetix/branch/develop/graph/badge.svg)](https://codecov.io/gh/Synthetixio/synthetix)
 
@@ -85,31 +83,31 @@ import 'synthetix/contracts/interfaces/ISynthetix.sol';
 
 
 contract MyContract {
-	// This should be instantiated with our ReadProxyAddressResolver
-	// it's a ReadProxy that won't change, so safe to code it here without a setter
-	// see https://docs.synthetix.io/addresses for addresses in mainnet and testnets
-	IAddressResolver public synthetixResolver;
+  // This should be instantiated with our ReadProxyAddressResolver
+  // it's a ReadProxy that won't change, so safe to code it here without a setter
+  // see https://docs.synthetix.io/addresses for addresses in mainnet and testnets
+  IAddressResolver public synthetixResolver;
 
-	constructor(IAddressResolver _snxResolver) public {
-		synthetixResolver = _snxResolver;
-	}
+  constructor(IAddressResolver _snxResolver) public {
+    synthetixResolver = _snxResolver;
+  }
 
-	function synthetixIssue() external {
-		ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
-		require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
+  function synthetixIssue() external {
+    ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
+    require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
 
-		// Issue for msg.sender = address(MyContract)
-		synthetix.issueMaxSynths();
-	}
+    // Issue for msg.sender = address(MyContract)
+    synthetix.issueMaxSynths();
+  }
 
-	function synthetixIssueOnBehalf(address user) external {
-		ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
-		require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
+  function synthetixIssueOnBehalf(address user) external {
+    ISynthetix synthetix = synthetixResolver.getAddress('Synthetix');
+    require(synthetix != address(0), 'Synthetix is missing from Synthetix resolver');
 
-		// Note: this will fail if `DelegateApprovals.approveIssueOnBehalf(address(MyContract))` has
-		// not yet been invoked by the `user`
-		synthetix.issueMaxSynthsOnBehalf(user);
-	}
+    // Note: this will fail if `DelegateApprovals.approveIssueOnBehalf(address(MyContract))` has
+    // not yet been invoked by the `user`
+    synthetix.issueMaxSynthsOnBehalf(user);
+  }
 }
 ```
 
@@ -119,8 +117,10 @@ contract MyContract {
 - `getPathToNetwork({ network, file = '' })` Returns the path to the folder (or file within the folder) for the given network
 - `getSource({ network })` Return `abi` and `bytecode` for a contract `source`
 - `getSuspensionReasons({ code })` Return mapping of `SystemStatus` suspension codes to string reasons
+- `getStakingRewards({ network })` Return the list of staking reward contracts available.
 - `getSynths({ network })` Return the list of synths for a network
 - `getTarget({ network })` Return the information about a contract's `address` and `source` file. The contract names are those specified in [docs.synthetix.io/addresses](https://docs.synthetix.io/addresses)
+- `getTokens({ network })` Return the list of tokens (synths and `SNX`) used in the system, along with their addresses.
 - `getUsers({ network })` Return the list of user accounts within the Synthetix protocol (e.g. `owner`, `fee`, etc)
 - `getVersions({ network, byContract = false })` Return the list of deployed versions to the network keyed by tagged version. If `byContract` is `true`, it keys by `contract` name.
 - `networks` Return the list of supported networks

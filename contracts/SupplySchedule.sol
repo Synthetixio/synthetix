@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
+import "./interfaces/ISupplySchedule.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -13,8 +14,8 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 
 
-// https://docs.synthetix.io/contracts/SupplySchedule
-contract SupplySchedule is Owned {
+// https://docs.synthetix.io/contracts/source/contracts/supplyschedule
+contract SupplySchedule is Owned, ISupplySchedule {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
     using Math for uint;

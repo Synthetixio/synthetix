@@ -25,7 +25,7 @@ const { GAS_PRICE } = require('../../buidler.config');
 
 const { toBytes32 } = require('../..');
 
-contract('Depot', async accounts => {
+contract('Depot @ovm-skip', async accounts => {
 	let synthetix, synth, depot, addressResolver, systemStatus, exchangeRates, ethRate, snxRate;
 
 	const [, owner, oracle, fundsWallet, address1, address2, address3] = accounts;
@@ -98,7 +98,7 @@ contract('Depot', async accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: depot.abi,
 				hasFallback: true,
-				ignoreParents: ['SelfDestructible', 'Pausable', 'ReentrancyGuard', 'MixinResolver'],
+				ignoreParents: ['Pausable', 'ReentrancyGuard', 'MixinResolver'],
 				expected: [
 					'depositSynths',
 					'exchangeEtherForSNX',
@@ -357,7 +357,7 @@ contract('Depot', async accounts => {
 					from: address1,
 					value: 10,
 				}),
-				'Rate stale or not a synth'
+				'Rate invalid or not a synth'
 			);
 			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
 			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);

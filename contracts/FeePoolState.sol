@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./SelfDestructible.sol";
 import "./LimitedSetup.sol";
 
 // Libraries
@@ -12,8 +11,8 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/IFeePool.sol";
 
 
-// https://docs.synthetix.io/contracts/FeePoolState
-contract FeePoolState is Owned, SelfDestructible, LimitedSetup {
+// https://docs.synthetix.io/contracts/source/contracts/feepoolstate
+contract FeePoolState is Owned, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -32,7 +31,7 @@ contract FeePoolState is Owned, SelfDestructible, LimitedSetup {
     // The IssuanceData activity that's happened in a fee period.
     mapping(address => IssuanceData[FEE_PERIOD_LENGTH]) public accountIssuanceLedger;
 
-    constructor(address _owner, IFeePool _feePool) public Owned(_owner) SelfDestructible() LimitedSetup(6 weeks) {
+    constructor(address _owner, IFeePool _feePool) public Owned(_owner) LimitedSetup(6 weeks) {
         feePool = address(_feePool);
     }
 

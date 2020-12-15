@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const execFile = require('util').promisify(require('child_process').execFile);
 const { gray, yellow, green, red } = require('chalk');
 const semver = require('semver');
@@ -9,16 +10,21 @@ const { stringify, loadAndCheckRequiredSources } = require('../util');
 
 const { networks, getPathToNetwork } = require('../../..');
 
-const versionsUpdate = async ({ versionTag, release }) => {
+const versionsUpdate = async ({ versionTag, release, useOvm }) => {
 	console.log(gray('Checking deployments for version:', versionTag));
 
 	// prefix a "v" to the tag
 	versionTag = /^v/.test(versionTag) ? versionTag : 'v' + versionTag;
 
 	for (const network of networks.filter(n => n !== 'local')) {
+		const deploymentPath = getPathToNetwork({ network, path, useOvm });
+		if (!fs.existsSync(deploymentPath)) {
+			continue;
+		}
+
 		const { deployment, deploymentFile, versions, versionsFile } = loadAndCheckRequiredSources({
 			network,
-			deploymentPath: getPathToNetwork({ network }),
+			deploymentPath,
 		});
 
 		for (const tag of Object.keys(versions)) {
@@ -51,7 +57,7 @@ const versionsUpdate = async ({ versionTag, release }) => {
 			contracts: {},
 		};
 
-		for (const { name, address } of Object.values(deployment.targets)) {
+		for (const { name, address, source } of Object.values(deployment.targets)) {
 			// if the address is already in the version file, skip it
 			if (new RegExp(`"${address}"`).test(JSON.stringify(versions))) {
 				continue;
@@ -68,6 +74,7 @@ const versionsUpdate = async ({ versionTag, release }) => {
 				entry.contracts[name] = {
 					address,
 					status: 'current',
+					keccak256: (deployment.sources[source].source || {}).keccak256,
 				};
 
 				// look for that same name with status of current and update it
@@ -126,5 +133,6 @@ module.exports = {
 			.description('Update all version.json files for each deployment')
 			.option('-v, --version-tag <value>', `The current version being updated`)
 			.option('-r, --release <value>', `The name of the release`)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.action(versionsUpdate),
 };

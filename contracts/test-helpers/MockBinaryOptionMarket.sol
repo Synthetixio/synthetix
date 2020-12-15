@@ -4,8 +4,8 @@ import "../BinaryOption.sol";
 
 import "../SafeDecimalMath.sol";
 
-contract MockBinaryOptionMarket {
 
+contract MockBinaryOptionMarket {
     using SafeDecimalMath for uint;
 
     uint public deposited;
@@ -58,7 +58,6 @@ contract MockBinaryOptionMarket {
     function requireActiveAndUnpaused() external pure {
         return;
     }
-
 
     event NewOption(BinaryOption newAddress);
 }

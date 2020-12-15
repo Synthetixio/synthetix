@@ -1,0 +1,10 @@
+# Validates that sources have been verified in etherscan
+{{> job-header.yml}}
+parameters:
+  network:
+    type: string
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - run: npm run test:etherscan --  --network << parameters.network >>

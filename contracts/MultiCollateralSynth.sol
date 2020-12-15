@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Synth.sol";
 
 
-// https://docs.synthetix.io/contracts/MultiCollateralSynth
+// https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
     bytes32 public multiCollateralKey;
 
@@ -22,14 +22,19 @@ contract MultiCollateralSynth is Synth {
         bytes32 _multiCollateralKey
     ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
         multiCollateralKey = _multiCollateralKey;
-
-        appendToAddressCache(multiCollateralKey);
     }
 
     /* ========== VIEWS ======================= */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = multiCollateralKey;
+        return combineArrays(existingAddresses, newAddresses);
+    }
+
     function multiCollateral() internal view returns (address) {
-        return requireAndGetAddress(multiCollateralKey, "Resolver is missing multiCollateral address");
+        return requireAndGetAddress(multiCollateralKey);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

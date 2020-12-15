@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/iliquidations
 interface ILiquidations {
     // Views
     function isOpenForLiquidation(address account) external view returns (bool);
@@ -15,10 +16,7 @@ interface ILiquidations {
 
     function liquidationPenalty() external view returns (uint);
 
-    function calculateAmountToFixCollateral(
-        uint debtBalance,
-        uint collateral
-    ) external view returns (uint);
+    function calculateAmountToFixCollateral(uint debtBalance, uint collateral) external view returns (uint);
 
     // Mutative Functions
     function flagAccountForLiquidation(address account) external;

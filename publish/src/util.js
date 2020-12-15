@@ -4,18 +4,27 @@ const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
+const { table } = require('table');
 const w3utils = require('web3-utils');
 
 const {
 	constants: {
 		CONFIG_FILENAME,
+		PARAMS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		OWNER_ACTIONS_FILENAME,
 		SYNTHS_FILENAME,
 		STAKING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
+		FEEDS_FILENAME,
 	},
+	wrap,
 } = require('../..');
+
+const { getPathToNetwork, getSynths, getStakingRewards, getVersions, getFeeds } = wrap({
+	path,
+	fs,
+});
 
 const { networks } = require('../..');
 const stringify = input => JSON.stringify(input, null, '\t') + '\n';
@@ -27,6 +36,12 @@ const ensureNetwork = network => {
 		);
 	}
 };
+
+const getDeploymentPathForNetwork = ({ network, useOvm }) => {
+	console.log(gray('Loading default deployment for network'));
+	return getPathToNetwork({ network, useOvm });
+};
+
 const ensureDeploymentPath = deploymentPath => {
 	if (!fs.existsSync(deploymentPath)) {
 		throw Error(
@@ -39,18 +54,25 @@ const ensureDeploymentPath = deploymentPath => {
 const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
-	const synths = JSON.parse(fs.readFileSync(synthsFile));
+	const synths = getSynths({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of staking rewards to deploy on ${network.toUpperCase()}...`));
 	const stakingRewardsFile = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
-	const stakingRewards = JSON.parse(fs.readFileSync(stakingRewardsFile));
+	const stakingRewards = getStakingRewards({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
 
+	console.log(gray(`Loading the list of deployment parameters on ${network.toUpperCase()}...`));
+	const paramsFile = path.join(deploymentPath, PARAMS_FILENAME);
+	const params = JSON.parse(fs.readFileSync(paramsFile));
+
 	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
-	const versions = network !== 'local' ? JSON.parse(fs.readFileSync(versionsFile)) : {};
+	const versions = network !== 'local' ? getVersions({ network, deploymentPath }) : {};
+
+	const feedsFile = path.join(deploymentPath, FEEDS_FILENAME);
+	const feeds = getFeeds({ network, deploymentPath });
 
 	console.log(
 		gray(`Loading the list of contracts already deployed for ${network.toUpperCase()}...`)
@@ -69,6 +91,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 
 	return {
 		config,
+		params,
 		configFile,
 		synths,
 		synthsFile,
@@ -80,26 +103,39 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		ownerActionsFile,
 		versions,
 		versionsFile,
+		feeds,
+		feedsFile,
 	};
 };
 
-const loadConnections = ({ network }) => {
-	if (network !== 'local' && !process.env.INFURA_PROJECT_ID) {
-		throw Error('Missing .env key of INFURA_PROJECT_ID. Please add and retry.');
+const getEtherscanLinkPrefix = network => {
+	return `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+};
+
+const loadConnections = ({ network, useFork }) => {
+	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
+	// This is because the fork command is assumed to be running at 'localhost:8545'.
+	let providerUrl;
+	if (network === 'local' || useFork) {
+		providerUrl = 'http://127.0.0.1:8545';
+	} else {
+		if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
+			providerUrl = process.env.PROVIDER_URL_MAINNET;
+		} else {
+			providerUrl = process.env.PROVIDER_URL.replace('network', network);
+		}
 	}
 
-	const providerUrl =
-		network === 'local'
-			? 'http://127.0.0.1:8545'
-			: `https://${network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
+
 	const etherscanUrl =
 		network === 'mainnet'
 			? 'https://api.etherscan.io/api'
 			: `https://api-${network}.etherscan.io/api`;
 
-	const etherscanLinkPrefix = `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+	const etherscanLinkPrefix = getEtherscanLinkPrefix(network);
+
 	return { providerUrl, privateKey, etherscanUrl, etherscanLinkPrefix };
 };
 
@@ -154,8 +190,12 @@ const performTransactionalStep = async ({
 	ownerActionsFile,
 	dryRun,
 	encodeABI,
+	nonceManager,
 }) => {
-	const action = `${contract}.${write}(${writeArg})`;
+	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
+	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
+		arg.length === 66 ? w3utils.hexToAscii(arg) : arg
+	)})`;
 
 	// check to see if action required
 	console.log(yellow(`Attempting action: ${action}`));
@@ -167,32 +207,50 @@ const performTransactionalStep = async ({
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
-			return;
+			return { noop: true };
 		}
 	}
-	// otherwuse check the owner
+	// otherwise check the owner
 	const owner = await target.methods.owner().call();
-	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	if (owner === account) {
 		// perform action
 		let hash;
+		let gasUsed = 0;
 		if (dryRun) {
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
-			const txn = await target.methods[write](...argumentsForWriteFunction).send({
+			const params = {
 				from: account,
 				gas: Number(gasLimit),
 				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			});
+			};
+
+			if (nonceManager) {
+				params.nonce = await nonceManager.getNonce();
+			}
+
+			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
+
 			hash = txn.transactionHash;
+			gasUsed = txn.gasUsed;
+
+			if (nonceManager) {
+				nonceManager.incrementNonce();
+			}
 		}
 
 		console.log(
-			green(`${dryRun ? '[DRY RUN] ' : ''}Successfully completed ${action} in hash: ${hash}`)
+			green(
+				`${
+					dryRun ? '[DRY RUN] ' : ''
+				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
+					2
+				)}m `
+			)
 		);
 
-		return hash;
+		return { mined: true, hash };
 	}
 	let data;
 	if (ownerActions && ownerActionsFile) {
@@ -219,14 +277,14 @@ const performTransactionalStep = async ({
 		} else {
 			appendOwnerAction(ownerAction);
 		}
-		return true;
+		return { pending: true };
 	} else {
 		// otherwise wait for owner in real time
 		try {
 			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
 			if (encodeABI) {
 				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
-				return true;
+				return { pending: true };
 			}
 
 			await confirmAction(
@@ -237,9 +295,10 @@ const performTransactionalStep = async ({
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
 			);
 
-			return true;
+			return { pending: true };
 		} catch (err) {
 			console.log(gray('Cancelled'));
+			return {};
 		}
 	}
 };
@@ -256,14 +315,36 @@ const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
 };
 
+function reportDeployedContracts({ deployer }) {
+	console.log(
+		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
+	);
+
+	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
+		name,
+		address,
+		deployer.deployment.targets[name].link,
+	]);
+	console.log();
+	if (tableData.length) {
+		console.log(gray(`All contracts deployed on "${deployer.network}" network:`));
+		console.log(table(tableData));
+	} else {
+		console.log(gray('Note: No new contracts deployed.'));
+	}
+}
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
+	getEtherscanLinkPrefix,
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,
 	performTransactionalStep,
 	parameterNotice,
+	reportDeployedContracts,
 };

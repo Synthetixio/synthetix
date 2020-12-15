@@ -34,7 +34,9 @@ contract('Synth', async accounts => {
 		sUSDContract,
 		addressResolver,
 		systemStatus,
+		systemSettings,
 		exchanger,
+		debtCache,
 		issuer;
 
 	before(async () => {
@@ -46,7 +48,9 @@ contract('Synth', async accounts => {
 			SystemStatus: systemStatus,
 			Synth: sUSDContract,
 			Exchanger: exchanger,
+			DebtCache: debtCache,
 			Issuer: issuer,
+			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
 			contracts: [
@@ -57,8 +61,11 @@ contract('Synth', async accounts => {
 				'Synthetix',
 				'SystemStatus',
 				'AddressResolver',
+				'DebtCache',
 				'Issuer', // required to issue via Synthetix
 				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
+				'SystemSettings',
+				'FlexibleStorage',
 			],
 		}));
 
@@ -74,6 +81,10 @@ contract('Synth', async accounts => {
 		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
 			from: oracle,
 		});
+		await debtCache.takeDebtSnapshot();
+
+		// set default issuanceRatio to 0.2
+		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -312,7 +323,7 @@ contract('Synth', async accounts => {
 			// Overwrite Synthetix address to the owner to allow us to invoke issue on the Synth
 			await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], { from: owner });
 			// now have the synth resync its cache
-			await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+			await sUSDContract.rebuildCache();
 		});
 		it('should issue successfully when called by Issuer', async () => {
 			const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
@@ -468,8 +479,8 @@ contract('Synth', async accounts => {
 					from: owner,
 				});
 				// now have synthetix resync its cache
-				await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
-				await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				await synthetix.rebuildCache();
+				await sUSDContract.rebuildCache();
 			});
 			it('then transferableSynths should be the total amount', async () => {
 				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('1000'));
@@ -696,6 +707,7 @@ contract('Synth', async accounts => {
 						AddressResolver: addressResolver,
 						SystemStatus: systemStatus,
 						Issuer: issuer,
+						DebtCache: debtCache,
 						Exchanger: exchanger,
 						FeePool: feePool,
 						Synthetix: synthetix,
@@ -709,13 +721,14 @@ contract('Synth', async accounts => {
 				await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
 					from: oracle,
 				});
+				await debtCache.takeDebtSnapshot();
 			});
 
 			it('when transferring it to FEE_ADDRESS it should exchange into sUSD first before sending', async () => {
 				// allocate the user some sEUR
 				await issueSynthsToUser({
 					owner,
-					synthetix,
+					issuer,
 					addressResolver,
 					synthContract: sEURContract,
 					user: owner,

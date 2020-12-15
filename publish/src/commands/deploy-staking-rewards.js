@@ -10,6 +10,7 @@ const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
+	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
@@ -48,6 +49,7 @@ const deployStakingRewards = async ({
 	dryRun = false,
 } = {}) => {
 	ensureNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	const {
@@ -181,7 +183,7 @@ const deployStakingRewards = async ({
 		}
 	}
 
-	console.log(gray(`Starting deployment to ${network.toUpperCase()} via Infura...`));
+	console.log(gray(`Starting deployment to ${network.toUpperCase()}...`));
 
 	// Contract dependencies
 	const rewardsDistributionAddress = deployment.targets['RewardsDistribution'].address;

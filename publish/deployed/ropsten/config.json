@@ -8,7 +8,13 @@
 	"BinaryOptionMarketManager": {
 		"deploy": false
 	},
+	"BinaryOptionMarketData": {
+		"deploy": false
+	},
 	"ReadProxyAddressResolver": {
+		"deploy": false
+	},
+	"DebtCache": {
 		"deploy": false
 	},
 	"DelegateApprovals": {
@@ -47,9 +53,6 @@
 	"Issuer": {
 		"deploy": false
 	},
-	"IssuanceEternalStorage": {
-		"deploy": false
-	},
 	"EternalStorageLiquidations": {
 		"deploy": false
 	},
@@ -75,6 +78,12 @@
 		"deploy": false
 	},
 	"SystemStatus": {
+		"deploy": false
+	},
+	"SynthUtil": {
+		"deploy": false
+	},
+	"DappMaintenance": {
 		"deploy": false
 	},
 	"SynthsUSD": {
@@ -474,6 +483,15 @@
 		"deploy": false
 	},
 	"SynthiADA": {
+		"deploy": false
+	},
+	"FlexibleStorage": {
+		"deploy": false
+	},
+	"SystemSettings": {
+		"deploy": false
+	},
+	"TradingRewards": {
 		"deploy": false
 	}
 }

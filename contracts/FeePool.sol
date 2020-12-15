@@ -3,9 +3,9 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./Proxyable.sol";
-import "./SelfDestructible.sol";
 import "./LimitedSetup.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/IFeePool.sol";
 
 // Libraries
@@ -24,15 +24,13 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
+import "./interfaces/IEtherCollateralsUSD.sol";
 
 
-// https://docs.synthetix.io/contracts/FeePool
-contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResolver, IFeePool {
+// https://docs.synthetix.io/contracts/source/contracts/feepool
+contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
-
-    // Exchange fee may not exceed 10%.
-    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
 
     // Where fees are pooled in sUSD.
     address public constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
@@ -61,18 +59,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     FeePeriod[FEE_PERIOD_LENGTH] private _recentFeePeriods;
     uint256 private _currentFeePeriod;
 
-    // How long a fee period lasts at a minimum. It is required for
-    // anyone to roll over the periods, so they are not guaranteed
-    // to roll over at exactly this duration, but the contract enforces
-    // that they cannot roll over any quicker than this duration.
-    uint public feePeriodDuration = 1 weeks;
-    // The fee period must be between 1 day and 60 days.
-    uint public constant MIN_FEE_PERIOD_DURATION = 1 days;
-    uint public constant MAX_FEE_PERIOD_DURATION = 60 days;
-
-    // Users are unable to claim fees if their collateralisation ratio drifts out of target treshold
-    uint public targetThreshold = (1 * SafeDecimalMath.unit()) / 100;
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -84,87 +70,95 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
+    bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
-
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_FEEPOOLSTATE,
-        CONTRACT_FEEPOOLETERNALSTORAGE,
-        CONTRACT_EXCHANGER,
-        CONTRACT_ISSUER,
-        CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_REWARDESCROW,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_REWARDSDISTRIBUTION
-    ];
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
-    bytes32 private constant SYNTH_EXCHANGE_FEE_RATE = "synth_exchange_fee_rate";
 
     constructor(
         address payable _proxy,
         address _owner,
         address _resolver
-    )
-        public
-        Owned(_owner)
-        SelfDestructible()
-        Proxyable(_proxy)
-        LimitedSetup(3 weeks)
-        MixinResolver(_resolver, addressesToCache)
-    {
+    ) public Owned(_owner) Proxyable(_proxy) LimitedSetup(3 weeks) MixinSystemSettings(_resolver) {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
         _recentFeePeriodsStorage(0).startTime = uint64(now);
     }
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](11);
+        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_SYNTHETIX;
+        newAddresses[2] = CONTRACT_FEEPOOLSTATE;
+        newAddresses[3] = CONTRACT_FEEPOOLETERNALSTORAGE;
+        newAddresses[4] = CONTRACT_EXCHANGER;
+        newAddresses[5] = CONTRACT_ISSUER;
+        newAddresses[6] = CONTRACT_SYNTHETIXSTATE;
+        newAddresses[7] = CONTRACT_REWARDESCROW;
+        newAddresses[8] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
+        newAddresses[10] = CONTRACT_REWARDSDISTRIBUTION;
+        return combineArrays(existingAddresses, newAddresses);
+    }
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function feePoolState() internal view returns (FeePoolState) {
-        return FeePoolState(requireAndGetAddress(CONTRACT_FEEPOOLSTATE, "Missing FeePoolState address"));
+        return FeePoolState(requireAndGetAddress(CONTRACT_FEEPOOLSTATE));
     }
 
     function feePoolEternalStorage() internal view returns (FeePoolEternalStorage) {
-        return
-            FeePoolEternalStorage(
-                requireAndGetAddress(CONTRACT_FEEPOOLETERNALSTORAGE, "Missing FeePoolEternalStorage address")
-            );
+        return FeePoolEternalStorage(requireAndGetAddress(CONTRACT_FEEPOOLETERNALSTORAGE));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
+    }
+
+    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
+        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
     }
 
     function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
-        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
-        return
-            IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
+        return IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION));
+    }
+
+    function issuanceRatio() external view returns (uint) {
+        return getIssuanceRatio();
+    }
+
+    function feePeriodDuration() external view returns (uint) {
+        return getFeePeriodDuration();
+    }
+
+    function targetThreshold() external view returns (uint) {
+        return getTargetThreshold();
     }
 
     function recentFeePeriods(uint index)
@@ -222,27 +216,10 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /**
-     * @notice Set the fee period duration
-     */
-    function setFeePeriodDuration(uint _feePeriodDuration) external optionalProxy_onlyOwner {
-        require(_feePeriodDuration >= MIN_FEE_PERIOD_DURATION, "value < MIN_FEE_PERIOD_DURATION");
-        require(_feePeriodDuration <= MAX_FEE_PERIOD_DURATION, "value > MAX_FEE_PERIOD_DURATION");
-
-        feePeriodDuration = _feePeriodDuration;
-
-        emitFeePeriodDurationUpdated(_feePeriodDuration);
-    }
-
-    function setTargetThreshold(uint _percent) external optionalProxy_onlyOwner {
-        require(_percent <= 50, "Threshold too high");
-        targetThreshold = _percent.mul(SafeDecimalMath.unit()).div(100);
-    }
-
-    /**
      * @notice The Exchanger contract informs us when fees are paid.
      * @param amount susd amount in fees being paid.
      */
-    function recordFeePaid(uint amount) external onlyExchangerOrSynth {
+    function recordFeePaid(uint amount) external onlyInternalContracts {
         // Keep track off fees in sUSD in the open fee pool period.
         _recentFeePeriodsStorage(0).feesToDistribute = _recentFeePeriodsStorage(0).feesToDistribute.add(amount);
     }
@@ -261,7 +238,8 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @notice Close the current fee period and start a new one.
      */
     function closeCurrentFeePeriod() external issuanceActive {
-        require(_recentFeePeriodsStorage(0).startTime <= (now - feePeriodDuration), "Too early to close fee period");
+        require(getFeePeriodDuration() > 0, "Fee Period Duration not set");
+        require(_recentFeePeriodsStorage(0).startTime <= (now - getFeePeriodDuration()), "Too early to close fee period");
 
         // Note:  when FEE_PERIOD_LENGTH = 2, periodClosing is the current period & periodToRollover is the last open claimable period
         FeePeriod storage periodClosing = _recentFeePeriodsStorage(FEE_PERIOD_LENGTH - 2);
@@ -323,11 +301,11 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
 
         // Address won't be able to claim fees if it is too far below the target c-ratio.
         // It will need to burn synths then try claiming again.
-        (bool feesClaimable, bool anyRateIsStale) = _isFeesClaimableAndAnyRatesStale(claimingAddress);
+        (bool feesClaimable, bool anyRateIsInvalid) = _isFeesClaimableAndAnyRatesInvalid(claimingAddress);
 
         require(feesClaimable, "C-Ratio below penalty threshold");
 
-        require(!anyRateIsStale, "A synth or SNX rate is stale");
+        require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress);
@@ -385,25 +363,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
             rewardsToDistribute: rewardsToDistribute,
             rewardsClaimed: rewardsClaimed
         });
-    }
-
-    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates) external optionalProxy_onlyOwner
-    {
-        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
-        for (uint i = 0; i < synthKeys.length; i++) {
-            require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
-            feePoolEternalStorage().setUIntValue(
-                keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKeys[i])),
-                exchangeFeeRates[i]
-            );
-            emitExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
-        }
-    }
-
-    function getExchangeFeeRateForSynth(bytes32 synthKey) external view returns (uint exchangeFeeRate) {
-        exchangeFeeRate = feePoolEternalStorage().getUIntValue(
-            keccak256(abi.encodePacked(SYNTH_EXCHANGE_FEE_RATE, synthKey))
-        );
     }
 
     /**
@@ -580,31 +539,31 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
         return (totalFees, totalRewards);
     }
 
-    function _isFeesClaimableAndAnyRatesStale(address account) internal view returns (bool, bool) {
+    function _isFeesClaimableAndAnyRatesInvalid(address account) internal view returns (bool, bool) {
         // Threshold is calculated from ratio % above the target ratio (issuanceRatio).
         //  0  <  10%:   Claimable
         // 10% > above:  Unable to claim
-        (uint ratio, bool anyRateIsStale) = issuer().collateralisationRatioAndAnyRatesStale(account);
-        uint targetRatio = synthetixState().issuanceRatio();
+        (uint ratio, bool anyRateIsInvalid) = issuer().collateralisationRatioAndAnyRatesInvalid(account);
+        uint targetRatio = getIssuanceRatio();
 
         // Claimable if collateral ratio below target ratio
         if (ratio < targetRatio) {
-            return (true, anyRateIsStale);
+            return (true, anyRateIsInvalid);
         }
 
         // Calculate the threshold for collateral ratio before fees can't be claimed.
-        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
+        uint ratio_threshold = targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(getTargetThreshold()));
 
         // Not claimable if collateral ratio above threshold
         if (ratio > ratio_threshold) {
-            return (false, anyRateIsStale);
+            return (false, anyRateIsInvalid);
         }
 
-        return (true, anyRateIsStale);
+        return (true, anyRateIsInvalid);
     }
 
     function isFeesClaimable(address account) external view returns (bool feesClaimable) {
-        (feesClaimable, ) = _isFeesClaimableAndAnyRatesStale(account);
+        (feesClaimable, ) = _isFeesClaimableAndAnyRatesInvalid(account);
     }
 
     /**
@@ -746,9 +705,7 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
      * @notice Calculate the collateral ratio before user is blocked from claiming.
      */
     function getPenaltyThresholdRatio() public view returns (uint) {
-        uint targetRatio = synthetixState().issuanceRatio();
-
-        return targetRatio.multiplyDecimal(SafeDecimalMath.unit().add(targetThreshold));
+        return getIssuanceRatio().multiplyDecimal(SafeDecimalMath.unit().add(getTargetThreshold()));
     }
 
     /**
@@ -764,11 +721,12 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
     }
 
     /* ========== Modifiers ========== */
-    modifier onlyExchangerOrSynth {
+    modifier onlyInternalContracts {
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
+        bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
 
-        require(isExchanger || isSynth, "Only Exchanger, Synths Authorised");
+        require(isExchanger || isSynth || isEtherCollateralsUSD, "Only Internal Contracts");
         _;
     }
 
@@ -813,20 +771,6 @@ contract FeePool is Owned, Proxyable, SelfDestructible, LimitedSetup, MixinResol
             0,
             0
         );
-    }
-
-    event SynthExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
-    bytes32 private constant SYNTHEXCHANGEFEEUPDATED_SIG = keccak256("SynthExchangeFeeUpdated(bytes32,uint256)");
-
-    function emitExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate) internal {
-        proxy._emit(abi.encode(synthKey, newExchangeFeeRate), 1, SYNTHEXCHANGEFEEUPDATED_SIG, 0, 0, 0);
-    }
-
-    event FeePeriodDurationUpdated(uint newFeePeriodDuration);
-    bytes32 private constant FEEPERIODDURATIONUPDATED_SIG = keccak256("FeePeriodDurationUpdated(uint256)");
-
-    function emitFeePeriodDurationUpdated(uint newFeePeriodDuration) internal {
-        proxy._emit(abi.encode(newFeePeriodDuration), 1, FEEPERIODDURATIONUPDATED_SIG, 0, 0, 0);
     }
 
     event FeePeriodClosed(uint feePeriodId);
