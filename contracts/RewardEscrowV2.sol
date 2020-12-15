@@ -65,18 +65,12 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         /* remove address for migration from old escrow */
         delete escrowMigrationPending[addressToMigrate];
 
-        /* Calculate entries that can be vested and total vested amount to deduct from
-         * totalEscrowedAccountBalance */
-        (uint lastVestedIndex, uint totalVested) = _getVestedEntriesAndAmount(addressToMigrate, numEntries);
+        /* iterate from the nextVestingIndex, skipping already vested entries */
+        uint nextVestingIndex = oldRewardEscrow().getNextVestingIndex(addressToMigrate);
 
-        /* transfer vested tokens to account */
-        if (totalVested != 0) {
-            _transferVestedTokens(addressToMigrate, totalVested);
-        }
-
-        /* iterate and migrate old escrow schedules from vestingSchedules[lastVestedIndex]
+        /* iterate and migrate old escrow schedules from vestingSchedules[nextVestingIndex]
          * stop at the end of the vesting schedule list */
-        for (uint i = lastVestedIndex + 1; i < numEntries; i++) {
+        for (uint i = nextVestingIndex; i < numEntries; i++) {
             uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(addressToMigrate, i);
 
             _importVestingEntry(
@@ -92,35 +86,6 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         }
 
         emit MigratedVestingSchedules(addressToMigrate, block.timestamp);
-    }
-
-    /**
-     * Determine which entries can be vested, based on the old escrow vest function
-     * return last vested entry index and amount
-     */
-    function _getVestedEntriesAndAmount(address _account, uint _numEntries)
-        internal
-        view
-        returns (uint lastVestedIndex, uint totalVestedAmount)
-    {
-        /* skip to nextVestingIndex for iterating through account's existing vesting schedule */
-        uint nextVestingIndex = oldRewardEscrow().getNextVestingIndex(_account);
-
-        for (uint i = nextVestingIndex; i < _numEntries; i++) {
-            /* get existing vesting entry [time, quantity] */
-            uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(_account, i);
-            /* The list is sorted on the old RewardEscrow; when we reach the first future time, bail out. */
-            uint time = vestingSchedule[0];
-            if (time > now) {
-                break;
-            }
-            uint qty = vestingSchedule[1];
-            if (qty > 0) {
-                totalVestedAmount = totalVestedAmount.add(qty);
-            }
-            /* return index of last vested entry */
-            lastVestedIndex = i;
-        }
     }
 
     /**
@@ -201,9 +166,6 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries)
     {
         require(entryIDs.length > 0, "Entry IDs required");
-
-        /* check if account migrated on L1 */
-        _checkEscrowMigrationPending(account);
 
         vestingEntries = new VestingEntries.VestingEntry[](entryIDs.length);
 

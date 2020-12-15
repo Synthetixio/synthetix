@@ -35,6 +35,7 @@ contract('Synthetix', async accounts => {
 		systemSettings,
 		supplySchedule,
 		rewardEscrow,
+		rewardEscrowV2,
 		oracle,
 		addressResolver,
 		systemStatus;
@@ -48,6 +49,7 @@ contract('Synthetix', async accounts => {
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			RewardEscrow: rewardEscrow,
+			RewardEscrowV2: rewardEscrowV2,
 			SupplySchedule: supplySchedule,
 		} = await setupAllContracts({
 			accounts,
@@ -716,9 +718,29 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	// describe('migration - transfer escrow balances to reward escrow v2', () => {
-	// 	beforeEach(async () => {
+	describe('migration - transfer escrow balances to reward escrow v2', () => {
+		let rewardEscrowBalanceBefore;
+		beforeEach(async () => {
+			// transfer SNX to rewardEscrow
+			await synthetix.transfer(rewardEscrow.address, toUnit('100'), { from: owner });
 
-	// 	});
-	// });
+			rewardEscrowBalanceBefore = await synthetix.balanceOf(rewardEscrow.address);
+		});
+		it('should revert if called by non-owner account', async () => {
+			await assert.revert(
+				synthetix.migrateEscrowBalanceToRewardEscrowV2({ from: account1 }),
+				'Only the contract owner may perform this action'
+			);
+		});
+		it('should have transferred reward escrow balance to reward escrow v2', async () => {
+			// call the migrate function
+			await synthetix.migrateEscrowBalanceToRewardEscrowV2({ from: owner });
+
+			// should have transferred balance to rewardEscrowV2
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrowV2.address), rewardEscrowBalanceBefore);
+
+			// rewardEscrow should have 0 balance
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), 0);
+		});
+	});
 });
