@@ -26,7 +26,7 @@ commands:
       - run:
           shell: /bin/sh
           command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=600 --timeout=600 -t 1000 http://localhost:8545
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
             :
 jobs:
   job-compile:
@@ -163,7 +163,7 @@ jobs:
             ls -la
             docker-compose pull
             ./up.sh
-      - cmd-wait-for-rpc
+      - run: sleep 20
       - run:
           name: Deploy Synthetix instances and run production tests
           command: |

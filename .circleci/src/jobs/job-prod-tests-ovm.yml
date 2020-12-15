@@ -14,7 +14,7 @@ steps:
         ls -la
         docker-compose pull
         ./up.sh
-  - cmd-wait-for-rpc
+  - run: sleep 20
   - run:
       name: Deploy Synthetix instances and run production tests
       command: |
