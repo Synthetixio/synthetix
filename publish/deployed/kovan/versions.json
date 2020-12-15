@@ -5853,8 +5853,24 @@
 			},
 			"Exchanger": {
 				"address": "0x189B2f2F23cC264518129a61c556490E1b8FF7A0",
+				"status": "replaced",
+				"keccak256": "0xee1b7e9552a2b8e7da01a7932c36340a6a1e667b8b37f6eefd7a59ef6bbc5361",
+				"replaced_in": "v2.33.0"
+			}
+		}
+	},
+	"v2.33.0": {
+		"tag": "v2.33.0",
+		"fulltag": "v2.33.0",
+		"release": "Adhara",
+		"network": "kovan",
+		"date": "2020-12-01T13:12:01+11:00",
+		"commit": "0de54808af511e54cd54d267bb65e9145b01ef88",
+		"contracts": {
+			"Exchanger": {
+				"address": "0x8EfAB91EAd9C4A89A83A7BB6E9f278aa916Eb4E1",
 				"status": "current",
-				"keccak256": "0xee1b7e9552a2b8e7da01a7932c36340a6a1e667b8b37f6eefd7a59ef6bbc5361"
+				"keccak256": "0x09fa1faaf859aae12a0424acc41b0e80c285f1af4b495a4659ac2b140afd8bdf"
 			}
 		}
 	}

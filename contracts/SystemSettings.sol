@@ -11,7 +11,7 @@ import "./SafeDecimalMath.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/systemsettings
-contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSettings {
+contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -39,14 +39,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
-    bytes32[24] private addressesToCache = [bytes32(0)];
-
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
 
@@ -129,7 +122,20 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
         return getTradingRewardsEnabled();
     }
 
+    function crossDomainMessageGasLimit() external view returns (uint) {
+        return getCrossDomainMessageGasLimit();
+    }
+
     // ========== RESTRICTED ==========
+
+    function setCrossDomainMessageGasLimit(uint _crossDomainMessageGasLimit) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            SETTING_CROSS_DOMAIN_MESSAGE_GAS_LIMIT,
+            _crossDomainMessageGasLimit
+        );
+        emit CrossDomainMessageGasLimitChanged(_crossDomainMessageGasLimit);
+    }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
         flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
@@ -250,6 +256,7 @@ contract SystemSettings is Owned, MixinResolver, MixinSystemSettings, ISystemSet
     }
 
     // ========== EVENTS ==========
+    event CrossDomainMessageGasLimitChanged(uint newLimit);
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);

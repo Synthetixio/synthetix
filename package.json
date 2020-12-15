@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.33.1",
+	"version": "2.35.0-ovm",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -23,11 +23,11 @@
 		"test:legacy": "npm run compile:legacy && buidler test:legacy",
 		"test:ovm": "buidler test --ovm --optimizer",
 		"test:prod": "buidler test:prod --network localhost --optimizer",
+		"test:prod:ovm": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism --timeout 900000\"",
 		"test:prod:gas": "buidler test:prod --gas --network localhost --optimizer --gas-output-file test-gas-used-prod.log",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",
-		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 90000\"",
-		"test:multi-same-chain": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/multi-same-chain --timeout 900000\""
+		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 90000\""
 	},
 	"husky": {
 		"hooks": {
@@ -54,8 +54,7 @@
 		"bin.js",
 		"build/ast",
 		"contracts/**/*.sol",
-		"publish/assets.json",
-		"publish/ovm-ignore.json",
+		"publish/*.json",
 		"publish/deployed/kovan/*",
 		"publish/deployed/rinkeby/*",
 		"publish/deployed/ropsten/*",
@@ -114,6 +113,7 @@
 		"prettier": "^1.14.2",
 		"prettier-plugin-solidity": "1.0.0-alpha.51",
 		"pretty-quick": "3.1.0",
+		"rlp": "^2.2.6",
 		"semver": "7.3.2",
 		"solc": "0.5.16",
 		"solhint": "^2.3.0",
@@ -129,6 +129,7 @@
 	"dependencies": {
 		"@chainlink/contracts-0.0.10": "npm:@chainlink/contracts@0.0.10",
 		"@eth-optimism/contracts": "0.0.2-alpha.7",
+		"@eth-optimism/watcher": "0.0.1-alpha.8",
 		"abi-decoder": "2.3.0",
 		"commander": "5.1.0",
 		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",

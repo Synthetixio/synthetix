@@ -124,7 +124,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: issuer.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'addSynth',
 				'addSynths',
@@ -2543,7 +2543,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						);
 
 						// ensure Issuer has the latest EtherCollateral
-						await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
+						await issuer.rebuildCache();
 
 						// Give some SNX to account1
 						await synthetix.transfer(account1, toUnit('1000'), { from: owner });

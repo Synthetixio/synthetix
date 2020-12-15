@@ -26,10 +26,10 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'completeWithdrawal',
-				'deposit',
+				'initiateDeposit',
 				'migrateBridge',
 				'notifyRewardAmount',
-				'rewardDeposit',
+				'initiateRewardDeposit',
 			],
 		});
 	});
@@ -45,6 +45,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let synthetix;
 		let issuer;
 		let resolver;
+		let flexibleStorage;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
@@ -53,11 +54,13 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);
 			issuer = await smockit(artifacts.require('IIssuer').abi);
+			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
 				[
+					'FlexibleStorage',
 					'ext:Messenger',
 					'Synthetix',
 					'Issuer',
@@ -65,6 +68,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					'ovm:SynthetixBridgeToBase',
 				].map(toBytes32),
 				[
+					flexibleStorage.address,
 					messenger.address,
 					synthetix.address,
 					issuer.address,
@@ -83,6 +87,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			messenger.smocked.sendMessage.will.return.with(() => {});
 			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToBase);
 			issuer.smocked.debtBalanceOf.will.return.with(() => '0');
+			flexibleStorage.smocked.getUIntValue.will.return.with(() => '3000000');
 		});
 
 		describe('when the target is deployed', () => {
@@ -92,20 +97,20 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					.require('SynthetixBridgeToOptimism')
 					.new(owner, resolver.address);
 
-				await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+				await instance.rebuildCache();
 			});
 
-			describe('deposit', () => {
+			describe('initiateDeposit', () => {
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
 						await instance.migrateBridge(randomAddress, { from: owner });
 
-						await assert.revert(instance.deposit('1'), 'Function deactivated');
+						await assert.revert(instance.initiateDeposit('1'), 'Function deactivated');
 					});
 
 					it('does not work when user has any debt', async () => {
 						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
-						await assert.revert(instance.deposit('1'), 'Cannot deposit with debt');
+						await assert.revert(instance.initiateDeposit('1'), 'Cannot deposit with debt');
 					});
 				});
 
@@ -114,7 +119,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					let amount;
 					beforeEach(async () => {
 						amount = '99';
-						txn = await instance.deposit(amount, { from: user1 });
+						txn = await instance.initiateDeposit(amount, { from: user1 });
 					});
 
 					it('then SNX is transferred from the user to the deposit contract', async () => {
@@ -127,7 +132,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
 						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 						const expectedData = getDataOfEncodedFncCall({
-							fnc: 'mintSecondaryFromDeposit',
+							fnc: 'completeDeposit',
 							args: [user1, amount],
 						});
 
@@ -141,12 +146,12 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 			});
 
-			describe('rewardDeposit', () => {
+			describe('initiateRewardDepositrewardDeposit', () => {
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
 						await instance.migrateBridge(randomAddress, { from: owner });
 
-						await assert.revert(instance.rewardDeposit('1'), 'Function deactivated');
+						await assert.revert(instance.initiateRewardDeposit('1'), 'Function deactivated');
 					});
 				});
 
@@ -155,7 +160,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					let amount;
 					beforeEach(async () => {
 						amount = '100';
-						txn = await instance.rewardDeposit(amount, { from: user1 });
+						txn = await instance.initiateRewardDeposit(amount, { from: user1 });
 					});
 
 					it('then SNX is transferred from the account to the user', async () => {
@@ -168,7 +173,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
 						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 						const expectedData = getDataOfEncodedFncCall({
-							fnc: 'mintSecondaryFromDepositForRewards',
+							fnc: 'completeRewardDeposit',
 							args: [amount],
 						});
 
@@ -214,7 +219,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 
 						const expectedData = getDataOfEncodedFncCall({
-							fnc: 'mintSecondaryFromDepositForRewards',
+							fnc: 'completeRewardDeposit',
 							args: [amount],
 						});
 

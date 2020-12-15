@@ -28,7 +28,7 @@ import "./interfaces/IEtherCollateralsUSD.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/feepool
-contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSettings, IFeePool {
+contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -73,20 +73,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
     bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_FEEPOOLSTATE,
-        CONTRACT_FEEPOOLETERNALSTORAGE,
-        CONTRACT_EXCHANGER,
-        CONTRACT_ISSUER,
-        CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_REWARDESCROW,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ETH_COLLATERAL_SUSD,
-        CONTRACT_REWARDSDISTRIBUTION
-    ];
-
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
     bytes32 private constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
@@ -95,68 +81,72 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         address payable _proxy,
         address _owner,
         address _resolver
-    )
-        public
-        Owned(_owner)
-        Proxyable(_proxy)
-        LimitedSetup(3 weeks)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {
+    ) public Owned(_owner) Proxyable(_proxy) LimitedSetup(3 weeks) MixinSystemSettings(_resolver) {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
         _recentFeePeriodsStorage(0).startTime = uint64(now);
     }
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](11);
+        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_SYNTHETIX;
+        newAddresses[2] = CONTRACT_FEEPOOLSTATE;
+        newAddresses[3] = CONTRACT_FEEPOOLETERNALSTORAGE;
+        newAddresses[4] = CONTRACT_EXCHANGER;
+        newAddresses[5] = CONTRACT_ISSUER;
+        newAddresses[6] = CONTRACT_SYNTHETIXSTATE;
+        newAddresses[7] = CONTRACT_REWARDESCROW;
+        newAddresses[8] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
+        newAddresses[10] = CONTRACT_REWARDSDISTRIBUTION;
+        return combineArrays(existingAddresses, newAddresses);
+    }
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function feePoolState() internal view returns (FeePoolState) {
-        return FeePoolState(requireAndGetAddress(CONTRACT_FEEPOOLSTATE, "Missing FeePoolState address"));
+        return FeePoolState(requireAndGetAddress(CONTRACT_FEEPOOLSTATE));
     }
 
     function feePoolEternalStorage() internal view returns (FeePoolEternalStorage) {
-        return
-            FeePoolEternalStorage(
-                requireAndGetAddress(CONTRACT_FEEPOOLETERNALSTORAGE, "Missing FeePoolEternalStorage address")
-            );
+        return FeePoolEternalStorage(requireAndGetAddress(CONTRACT_FEEPOOLETERNALSTORAGE));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return
-            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
+        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
     }
 
     function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
-        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
-        return
-            IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
+        return IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION));
     }
 
     function issuanceRatio() external view returns (uint) {
