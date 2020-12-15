@@ -16,6 +16,7 @@ steps:
       name: Start chains
       background: true
       command: |
+        cd optimism-integration
         ./up.sh
   - run: sleep 5
   - run:
