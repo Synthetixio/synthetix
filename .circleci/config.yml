@@ -168,7 +168,7 @@ jobs:
           command: |
             cd optimism-integration
             ./up.sh
-      - run: sleep 5
+      - run: sleep 15
       - run:
           name: Deploy Synthetix instances and run production tests
           command: |
