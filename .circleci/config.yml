@@ -168,10 +168,10 @@ jobs:
           command: |
             cd optimism-integration
             ./up.sh
-      - run: sleep 15
       - run:
           name: Deploy Synthetix instances and run production tests
           command: |
+            sleep 20
             node publish deploy-ovm-pair
             npm run test:prod:ovm
   job-prod-tests:
