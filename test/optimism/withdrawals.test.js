@@ -2,7 +2,6 @@ const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { assertRevertOptimism } = require('./utils/revertOptimism');
 const { connectContract } = require('./utils/connectContract');
-const { wait } = require('./utils/rpc');
 
 const itCanPerformWithdrawals = ({ ctx }) => {
 	describe('[WITHDRAWALS] when migrating SNX from L2 to L1', () => {
@@ -98,49 +97,49 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			// --------------------------
 
 			// TODO: Not working because of Optimism's issues with "now"
-			describe.skip('when a user has debt in L2', () => {
-				before('issue sUSD', async () => {
-					SynthetixL2 = SynthetixL2.connect(user1L2);
+			// describe.skip('when a user has debt in L2', () => {
+			// 	before('issue sUSD', async () => {
+			// 		SynthetixL2 = SynthetixL2.connect(user1L2);
 
-					const tx = await SynthetixL2.issueSynths(1);
-					await tx.wait();
-				});
+			// 		const tx = await SynthetixL2.issueSynths(1);
+			// 		await tx.wait();
+			// 	});
 
-				after('remove all debt', async () => {
-					const time = (await IssuerL2.minimumStakeTime()).toString();
-					await wait(time);
+			// 	after('remove all debt', async () => {
+			// 		const time = (await IssuerL2.minimumStakeTime()).toString();
+			// 		await wait(time);
 
-					SynthetixL2 = SynthetixL2.connect(user1L2);
+			// 		SynthetixL2 = SynthetixL2.connect(user1L2);
 
-					const debt = await IssuerL2.debtBalanceOf(
-						user1L2.address,
-						ethers.utils.formatBytes32String('sUSD')
-					);
-					console.log('debt', debt.toString());
+			// 		const debt = await IssuerL2.debtBalanceOf(
+			// 			user1L2.address,
+			// 			ethers.utils.formatBytes32String('sUSD')
+			// 		);
+			// 		console.log('debt', debt.toString());
 
-					const tx = await SynthetixL2.burnSynths(debt);
-					await tx.wait();
-				});
+			// 		const tx = await SynthetixL2.burnSynths(debt);
+			// 		await tx.wait();
+			// 	});
 
-				it('shows the user has debt', async () => {
-					assert.bnGte(
-						await IssuerL2.debtBalanceOf(user1L2.address, ethers.utils.formatBytes32String('sUSD')),
-						1
-					);
-				});
+			// 	it('shows the user has debt', async () => {
+			// 		assert.bnGte(
+			// 			await IssuerL2.debtBalanceOf(user1L2.address, ethers.utils.formatBytes32String('sUSD')),
+			// 			1
+			// 		);
+			// 	});
 
-				it('reverts if the user attemtps to withdraw to L1', async () => {
-					SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
+			// 	it('reverts if the user attemtps to withdraw to L1', async () => {
+			// 		SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
-					const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(1);
+			// 		const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(1);
 
-					await assertRevertOptimism({
-						tx,
-						reason: 'Cannot withdraw with debt',
-						provider: ctx.providerL2,
-					});
-				});
-			});
+			// 		await assertRevertOptimism({
+			// 			tx,
+			// 			reason: 'Cannot withdraw with debt',
+			// 			provider: ctx.providerL2,
+			// 		});
+			// 	});
+			// });
 
 			// --------------------------
 			// Without debt
@@ -230,11 +229,12 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 						);
 					});
 
-					// TODO: Probably a service to query here too
-					const time = 30;
-					describe(`when ${time} seconds have elapsed`, () => {
-						before('wait', async () => {
-							await wait(time);
+					describe('when waiting for the tx to complete on L1', () => {
+						before('listen for completion', async () => {
+							const [transactionHashL1] = await ctx.watcher.getMessageHashesFromL2Tx(
+								withdrawalReceipt.transactionHash
+							);
+							await ctx.watcher.getL1TransactionReceipt(transactionHashL1);
 						});
 
 						before('stop listening to events on L1', async () => {

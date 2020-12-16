@@ -52,7 +52,7 @@ contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
         newAddresses[2] = CONTRACT_ETERNALSTORAGE_LIQUIDATIONS;
         newAddresses[3] = CONTRACT_ISSUER;
         newAddresses[4] = CONTRACT_EXRATES;
-        return combineArrays(existingAddresses, newAddresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function synthetix() internal view returns (ISynthetix) {

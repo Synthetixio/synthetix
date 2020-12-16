@@ -216,25 +216,7 @@ contract('StakingRewards', accounts => {
 				stakingRewards.recoverERC20(stakingToken.address, amount, {
 					from: owner,
 				}),
-				'Cannot withdraw the staking or rewards tokens'
-			);
-		});
-		it('should revert if recovering rewards token (SNX)', async () => {
-			// rewardsToken in these tests is the underlying contract
-			await assert.revert(
-				stakingRewards.recoverERC20(rewardsToken.address, amount, {
-					from: owner,
-				}),
-				'Cannot withdraw the staking or rewards tokens'
-			);
-		});
-		it('should revert if recovering the SNX Proxy', async () => {
-			const snxProxy = await rewardsToken.proxy();
-			await assert.revert(
-				stakingRewards.recoverERC20(snxProxy, amount, {
-					from: owner,
-				}),
-				'Cannot withdraw the staking or rewards tokens'
+				'Cannot withdraw the staking token'
 			);
 		});
 		it('should retrieve external token from StakingRewards and reduce contracts balance', async () => {
