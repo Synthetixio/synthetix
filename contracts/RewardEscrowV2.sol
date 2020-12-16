@@ -13,6 +13,8 @@ import "./interfaces/ISystemStatus.sol";
 contract RewardEscrowV2 is BaseRewardEscrowV2 {
     mapping(address => bool) public escrowMigrationPending;
 
+    mapping(address => uint256) public totalBalancePendingMigration;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM = "SynthetixBridgeToOptimism";
@@ -73,14 +75,16 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         for (uint i = nextVestingIndex; i < numEntries; i++) {
             uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(addressToMigrate, i);
 
+            uint amount = vestingSchedule[QUANTITY_INDEX];
+
             _importVestingEntry(
                 addressToMigrate,
                 VestingEntries.VestingEntry({
                     endTime: uint64(vestingSchedule[TIME_INDEX]),
                     duration: uint64(52 weeks),
                     lastVested: 0,
-                    escrowAmount: vestingSchedule[QUANTITY_INDEX],
-                    remainingAmount: vestingSchedule[QUANTITY_INDEX]
+                    escrowAmount: amount,
+                    remainingAmount: amount
                 })
             );
         }
@@ -106,6 +110,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
             uint256 escrowAmount = escrowAmounts[i];
 
             // ensure account have escrow migration pending
+            require(totalEscrowedAccountBalance[addressToMigrate] > 0, "Address escrow balance is 0");
             require(escrowMigrationPending[addressToMigrate], "No escrow migration pending");
 
             /* Import vesting entry with endTime as vestingTimestamp and escrowAmount */

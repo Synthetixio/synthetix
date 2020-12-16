@@ -10,6 +10,14 @@ library VestingEntries {
         uint256 escrowAmount;
         uint256 remainingAmount;
     }
+    struct VestingEntryWithID {
+        uint64 endTime;
+        uint64 duration;
+        uint64 lastVested;
+        uint256 escrowAmount;
+        uint256 remainingAmount;
+        uint256 entryID;
+    }
 }
 
 
@@ -29,7 +37,7 @@ interface IRewardEscrowV2 {
         address account,
         uint256 index,
         uint256 pageSize
-    ) external view returns (VestingEntries.VestingEntry[] memory);
+    ) external view returns (VestingEntries.VestingEntryWithID[] memory);
 
     function getVestingEntryClaimable(address account, uint256 entryID) external view returns (uint);
 
