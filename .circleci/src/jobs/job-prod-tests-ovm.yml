@@ -20,8 +20,17 @@ steps:
         cd optimism-integration
         ./up.sh
   - run:
+      shell: /bin/sh
+      command: |
+        wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+        :
+  - run:
+      shell: /bin/sh
+      command: |
+        wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:9545
+        :
+  - run:
       name: Deploy Synthetix instances and run production tests
       command: |
-        sleep 20
         node publish deploy-ovm-pair
         npm run test:prod:ovm
