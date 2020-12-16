@@ -212,7 +212,7 @@ const deploy = async ({
 	}
 
 	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
-	if (network !== 'local' || !privateKey) {
+	if (network !== 'local' && !privateKey) {
 		privateKey = envPrivateKey;
 	}
 
