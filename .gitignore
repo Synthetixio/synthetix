@@ -35,8 +35,5 @@ browser.js
 # CircleCI local artifacts
 process.yml
 
-# Ganache local chain data
-.db
-
 # Temp files
 .tmp/

@@ -1,39 +1,32 @@
 'use strict';
 
 const { ensureNetwork, loadConnections } = require('../util');
-const { getUsers, networkToChainId } = require('../../..');
-const { red, gray, yellow } = require('chalk');
-const path = require('path');
+const { wrap, networkToChainId } = require('../../..');
+const { red, gray } = require('chalk');
 const fs = require('fs');
+const path = require('path');
 
 const hre = require('hardhat');
 
-const dbPath = '.db/';
-
-const forkChain = async ({ network, reset, providerUrl, unlockAccounts = [] }) => {
+const forkChain = async ({ providerUrl, unlockAccounts = [] }) => {
+	const network = 'mainnet';
 	ensureNetwork(network);
-
-	const dbNetworkPath = path.join(dbPath, network);
-
-	if (reset && fs.existsSync(dbPath)) {
-		console.log(yellow(`Clearing database at ${dbNetworkPath}!`));
-
-		fs.rmdirSync(dbPath, { recursive: true });
-	}
 
 	const chainId = networkToChainId[network];
 	console.log(gray(`Forking ${network} (id=${chainId})...`));
 
+	const { getUsers } = wrap({ network, fs, path });
 	const users = getUsers({ network });
 
 	const fee = users.find(user => user.name === 'fee');
 	const zero = users.find(user => user.name === 'zero');
 
-	const pwnedAddresses = users
+	const unlockedAccounts = users
 		.map(user => user.address)
 		.filter(address => address !== fee.address)
 		.filter(address => address !== zero.address)
-		.concat(unlockAccounts);
+		.concat(unlockAccounts)
+		.join(',');
 
 	const { providerUrl: envProviderUrl } = loadConnections({ network });
 
@@ -45,11 +38,7 @@ const forkChain = async ({ network, reset, providerUrl, unlockAccounts = [] }) =
 		providerUrl = envProviderUrl;
 	}
 
-	// NOTEs:
-	// 1. No reset support
-	// 2. No network support
-
-	await hre.run('node', { fork: providerUrl, unlockedAccounts: pwnedAddresses.join(',') });
+	await hre.run('node', { fork: providerUrl, unlockedAccounts });
 };
 
 module.exports = {
@@ -59,15 +48,9 @@ module.exports = {
 			.command('fork')
 			.description('Starts a local chain, forking the specified network.')
 			.option(
-				'-n, --network <value>',
-				'Network name. E.g: mainnet, ropsten, rinkeby, etc.',
-				'mainnet'
-			)
-			.option(
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
-			.option('-r, --reset', 'Reset local database', false)
 			.option(
 				'-u, --unlock-accounts <account>',
 				'Unlock a specific account (or accounts, comma-delimit no space)',
