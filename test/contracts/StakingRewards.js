@@ -79,12 +79,11 @@ contract('StakingRewards', accounts => {
 			args: [owner, rewardsDistribution.address, rewardsToken.address, stakingToken.address],
 		});
 
-		await Promise.all([
-			rewardsDistribution.setAuthority(authority, { from: owner }),
-			rewardsDistribution.setRewardEscrow(rewardEscrowAddress, { from: owner }),
-			rewardsDistribution.setSynthetixProxy(rewardsToken.address, { from: owner }),
-			rewardsDistribution.setFeePoolProxy(feePool.address, { from: owner }),
-		]);
+
+		await rewardsDistribution.setAuthority(authority, { from: owner });
+		await rewardsDistribution.setRewardEscrow(rewardEscrowAddress, { from: owner });
+		await rewardsDistribution.setSynthetixProxy(rewardsToken.address, { from: owner });
+		await rewardsDistribution.setFeePoolProxy(feePool.address, { from: owner });
 
 		await stakingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
 			from: owner,
