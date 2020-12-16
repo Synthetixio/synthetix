@@ -29,6 +29,7 @@ const {
 		SYNTHS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		ZERO_ADDRESS,
+		OVM_MAX_GAS_LIMIT,
 		inflationStartTimestampInSecs,
 	},
 	defaults,
@@ -109,7 +110,7 @@ const deploy = async ({
 		// Every transaction in Optimism needs to be below 9m gas, to ensure
 		// there are no deployment out of gas errors during fraud proofs.
 		if (useOvm) {
-			const maxOptimismGasLimit = 8900000;
+			const maxOptimismGasLimit = OVM_MAX_GAS_LIMIT;
 			if (
 				contractDeploymentGasLimit > maxOptimismGasLimit ||
 				methodCallGasLimit > maxOptimismGasLimit
