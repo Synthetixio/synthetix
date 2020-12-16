@@ -155,14 +155,12 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
 		maxDebt = toUnit(10000000);
-		liqPen = toUnit(0.1);
 
 		manager = await CollateralManager.new(
 			managerState.address,
 			owner,
 			addressResolver.address,
 			maxDebt,
-			liqPen,
 			// 5% / 31536000 (seconds in common year)
 			1585489599,
 			0,

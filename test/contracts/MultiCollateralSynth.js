@@ -106,7 +106,6 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 			owner,
 			resolver.address,
 			toUnit(10000),
-			toUnit(0.1),
 			0,
 			0,
 			{

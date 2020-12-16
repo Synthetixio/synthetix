@@ -129,14 +129,12 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
 		const maxDebt = toUnit(10000000);
-		const liqPen = toUnit(0.1);
 
 		manager = await CollateralManager.new(
 			managerState.address,
 			owner,
 			addressResolver.address,
 			maxDebt,
-			liqPen,
 			// 5% / 31536000 (seconds in common year)
 			1585489599,
 			0,
@@ -272,6 +270,10 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			it('should tell the manager about the short', async () => {
 				assert.bnEqual(await manager.short(sBTC), oneBTC);
+			});
+
+			it('should tell the manager about the short', async () => {
+				console.log(await sUSDSynth.balanceOf(short.address));
 			});
 		});
 

@@ -241,7 +241,6 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 			toUnit(10000000),
-			toUnit(0.1),
 			0,
 			0,
 		],
