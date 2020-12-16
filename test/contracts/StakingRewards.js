@@ -79,7 +79,6 @@ contract('StakingRewards', accounts => {
 			args: [owner, rewardsDistribution.address, rewardsToken.address, stakingToken.address],
 		});
 
-
 		await rewardsDistribution.setAuthority(authority, { from: owner });
 		await rewardsDistribution.setRewardEscrow(rewardEscrowAddress, { from: owner });
 		await rewardsDistribution.setSynthetixProxy(rewardsToken.address, { from: owner });

@@ -44,7 +44,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		sBTCSynth,
 		synths,
 		maxDebt,
-		liqPen,
 		short,
 		shortState,
 		debtCache,
