@@ -55,7 +55,7 @@ const settle = async ({
 }) => {
 	ensureNetwork(network);
 
-	const { getTarget, getSource } = wrap({ network, fs, path });
+	const { getTarget, getSource, getVersions } = wrap({ network, fs, path });
 
 	console.log(gray('Using network:', yellow(network)));
 
@@ -104,19 +104,28 @@ const settle = async ({
 
 	const { number: currentBlock } = await web3.eth.getBlock('latest');
 
-	const getContract = ({ label, source }) =>
-		new web3.eth.Contract(
-			getSource({ contract: source }).abi,
-			getTarget({ contract: label }).address
-		);
+	const versions = getVersions({ byContract: true });
+
+	const getContract = ({ label, source = label, blockNumber }) => {
+		let { address } = getTarget({ contract: label });
+
+		if (blockNumber) {
+			// look for the right contract based off the block
+			for (const entry of versions[source]) {
+				// assumes sorted by block number ascending
+				if (entry.block < blockNumber) {
+					address = entry.address;
+				}
+			}
+		}
+		// console.log(`For ${label} using ${address}`);
+		return new web3.eth.Contract(getSource({ contract: source }).abi, address);
+	};
 
 	const Synthetix = getContract({
 		label: 'ProxyERC20',
 		source: 'Synthetix',
 	});
-
-	const Exchanger = getContract({ label: 'Exchanger', source: 'Exchanger' });
-	const ExchangeRates = getContract({ label: 'ExchangeRates', source: 'ExchangeRates' });
 
 	const fetchAllEvents = ({ pageSize = 10e3, startingBlock = fromBlock, target }) => {
 		const innerFnc = async () => {
@@ -167,11 +176,33 @@ const settle = async ({
 
 		if (synth && !new RegExp(synth).test(web3.utils.hexToUtf8(toCurrencyKey))) continue;
 
+		// get the current exchanger and state
+		const Exchanger = getContract({ label: 'Exchanger' });
+		const ExchangeState = getContract({ label: 'ExchangeState' });
+
+		// but get the historical exchange rates (for showing historical debt)
+		const ExchangeRates = getContract({ label: 'ExchangeRates', blockNumber });
+
+		// check for current settlement owing
 		const { reclaimAmount, rebateAmount, numEntries } = await Exchanger.methods
 			.settlementOwing(account, toCurrencyKey)
 			.call();
 
 		if (+numEntries > 0) {
+			// Fetch all entries within the settlement
+			const results = [];
+			for (let i = 0; i < numEntries; i++) {
+				const { src, amount, timestamp } = await ExchangeState.methods
+					.getEntryAt(account, toCurrencyKey, i)
+					.call();
+
+				results.push(
+					`${web3.utils.hexToUtf8(src)} - ${web3.utils.fromWei(amount)} at ${new Date(
+						timestamp * 1000
+					).toString()}`
+				);
+			}
+
 			process.stdout.write(
 				gray(
 					'Block',
@@ -179,7 +210,10 @@ const settle = async ({
 					'processing',
 					yellow(account),
 					'into',
-					yellow(web3.utils.hexToAscii(toCurrencyKey))
+					yellow(web3.utils.hexToAscii(toCurrencyKey)),
+					'with',
+					yellow(numEntries),
+					'entries'
 				)
 			);
 
@@ -226,6 +260,8 @@ const settle = async ({
 					)
 				);
 			}
+
+			console.log(gray(`Comprised of`), yellow(results.join(',')));
 
 			if (dryRun) {
 				console.log(green(`[DRY RUN] > Invoke settle()`));
@@ -275,7 +311,7 @@ module.exports = {
 		program
 			.command('settle')
 			.description('Settle all exchanges')
-			.option('-a, --latest', 'Always fetch the latest list of transactions')
+			.option('-a, --latest', 'Always fetch the latest list of transactions', true)
 			.option('-d, --show-debt', 'Whether or not to show debt pool impact (requires archive node)')
 			.option('-e, --eth-to-seed <value>', 'Amount of ETH to seed', '1')
 			.option('-f, --from-block <value>', 'Starting block number to listen to events from')
