@@ -33,13 +33,8 @@
 		"asset": "XAG"
 	},
 	{
-		"name": "sOIL",
-		"asset": "OIL"
-	},
-	{
 		"name": "sBTC",
-		"asset": "BTC",
-		"subclass": "MultiCollateralSynth"
+		"asset": "BTC"
 	},
 	{
 		"name": "sETH",
@@ -98,50 +93,42 @@
 		"asset": "ADA"
 	},
 	{
-		"name": "sFTSE",
-		"asset": "FTSE100"
-	},
-	{
-		"name": "sNIKKEI",
-		"asset": "NIKKEI225"
-	},
-	{
 		"name": "sCEX",
 		"asset": "CEX",
 		"index": [
 			{
 				"asset": "BNB",
-				"units": 12.88,
+				"units": 12.98,
 				"weight": 29.15
 			},
 			{
 				"asset": "CRO",
-				"units": 1303.31,
+				"units": 1344.11,
 				"weight": 24.3
 			},
 			{
 				"asset": "LEO",
-				"units": 94.54,
+				"units": 95.02,
 				"weight": 13.42
 			},
 			{
 				"asset": "HT",
-				"units": 23.06,
+				"units": 23.76,
 				"weight": 11.73
 			},
 			{
 				"asset": "FTT",
-				"units": 9.36,
+				"units": 9.43,
 				"weight": 3.56
 			},
 			{
 				"asset": "OKB",
-				"units": 25.72,
+				"units": 25.41,
 				"weight": 16.97
 			},
 			{
 				"asset": "KCS",
-				"units": 9.18,
+				"units": 8.66,
 				"weight": 0.87
 			}
 		],
@@ -153,63 +140,63 @@
 		"index": [
 			{
 				"asset": "COMP",
-				"units": 1.88,
-				"weight": 7.5
+				"units": 4.01,
+				"weight": 20.5
 			},
 			{
 				"asset": "MKR",
-				"units": 0.39,
-				"weight": 7.5
+				"units": 0.8,
+				"weight": 15.0
 			},
 			{
-				"asset": "AAVE",
-				"units": 8.41,
-				"weight": 15.0
+				"asset": "ZRX",
+				"units": 708.02,
+				"weight": 9.7
+			},
+			{
+				"asset": "REP",
+				"units": 9.45,
+				"weight": 7.2
+			},
+			{
+				"asset": "LEND",
+				"units": 666.51,
+				"weight": 6.7
 			},
 			{
 				"asset": "UMA",
-				"units": 19.47,
-				"weight": 5.0
+				"units": 28.87,
+				"weight": 4.2
 			},
 			{
 				"asset": "SNX",
-				"units": 109.93,
-				"weight": 15.0
+				"units": 81.63,
+				"weight": 10.2
 			},
 			{
 				"asset": "REN",
-				"units": 598.03,
+				"units": 814.38,
 				"weight": 5.0
 			},
 			{
-				"asset": "UNI",
-				"units": 92.09,
-				"weight": 10.0
+				"asset": "LRC",
+				"units": 913.1,
+				"weight": 3.8
 			},
 			{
 				"asset": "KNC",
-				"units": 159.13,
-				"weight": 5.0
+				"units": 213.76,
+				"weight": 11.8
 			},
 			{
-				"asset": "CRV",
-				"units": 253.8,
-				"weight": 5.0
-			},
-			{
-				"asset": "WNXM",
-				"units": 4.53,
-				"weight": 5.0
-			},
-			{
-				"asset": "YFI",
-				"units": 0.023,
-				"weight": 15.0
+				"asset": "BNT",
+				"units": 62.87,
+				"weight": 3.4
 			},
 			{
 				"asset": "BAL",
-				"units": 9.05,
-				"weight": 5.0
+				"units": 7.06,
+				"weight": 2.5
 			}
 		],
 		"subclass": "PurgeableSynth"
@@ -229,9 +216,9 @@
 		"asset": "ETH",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 578.01,
-			"upperLimit": 867.02,
-			"lowerLimit": 289.01
+			"entryPoint": 314.54,
+			"upperLimit": 550.445,
+			"lowerLimit": 78.635
 		}
 	},
 	{
@@ -239,9 +226,9 @@
 		"asset": "BNB",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 30.195,
-			"upperLimit": 45.2925,
-			"lowerLimit": 15.0975
+			"entryPoint": 22.88,
+			"upperLimit": 34.32,
+			"lowerLimit": 11.44
 		}
 	},
 	{
@@ -269,9 +256,9 @@
 		"asset": "XRP",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.6201,
-			"upperLimit": 0.9302,
-			"lowerLimit": 0.3101
+			"entryPoint": 0.1883,
+			"upperLimit": 0.282,
+			"lowerLimit": 0.094
 		}
 	},
 	{
@@ -289,9 +276,9 @@
 		"asset": "LTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 87.88,
-			"upperLimit": 131.82,
-			"lowerLimit": 43.94
+			"entryPoint": 48.12,
+			"upperLimit": 72.18,
+			"lowerLimit": 24.06
 		}
 	},
 	{
@@ -299,9 +286,9 @@
 		"asset": "EOS",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 3.0431,
-			"upperLimit": 4.5647,
-			"lowerLimit": 1.5216
+			"entryPoint": 2.22,
+			"upperLimit": 3.33,
+			"lowerLimit": 1.11
 		}
 	},
 	{
@@ -329,9 +316,9 @@
 		"asset": "DASH",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 105.58,
-			"upperLimit": 158.37,
-			"lowerLimit": 52.79
+			"entryPoint": 64.44,
+			"upperLimit": 96.66,
+			"lowerLimit": 32.22
 		}
 	},
 	{
@@ -374,16 +361,6 @@
 			"entryPoint": 2714.42,
 			"upperLimit": 4071.63,
 			"lowerLimit": 1357.21
-		}
-	},
-	{
-		"name": "iOIL",
-		"asset": "OIL",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 45.087,
-			"upperLimit": 67.63,
-			"lowerLimit": 22.543
 		}
 	}
 ]

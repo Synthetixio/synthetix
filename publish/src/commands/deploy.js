@@ -1199,6 +1199,138 @@ const deploy = async ({
 		}
 	}
 
+	// ----------------
+	// Multi Collateral System
+	// ----------------
+
+	console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
+
+	const managerState = await deployer.deployContract({
+		name: 'CollateralManagerState',
+		args: [account, account],
+	});
+
+	const maxDebt = w3utils.toWei('10000000'); // 10 million sUSD worth of non SNX debt can be issued initially.
+	const baseBorrowRate = w3utils.toWei('0'); //
+	const baseShortRate = w3utils.toWei('0'); //
+
+	const manager = await deployer.deployContract({
+		name: 'CollateralManager',
+		args: [
+			addressOf(managerState),
+			account,
+			addressOf(readProxyForResolver),
+			maxDebt,
+			baseBorrowRate,
+			baseShortRate,
+		],
+	});
+
+	if (managerState && manager) {
+		await runStep({
+			contract: 'ManagerState',
+			target: managerState,
+			read: 'associatedContract',
+			expected: input => input === manager.options.address,
+			write: 'setAssociatedContract',
+			writeArg: manager.options.address,
+		});
+	}
+
+	const collateralEthState = await deployer.deployContract({
+		name: 'CollateralState',
+		args: [account, account],
+	});
+
+	const collateralEth = await deployer.deployContract({
+		name: 'CollateralEth',
+		args: [
+			addressOf(collateralEthState),
+			account,
+			addressOf(manager),
+			addressOf(readProxyForResolver),
+			toBytes32('sETH'),
+			[toBytes32('SynthsUSD', 'SynthsETH')],
+			w3utils.toWei('1.5'),
+			w3utils.toWei('0.1'),
+		],
+	});
+
+	if (collateralEthState && collateralEth) {
+		await runStep({
+			contract: 'CollateralState',
+			target: collateralEthState,
+			read: 'associatedContract',
+			expected: input => input === collateralEth.options.address,
+			write: 'setAssociatedContract',
+			writeArg: collateralEth.options.address,
+		});
+	}
+
+	const collateralErc20State = await deployer.deployContract({
+		name: 'CollateralState',
+		args: [account, account],
+	});
+
+	const RENBTC_ADDRESS = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
+
+	const collateralErc20 = await deployer.deployContract({
+		name: 'CollateralErc20',
+		args: [
+			addressOf(collateralErc20State),
+			account,
+			addressOf(manager),
+			addressOf(readProxyForResolver),
+			toBytes32('sBTC'),
+			[toBytes32('SynthsUSD', 'SynthsBTC')],
+			w3utils.toWei('1.5'),
+			w3utils.toWei('0.1'),
+			RENBTC_ADDRESS,
+		],
+	});
+
+	if (collateralErc20State && collateralErc20) {
+		await runStep({
+			contract: 'CollateralState',
+			target: collateralErc20State,
+			read: 'associatedContract',
+			expected: input => input === collateralErc20.options.address,
+			write: 'setAssociatedContract',
+			writeArg: collateralErc20.options.address,
+		});
+	}
+
+	const collateralShortState = await deployer.deployContract({
+		name: 'CollateralState',
+		args: [account, account],
+	});
+
+	const collateralShort = await deployer.deployContract({
+		name: 'CollateralShort',
+		args: [
+			addressOf(collateralShortState),
+			account,
+			addressOf(manager),
+			addressOf(readProxyForResolver),
+			toBytes32('sUSD'),
+			[toBytes32('SynthsBTC', 'SynthsETH')],
+			w3utils.toWei('1.5'),
+			w3utils.toWei('0.1'),
+			addressOf(deployer.getExistingContract({ contract: `ProxyERC20sUSD` })),
+		],
+	});
+
+	if (collateralShortState && collateralShort) {
+		await runStep({
+			contract: 'CollateralState',
+			target: collateralShortState,
+			read: 'associatedContract',
+			expected: input => input === collateralShort.options.address,
+			write: 'setAssociatedContract',
+			writeArg: collateralShort.options.address,
+		});
+	}
+
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	let addressesAreImported = false;
@@ -1273,9 +1405,11 @@ const deploy = async ({
 
 	console.log(gray('Addresses are correctly set up, continuing...'));
 
+	// contractsWithRebuildableCache.map(x => console.log(x));
+
 	// now ensure all resolvers are set
 	await runStep({
-		gasLimit: 7e6, // higher gas required
+		gasLimit: 8e6, // higher gas required
 		contract: `AddressResolver`,
 		target: addressResolver,
 		write: 'rebuildCaches',

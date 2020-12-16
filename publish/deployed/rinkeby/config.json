@@ -2,6 +2,24 @@
 	"AddressResolver": {
 		"deploy": false
 	},
+	"CollateralManager": {
+		"deploy": true
+	},
+	"CollateralManagerState": {
+		"deploy": true
+	},
+	"CollateralEth": {
+		"deploy": true
+	},
+	"CollateralErc20": {
+		"deploy": true
+	},
+	"CollateralShort": {
+		"deploy": true
+	},
+	"CollateralState": {
+		"deploy": true
+	},
 	"BinaryOptionMarketFactory": {
 		"deploy": false
 	},

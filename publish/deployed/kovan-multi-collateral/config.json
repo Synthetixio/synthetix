@@ -11,34 +11,16 @@
 	"BinaryOptionMarketData": {
 		"deploy": false
 	},
-	"CollateralManager": {
-		"deploy": true
-	},
-	"CollateralManagerState": {
-		"deploy": true
-	},
-	"CollateralEth": {
-		"deploy": true
-	},
-	"CollateralErc20": {
-		"deploy": true
-	},
-	"CollateralShort": {
-		"deploy": true
-	},
-	"CollateralState": {
-		"deploy": true
-	},
 	"ReadProxyAddressResolver": {
-		"deploy": false
-	},
-	"DebtCache": {
 		"deploy": false
 	},
 	"DelegateApprovals": {
 		"deploy": false
 	},
 	"DelegateApprovalsEternalStorage": {
+		"deploy": false
+	},
+	"DebtCache": {
 		"deploy": false
 	},
 	"Depot": {
@@ -48,6 +30,9 @@
 		"deploy": false
 	},
 	"EtherCollateral": {
+		"deploy": false
+	},
+	"EtherCollateralsUSD": {
 		"deploy": false
 	},
 	"ExchangeRates": {
@@ -66,6 +51,9 @@
 		"deploy": false
 	},
 	"FeePoolEternalStorage": {
+		"deploy": false
+	},
+	"FlexibleStorage": {
 		"deploy": false
 	},
 	"Issuer": {
@@ -93,6 +81,9 @@
 		"deploy": false
 	},
 	"SynthetixState": {
+		"deploy": false
+	},
+	"SystemSettings": {
 		"deploy": false
 	},
 	"SystemStatus": {
@@ -431,24 +422,6 @@
 	"SynthsADA": {
 		"deploy": false
 	},
-	"TokenStatesFTSE": {
-		"deploy": false
-	},
-	"ProxysFTSE": {
-		"deploy": false
-	},
-	"SynthsFTSE": {
-		"deploy": false
-	},
-	"TokenStatesNIKKEI": {
-		"deploy": false
-	},
-	"ProxysNIKKEI": {
-		"deploy": false
-	},
-	"SynthsNIKKEI": {
-		"deploy": false
-	},
 	"TokenStateiEOS": {
 		"deploy": false
 	},
@@ -503,34 +476,7 @@
 	"SynthiADA": {
 		"deploy": false
 	},
-	"FlexibleStorage": {
-		"deploy": false
-	},
-	"SystemSettings": {
-		"deploy": false
-	},
 	"TradingRewards": {
-		"deploy": false
-	},
-	"EtherCollateralsUSD": {
-		"deploy": false
-	},
-	"TokenStatesOIL": {
-		"deploy": false
-	},
-	"ProxysOIL": {
-		"deploy": false
-	},
-	"SynthsOIL": {
-		"deploy": false
-	},
-	"TokenStateiOIL": {
-		"deploy": false
-	},
-	"ProxyiOIL": {
-		"deploy": false
-	},
-	"SynthiOIL": {
 		"deploy": false
 	}
 }
