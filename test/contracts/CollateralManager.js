@@ -323,7 +323,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		assert.equal(await manager.owner(), owner);
 		assert.equal(await manager.resolver(), addressResolver.address);
 		assert.bnEqual(await manager.maxDebt(), maxDebt);
-		assert.bnEqual(await manager.liquidationPenalty(), liqPen);
 	});
 
 	it('should ensure only expected functions are mutative', async () => {
@@ -333,7 +332,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			expected: [
 				'setUtilisationMultiplier',
 				'setMaxDebt',
-				'setLiquidationPenalty',
 				'setBaseBorrowRate',
 				'setBaseShortRate',
 				'addCollateral',
@@ -434,31 +432,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				});
 				it('should update the utilisation multiplier', async () => {
 					assert.bnEqual(await manager.utilisationMultiplier(), toUnit(2));
-				});
-			});
-		});
-
-		describe('setLiquidationPenalty', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						manager.setLiquidationPenalty(toUnit(1), { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-				it('should fail if 0 is passed', async () => {
-					await assert.revert(
-						manager.setLiquidationPenalty(toUnit(0), { from: owner }),
-						'Must be greater than 0'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await manager.setLiquidationPenalty(toUnit(0.2), { from: owner });
-				});
-				it('should update the liquidation penalty', async () => {
-					assert.bnEqual(await manager.liquidationPenalty(), toUnit(0.2));
 				});
 			});
 		});
