@@ -365,6 +365,20 @@ class Deployer {
 		force = false,
 		dryRun = this.dryRun,
 	}) {
+		const forbiddenAddress = (this.deployedContracts['AddressResolver'] || { options: {} }).options
+			.address;
+		for (const arg of args) {
+			if (
+				forbiddenAddress &&
+				typeof arg === 'string' &&
+				arg.toLowerCase() === forbiddenAddress.toLowerCase()
+			) {
+				throw Error(
+					`new ${name}(): Cannot use the AddressResolver as a constructor arg. Use ReadProxyForResolver instead.`
+				);
+			}
+		}
+
 		// Deploys contract according to configuration
 		const deployedContract = await this._deploy({ name, source, args, deps, force, dryRun });
 
