@@ -6,6 +6,10 @@ const commands = {
 	connectBridge: require('./connect-bridge').connectBridge,
 };
 
+const {
+	constants: { OVM_MAX_GAS_LIMIT },
+} = require('../../../.');
+
 const L1_PROVIDER_URL = 'http://localhost:9545';
 const L2_PROVIDER_URL = 'http://localhost:8545';
 const DATA_PROVIDER_URL = 'http://localhost:8080';
@@ -56,7 +60,7 @@ const deployInstance = async ({ useOvm, privateKey }) => {
 		gasPrice: '0',
 		useOvm,
 		methodCallGasLimit: '3500000',
-		contractDeploymentGasLimit: useOvm ? '8900000' : '9500000',
+		contractDeploymentGasLimit: useOvm ? OVM_MAX_GAS_LIMIT : '9500000',
 		privateKey,
 		ignoreCustomParameters: true,
 	});
