@@ -56,7 +56,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         IERC20(underlyingContract).transfer(msg.sender, collateral);
     }
 
-    function deposit(address borrower, uint  id, uint amount) external {
+    function deposit(address borrower, uint id, uint amount) external {
         require(amount <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
 
         depositInternal(borrower, id, amount);

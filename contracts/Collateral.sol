@@ -20,6 +20,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IShortingRewards.sol";
 
 contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings, Pausable {
     /* ========== LIBRARIES ========== */
@@ -45,6 +46,9 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
     // Map from currency key to synth.
     mapping(bytes32 => bytes32) public currencies;
+
+    // Map from currency to the shorting rewards contract
+    mapping(bytes32 => address) shortingRewards;
 
     // ========== SETTER STATE VARIABLES ==========
 
@@ -212,6 +216,12 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         synths.push(_synth);
     }
 
+     /* ---------- Rewards Contracts ---------- */
+
+     function addRewardsContracts(address rewardsContract, bytes32 synth) external onlyOwner {
+         shortingRewards[synth] = rewardsContract;
+     }
+
     /* ---------- SETTERS ---------- */
 
     function setMinCratio(uint _minCratio) public onlyOwner {
@@ -309,6 +319,10 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         if (short) {
             issued = _exchangeRates().effectiveValue(currency, loanAmountMinusFee, sUSD);
             _manager().incrementShorts(currency, amount);
+
+            if (shortingRewards[currency] != address(0)) {
+                IShortingRewards(shortingRewards[currency]).enrol(msg.sender, amount);
+            }
         } else {
             _synths(currencies[currency]).issue(msg.sender, loanAmountMinusFee);
             _manager().incrementLongs(currency, amount);
@@ -343,15 +357,20 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         // 7. Tell the manager.
         if (loan.short) {
             _manager().decrementShorts(loan.currency, loan.amount);
+
+            if (shortingRewards[loan.currency] != address(0)) {
+                IShortingRewards(shortingRewards[loan.currency]).exit(msg.sender);
+            }
+            // if its short, we need to work out the sUSD value and transfer back the difference.
+            uint amount = _exchangeRates().effectiveValue(loan.currency, loan.amount, sUSD);
+            collateral = loan.collateral.sub(amount);
         } else {
             _manager().decrementLongs(loan.currency, loan.amount);
+            collateral = loan.collateral;
         }
 
         // 8. Pay fees
         _payFees(loan.accruedInterest, loan.currency);
-
-        // 9. Return collateral to the child class so it knows how much to transfer.
-        collateral = loan.collateral;
 
         // 10. Record loan as closed
         loan.amount = 0;
@@ -380,6 +399,10 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         // 5. Tell the manager.
         if (loan.short) {
             _manager().decrementShorts(loan.currency, loan.amount);
+
+            if (shortingRewards[loan.currency] != address(0)) {
+                IShortingRewards(shortingRewards[loan.currency]).exit(borrower);
+            }
         } else {
             _manager().decrementLongs(loan.currency, loan.amount);
         }
@@ -586,10 +609,14 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
         // 7. If its short, let the child handle it, otherwise issue the synths.
         if (loan.short) {
-            _manager().incrementShorts(loan.currency, loan.amount);
+            _manager().incrementShorts(loan.currency, amount);
             issued = _exchangeRates().effectiveValue(loan.currency, amount, sUSD);
+
+            if (shortingRewards[loan.currency] != address(0)) {
+                IShortingRewards(shortingRewards[loan.currency]).enrol(msg.sender, amount);
+            }
         } else {
-            _manager().incrementLongs(loan.currency, loan.amount);
+            _manager().incrementLongs(loan.currency, amount);
             _synths(currencies[loan.currency]).issue(msg.sender, amount);
         }
 
@@ -653,9 +680,13 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
             // And get the manager to reduce the total long/short balance.
             if (loanAfter.short) {
-                _manager().decrementShorts(loanAfter.currency, loanAfter.amount);
+                _manager().decrementShorts(loanAfter.currency, payment);
+
+                if (shortingRewards[loanAfter.currency] != address(0)) {
+                    IShortingRewards(shortingRewards[loanAfter.currency]).withdraw(loanAfter.account, payment);
+                }
             } else {
-                _manager().decrementLongs(loanAfter.currency, loanAfter.amount);
+                _manager().decrementLongs(loanAfter.currency, payment);
             }
         }
     }
