@@ -65,7 +65,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
 
     // ========== VIEWS ==========
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory addresses = new bytes32[](5);
         addresses[0] = CONTRACT_EXT_MESSENGER;
@@ -73,7 +73,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         addresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
         addresses[3] = CONTRACT_ISSUER;
         addresses[4] = CONTRACT_REWARDESCROW;
-        return combineArrays(existingAddresses, addresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     // ========== PUBLIC FUNCTIONS =========

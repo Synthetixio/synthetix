@@ -30,7 +30,7 @@ contract MultiCollateralSynth is Synth {
         bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = multiCollateralKey;
-        return combineArrays(existingAddresses, newAddresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function multiCollateral() internal view returns (address) {

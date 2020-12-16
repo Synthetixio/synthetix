@@ -99,7 +99,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[9] = CONTRACT_SYNTHETIXESCROW;
         newAddresses[10] = CONTRACT_LIQUIDATIONS;
         newAddresses[11] = CONTRACT_DEBTCACHE;
-        return combineArrays(existingAddresses, newAddresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function synthetix() internal view returns (ISynthetix) {
