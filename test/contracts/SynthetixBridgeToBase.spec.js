@@ -6,17 +6,22 @@ const { toBN } = web3.utils;
 contract('SynthetixBridgeToBase (spec tests)', accounts => {
 	const [, owner] = accounts;
 
-	let mintableSynthetix, synthetixBridgeToBase;
+	let mintableSynthetix, synthetixBridgeToBase, systemSettings;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: mintableSynthetix, // we request Synthetix instead of MintableSynthetix because it is renamed in setup.js
 				SynthetixBridgeToBase: synthetixBridgeToBase,
+				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['MintableSynthetix', 'SynthetixBridgeToBase'],
+				contracts: ['MintableSynthetix', 'SynthetixBridgeToBase', 'SystemSettings'],
 			}));
+		});
+
+		it('shows the expected cross domain message gas limit', async () => {
+			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(), 3e6);
 		});
 
 		describe('when a user has the required balance', () => {

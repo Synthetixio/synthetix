@@ -150,7 +150,7 @@ contract('Synthetix', async accounts => {
 				await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger], {
 					from: owner,
 				});
-				await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				await synthetix.rebuildCache();
 			});
 			beforeEach('call event emission functions', async () => {
 				tx1 = await synthetix.emitExchangeRebate(account1, currencyKey1, amount1, {
@@ -215,7 +215,7 @@ contract('Synthetix', async accounts => {
 				[smockExchanger.address],
 				{ from: owner }
 			);
-			await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
+			await synthetix.rebuildCache();
 		});
 
 		const amount1 = '10';

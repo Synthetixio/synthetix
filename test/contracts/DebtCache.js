@@ -111,7 +111,7 @@ contract('DebtCache', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: debtCache.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'takeDebtSnapshot',
 				'purgeCachedSynthDebt',
@@ -352,7 +352,7 @@ contract('DebtCache', async accounts => {
 				await addressResolver.importAddresses([debtCacheName], [newDebtCache.address], {
 					from: owner,
 				});
-				await newDebtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				await newDebtCache.rebuildCache();
 
 				assert.bnEqual(await newDebtCache.cachedDebt(), toUnit('0'));
 				assert.bnEqual(await newDebtCache.cachedSynthDebt(sUSD), toUnit('0'));
@@ -366,7 +366,7 @@ contract('DebtCache', async accounts => {
 				assert.isTrue(info.isStale);
 				assert.isTrue(await newDebtCache.cacheStale());
 
-				await issuer.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				await issuer.rebuildCache();
 				assert.isTrue((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 			});
 
@@ -706,8 +706,7 @@ contract('DebtCache', async accounts => {
 				await addressResolver.importAddresses([debtCacheName], [newDebtCache.address], {
 					from: owner,
 				});
-				await newDebtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
-
+				await newDebtCache.rebuildCache();
 				await newDebtCache.takeDebtSnapshot();
 				const issued = (await newDebtCache.cacheInfo())[0];
 
@@ -865,7 +864,7 @@ contract('DebtCache', async accounts => {
 				await addressResolver.importAddresses([issuerName], [account1], {
 					from: owner,
 				});
-				await debtCache.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				await debtCache.rebuildCache();
 			});
 
 			describe('when the debt cache is valid', () => {
@@ -960,10 +959,11 @@ contract('DebtCache', async accounts => {
 					}
 				);
 
+				// rebuild the caches of those addresses not just added to the adress resolver
 				await Promise.all([
-					issuer.setResolverAndSyncCache(addressResolver.address, { from: owner }),
-					exchanger.setResolverAndSyncCache(addressResolver.address, { from: owner }),
-					realtimeDebtCache.setResolverAndSyncCache(addressResolver.address, { from: owner }),
+					issuer.rebuildCache(),
+					exchanger.rebuildCache(),
+					realtimeDebtCache.rebuildCache(),
 				]);
 			});
 

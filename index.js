@@ -16,6 +16,7 @@ const data = {
 const assets = require('./publish/assets.json');
 const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
+const releases = require('./publish/releases.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
@@ -42,8 +43,6 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
-	OVM_IGNORE_FILENAME: 'ovm-ignore.json',
-	NON_UPGRADEABLE_FILENAME: 'non-upgradeable.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -83,6 +82,7 @@ const defaults = {
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
+	CROSS_DOMAIN_MESSAGE_GAS_LIMIT: `${3e6}`,
 };
 
 /**
@@ -467,7 +467,7 @@ const decode = ({ network = 'mainnet', fs, path, data, target, useOvm = false } 
 	return { method: abiDecoder.decodeMethod(data), contract };
 };
 
-const wrap = ({ network, fs, path, useOvm = false }) =>
+const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 	[
 		'decode',
 		'getAST',
@@ -482,7 +482,7 @@ const wrap = ({ network, fs, path, useOvm = false }) =>
 		'getVersions',
 	].reduce((memo, fnc) => {
 		memo[fnc] = (prop = {}) =>
-			module.exports[fnc](Object.assign({ network, useOvm, fs, path }, prop));
+			module.exports[fnc](Object.assign({ network, deploymentPath, fs, path, useOvm }, prop));
 		return memo;
 	}, {});
 
@@ -507,4 +507,5 @@ module.exports = {
 	wrap,
 	ovmIgnored,
 	nonUpgradeable,
+	releases,
 };

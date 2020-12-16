@@ -6,17 +6,22 @@ const { toBN } = web3.utils;
 contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 	const [, owner, newBridge] = accounts;
 
-	let synthetix, synthetixBridgeToOptimism;
+	let synthetix, synthetixBridgeToOptimism, systemSettings;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
 			({
 				Synthetix: synthetix,
 				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
+				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
 				contracts: ['Synthetix', 'Issuer', 'RewardEscrow', 'SynthetixBridgeToOptimism'],
 			}));
+		});
+
+		it('shows the expected cross domain message gas limit', async () => {
+			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(), 3e6);
 		});
 
 		describe('deposit', () => {
@@ -37,7 +42,7 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 					});
 
 					before('perform a deposit', async () => {
-						await synthetixBridgeToOptimism.deposit(amountToDeposit, {
+						await synthetixBridgeToOptimism.initiateDeposit(amountToDeposit, {
 							from: owner,
 						});
 					});
@@ -58,7 +63,7 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 			});
 		});
 
-		describe('rewardDeposit', () => {
+		describe('initiateRewardDeposit', () => {
 			describe('when a user has provided allowance to the bridge contract', () => {
 				const amountToDeposit = 1;
 
@@ -75,8 +80,8 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 						userBalanceBefore = await synthetix.balanceOf(owner);
 					});
 
-					before('perform a rewardDeposit', async () => {
-						await synthetixBridgeToOptimism.rewardDeposit(amountToDeposit, {
+					before('perform a initiateRewardDeposit', async () => {
+						await synthetixBridgeToOptimism.initiateRewardDeposit(amountToDeposit, {
 							from: owner,
 						});
 					});

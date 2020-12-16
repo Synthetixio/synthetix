@@ -535,7 +535,7 @@ module.exports = ({ web3 } = {}) => {
 		if (publicKey) {
 			wallet = provider.getSigner(publicKey);
 			wallet.address = publicKey;
-		} else if (privateKey) {
+		} else {
 			wallet = new ethers.Wallet(privateKey || ethers.Wallet.createRandom().privateKey, provider);
 		}
 

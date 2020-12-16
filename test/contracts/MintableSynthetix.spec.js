@@ -33,8 +33,8 @@ contract('MintableSynthetix (spec tests)', accounts => {
 					from: owner,
 				}
 			);
-			// synch cache
-			await mintableSynthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
+			// sync cache
+			await mintableSynthetix.rebuildCache();
 		});
 
 		describe('mintSecondary()', async () => {

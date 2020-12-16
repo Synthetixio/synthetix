@@ -481,7 +481,7 @@ contract('FeePool', async accounts => {
 						}
 					);
 
-					await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
+					await feePool.rebuildCache();
 				});
 				it('when closeFeePeriod() is invoked, it reverts with Fee Period Duration not set', async () => {
 					await assert.revert(

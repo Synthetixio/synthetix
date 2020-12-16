@@ -19,6 +19,7 @@ const {
 		RATE_STALE_PERIOD,
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
+		CROSS_DOMAIN_MESSAGE_GAS_LIMIT,
 	},
 } = require('../../');
 
@@ -702,7 +703,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'SynthetixBridgeToBase',
 			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism'],
-			deps: ['AddressResolver'],
+			deps: ['AddressResolver', 'Issuer'],
 		},
 		{ contract: 'TradingRewards', deps: ['AddressResolver', 'Synthetix'] },
 		{
@@ -844,7 +845,10 @@ const setupAllContracts = async ({
 
 	// now invoke AddressResolver to set all addresses
 	if (returnObj['AddressResolver']) {
-		// TODO - this should only import the ones set as required in contracts
+		if (process.env.DEBUG) {
+			log(`Importing into AddressResolver:\n\t - ${Object.keys(returnObj).join('\n\t - ')}`);
+		}
+
 		await returnObj['AddressResolver'].importAddresses(
 			Object.keys(returnObj).map(toBytes32),
 			Object.values(returnObj).map(entry =>
@@ -857,23 +861,17 @@ const setupAllContracts = async ({
 		);
 	}
 
-	// now set resolver and sync cache for all contracts that need it
+	// now rebuild caches for all contracts that need it
 	await Promise.all(
 		Object.entries(returnObj)
 			// keep items not in mocks
 			.filter(([name]) => !(name in mocks))
 			// and only those with the setResolver function
-			.filter(([, instance]) => !!instance.setResolverAndSyncCache)
+			.filter(([, instance]) => !!instance.rebuildCache)
 			.map(([contract, instance]) => {
-				return instance
-					.setResolverAndSyncCache(returnObj['AddressResolver'].address, { from: owner })
-					.catch(err => {
-						if (/Resolver missing target/.test(err.toString())) {
-							throw Error(`Cannot resolve all resolver requirements for ${contract}`);
-						} else {
-							throw err;
-						}
-					});
+				return instance.rebuildCache().catch(err => {
+					throw err;
+				});
 			})
 	);
 
@@ -897,6 +895,9 @@ const setupAllContracts = async ({
 				{ from: owner }
 			),
 			returnObj['SystemSettings'].setIssuanceRatio(ISSUANCE_RATIO, { from: owner }),
+			returnObj['SystemSettings'].setCrossDomainMessageGasLimit(CROSS_DOMAIN_MESSAGE_GAS_LIMIT, {
+				from: owner,
+			}),
 			returnObj['SystemSettings'].setFeePeriodDuration(FEE_PERIOD_DURATION, { from: owner }),
 			returnObj['SystemSettings'].setTargetThreshold(TARGET_THRESHOLD, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),
