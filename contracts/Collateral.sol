@@ -44,7 +44,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
     bytes32[] public synths;
 
     // Map from currency key to synth.
-    mapping (bytes32 => bytes32) currencies;
+    mapping(bytes32 => bytes32) public currencies;
 
     // ========== SETTER STATE VARIABLES ==========
 

@@ -57,9 +57,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     // The maximum amount of debt in sUSD that can be issued by non snx collateral.
     uint public maxDebt;
 
-    // The percentage of collateral that is paid to incentivise a liquidation.
-    uint public liquidationPenalty;
-
     // The base interest rate applied to all borrows.
     uint public baseBorrowRate;
 
@@ -81,7 +78,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         address _owner,
         address _resolver,
         uint _maxDebt,
-        uint _liquidationPenalty,
         uint _baseBorrowRate,
         uint _baseShortRate
         ) public
@@ -93,7 +89,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         state = _state;
 
         setMaxDebt(_maxDebt);
-        setLiquidationPenalty(_liquidationPenalty);
         setBaseBorrowRate(_baseBorrowRate);
         setBaseShortRate(_baseShortRate);
 
@@ -256,12 +251,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         require(_maxDebt > 0, "Must be greater than 0");
         maxDebt = _maxDebt;
         emit MaxDebtUpdated(maxDebt);
-    }
-
-    function setLiquidationPenalty(uint _liquidationPenalty) public onlyOwner {
-        require(_liquidationPenalty > 0, "Must be greater than 0");
-        liquidationPenalty = _liquidationPenalty;
-        emit LiquidationPenaltyUpdated(liquidationPenalty);
     }
 
     function setBaseBorrowRate(uint _baseBorrowRate) public onlyOwner {
