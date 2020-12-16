@@ -218,9 +218,9 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
      /* ---------- Rewards Contracts ---------- */
 
-     function addRewardsContracts(address rewardsContract, bytes32 synth) external onlyOwner {
-         shortingRewards[synth] = rewardsContract;
-     }
+    function addRewardsContracts(address rewardsContract, bytes32 synth) external onlyOwner {
+        shortingRewards[synth] = rewardsContract;
+    }
 
     /* ---------- SETTERS ---------- */
 

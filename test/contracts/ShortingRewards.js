@@ -357,74 +357,74 @@ contract('ShortingRewards', accounts => {
 		});
 	});
 
-	// describe('External Rewards Recovery', () => {
-	// 	const amount = toUnit('5000');
-	// 	beforeEach(async () => {
-	// 		// Send ERC20 to shortingRewards Contract
-	// 		await externalRewardsToken.transfer(shortingRewards.address, amount, { from: owner });
-	// 		assert.bnEqual(await externalRewardsToken.balanceOf(shortingRewards.address), amount);
-	// 	});
-	// 	it('only owner can call recoverERC20', async () => {
-	// 		await onlyGivenAddressCanInvoke({
-	// 			fnc: shortingRewards.recoverERC20,
-	// 			args: [externalRewardsToken.address, amount],
-	// 			address: owner,
-	// 			accounts,
-	// 			reason: 'Only the contract owner may perform this action',
-	// 		});
-	// 	});
-	// 	it('should revert if recovering staking token', async () => {
-	// 		await assert.revert(
-	// 			shortingRewards.recoverERC20(stakingToken.address, amount, {
-	// 				from: owner,
-	// 			}),
-	// 			'Cannot withdraw the staking or rewards tokens'
-	// 		);
-	// 	});
-	// 	it('should revert if recovering rewards token (SNX)', async () => {
-	// 		// rewardsToken in these tests is the underlying contract
-	// 		await assert.revert(
-	// 			shortingRewards.recoverERC20(rewardsToken.address, amount, {
-	// 				from: owner,
-	// 			}),
-	// 			'Cannot withdraw the staking or rewards tokens'
-	// 		);
-	// 	});
-	// 	it('should revert if recovering the SNX Proxy', async () => {
-	// 		const snxProxy = await rewardsToken.proxy();
-	// 		await assert.revert(
-	// 			shortingRewards.recoverERC20(snxProxy, amount, {
-	// 				from: owner,
-	// 			}),
-	// 			'Cannot withdraw the staking or rewards tokens'
-	// 		);
-	// 	});
-	// 	it('should retrieve external token from shortingRewards and reduce contracts balance', async () => {
-	// 		await shortingRewards.recoverERC20(externalRewardsToken.address, amount, {
-	// 			from: owner,
-	// 		});
-	// 		assert.bnEqual(await externalRewardsToken.balanceOf(shortingRewards.address), ZERO_BN);
-	// 	});
-	// 	it('should retrieve external token from shortingRewards and increase owners balance', async () => {
-	// 		const ownerMOARBalanceBefore = await externalRewardsToken.balanceOf(owner);
+	describe('External Rewards Recovery', () => {
+		const amount = toUnit('5000');
+		beforeEach(async () => {
+			// Send ERC20 to shortingRewards Contract
+			await externalRewardsToken.transfer(shortingRewards.address, amount, { from: owner });
+			assert.bnEqual(await externalRewardsToken.balanceOf(shortingRewards.address), amount);
+		});
+		// 	it('only owner can call recoverERC20', async () => {
+		// 		await onlyGivenAddressCanInvoke({
+		// 			fnc: shortingRewards.recoverERC20,
+		// 			args: [externalRewardsToken.address, amount],
+		// 			address: owner,
+		// 			accounts,
+		// 			reason: 'Only the contract owner may perform this action',
+		// 		});
+		// 	});
+		// 	it('should revert if recovering staking token', async () => {
+		// 		await assert.revert(
+		// 			shortingRewards.recoverERC20(stakingToken.address, amount, {
+		// 				from: owner,
+		// 			}),
+		// 			'Cannot withdraw the staking or rewards tokens'
+		// 		);
+		// 	});
+		// 	it('should revert if recovering rewards token (SNX)', async () => {
+		// 		// rewardsToken in these tests is the underlying contract
+		// 		await assert.revert(
+		// 			shortingRewards.recoverERC20(rewardsToken.address, amount, {
+		// 				from: owner,
+		// 			}),
+		// 			'Cannot withdraw the staking or rewards tokens'
+		// 		);
+		// 	});
+		// 	it('should revert if recovering the SNX Proxy', async () => {
+		// 		const snxProxy = await rewardsToken.proxy();
+		// 		await assert.revert(
+		// 			shortingRewards.recoverERC20(snxProxy, amount, {
+		// 				from: owner,
+		// 			}),
+		// 			'Cannot withdraw the staking or rewards tokens'
+		// 		);
+		// 	});
+		// 	it('should retrieve external token from shortingRewards and reduce contracts balance', async () => {
+		// 		await shortingRewards.recoverERC20(externalRewardsToken.address, amount, {
+		// 			from: owner,
+		// 		});
+		// 		assert.bnEqual(await externalRewardsToken.balanceOf(shortingRewards.address), ZERO_BN);
+		// 	});
+		// 	it('should retrieve external token from shortingRewards and increase owners balance', async () => {
+		// 		const ownerMOARBalanceBefore = await externalRewardsToken.balanceOf(owner);
 
-	// 		await shortingRewards.recoverERC20(externalRewardsToken.address, amount, {
-	// 			from: owner,
-	// 		});
+		// 		await shortingRewards.recoverERC20(externalRewardsToken.address, amount, {
+		// 			from: owner,
+		// 		});
 
-	// 		const ownerMOARBalanceAfter = await externalRewardsToken.balanceOf(owner);
-	// 		assert.bnEqual(ownerMOARBalanceAfter.sub(ownerMOARBalanceBefore), amount);
-	// 	});
-	// 	it('should emit Recovered event', async () => {
-	// 		const transaction = await shortingRewards.recoverERC20(externalRewardsToken.address, amount, {
-	// 			from: owner,
-	// 		});
-	// 		assert.eventEqual(transaction, 'Recovered', {
-	// 			token: externalRewardsToken.address,
-	// 			amount: amount,
-	// 		});
-	// 	});
-	// });
+		// 		const ownerMOARBalanceAfter = await externalRewardsToken.balanceOf(owner);
+		// 		assert.bnEqual(ownerMOARBalanceAfter.sub(ownerMOARBalanceBefore), amount);
+		// 	});
+		// 	it('should emit Recovered event', async () => {
+		// 		const transaction = await shortingRewards.recoverERC20(externalRewardsToken.address, amount, {
+		// 			from: owner,
+		// 		});
+		// 		assert.eventEqual(transaction, 'Recovered', {
+		// 			token: externalRewardsToken.address,
+		// 			amount: amount,
+		// 		});
+		// 	});
+	});
 
 	describe('lastTimeRewardApplicable()', () => {
 		it('should return 0', async () => {
