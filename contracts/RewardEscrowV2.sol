@@ -80,7 +80,8 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
                     lastVested: 0,
                     escrowAmount: amount,
                     remainingAmount: amount
-                })
+                }),
+                true
             );
 
             /* subtract amount from totalBalancePendingMigration - reverts if insufficient */
@@ -120,7 +121,8 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
                     lastVested: 0,
                     escrowAmount: escrowAmount,
                     remainingAmount: escrowAmount
-                })
+                }),
+                true
             );
 
             /* update totalBalancePendingMigration - reverts if escrowAmount > remaining balance to migrate */

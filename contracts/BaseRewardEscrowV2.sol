@@ -447,7 +447,11 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         emit VestingEntryCreated(account, block.timestamp, quantity, duration, entryID);
     }
 
-    function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
+    function _importVestingEntry(
+        address account,
+        VestingEntries.VestingEntry memory entry,
+        bool emitEvent
+    ) internal {
         uint entryID = nextEntryId;
         vestingSchedules[account][entryID] = entry;
 
@@ -457,15 +461,17 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         /* Increment the next entry id. */
         nextEntryId = nextEntryId.add(1);
 
-        emit ImportedVestingEntry(
-            account,
-            entryID,
-            entry.escrowAmount,
-            entry.remainingAmount,
-            entry.endTime,
-            entry.duration,
-            entry.lastVested
-        );
+        if (emitEvent) {
+            emit ImportedVestingEntry(
+                account,
+                entryID,
+                entry.escrowAmount,
+                entry.remainingAmount,
+                entry.endTime,
+                entry.duration,
+                entry.lastVested
+            );
+        }
     }
 
     /* ========== MODIFIERS ========== */

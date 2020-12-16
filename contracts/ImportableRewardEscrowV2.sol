@@ -45,7 +45,7 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
         totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
 
         for (uint i = 0; i < vestingEntries.length; i++) {
-            _importVestingEntry(account, vestingEntries[i]);
+            _importVestingEntry(account, vestingEntries[i], false);
         }
     }
 
