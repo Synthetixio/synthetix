@@ -833,6 +833,8 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// escrowAmounts should match for the entries in order
 			entries.forEach((entry, i) => {
 				assert.bnEqual(entry.escrowAmount, escrowAmounts[i]);
+				assert.bnEqual(entry.remainingAmount, escrowAmounts[i]);
+				assert.bnEqual(entry.entryID, i + 1);
 			});
 		});
 	});
