@@ -382,16 +382,6 @@ workflows:
           network: mainnet
           requires:
             - job-prepare
-      - job-prod-tests:
-          name: job-prod-tests-rinkeby
-          network: rinkeby
-          requires:
-            - job-prepare
-      - job-prod-tests:
-          name: job-prod-tests-kovan
-          network: kovan
-          requires:
-            - job-prepare
       - job-diff-prod-tests-local:
           name: job-diff-prod-tests-local
           requires:
@@ -426,22 +416,6 @@ workflows:
               only: /.*(staging|master).*/
           requires:
             - job-prepare
-      - job-prod-tests:
-          name: job-prod-tests-rinkeby
-          network: rinkeby
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-prod-tests:
-          name: job-prod-tests-kovan
-          network: kovan
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
       - job-diff-prod-tests-local:
           name: job-diff-prod-tests-local
           filters:
@@ -459,22 +433,6 @@ workflows:
       - job-diff-prod-tests:
           name: job-diff-prod-tests-mainnet
           network: mainnet
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-diff-prod-tests:
-          name: job-diff-prod-tests-rinkeby
-          network: rinkeby
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-diff-prod-tests:
-          name: job-diff-prod-tests-kovan
-          network: kovan
           filters:
             branches:
               only: /.*(staging|master).*/
