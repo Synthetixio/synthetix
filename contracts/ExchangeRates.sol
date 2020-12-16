@@ -216,7 +216,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_EXCHANGER;
-        return combineArrays(existingAddresses, newAddresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     // SIP-75 View to determine if freezeRate can be called safely

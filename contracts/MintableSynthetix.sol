@@ -40,7 +40,7 @@ contract MintableSynthetix is BaseSynthetix {
         bytes32[] memory existingAddresses = BaseSynthetix.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_SYNTHETIX_BRIDGE;
-        return combineArrays(existingAddresses, newAddresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function synthetixBridge() internal view returns (address) {
