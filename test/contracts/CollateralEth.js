@@ -80,14 +80,13 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 		manager,
 		resolver,
 		collatKey,
-		synths,
 		minColat,
 		minSize,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [state, owner, manager, resolver, collatKey, synths, minColat, minSize],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
@@ -146,10 +145,11 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			manager: manager.address,
 			resolver: addressResolver.address,
 			collatKey: sETH,
-			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsETH')],
 			minColat: toUnit(1.5),
 			minSize: toUnit(1),
 		});
+
+		await state.setAssociatedContract(ceth.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
@@ -160,21 +160,17 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 		);
 
 		await ceth.rebuildCache();
-
-		await ceth.setCurrencies({ from: owner });
-
-		await state.setAssociatedContract(ceth.address, { from: owner });
-
-		await ceth.rebuildCache();
-		await feePool.rebuildCache();
 		await manager.rebuildCache();
-		await issuer.rebuildCache();
 		await debtCache.rebuildCache();
+		await feePool.rebuildCache();
+		await issuer.rebuildCache();
 
-		await manager.addCollateral(ceth.address, { from: owner });
+		await manager.addCollaterals([ceth.address], { from: owner });
 
-		await manager.addSynth(sUSDSynth.address, { from: owner });
-		await manager.addSynth(sETHSynth.address, { from: owner });
+		await ceth.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsETH')], { from: owner });
+		await ceth.rebuildCache();
+
+		await ceth.setCurrenciesAndNotifyManager();
 	};
 
 	const updateRatesWithDefaults = async () => {

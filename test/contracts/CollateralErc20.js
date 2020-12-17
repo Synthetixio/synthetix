@@ -110,7 +110,6 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		manager,
 		resolver,
 		collatKey,
-		synths,
 		minColat,
 		minSize,
 		underCon,
@@ -118,7 +117,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralErc20',
-			args: [state, owner, manager, resolver, collatKey, synths, minColat, minSize, underCon],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon],
 		});
 	};
 
@@ -194,20 +193,18 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 		await proxy.setTarget(renBTC.address, { from: owner });
 
-		// Issue ren and set allowance
-		await issueRenBTCtoAccount(toUnit(100), account1);
-
 		cerc20 = await deployCollateral({
 			state: state.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
 			collatKey: sBTC,
-			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsBTC')],
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 			underCon: renBTC.address,
 		});
+
+		await state.setAssociatedContract(cerc20.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralErc20'), toBytes32('CollateralManager')],
@@ -218,22 +215,21 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		);
 
 		await cerc20.rebuildCache();
-		await cerc20.setCurrencies();
-
-		await state.setAssociatedContract(cerc20.address, { from: owner });
-
-		await cerc20.rebuildCache();
 		await feePool.rebuildCache();
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
 		await debtCache.rebuildCache();
 
+		await manager.addCollaterals([cerc20.address], { from: owner });
+
+		await cerc20.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
+		await cerc20.rebuildCache();
+
+		await cerc20.setCurrenciesAndNotifyManager();
+
+		// Issue ren and set allowance
+		await issueRenBTCtoAccount(toUnit(100), account1);
 		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
-
-		await manager.addCollateral(cerc20.address, { from: owner });
-
-		await manager.addSynth(sUSDSynth.address, { from: owner });
-		await manager.addSynth(sBTCSynth.address, { from: owner });
 	};
 
 	before(async () => {

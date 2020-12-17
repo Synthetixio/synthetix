@@ -110,7 +110,6 @@ contract('ShortingRewards', accounts => {
 		manager,
 		resolver,
 		collatKey,
-		synths,
 		minColat,
 		minSize,
 		underCon,
@@ -118,7 +117,7 @@ contract('ShortingRewards', accounts => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, synths, minColat, minSize, underCon],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon],
 		});
 	};
 
@@ -182,11 +181,12 @@ contract('ShortingRewards', accounts => {
 			manager: manager.address,
 			resolver: addressResolver.address,
 			collatKey: sUSD,
-			synths: [toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 			underCon: sUSDSynth.address,
 		});
+
+		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
@@ -197,20 +197,18 @@ contract('ShortingRewards', accounts => {
 		);
 
 		await short.rebuildCache();
-		await short.setCurrencies();
-
-		await state.setAssociatedContract(short.address, { from: owner });
-
 		await feePool.rebuildCache();
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
 		await debtCache.rebuildCache();
 
-		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
+		await manager.addCollaterals([short.address], { from: owner });
 
-		await manager.addCollateral(short.address, { from: owner });
-		await manager.addShortableSynth(sBTCSynth.address, { from: owner });
-		await manager.addShortableSynth(sETHSynth.address, { from: owner });
+		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
+		await short.rebuildCache();
+		await short.setCurrenciesAndNotifyManager();
+
+		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 
 		({ token: externalRewardsToken } = await mockToken({
 			accounts,

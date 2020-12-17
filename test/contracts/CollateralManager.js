@@ -61,14 +61,13 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		manager,
 		resolver,
 		collatKey,
-		synths,
 		minColat,
 		minSize,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [mcState, owner, manager, resolver, collatKey, synths, minColat, minSize],
+			args: [mcState, owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
@@ -78,7 +77,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		manager,
 		resolver,
 		collatKey,
-		synths,
 		minColat,
 		minSize,
 		underCon,
@@ -86,7 +84,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralErc20',
-			args: [mcState, owner, manager, resolver, collatKey, synths, minColat, minSize, underCon],
+			args: [mcState, owner, manager, resolver, collatKey, minColat, minSize, underCon],
 		});
 	};
 
@@ -96,7 +94,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		manager,
 		resolver,
 		collatKey,
-		synths,
 		minColat,
 		minSize,
 		underCon,
@@ -104,7 +101,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, synths, minColat, minSize, underCon],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon],
 		});
 	};
 
@@ -178,10 +175,11 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			manager: manager.address,
 			resolver: addressResolver.address,
 			collatKey: sETH,
-			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsETH')],
 			minColat: toUnit(1.5),
 			minSize: toUnit(1),
 		});
+
+		await mcstate.setAssociatedContract(ceth.address, { from: owner });
 
 		mcstateErc20 = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
@@ -223,11 +221,12 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			manager: manager.address,
 			resolver: addressResolver.address,
 			collatKey: sBTC,
-			synths: [toBytes32('SynthsUSD'), toBytes32('SynthsBTC')],
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 			underCon: renBTC.address,
 		});
+
+		await mcstateErc20.setAssociatedContract(cerc20.address, { from: owner });
 
 		shortState = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
@@ -237,11 +236,12 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			manager: manager.address,
 			resolver: addressResolver.address,
 			collatKey: sUSD,
-			synths: [toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 			underCon: sUSDSynth.address,
 		});
+
+		await shortState.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[
@@ -256,10 +256,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			}
 		);
 
-		await mcstate.setAssociatedContract(ceth.address, { from: owner });
-		await mcstateErc20.setAssociatedContract(cerc20.address, { from: owner });
-		await shortState.setAssociatedContract(short.address, { from: owner });
-
 		await issuer.rebuildCache();
 		await ceth.rebuildCache();
 		await cerc20.rebuildCache();
@@ -268,24 +264,23 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		await manager.rebuildCache();
 		await short.rebuildCache();
 
-		await ceth.setCurrencies();
-		await cerc20.setCurrencies();
-		await short.setCurrencies();
+		await manager.addCollaterals([ceth.address, cerc20.address, short.address], { from: owner });
 
-		await manager.addCollateral(ceth.address, { from: owner });
-		await manager.addCollateral(cerc20.address, { from: owner });
-		await manager.addCollateral(short.address, { from: owner });
+		await ceth.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsETH')], { from: owner });
+		await cerc20.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
+		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
 
-		await manager.addSynth(sUSDSynth.address, { from: owner });
-		await manager.addSynth(sETHSynth.address, { from: owner });
-		await manager.addSynth(sBTCSynth.address, { from: owner });
+		await ceth.rebuildCache();
+		await ceth.setCurrenciesAndNotifyManager();
 
-		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
+		await cerc20.rebuildCache();
+		await cerc20.setCurrenciesAndNotifyManager();
 
-		await manager.addShortableSynth(sBTCSynth.address, { from: owner });
-		await manager.addShortableSynth(sETHSynth.address, { from: owner });
+		await short.rebuildCache();
+		await short.setCurrenciesAndNotifyManager();
 
 		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
+		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 	};
 
 	const updateRatesWithDefaults = async () => {
@@ -333,7 +328,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'setMaxDebt',
 				'setBaseBorrowRate',
 				'setBaseShortRate',
-				'addCollateral',
+				'addCollaterals',
 				'addSynth',
 				'addShortableSynth',
 				'updateBorrowRates',
@@ -386,7 +381,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		it('should get the total balance in sUSD correctly', async () => {
 			const total = await manager.totalLong();
-			const debt = total.debt;
+			const debt = total.susdValue;
 
 			assert.bnEqual(debt, toUnit(400));
 		});
@@ -403,7 +398,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			await ceth.close(id, { from: account1 });
 
 			const total = await manager.totalLong();
-			const debt = total.debt;
+			const debt = total.susdValue;
 
 			assert.bnEqual(debt, toUnit(300));
 		});
@@ -463,7 +458,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		describe('revert conditions', async () => {
 			it('should revert if the caller is not the owner', async () => {
 				await assert.revert(
-					manager.addCollateral(ZERO_ADDRESS, { from: account1 }),
+					manager.addCollaterals([ZERO_ADDRESS], { from: account1 }),
 					'Only the contract owner may perform this action'
 				);
 			});
@@ -471,7 +466,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		describe('when a new collateral is added', async () => {
 			beforeEach(async () => {
-				await manager.addCollateral(ZERO_ADDRESS, { from: owner });
+				await manager.addCollaterals([ZERO_ADDRESS], { from: owner });
 			});
 
 			it('should add the collateral', async () => {
@@ -490,34 +485,34 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		});
 	});
 
-	describe('adding synths', async () => {
-		describe('revert conditions', async () => {
-			it('should revert if the caller is not the owner', async () => {
-				await assert.revert(
-					manager.addSynth(ZERO_ADDRESS, { from: account1 }),
-					'Only the contract owner may perform this action'
-				);
-			});
-		});
+	// describe('adding synths', async () => {
+	// 	describe('revert conditions', async () => {
+	// 		it('should revert if the caller is not the owner', async () => {
+	// 			await assert.revert(
+	// 				manager.addSynth(ZERO_ADDRESS, { from: account1 }),
+	// 				'Only collateral contracts'
+	// 			);
+	// 		});
+	// 	});
 
-		describe('when a new synth is added', async () => {
-			beforeEach(async () => {
-				await manager.addSynth(ZERO_ADDRESS, { from: owner });
-			});
+	// 	describe('when a new synth is added', async () => {
+	// 		beforeEach(async () => {
+	// 			await ceth.addSynths([toBytes32('sXRP')], { from: owner });
+	// 		});
 
-			it('should add the collateral', async () => {
-				assert.isTrue(await manager.hasSynth(ZERO_ADDRESS));
-			});
-		});
+	// 		it('should add the synth', async () => {
+	// 			assert.isTrue(await manager.hasSynth(ZERO_ADDRESS));
+	// 		});
+	// 	});
 
-		describe('retreiving synth by address', async () => {
-			it('if a synth is in the manager, it should return true', async () => {
-				assert.isTrue(await manager.hasSynth(sUSDSynth.address));
-			});
+	// 	describe('retreiving synth by address', async () => {
+	// 		it('if a synth is in the manager, it should return true', async () => {
+	// 			assert.isTrue(await manager.hasSynth(sUSDSynth.address));
+	// 		});
 
-			it('if a collateral is not in the manager, it should return false', async () => {
-				assert.isFalse(await manager.hasSynth(ZERO_ADDRESS));
-			});
-		});
-	});
+	// 		it('if a collateral is not in the manager, it should return false', async () => {
+	// 			assert.isFalse(await manager.hasSynth(ZERO_ADDRESS));
+	// 		});
+	// 	});
+	// });
 });

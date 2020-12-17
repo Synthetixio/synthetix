@@ -27,12 +27,12 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 		resolver,
 		manager,
 		ceth,
-		synths,
 		exchangeRates,
 		managerState,
 		debtCache,
 		sUSDSynth,
-		feePool;
+		feePool,
+		synths;
 
 	const getid = async tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
@@ -45,14 +45,13 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 		manager,
 		resolver,
 		collatKey,
-		synths,
 		minColat,
 		minSize,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [state, owner, manager, resolver, collatKey, synths, minColat, minSize],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
@@ -123,7 +122,6 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 			manager: manager.address,
 			resolver: resolver.address,
 			collatKey: toBytes32('sETH'),
-			synths: [],
 			minColat: toUnit(1.5),
 			minSize: toUnit(1),
 		});
@@ -141,7 +139,7 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 		await manager.rebuildCache();
 		await feePool.rebuildCache();
 
-		await manager.addCollateral(ceth.address, { from: owner });
+		await manager.addCollaterals([ceth.address], { from: owner });
 
 		await updateRatesWithDefaults();
 
@@ -187,12 +185,9 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 		await manager.rebuildCache();
 		await debtCache.rebuildCache();
 
-		await ceth.addSynth(toBytes32(`Synth${currencyKey}`), { from: owner });
+		await ceth.addSynths([toBytes32(`Synth${currencyKey}`)], { from: owner });
 		await ceth.rebuildCache();
-		await ceth.setCurrencies({ from: owner });
-
-		await manager.addSynth(synth.address, { from: owner });
-		await ceth.rebuildCache();
+		await ceth.setCurrenciesAndNotifyManager();
 
 		return { synth, tokenState, proxy };
 	};
