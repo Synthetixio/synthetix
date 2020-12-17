@@ -4,7 +4,9 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npx hardhat node --target-network mainnet
+  - run:
+      command: npx hardhat node --target-network mainnet
+      background: true
   - cmd-wait-for-rpc
   - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
   - store_artifacts:

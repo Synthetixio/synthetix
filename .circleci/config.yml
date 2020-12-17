@@ -34,7 +34,9 @@ jobs:
       - attach_workspace:
           at: .
       - run: node publish build --use-ovm
-      - run: npx hardhat node
+      - run:
+          command: npx hardhat node
+          background: true
       - cmd-wait-for-rpc
       - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
       - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm --target-network local
@@ -50,7 +52,9 @@ jobs:
       - attach_workspace:
           at: .
       - run: node publish build
-      - run: npx hardhat node
+      - run:
+          command: npx hardhat node
+          background: true
       - cmd-wait-for-rpc
       - run: node publish deploy --network local--fresh-deploy --yes
       - run: npm run test:prod -- --patch-fresh-deployment --target-network local
@@ -66,7 +70,9 @@ jobs:
       - attach_workspace:
           at: .
       - run: node publish build
-      - run: npx hardhat node --target-network mainnet
+      - run:
+          command: npx hardhat node --target-network mainnet
+          background: true
       - cmd-wait-for-rpc
       - run: node publish prepare-deploy --network mainnet
       - run: node publish deploy --add-new-synths --use-fork --yes --network mainnet
@@ -131,7 +137,9 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npx hardhat node --target-network mainnet
+      - run:
+          command: npx hardhat node --target-network mainnet
+          background: true
       - cmd-wait-for-rpc
       - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
       - store_artifacts:

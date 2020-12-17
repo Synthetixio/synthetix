@@ -7,7 +7,9 @@ steps:
   # Compile
   - run: node publish build --use-ovm
   # Start local chain
-  - run: npx hardhat node
+  - run:
+      command: npx hardhat node
+      background: true
   - cmd-wait-for-rpc
   # Deploy
   - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
