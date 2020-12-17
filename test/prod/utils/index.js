@@ -12,7 +12,6 @@ const { simulateExchangeRates } = require('./exchangeRates');
 const { takeDebtSnapshot } = require('./debtSnapshot');
 const { mockOptimismBridge } = require('./optimismBridge');
 const { implementsVirtualSynths } = require('./virtualSynths');
-const { knownAccounts, pwnAccountsOnNetwork } = require('./pwnAccounts');
 const { setup } = require('./setup');
 
 module.exports = {
@@ -31,7 +30,5 @@ module.exports = {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsVirtualSynths,
-	knownAccounts,
-	pwnAccountsOnNetwork,
 	setup,
 };

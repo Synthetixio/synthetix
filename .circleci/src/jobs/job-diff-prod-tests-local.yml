@@ -7,8 +7,9 @@ steps:
   # Compile
   - run: node publish build
   # Start local chain
-  - cmd-local-start
+  - run: npx hardhat node
+  - cmd-wait-for-rpc
   # Deploy
-  - run: node publish deploy --network local --fresh-deploy --yes
+  - run: node publish deploy --network local--fresh-deploy --yes
   # Run production tests
-  - run: npm run test:prod -- --patch-fresh-deployment
+  - run: npm run test:prod -- --patch-fresh-deployment --target-network local

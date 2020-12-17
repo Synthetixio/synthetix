@@ -1,30 +1,53 @@
-const { yellow } = require('chalk');
+const fs = require('fs');
+const path = require('path');
+const { knownAccounts, wrap } = require('../..');
+const { red, gray, yellow } = require('chalk');
 const { subtask, task } = require('hardhat/config');
 const { TASK_NODE_SERVER_READY } = require('hardhat/builtin-tasks/task-names');
 
 task('node', 'Run a node')
-	.addOptionalParam('unlockedAccounts', 'Accounts to unlock')
+	.addOptionalParam('targetNetwork', 'Target network to simulate, i.e. mainnet or local', 'local')
 	.setAction(async (taskArguments, hre, runSuper) => {
-		const unlockedAccounts = (taskArguments.unlockedAccounts || '').split(/,/).filter(x => x);
+		// Enable forking if necessary
+		if (taskArguments.fork) {
+			throw new Error(
+				red(
+					'Forking is automatically managed in Synthetix. Please use `--target-network mainnet` instead.'
+				)
+			);
+		}
+		if (taskArguments.targetNetwork === 'mainnet') {
+			taskArguments.fork =
+				process.env.PROVIDER_URL_MAINNET || process.env.PROVIDER_URL.replace('network', 'mainnet');
+
+			console.log(yellow('<<FORKING ENABLED>>'));
+		}
 
 		subtask(TASK_NODE_SERVER_READY).setAction(async ({ provider }, hre, runSuper) => {
 			await runSuper();
 
-			if (taskArguments.fork) {
-				console.log(
-					yellow('Successful fork of mainnet...')
-					// yellow(`Successfully forked ${network} at block ${state.blockchain.forkBlockNumber}`)
-				);
+			const network = taskArguments.targetNetwork;
+			console.log(
+				yellow(`Targetting Synthetix in ${network}${taskArguments.fork ? ' (forked)' : ''}`)
+			);
 
-				await Promise.all(
-					unlockedAccounts.map(address => {
-						return provider.request({
-							method: 'hardhat_impersonateAccount',
-							params: [address],
-						});
-					})
-				);
-			}
+			// Unlock any specified accounts, plus those
+			// known as protocol users of the target network.
+			const { getUsers } = wrap({ network, fs, path });
+			const accounts = getUsers({ network })
+				.filter(account => account.name !== 'fee')
+				.filter(account => account.name !== 'zero')
+				.concat(knownAccounts[network] || []);
+			await Promise.all(
+				accounts.map(account => {
+					console.log(gray(`  > Unlocking ${account.name}: ${account.address}`));
+
+					return provider.request({
+						method: 'hardhat_impersonateAccount',
+						params: [account.address],
+					});
+				})
+			);
 		});
 
 		await runSuper(taskArguments);

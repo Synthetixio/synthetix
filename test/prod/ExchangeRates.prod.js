@@ -21,7 +21,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 	let ExchangeRates, ReadProxyAddressResolver, SystemSettings, Exchanger;
 
 	before('prepare', async () => {
-		network = 'mainnet';
+		network = config.targetNetwork;
 		({ owner, deploymentPath } = await setup({ network }));
 
 		({

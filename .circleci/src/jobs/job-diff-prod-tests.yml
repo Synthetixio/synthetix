@@ -7,7 +7,8 @@ steps:
   # Compile
   - run: node publish build
   # Start fork
-  - cmd-fork-start
+  - run: npx hardhat node --target-network mainnet
+  - cmd-wait-for-rpc
   # Prepare deploy
   - run: node publish prepare-deploy --network mainnet
   # Deploy

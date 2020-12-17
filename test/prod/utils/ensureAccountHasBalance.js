@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const { knownAccounts } = require('./pwnAccounts');
 const { connectContract } = require('./connectContract');
 const { web3 } = require('hardhat');
 const { toBN } = web3.utils;
-const { wrap, toBytes32 } = require('../../..');
+const { knownAccounts, wrap, toBytes32 } = require('../../..');
+const { gray } = require('chalk');
 
 function getUser({ network, deploymentPath, user }) {
 	const { getUsers } = wrap({ network, deploymentPath, fs, path });
@@ -13,9 +13,11 @@ function getUser({ network, deploymentPath, user }) {
 }
 
 async function ensureAccountHasEther({ network, deploymentPath, amount, account }) {
+	console.log(gray(`  > Ensuring ${account} has Ether...`));
+
 	const fromAccount =
 		network === 'mainnet'
-			? knownAccounts.find(a => a.name === 'binance').address
+			? knownAccounts.mainnet.find(a => a.name === 'binance').address
 			: getUser({ network, deploymentPath, user: 'owner' });
 
 	const balance = toBN(await web3.eth.getBalance(fromAccount));
@@ -33,9 +35,11 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 }
 
 async function ensureAccountHasSNX({ network, deploymentPath, amount, account }) {
+	console.log(gray(`  > Ensuring ${account} has SNX...`));
+
 	const fromAccount =
 		network === 'mainnet'
-			? knownAccounts.find(a => a.name === 'binance').address
+			? knownAccounts.mainnet.find(a => a.name === 'binance').address
 			: getUser({
 					network,
 					deploymentPath,
@@ -57,9 +61,11 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 }
 
 async function ensureAccountHassUSD({ network, deploymentPath, amount, account }) {
+	console.log(gray(`  > Ensuring ${account} has sUSD...`));
+
 	const fromAccount =
 		network === 'mainnet'
-			? knownAccounts.find(a => a.name === 'binance').address
+			? knownAccounts.mainnet.find(a => a.name === 'binance').address
 			: getUser({
 					network,
 					deploymentPath,
@@ -99,6 +105,8 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 }
 
 async function ensureAccountHassETH({ network, deploymentPath, amount, account }) {
+	console.log(gray(`  > Ensuring ${account} has sETH...`));
+
 	const sUSDAmount = amount.mul(toBN('50'));
 	await ensureAccountHassUSD({ network, deploymentPath, amount: sUSDAmount, account });
 

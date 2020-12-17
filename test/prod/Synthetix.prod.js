@@ -2,7 +2,7 @@ const { grey, red } = require('chalk');
 const { web3, contract, artifacts, config } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit, fromUnit } = require('../utils')();
-const { toBytes32 } = require('../..');
+const { knownAccounts, toBytes32 } = require('../..');
 const {
 	connectContracts,
 	connectContract,
@@ -13,7 +13,6 @@ const {
 	skipStakeTime,
 	writeSetting,
 	implementsVirtualSynths,
-	knownAccounts,
 	setup,
 } = require('./utils');
 
@@ -31,7 +30,7 @@ contract('Synthetix (prod tests)', accounts => {
 	let SynthsUSD, SynthsETH;
 
 	before('prepare', async () => {
-		network = 'mainnet';
+		network = config.targetNetwork;
 		({ owner, deploymentPath } = await setup({ network }));
 
 		({
@@ -346,7 +345,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		describe('with virtual tokens and a custom swap contract', () => {
-			const usdcHolder = knownAccounts.find(a => a.name === 'binance').address;
+			const usdcHolder = knownAccounts.mainnet.find(a => a.name === 'binance').address;
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 

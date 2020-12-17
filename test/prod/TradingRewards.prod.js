@@ -26,7 +26,7 @@ contract('TradingRewards (prod tests)', accounts => {
 			return this.skip();
 		}
 
-		network = 'mainnet';
+		network = config.targetNetwork;
 		({ owner, deploymentPath } = await setup({ network }));
 
 		({ TradingRewards, ReadProxyAddressResolver, SystemSettings } = await connectContracts({

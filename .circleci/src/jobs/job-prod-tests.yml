@@ -4,7 +4,8 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - cmd-fork-start
+  - run: npx hardhat node --target-network mainnet
+  - cmd-wait-for-rpc
   - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log

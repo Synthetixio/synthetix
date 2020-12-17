@@ -1,19 +1,5 @@
 version: 2.1
 commands:
-  cmd-fork-start:
-    description: Starts a local fork of mainnet
-    steps:
-      - run:
-          command: npx hardhat node --fork $PROVIDER_URL_MAINNET --unlocked-accounts 0xEb3107117FEAd7de89Cd14D463D340A2E6917769,0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362
-          background: true
-      - cmd-wait-for-rpc
-  cmd-local-start:
-    description: Starts a local hardhat chain
-    steps:
-      - run:
-          command: npx hardhat node
-          background: true
-      - cmd-wait-for-rpc
   cmd-wait-for-rpc:
     steps:
       - run: sleep 5
@@ -47,10 +33,11 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: node publish build
-      - cmd-local-start
+      - run: node publish build --use-ovm
+      - run: npx hardhat node
+      - cmd-wait-for-rpc
       - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
-      - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
+      - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm --target-network local
   job-diff-prod-tests-local:
     working_directory: ~/repo
     docker:
@@ -63,9 +50,10 @@ jobs:
       - attach_workspace:
           at: .
       - run: node publish build
-      - cmd-local-start
-      - run: node publish deploy --network local --fresh-deploy --yes
-      - run: npm run test:prod -- --patch-fresh-deployment
+      - run: npx hardhat node
+      - cmd-wait-for-rpc
+      - run: node publish deploy --network local--fresh-deploy --yes
+      - run: npm run test:prod -- --patch-fresh-deployment --target-network local
   job-diff-prod-tests:
     working_directory: ~/repo
     docker:
@@ -78,7 +66,8 @@ jobs:
       - attach_workspace:
           at: .
       - run: node publish build
-      - cmd-fork-start
+      - run: npx hardhat node --target-network mainnet
+      - cmd-wait-for-rpc
       - run: node publish prepare-deploy --network mainnet
       - run: node publish deploy --add-new-synths --use-fork --yes --network mainnet
       - run: npm run test:prod:gas -- --patch-fresh-deployment && npx codechecks codechecks.prod.yml
@@ -142,7 +131,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - cmd-fork-start
+      - run: npx hardhat node --target-network mainnet
+      - cmd-wait-for-rpc
       - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log

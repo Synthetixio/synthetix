@@ -47,13 +47,10 @@ module.exports = {
 			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 			gasPrice: GAS_PRICE,
 			allowUnlimitedContractSize: true,
-			forking: {
-				// blockNumber: 11471344, // Uncomment to fix on a block for faster prod test development
-				url:
-					process.env.PROVIDER_URL_MAINNET ||
-					process.env.PROVIDER_URL.replace('network', 'mainnet'),
-				enabled: false,
-			},
+			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
+		},
+		localhost: {
+			url: 'http://localhost:8545',
 		},
 	},
 	gasReporter: {

@@ -5,10 +5,11 @@ steps:
   - attach_workspace:
       at: .
   # Compile
-  - run: node publish build
+  - run: node publish build --use-ovm
   # Start local chain
-  - cmd-local-start
+  - run: npx hardhat node
+  - cmd-wait-for-rpc
   # Deploy
   - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
   # Run production tests
-  - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
+  - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm --target-network local
