@@ -81,7 +81,9 @@ const defaults = {
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
-	CROSS_DOMAIN_MESSAGE_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
 };
 
 /**

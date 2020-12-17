@@ -122,19 +122,33 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getTradingRewardsEnabled();
     }
 
-    function crossDomainMessageGasLimit() external view returns (uint) {
-        return getCrossDomainMessageGasLimit();
+    function crossDomainMessageGasLimit(CrossDomainMessageGasLimits gasLimitType) external view returns (uint) {
+        return getCrossDomainMessageGasLimit(gasLimitType);
     }
 
     // ========== RESTRICTED ==========
 
-    function setCrossDomainMessageGasLimit(uint _crossDomainMessageGasLimit) external onlyOwner {
+    function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
+        external
+        onlyOwner
+    {
+        bytes32 settingCrossDomainMessgaeGasLimit;
+
+        if (_gasLimitType == CrossDomainMessageGasLimits.Deposit) {
+            settingCrossDomainMessgaeGasLimit = SETTING_CROSS_DOMAIN_DEPOSIT_GAS_LIMIT;
+        } else if (_gasLimitType == CrossDomainMessageGasLimits.Reward) {
+            settingCrossDomainMessgaeGasLimit = SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT;
+        } else {
+            // default assignment is the highest number
+            settingCrossDomainMessgaeGasLimit = SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT;
+        }
+
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
-            SETTING_CROSS_DOMAIN_MESSAGE_GAS_LIMIT,
+            settingCrossDomainMessgaeGasLimit,
             _crossDomainMessageGasLimit
         );
-        emit CrossDomainMessageGasLimitChanged(_crossDomainMessageGasLimit);
+        emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
@@ -256,7 +270,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // ========== EVENTS ==========
-    event CrossDomainMessageGasLimitChanged(uint newLimit);
+    event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);

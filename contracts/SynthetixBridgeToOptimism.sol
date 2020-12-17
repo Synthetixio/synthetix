@@ -118,7 +118,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
                     vestingEntries
                 );
                 // relay the message to this contract on L2 via L1 Messenger
-                messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(8e6));
+                messenger().sendMessage(
+                    synthetixBridgeToBase(),
+                    messageData,
+                    uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Escrow))
+                );
                 emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
             }
         }
@@ -179,7 +183,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         bytes memory messageData = abi.encodeWithSignature("completeRewardDeposit(uint256)", _amount);
 
         // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(getCrossDomainMessageGasLimit()));
+        messenger().sendMessage(
+            synthetixBridgeToBase(),
+            messageData,
+            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Reward))
+        );
 
         emit RewardDeposit(msg.sender, _amount);
     }
@@ -191,7 +199,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         // create message payload for L2
         bytes memory messageData = abi.encodeWithSignature("completeDeposit(address,uint256)", msg.sender, _depositAmount);
         // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(getCrossDomainMessageGasLimit()));
+        messenger().sendMessage(
+            synthetixBridgeToBase(),
+            messageData,
+            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Deposit))
+        );
         emit Deposit(msg.sender, _depositAmount);
     }
 

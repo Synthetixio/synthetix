@@ -30,7 +30,9 @@ contract('SynthetixBridgeToBase (spec tests)', accounts => {
 		});
 
 		it('shows the expected cross domain message gas limit', async () => {
-			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(), 3e6);
+			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(0), 3e6);
+			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(1), 8e6);
+			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(2), 3e6);
 		});
 
 		describe('when a user has the required balance', () => {
