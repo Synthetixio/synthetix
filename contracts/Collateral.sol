@@ -44,10 +44,10 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
     // The synths that this contract can issue.
     bytes32[] public synths;
 
-    // Map from currency key to synth.
-    mapping(bytes32 => bytes32) public currencies;
+    // Map from currency key to synth contract name.
+    mapping(bytes32 => bytes32) public synthsByKey;
 
-    // Map from currency to the shorting rewards contract
+    // Map from currency key to the shorting rewards contract
     mapping(bytes32 => address) shortingRewards;
 
     // ========== SETTER STATE VARIABLES ==========
@@ -79,7 +79,6 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         address _manager,
         address _resolver,
         bytes32 _collateralKey,
-        bytes32[] memory _synths,
         uint _minCratio,
         uint _minCollateral
         ) public
@@ -94,10 +93,6 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         collateralKey = _collateralKey;
         setMinCratio(_minCratio);
         setMinCollateral(_minCollateral);
-
-        for (uint i = 0; i < _synths.length; i++) {
-            synths.push(_synths[i]);
-        }
 
         owner = _owner;
     }
@@ -123,8 +118,8 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
-    function _synths(bytes32 synth) internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(synth));
+    function _synth(bytes32 synthName) internal view returns (ISynth) {
+        return ISynth(requireAndGetAddress(synthName));
     }
 
     function _synthsUSD() internal view returns (ISynth) {
@@ -192,8 +187,8 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
     /* ---------- UTILITIES ---------- */
 
     // Check the account has enough of the synth to make the payment
-    function _checkSynthBalance(address payer, bytes32 _synth, uint amount) internal view returns (bool) {
-        require(IERC20(address(_synths(currencies[_synth]))).balanceOf(payer) >= amount, "Not enough synth balance");
+    function _checkSynthBalance(address payer, bytes32 key, uint amount) internal view returns (bool) {
+        require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough synth balance");
     }
 
     // We set the interest index to 0 to indicate the loan has been closed.
@@ -205,15 +200,20 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
     /* ---------- Synths ---------- */
 
-    function setCurrencies() external {
-        for (uint i = 0; i < synths.length; i++) {
-            ISynth synth = ISynth(requireAndGetAddress(synths[i]));
-            currencies[synth.currencyKey()] = synths[i];
+
+    function addSynths(bytes32[] calldata _synthNames) external onlyOwner {
+        for (uint i = 0; i < _synthNames.length; i++) {
+            synths.push(_synthNames[i]);
         }
     }
 
-    function addSynth(bytes32 _synth) external onlyOwner {
-        synths.push(_synth);
+    // We split this out because we need to rebuild the cache after adding synths.
+    function setCurrenciesAndNotifyManager() public {
+        for (uint i = 0; i < synths.length; i++) {
+            ISynth synth = ISynth(requireAndGetAddress(synths[i]));
+            synthsByKey[synth.currencyKey()] = synths[i];
+            _manager().addSynth(address(synth));
+        }
     }
 
      /* ---------- Rewards Contracts ---------- */
@@ -265,7 +265,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         _systemStatus().requireIssuanceActive();
 
         // 1. We can only issue certain synths.
-        require(currencies[currency] > 0, "Not allowed to issue this synth");
+        require(synthsByKey[currency] > 0, "Not allowed to issue this synth");
 
         // 2. Make sure the synth rate is not invalid.
         require(!_exchangeRates().rateIsInvalid(currency), "Currency rate is invalid");
@@ -318,13 +318,14 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         // 15. If its short, convert back to sUSD, otherwise issue the loan.
         if (short) {
             issued = _exchangeRates().effectiveValue(currency, loanAmountMinusFee, sUSD);
+            _synthsUSD().issue(msg.sender, issued);
             _manager().incrementShorts(currency, amount);
 
             if (shortingRewards[currency] != address(0)) {
                 IShortingRewards(shortingRewards[currency]).enrol(msg.sender, amount);
             }
         } else {
-            _synths(currencies[currency]).issue(msg.sender, loanAmountMinusFee);
+            _synth(synthsByKey[currency]).issue(msg.sender, loanAmountMinusFee);
             _manager().incrementLongs(currency, amount);
         }
 
@@ -352,7 +353,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         _checkSynthBalance(loan.account, loan.currency, total);
 
         // 6. Burn the synths
-        _synths(currencies[loan.currency]).burn(borrower, total);
+        _synth(synthsByKey[loan.currency]).burn(borrower, total);
 
         // 7. Tell the manager.
         if (loan.short) {
@@ -361,13 +362,11 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).exit(msg.sender);
             }
-            // if its short, we need to work out the sUSD value and transfer back the difference.
-            uint amount = _exchangeRates().effectiveValue(loan.currency, loan.amount, sUSD);
-            collateral = loan.collateral.sub(amount);
         } else {
             _manager().decrementLongs(loan.currency, loan.amount);
-            collateral = loan.collateral;
         }
+
+        collateral = loan.collateral;
 
         // 8. Pay fees
         _payFees(loan.accruedInterest, loan.currency);
@@ -394,7 +393,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         collateral = loan.collateral;
 
         // 4. Burn the synths
-        _synths(currencies[loan.currency]).burn(liquidator, total);
+        _synth(synthsByKey[loan.currency]).burn(liquidator, total);
 
         // 5. Tell the manager.
         if (loan.short) {
@@ -532,7 +531,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
         // 14. Burn the synths from the liquidator.
-        _synths(currencies[loan.currency]).burn(msg.sender, amountToLiquidate);
+        _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
 
         // 15. Store the loan.
         state.updateLoan(loan);
@@ -576,7 +575,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         loan = _processPayment(loan, payment);
 
         // 9. Burn synths from the payer
-        _synths(currencies[loan.currency]).burn(repayer, payment);
+        _synth(synthsByKey[loan.currency]).burn(repayer, payment);
 
         // 10. Store the loan
         state.updateLoan(loan);
@@ -611,13 +610,14 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         if (loan.short) {
             _manager().incrementShorts(loan.currency, amount);
             issued = _exchangeRates().effectiveValue(loan.currency, amount, sUSD);
+            _synthsUSD().issue(msg.sender, issued);
 
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).enrol(msg.sender, amount);
             }
         } else {
             _manager().incrementLongs(loan.currency, amount);
-            _synths(currencies[loan.currency]).issue(msg.sender, amount);
+            _synth(synthsByKey[loan.currency]).issue(msg.sender, amount);
         }
 
         // 8. Store the loan
@@ -635,7 +635,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) =  loan.short ? _manager().getShortRatesAndTime(loan.currency, loan.interestIndex) : _manager().getRatesAndTime(loan.interestIndex);
 
         // 2. Get the instantaneous rate.
-        uint instantaneousRate = loan.short ? _manager().getShortRate(address(_synths(currencies[loan.currency]))) : _manager().getBorrowRate();
+        uint instantaneousRate = loan.short ? _manager().getShortRate(address(_synth(synthsByKey[loan.currency]))) : _manager().getBorrowRate();
 
         // 3. Get the time since we last updated the rate.
         uint timeDelta = block.timestamp.sub(lastUpdated).mul(SafeDecimalMath.unit());

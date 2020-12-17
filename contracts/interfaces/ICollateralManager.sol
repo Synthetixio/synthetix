@@ -23,8 +23,10 @@ interface ICollateralManager {
 
     function getShortRate(address currency) external view returns (uint shortRate);
 
+    function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue);
+
     // Manager mutative
-    function addCollateral(address collateral) external;
+    function addCollaterals(address[] calldata collaterals) external;
 
     function addSynth(address synth) external;
 
@@ -43,5 +45,4 @@ interface ICollateralManager {
 
     function updateShortRates(bytes32 currency, uint rate) external;
 
-    function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue);
 }

@@ -147,17 +147,17 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         return state.short(synth);
     }
 
-    function totalLong() public view returns (uint debt, bool anyRateIsInvalid) {
+    function totalLong() public view returns (uint susdValue, bool anyRateIsInvalid) {
         address[] memory synths = _synths.elements;
 
         for (uint i = 0; i < synths.length; i++) {
             bytes32 synth = ISynth(synths[i]).currencyKey();
             if (synth == sUSD) {
-                debt = debt.add(state.long(synth));
+                susdValue = susdValue.add(state.long(synth));
             } else {
                 (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
                 uint amount = state.long(synth).multiplyDecimal(rate);
-                debt = debt.add(amount);
+                susdValue = susdValue.add(amount);
                 if (invalid) {
                     anyRateIsInvalid = true;
                 }
@@ -165,14 +165,14 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         }
     }
 
-    function totalShort() public view returns (uint shortValue, bool anyRateIsInvalid) {
+    function totalShort() public view returns (uint susdValue, bool anyRateIsInvalid) {
         address[] memory synths = _shortableSynths.elements;
 
         for (uint i = 0; i < synths.length; i++) {
             bytes32 synth = ISynth(synths[i]).currencyKey();
             (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
             uint amount = state.short(synth).multiplyDecimal(rate);
-            shortValue = shortValue.add(amount);
+            susdValue = susdValue.add(amount);
             if (invalid) {
                 anyRateIsInvalid = true;
             }
@@ -267,23 +267,17 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
 
     /* ---------- MANAGER ---------- */
 
-    function addCollateral(address collateral) external onlyOwner {
+    function addCollaterals(address[] calldata collaterals) external onlyOwner {
         _systemStatus().requireSystemActive();
 
-        // Has one of the other contracts already added the collateral?
-        require(!_collaterals.contains(collateral), "Collateral already added");
-
-        // Add it to the address set lib.
-        _collaterals.add(collateral);
-
-        emit CollateralAdded(collateral);
+        for (uint i = 0; i < collaterals.length; i++) {
+            _collaterals.add(collaterals[i]);
+            emit CollateralAdded(collaterals[i]);
+        }
     }
 
-    function addSynth(address synth) external onlyOwner {
+    function addSynth(address synth) external onlyCollateral {
         _systemStatus().requireSystemActive();
-
-        // Has one of the other contracts already added the synth?
-        require(!_synths.contains(synth), "Synth already added");
 
         // Add it to the address set lib.
         _synths.add(synth);
@@ -294,11 +288,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         emit SynthAdded(synth);
     }
 
-    function addShortableSynth(address synth) external onlyOwner {
+    function addShortableSynth(address synth) external onlyCollateral {
         _systemStatus().requireSystemActive();
-
-        // Has one of the other contracts already added the synth?
-        require(!_shortableSynths.contains(synth), "Synth already added");
 
         // Add it to the address set lib.
         _shortableSynths.add(synth);

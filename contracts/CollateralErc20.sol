@@ -22,7 +22,6 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         address _manager,
         address _resolver,
         bytes32 _collateralKey,
-        bytes32[] memory _synths,
         uint _minCratio,
         uint _minCollateral,
         address _underlyingContract
@@ -34,7 +33,6 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         _manager,
         _resolver,
         _collateralKey,
-        _synths,
         _minCratio,
         _minCollateral
         )
