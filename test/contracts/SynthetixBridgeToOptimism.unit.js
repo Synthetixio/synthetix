@@ -132,7 +132,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 
 					it('only one event is emitted (Deposit)', async () => {
-						assert.eventEqual(txn, 'Deposit', [user1, amount, 0]);
+						assert.eventEqual(txn, 'Deposit', [user1, amount]);
 					});
 
 					it('only one message is sent', async () => {
@@ -141,7 +141,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						const expectedData = getDataOfEncodedFncCall({
 							contract: 'SynthetixBridgeToBase',
 							fnc: 'completeDeposit',
-							args: [user1, amount, 0],
+							args: [user1, amount],
 						});
 						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
@@ -202,7 +202,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							expectedData = getDataOfEncodedFncCall({
 								contract: 'SynthetixBridgeToBase',
 								fnc: 'completeDeposit',
-								args: [user1, amount, escrowAmount],
+								args: [user1, amount],
 							});
 
 							assert.equal(messenger.smocked.sendMessage.calls[1][1], expectedData);
@@ -221,7 +221,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 								escrowAmount,
 								emptyArray,
 							]);
-							assert.eventEqual(txn.logs[1], 'Deposit', [user1, amount, escrowAmount]);
+							assert.eventEqual(txn.logs[1], 'Deposit', [user1, amount]);
 						});
 					});
 
@@ -237,7 +237,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							const expectedData = getDataOfEncodedFncCall({
 								contract: 'SynthetixBridgeToBase',
 								fnc: 'completeDeposit',
-								args: [user1, amount, 0],
+								args: [user1, amount],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
 							assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
@@ -245,7 +245,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 						it('and one event is emitted (Deposit)', async () => {
 							assert.equal(txn.logs.length, 1);
-							assert.eventEqual(txn.logs[0], 'Deposit', [user1, amount, 0]);
+							assert.eventEqual(txn.logs[0], 'Deposit', [user1, amount]);
 						});
 					});
 

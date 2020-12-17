@@ -192,7 +192,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					it('should only allow the relayer (aka messenger) to call completeDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.completeDeposit,
-							args: [user1, 100, 1],
+							args: [user1, 100],
 							accounts,
 							address: smockedMessenger,
 							reason: 'Only the relayer can call this',
@@ -203,7 +203,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.completeDeposit(user1, 100, 1, {
+							instance.completeDeposit(user1, 100, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -211,19 +211,13 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by the messenger (aka relayer) with 0 escrow amount', async () => {
+				describe('when invoked by the messenger (aka relayer)', async () => {
 					let completeDepositTx;
 					const completeDepositAmount = 100;
-					const escrowAmount = 0;
 					beforeEach('completeDeposit is called', async () => {
-						completeDepositTx = await instance.completeDeposit(
-							user1,
-							completeDepositAmount,
-							escrowAmount,
-							{
-								from: smockedMessenger,
-							}
-						);
+						completeDepositTx = await instance.completeDeposit(user1, completeDepositAmount, {
+							from: smockedMessenger,
+						});
 					});
 
 					it('should emit a MintedSecondary event', async () => {
@@ -239,47 +233,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.equal(
 							mintableSynthetix.smocked.mintSecondary.calls[0][1].toString(),
 							completeDepositAmount
-						);
-					});
-				});
-
-				describe('when invoked by the messenger (aka relayer) with non-zero escrow amount', async () => {
-					let completeDepositTx;
-					const completeDepositAmount = 100;
-					const escrowAmount = 100;
-					beforeEach('completeDeposit is called', async () => {
-						completeDepositTx = await instance.completeDeposit(
-							user1,
-							completeDepositAmount,
-							escrowAmount,
-							{
-								from: smockedMessenger,
-							}
-						);
-					});
-
-					it('should emit two MintedSecondary events', async () => {
-						assert.eventEqual(completeDepositTx.logs[0], 'MintedSecondary', [
-							user1,
-							completeDepositAmount,
-						]);
-						assert.eventEqual(completeDepositTx.logs[1], 'MintedSecondary', [
-							rewardEscrow.address,
-							escrowAmount,
-						]);
-					});
-
-					it('then SNX is minted via MintableSynthetix.mintSecondary to both the sue and the rewardEscrow contract', async () => {
-						assert.equal(mintableSynthetix.smocked.mintSecondary.calls.length, 2);
-						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[0][0], user1);
-						assert.equal(
-							mintableSynthetix.smocked.mintSecondary.calls[0][1].toString(),
-							completeDepositAmount
-						);
-						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[1][0], rewardEscrow.address);
-						assert.equal(
-							mintableSynthetix.smocked.mintSecondary.calls[1][1].toString(),
-							escrowAmount
 						);
 					});
 				});

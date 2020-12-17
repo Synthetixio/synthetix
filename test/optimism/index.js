@@ -7,6 +7,7 @@ const { toBytes32 } = require('../..');
 const { itCanPerformDeposits } = require('./deposits.test');
 const { itCanPerformRewardDeposits } = require('./rewards.test');
 const { itCanPerformWithdrawals } = require('./withdrawals.test');
+const { itCanPerformEscrowMigration } = require('./migrateEscrow.test');
 
 /*
  * ===== L2 GOTCHAS =====
@@ -62,10 +63,10 @@ describe('Layer 2 production tests', () => {
 		});
 	});
 
-	after('exit', async () => {
-		// TODO: Optimism watchers leave the process open, so we explicitely kill it
-		process.exit(0);
-	});
+	// after('exit', async () => {
+	// 	// TODO: Optimism watchers leave the process open, so we explicitely kill it
+	// 	process.exit(0);
+	// });
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
 		before('connect to contracts', async () => {
@@ -164,5 +165,6 @@ describe('Layer 2 production tests', () => {
 		itCanPerformDeposits({ ctx: this });
 		itCanPerformWithdrawals({ ctx: this });
 		itCanPerformRewardDeposits({ ctx: this });
+		itCanPerformEscrowMigration({ ctx: this });
 	});
 });
