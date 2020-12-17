@@ -19,6 +19,7 @@ const GAS_PRICE = 20e9; // 20 GWEI
 const CACHE_FOLDER = 'cache';
 
 const baseNetworkConfig = {
+	blockGasLimit: 12000000,
 	initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 	gasPrice: GAS_PRICE,
 	// default to allow unlimited sized so that if we run Hardhat Network in isolation (via npx hardhat node)
@@ -60,7 +61,16 @@ module.exports = {
 		ignores: 'test-helpers',
 	},
 	networks: {
-		hardhat: baseNetworkConfig,
+		hardhat: {
+			...baseNetworkConfig,
+			forking: {
+				// blockNumber: 11471344, // Uncomment to fix on a block for faster prod test development
+				url:
+					process.env.PROVIDER_URL_MAINNET ||
+					process.env.PROVIDER_URL.replace('network', 'mainnet'),
+				enabled: false,
+			},
+		},
 		localhost: localNetwork,
 	},
 	gasReporter: {

@@ -1,12 +1,9 @@
 const { grey, red } = require('chalk');
 const { web3, contract, artifacts, config } = require('hardhat');
-const fs = require('fs');
-const path = require('path');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit, fromUnit } = require('../utils')();
-const { wrap, toBytes32 } = require('../..');
+const { toBytes32 } = require('../..');
 const {
-	knownMainnetWallet,
 	connectContracts,
 	connectContract,
 	ensureAccountHasEther,
@@ -15,10 +12,9 @@ const {
 	skipWaitingPeriod,
 	skipStakeTime,
 	writeSetting,
-	simulateExchangeRates,
-	takeDebtSnapshot,
-	mockOptimismBridge,
 	implementsVirtualSynths,
+	knownAccounts,
+	setup,
 } = require('./utils');
 
 const gasFromReceipt = ({ receipt }) =>
@@ -36,20 +32,7 @@ contract('Synthetix (prod tests)', accounts => {
 
 	before('prepare', async () => {
 		network = 'mainnet';
-		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
-		deploymentPath = config.deploymentPath || getPathToNetwork(network);
-
-		owner = getUsers({ network, user: 'owner' }).address;
-		console.log('owner:', owner);
-		console.log('block:', await web3.eth.getBlockNumber());
-		console.log('bal', await web3.eth.getBalance('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'));
-
-		if (config.patchFreshDeployment) {
-			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
-			await mockOptimismBridge({ network, deploymentPath });
-		}
+		({ owner, deploymentPath } = await setup({ network }));
 
 		({
 			Synthetix,
@@ -91,6 +74,7 @@ contract('Synthetix (prod tests)', accounts => {
 			deploymentPath,
 		});
 	});
+
 	describe('core infrastructure', () => {
 		describe('misc state', () => {
 			it('has the expected resolver set', async () => {
@@ -362,7 +346,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		describe('with virtual tokens and a custom swap contract', () => {
-			const usdcHolder = knownMainnetWallet;
+			const usdcHolder = knownAccounts.find(a => a.name === 'binance').address;
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 

@@ -1,11 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const { knownAccounts } = require('./pwnAccounts');
 const { connectContract } = require('./connectContract');
 const { web3 } = require('hardhat');
 const { toBN } = web3.utils;
 const { wrap, toBytes32 } = require('../../..');
-
-const knownMainnetWallet = '0xF977814e90dA44bFA03b6295A0616a897441aceC'; // Binance 8 wallet
 
 function getUser({ network, deploymentPath, user }) {
 	const { getUsers } = wrap({ network, deploymentPath, fs, path });
@@ -16,7 +15,7 @@ function getUser({ network, deploymentPath, user }) {
 async function ensureAccountHasEther({ network, deploymentPath, amount, account }) {
 	const fromAccount =
 		network === 'mainnet'
-			? knownMainnetWallet
+			? knownAccounts.find(a => a.name === 'binance').address
 			: getUser({ network, deploymentPath, user: 'owner' });
 
 	const balance = toBN(await web3.eth.getBalance(fromAccount));
@@ -36,7 +35,7 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 async function ensureAccountHasSNX({ network, deploymentPath, amount, account }) {
 	const fromAccount =
 		network === 'mainnet'
-			? knownMainnetWallet
+			? knownAccounts.find(a => a.name === 'binance').address
 			: getUser({
 					network,
 					deploymentPath,
@@ -60,7 +59,7 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 async function ensureAccountHassUSD({ network, deploymentPath, amount, account }) {
 	const fromAccount =
 		network === 'mainnet'
-			? knownMainnetWallet
+			? knownAccounts.find(a => a.name === 'binance').address
 			: getUser({
 					network,
 					deploymentPath,
@@ -116,7 +115,6 @@ async function ensureAccountHassETH({ network, deploymentPath, amount, account }
 }
 
 module.exports = {
-	knownMainnetWallet,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	ensureAccountHassETH,

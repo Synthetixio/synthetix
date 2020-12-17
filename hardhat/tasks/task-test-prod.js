@@ -13,12 +13,17 @@ task('test:prod', 'run production tests against a running fork')
 			throw new Error('Prod testing needs to be run with --network hardhat');
 		}
 
+		// Extra arguments that can be reached from the tests
 		hre.config.deploymentPath = taskArguments.deploymentPath;
 		hre.config.patchFreshDeployment = taskArguments.patchFreshDeployment;
 		hre.config.useOvm = taskArguments.useOvm;
-		hre.config.paths.tests = './test/prod/';
 
-		// Prod tests use forking, which means some txs could last minutes.
+		// Configure hre
+		hre.config.paths.tests = './test/prod/';
+		hre.config.networks.hardhat.forking.enabled = true;
+		taskArguments.maxMemory = true;
+
+		// Forking means that some txs could last a bit longer
 		const timeout = 5 * 60 * 1000; // 5 minutes
 		hre.config.mocha.timeout = timeout;
 		hre.config.networks.hardhat.timeout = timeout;

@@ -1,7 +1,4 @@
-const fs = require('fs');
-const path = require('path');
 const { contract, config } = require('hardhat');
-const { wrap } = require('../../index.js');
 const { web3 } = require('hardhat');
 const { assert } = require('../contracts/common');
 const { toUnit } = require('../utils')();
@@ -10,9 +7,7 @@ const {
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	skipWaitingPeriod,
-	simulateExchangeRates,
-	takeDebtSnapshot,
-	mockOptimismBridge,
+	setup,
 } = require('./utils');
 
 contract('EtherCollateral (prod tests)', accounts => {
@@ -26,22 +21,12 @@ contract('EtherCollateral (prod tests)', accounts => {
 	let SynthsETH, SynthsUSD;
 
 	before('prepare', async function() {
-		network = 'mainnet';
-		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
-		owner = getUsers({ network, user: 'owner' }).address;
-
-		deploymentPath = config.deploymentPath || getPathToNetwork(network);
-
 		if (config.useOvm) {
 			return this.skip();
 		}
 
-		if (config.patchFreshDeployment) {
-			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
-			await mockOptimismBridge({ network, deploymentPath });
-		}
+		network = 'mainnet';
+		({ owner, deploymentPath } = await setup({ network }));
 
 		({
 			EtherCollateral,
@@ -67,12 +52,14 @@ contract('EtherCollateral (prod tests)', accounts => {
 			account: owner,
 			fromAccount: accounts[7],
 			network,
+			deploymentPath,
 		});
 		await ensureAccountHassUSD({
 			amount: toUnit('1000'),
 			account: user1,
 			fromAccount: owner,
 			network,
+			deploymentPath,
 		});
 	});
 

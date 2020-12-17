@@ -1,7 +1,6 @@
 const { detectNetworkName } = require('./detectNetwork');
 const { connectContract, connectContracts } = require('./connectContract');
 const {
-	knownMainnetWallet,
 	ensureAccountHasEther,
 	ensureAccountHasSNX,
 	ensureAccountHassUSD,
@@ -13,9 +12,10 @@ const { simulateExchangeRates } = require('./exchangeRates');
 const { takeDebtSnapshot } = require('./debtSnapshot');
 const { mockOptimismBridge } = require('./optimismBridge');
 const { implementsVirtualSynths } = require('./virtualSynths');
+const { knownAccounts, pwnAccountsOnNetwork } = require('./pwnAccounts');
+const { setup } = require('./setup');
 
 module.exports = {
-	knownMainnetWallet,
 	detectNetworkName,
 	connectContract,
 	connectContracts,
@@ -31,4 +31,7 @@ module.exports = {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsVirtualSynths,
+	knownAccounts,
+	pwnAccountsOnNetwork,
+	setup,
 };

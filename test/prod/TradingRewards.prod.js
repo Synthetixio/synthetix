@@ -1,7 +1,4 @@
-const fs = require('fs');
-const path = require('path');
 const { contract, config } = require('hardhat');
-const { wrap } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
@@ -10,9 +7,7 @@ const {
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
-	simulateExchangeRates,
-	takeDebtSnapshot,
-	mockOptimismBridge,
+	setup,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -27,22 +22,12 @@ contract('TradingRewards (prod tests)', accounts => {
 	let exchangeLogs;
 
 	before('prepare', async function() {
-		network = 'mainnet';
-		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
-		owner = getUsers({ network, user: 'owner' }).address;
-
-		deploymentPath = config.deploymentPath || getPathToNetwork(network);
-
 		if (config.useOvm) {
 			return this.skip();
 		}
 
-		if (config.patchFreshDeployment) {
-			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
-			await mockOptimismBridge({ network, deploymentPath });
-		}
+		network = 'mainnet';
+		({ owner, deploymentPath } = await setup({ network }));
 
 		({ TradingRewards, ReadProxyAddressResolver, SystemSettings } = await connectContracts({
 			network,
@@ -61,12 +46,14 @@ contract('TradingRewards (prod tests)', accounts => {
 			account: owner,
 			fromAccount: accounts[7],
 			network,
+			deploymentPath,
 		});
 		await ensureAccountHassUSD({
 			amount: toUnit('100'),
 			account: user,
 			fromAccount: owner,
 			network,
+			deploymentPath,
 		});
 	});
 
