@@ -116,7 +116,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[7] = CONTRACT_ISSUER;
         newAddresses[8] = CONTRACT_DEBTCACHE;
-        return combineArrays(existingAddresses, newAddresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
