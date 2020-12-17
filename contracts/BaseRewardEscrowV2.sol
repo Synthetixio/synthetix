@@ -164,6 +164,29 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         return vestingEntries;
     }
 
+    function getAccountVestingEntryIDs(
+        address account,
+        uint256 index,
+        uint256 pageSize
+    ) external view returns (uint256[] memory) {
+        uint256 endIndex = index + pageSize;
+
+        // If the page extends past the end of the accountVestingEntryIDs, truncate it.
+        if (endIndex > accountVestingEntryIDs[account].length) {
+            endIndex = accountVestingEntryIDs[account].length;
+        }
+        if (endIndex <= index) {
+            return new uint256[](0);
+        }
+
+        uint256 n = endIndex - index;
+        uint256[] memory page = new uint256[](n);
+        for (uint256 i; i < n; i++) {
+            page[i] = accountVestingEntryIDs[account][i + index];
+        }
+        return page;
+    }
+
     /* rate of escrow emission per second */
     function ratePerSecond(address account, uint256 entryID) external view returns (uint256) {
         /* Retrieve the vesting entry */
