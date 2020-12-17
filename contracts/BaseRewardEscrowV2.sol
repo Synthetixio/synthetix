@@ -447,33 +447,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         emit VestingEntryCreated(account, block.timestamp, quantity, duration, entryID);
     }
 
-    function _importVestingEntry(
-        address account,
-        VestingEntries.VestingEntry memory entry,
-        bool emitEvent
-    ) internal {
-        uint entryID = nextEntryId;
-        vestingSchedules[account][entryID] = entry;
-
-        /* append entryID to list of entries for account */
-        accountVestingEntryIDs[account].push(entryID);
-
-        /* Increment the next entry id. */
-        nextEntryId = nextEntryId.add(1);
-
-        if (emitEvent) {
-            emit ImportedVestingEntry(
-                account,
-                entryID,
-                entry.escrowAmount,
-                entry.remainingAmount,
-                entry.endTime,
-                entry.duration,
-                entry.lastVested
-            );
-        }
-    }
-
     /* ========== MODIFIERS ========== */
     modifier onlyFeePool() {
         require(msg.sender == address(feePool()), "Only the FeePool can perform this action");
@@ -494,13 +467,4 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         uint time
     );
     event NominateAccountToMerge(address indexed account, address destination);
-    event ImportedVestingEntry(
-        address indexed account,
-        uint entryID,
-        uint escrowAmount,
-        uint remainingAmount,
-        uint endTime,
-        uint duration,
-        uint lastVested
-    );
 }

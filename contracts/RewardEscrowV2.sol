@@ -80,8 +80,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
                     lastVested: 0,
                     escrowAmount: amount,
                     remainingAmount: amount
-                }),
-                true
+                })
             );
 
             /* subtract amount from totalBalancePendingMigration - reverts if insufficient */
@@ -121,8 +120,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
                     lastVested: 0,
                     escrowAmount: escrowAmount,
                     remainingAmount: escrowAmount
-                }),
-                true
+                })
             );
 
             /* update totalBalancePendingMigration - reverts if escrowAmount > remaining balance to migrate */
@@ -166,6 +164,28 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
             emit MigratedAccountEscrow(account, escrowedAmount, vestedAmount, now);
         }
+    }
+
+    /* Internal function to add entry to vestingSchedules and emit event */
+    function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
+        uint entryID = nextEntryId;
+        vestingSchedules[account][entryID] = entry;
+
+        /* append entryID to list of entries for account */
+        accountVestingEntryIDs[account].push(entryID);
+
+        /* Increment the next entry id. */
+        nextEntryId = nextEntryId.add(1);
+
+        emit ImportedVestingEntry(
+            account,
+            entryID,
+            entry.escrowAmount,
+            entry.remainingAmount,
+            entry.endTime,
+            entry.duration,
+            entry.lastVested
+        );
     }
 
     /* ========== L2 MIGRATION ========== */
@@ -222,4 +242,13 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     event MigratedVestingSchedules(address indexed account, uint time);
     event ImportedVestingSchedule(address indexed account, uint time, uint escrowAmount);
     event BurnedForMigrationToL2(address indexed account, uint[] entryIDs, uint escrowedAmountMigrated, uint time);
+    event ImportedVestingEntry(
+        address indexed account,
+        uint entryID,
+        uint escrowAmount,
+        uint remainingAmount,
+        uint endTime,
+        uint duration,
+        uint lastVested
+    );
 }

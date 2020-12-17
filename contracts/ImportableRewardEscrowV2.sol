@@ -45,8 +45,19 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
         totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
 
         for (uint i = 0; i < vestingEntries.length; i++) {
-            _importVestingEntry(account, vestingEntries[i], false);
+            _importVestingEntry(account, vestingEntries[i]);
         }
+    }
+
+    function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
+        uint entryID = nextEntryId;
+        vestingSchedules[account][entryID] = entry;
+
+        /* append entryID to list of entries for account */
+        accountVestingEntryIDs[account].push(entryID);
+
+        /* Increment the next entry id. */
+        nextEntryId = nextEntryId.add(1);
     }
 
     modifier onlySynthetixBridge() {
