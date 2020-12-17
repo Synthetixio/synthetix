@@ -50,10 +50,10 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 
 		describe('when no escrow has been created', () => {
 			it('the initial state should be the expected one', async () => {
-				assert.equal(await RewardEscrowV2L1.totalEscrowedBalance(), 0);
-				assert.equal(await RewardEscrowV2L1.numVestingEntries(user1L1.address), 0);
-				assert.equal(await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address), 0);
-				assert.equal(await RewardEscrowV2L1.totalVestedAccountBalance(user1L1.address), 0);
+				assert.bnEqual(await RewardEscrowV2L1.totalEscrowedBalance(), '0');
+				assert.bnEqual(await RewardEscrowV2L1.numVestingEntries(user1L1.address), '0');
+				assert.bnEqual(await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address), '0');
+				assert.bnEqual(await RewardEscrowV2L1.totalVestedAccountBalance(user1L1.address), '0');
 			});
 		});
 
@@ -78,11 +78,11 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 					await SynthetixL1.approve(RewardEscrowV2L1.address, snxAmount);
 				});
 
-				describe('when the user creates 52 escrow entries', () => {
+				const escrowNum = 24;
+				describe(`when the user creates ${escrowNum} escrow entries`, () => {
 					const escrowEntryAmount = ethers.utils.parseEther('1');
 					const duration = MINUTE;
 					const userEntries = [];
-					const escrowNum = 52;
 					let currentId;
 					let totalEscrowed = ethers.BigNumber.from('0');
 
@@ -100,7 +100,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 						}
 					});
 
-					it('Should create 52 entry IDs', async () => {
+					it(`Should create ${escrowNum} entry IDs`, async () => {
 						assert.equal(userEntries.length, escrowNum);
 						assert.bnEqual(await RewardEscrowV2L1.nextEntryId(), (escrowNum + 1).toString());
 					});
@@ -133,16 +133,26 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 								});
 
 								describe('when the user deposits SNX along with the migration', () => {
-									let mintedSecondaryEvent;
+									let mintedSecondaryEvent, importedVestingEntriesEvent;
 
-									const eventListener = (from, value, event) => {
+									const mintedSecondaryEventListener = (account, amount, event) => {
 										if (event && event.event === 'MintedSecondary') {
 											mintedSecondaryEvent = event;
 										}
 									};
 
+									const importedVestingEntriesEventListener = (account, amount, entries, event) => {
+										if (event && event.event === 'ImportedVestingEntries') {
+											importedVestingEntriesEvent = event;
+										}
+									};
+
 									before('listen to events on l2', async () => {
-										SynthetixBridgeToBaseL2.on('MintedSecondary', eventListener);
+										SynthetixBridgeToBaseL2.on(
+											'ImportedVestingEntries',
+											importedVestingEntriesEventListener
+										);
+										SynthetixBridgeToBaseL2.on('MintedSecondary', mintedSecondaryEventListener);
 									});
 
 									before('depositAndMigrateEscrow', async () => {
@@ -157,9 +167,17 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 									it('emitted a Deposit event', async () => {
 										const event = depositAndMigrateReceipt.events.find(e => e.event === 'Deposit');
 										assert.exists(event);
-
 										assert.bnEqual(event.args.amount, depositAmount);
 										assert.equal(event.args.account, user1L1.address);
+									});
+
+									it('emitted an ExportedVestingEntries event', async () => {
+										const event = depositAndMigrateReceipt.events.find(
+											e => e.event === 'ExportedVestingEntries'
+										);
+										assert.exists(event);
+										assert.equal(event.args.account, user1L1.address);
+										assert.bnEqual(event.args.escrowedAccountBalance, totalEscrowed);
 									});
 
 									it('should update the L1 escrow state', async () => {
@@ -189,12 +207,28 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 											] = await ctx.watcher.getMessageHashesFromL1Tx(
 												depositAndMigrateReceipt.transactionHash
 											);
+											const importEntriesReceiptL2 = await ctx.watcher.getL2TransactionReceipt(
+												messageHashL2ImportEntries
+											);
+											// console.log('GAS:', importEntriesReceiptL2.gasUsed.toString());
 											await ctx.watcher.getL2TransactionReceipt(messageHashL2Deposit);
-											// await ctx.watcher.getL2TransactionReceipt(messageHashL2ImportEntries);
 										});
 
 										before('stop listening to events on L2', async () => {
-											SynthetixBridgeToBaseL2.off('MintedSecondary', eventListener);
+											SynthetixBridgeToBaseL2.off(
+												'ImportedVestingEntries',
+												importedVestingEntriesEventListener
+											);
+											SynthetixBridgeToBaseL2.off('MintedSecondary', mintedSecondaryEventListener);
+										});
+
+										it('emitted an ImportedVestingEntries event', async () => {
+											assert.exists(importedVestingEntriesEvent);
+											assert.equal(importedVestingEntriesEvent.args.account, user1L1.address);
+											assert.bnEqual(
+												importedVestingEntriesEvent.args.escrowedAmount,
+												totalEscrowed
+											);
 										});
 
 										it('emitted a MintedSecondary event', async () => {
@@ -223,7 +257,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 											assert.bnEqual(await SynthetixL2.balanceOf(user1L1.address), depositAmount);
 											assert.bnEqual(
 												await SynthetixL2.balanceOf(RewardEscrowV2L2.address),
-												escrowNum.toString()
+												totalEscrowed
 											);
 										});
 									});
