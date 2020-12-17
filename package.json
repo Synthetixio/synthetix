@@ -19,9 +19,9 @@
 		"test": "hardhat test",
 		"test:gas": "hardhat test --gas --optimizer || cat test-gas-used.log",
 		"test:ovm": "hardhat test --ovm --optimizer",
-		"test:prod": "hardhat test:prod --target-network local --optimizer",
+		"test:prod": "hardhat test:prod --network localhost --optimizer",
+		"test:prod:gas": "hardhat test:prod --gas --network localhost --optimizer --gas-output-file test-gas-used-prod.log",
 		"test:prod:ovm": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism --timeout 900000\"",
-		"test:prod:gas": "hardhat test:prod --gas --network hardhat --optimizer --gas-output-file test-gas-used-prod.log",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",
 		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 90000\""

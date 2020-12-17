@@ -6,9 +6,13 @@ const { getPathToNetwork } = require('../../..');
 const { simulateExchangeRates } = require('./exchangeRates');
 const { takeDebtSnapshot } = require('./debtSnapshot');
 const { mockOptimismBridge } = require('./optimismBridge');
+const { gray } = require('chalk');
 
 async function setup({ network }) {
+	console.log(gray(`  > network: ${network}`));
+
 	const deploymentPath = hre.config.deploymentPath || getPathToNetwork({ network, fs, path });
+	console.log(gray(`  > deployentPath: ${deploymentPath}`));
 
 	const { getUsers } = wrap({ network, fs, path });
 	const synthetixAccounts = getUsers({ network });

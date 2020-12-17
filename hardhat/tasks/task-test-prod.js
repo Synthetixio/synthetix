@@ -8,7 +8,7 @@ task('test:prod', 'run production tests against a running fork')
 	.addOptionalParam(
 		'targetNetwork',
 		'The deployement network to run the tests against (E.g. mainnet, local, etc...)',
-		'mainnet'
+		'local'
 	)
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('deploymentPath', 'Deployed data path')

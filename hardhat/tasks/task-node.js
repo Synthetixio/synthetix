@@ -28,7 +28,7 @@ task('node', 'Run a node')
 
 			const network = taskArguments.targetNetwork;
 			console.log(
-				yellow(`Targetting Synthetix in ${network}${taskArguments.fork ? ' (forked)' : ''}`)
+				yellow(`Targeting Synthetix in ${network}${taskArguments.fork ? ' (forked)' : ''}`)
 			);
 
 			// Unlock any specified accounts, plus those
