@@ -24,7 +24,6 @@
 		"test:ovm": "buidler test --ovm --optimizer",
 		"test:prod": "buidler test:prod --network localhost --optimizer",
 		"test:prod:ovm": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism --timeout 900000\"",
-		"test:prod:ovm:escrow": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism-escrow --timeout 900000\"",
 		"test:prod:gas": "buidler test:prod --gas --network localhost --optimizer --gas-output-file test-gas-used-prod.log",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",

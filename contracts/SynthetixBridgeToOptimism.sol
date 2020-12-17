@@ -95,7 +95,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     function initiateDeposit(uint256 depositAmount) external requireActive {
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
         // escrow amount should beset to 0
-        _initiateDeposit(depositAmount, 0);
+        _initiateDeposit(depositAmount);
     }
 
     function depositAndMigrateEscrow(uint256 depositAmount, uint256[] calldata entryIDs) external requireActive {
@@ -118,12 +118,13 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
                     vestingEntries
                 );
                 // relay the message to this contract on L2 via L1 Messenger
-                messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(getCrossDomainMessageGasLimit()));
+                messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(8e6));
                 emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
             }
         }
+
         if (depositAmount > 0) {
-            _initiateDeposit(depositAmount, escrowedAccountBalance);
+            _initiateDeposit(depositAmount);
         }
     }
 
@@ -183,26 +184,21 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         emit RewardDeposit(msg.sender, _amount);
     }
 
-    function _initiateDeposit(uint256 _depositAmount, uint256 _escrowAmount) private {
+    function _initiateDeposit(uint256 _depositAmount) private {
         // Transfer SNX to L2
         // First, move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), _depositAmount);
         // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature(
-            "completeDeposit(address,uint256,uint256)",
-            msg.sender,
-            _depositAmount,
-            _escrowAmount
-        );
+        bytes memory messageData = abi.encodeWithSignature("completeDeposit(address,uint256)", msg.sender, _depositAmount);
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(getCrossDomainMessageGasLimit()));
-        emit Deposit(msg.sender, _depositAmount, _escrowAmount);
+        emit Deposit(msg.sender, _depositAmount);
     }
 
     // ========== EVENTS ==========
 
     event BridgeMigrated(address oldBridge, address newBridge, uint256 amount);
-    event Deposit(address indexed account, uint256 amount, uint256 escrowAmount);
+    event Deposit(address indexed account, uint256 amount);
     event ExportedVestingEntries(
         address indexed account,
         uint256 escrowedAccountBalance,
