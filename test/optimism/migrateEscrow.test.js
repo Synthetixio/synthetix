@@ -3,7 +3,7 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 
 const itCanPerformEscrowMigration = ({ ctx }) => {
-	describe('[ESCROW_MIGRATION] when migrating L1 rewardEscrowV2 entries to L2', () => {
+	describe.only('[ESCROW_MIGRATION] when migrating L1 rewardEscrowV2 entries to L2', () => {
 		const SECOND = 1000;
 		const MINUTE = SECOND * 60;
 
@@ -210,7 +210,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 											const importEntriesReceiptL2 = await ctx.watcher.getL2TransactionReceipt(
 												messageHashL2ImportEntries
 											);
-											// console.log('GAS:', importEntriesReceiptL2.gasUsed.toString());
+											console.log('GAS:', importEntriesReceiptL2.gasUsed.toString());
 											await ctx.watcher.getL2TransactionReceipt(messageHashL2Deposit);
 										});
 
