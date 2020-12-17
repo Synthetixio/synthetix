@@ -853,6 +853,51 @@ contract('BaseRewardEscrowV2', async accounts => {
 		});
 	});
 
+	describe.only('Stress test - Read Vesting Schedule', () => {
+		const duration = 1 * YEAR;
+		const escrowAmount = toUnit(1);
+		const numberOfEntries = 260; // 5 years of entries
+		beforeEach(async () => {
+			// Transfer of SNX to the escrow must occur before creating a vestinng entry
+			mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('1000'));
+
+			// add a 260 escrow entries
+			for (var i = 0; i < numberOfEntries; i++) {
+				await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount, duration, {
+					from: feePoolAccount,
+				});
+			}
+
+			// ensure Issuer.debtBalanceOf returns 0
+			mocks['Issuer'].smocked.debtBalanceOf.will.return.with('0');
+		});
+		it('should return the vesting schedules for account1', async () => {
+			const entries = await baseRewardEscrowV2.getVestingSchedules(account1, 0, numberOfEntries);
+			// should be 260 entries
+			assert.equal(entries.length, numberOfEntries);
+		});
+		it('should return the list of vesting entryIDs for account1', async () => {
+			const vestingEntryIDs = await baseRewardEscrowV2.getAccountVestingEntryIDs(
+				account1,
+				0,
+				numberOfEntries
+			);
+
+			// should be 260 entryID's in the list
+			assert.equal(vestingEntryIDs.length, numberOfEntries);
+		});
+		it('should return a subset of vesting entryIDs for account1', async () => {
+			const vestingEntryIDs = await baseRewardEscrowV2.getAccountVestingEntryIDs(
+				account1,
+				130,
+				numberOfEntries
+			);
+
+			// should be 130 entryID's in the list
+			assert.equal(vestingEntryIDs.length, 130);
+		});
+	});
+
 	describe('Vesting Schedule merging', () => {
 		const duration = 1 * YEAR;
 		let escrowAmount1, escrowAmount2, escrowAmount3, entryID1, entryID2, entryID3;
