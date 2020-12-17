@@ -164,6 +164,29 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         return vestingEntries;
     }
 
+    function getAccountVestingEntryIDs(
+        address account,
+        uint256 index,
+        uint256 pageSize
+    ) external view returns (uint256[] memory) {
+        uint256 endIndex = index + pageSize;
+
+        // If the page extends past the end of the accountVestingEntryIDs, truncate it.
+        if (endIndex > accountVestingEntryIDs[account].length) {
+            endIndex = accountVestingEntryIDs[account].length;
+        }
+        if (endIndex <= index) {
+            return new uint256[](0);
+        }
+
+        uint256 n = endIndex - index;
+        uint256[] memory page = new uint256[](n);
+        for (uint256 i; i < n; i++) {
+            page[i] = accountVestingEntryIDs[account][i + index];
+        }
+        return page;
+    }
+
     /* rate of escrow emission per second */
     function ratePerSecond(address account, uint256 entryID) external view returns (uint256) {
         /* Retrieve the vesting entry */
@@ -447,27 +470,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         emit VestingEntryCreated(account, block.timestamp, quantity, duration, entryID);
     }
 
-    function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
-        uint entryID = nextEntryId;
-        vestingSchedules[account][entryID] = entry;
-
-        /* append entryID to list of entries for account */
-        accountVestingEntryIDs[account].push(entryID);
-
-        /* Increment the next entry id. */
-        nextEntryId = nextEntryId.add(1);
-
-        emit ImportedVestingEntry(
-            account,
-            entryID,
-            entry.escrowAmount,
-            entry.remainingAmount,
-            entry.endTime,
-            entry.duration,
-            entry.lastVested
-        );
-    }
-
     /* ========== MODIFIERS ========== */
     modifier onlyFeePool() {
         require(msg.sender == address(feePool()), "Only the FeePool can perform this action");
@@ -488,13 +490,4 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         uint time
     );
     event NominateAccountToMerge(address indexed account, address destination);
-    event ImportedVestingEntry(
-        address indexed account,
-        uint entryID,
-        uint escrowAmount,
-        uint remainingAmount,
-        uint endTime,
-        uint duration,
-        uint lastVested
-    );
 }
