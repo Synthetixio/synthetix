@@ -1,8 +1,5 @@
 # Simulates a deployment in a fork, and runs production tests against it
 {{> job-header.yml}}
-parameters:
-  network:
-    type: string
 steps:
   - checkout
   - attach_workspace:
@@ -10,13 +7,11 @@ steps:
   # Compile
   - run: node publish build
   # Start fork
-  - cmd-fork-start:
-      network: << parameters.network >>
-      reset: true
+  - cmd-fork-start
   # Prepare deploy
-  - run: node publish prepare-deploy --network << parameters.network >>
+  - run: node publish prepare-deploy --network mainnet
   # Deploy
-  - run: node publish deploy --add-new-synths --use-fork --yes --network << parameters.network >>
+  - run: node publish deploy --add-new-synths --use-fork --yes --network mainnet
   # Run production tests
   - run: npm run test:prod:gas -- --patch-fresh-deployment && npx codechecks codechecks.prod.yml
   - store_artifacts:

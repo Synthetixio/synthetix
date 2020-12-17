@@ -1,16 +1,10 @@
 version: 2.1
 commands:
   cmd-fork-start:
-    description: Starts a local hardhat fork on the specified network
-    parameters:
-      network:
-        type: string
-      reset:
-        type: boolean
-        default: false
+    description: Starts a local fork of mainnet
     steps:
       - run:
-          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >> --unlock-accounts 0xF977814e90dA44bFA03b6295A0616a897441aceC
+          command: npx hardhat node --fork $PROVIDER_URL_MAINNET
           background: true
       - cmd-wait-for-rpc
   cmd-local-start:
@@ -79,19 +73,14 @@ jobs:
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
-    parameters:
-      network:
-        type: string
     steps:
       - checkout
       - attach_workspace:
           at: .
       - run: node publish build
-      - cmd-fork-start:
-          network: << parameters.network >>
-          reset: true
-      - run: node publish prepare-deploy --network << parameters.network >>
-      - run: node publish deploy --add-new-synths --use-fork --yes --network << parameters.network >>
+      - cmd-fork-start
+      - run: node publish prepare-deploy --network mainnet
+      - run: node publish deploy --add-new-synths --use-fork --yes --network mainnet
       - run: npm run test:prod:gas -- --patch-fresh-deployment && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
@@ -149,15 +138,11 @@ jobs:
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
-    parameters:
-      network:
-        type: string
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - cmd-fork-start:
-          network: << parameters.network >>
+      - cmd-fork-start
       - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
@@ -318,6 +303,12 @@ workflows:
               only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
+      - job-unit-tests-coverage:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
       - job-unit-tests-gas-report:
           filters:
             branches:
@@ -357,7 +348,10 @@ workflows:
             - job-prepare
       - job-prod-tests:
           name: job-prod-tests-mainnet
-          network: mainnet
+          requires:
+            - job-prepare
+      - job-diff-prod-tests:
+          name: job-diff-prod-tests-mainnet
           requires:
             - job-prepare
       - job-diff-prod-tests-local:
@@ -388,7 +382,13 @@ workflows:
             - job-prepare
       - job-prod-tests:
           name: job-prod-tests-mainnet
-          network: mainnet
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-diff-prod-tests:
+          name: job-diff-prod-tests-mainnet
           filters:
             branches:
               only: /.*(staging|master).*/
@@ -403,14 +403,6 @@ workflows:
             - job-prepare
       - job-diff-prod-tests-local-ovm:
           name: job-diff-prod-tests-local-ovm
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-diff-prod-tests:
-          name: job-diff-prod-tests-mainnet
-          network: mainnet
           filters:
             branches:
               only: /.*(staging|master).*/
