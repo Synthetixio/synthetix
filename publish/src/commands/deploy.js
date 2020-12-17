@@ -29,6 +29,7 @@ const {
 		SYNTHS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		ZERO_ADDRESS,
+		OVM_MAX_GAS_LIMIT,
 		inflationStartTimestampInSecs,
 	},
 	defaults,
@@ -104,6 +105,20 @@ const deploy = async ({
 		// Using Goerli without manageNonces?
 		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
 			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+		}
+
+		// Every transaction in Optimism needs to be below 9m gas, to ensure
+		// there are no deployment out of gas errors during fraud proofs.
+		if (useOvm) {
+			const maxOptimismGasLimit = OVM_MAX_GAS_LIMIT;
+			if (
+				contractDeploymentGasLimit > maxOptimismGasLimit ||
+				methodCallGasLimit > maxOptimismGasLimit
+			) {
+				throw new Error(
+					`Maximum transaction gas limit for OVM is ${maxOptimismGasLimit} gas, and specified contractDeploymentGasLimit and/or methodCallGasLimit are over such limit. Please make sure that these values are below the maximum gas limit to guarantee that fraud proofs can be done in L1.`
+				);
+			}
 		}
 
 		// Deploying on OVM and not using an OVM deployment path?
@@ -243,7 +258,6 @@ const deploy = async ({
 	nonceManager.account = account;
 
 	let currentSynthetixSupply;
-	let currentSynthetixPrice;
 	let oldExrates;
 	let currentLastMintEvent;
 	let currentWeekOfInflation;
@@ -292,13 +306,11 @@ const deploy = async ({
 
 	try {
 		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
-		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
 		if (!oracleExrates) {
 			oracleExrates = await oldExrates.methods.oracle().call();
 		}
 	} catch (err) {
 		if (freshDeploy) {
-			currentSynthetixPrice = w3utils.toWei('0.2');
 			oracleExrates = oracleExrates || account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
 		} else {
@@ -393,6 +405,8 @@ const deploy = async ({
 				: green('true')
 			: 'false',
 		'Gas price to use': `${gasPrice} GWEI`,
+		'Method call gas limit': `${methodCallGasLimit} gas`,
+		'Contract deployment gas limit': `${contractDeploymentGasLimit} gas`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
 			: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') + deploymentPath,
@@ -509,13 +523,8 @@ const deploy = async ({
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [
-			account,
-			oracleExrates,
-			addressOf(readProxyForResolver),
-			[toBytes32('SNX')],
-			[currentSynthetixPrice],
-		],
+		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
+		args: [account, oracleExrates, addressOf(readProxyForResolver), [], []],
 	});
 
 	const rewardEscrow = await deployer.deployContract({
@@ -781,6 +790,7 @@ const deploy = async ({
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
+		source: useOvm ? 'IssuerWithoutLiquidations' : 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});
