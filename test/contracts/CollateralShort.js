@@ -391,11 +391,9 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			await short.close(id, { from: account1 });
 
-
 			console.log('Contract balance: ' + fromUnit(await sUSDSynth.balanceOf(short.address)));
 			console.log('Account balance: ' + fromUnit(await sUSDSynth.balanceOf(account1)));
 			console.log('-------');
-
 		});
 
 		// it('should transfer the collateral back to the user', async () => {
