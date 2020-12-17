@@ -853,7 +853,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 		});
 	});
 
-	describe.only('Stress test - Read Vesting Schedule', () => {
+	describe('Stress test - Read Vesting Schedule', () => {
 		const duration = 1 * YEAR;
 		const escrowAmount = toUnit(1);
 		const numberOfEntries = 260; // 5 years of entries
