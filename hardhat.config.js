@@ -1,12 +1,11 @@
 'use strict';
 
-require('@nomiclabs/hardhat-truffle5'); // uses and exposes web3 via hardhat-web3 plugin
-
 const path = require('path');
 
+require('./hardhat');
+require('@nomiclabs/hardhat-truffle5'); // uses and exposes web3 via hardhat-web3 plugin
 // require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-compiler'); // enable custom solc compiler
 // require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-node'); // add ability to start an OVM node
-
 require('solidity-coverage');
 require('hardhat-gas-reporter');
 // usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
@@ -17,25 +16,6 @@ const {
 
 const GAS_PRICE = 20e9; // 20 GWEI
 const CACHE_FOLDER = 'cache';
-
-const baseNetworkConfig = {
-	blockGasLimit: 12000000,
-	initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
-	gasPrice: GAS_PRICE,
-	// default to allow unlimited sized so that if we run Hardhat Network in isolation (via npx hardhat node)
-	// it will use this setting and allow any type of compiled contracts
-	allowUnlimitedContractSize: true,
-};
-
-require('./hardhat');
-
-const localNetwork = Object.assign(
-	{
-		url: 'http://localhost:8545',
-		allowUnlimitedContractSize: true,
-	},
-	baseNetworkConfig
-);
 
 module.exports = {
 	GAS_PRICE,
@@ -60,9 +40,13 @@ module.exports = {
 		file: AST_FILENAME,
 		ignores: 'test-helpers',
 	},
+	defaultNetwork: 'hardhat',
 	networks: {
 		hardhat: {
-			...baseNetworkConfig,
+			blockGasLimit: 12000000,
+			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
+			gasPrice: GAS_PRICE,
+			allowUnlimitedContractSize: true,
 			forking: {
 				// blockNumber: 11471344, // Uncomment to fix on a block for faster prod test development
 				url:
@@ -71,7 +55,6 @@ module.exports = {
 				enabled: false,
 			},
 		},
-		localhost: localNetwork,
 	},
 	gasReporter: {
 		enabled: false,
