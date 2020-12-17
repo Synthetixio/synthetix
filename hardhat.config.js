@@ -19,7 +19,6 @@ const GAS_PRICE = 20e9; // 20 GWEI
 const CACHE_FOLDER = 'cache';
 
 const baseNetworkConfig = {
-	blockGasLimit: 0x1fffffffffffff,
 	initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 	gasPrice: GAS_PRICE,
 	// default to allow unlimited sized so that if we run Hardhat Network in isolation (via npx hardhat node)

@@ -6,7 +6,6 @@ const { web3 } = require('hardhat');
 const { assert } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
-	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
@@ -27,7 +26,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 	let SynthsETH, SynthsUSD;
 
 	before('prepare', async function() {
-		network = await detectNetworkName();
+		network = 'mainnet';
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 
 		owner = getUsers({ network, user: 'owner' }).address;

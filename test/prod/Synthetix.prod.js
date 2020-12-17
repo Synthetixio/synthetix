@@ -7,7 +7,6 @@ const { toUnit, fromUnit } = require('../utils')();
 const { wrap, toBytes32 } = require('../..');
 const {
 	knownMainnetWallet,
-	detectNetworkName,
 	connectContracts,
 	connectContract,
 	ensureAccountHasEther,
@@ -36,12 +35,15 @@ contract('Synthetix (prod tests)', accounts => {
 	let SynthsUSD, SynthsETH;
 
 	before('prepare', async () => {
-		network = await detectNetworkName();
+		network = 'mainnet';
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
 		owner = getUsers({ network, user: 'owner' }).address;
+		console.log('owner:', owner);
+		console.log('block:', await web3.eth.getBlockNumber());
+		console.log('bal', await web3.eth.getBalance('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'));
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });

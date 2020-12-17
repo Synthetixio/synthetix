@@ -5,7 +5,6 @@ const { wrap } = require('../../index.js');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
-	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
@@ -28,7 +27,7 @@ contract('TradingRewards (prod tests)', accounts => {
 	let exchangeLogs;
 
 	before('prepare', async function() {
-		network = await detectNetworkName();
+		network = 'mainnet';
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 
 		owner = getUsers({ network, user: 'owner' }).address;

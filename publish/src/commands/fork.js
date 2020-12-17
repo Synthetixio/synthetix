@@ -8,8 +8,11 @@ const path = require('path');
 
 const hre = require('hardhat');
 
-const forkChain = async ({ providerUrl, unlockAccounts = [] }) => {
-	const network = 'mainnet';
+const forkChain = async ({ network, providerUrl, unlockAccounts = [] }) => {
+	if (network !== 'mainnet') {
+		throw new Error(`Hardhat does not support forking ${network}`);
+	}
+
 	ensureNetwork(network);
 
 	const chainId = networkToChainId[network];
@@ -47,6 +50,11 @@ module.exports = {
 		program
 			.command('fork')
 			.description('Starts a local chain, forking the specified network.')
+			.option(
+				'-n, --network <value>',
+				'Network name. E.g: mainnet, ropsten, rinkeby, etc.',
+				'mainnet'
+			)
 			.option(
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'

@@ -5,7 +5,6 @@ const { wrap } = require('../../index.js');
 const { assert } = require('../contracts/common');
 const { toUnit, fastForward } = require('../utils')();
 const {
-	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
@@ -27,7 +26,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 	let ExchangeRates, ReadProxyAddressResolver, SystemSettings, Exchanger;
 
 	before('prepare', async () => {
-		network = await detectNetworkName();
+		network = 'mainnet';
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 
 		owner = getUsers({ network, user: 'owner' }).address;

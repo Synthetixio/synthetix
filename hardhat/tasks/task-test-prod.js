@@ -9,8 +9,8 @@ task('test:prod', 'run production tests against a running fork')
 	.addOptionalParam('deploymentPath', 'Deployed data path')
 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
 	.setAction(async (taskArguments, hre) => {
-		if (hre.network.name !== 'localhost') {
-			throw new Error('Prod testing needs to be run with --network localhost');
+		if (hre.network.name !== 'hardhat') {
+			throw new Error('Prod testing needs to be run with --network hardhat');
 		}
 
 		hre.config.deploymentPath = taskArguments.deploymentPath;
@@ -21,7 +21,7 @@ task('test:prod', 'run production tests against a running fork')
 		// Prod tests use forking, which means some txs could last minutes.
 		const timeout = 5 * 60 * 1000; // 5 minutes
 		hre.config.mocha.timeout = timeout;
-		hre.config.networks.localhost.timeout = timeout;
+		hre.config.networks.hardhat.timeout = timeout;
 
 		await hre.run('test', taskArguments);
 	});
