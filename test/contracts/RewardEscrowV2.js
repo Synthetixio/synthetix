@@ -27,7 +27,7 @@ contract('RewardEscrowV2', async accounts => {
 
 		({ RewardEscrowV2: rewardEscrowV2 } = await setupAllContracts({
 			accounts,
-			contracts: ['RewardEscrowV2'],
+			contracts: ['RewardEscrow', 'RewardEscrowV2'],
 			mocks: {
 				Synthetix: synthetix,
 				FeePool: feePool,
@@ -66,5 +66,13 @@ contract('RewardEscrowV2', async accounts => {
 		it('then numVestingEntries should return 0', async () => {
 			assert.equal(0, await rewardEscrowV2.numVestingEntries(account1));
 		});
+	});
+
+	describe('migrateAccountEscrowBalances', () => {
+		beforeEach(async () => {});
+	});
+
+	describe('importVestingSchedule', () => {
+		beforeEach(async () => {});
 	});
 });

@@ -71,16 +71,16 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
 
     /* ========== VIEWS ========== */
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory addresses = new bytes32[](6);
-        addresses[0] = CONTRACT_EXT_MESSENGER;
-        addresses[1] = CONTRACT_SYNTHETIX;
-        addresses[2] = CONTRACT_ISSUER;
-        addresses[3] = CONTRACT_REWARDSDISTRIBUTION;
-        addresses[4] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
-        addresses[5] = CONTRACT_REWARDESCROW;
-        return combineArrays(existingAddresses, addresses);
+        bytes32[] memory newAddresses = new bytes32[](6);
+        newAddresses[0] = CONTRACT_EXT_MESSENGER;
+        newAddresses[1] = CONTRACT_SYNTHETIX;
+        newAddresses[2] = CONTRACT_ISSUER;
+        newAddresses[3] = CONTRACT_REWARDSDISTRIBUTION;
+        newAddresses[4] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
+        newAddresses[5] = CONTRACT_REWARDESCROW;
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     // ========== MODIFIERS ============
