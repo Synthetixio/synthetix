@@ -39,6 +39,12 @@ interface IRewardEscrowV2 {
         uint256 pageSize
     ) external view returns (VestingEntries.VestingEntryWithID[] memory);
 
+    function getAccountVestingEntryIDs(
+        address account,
+        uint256 index,
+        uint256 pageSize
+    ) external view returns (uint256[] memory);
+
     function getVestingEntryClaimable(address account, uint256 entryID) external view returns (uint);
 
     function timeSinceLastVested(address account, uint256 entryID) external view returns (uint);
