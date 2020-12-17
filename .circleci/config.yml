@@ -4,7 +4,7 @@ commands:
     description: Starts a local fork of mainnet
     steps:
       - run:
-          command: npx hardhat node --fork $PROVIDER_URL_MAINNET
+          command: npx hardhat node --fork $PROVIDER_URL_MAINNET --unlock-accounts 0xEb3107117FEAd7de89Cd14D463D340A2E6917769,0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362
           background: true
       - cmd-wait-for-rpc
   cmd-local-start:
