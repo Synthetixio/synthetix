@@ -27,6 +27,7 @@ const TokenState = artifacts.require(`TokenState`);
 
 contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 	const YEAR = 31536000;
+	const INTERACTION_DELAY = 300;
 
 	const sUSD = toBytes32('sUSD');
 	const sETH = toBytes32('sETH');
@@ -143,6 +144,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				'SystemStatus',
 				'Issuer',
 				'DebtCache',
+				'Exchanger',
 			],
 		}));
 
@@ -155,8 +157,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			owner,
 			addressResolver.address,
 			maxDebt,
-			// 5% / 31536000 (seconds in common year)
-			1585489599,
+			0,
 			0,
 			{
 				from: deployerAccount,
@@ -753,6 +754,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			});
 
 			id = await getid(tx);
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -808,6 +811,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			});
 
 			id = await getid(loan);
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -890,6 +895,9 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 
+			// to get past fee reclamation and settlement owing.
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
+
 			id = await getid(tx);
 		});
 
@@ -943,7 +951,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		});
 
 		describe('should allow repayments on an sUSD loan', async () => {
-			const expected = new BN('90000000323366715800');
+			const expected = new BN('90000000952856992000');
 
 			// I don't want to test interest here. I just want to test repayment.
 			beforeEach(async () => {
@@ -974,12 +982,14 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		});
 
 		describe('it should allow repayments on an sBTC loan', async () => {
-			const expected = new BN('1000000027380576684');
+			const expected = new BN('1000003208389288920');
 
 			beforeEach(async () => {
 				tx = await cerc20.open(fiveRenBTC, twoRenBTC, sBTC, {
 					from: account1,
 				});
+
+				await fastForwardAndUpdateRates(INTERACTION_DELAY);
 
 				id = await getid(tx);
 
@@ -1020,6 +1030,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			tx = await cerc20.open(oneRenBTC, toUnit(5000), sUSD, {
 				from: account1,
 			});
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 
 			id = await getid(tx);
 		});
@@ -1124,7 +1136,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				const ratio = await cerc20.collateralRatio(loan);
 
 				// the loan is very close 150%, we are in 10^18 land.
-				assert.bnClose(ratio, toUnit(1.5), '100000000000');
+				assert.bnClose(ratio, toUnit(1.5), '1000000000000');
 			});
 		});
 
@@ -1172,7 +1184,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
 				const expectedBalance = toUnit(10000).sub(toUnit(5000));
 
-				assert.bnClose(liquidatorBalance, expectedBalance, '100000000000000');
+				assert.bnClose(liquidatorBalance, expectedBalance, '10000000000000000');
 			});
 		});
 	});
@@ -1185,6 +1197,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			});
 
 			id = await getid(tx);
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -1271,6 +1285,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			});
 
 			id = await getid(tx);
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -1320,6 +1336,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 		describe('revert conditions', async () => {
 			it('should revert if the draw would under collateralise the loan', async () => {
+				await fastForwardAndUpdateRates(INTERACTION_DELAY);
+
 				await assert.revert(
 					cerc20.draw(id, toUnit(3000), { from: account1 }),
 					'Drawing this much would put the loan under minimum collateralisation'

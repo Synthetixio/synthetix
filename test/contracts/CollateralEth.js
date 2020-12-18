@@ -23,6 +23,7 @@ const CollateralManagerState = artifacts.require('CollateralManagerState');
 
 contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 	const YEAR = 31556926;
+	const INTERACTION_DELAY = 300;
 
 	const sUSD = toBytes32('sUSD');
 	const sETH = toBytes32('sETH');
@@ -109,6 +110,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 				'FeePool',
 				'AddressResolver',
 				'ExchangeRates',
+				'Exchanger',
 				'SystemStatus',
 				'Issuer',
 				'DebtCache',
@@ -124,8 +126,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			owner,
 			addressResolver.address,
 			maxDebt,
-			// 5% / 31536000 (seconds in common year)
-			1585489599,
+			0,
 			0,
 			{
 				from: deployerAccount,
@@ -725,6 +726,8 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			});
 
 			id = await getid(tx);
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -781,6 +784,8 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			});
 
 			id = await getid(loan);
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -876,6 +881,9 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 
+			// to get past fee reclamation and settlement owing.
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
+
 			id = await getid(tx);
 		});
 
@@ -929,9 +937,9 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 		});
 
 		describe('should allow repayments on an sUSD loan', async () => {
-			const expected = new BN('90000000618895678000');
-
 			// I don't want to test interest here. I just want to test repayment.
+			const expected = new BN('90000045873259246400');
+
 			beforeEach(async () => {
 				await issuesUSDToAccount(oneHundredsUSD, account2);
 				tx = await ceth.repay(account1, id, tensUSD, { from: account2 });
@@ -960,13 +968,16 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 		});
 
 		describe('it should allow repayments on an sETH loan', async () => {
-			const expected = new BN('4000000088982814330');
+			// I don't want to test interest here. I just want to test repayment.
+			const expected = new BN('4000011115443587680');
 
 			beforeEach(async () => {
 				tx = await ceth.open(fiveETH, sETH, {
 					value: tenETH,
 					from: account1,
 				});
+
+				await fastForwardAndUpdateRates(INTERACTION_DELAY);
 
 				id = await getid(tx);
 
@@ -1010,6 +1021,9 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 				value: twoETH,
 				from: account1,
 			});
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
+
 			id = await getid(loan);
 		});
 
@@ -1115,7 +1129,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 				const ratio = await ceth.collateralRatio(loan);
 
 				// the loan is very close 150%, we are in 10^18 land.
-				assert.bnClose(ratio, toUnit(1.5), '100000000000');
+				assert.bnClose(ratio, toUnit(1.5), '1000000000000');
 			});
 
 			it('should allow the liquidator to call claim', async () => {
@@ -1169,7 +1183,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
 				const expectedBalance = toUnit(1000).sub(toUnit(100));
 
-				assert.bnClose(liquidatorBalance, expectedBalance, '1000000000000');
+				assert.bnClose(liquidatorBalance, expectedBalance, '10000000000000');
 			});
 
 			it('should create a pending withdrawl entry', async () => {
@@ -1196,6 +1210,8 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 			id = await getid(loan);
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -1286,6 +1302,8 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			});
 
 			id = await getid(tx);
+
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -1353,7 +1371,10 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 	});
 
 	describe('Accrue Interest', async () => {
-		beforeEach(async () => {});
+		beforeEach(async () => {
+			// 5% / 31536000 (seconds in common year)
+			await manager.setBaseBorrowRate(1585489599, { from: owner });
+		});
 
 		it('should correctly determine the interest on loans', async () => {
 			tx = await ceth.open(oneHundredsUSD, sUSD, {

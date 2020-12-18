@@ -4,7 +4,7 @@ const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { toUnit, currentTime } = require('../utils')();
+const { toUnit, currentTime, fastForward } = require('../utils')();
 
 const { setupAllContracts, setupContract } = require('./setup');
 
@@ -25,6 +25,8 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
 	const sBTC = toBytes32('sBTC');
+
+	const INTERACTION_DELAY = 300;
 
 	let ceth,
 		mcstate,
@@ -123,6 +125,25 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		await sBTCSynth.issue(receiver, issueAmount, { from: owner });
 	};
 
+	const updateRatesWithDefaults = async () => {
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+			from: oracle,
+		});
+
+		const sBTC = toBytes32('sBTC');
+
+		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
+			from: oracle,
+		});
+	};
+
+	const fastForwardAndUpdateRates = async seconds => {
+		await fastForward(seconds);
+		await updateRatesWithDefaults();
+	};
+
 	const setupManager = async () => {
 		synths = ['sUSD', 'sBTC', 'sETH'];
 		({
@@ -145,6 +166,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'SystemStatus',
 				'Issuer',
 				'DebtCache',
+				'Exchanger',
 			],
 		}));
 
@@ -283,20 +305,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 	};
 
-	const updateRatesWithDefaults = async () => {
-		const timestamp = await currentTime();
-
-		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
-			from: oracle,
-		});
-
-		const sBTC = toBytes32('sBTC');
-
-		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
-			from: oracle,
-		});
-	};
-
 	before(async () => {
 		await setupManager();
 	});
@@ -329,8 +337,11 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'setBaseBorrowRate',
 				'setBaseShortRate',
 				'addCollaterals',
+				'removeCollaterals',
 				'addSynth',
+				'removeSynth',
 				'addShortableSynth',
+				'removeShortableSynth',
 				'updateBorrowRates',
 				'updateShortRates',
 				'incrementLongs',
@@ -388,6 +399,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		it('should reduce the sUSD balance when a loan is closed', async () => {
 			issuesUSDToAccount(toUnit(10), account1);
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 			await ceth.close(id, { from: account1 });
 
 			assert.bnEqual(await manager.long(sUSD), toUnit(100));
@@ -395,6 +407,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		it('should reduce the total balance in sUSD when a loan is closed', async () => {
 			issuesUSDToAccount(toUnit(10), account1);
+			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 			await ceth.close(id, { from: account1 });
 
 			const total = await manager.totalLong();
