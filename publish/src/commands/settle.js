@@ -27,7 +27,7 @@ const fromBlockMap = {
 	kovan: 20528323,
 	rinkeby: 7100439,
 	// Note: ropsten was not settled. Needs to be done after https://github.com/Synthetixio/synthetix/pull/699
-	mainnet: 10772929,
+	mainnet: 10892310,
 };
 
 const pathToLocal = name => path.join(__dirname, `${name}.json`);
@@ -218,6 +218,7 @@ const settle = async ({
 			);
 
 			const wasReclaimOrRebate = reclaimAmount > 0 || rebateAmount > 0;
+			let skipIfWillFail = false;
 			if (showDebt) {
 				const valueInUSD = wasReclaimOrRebate
 					? web3.utils.fromWei(
@@ -245,6 +246,24 @@ const settle = async ({
 						'Settling...'
 					)
 				);
+				// see if user has enough funds to settle
+				if (reclaimAmount > 0) {
+					const synth = await Synthetix.methods.synths(toCurrencyKey).call();
+
+					const Synth = new web3.eth.Contract(getSource({ contract: 'Synth' }).abi, synth);
+
+					const balance = await Synth.methods.balanceOf(account).call();
+
+					console.log(
+						gray('Warning: user does not have enough balance to be reclaimed'),
+						gray('User has'),
+						yellow(web3.utils.fromWei(balance.toString())),
+						gray('needs'),
+						yellow(web3.utils.fromWei(reclaimAmount.toString())),
+						reclaimAmount > balance ? red('not enough!') : green('sufficient')
+					);
+					skipIfWillFail = reclaimAmount > balance;
+				}
 			} else {
 				console.log(
 					gray(
@@ -265,6 +284,8 @@ const settle = async ({
 
 			if (dryRun) {
 				console.log(green(`[DRY RUN] > Invoke settle()`));
+			} else if (skipIfWillFail) {
+				console.log(green(`Skipping - will fail`));
 			} else {
 				console.log(green(`Invoking settle()`));
 
@@ -311,7 +332,7 @@ module.exports = {
 		program
 			.command('settle')
 			.description('Settle all exchanges')
-			.option('-a, --latest', 'Always fetch the latest list of transactions', true)
+			.option('-a, --latest', 'Always fetch the latest list of transactions')
 			.option('-d, --show-debt', 'Whether or not to show debt pool impact (requires archive node)')
 			.option('-e, --eth-to-seed <value>', 'Amount of ETH to seed', '1')
 			.option('-f, --from-block <value>', 'Starting block number to listen to events from')
@@ -321,7 +342,7 @@ module.exports = {
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
 				false
 			)
-			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 180e3)
+			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 250e3)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-r, --dry-run',
