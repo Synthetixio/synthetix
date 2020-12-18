@@ -1324,10 +1324,7 @@ const deploy = async ({
 		]) => address
 	);
 	const maxAddressesToCachePerChunk = useOvm ? 6 : 10;
-	const addressGroupsToCache = splitArrayIntoChunks(
-		addressesToCache,
-		Math.ceil(addressesToCache.length / maxAddressesToCachePerChunk)
-	);
+	const addressGroupsToCache = splitArrayIntoChunks(addressesToCache, maxAddressesToCachePerChunk);
 	for (let i = 0; i < addressGroupsToCache.length; i++) {
 		const addressGroup = addressGroupsToCache[i];
 		await runStep({
