@@ -43,19 +43,19 @@ contract MixinSystemSettings is MixinResolver {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
     }
 
-    function getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits gasLimitType) internal view returns (uint) {
-        bytes32 settingCrossDomainMessgaeGasLimit;
-
+    function _getGasLimit(CrossDomainMessageGasLimits gasLimitType) internal pure returns (bytes32) {
         if (gasLimitType == CrossDomainMessageGasLimits.Deposit || gasLimitType == CrossDomainMessageGasLimits.Withdrawal) {
-            settingCrossDomainMessgaeGasLimit = SETTING_CROSS_DOMAIN_DEPOSIT_GAS_LIMIT;
+            return SETTING_CROSS_DOMAIN_DEPOSIT_GAS_LIMIT;
         } else if (gasLimitType == CrossDomainMessageGasLimits.Reward) {
-            settingCrossDomainMessgaeGasLimit = SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT;
+            return SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT;
         } else {
             // default assignment is the highest gasLimit
-            settingCrossDomainMessgaeGasLimit = SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT;
+            return SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT;
         }
+    }
 
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, settingCrossDomainMessgaeGasLimit);
+    function getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits gasLimitType) internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, _getGasLimit(gasLimitType));
     }
 
     function getTradingRewardsEnabled() internal view returns (bool) {

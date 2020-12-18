@@ -132,22 +132,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         external
         onlyOwner
     {
-        bytes32 settingCrossDomainMessgaeGasLimit;
-
-        if (_gasLimitType == CrossDomainMessageGasLimits.Deposit) {
-            settingCrossDomainMessgaeGasLimit = SETTING_CROSS_DOMAIN_DEPOSIT_GAS_LIMIT;
-        } else if (_gasLimitType == CrossDomainMessageGasLimits.Reward) {
-            settingCrossDomainMessgaeGasLimit = SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT;
-        } else {
-            // default assignment is the highest number
-            settingCrossDomainMessgaeGasLimit = SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT;
-        }
-
-        flexibleStorage().setUIntValue(
-            SETTING_CONTRACT_NAME,
-            settingCrossDomainMessgaeGasLimit,
-            _crossDomainMessageGasLimit
-        );
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, _getGasLimit(_gasLimitType), _crossDomainMessageGasLimit);
         emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
