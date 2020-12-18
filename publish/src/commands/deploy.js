@@ -45,18 +45,6 @@ const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
 
-function splitArrayIntoChunks(array, chunkSize) {
-	const chunks = [];
-	for (let i = 0; i < array.length; i += chunkSize) {
-		const chunk = array.slice(i, i + chunkSize);
-		if (chunk.length > 0) {
-			chunks.push(chunk);
-		}
-	}
-
-	return chunks;
-}
-
 const deploy = async ({
 	addNewSynths,
 	gasPrice = DEFAULTS.gasPrice,
@@ -1333,16 +1321,15 @@ const deploy = async ({
 			},
 		]) => address
 	);
-	const maxAddressesToCachePerChunk = useOvm ? 10 : 20;
-	const addressGroupsToCache = splitArrayIntoChunks(addressesToCache, maxAddressesToCachePerChunk);
-	for (let i = 0; i < addressGroupsToCache.length; i++) {
-		const addressGroup = addressGroupsToCache[i];
+	const addressChunkSize = useOvm ? 12 : 20;
+	for (let i = 0; i < addressesToCache.length; i += addressChunkSize) {
+		const chunk = addressesToCache.slice(i, i + addressChunkSize);
 		await runStep({
 			gasLimit: 7e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'rebuildCaches',
-			writeArg: [addressGroup],
+			writeArg: [chunk],
 		});
 	}
 
