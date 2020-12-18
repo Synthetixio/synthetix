@@ -208,7 +208,7 @@ const setupInstance = async ({
 	console.log(gray('  > useFork:', useFork));
 	console.log(gray('  > useOvm:', useOvm));
 
-	const { web3, getSource, getTarget, providerUrl } = bootstrapConnection({
+	const { web3, getSource, getTarget, providerUrl, account } = bootstrapConnection({
 		network,
 		providerUrl: specifiedProviderUrl,
 		deploymentPath,
@@ -217,14 +217,6 @@ const setupInstance = async ({
 		useOvm,
 	});
 	console.log(gray('  > provider:', providerUrl));
-
-	let account;
-	if (privateKey) {
-		const idx = web3.eth.accounts.wallet.length;
-		web3.eth.accounts.wallet.add(privateKey);
-		web3.eth.defaultAccount = web3.eth.accounts.wallet[idx].address;
-		account = web3.eth.defaultAccount;
-	}
 	console.log(gray('  > account:', account));
 
 	const AddressResolver = getContract({
@@ -271,7 +263,7 @@ const bootstrapConnection = ({
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
-	if (network === 'local' || !privateKey) {
+	if (network !== 'local' && !privateKey) {
 		privateKey = envPrivateKey;
 	}
 
