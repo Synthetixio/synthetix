@@ -51,6 +51,8 @@ module.exports = {
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {
+			gas: 12e6,
+			blockGasLimit: 12e6,
 			url: 'http://localhost:8545',
 		},
 	},
