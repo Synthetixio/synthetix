@@ -20,7 +20,7 @@ task('node', 'Run a node')
 			taskArguments.fork =
 				process.env.PROVIDER_URL_MAINNET || process.env.PROVIDER_URL.replace('network', 'mainnet');
 
-			console.log(yellow('<<FORKING ENABLED>>'));
+			console.log(yellow('Forking Mainnet...'));
 		}
 
 		subtask(TASK_NODE_SERVER_READY).setAction(async ({ provider }, hre, runSuper) => {

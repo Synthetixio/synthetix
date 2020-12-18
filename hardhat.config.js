@@ -43,8 +43,11 @@ module.exports = {
 	defaultNetwork: 'hardhat',
 	networks: {
 		hardhat: {
-			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
+			gas: 12e6,
+			blockGasLimit: 12e6,
+			allowUnlimitedContractSize: true,
 			gasPrice: GAS_PRICE,
+			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {

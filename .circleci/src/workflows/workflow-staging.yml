@@ -20,22 +20,19 @@ jobs:
   # Production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-prod-tests:
-      name: job-prod-tests-mainnet
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
-  - job-diff-prod-tests:
-      name: job-diff-prod-tests-mainnet
+  - job-prod-diff-tests:
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Local production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-diff-prod-tests-local:
-      name: job-diff-prod-tests-local
+  - job-prod-diff-tests-local:
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
-  - job-diff-prod-tests-local-ovm:
-      name: job-diff-prod-tests-local-ovm
-      {{> filter-staging.yml}}
-      {{> require-prepare.yml}}
+  # Disabled until we can compile for OVM with hardhat
+  # - job-prod-diff-tests-local-ovm:
+  #     {{> filter-staging.yml}}
+  #     {{> require-prepare.yml}}

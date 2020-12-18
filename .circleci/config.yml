@@ -22,63 +22,6 @@ jobs:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
-  job-diff-prod-tests-local-ovm:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build --use-ovm
-      - run:
-          command: npx hardhat node
-          background: true
-      - cmd-wait-for-rpc
-      - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
-      - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
-  job-diff-prod-tests-local:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build
-      - run:
-          command: npx hardhat node
-          background: true
-      - cmd-wait-for-rpc
-      - run: node publish deploy --network local --fresh-deploy --yes
-      - run: npm run test:prod -- --patch-fresh-deployment
-  job-diff-prod-tests:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build
-      - run:
-          command: npx hardhat node --target-network mainnet
-          background: true
-      - cmd-wait-for-rpc
-      - run: node publish prepare-deploy --network mainnet
-      - run: node publish deploy --add-new-synths --use-fork --yes --network mainnet
-      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && npx codechecks codechecks.prod.yml
-      - store_artifacts:
-          path: test-gas-used-prod.log
   job-lint:
     working_directory: ~/repo
     docker:
@@ -126,6 +69,63 @@ jobs:
           root: .
           paths:
             - node_modules
+  job-prod-diff-tests-local-ovm:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build --use-ovm
+      - run:
+          command: npx hardhat node
+          background: true
+      - cmd-wait-for-rpc
+      - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
+      - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
+  job-prod-diff-tests-local:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - run:
+          command: npx hardhat node
+          background: true
+      - cmd-wait-for-rpc
+      - run: node publish deploy --network local --fresh-deploy --yes
+      - run: npm run test:prod -- --patch-fresh-deployment
+  job-prod-diff-tests:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - run:
+          command: npx hardhat node --target-network mainnet
+          background: true
+      - cmd-wait-for-rpc
+      - run: node publish prepare-deploy --network mainnet
+      - run: node publish deploy --add-new-synths --use-fork --yes --network mainnet
+      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && npx codechecks codechecks.prod.yml
+      - store_artifacts:
+          path: test-gas-used-prod.log
   job-prod-tests:
     working_directory: ~/repo
     docker:
@@ -345,19 +345,15 @@ workflows:
           requires:
             - job-prepare
       - job-prod-tests:
-          name: job-prod-tests-mainnet
           requires:
             - job-prepare
-      - job-diff-prod-tests:
-          name: job-diff-prod-tests-mainnet
+      - job-prod-diff-tests:
           requires:
             - job-prepare
-      - job-diff-prod-tests-local:
-          name: job-diff-prod-tests-local
+      - job-prod-diff-tests-local:
           requires:
             - job-prepare
-      - job-diff-prod-tests-local-ovm:
-          name: job-diff-prod-tests-local-ovm
+      - job-prod-diff-tests-local-ovm:
           requires:
             - job-prepare
   workflow-staging:
@@ -379,28 +375,18 @@ workflows:
           requires:
             - job-prepare
       - job-prod-tests:
-          name: job-prod-tests-mainnet
           filters:
             branches:
               only: /.*(staging|master).*/
           requires:
             - job-prepare
-      - job-diff-prod-tests:
-          name: job-diff-prod-tests-mainnet
+      - job-prod-diff-tests:
           filters:
             branches:
               only: /.*(staging|master).*/
           requires:
             - job-prepare
-      - job-diff-prod-tests-local:
-          name: job-diff-prod-tests-local
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-diff-prod-tests-local-ovm:
-          name: job-diff-prod-tests-local-ovm
+      - job-prod-diff-tests-local:
           filters:
             branches:
               only: /.*(staging|master).*/
