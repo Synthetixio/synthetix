@@ -47,4 +47,6 @@ contract CollateralShort is CollateralErc20 {
             _manager().addShortableSynth(address(synth));
         }
     }
+
+    // add the ability to exit the rewards contract
 }

@@ -20,5 +20,7 @@ interface ICollateralLoan {
         uint accruedInterest;
         // last interest index
         uint interestIndex;
+        // time of last interaction.
+        uint lastInteraction;
     }
 }

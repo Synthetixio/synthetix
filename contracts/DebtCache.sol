@@ -30,7 +30,6 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
     mapping(bytes32 => uint) internal _cachedSynthDebt;
     uint internal _cacheTimestamp;
     bool internal _cacheInvalid = true;
-    mapping(address => bool) internal _collateralSynths;
 
     /* ========== ENCODED NAMES ========== */
 
@@ -39,6 +38,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     // Flexible storage names
     bytes32 internal constant COLLATERAL_SYNTHS = "collateralSynth";
+    bytes32 internal constant COLLATERAL_SHORTS = "collateralShort";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -206,6 +206,12 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
         for (uint i; i < numValues; i++) {
             total = total.add(values[i]);
         }
+
+        // subtract the USD value of all shorts.
+        (uint susdValue, bool invalid) = collateralManager().totalShort();
+
+        total = total.sub(susdValue);
+
         return (total, isInvalid);
     }
 
@@ -277,10 +283,6 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function updateDebtCacheValidity(bool currentlyInvalid) external onlyIssuer {
         _updateDebtCacheValidity(currentlyInvalid);
-    }
-
-    function addCollateralSynths(address synth) external onlyCollateralManager {
-        _collateralSynths[synth] = true;
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -358,13 +360,6 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     modifier onlyIssuerOrExchanger() {
         _onlyIssuerOrExchanger();
-        _;
-    }
-
-    modifier onlyCollateralManager() {
-        bool isCollateralManager = msg.sender == address(collateralManager());
-
-        require(isCollateralManager, "Only the Collateral Manager");
         _;
     }
 
