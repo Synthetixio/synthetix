@@ -1323,27 +1323,27 @@ const deploy = async ({
 			},
 		]) => address
 	);
-	if (useOvm) {
-		const chunks = splitArrayIntoChunks(addressesToCache, 4);
-		for (let i = 0; i < chunks.length; i++) {
-			const chunk = chunks[i];
-			await runStep({
-				gasLimit: 7e6, // higher gas required
-				contract: `AddressResolver`,
-				target: addressResolver,
-				write: 'rebuildCaches',
-				writeArg: [chunk],
-			});
-		}
-	} else {
+	// if (useOvm) {
+	const chunks = splitArrayIntoChunks(addressesToCache, 4);
+	for (let i = 0; i < chunks.length; i++) {
+		const chunk = chunks[i];
 		await runStep({
 			gasLimit: 7e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'rebuildCaches',
-			writeArg: [addressesToCache],
+			writeArg: [chunk],
 		});
 	}
+	// } else {
+	// 	await runStep({
+	// 		gasLimit: 7e6, // higher gas required
+	// 		contract: `AddressResolver`,
+	// 		target: addressResolver,
+	// 		write: 'rebuildCaches',
+	// 		writeArg: [addressesToCache],
+	// 	});
+	// }
 
 	console.log(gray('Double check all contracts with rebuildCache() are rebuilt...'));
 	for (const [contract, target] of contractsWithRebuildableCache) {
