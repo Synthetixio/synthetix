@@ -32,7 +32,6 @@ jobs:
   - job-prod-diff-tests-local:
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
-  # Disabled until we can compile for OVM with hardhat
-  # - job-prod-diff-tests-local-ovm:
-  #     {{> filter-staging.yml}}
-  #     {{> require-prepare.yml}}
+  - job-prod-diff-tests-local-ovm:
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
