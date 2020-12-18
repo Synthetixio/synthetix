@@ -43,13 +43,23 @@ module.exports = {
 	defaultNetwork: 'hardhat',
 	networks: {
 		hardhat: {
-			blockGasLimit: 12000000,
+			// gas: 0x1fffffffffffff,
+			// blockGasLimit: 0x1fffffffffffff,
+			// allowUnlimitedContractSize: true,
 			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
 			gasPrice: GAS_PRICE,
-			allowUnlimitedContractSize: true,
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {
+			// gas: 0x1fffffffffffff,
+			// blockGasLimit: 0x1fffffffffffff,
+			// allowUnlimitedContractSize: true,
+			url: 'http://localhost:8545',
+		},
+		coverage: {
+			gas: 0x1fffffffffffff,
+			blockGasLimit: 0x1fffffffffffff,
+			allowUnlimitedContractSize: true,
 			url: 'http://localhost:8545',
 		},
 	},
