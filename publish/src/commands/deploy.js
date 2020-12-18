@@ -1322,8 +1322,14 @@ const deploy = async ({
 		]) => address
 	);
 	const addressChunkSize = useOvm ? 12 : 20;
+	console.log(
+		gray(`There are ${addressesToCache.length} addreseses to cache: ${addressesToCache.join('\n')}`)
+	);
 	for (let i = 0; i < addressesToCache.length; i += addressChunkSize) {
 		const chunk = addressesToCache.slice(i, i + addressChunkSize);
+		console.log(
+			gray(`  Caching ${addressChunkSize} addresses, from address at idx ${i} ${chunk.join('\n')}`)
+		);
 		await runStep({
 			gasLimit: 7e6, // higher gas required
 			contract: `AddressResolver`,
