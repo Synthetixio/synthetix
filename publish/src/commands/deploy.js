@@ -1313,8 +1313,8 @@ const deploy = async ({
 	console.log(gray('Addresses are correctly set up, continuing...'));
 
 	// now ensure all resolvers are set
-	// NOTE: If using OVM, split the array of addresses to cache,
-	// since things spend signifficantly more gas in OVM
+	// Since this can be gas intensive, split
+	// the call into chunks, depending on the number of addresses to cache.
 	const addressesToCache = contractsWithRebuildableCache.map(
 		([
 			,
@@ -1323,27 +1323,21 @@ const deploy = async ({
 			},
 		]) => address
 	);
-	// if (useOvm) {
-	const chunks = splitArrayIntoChunks(addressesToCache, 4);
-	for (let i = 0; i < chunks.length; i++) {
-		const chunk = chunks[i];
+	const maxAddressesToCachePerChunk = useOvm ? 6 : 10;
+	const addressGroupsToCache = splitArrayIntoChunks(
+		addressesToCache,
+		Math.ceil(addressesToCache.length / maxAddressesToCachePerChunk)
+	);
+	for (let i = 0; i < addressGroupsToCache.length; i++) {
+		const addressGroup = addressGroupsToCache[i];
 		await runStep({
 			gasLimit: 7e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'rebuildCaches',
-			writeArg: [chunk],
+			writeArg: [addressGroup],
 		});
 	}
-	// } else {
-	// 	await runStep({
-	// 		gasLimit: 7e6, // higher gas required
-	// 		contract: `AddressResolver`,
-	// 		target: addressResolver,
-	// 		write: 'rebuildCaches',
-	// 		writeArg: [addressesToCache],
-	// 	});
-	// }
 
 	console.log(gray('Double check all contracts with rebuildCache() are rebuilt...'));
 	for (const [contract, target] of contractsWithRebuildableCache) {
