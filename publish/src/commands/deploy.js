@@ -1323,7 +1323,7 @@ const deploy = async ({
 			},
 		]) => address
 	);
-	const maxAddressesToCachePerChunk = useOvm ? 6 : 10;
+	const maxAddressesToCachePerChunk = useOvm ? 10 : 20;
 	const addressGroupsToCache = splitArrayIntoChunks(addressesToCache, maxAddressesToCachePerChunk);
 	for (let i = 0; i < addressGroupsToCache.length; i++) {
 		const addressGroup = addressGroupsToCache[i];
