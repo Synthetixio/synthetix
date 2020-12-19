@@ -293,13 +293,20 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
 
 		await ceth.rebuildCache();
-		await ceth.setCurrenciesAndNotifyManager();
+		await ceth.setCurrencies();
 
 		await cerc20.rebuildCache();
-		await cerc20.setCurrenciesAndNotifyManager();
+		await cerc20.setCurrencies();
 
 		await short.rebuildCache();
-		await short.setCurrenciesAndNotifyManager();
+		await short.setCurrencies();
+
+		await manager.addSynths([sUSDSynth.address, sBTCSynth.address, sETHSynth.address], {
+			from: owner,
+		});
+		await manager.addShortableSynths([sUSDSynth.address, sBTCSynth.address, sETHSynth.address], {
+			from: owner,
+		});
 
 		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
@@ -338,10 +345,10 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'setBaseShortRate',
 				'addCollaterals',
 				'removeCollaterals',
-				'addSynth',
-				'removeSynth',
-				'addShortableSynth',
-				'removeShortableSynth',
+				'addSynths',
+				'removeSynths',
+				'addShortableSynths',
+				'removeShortableSynths',
 				'updateBorrowRates',
 				'updateShortRates',
 				'incrementLongs',
