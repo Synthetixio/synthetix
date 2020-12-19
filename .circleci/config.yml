@@ -80,7 +80,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: node publish build --use-ovm
+      - run: node publish build
       - run:
           command: npx hardhat node
           background: true

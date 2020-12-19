@@ -5,7 +5,7 @@ steps:
   - attach_workspace:
       at: .
   # Compile
-  - run: node publish build --use-ovm
+  - run: node publish build
   # Start local chain
   - run:
       command: npx hardhat node
