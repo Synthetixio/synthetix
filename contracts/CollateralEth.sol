@@ -10,9 +10,9 @@ import "./interfaces/ICollateralEth.sol";
 // Internal references
 import "./CollateralState.sol";
 
+
 // This contract handles the payable aspects of eth loans.
 contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
-
     mapping(address => uint) public pendingWithdrawals;
 
     constructor(
@@ -23,25 +23,14 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    )
-    public
-    Collateral(
-        _state,
-        _owner,
-        _manager,
-        _resolver,
-        _collateralKey,
-        _minCratio,
-        _minCollateral
-        )
-    { }
+    ) public Collateral(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
 
     function open(uint amount, bytes32 currency) external payable {
         openInternal(msg.value, amount, currency, false);
     }
 
     function close(uint id) external {
-        uint256 collateral = closeInternal(msg.sender, id);
+        uint collateral = closeInternal(msg.sender, id);
 
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateral);
     }
@@ -56,7 +45,11 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
     }
 
-    function repay(address account, uint id, uint amount) external {
+    function repay(
+        address account,
+        uint id,
+        uint amount
+    ) external {
         repayInternal(account, msg.sender, id, amount);
     }
 
@@ -64,15 +57,18 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         drawInternal(id, amount);
     }
 
-    function liquidate(address borrower, uint id, uint amount) external {
+    function liquidate(
+        address borrower,
+        uint id,
+        uint amount
+    ) external {
         uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateralLiquidated);
     }
 
     function claim(uint amount) external nonReentrant {
-        require(pendingWithdrawals[msg.sender] >= amount, "You cannot withdraw more than your total balance");
-
+        // If they try to withdraw more than their total balance, it will fail on the safe sub.
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
 
         (bool success, ) = msg.sender.call.value(amount)("");

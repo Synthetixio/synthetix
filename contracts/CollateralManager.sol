@@ -20,6 +20,7 @@ import "./interfaces/IDebtCache.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ISynth.sol";
 
+
 contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
@@ -81,11 +82,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         uint _maxDebt,
         uint _baseBorrowRate,
         uint _baseShortRate
-        ) public
-        Owned(_owner)
-        Pausable()
-        MixinSystemSettings(_resolver)
-    {
+    ) public Owned(_owner) Pausable() MixinSystemSettings(_resolver) {
         owner = msg.sender;
         state = _state;
 
@@ -154,16 +151,18 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     function totalLong() public view returns (uint susdValue, bool anyRateIsInvalid) {
         address[] memory synths = _synths.elements;
 
-        for (uint i = 0; i < synths.length; i++) {
-            bytes32 synth = ISynth(synths[i]).currencyKey();
-            if (synth == sUSD) {
-                susdValue = susdValue.add(state.long(synth));
-            } else {
-                (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
-                uint amount = state.long(synth).multiplyDecimal(rate);
-                susdValue = susdValue.add(amount);
-                if (invalid) {
-                    anyRateIsInvalid = true;
+        if (synths.length > 0) {
+            for (uint i = 0; i < synths.length; i++) {
+                bytes32 synth = ISynth(synths[i]).currencyKey();
+                if (synth == sUSD) {
+                    susdValue = susdValue.add(state.long(synth));
+                } else {
+                    (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
+                    uint amount = state.long(synth).multiplyDecimal(rate);
+                    susdValue = susdValue.add(amount);
+                    if (invalid) {
+                        anyRateIsInvalid = true;
+                    }
                 }
             }
         }
@@ -172,13 +171,15 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     function totalShort() public view returns (uint susdValue, bool anyRateIsInvalid) {
         address[] memory synths = _shortableSynths.elements;
 
-        for (uint i = 0; i < synths.length; i++) {
-            bytes32 synth = ISynth(synths[i]).currencyKey();
-            (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
-            uint amount = state.short(synth).multiplyDecimal(rate);
-            susdValue = susdValue.add(amount);
-            if (invalid) {
-                anyRateIsInvalid = true;
+        if (synths.length > 0) {
+            for (uint i = 0; i < synths.length; i++) {
+                bytes32 synth = ISynth(synths[i]).currencyKey();
+                (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
+                uint amount = state.short(synth).multiplyDecimal(rate);
+                susdValue = susdValue.add(amount);
+                if (invalid) {
+                    anyRateIsInvalid = true;
+                }
             }
         }
     }
@@ -205,9 +206,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         anyRateIsInvalid = ratesInvalid;
     }
 
-    function getShortRate(address _synth) external view returns (uint shortRate, bool rateIsInvalid) {
-        IERC20 synth = IERC20(_synth);
-        bytes32 synthKey = ISynth(_synth).currencyKey();
+    function getShortRate(address synthAddress) external view returns (uint shortRate, bool rateIsInvalid) {
+        IERC20 synth = IERC20(synthAddress);
+        bytes32 synthKey = ISynth(synthAddress).currencyKey();
 
         rateIsInvalid = _exchangeRates().rateIsInvalid(synthKey);
 
@@ -230,11 +231,29 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         shortRate = proportionalSkew.add(baseShortRate);
     }
 
-    function getRatesAndTime(uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex)  {
+    function getRatesAndTime(uint index)
+        external
+        view
+        returns (
+            uint entryRate,
+            uint lastRate,
+            uint lastUpdated,
+            uint newIndex
+        )
+    {
         (entryRate, lastRate, lastUpdated, newIndex) = state.getRatesAndTime(index);
     }
 
-    function getShortRatesAndTime(bytes32 currency, uint index) external view returns (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex)  {
+    function getShortRatesAndTime(bytes32 currency, uint index)
+        external
+        view
+        returns (
+            uint entryRate,
+            uint lastRate,
+            uint lastUpdated,
+            uint newIndex
+        )
+    {
         (entryRate, lastRate, lastUpdated, newIndex) = state.getShortRatesAndTime(currency, index);
     }
 
@@ -300,64 +319,83 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         }
     }
 
-    function addSynth(address synth) external onlyCollateral {
+    function addSynths(address[] calldata synths) external onlyOwner {
         _systemStatus().requireSystemActive();
 
-        if (!_synths.contains(synth)) {
-            // Add it to the address set lib.
-            _synths.add(synth);
+        for (uint i = 0; i < synths.length; i++) {
+            if (!_synths.contains(synths[i])) {
+                // Add it to the address set lib.
+                _synths.add(synths[i]);
 
-            // Now tell flexible storage which the debt cache will read from.
-            flexibleStorage().setBoolValue(CONTRACT_NAME, keccak256(abi.encodePacked(COLLATERAL_SYNTHS, synth)), true);
+                // Now tell flexible storage which the debt cache will read from.
+                flexibleStorage().setBoolValue(
+                    CONTRACT_NAME,
+                    keccak256(abi.encodePacked(COLLATERAL_SYNTHS, synths[i])),
+                    true
+                );
 
-            emit SynthAdded(synth);
+                emit SynthAdded(synths[i]);
+            }
         }
     }
 
-    function removeSynth(address synth) external onlyCollateral {
+    function removeSynths(address[] calldata synths) external onlyOwner {
         _systemStatus().requireSystemActive();
 
-        if (_synths.contains(synth)) {
-            // Remove it from the the address set lib.
-            _synths.remove(synth);
+        for (uint i = 0; i < synths.length; i++) {
+            if (_synths.contains(synths[i])) {
+                // Remove it from the the address set lib.
+                _synths.remove(synths[i]);
 
-            // Now tell flexible storage which the debt cache will read from.
-            flexibleStorage().setBoolValue(CONTRACT_NAME, keccak256(abi.encodePacked(COLLATERAL_SYNTHS, synth)), false);
+                // Now tell flexible storage which the debt cache will read from.
+                flexibleStorage().setBoolValue(
+                    CONTRACT_NAME,
+                    keccak256(abi.encodePacked(COLLATERAL_SYNTHS, synths[i])),
+                    false
+                );
 
-            emit SynthRemoved(synth);
+                emit SynthRemoved(synths[i]);
+            }
         }
     }
 
-    function addShortableSynth(address synth) external onlyCollateral {
+    function addShortableSynths(address[] calldata synths) external onlyOwner {
         _systemStatus().requireSystemActive();
 
-        if (!_shortableSynths.contains(synth)) {
-            // Add it to the address set lib.
-            _shortableSynths.add(synth);
+        for (uint i = 0; i < synths.length; i++) {
+            if (!_shortableSynths.contains(synths[i])) {
+                // Add it to the address set lib.
+                _shortableSynths.add(synths[i]);
 
-            // Now tell flexible storage which the debt cache will read from.
-            flexibleStorage().setBoolValue(CONTRACT_NAME, keccak256(abi.encodePacked(COLLATERAL_SHORTS, synth)), true);
+                // Now tell flexible storage which the debt cache will read from.
+                flexibleStorage().setBoolValue(
+                    CONTRACT_NAME,
+                    keccak256(abi.encodePacked(COLLATERAL_SHORTS, synths[i])),
+                    true
+                );
 
-            bytes32 synthKey = ISynth(synth).currencyKey();
+                bytes32 synthKey = ISynth(synths[i]).currencyKey();
+                state.addShortCurrency(synthKey);
 
-            state.addShortCurrency(synthKey);
-
-            emit ShortableSynthAdded(synth);
+                emit ShortableSynthAdded(synths[i]);
+            }
         }
     }
 
-    function removeShortableSynth(address synth) external onlyCollateral {
+    function removeShortableSynths(address[] calldata synths) external onlyOwner {
         _systemStatus().requireSystemActive();
 
-        if (_shortableSynths.contains(synth)) {
-            // Remove it from the the address set lib.
-            _shortableSynths.remove(synth);
+        for (uint i = 0; i < synths.length; i++) {
+            if (_shortableSynths.contains(synths[i])) {
+                // Remove it from the the address set lib.
+                _shortableSynths.remove(synths[i]);
 
-            // bytes32 synthKey = ISynth(synth).currencyKey();
+                bytes32 synthKey = ISynth(synths[i]).currencyKey();
 
-            // state.addShortCurrency(synthKey);
+                state.addShortCurrency(synthKey);
 
-            // emit ShortableSynthRemoved(synth);
+                emit ShortableSynthRemoved(synths[i]);
+            }
         }
     }
 

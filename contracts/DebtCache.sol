@@ -20,7 +20,6 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 
 
-
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
@@ -137,7 +136,10 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
 
-            bool mcIssued = flexibleStorage().getBoolValue(CONTRACT_COLLATERALMANAGER, keccak256(abi.encodePacked(COLLATERAL_SYNTHS, synthAddress)));
+            bool mcIssued = flexibleStorage().getBoolValue(
+                CONTRACT_COLLATERALMANAGER,
+                keccak256(abi.encodePacked(COLLATERAL_SYNTHS, synthAddress))
+            );
 
             if (mcIssued) {
                 uint collateralIssued = collateralManager().long(key);
@@ -208,9 +210,11 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
         }
 
         // subtract the USD value of all shorts.
-        (uint susdValue, bool invalid) = collateralManager().totalShort();
+        (uint susdValue, bool shortInvalid) = collateralManager().totalShort();
 
         total = total.sub(susdValue);
+
+        isInvalid = isInvalid || shortInvalid;
 
         return (total, isInvalid);
     }

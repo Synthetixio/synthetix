@@ -10,6 +10,7 @@ import "./interfaces/ICollateral.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
+
 contract CollateralManagerState is Owned, State {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -22,8 +23,8 @@ contract CollateralManagerState is Owned, State {
     uint[] public borrowRates;
     uint public borrowRatesLastUpdated;
 
-    mapping(bytes32 => uint[]) shortRates;
-    mapping(bytes32 => uint) shortRatesLastUpdated;
+    mapping(bytes32 => uint[]) public shortRates;
+    mapping(bytes32 => uint) public shortRatesLastUpdated;
 
     // The total amount of long and short for a synth,
     mapping(bytes32 => Balance) public totalIssuedSynths;
@@ -57,13 +58,13 @@ contract CollateralManagerState is Owned, State {
         totalIssuedSynths[synth].short = totalIssuedSynths[synth].short.sub(amount);
     }
 
-    // Borrow rates.
+    // Borrow rates, one array here for all currencies.
 
-    function getRateAt(uint index) public view returns(uint) {
+    function getRateAt(uint index) public view returns (uint) {
         return borrowRates[index];
     }
 
-    function getRatesLength() public view returns(uint) {
+    function getRatesLength() public view returns (uint) {
         return borrowRates.length;
     }
 
@@ -72,31 +73,42 @@ contract CollateralManagerState is Owned, State {
         borrowRatesLastUpdated = block.timestamp;
     }
 
-    function ratesLastUpdated() public view returns(uint) {
+    function ratesLastUpdated() public view returns (uint) {
         return borrowRatesLastUpdated;
     }
 
-    function getRatesAndTime(uint index) external view returns(uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) {
+    function getRatesAndTime(uint index)
+        external
+        view
+        returns (
+            uint entryRate,
+            uint lastRate,
+            uint lastUpdated,
+            uint newIndex
+        )
+    {
         newIndex = getRatesLength();
         entryRate = getRateAt(index);
         lastRate = getRateAt(newIndex - 1);
         lastUpdated = ratesLastUpdated();
     }
 
-    // Short rates.
+    // Short rates, one array per currency.
 
     function addShortCurrency(bytes32 currency) external onlyAssociatedContract {
-        if (shortRates[currency].length == 0) {
+        if (shortRates[currency].length > 0) {
+            return;
+        } else {
             shortRates[currency].push(0);
             shortRatesLastUpdated[currency] = block.timestamp;
         }
     }
 
-    function getShortRateAt(bytes32 currency, uint index) internal view returns(uint) {
+    function getShortRateAt(bytes32 currency, uint index) internal view returns (uint) {
         return shortRates[currency][index];
     }
 
-    function getShortRatesLength(bytes32 currency) internal view returns(uint) {
+    function getShortRatesLength(bytes32 currency) internal view returns (uint) {
         return shortRates[currency].length;
     }
 
@@ -105,11 +117,20 @@ contract CollateralManagerState is Owned, State {
         shortRatesLastUpdated[currency] = block.timestamp;
     }
 
-    function shortRateLastUpdated(bytes32 currency) internal view returns(uint) {
+    function shortRateLastUpdated(bytes32 currency) internal view returns (uint) {
         return shortRatesLastUpdated[currency];
     }
 
-    function getShortRatesAndTime(bytes32 currency, uint index) external view returns(uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) {
+    function getShortRatesAndTime(bytes32 currency, uint index)
+        external
+        view
+        returns (
+            uint entryRate,
+            uint lastRate,
+            uint lastUpdated,
+            uint newIndex
+        )
+    {
         newIndex = getShortRatesLength(currency);
         entryRate = getShortRateAt(currency, index);
         lastRate = getShortRateAt(currency, newIndex - 1);

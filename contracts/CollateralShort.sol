@@ -8,6 +8,7 @@ import "./CollateralErc20.sol";
 // Internal references
 import "./CollateralState.sol";
 
+
 contract CollateralShort is CollateralErc20 {
     constructor(
         CollateralState _state,
@@ -19,33 +20,20 @@ contract CollateralShort is CollateralErc20 {
         uint _minCollateral,
         address _underlyingContract
     )
-    public
-    CollateralErc20(
-        _state,
-        _owner,
-        _manager,
-        _resolver,
-        _collateralKey,
-        _minCratio,
-        _minCollateral,
-        _underlyingContract
-    )
+        public
+        CollateralErc20(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral, _underlyingContract)
     {}
 
-    function open(uint collateral, uint amount, bytes32 currency) external {
+    function open(
+        uint collateral,
+        uint amount,
+        bytes32 currency
+    ) external {
         require(collateral <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
 
         openInternal(collateral, amount, currency, true);
 
         IERC20(underlyingContract).transferFrom(msg.sender, address(this), collateral);
-    }
-
-    function setCurrenciesAndNotifyManager() public {
-        for (uint i = 0; i < synths.length; i++) {
-            ISynth synth = ISynth(requireAndGetAddress(synths[i]));
-            synthsByKey[synth.currencyKey()] = synths[i];
-            _manager().addShortableSynth(address(synth));
-        }
     }
 
     // add the ability to exit the rewards contract
