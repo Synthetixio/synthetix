@@ -171,9 +171,7 @@ const connectLayer = async ({
 
 	let needToSyncCacheOnBridge = needToImportAddresses;
 	if (!needToSyncCacheOnBridge) {
-		const isResolverCached = await SynthetixBridge.methods
-			.isResolverCached(AddressResolver.options.address)
-			.call();
+		const isResolverCached = await SynthetixBridge.methods.isResolverCached().call();
 		if (!isResolverCached) {
 			needToSyncCacheOnBridge = true;
 		}
