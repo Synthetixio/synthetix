@@ -47,6 +47,8 @@ const constants = {
 
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 
+	OVM_MAX_GAS_LIMIT: '8900000',
+
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
 
@@ -81,6 +83,7 @@ const defaults = {
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
+	CROSS_DOMAIN_MESSAGE_GAS_LIMIT: `${3e6}`,
 };
 
 /**

@@ -216,7 +216,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
         newAddresses[0] = CONTRACT_EXCHANGER;
-        return combineArrays(existingAddresses, newAddresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     // SIP-75 View to determine if freezeRate can be called safely
@@ -715,8 +715,12 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     /* ========== MODIFIERS ========== */
 
     modifier onlyOracle {
-        require(msg.sender == oracle, "Only the oracle can perform this action");
+        _onlyOracle();
         _;
+    }
+
+    function _onlyOracle() internal {
+        require(msg.sender == oracle, "Only the oracle can perform this action");
     }
 
     /* ========== EVENTS ========== */

@@ -122,7 +122,20 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getTradingRewardsEnabled();
     }
 
+    function crossDomainMessageGasLimit() external view returns (uint) {
+        return getCrossDomainMessageGasLimit();
+    }
+
     // ========== RESTRICTED ==========
+
+    function setCrossDomainMessageGasLimit(uint _crossDomainMessageGasLimit) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            SETTING_CROSS_DOMAIN_MESSAGE_GAS_LIMIT,
+            _crossDomainMessageGasLimit
+        );
+        emit CrossDomainMessageGasLimitChanged(_crossDomainMessageGasLimit);
+    }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
         flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_TRADING_REWARDS_ENABLED, _tradingRewardsEnabled);
@@ -243,6 +256,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // ========== EVENTS ==========
+    event CrossDomainMessageGasLimitChanged(uint newLimit);
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);

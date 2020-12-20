@@ -48,6 +48,7 @@ contract('SystemSettings', async accounts => {
 				'setAggregatorWarningFlags',
 				'setTradingRewardsEnabled',
 				'setDebtSnapshotStaleTime',
+				'setCrossDomainMessageGasLimit',
 			],
 		});
 	});

@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // Internal references
@@ -13,9 +14,7 @@ import "./interfaces/IIssuer.sol";
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
 
-contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
-    uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: make this updateable
-
+contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeToBase {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -24,7 +23,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     //
     // ========== INTERNALS ============
@@ -60,11 +59,13 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     // ========== VIEWS ==========
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](4);
-        addresses[0] = CONTRACT_EXT_MESSENGER;
-        addresses[1] = CONTRACT_SYNTHETIX;
-        addresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
-        addresses[3] = CONTRACT_ISSUER;
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](4);
+        newAddresses[0] = CONTRACT_EXT_MESSENGER;
+        newAddresses[1] = CONTRACT_SYNTHETIX;
+        newAddresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
+        newAddresses[3] = CONTRACT_ISSUER;
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     // ========== PUBLIC FUNCTIONS =========
@@ -72,6 +73,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot withdraw with debt");
+
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
 
@@ -79,7 +81,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
         bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
-        messenger().sendMessage(synthetixBridgeToOptimism(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+        messenger().sendMessage(synthetixBridgeToOptimism(), messageData, uint32(getCrossDomainMessageGasLimit()));
 
         emit WithdrawalInitiated(msg.sender, amount);
     }
@@ -87,7 +89,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger on L2
-    function mintSecondaryFromDeposit(address account, uint amount) external onlyOptimismBridge {
+    function completeDeposit(address account, uint amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
         synthetix().mintSecondary(account, amount);
 
@@ -95,7 +97,7 @@ contract SynthetixBridgeToBase is Owned, MixinResolver, ISynthetixBridgeToBase {
     }
 
     // invoked by Messenger on L2
-    function mintSecondaryFromDepositForRewards(uint amount) external onlyOptimismBridge {
+    function completeRewardDeposit(uint amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 

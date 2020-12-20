@@ -13,6 +13,7 @@ const {
 const connectBridge = async ({
 	l1Network,
 	l2Network,
+	l1ProviderUrl,
 	l2ProviderUrl,
 	l1DeploymentPath,
 	l2DeploymentPath,
@@ -38,6 +39,7 @@ const connectBridge = async ({
 		account: accountL1,
 	} = await setupInstance({
 		network: l1Network,
+		providerUrl: l1ProviderUrl,
 		deploymentPath: l1DeploymentPath,
 		privateKey: l1PrivateKey,
 		useFork: l1UseFork,
@@ -108,7 +110,7 @@ const connectLayer = async ({
 	dryRun,
 }) => {
 	// ---------------------------------
-	// Compare with on-chain values
+	// Check if the AddressResolver has all the correct addresses
 	// ---------------------------------
 
 	const filteredNames = [];
@@ -127,20 +129,11 @@ const connectLayer = async ({
 		}
 	}
 
+	const needToImportAddresses = filteredNames.length > 0;
+
 	// ---------------------------------
-	// Update on-chain values
+	// Update AddressResolver if needed
 	// ---------------------------------
-
-	let tx;
-
-	if (filteredNames.length === 0) {
-		console.log(gray('  > Bridge is already connected on this layer. Skipping...'));
-		return;
-	}
-
-	console.log(yellow('  > Setting these values:'));
-	console.log(yellow(`  > ${names[0]} => ${addresses[0]}`));
-	console.log(yellow(`  > ${names[1]} => ${addresses[1]}`));
 
 	const params = {
 		from: account,
@@ -148,18 +141,54 @@ const connectLayer = async ({
 		gas: gasLimit,
 	};
 
-	if (!dryRun) {
-		console.log(yellow('  > AddressResolver.importAddresses()...'));
-		tx = await AddressResolver.methods
-			.importAddresses(names.map(toBytes32), addresses)
-			.send(params);
-		console.log(JSON.stringify(tx, null, 2));
+	let tx;
 
-		console.log(yellow('  > SynthetixBridge.rebuildCache()...'));
-		tx = await SynthetixBridge.methods.rebuildCache().send(params);
-		console.log(JSON.stringify(tx, null, 2));
+	if (needToImportAddresses) {
+		const ids = names.map(toBytes32);
+
+		console.log(yellow('  > Setting these values:'));
+		console.log(yellow(`  > ${names[0]} => ${addresses[0]}`));
+		console.log(yellow(`  > ${names[1]} => ${addresses[1]}`));
+
+		if (!dryRun) {
+			console.log(yellow(`  > AddressResolver.importAddresses([${ids}], [${addresses}])`));
+			tx = await AddressResolver.methods
+				.importAddresses(names.map(toBytes32), addresses)
+				.send(params);
+			console.log(gray(`    > tx hash: ${tx.transactionHash}`));
+		} else {
+			console.log(yellow('  > Skipping, since this is a DRY RUN'));
+		}
 	} else {
-		console.log(yellow('  > Skipping, since this is a DRY RUN'));
+		console.log(
+			gray('  > Bridge is already does not need to import any addresses in this layer. Skipping...')
+		);
+	}
+
+	// ---------------------------------
+	// Sync cache on bridge if needed
+	// ---------------------------------
+
+	let needToSyncCacheOnBridge = needToImportAddresses;
+	if (!needToSyncCacheOnBridge) {
+		const isResolverCached = await SynthetixBridge.methods.isResolverCached().call();
+		if (!isResolverCached) {
+			needToSyncCacheOnBridge = true;
+		}
+	}
+
+	if (needToSyncCacheOnBridge) {
+		console.log(yellow('  > Rebuilding cache on bridge...'));
+
+		if (!dryRun) {
+			console.log(yellow('  > SynthetixBridge.rebuildCache()...'));
+			tx = await SynthetixBridge.methods.rebuildCache().send(params);
+			console.log(gray(`    > tx hash: ${tx.transactionHash}`));
+		} else {
+			console.log(yellow('  > Skipping, since this is a DRY RUN'));
+		}
+	} else {
+		console.log(gray('  > Bridge cache is synced in this layer. Skipping...'));
 	}
 };
 
@@ -177,7 +206,7 @@ const setupInstance = async ({
 	console.log(gray('  > useFork:', useFork));
 	console.log(gray('  > useOvm:', useOvm));
 
-	const { web3, getSource, getTarget, providerUrl } = bootstrapConnection({
+	const { web3, getSource, getTarget, providerUrl, account } = bootstrapConnection({
 		network,
 		providerUrl: specifiedProviderUrl,
 		deploymentPath,
@@ -186,13 +215,6 @@ const setupInstance = async ({
 		useOvm,
 	});
 	console.log(gray('  > provider:', providerUrl));
-
-	let account;
-	if (privateKey) {
-		web3.eth.accounts.wallet.add(privateKey);
-		web3.eth.defaultAccount = web3.eth.accounts.wallet[0].address;
-		account = web3.eth.defaultAccount;
-	}
 	console.log(gray('  > account:', account));
 
 	const AddressResolver = getContract({
@@ -239,7 +261,7 @@ const bootstrapConnection = ({
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
-	if (network === 'local' || !privateKey) {
+	if (network !== 'local' && !privateKey) {
 		privateKey = envPrivateKey;
 	}
 
@@ -290,6 +312,7 @@ module.exports = {
 			.description('Configures the bridge between an L1-L2 instance pair.')
 			.option('--l1-network <value>', 'The name of the target L1 network', 'goerli')
 			.option('--l2-network <value>', 'The name of the target L2 network', 'goerli')
+			.option('--l1-provider-url <value>', 'The L1 provider to use', undefined)
 			.option('--l2-provider-url <value>', 'The L2 provider to use', 'https://goerli.optimism.io')
 			.option('--l1-deployment-path <value>', 'The path of the L1 deployment to target')
 			.option('--l2-deployment-path <value>', 'The path of the L2 deployment to target')

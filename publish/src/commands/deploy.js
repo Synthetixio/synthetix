@@ -29,6 +29,7 @@ const {
 		SYNTHS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		ZERO_ADDRESS,
+		OVM_MAX_GAS_LIMIT,
 		inflationStartTimestampInSecs,
 	},
 	defaults,
@@ -42,6 +43,18 @@ const DEFAULTS = {
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
+
+function splitArrayIntoChunks(array, chunkSize) {
+	const chunks = [];
+	for (let i = 0; i < array.length; i += chunkSize) {
+		const chunk = array.slice(i, i + chunkSize);
+		if (chunk.length > 0) {
+			chunks.push(chunk);
+		}
+	}
+
+	return chunks;
+}
 
 const deploy = async ({
 	addNewSynths,
@@ -92,6 +105,20 @@ const deploy = async ({
 		// Using Goerli without manageNonces?
 		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
 			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+		}
+
+		// Every transaction in Optimism needs to be below 9m gas, to ensure
+		// there are no deployment out of gas errors during fraud proofs.
+		if (useOvm) {
+			const maxOptimismGasLimit = OVM_MAX_GAS_LIMIT;
+			if (
+				contractDeploymentGasLimit > maxOptimismGasLimit ||
+				methodCallGasLimit > maxOptimismGasLimit
+			) {
+				throw new Error(
+					`Maximum transaction gas limit for OVM is ${maxOptimismGasLimit} gas, and specified contractDeploymentGasLimit and/or methodCallGasLimit are over such limit. Please make sure that these values are below the maximum gas limit to guarantee that fraud proofs can be done in L1.`
+				);
+			}
 		}
 
 		// Deploying on OVM and not using an OVM deployment path?
@@ -200,7 +227,7 @@ const deploy = async ({
 	}
 
 	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
-	if (network !== 'local' || !privateKey) {
+	if (network !== 'local' && !privateKey) {
 		privateKey = envPrivateKey;
 	}
 
@@ -231,7 +258,6 @@ const deploy = async ({
 	nonceManager.account = account;
 
 	let currentSynthetixSupply;
-	let currentSynthetixPrice;
 	let oldExrates;
 	let currentLastMintEvent;
 	let currentWeekOfInflation;
@@ -280,13 +306,11 @@ const deploy = async ({
 
 	try {
 		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
-		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
 		if (!oracleExrates) {
 			oracleExrates = await oldExrates.methods.oracle().call();
 		}
 	} catch (err) {
 		if (freshDeploy) {
-			currentSynthetixPrice = w3utils.toWei('0.2');
 			oracleExrates = oracleExrates || account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
 		} else {
@@ -381,6 +405,8 @@ const deploy = async ({
 				: green('true')
 			: 'false',
 		'Gas price to use': `${gasPrice} GWEI`,
+		'Method call gas limit': `${methodCallGasLimit} gas`,
+		'Contract deployment gas limit': `${contractDeploymentGasLimit} gas`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
 			: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') + deploymentPath,
@@ -497,13 +523,8 @@ const deploy = async ({
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [
-			account,
-			oracleExrates,
-			addressOf(readProxyForResolver),
-			[toBytes32('SNX')],
-			[currentSynthetixPrice],
-		],
+		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
+		args: [account, oracleExrates, addressOf(readProxyForResolver), [], []],
 	});
 
 	const rewardEscrow = await deployer.deployContract({
@@ -769,6 +790,7 @@ const deploy = async ({
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
+		source: useOvm ? 'IssuerWithoutLiquidations' : 'Issuer',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});
@@ -1409,22 +1431,37 @@ const deploy = async ({
 	console.log(gray('Addresses are correctly set up, continuing...'));
 
 	// now ensure all resolvers are set
-	await runStep({
-		gasLimit: 9e6, // higher gas required
-		contract: `AddressResolver`,
-		target: addressResolver,
-		write: 'rebuildCaches',
-		writeArg: [
-			contractsWithRebuildableCache.map(
-				([
-					,
-					{
-						options: { address },
-					},
-				]) => address
-			),
-		],
-	});
+	// NOTE: If using OVM, split the array of addresses to cache,
+	// since things spend signifficantly more gas in OVM
+	const addressesToCache = contractsWithRebuildableCache.map(
+		([
+			,
+			{
+				options: { address },
+			},
+		]) => address
+	);
+	if (useOvm) {
+		const chunks = splitArrayIntoChunks(addressesToCache, 4);
+		for (let i = 0; i < chunks.length; i++) {
+			const chunk = chunks[i];
+			await runStep({
+				gasLimit: 7e6, // higher gas required
+				contract: `AddressResolver`,
+				target: addressResolver,
+				write: 'rebuildCaches',
+				writeArg: [chunk],
+			});
+		}
+	} else {
+		await runStep({
+			gasLimit: 7e6, // higher gas required
+			contract: `AddressResolver`,
+			target: addressResolver,
+			write: 'rebuildCaches',
+			writeArg: [addressesToCache],
+		});
+	}
 
 	console.log(gray('Double check all contracts with rebuildCache() are rebuilt...'));
 	for (const [contract, target] of contractsWithRebuildableCache) {
@@ -1822,6 +1859,15 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if zero
 			write: 'setDebtSnapshotStaleTime',
 			writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: await getDeployParameter('CROSS_DOMAIN_MESSAGE_GAS_LIMIT'),
 		});
 
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
