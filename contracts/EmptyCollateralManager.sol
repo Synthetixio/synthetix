@@ -9,14 +9,6 @@ contract EmptyCollateralManager is ICollateralManager {
         return false;
     }
 
-    function hasSynth(address) external view returns (bool) {
-        return false;
-    }
-
-    function hasShortableSynth(address) external view returns (bool) {
-        return false;
-    }
-
     // State information
     function long(bytes32) external view returns (uint amount) {
         return 0;
@@ -38,7 +30,7 @@ contract EmptyCollateralManager is ICollateralManager {
         return (0, false);
     }
 
-    function getShortRate(address) external view returns (uint shortRate, bool rateIsInvalid) {
+    function getShortRate(bytes32) external view returns (uint shortRate, bool rateIsInvalid) {
         return (0, false);
     }
 
@@ -72,18 +64,27 @@ contract EmptyCollateralManager is ICollateralManager {
         return (false, false);
     }
 
+    // Loans
+    function getLoanId() external returns (uint id) {
+        return 0;
+    }
+
     // Manager mutative
     function addCollaterals(address[] calldata) external {}
 
     function removeCollaterals(address[] calldata) external {}
 
-    function addSynths(address[] calldata) external {}
+    function addSynths(bytes32[] calldata) external {}
 
-    function removeSynths(address[] calldata) external {}
+    function removeSynths(bytes32[] calldata) external {}
 
-    function addShortableSynths(address[] calldata) external {}
+    function addShortableSynths(bytes32[2][] calldata) external {}
 
-    function removeShortableSynths(address[] calldata) external {}
+    function removeShortableSynths(bytes32[] calldata) external {}
+
+    function addSynthsToFlexibleStorage() external {}
+
+    function addShortableSynthsToState() external {}
 
     // State mutative
     function incrementLongs(bytes32, uint) external {}

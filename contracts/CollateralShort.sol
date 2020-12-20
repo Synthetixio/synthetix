@@ -36,5 +36,9 @@ contract CollateralShort is CollateralErc20 {
         IERC20(underlyingContract).transferFrom(msg.sender, address(this), collateral);
     }
 
-    // add the ability to exit the rewards contract
+    function getReward(bytes32 currency, address account) external {
+        if (shortingRewards[currency] != address(0)) {
+            IShortingRewards(shortingRewards[currency]).getReward(account);
+        }
+    }
 }

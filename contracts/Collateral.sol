@@ -311,7 +311,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         uint loanAmountMinusFee = amount.sub(issueFee);
 
         // 11. Get a Loan ID
-        id = state.incrementTotalLoans();
+        id = _manager().getLoanId();
 
         // 12. Create the loan struct.
         Loan memory loan = Loan({
@@ -387,7 +387,6 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
             _manager().decrementShorts(loan.currency, loan.amount);
 
             if (shortingRewards[loan.currency] != address(0)) {
-                // withdraw instead of exit
                 IShortingRewards(shortingRewards[loan.currency]).withdraw(borrower, loan.amount);
             }
         } else {

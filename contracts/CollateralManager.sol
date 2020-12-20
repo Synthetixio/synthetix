@@ -314,6 +314,12 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         emit BaseShortRateUpdated(baseShortRate);
     }
 
+    /* ---------- LOANS ---------- */
+
+    function getLoanId() external onlyCollateral returns (uint id) {
+        id = state.incrementTotalLoans();
+    }
+
     /* ---------- MANAGER ---------- */
 
     function addCollaterals(address[] calldata collaterals) external onlyOwner {

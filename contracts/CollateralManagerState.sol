@@ -20,6 +20,8 @@ contract CollateralManagerState is Owned, State {
         uint short;
     }
 
+    uint public totalLoans;
+
     uint[] public borrowRates;
     uint public borrowRatesLastUpdated;
 
@@ -32,6 +34,11 @@ contract CollateralManagerState is Owned, State {
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {
         borrowRates.push(0);
         borrowRatesLastUpdated = block.timestamp;
+    }
+
+    function incrementTotalLoans() external onlyAssociatedContract returns (uint) {
+        totalLoans = totalLoans.add(1);
+        return totalLoans;
     }
 
     function long(bytes32 synth) external view onlyAssociatedContract returns (uint) {

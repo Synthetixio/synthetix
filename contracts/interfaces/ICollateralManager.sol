@@ -5,10 +5,6 @@ interface ICollateralManager {
     // Manager information
     function hasCollateral(address collateral) external view returns (bool);
 
-    // function hasSynth(address synth) external view returns (bool);
-
-    // function hasShortableSynth(address synth) external view returns (bool);
-
     // State information
     function long(bytes32 synth) external view returns (uint amount);
 
@@ -43,6 +39,9 @@ interface ICollateralManager {
         );
 
     function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue, bool anyRateIsInvalid);
+
+    // Loans
+    function getLoanId() external returns (uint id);
 
     // Manager mutative
     function addCollaterals(address[] calldata collaterals) external;

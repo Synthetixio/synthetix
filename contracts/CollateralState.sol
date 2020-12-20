@@ -11,11 +11,10 @@ import "./interfaces/ICollateralLoan.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
+
 contract CollateralState is Owned, State, ICollateralLoan {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
-
-    uint public totalLoans;
 
     mapping(address => Loan[]) public loans;
 
@@ -49,10 +48,5 @@ contract CollateralState is Owned, State, ICollateralLoan {
                 loans[loan.account][i] = loan;
             }
         }
-    }
-
-    function incrementTotalLoans() external onlyAssociatedContract returns (uint) {
-        totalLoans = totalLoans.add(1);
-        return totalLoans;
     }
 }

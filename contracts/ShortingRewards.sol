@@ -16,6 +16,7 @@ import "./MixinResolver.sol";
 
 import "./interfaces/ICollateralErc20.sol";
 
+
 // https://docs.synthetix.io/contracts/source/contracts/stakingrewards
 contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, ReentrancyGuard, Pausable, MixinResolver {
     using SafeMath for uint256;
@@ -51,10 +52,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
         address _rewardsToken,
         address _short,
         bytes32 _synth
-    ) public
-    Owned(_owner)
-    MixinResolver(_resolver)
-    {
+    ) public Owned(_owner) MixinResolver(_resolver) {
         rewardsToken = IERC20(_rewardsToken);
         short = ICollateralErc20(_short);
         rewardsDistribution = _rewardsDistribution;
@@ -119,7 +117,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
         emit Withdrawn(account, amount);
     }
 
-    function getReward(address account) public onlyShortContract nonReentrant updateReward(account) {
+    function getReward(address account) public nonReentrant updateReward(account) {
         uint256 reward = rewards[account];
         if (reward > 0) {
             rewards[account] = 0;
