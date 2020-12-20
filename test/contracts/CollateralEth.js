@@ -171,7 +171,12 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 		await ceth.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsETH')], { from: owner });
 		await ceth.rebuildCache();
 
-		await ceth.setCurrenciesAndNotifyManager();
+		await ceth.setCurrencies();
+
+		await manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsETH')], { from: owner });
+		// rebuild the cache to add the synths we need.
+		await manager.rebuildCache();
+		await manager.addSynthsToFlexibleStorage({ from: owner });
 	};
 
 	const updateRatesWithDefaults = async () => {
@@ -969,7 +974,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 
 		describe('it should allow repayments on an sETH loan', async () => {
 			// I don't want to test interest here. I just want to test repayment.
-			const expected = new BN('4000011115443587680');
+			const expected = new BN('4000011152007546850');
 
 			beforeEach(async () => {
 				tx = await ceth.open(fiveETH, sETH, {
@@ -1183,7 +1188,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 				const liquidatorBalance = await sUSDSynth.balanceOf(account2);
 				const expectedBalance = toUnit(1000).sub(toUnit(100));
 
-				assert.bnClose(liquidatorBalance, expectedBalance, '10000000000000');
+				assert.bnClose(liquidatorBalance, expectedBalance, '100000000000000');
 			});
 
 			it('should create a pending withdrawl entry', async () => {

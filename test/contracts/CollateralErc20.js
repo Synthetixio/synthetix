@@ -226,7 +226,12 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		await cerc20.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
 		await cerc20.rebuildCache();
 
-		await cerc20.setCurrenciesAndNotifyManager();
+		await cerc20.setCurrencies();
+
+		await manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
+		// rebuild the cache to add the synths we need.
+		await manager.rebuildCache();
+		await manager.addSynthsToFlexibleStorage({ from: owner });
 
 		// Issue ren and set allowance
 		await issueRenBTCtoAccount(toUnit(100), account1);

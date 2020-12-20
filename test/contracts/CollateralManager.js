@@ -44,6 +44,8 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		sUSDSynth,
 		sETHSynth,
 		sBTCSynth,
+		iBTCSynth,
+		iETHSynth,
 		synths,
 		maxDebt,
 		short,
@@ -107,22 +109,8 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		});
 	};
 
-	const issueRenBTCtoAccount = async (issueAmount, receiver) => {
-		await renBTC.transfer(receiver, issueAmount, { from: owner });
-	};
-
-	const issuesUSDToAccount = async (issueAmount, receiver) => {
-		await sUSDSynth.issue(receiver, issueAmount, {
-			from: owner,
-		});
-	};
-
-	const issuesETHToAccount = async (issueAmount, receiver) => {
-		await sETHSynth.issue(receiver, issueAmount, { from: owner });
-	};
-
-	const issuesBTCToAccount = async (issueAmount, receiver) => {
-		await sBTCSynth.issue(receiver, issueAmount, { from: owner });
+	const issue = async (synth, issueAmount, receiver) => {
+		await synth.issue(receiver, issueAmount, { from: owner });
 	};
 
 	const updateRatesWithDefaults = async () => {
@@ -145,12 +133,14 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 	};
 
 	const setupManager = async () => {
-		synths = ['sUSD', 'sBTC', 'sETH'];
+		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
 		({
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
 			SynthsETH: sETHSynth,
 			SynthsBTC: sBTCSynth,
+			SynthiBTC: iBTCSynth,
+			SynthiETH: iETHSynth,
 			FeePool: feePool,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
@@ -235,7 +225,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		await proxy.setTarget(renBTC.address, { from: owner });
 
 		// Issue ren and set allowance
-		await issueRenBTCtoAccount(toUnit(100), account1);
+		await issue(renBTC, toUnit(100), account1);
 
 		cerc20 = await deployErc20Collateral({
 			mcState: mcstateErc20.address,
@@ -301,12 +291,27 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		await short.rebuildCache();
 		await short.setCurrencies();
 
-		await manager.addSynths([sUSDSynth.address, sBTCSynth.address, sETHSynth.address], {
-			from: owner,
-		});
-		await manager.addShortableSynths([sUSDSynth.address, sBTCSynth.address, sETHSynth.address], {
-			from: owner,
-		});
+		await manager.addSynths(
+			[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
+			{
+				from: owner,
+			}
+		);
+
+		await manager.addShortableSynths(
+			[
+				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
+				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
+			],
+			{
+				from: owner,
+			}
+		);
+
+		// rebuild the cache to add the synths we need.
+		await manager.rebuildCache();
+		await manager.addSynthsToFlexibleStorage({ from: owner });
+		await manager.addShortableSynthsToState({ from: owner });
 
 		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
@@ -321,9 +326,9 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 	beforeEach(async () => {
 		await updateRatesWithDefaults();
 
-		await issuesUSDToAccount(toUnit(1000), owner);
-		await issuesETHToAccount(toUnit(10), owner);
-		await issuesBTCToAccount(toUnit(0.1), owner);
+		await issue(sUSDSynth, toUnit(1000), owner);
+		await issue(sETHSynth, toUnit(10), owner);
+		await issue(sBTCSynth, toUnit(0.1), owner);
 		await debtCache.takeDebtSnapshot();
 	});
 
@@ -349,6 +354,8 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'removeSynths',
 				'addShortableSynths',
 				'removeShortableSynths',
+				'addSynthsToFlexibleStorage',
+				'addShortableSynthsToState',
 				'updateBorrowRates',
 				'updateShortRates',
 				'incrementLongs',
@@ -405,7 +412,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		});
 
 		it('should reduce the sUSD balance when a loan is closed', async () => {
-			issuesUSDToAccount(toUnit(10), account1);
+			issue(sUSDSynth, toUnit(10), account1);
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 			await ceth.close(id, { from: account1 });
 
@@ -413,7 +420,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		});
 
 		it('should reduce the total balance in sUSD when a loan is closed', async () => {
-			issuesUSDToAccount(toUnit(10), account1);
+			issue(sUSDSynth, toUnit(10), account1);
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 			await ceth.close(id, { from: account1 });
 
@@ -421,6 +428,22 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			const debt = total.susdValue;
 
 			assert.bnEqual(debt, toUnit(300));
+		});
+	});
+
+	describe('tracking synth balances across collaterals', async () => {
+		let systemDebtBefore;
+
+		beforeEach(async () => {
+			systemDebtBefore = (await debtCache.currentDebt()).debt;
+
+			tx = await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
+
+			id = await getid(tx);
+		});
+
+		it('should not change the system debt.', async () => {
+			assert.bnEqual((await debtCache.currentDebt()).debt, systemDebtBefore);
 		});
 	});
 
@@ -504,35 +527,4 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			});
 		});
 	});
-
-	// describe('adding synths', async () => {
-	// 	describe('revert conditions', async () => {
-	// 		it('should revert if the caller is not the owner', async () => {
-	// 			await assert.revert(
-	// 				manager.addSynth(ZERO_ADDRESS, { from: account1 }),
-	// 				'Only collateral contracts'
-	// 			);
-	// 		});
-	// 	});
-
-	// 	describe('when a new synth is added', async () => {
-	// 		beforeEach(async () => {
-	// 			await ceth.addSynths([toBytes32('sXRP')], { from: owner });
-	// 		});
-
-	// 		it('should add the synth', async () => {
-	// 			assert.isTrue(await manager.hasSynth(ZERO_ADDRESS));
-	// 		});
-	// 	});
-
-	// 	describe('retreiving synth by address', async () => {
-	// 		it('if a synth is in the manager, it should return true', async () => {
-	// 			assert.isTrue(await manager.hasSynth(sUSDSynth.address));
-	// 		});
-
-	// 		it('if a collateral is not in the manager, it should return false', async () => {
-	// 			assert.isFalse(await manager.hasSynth(ZERO_ADDRESS));
-	// 		});
-	// 	});
-	// });
 });

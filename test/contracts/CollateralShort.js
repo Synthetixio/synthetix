@@ -37,6 +37,8 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		sUSDSynth,
 		sBTCSynth,
 		sETHSynth,
+		iBTCSynth,
+		iETHSynth,
 		synths,
 		manager,
 		issuer,
@@ -54,19 +56,8 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		await updateRatesWithDefaults();
 	};
 
-	const issuesUSDToAccount = async (issueAmount, receiver) => {
-		// Set up the depositor with an amount of synths to deposit.
-		await sUSDSynth.issue(receiver, issueAmount, {
-			from: owner,
-		});
-	};
-
-	const issuesBTCtoAccount = async (issueAmount, receiver) => {
-		await sBTCSynth.issue(receiver, issueAmount, { from: owner });
-	};
-
-	const issuesETHToAccount = async (issueAmount, receiver) => {
-		await sETHSynth.issue(receiver, issueAmount, { from: owner });
+	const issue = async (synth, issueAmount, receiver) => {
+		await synth.issue(receiver, issueAmount, { from: owner });
 	};
 
 	const updateRatesWithDefaults = async () => {
@@ -101,12 +92,14 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 	};
 
 	const setupShort = async () => {
-		synths = ['sUSD', 'sBTC', 'sETH'];
+		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
 		({
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
 			SynthsBTC: sBTCSynth,
 			SynthsETH: sETHSynth,
+			SynthiBTC: iBTCSynth,
+			SynthiETH: iETHSynth,
 			FeePool: feePool,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
@@ -178,7 +171,22 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
 		await short.rebuildCache();
-		await short.setCurrenciesAndNotifyManager();
+		await short.setCurrencies();
+
+		await manager.addShortableSynths(
+			[
+				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
+				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
+			],
+			{
+				from: owner,
+			}
+		);
+
+		// rebuild the cache to add the synths we need.
+		await manager.rebuildCache();
+
+		await manager.addShortableSynthsToState({ from: owner });
 
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 	};
@@ -192,9 +200,13 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 	beforeEach(async () => {
 		await updateRatesWithDefaults();
 
-		await issuesUSDToAccount(toUnit(100000), owner);
-		await issuesBTCtoAccount(toUnit(1), owner);
-		await issuesETHToAccount(toUnit(1), owner);
+		await issue(sUSDSynth, toUnit(100000), owner);
+		await issue(sBTCSynth, toUnit(1), owner);
+		await issue(sETHSynth, toUnit(1), owner);
+		await issue(iBTCSynth, toUnit(1), owner);
+		await issue(iETHSynth, toUnit(1), owner);
+
+		// The market is balanced between long and short.
 
 		await debtCache.takeDebtSnapshot();
 	});
@@ -233,7 +245,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			const susdCollateral = toUnit(15000);
 
 			beforeEach(async () => {
-				await issuesUSDToAccount(susdCollateral, account1);
+				await issue(sUSDSynth, susdCollateral, account1);
 
 				tx = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
 
@@ -281,7 +293,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			const susdCollateral = toUnit(1000);
 
 			beforeEach(async () => {
-				await issuesUSDToAccount(susdCollateral, account1);
+				await issue(sUSDSynth, susdCollateral, account1);
 
 				tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
 
@@ -326,7 +338,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		const susdCollateral = toUnit(1000);
 
 		beforeEach(async () => {
-			await issuesUSDToAccount(susdCollateral, account1);
+			await issue(sUSDSynth, susdCollateral, account1);
 
 			tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
 
@@ -362,7 +374,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		beforeEach(async () => {});
 
 		it('if the eth price goes down, the shorter makes profit', async () => {
-			await issuesUSDToAccount(susdCollateral, account1);
+			await issue(sUSDSynth, susdCollateral, account1);
 
 			tx = await short.open(toUnit(500), oneETH, sETH, { from: account1 });
 
@@ -377,7 +389,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			// simulate buying sETH for 50 susd.
 			await sUSDSynth.transfer(owner, toUnit(50), { from: account1 });
-			await issuesETHToAccount(oneETH, account1);
+			await issue(sETHSynth, oneETH, account1);
 
 			// now close the short
 			await short.close(id, { from: account1 });
@@ -387,7 +399,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		});
 
 		it('if the eth price goes up, the shorter makes a loss', async () => {
-			await issuesUSDToAccount(susdCollateral, account1);
+			await issue(sUSDSynth, susdCollateral, account1);
 
 			tx = await short.open(toUnit(500), oneETH, sETH, { from: account1 });
 
@@ -402,7 +414,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			// simulate buying sETH for 150 susd.
 			await sUSDSynth.transfer(owner, toUnit(150), { from: account1 });
-			await issuesETHToAccount(oneETH, account1);
+			await issue(sETHSynth, oneETH, account1);
 
 			// now close the short
 			await short.close(id, { from: account1 });
@@ -418,7 +430,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		const susdCollateral = toUnit(1000);
 
 		it('If there is 1 ETH and 1 short ETH, then the system debt is constant before and after a price change', async () => {
-			await issuesUSDToAccount(susdCollateral, account1);
+			await issue(sUSDSynth, susdCollateral, account1);
 
 			await debtCache.takeDebtSnapshot();
 			let result = await debtCache.currentDebt();
@@ -445,7 +457,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			// simulate buying sETH for 150 susd.
 			await sUSDSynth.burn(account1, toUnit(150));
-			await issuesETHToAccount(oneETH, account1);
+			await issue(sETHSynth, oneETH, account1);
 
 			await debtCache.takeDebtSnapshot();
 			result = await debtCache.currentDebt();
@@ -463,7 +475,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		});
 
 		it('If there is 1 ETH and 2 short ETH, then the system debt decreases if the price goes up', async () => {
-			await issuesUSDToAccount(susdCollateral, account1);
+			await issue(sUSDSynth, susdCollateral, account1);
 
 			await debtCache.takeDebtSnapshot();
 			let result = await debtCache.currentDebt();
@@ -492,7 +504,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			// simulate buying 2 sETH for 300 susd.
 			await sUSDSynth.burn(account1, toUnit(300));
-			await issuesETHToAccount(twoETH, account1);
+			await issue(sETHSynth, twoETH, account1);
 
 			await debtCache.takeDebtSnapshot();
 			result = await debtCache.currentDebt();
@@ -510,7 +522,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		});
 
 		it('If there is 1 ETH and 2 short ETH, then the system debt increases if the price goes down', async () => {
-			await issuesUSDToAccount(susdCollateral, account1);
+			await issue(sUSDSynth, susdCollateral, account1);
 
 			await debtCache.takeDebtSnapshot();
 			let result = await debtCache.currentDebt();
@@ -539,7 +551,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			// simulate buying 2 sETH for 100 susd.
 			await sUSDSynth.burn(account1, toUnit(100));
-			await issuesETHToAccount(twoETH, account1);
+			await issue(sETHSynth, twoETH, account1);
 
 			await debtCache.takeDebtSnapshot();
 			result = await debtCache.currentDebt();
@@ -557,36 +569,17 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		});
 	});
 
-	describe('Accrue Interest', async () => {
+	describe('Determining the skew and interest rate', async () => {
 		beforeEach(async () => {});
 
 		it('should correctly determine the interest on a short', async () => {
 			const oneBTC = toUnit(1);
 			const susdCollateral = toUnit(15000);
 
-			await issuesUSDToAccount(susdCollateral, account1);
+			await issue(sUSDSynth, susdCollateral, account1);
 
 			tx = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
 			id = await getid(tx);
-
-			// after a year we should have accrued 0%.
-
-			await fastForwardAndUpdateRates(YEAR);
-
-			// deposit some collateral to trigger the interest accrual.
-
-			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
-
-			loan = await state.getLoan(account1, id);
-
-			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
-
-			assert.equal(interest, 0);
-
-			await fastForwardAndUpdateRates(3600);
-
-			await issuesBTCtoAccount(toUnit(1), owner);
-			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
 
 			// after a year we should have accrued 33%.
 
@@ -598,9 +591,27 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			loan = await state.getLoan(account1, id);
 
+			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
+
+			assert.equal(interest, 0.3333);
+
+			await fastForwardAndUpdateRates(3600);
+
+			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
+
+			// after two years we should have accrued about 66%, give or take the 5 minutes we skipped.
+
+			await fastForwardAndUpdateRates(YEAR);
+
+			// deposit some collateral to trigger the interest accrual.
+
+			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
+
+			loan = await state.getLoan(account1, id);
+
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 0);
+			assert.equal(interest, 0.6667);
 		});
 	});
 });
