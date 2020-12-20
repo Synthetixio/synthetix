@@ -1455,7 +1455,7 @@ const deploy = async ({
 		}
 	} else {
 		await runStep({
-			gasLimit: 7e6, // higher gas required
+			gasLimit: 8e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'rebuildCaches',
