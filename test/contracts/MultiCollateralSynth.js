@@ -10,7 +10,7 @@ const CollateralManagerState = artifacts.require('CollateralManagerState');
 const CollateralManager = artifacts.require('CollateralManager');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toUnit, currentTime } = require('../utils')();
+const { toUnit, currentTime, fastForward } = require('../utils')();
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
@@ -94,6 +94,7 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 				'Issuer',
 				'ExchangeRates',
 				'SystemStatus',
+				'Exchanger',
 				'FeePool',
 			],
 		}));
@@ -187,7 +188,7 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 
 		await ceth.addSynths([toBytes32(`Synth${currencyKey}`)], { from: owner });
 		await ceth.rebuildCache();
-		await ceth.setCurrenciesAndNotifyManager();
+		await ceth.setCurrencies();
 
 		return { synth, tokenState, proxy };
 	};
@@ -276,6 +277,8 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 					});
 
 					const id = await getid(tx);
+
+					await fastForward(300);
 
 					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(amount));
 					assert.bnEqual(await this.synth.balanceOf(account1), balanceOfBefore.add(amount));

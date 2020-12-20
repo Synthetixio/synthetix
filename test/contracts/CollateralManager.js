@@ -44,8 +44,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		sUSDSynth,
 		sETHSynth,
 		sBTCSynth,
-		iBTCSynth,
-		iETHSynth,
 		synths,
 		maxDebt,
 		short,
@@ -139,8 +137,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			SynthsUSD: sUSDSynth,
 			SynthsETH: sETHSynth,
 			SynthsBTC: sBTCSynth,
-			SynthiBTC: iBTCSynth,
-			SynthiETH: iETHSynth,
 			FeePool: feePool,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
@@ -225,7 +221,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		await proxy.setTarget(renBTC.address, { from: owner });
 
 		// Issue ren and set allowance
-		await issue(renBTC, toUnit(100), account1);
+		await renBTC.transfer(account1, toUnit(100), { from: owner });
 
 		cerc20 = await deployErc20Collateral({
 			mcState: mcstateErc20.address,
@@ -348,6 +344,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'setMaxDebt',
 				'setBaseBorrowRate',
 				'setBaseShortRate',
+				'getLoanId',
 				'addCollaterals',
 				'removeCollaterals',
 				'addSynths',

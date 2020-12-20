@@ -958,7 +958,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			it('should update the loan', async () => {
 				loan = await state.getLoan(account1, id);
 
-				assert.equal(loan.amount, expected);
+				assert.equal(loan.amount, expected.toString());
 			});
 
 			it('should emit the event properly', async () => {
@@ -974,7 +974,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 
 		describe('it should allow repayments on an sETH loan', async () => {
 			// I don't want to test interest here. I just want to test repayment.
-			const expected = new BN('4000011152007546850');
+			const expected = new BN('4000011115443587680');
 
 			beforeEach(async () => {
 				tx = await ceth.open(fiveETH, sETH, {
@@ -1002,7 +1002,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			it('should update the loan', async () => {
 				loan = await state.getLoan(account1, id);
 
-				assert.equal(loan.amount, expected);
+				assert.equal(loan.amount, expected.toString());
 			});
 
 			it('should emit the event properly', async () => {

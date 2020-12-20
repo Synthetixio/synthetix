@@ -120,7 +120,6 @@ contract('DebtCache', async accounts => {
 				'updateCachedSynthDebtWithRate',
 				'updateCachedSynthDebtsWithRates',
 				'updateDebtCacheValidity',
-				'addCollateralSynths',
 			],
 		});
 	});

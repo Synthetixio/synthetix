@@ -124,7 +124,7 @@ contract('ShortingRewards', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	before(async () => {
-		synths = ['sUSD', 'sBTC', 'sETH'];
+		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
 		({
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
@@ -151,6 +151,7 @@ contract('ShortingRewards', accounts => {
 				'RewardsDistribution',
 				'Synthetix',
 				'SystemSettings',
+				'Exchanger',
 			],
 		}));
 
@@ -163,8 +164,7 @@ contract('ShortingRewards', accounts => {
 			owner,
 			addressResolver.address,
 			maxDebt,
-			// 5% / 31536000 (seconds in common year)
-			1585489599,
+			0,
 			0,
 			{
 				from: deployerAccount,
@@ -206,7 +206,22 @@ contract('ShortingRewards', accounts => {
 
 		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
 		await short.rebuildCache();
-		await short.setCurrenciesAndNotifyManager();
+		await short.setCurrencies();
+
+		await manager.addShortableSynths(
+			[
+				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
+				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
+			],
+			{
+				from: owner,
+			}
+		);
+
+		// rebuild the cache to add the synths we need.
+		await manager.rebuildCache();
+		await manager.addSynthsToFlexibleStorage({ from: owner });
+		await manager.addShortableSynthsToState({ from: owner });
 
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 
@@ -571,6 +586,7 @@ contract('ShortingRewards', accounts => {
 
 			await issuesBTCtoAccount(toUnit(1), account1);
 			await short.close(id, { from: account1 });
+			await short.getReward(sBTC, account1, { from: account1 });
 
 			const postRewardBal = await rewardsToken.balanceOf(account1);
 			const postEarnedBal = await shortingRewards.earned(account1);
@@ -647,7 +663,7 @@ contract('ShortingRewards', accounts => {
 			});
 
 			await fastForward(DAY * 4);
-			await shortingRewards.getReward(account1, { from: shortingRewards.adddress });
+			await short.getReward(sBTC, account1, { from: account1 });
 			await fastForward(DAY * 4);
 
 			// New Rewards period much lower
@@ -665,7 +681,7 @@ contract('ShortingRewards', accounts => {
 			});
 
 			await fastForward(DAY * 71);
-			await shortingRewards.getReward(account1, { from: shortingRewards.adddress });
+			await short.getReward(sBTC, account1, { from: account1 });
 		});
 	});
 
@@ -694,6 +710,8 @@ contract('ShortingRewards', accounts => {
 			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
 			id = await getid(tx);
 
+			await fastForward(300);
+
 			const initialStakeBal = await shortingRewards.balanceOf(account1);
 
 			tx = await short.close(id, { from: account1 });
@@ -720,7 +738,8 @@ contract('ShortingRewards', accounts => {
 
 			const initialRewardBal = await rewardsToken.balanceOf(account1);
 			const initialEarnedBal = await shortingRewards.earned(account1);
-			tx = await short.close(id, { from: account1 });
+			await short.close(id, { from: account1 });
+			await short.getReward(sBTC, account1, { from: account1 });
 			const postRewardBal = await rewardsToken.balanceOf(account1);
 			const postEarnedBal = await shortingRewards.earned(account1);
 

@@ -972,7 +972,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			it('should update the loan', async () => {
 				loan = await state.getLoan(account1, id);
 
-				assert.equal(loan.amount, expected);
+				assert.equal(loan.amount, expected.toString());
 			});
 
 			it('should emit the event properly', async () => {
@@ -987,7 +987,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		});
 
 		describe('it should allow repayments on an sBTC loan', async () => {
-			const expected = new BN('1000003208389288920');
+			const expected = new BN('1000003197869979776');
 
 			beforeEach(async () => {
 				tx = await cerc20.open(fiveRenBTC, twoRenBTC, sBTC, {
@@ -1014,7 +1014,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			it('should update the loan', async () => {
 				loan = await state.getLoan(account1, id);
 
-				assert.equal(loan.amount, expected);
+				assert.equal(loan.amount, expected.toString());
 			});
 
 			it('should emit the event properly', async () => {
