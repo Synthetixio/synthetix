@@ -187,7 +187,7 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 
 		await ceth.addSynths([toBytes32(`Synth${currencyKey}`)], { from: owner });
 		await ceth.rebuildCache();
-		await ceth.setCurrencies();
+		await ceth.setCurrencies({ from: owner });
 
 		return { synth, tokenState, proxy };
 	};

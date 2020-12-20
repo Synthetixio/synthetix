@@ -279,13 +279,13 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
 
 		await ceth.rebuildCache();
-		await ceth.setCurrencies();
+		await ceth.setCurrencies({ from: owner });
 
 		await cerc20.rebuildCache();
-		await cerc20.setCurrencies();
+		await cerc20.setCurrencies({ from: owner });
 
 		await short.rebuildCache();
-		await short.setCurrencies();
+		await short.setCurrencies({ from: owner });
 
 		await manager.addSynths(
 			[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],

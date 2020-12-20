@@ -171,7 +171,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
 		await short.rebuildCache();
-		await short.setCurrencies();
+		await short.setCurrencies({ from: owner });
 
 		await manager.addShortableSynths(
 			[
@@ -360,10 +360,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 		it('should not let them draw too much', async () => {
 			await fastForwardAndUpdateRates(3600);
-			await assert.revert(
-				short.draw(id, toUnit(8), { from: account1 }),
-				'Drawing this much would put the loan under minimum collateralisation'
-			);
+			await assert.revert(short.draw(id, toUnit(8), { from: account1 }), 'Cannot draw this much');
 		});
 	});
 
