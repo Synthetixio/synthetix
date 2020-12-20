@@ -32,9 +32,7 @@ task('compile')
 
 			hre.config.ignoreNonOvmContracts = true;
 
-			hre.config.solc = {
-				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc'),
-			};
+			require('@eth-optimism/plugins/hardhat/compiler/0.5.16');
 		}
 
 		if (taskArguments.native) {
