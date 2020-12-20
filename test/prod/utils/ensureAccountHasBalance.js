@@ -6,6 +6,7 @@ const { toBN } = web3.utils;
 const { wrap, toBytes32 } = require('../../..');
 
 const knownMainnetWallet = '0xF977814e90dA44bFA03b6295A0616a897441aceC'; // Binance 8 wallet
+const renBTCWallet = '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE';
 
 function getUser({ network, deploymentPath, user }) {
 	const { getUsers } = wrap({ network, deploymentPath, fs, path });
@@ -30,6 +31,23 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 		from: fromAccount,
 		to: account,
 		value: amount,
+	});
+}
+
+async function ensureAccountHasRenBTC({ network, deploymentPath, amount, account }) {
+	const fromAccount =
+		network === 'mainnet' ? renBTCWallet : getUser({ network, deploymentPath, user: 'owner' });
+
+	const RENBTC = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
+	const balance = toBN(await RENBTC.balanceOf(fromAccount));
+	if (balance.lt(amount)) {
+		throw new Error(
+			`Account ${fromAccount} only has ${balance} renBTC and cannot transfer ${amount} renBTC to ${account} `
+		);
+	}
+
+	await RENBTC.transfer(account, amount, {
+		from: fromAccount,
 	});
 }
 
@@ -117,6 +135,7 @@ async function ensureAccountHassETH({ network, deploymentPath, amount, account }
 
 module.exports = {
 	knownMainnetWallet,
+	ensureAccountHasRenBTC,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	ensureAccountHassETH,
