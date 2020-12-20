@@ -425,10 +425,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         collateral = loan.collateral;
 
         // 4. Burn the synths
-        require(
-            !_exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, loan.currency),
-            "Waiting period or settlement owing"
-        );
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, loan.currency), "Waiting or settlement owing");
         _synth(synthsByKey[loan.currency]).burn(liquidator, total);
 
         // 5. Tell the manager.
@@ -467,8 +464,8 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
         require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
 
-        // // 1. They sent some value > 0
-        // require(amount > 0, "Deposit must be greater than 0");
+        // 1. They sent some value > 0
+        require(amount > 0, "Deposit must be greater than 0");
 
         // 2. Get the loan
         Loan memory loan = state.getLoan(account, id);
@@ -498,8 +495,8 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
         require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
 
-        // // 1. Check withdraw amount
-        // require(amount > 0, "Amount to withdraw must be greater than 0");
+        // 1. Check withdraw amount
+        require(amount > 0, "Amount to withdraw must be greater than 0");
 
         // 2. Get the loan.
         Loan memory loan = state.getLoan(msg.sender, id);
@@ -545,8 +542,8 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
         require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
 
-        // // 1. Check the payment amount.
-        // require(payment > 0, "Payment must be greater than 0");
+        // 1. Check the payment amount.
+        require(payment > 0, "Payment must be greater than 0");
 
         // 2. Get the loan.
         Loan memory loan = state.getLoan(borrower, id);
@@ -591,10 +588,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         loan.lastInteraction = block.timestamp;
 
         // 15. Burn the synths from the liquidator.
-        require(
-            !_exchanger().hasWaitingPeriodOrSettlementOwing(msg.sender, loan.currency),
-            "Waiting period or settlement owing"
-        );
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(msg.sender, loan.currency), "Waiting or settlement owing");
         _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
 
         // 16. Store the loan.
@@ -615,8 +609,8 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
         require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
 
-        // // 1. Check the payment amount.
-        // require(payment > 0, "Payment must be greater than 0");
+        // 1. Check the payment amount.
+        require(payment > 0, "Payment must be greater than 0");
 
         // 2. Get loan
         Loan memory loan = state.getLoan(borrower, id);
@@ -643,10 +637,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         loan.lastInteraction = block.timestamp;
 
         // 10. Burn synths from the payer
-        require(
-            !_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency),
-            "Waiting period or settlement owing"
-        );
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or settlement owing");
         _synth(synthsByKey[loan.currency]).burn(repayer, payment);
 
         // 11. Store the loan
@@ -715,7 +706,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
         // 2. Get the instantaneous rate.
         (uint rate, bool invalid) = loan.short
-            ? _manager().getShortRate(address(_synth(synthsByKey[loan.currency])))
+            ? _manager().getShortRate(synthsByKey[loan.currency])
             : _manager().getBorrowRate();
 
         require(!invalid, "Rates are invalid");

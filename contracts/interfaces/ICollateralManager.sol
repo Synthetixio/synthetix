@@ -5,9 +5,9 @@ interface ICollateralManager {
     // Manager information
     function hasCollateral(address collateral) external view returns (bool);
 
-    function hasSynth(address synth) external view returns (bool);
+    // function hasSynth(address synth) external view returns (bool);
 
-    function hasShortableSynth(address synth) external view returns (bool);
+    // function hasShortableSynth(address synth) external view returns (bool);
 
     // State information
     function long(bytes32 synth) external view returns (uint amount);
@@ -20,7 +20,7 @@ interface ICollateralManager {
 
     function getBorrowRate() external view returns (uint borrowRate, bool anyRateIsInvalid);
 
-    function getShortRate(address synthAddress) external view returns (uint shortRate, bool rateIsInvalid);
+    function getShortRate(bytes32 synth) external view returns (uint shortRate, bool rateIsInvalid);
 
     function getRatesAndTime(uint index)
         external
@@ -49,13 +49,17 @@ interface ICollateralManager {
 
     function removeCollaterals(address[] calldata collaterals) external;
 
-    function addSynths(address[] calldata synths) external;
+    function addSynths(bytes32[] calldata synths) external;
 
-    function removeSynths(address[] calldata synths) external;
+    function removeSynths(bytes32[] calldata synths) external;
 
-    function addShortableSynths(address[] calldata synths) external;
+    function addShortableSynths(bytes32[2][] calldata synthsWithInverses) external;
 
-    function removeShortableSynths(address[] calldata synths) external;
+    function removeShortableSynths(bytes32[] calldata synths) external;
+
+    function addSynthsToFlexibleStorage() external;
+
+    function addShortableSynthsToState() external;
 
     // State mutative
     function updateBorrowRates(uint rate) external;

@@ -104,6 +104,10 @@ contract CollateralManagerState is Owned, State {
         }
     }
 
+    function removeShortCurrency(bytes32 currency) external onlyAssociatedContract {
+        delete shortRates[currency];
+    }
+
     function getShortRateAt(bytes32 currency, uint index) internal view returns (uint) {
         return shortRates[currency][index];
     }

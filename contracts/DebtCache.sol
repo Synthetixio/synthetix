@@ -138,7 +138,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
 
             bool mcIssued = flexibleStorage().getBoolValue(
                 CONTRACT_COLLATERALMANAGER,
-                keccak256(abi.encodePacked(COLLATERAL_SYNTHS, synthAddress))
+                keccak256(abi.encodePacked(COLLATERAL_SYNTHS, key))
             );
 
             if (mcIssued) {
