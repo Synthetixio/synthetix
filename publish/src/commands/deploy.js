@@ -33,6 +33,7 @@ const {
 		inflationStartTimestampInSecs,
 	},
 	defaults,
+	nonUpgradeable,
 } = require('../../../.');
 
 const DEFAULTS = {
@@ -43,18 +44,6 @@ const DEFAULTS = {
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
-
-function splitArrayIntoChunks(array, chunkSize) {
-	const chunks = [];
-	for (let i = 0; i < array.length; i += chunkSize) {
-		const chunk = array.slice(i, i + chunkSize);
-		if (chunk.length > 0) {
-			chunks.push(chunk);
-		}
-	}
-
-	return chunks;
-}
 
 const deploy = async ({
 	addNewSynths,
@@ -105,6 +94,29 @@ const deploy = async ({
 		// Using Goerli without manageNonces?
 		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
 			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+		}
+
+		// Cannot re-deploy legacy contracts
+		if (!freshDeploy) {
+			// Get list of contracts to be deployed
+			const contractsToDeploy = [];
+			Object.keys(config).map(contractName => {
+				if (config[contractName].deploy) {
+					contractsToDeploy.push(contractName);
+				}
+			});
+
+			// Check that no non-deployable is marked for deployment.
+			// Note: if nonDeployable = 'TokenState', this will match 'TokenStatesUSD'
+			nonUpgradeable.map(nonUpgradeableContract => {
+				contractsToDeploy.map(contractName => {
+					if (contractName.match(new RegExp(`^${nonUpgradeableContract}`, 'g'))) {
+						throw new Error(
+							`You are attempting to deploy a contract marked as non-upgradeable: ${contractName}. This action could result in loss of state. Please verify and use --ignore-safety-checks if you really know what you're doing.`
+						);
+					}
+				});
+			});
 		}
 
 		// Every transaction in Optimism needs to be below 9m gas, to ensure
@@ -1431,8 +1443,8 @@ const deploy = async ({
 	console.log(gray('Addresses are correctly set up, continuing...'));
 
 	// now ensure all resolvers are set
-	// NOTE: If using OVM, split the array of addresses to cache,
-	// since things spend signifficantly more gas in OVM
+	// Since this can be gas intensive, split
+	// the call into chunks, depending on the number of addresses to cache.
 	const addressesToCache = contractsWithRebuildableCache.map(
 		([
 			,
@@ -1441,25 +1453,20 @@ const deploy = async ({
 			},
 		]) => address
 	);
-	if (useOvm) {
-		const chunks = splitArrayIntoChunks(addressesToCache, 4);
-		for (let i = 0; i < chunks.length; i++) {
-			const chunk = chunks[i];
-			await runStep({
-				gasLimit: 7e6, // higher gas required
-				contract: `AddressResolver`,
-				target: addressResolver,
-				write: 'rebuildCaches',
-				writeArg: [chunk],
-			});
-		}
-	} else {
+	const addressChunkSize = useOvm ? 12 : 20;
+	console.log(
+		gray(
+			`There are ${addressesToCache.length} addreseses to cache: \n${addressesToCache.join('\n')}`
+		)
+	);
+	for (let i = 0; i < addressesToCache.length; i += addressChunkSize) {
+		const chunk = addressesToCache.slice(i, i + addressChunkSize);
 		await runStep({
 			gasLimit: 8e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'rebuildCaches',
-			writeArg: [addressesToCache],
+			writeArg: [chunk],
 		});
 	}
 

@@ -1,9 +1,10 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
+const TokenState = artifacts.require('TokenState');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 const CollateralState = artifacts.require('CollateralState');
 const CollateralManagerState = artifacts.require('CollateralManagerState');
@@ -150,9 +151,7 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
-		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
-		const TokenState = artifacts.require('TokenState');
+	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
 		const Proxy = artifacts.require('Proxy');
 
 		tokenState =

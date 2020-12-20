@@ -1,4 +1,4 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { toWei, toChecksumAddress } = web3.utils;
@@ -22,7 +22,7 @@ contract('MintableSynthetix (unit tests)', accounts => {
 		});
 	});
 
-	describe('initial setup, smock all deps @cov-skip', () => {
+	describe('initial setup, smock all deps', () => {
 		let resolver;
 		let tokenState;
 		let proxy;

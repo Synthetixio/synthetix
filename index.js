@@ -15,6 +15,7 @@ const data = {
 
 const assets = require('./publish/assets.json');
 const ovmIgnored = require('./publish/ovm-ignore.json');
+const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
@@ -50,6 +51,15 @@ const constants = {
 	OVM_MAX_GAS_LIMIT: '8900000',
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
+};
+
+const knownAccounts = {
+	mainnet: [
+		{
+			name: 'binance', // Binance 8 Wallet
+			address: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
+		},
+	],
 };
 
 // The solidity defaults are managed here in the same format they will be stored, hence all
@@ -358,8 +368,8 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		goerli: Object.assign({}, base),
 		'goerli-ovm': Object.assign({}, base),
 		local: Object.assign({}, base, {
-			// Deterministic account #0 when using `npx buidler node`
-			owner: '0xc783df8a850f42e7F7e57013759C285caa701eB6',
+			// Deterministic account #0 when using `npx hardhat node`
+			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 		}),
 	};
 
@@ -507,5 +517,7 @@ module.exports = {
 	toBytes32,
 	wrap,
 	ovmIgnored,
+	nonUpgradeable,
 	releases,
+	knownAccounts,
 };

@@ -1,4 +1,4 @@
-const { contract, artifacts } = require('@nomiclabs/buidler');
+const { contract, artifacts } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const TestableBytes32Set = artifacts.require('TestableBytes32Set');
 

@@ -3,14 +3,18 @@ const { assert } = require('chai');
 const fs = require('fs');
 const path = require('path');
 
-const buidler = require('@nomiclabs/buidler');
+const hardhat = require('hardhat');
+// Note: the below is hardhat internal and is subject to change
+const { normalizeHardhatNetworkAccountsConfig } = require('hardhat/internal/core/providers/util');
 const ethers = require('ethers');
 
 const {
-	network: {
-		config: { accounts },
+	config: {
+		networks: {
+			hardhat: { accounts },
+		},
 	},
-} = buidler;
+} = hardhat;
 
 const BN = require('bn.js');
 
@@ -31,7 +35,7 @@ const { buildPath } = deployCmd.DEFAULTS;
 
 module.exports = ({ web3 } = {}) => {
 	// allow non-buidler based test tasks to pass thru web3
-	web3 = web3 || buidler.web3;
+	web3 = web3 || hardhat.web3;
 
 	/**
 	 * Sets default properties on the jsonrpc object and promisifies it so we don't have to copy/paste everywhere.
@@ -80,7 +84,7 @@ module.exports = ({ web3 } = {}) => {
 			params: [seconds],
 		};
 
-		if (buidler.ovm) {
+		if (hardhat.ovm) {
 			params = {
 				method: 'evm_setNextBlockTimestamp',
 				params: [(await currentTime()) + seconds],
@@ -508,7 +512,7 @@ module.exports = ({ web3 } = {}) => {
 	const getEthBalance = account => web3.eth.getBalance(account);
 
 	const loadLocalUsers = () => {
-		return accounts.map(({ privateKey }) => ({
+		return normalizeHardhatNetworkAccountsConfig(accounts).map(({ privateKey }) => ({
 			private: privateKey,
 			public: web3.eth.accounts.privateKeyToAccount(privateKey).address,
 		}));

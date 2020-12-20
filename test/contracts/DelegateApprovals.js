@@ -1,9 +1,10 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
+const EternalStorage = artifacts.require('EternalStorage');
 const DelegateApprovals = artifacts.require('DelegateApprovals');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const {
@@ -17,8 +18,6 @@ contract('DelegateApprovals', async accounts => {
 	let delegateApprovals;
 
 	before(async () => {
-		// As EternalStorage could be legacy, we require it the testing context (see buidler.config.js)
-		const EternalStorage = artifacts.require('EternalStorage');
 		const delegateApprovalsEternalStorage = await EternalStorage.new(owner, ZERO_ADDRESS, {
 			from: deployerAccount,
 		});

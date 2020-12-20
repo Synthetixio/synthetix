@@ -1,10 +1,11 @@
 const testUtils = require('../../utils/index');
 const { toBytes32 } = require('../../..');
-const { web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('hardhat');
 const { toWei } = require('web3-utils');
 const { connectContract } = require('./connectContract');
 const { ensureAccountHasEther } = require('./ensureAccountHasBalance');
 const { toUnit } = require('../../utils')();
+const { gray } = require('chalk');
 
 async function checkRates({ network, deploymentPath }) {
 	const Synthetix = await connectContract({
@@ -31,9 +32,9 @@ async function simulateExchangeRates({ network, deploymentPath }) {
 
 	let currencyKeys = await Issuer.availableCurrencyKeys();
 	currencyKeys = currencyKeys.filter(key => key !== toBytes32('sUSD'));
-	const additionalKeys = ['ETH'].map(toBytes32); // The Depot uses the key "ETH" as opposed to "sETH" for its ether price
+	const additionalKeys = ['SNX', 'ETH'].map(toBytes32); // The Depot uses the key "ETH" as opposed to "sETH" for its ether price
 	currencyKeys.push(...additionalKeys);
-	console.log(`Updating ${currencyKeys.length} exchange rates...`);
+	console.log(gray(`  > Updating ${currencyKeys.length} exchange rates...`));
 
 	const ExchangeRates = await connectContract({
 		network,

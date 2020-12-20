@@ -1,4 +1,4 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
@@ -40,7 +40,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			args
 		);
 
-	describe('when all the deps are mocked @cov-skip', () => {
+	describe('when all the deps are mocked', () => {
 		let messenger;
 		let synthetix;
 		let issuer;

@@ -1,14 +1,13 @@
 # Restarts a forked chain, and runs production tests with gas reports against it
 {{> job-header.yml}}
-parameters:
-  network:
-    type: string
 steps:
   - checkout
   - attach_workspace:
       at: .
-  - cmd-fork-start:
-      network: << parameters.network >>
-  - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
+  - run:
+      command: npx hardhat node --target-network mainnet
+      background: true
+  - cmd-wait-for-rpc
+  - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log

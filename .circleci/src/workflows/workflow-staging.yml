@@ -20,48 +20,18 @@ jobs:
   # Production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-prod-tests:
-      name: job-prod-tests-mainnet
-      network: mainnet
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
-  - job-prod-tests:
-      name: job-prod-tests-rinkeby
-      network: rinkeby
-      {{> filter-staging.yml}}
-      {{> require-prepare.yml}}
-  - job-prod-tests:
-      name: job-prod-tests-kovan
-      network: kovan
+  - job-prod-diff-tests:
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Differential local production tests
+  # Local production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-diff-prod-tests-local:
-      name: job-diff-prod-tests-local
+  - job-prod-diff-tests-local:
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
-  - job-diff-prod-tests-local-ovm:
-      name: job-diff-prod-tests-local-ovm
-      {{> filter-staging.yml}}
-      {{> require-prepare.yml}}
-
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Differential production tests
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-diff-prod-tests:
-      name: job-diff-prod-tests-mainnet
-      network: mainnet
-      {{> filter-staging.yml}}
-      {{> require-prepare.yml}}
-  - job-diff-prod-tests:
-      name: job-diff-prod-tests-rinkeby
-      network: rinkeby
-      {{> filter-staging.yml}}
-      {{> require-prepare.yml}}
-  - job-diff-prod-tests:
-      name: job-diff-prod-tests-kovan
-      network: kovan
+  - job-prod-diff-tests-local-ovm:
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}

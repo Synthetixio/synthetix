@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -1456,8 +1456,7 @@ contract('FeePool', async accounts => {
 			it('should revert if no tokens', async () => {
 				await assert.revert(
 					feePool.appendVestingEntry(account3, escrowAmount, { from: owner }),
-					// Legacy safe math had no revert reasons
-					!legacy ? 'SafeMath: subtraction overflow' : undefined
+					'SafeMath: subtraction overflow'
 				);
 			});
 

@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 const { smockit } = require('@eth-optimism/smock');
 const { assert } = require('./common');
 

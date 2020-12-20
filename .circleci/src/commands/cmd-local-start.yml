@@ -1,7 +1,0 @@
-# Starts a local chain
-description: Starts a local ganache chain
-steps:
-  - run:
-      command: npx buidler node
-      background: true
-  - cmd-wait-for-rpc

@@ -1,19 +1,13 @@
-const fs = require('fs');
-const path = require('path');
-const { contract, config } = require('@nomiclabs/buidler');
-const { wrap } = require('../../index.js');
+const { contract, config } = require('hardhat');
 const { assert } = require('../contracts/common');
 const { toUnit, fastForward } = require('../utils')();
 const {
-	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
-	simulateExchangeRates,
-	takeDebtSnapshot,
-	mockOptimismBridge,
+	setup,
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
@@ -27,18 +21,8 @@ contract('ExchangeRates (prod tests)', accounts => {
 	let ExchangeRates, ReadProxyAddressResolver, SystemSettings, Exchanger;
 
 	before('prepare', async () => {
-		network = await detectNetworkName();
-		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
-		owner = getUsers({ network, user: 'owner' }).address;
-
-		deploymentPath = config.deploymentPath || getPathToNetwork(network);
-
-		if (config.patchFreshDeployment) {
-			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
-			await mockOptimismBridge({ network, deploymentPath });
-		}
+		network = config.targetNetwork;
+		({ owner, deploymentPath } = await setup({ network }));
 
 		({
 			ExchangeRates,

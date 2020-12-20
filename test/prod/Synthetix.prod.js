@@ -1,13 +1,9 @@
 const { grey, red } = require('chalk');
-const { web3, contract, artifacts, config } = require('@nomiclabs/buidler');
-const fs = require('fs');
-const path = require('path');
+const { web3, contract, artifacts, config } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit, fromUnit } = require('../utils')();
-const { wrap, toBytes32 } = require('../..');
+const { knownAccounts, toBytes32 } = require('../..');
 const {
-	knownMainnetWallet,
-	detectNetworkName,
 	connectContracts,
 	connectContract,
 	ensureAccountHasEther,
@@ -16,10 +12,8 @@ const {
 	skipWaitingPeriod,
 	skipStakeTime,
 	writeSetting,
-	simulateExchangeRates,
-	takeDebtSnapshot,
-	mockOptimismBridge,
 	implementsVirtualSynths,
+	setup,
 } = require('./utils');
 
 const gasFromReceipt = ({ receipt }) =>
@@ -36,18 +30,8 @@ contract('Synthetix (prod tests)', accounts => {
 	let SynthsUSD, SynthsETH;
 
 	before('prepare', async () => {
-		network = await detectNetworkName();
-		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
-		deploymentPath = config.deploymentPath || getPathToNetwork(network);
-
-		owner = getUsers({ network, user: 'owner' }).address;
-
-		if (config.patchFreshDeployment) {
-			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
-			await mockOptimismBridge({ network, deploymentPath });
-		}
+		network = config.targetNetwork;
+		({ owner, deploymentPath } = await setup({ network }));
 
 		({
 			Synthetix,
@@ -89,6 +73,7 @@ contract('Synthetix (prod tests)', accounts => {
 			deploymentPath,
 		});
 	});
+
 	describe('core infrastructure', () => {
 		describe('misc state', () => {
 			it('has the expected resolver set', async () => {
@@ -352,12 +337,7 @@ contract('Synthetix (prod tests)', accounts => {
 
 						assert.equal(numEntries.toString(), '0');
 					});
-					// NOTE: There seems to be an error with ganache-core forks.
-					// Skip until after hardhat migration or ganache-core fix.
-					// vSynth.settled() shows as false even though it should be true.
-					// Probably has to do with how the variable is stored and fork caching.
-					// Disabling caching in ganache-core yields it unusable.
-					it.skip('and the vSynth shows settled', async () => {
+					it('and the vSynth shows settled', async () => {
 						assert.equal(await vSynth.settled(), true);
 					});
 				});
@@ -365,7 +345,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		describe('with virtual tokens and a custom swap contract', () => {
-			const usdcHolder = knownMainnetWallet;
+			const usdcHolder = knownAccounts.mainnet.find(a => a.name === 'binance').address;
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 
