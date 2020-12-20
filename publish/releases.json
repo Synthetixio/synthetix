@@ -103,6 +103,6 @@
 			"TradingRewards",
 			"Synth(s|i).+"
 		],
-		"sips": []
+		"sips": [97, 103]
 	}
 ]
