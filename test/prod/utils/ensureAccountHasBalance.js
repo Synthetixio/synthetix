@@ -6,6 +6,8 @@ const { toBN } = web3.utils;
 const { knownAccounts, wrap, toBytes32 } = require('../../..');
 const { gray } = require('chalk');
 
+const knownMainnetAccount = knownAccounts['mainnet'].find(a => a.name === 'binance').address;
+
 function getUser({ network, deploymentPath, user }) {
 	const { getUsers } = wrap({ network, deploymentPath, fs, path });
 
@@ -17,7 +19,7 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 
 	const fromAccount =
 		network === 'mainnet'
-			? knownAccounts['mainnet'].find(a => a.name === 'binance').address
+			? knownMainnetAccount
 			: getUser({ network, deploymentPath, user: 'owner' });
 
 	const balance = toBN(await web3.eth.getBalance(fromAccount));
@@ -39,7 +41,7 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 
 	const fromAccount =
 		network === 'mainnet'
-			? knownAccounts['mainnet'].find(a => a.name === 'binance').address
+			? knownMainnetAccount
 			: getUser({
 					network,
 					deploymentPath,
@@ -65,7 +67,7 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 
 	const fromAccount =
 		network === 'mainnet'
-			? knownAccounts['mainnet'].find(a => a.name === 'binance').address
+			? knownMainnetAccount
 			: getUser({
 					network,
 					deploymentPath,
