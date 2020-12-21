@@ -4,9 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit, fromUnit } = require('../utils')();
-const { wrap, toBytes32 } = require('../..');
+const { knownAccounts, wrap, toBytes32 } = require('../..');
 const {
-	knownMainnetWallet,
 	detectNetworkName,
 	connectContracts,
 	connectContract,
@@ -365,7 +364,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		describe('with virtual tokens and a custom swap contract', () => {
-			const usdcHolder = knownMainnetWallet;
+			const usdcHolder = knownAccounts['mainnet'].find(a => a.name === 'binance').address;
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 

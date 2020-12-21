@@ -8,6 +8,6 @@ parameters:
     default: false
 steps:
   - run:
-      command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >> --unlock-accounts 0xF977814e90dA44bFA03b6295A0616a897441aceC
+      command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
       background: true
   - cmd-wait-for-rpc

@@ -15,6 +15,7 @@ const {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 } = require('./utils');
+const { yellow } = require('chalk');
 
 contract('EtherCollateral (prod tests)', accounts => {
 	const [, user1] = accounts;
@@ -94,7 +95,16 @@ contract('EtherCollateral (prod tests)', accounts => {
 		let tx;
 		let loanID;
 
-		before(async () => {
+		before('open loan', async function() {
+			const totalIssuedSynths = await EtherCollateral.totalIssuedSynths();
+			const issueLimit = await EtherCollateral.issueLimit();
+			const liquidity = totalIssuedSynths.add(amount);
+			if (liquidity.gte(issueLimit)) {
+				console.log(yellow(`Not enough liquidity to open loan. Liquidity: ${liquidity}`));
+
+				this.skip();
+			}
+
 			ethBalance = await web3.eth.getBalance(user1);
 			sEthBalance = await SynthsETH.balanceOf(user1);
 
