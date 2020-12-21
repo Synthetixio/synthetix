@@ -52,6 +52,15 @@ const constants = {
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
 
+const knownAccounts = {
+	mainnet: [
+		{
+			name: 'binance', // Binance 8 Wallet
+			address: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
+		},
+	],
+};
+
 // The solidity defaults are managed here in the same format they will be stored, hence all
 // numbers are converted to strings and those with 18 decimals are also converted to wei amounts
 const defaults = {
@@ -511,4 +520,5 @@ module.exports = {
 	wrap,
 	ovmIgnored,
 	releases,
+	knownAccounts,
 };
