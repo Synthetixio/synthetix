@@ -111,8 +111,7 @@ const settle = async ({
 
 		if (blockNumber) {
 			// look for the right contract based off the block
-			for (const entry of versions[source]) {
-				// assumes sorted by block number ascending
+			for (const entry of versions[source].sort((a, b) => (a.block > b.block ? 1 : -1))) {
 				if (entry.block < blockNumber) {
 					address = entry.address;
 				}
@@ -260,9 +259,9 @@ const settle = async ({
 						yellow(web3.utils.fromWei(balance.toString())),
 						gray('needs'),
 						yellow(web3.utils.fromWei(reclaimAmount.toString())),
-						reclaimAmount > balance ? red('not enough!') : green('sufficient')
+						+reclaimAmount > +balance ? red('not enough!') : green('sufficient')
 					);
-					skipIfWillFail = reclaimAmount > balance;
+					skipIfWillFail = +reclaimAmount > +balance;
 				}
 			} else {
 				console.log(
