@@ -6,6 +6,7 @@
 		"network": "mainnet",
 		"date": "2019-03-11T18:17:52-04:00",
 		"commit": "eeb271f4fdd2e615f9dba90503f42b2cb9f9716e",
+		"block": 6834810,
 		"contracts": {
 			"Depot": {
 				"address": "0x172E09691DfBbC035E37c73B62095caa16Ee2388",
@@ -324,6 +325,7 @@
 		"network": "mainnet",
 		"date": "2019-04-23T19:43:01-04:00",
 		"commit": "8d56cf7667de27b294fa3b99b086132f71e1aba4",
+		"block": 7626469,
 		"contracts": {
 			"EscrowChecker": {
 				"address": "0x3b399e00AFd8201ACf8A5a0EcCF1C47d8D5E41da",
@@ -413,6 +415,7 @@
 		"network": "mainnet",
 		"date": "2019-05-02T18:49:57+10:00",
 		"commit": "edf5244839cda59bd51c1390a285bae371a477ff",
+		"block": 7680400,
 		"contracts": {
 			"FeePool": {
 				"address": "0x9B7E40031f7d4f6AB6e5D36bBF2Fea3bCCcc75a5",
@@ -446,6 +449,7 @@
 		"network": "mainnet",
 		"date": "2019-05-28T18:42:37+10:00",
 		"commit": "dc94228312749779a0c4035d8bc7bb3b9a242693",
+		"block": 7846908,
 		"contracts": {
 			"FeePool": {
 				"address": "0x3D32f1404deacE2A43B08211E4662275045b495b",
@@ -475,6 +479,7 @@
 		"network": "mainnet",
 		"date": "2019-05-29T17:37:35+10:00",
 		"commit": "6cf02bed77b9d711efc0b33f643613529f4b92ce",
+		"block": 7853007,
 		"contracts": {
 			"Synthetix": {
 				"address": "0x5a4aDe4f3E934a0885f42884F7077261C3F4f66F",
@@ -490,6 +495,7 @@
 		"network": "mainnet",
 		"date": "2019-07-01T16:10:26-04:00",
 		"commit": "e8a6445a3096e3b003c429cd6fb2c9a38920f047",
+		"block": 8025495,
 		"contracts": {
 			"FeePool": {
 				"address": "0x503e91fc2b9ad7453700130d0825e661565e4c3b",
@@ -505,6 +511,7 @@
 		"network": "mainnet",
 		"date": "2019-07-02T22:47:48-04:00",
 		"commit": "83a9721950521ff3d0ced2d974d90caa0f011a23",
+		"block": 8075694,
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x5cBB53Ca85A9E52B593Baf8ae90282C4B3dB0b25",
@@ -565,6 +572,7 @@
 		"network": "mainnet",
 		"date": "2019-07-05T23:28:25-04:00",
 		"commit": "4fb6450e5629a053b9fa4aa4a40974e0ff9841b6",
+		"block": 8120167,
 		"contracts": {
 			"SynthsGBP": {
 				"address": "0x0a24864596C54D79C825e64b281645249C14590C",
@@ -590,6 +598,7 @@
 		"network": "mainnet",
 		"date": "2019-07-18T20:31:41-04:00",
 		"commit": "1eeb4e6519e1eedb7d4692e5d68af417b4afbb49",
+		"block": 8177843,
 		"contracts": {
 			"SynthiBTC": {
 				"address": "0xccC395f0eBFAA26dCC2D3BACc23d55614002236b",
@@ -655,6 +664,7 @@
 		"network": "mainnet",
 		"date": "2019-08-08T15:03:34+10:00",
 		"commit": "4dbb6e8e1b58796fb033c81a80c51bc2864719e6",
+		"block": 8307884,
 		"contracts": {
 			"Synthetix": {
 				"address": "0xbD88D2Ddf55b65BDBbA6f6a5A626B854835d7844",
@@ -674,6 +684,7 @@
 		"network": "mainnet",
 		"date": "2019-08-19T23:07:45+02:00",
 		"commit": "4b50f490bcc79827538c9030af495c410d60d3a0",
+		"block": 8382392,
 		"contracts": {
 			"TokenStatesCEX": {
 				"address": "0xc5680d24C3086e10f618b5176A59E90D6284be9f",
@@ -712,6 +723,7 @@
 		"network": "mainnet",
 		"date": "2019-08-29T12:12:45+10:00",
 		"commit": "ae8c6ae9c2342e247f08bade0d34e51cc8cf61b9",
+		"block": 8442231,
 		"contracts": {
 			"FeePool": {
 				"address": "0xA70B3c3DcD4d3CDC55992DC5BEBED33dA92a259A",
@@ -737,6 +749,7 @@
 		"network": "mainnet",
 		"date": "2019-09-13T16:48:15+10:00",
 		"commit": "368d0596e255a3555688cf0114e91eca8830940c",
+		"block": 8533639,
 		"contracts": {
 			"ProxysETH": {
 				"address": "0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb",
@@ -752,6 +765,7 @@
 		"network": "mainnet",
 		"date": "2019-09-26T13:03:00+10:00",
 		"commit": "d025db087a41a64a6fa8caee8bd059c19fd3eb1d",
+		"block": 8621971,
 		"contracts": {
 			"ProxysUSD": {
 				"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
@@ -766,6 +780,7 @@
 		"network": "mainnet",
 		"date": "2019-09-26T18:58:44+10:00",
 		"commit": "688fd3865c3cdfb3e5451c2b6eef4599e1ae6cc9",
+		"block": 8622895,
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0x99a46c42689720d9118FF7aF7ce80C2a92fC4f97",
@@ -995,6 +1010,7 @@
 		"network": "mainnet",
 		"date": "2019-10-04T11:18:21+10:00",
 		"commit": "fbe1c95d833616ce1ffd5cfa5bda2a0ede683204",
+		"block": 8672615,
 		"contracts": {
 			"Synthetix": {
 				"address": "0x42D03f506c2308ECd06aE81D8fA22352BC7A8F2b",
@@ -1010,6 +1026,7 @@
 		"network": "mainnet",
 		"date": "2019-11-08T11:49:46+11:00",
 		"commit": "03c8bf29545cd6c4a3d5d11171be09151f94bf70",
+		"block": 8971463,
 		"contracts": {
 			"Synthetix": {
 				"address": "0x22a67ECd108f7A6Fc52Da9e2655DDfe88ecCd9CA",
@@ -1183,6 +1200,7 @@
 		"network": "mainnet",
 		"date": "2019-12-12T16:03:22+11:00",
 		"commit": "ad931ba28b8b2e28166f08db377d1426ca2ee3b0",
+		"block": 9123413,
 		"contracts": {
 			"Synthetix": {
 				"address": "0x7cB89c509001D25dA9938999ABFeA6740212E5f0",
@@ -1363,6 +1381,7 @@
 		"network": "mainnet",
 		"date": "2019-12-18T16:32:38+11:00",
 		"commit": "ddd5e765f53e1af5b5910c6079b7df6a240bcb9c",
+		"block": 9124116,
 		"contracts": {
 			"FeePool": {
 				"address": "0x94dBa784e87A3F5F12e25EC98bF14233c1e69017",
@@ -1378,6 +1397,7 @@
 		"network": "mainnet",
 		"date": "2020-02-20T17:38:03+11:00",
 		"commit": "e0902f6c49fe4edbe2e52c9691ed971f695a17bc",
+		"block": 9518289,
 		"contracts": {
 			"Depot": {
 				"address": "0xE1f64079aDa6Ef07b03982Ca34f1dD7152AA3b86",
@@ -1588,6 +1608,7 @@
 		"network": "mainnet",
 		"date": "2020-02-28T14:01:33+11:00",
 		"commit": "176e5a241248b58f6a017553a70328612670cb07",
+		"block": 9570402,
 		"contracts": {
 			"Unipool": {
 				"address": "0x48D7f315feDcaD332F68aafa017c7C158BC54760",
@@ -1616,6 +1637,7 @@
 		"network": "mainnet",
 		"date": "2020-03-31T15:11:35+11:00",
 		"commit": "5f48ad4d4fe2e59d07de3d064492d2a5cf31a5f2",
+		"block": 9776248,
 		"contracts": {
 			"FeePool": {
 				"address": "0x8a34AefF4cDed94aFa786fcf811A6307aA7c656a",
@@ -1779,6 +1801,7 @@
 		"network": "mainnet",
 		"date": "2020-04-02T20:34:45+11:00",
 		"commit": "749da0208911b419eedc9dd5c6dc8e229e3dd30b",
+		"block": 9791518,
 		"contracts": {
 			"TokenStatesEOS": {
 				"address": "0x631443C4121ca7B4c90dC79a37B1DcE8B79aDeEc",
@@ -1957,6 +1980,7 @@
 		"network": "mainnet",
 		"date": "2020-05-08T12:52:06-04:00",
 		"commit": "19997724bc7eaceb902c523a6742e0bd74fc75cb",
+		"block": 10026694,
 		"contracts": {
 			"ReadProxyAddressResolver": {
 				"address": "0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2",
@@ -1971,6 +1995,7 @@
 		"network": "mainnet",
 		"date": "2020-06-05T14:45:28+10:00",
 		"commit": "5c7e67ba325f8506c34e163b215ae36a16537a91",
+		"block": 10202730,
 		"contracts": {
 			"FeePool": {
 				"address": "0x21bD6b9C3cB3f7E0c6Aa7061D2B02f22CDEbD2aB",
@@ -2010,6 +2035,7 @@
 		"network": "mainnet",
 		"date": "2020-06-30T15:44:41+10:00",
 		"commit": "4fd3c1e6ac849f8c43277493e636a2ecc63801e0",
+		"block": 10364342,
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xba727c69636491ecdfE3E6F64cBE9428aD371e48",
@@ -2059,6 +2085,7 @@
 		"network": "mainnet",
 		"date": "2020-07-01T14:54:11+10:00",
 		"commit": "280652bae2d971281b8bf96a319c1c8139ec15c3",
+		"block": 10371667,
 		"contracts": {
 			"Synthetix": {
 				"address": "0x5eF0de4bd373e435341Cd82311dfb13d5E8fdEf5",
@@ -2074,6 +2101,7 @@
 		"network": "mainnet",
 		"date": "2020-07-20T13:50:06+10:00",
 		"commit": "4833cb929d5af6715112537cac3b04b5d7a8b157",
+		"block": 10493729,
 		"contracts": {
 			"BinaryOptionMarketFactory": {
 				"address": "0x72c091691b5cD86fAcD048972157985f74Ea1F07",
@@ -2123,6 +2151,7 @@
 		"network": "mainnet",
 		"date": "2020-07-30T13:13:50+10:00",
 		"commit": "bda26772bfe5f1bcc7c93d653f80deb60fe2e905",
+		"block": 10557958,
 		"contracts": {
 			"Exchanger": {
 				"address": "0x439502C922ADA61FE49329248B7A8ecb31C0b329",
@@ -2142,6 +2171,7 @@
 		"network": "mainnet",
 		"date": "2020-08-14T15:22:27-06:00",
 		"commit": "60c8390d525949507f8cf2c952c342a97a0826fe",
+		"block": 10602893,
 		"contracts": {
 			"StakingRewardsiETH": {
 				"address": "0x6Dc0b8A7DACe47Bc75D2dDFDF8BF29e363d92693",
@@ -2174,6 +2204,7 @@
 		"network": "mainnet",
 		"date": "2020-09-01T18:32:44+12:00",
 		"commit": "62408a24161f041e1e484af92e1dbb232dfc4065",
+		"block": 10773786,
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xbCc4ac49b8f57079df1029dD3146C8ECD805acd0",
@@ -2235,6 +2266,7 @@
 		"network": "mainnet",
 		"date": "2020-09-24T18:50:48+10:00",
 		"commit": "5f0eba4171a7f5db98fdf6129e9794f443116b92",
+		"block": 10924759,
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xdB2Ae36C2e9C00070e5bF752Be1FA2d477E98BDa",
@@ -2272,6 +2304,7 @@
 		"network": "mainnet",
 		"date": "2020-10-08T19:34:02+11:00",
 		"commit": "6e6b68ae14eee0c6246b5bbe6bdd0b181ba7df94",
+		"block": 11014103,
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xda80E6024bC82C9fe9e4e6760a9769CF0D231E80",
@@ -2305,6 +2338,7 @@
 		"network": "mainnet",
 		"date": "2020-11-11T22:10:58-05:00",
 		"commit": "29919ec289317f6441c89df4852620ebb6983285",
+		"block": 11240446,
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xA68C6020fF9Ea79F05345cDd2CE37DF4b89478ed",
@@ -2386,6 +2420,7 @@
 		"network": "mainnet",
 		"date": "2020-11-12T23:51:24-05:00",
 		"commit": "cd889471d05c29510af0cb082fed6c03b8638981",
+		"block": 11247749,
 		"contracts": {
 			"Synthetix": {
 				"address": "0xf87A0587Fe48Ca05dd68a514Ce387C0d4d3AE31C",
@@ -2407,6 +2442,7 @@
 		"network": "mainnet",
 		"date": "2020-11-24T12:48:26+11:00",
 		"commit": "1925c97723ce0b4871ac4864f1e63f5f12990c5a",
+		"block": 11311695,
 		"contracts": {
 			"StakingRewardsiETH": {
 				"address": "0x3fdbbbd81b0962fdf486d74f94a68c70ba87c6c7",
@@ -2421,6 +2457,7 @@
 		"network": "mainnet",
 		"date": "2020-12-01T03:01:54+00:00",
 		"commit": "12576807a21a7efa6b2cbb47c5a9082a956edc64",
+		"block": 11363952,
 		"contracts": {
 			"Exchanger": {
 				"address": "0x93b434b2e21d0F4E3ed1e9efa3Aa254A6D863B2A",
