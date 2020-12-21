@@ -15,6 +15,7 @@ const {
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
+	implementsMultiCollateral,
 } = require('./utils');
 
 const { toBytes32 } = require('../..');
@@ -47,9 +48,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			return this.skip();
 		}
 
-		// Skip if not Shaula or later.
-		const versions = require(`../../publish/deployed/${network}/versions.json`);
-		if (!Object.keys(versions).some(k => versions[k].name === 'Shaula')) {
+		if (!implementsMultiCollateral({ network, deploymentPath })) {
 			this.skip();
 		}
 

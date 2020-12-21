@@ -13,6 +13,7 @@ const { simulateExchangeRates } = require('./exchangeRates');
 const { takeDebtSnapshot } = require('./debtSnapshot');
 const { mockOptimismBridge } = require('./optimismBridge');
 const { implementsVirtualSynths } = require('./virtualSynths');
+const { implementsMultiCollateral } = require('./multicollateral');
 
 module.exports = {
 	detectNetworkName,
@@ -31,4 +32,5 @@ module.exports = {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsVirtualSynths,
+	implementsMultiCollateral,
 };
