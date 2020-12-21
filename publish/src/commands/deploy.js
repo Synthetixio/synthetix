@@ -1770,7 +1770,7 @@ const deploy = async ({
 		if (force || validityChanged) {
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
-				gasLimit: 5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
+				gasLimit: 8e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
 				contract: 'DebtCache',
 				target: debtCache,
 				write: 'takeDebtSnapshot',
