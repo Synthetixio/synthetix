@@ -26,6 +26,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_OVM_SYNTHETIXBRIDGETOBASE = "ovm:SynthetixBridgeToBase";
 
+    uint8 private constant MAX_ENTRIES_MIGRATED_PER_MESSAGE = 4;
+
     bool public activated;
 
     // ========== CONSTRUCTOR ==========
@@ -110,16 +112,20 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
 
             // if there is an escrow amount to be migrated
             if (escrowedAccountBalance > 0) {
-                // create message payload for L2
-                bytes memory messageData = abi.encodeWithSignature(
-                    "importVestingEntries(address,uint256,(uint64,uint64,uint64,uint256,uint256)[])",
-                    msg.sender,
-                    escrowedAccountBalance,
-                    vestingEntries
-                );
-                // relay the message to this contract on L2 via L1 Messenger
-                messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(8e6));
-                emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
+                // determine how message are needed in order to mugrate all the entries
+                uint messageNum = entryIDs.length % MAX_ENTRIES_MIGRATED_PER_MESSAGE;
+                for (i = 0; i < messageNum; i++) {
+                    // create message payload for L2
+                    bytes memory messageData = abi.encodeWithSignature(
+                        "importVestingEntries(address,uint256,(uint64,uint64,uint64,uint256,uint256)[])",
+                        msg.sender,
+                        escrowedAccountBalance,
+                        vestingEntries
+                    );
+                    // relay the message to this contract on L2 via L1 Messenger
+                    messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(8e6));
+                    emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
+                }
             }
         }
 
