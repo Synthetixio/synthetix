@@ -32,7 +32,7 @@ const forkChain = async ({ network, reset, providerUrl, unlockAccounts = [] }) =
 	const fee = users.find(user => user.name === 'fee');
 	const zero = users.find(user => user.name === 'zero');
 
-	let pwnedAddresses = users
+	const pwnedAddresses = users
 		.map(user => user.address)
 		.filter(address => address !== fee.address)
 		.filter(address => address !== zero.address)
