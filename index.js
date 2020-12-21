@@ -394,13 +394,16 @@ const getVersions = ({
 
 	if (byContract) {
 		// compile from the contract perspective
-		return Object.values(versions).reduce((memo, entry) => {
-			for (const [contract, contractEntry] of Object.entries(entry.contracts)) {
-				memo[contract] = memo[contract] || [];
-				memo[contract].push(contractEntry);
-			}
-			return memo;
-		}, {});
+		return Object.values(versions).reduce(
+			(memo, { tag, release, date, commit, block, contracts }) => {
+				for (const [contract, contractEntry] of Object.entries(contracts)) {
+					memo[contract] = memo[contract] || [];
+					memo[contract].push(Object.assign({ tag, release, date, commit, block }, contractEntry));
+				}
+				return memo;
+			},
+			{}
+		);
 	}
 	return versions;
 };
