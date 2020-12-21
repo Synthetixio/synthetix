@@ -295,7 +295,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         // 6. Check we haven't hit the debt cap for non snx collateral.
         (bool canIssue, bool anyRateIsInvalid) = _manager().exceedsDebtLimit(amount, currency);
 
-        require(canIssue || !anyRateIsInvalid, "Debt limit or invalid rate");
+        require(canIssue && !anyRateIsInvalid, "Debt limit or invalid rate");
 
         // 7. Require requested loan < max loan
         require(amount <= maxLoan(collateral, currency), "Loan amount exceeds max borrowing power");
