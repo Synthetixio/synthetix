@@ -508,25 +508,6 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			});
 		});
 
-		describe('setMinCollateral', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						ceth.setMinCollateral(toUnit(1), { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await ceth.setMinCollateral(toUnit(2), { from: owner });
-				});
-				it('should update the min collateral', async () => {
-					assert.bnEqual(await ceth.minCollateral(), toUnit(2));
-				});
-			});
-		});
-
 		describe('setIssueFeeRate', async () => {
 			describe('revert condtions', async () => {
 				it('should fail if not called by the owner', async () => {
@@ -546,25 +527,6 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 				it('should allow the issue fee rate to be  0', async () => {
 					await ceth.setIssueFeeRate(toUnit(0), { from: owner });
 					assert.bnEqual(await ceth.issueFeeRate(), toUnit(0));
-				});
-			});
-		});
-
-		describe('setAccountLoanLimit', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						ceth.setMaxLoansPerAccount(toUnit(1), { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await ceth.setMaxLoansPerAccount(toUnit(100), { from: owner });
-				});
-				it('should update the account loan limit', async () => {
-					assert.bnEqual(await ceth.maxLoansPerAccount(), toUnit(100));
 				});
 			});
 		});
@@ -678,7 +640,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			it('should revert if the requested loan exceeds borrowing power', async () => {
 				await assert.revert(
 					ceth.open(oneHundredsUSD, sUSD, { value: toUnit(1), from: account1 }),
-					'Loan amount exceeds max borrowing power'
+					'Exceeds max borrowing power'
 				);
 			});
 		});

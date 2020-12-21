@@ -236,22 +236,10 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         emit MinCratioRatioUpdated(minCratio);
     }
 
-    function setMinCollateral(uint _minCollateral) external onlyOwner {
-        require(_minCollateral > 0, "Must be greater than 0");
-        minCollateral = _minCollateral;
-        emit MinCollateralUpdated(minCollateral);
-    }
-
     function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
         require(_issueFeeRate >= 0, "Must be greater than or equal to 0");
         issueFeeRate = _issueFeeRate;
         emit IssueFeeRateUpdated(issueFeeRate);
-    }
-
-    function setMaxLoansPerAccount(uint _maxLoansPerAccount) external onlyOwner {
-        require(_maxLoansPerAccount > 0, "Must be greater than 0");
-        maxLoansPerAccount = _maxLoansPerAccount;
-        emit MaxLoansPerAccountUpdated(maxLoansPerAccount);
     }
 
     function setInteractionDelay(uint _interactionDelay) external onlyOwner {
@@ -289,7 +277,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         require(collateral >= minCollateral, "Not enough collateral to create a loan");
 
         // 5. Cap the number of loans so that the array doesn't get too big.
-        require(state.getNumLoans(msg.sender) < maxLoansPerAccount, "You have reached the maximum number of loans");
+        require(state.getNumLoans(msg.sender) < maxLoansPerAccount, "Max loans exceeded");
 
         // 6. Check we haven't hit the debt cap for non snx collateral.
         (bool canIssue, bool anyRateIsInvalid) = _manager().exceedsDebtLimit(amount, currency);
@@ -297,7 +285,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         require(canIssue && !anyRateIsInvalid, "Debt limit or invalid rate");
 
         // 7. Require requested loan < max loan
-        require(amount <= maxLoan(collateral, currency), "Loan amount exceeds max borrowing power");
+        require(amount <= maxLoan(collateral, currency), "Exceeds max borrowing power");
 
         // 8. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
@@ -507,19 +495,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         // 6. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 7. Workout what the new c ratio would be.
-        uint cratioAfter = collateralRatio(loan);
+        // 7. Check that the new amount does not put them under the minimum c ratio.
+        require(collateralRatio(loan) > minCratio, "Cratio too low");
 
-        // 8. Check that the new amount does not put them under the minimum c ratio.
-        require(cratioAfter > minCratio, "Cratio too low");
-
-        // 9. Store the loan.
+        // 8. Store the loan.
         state.updateLoan(loan);
 
-        // 10. Assign the return variable.
+        // 9. Assign the return variable.
         withdraw = amount;
 
-        // 11. Emit the event.
+        // 10. Emit the event.
         emit CollateralWithdrawn(msg.sender, id, amount, loan.collateral);
     }
 
@@ -549,44 +534,41 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         // 6. Check they have enough balance to make the payment.
         _checkSynthBalance(msg.sender, loan.currency, payment);
 
-        // 7. Get the collateral ratio.
-        uint cratio = collateralRatio(loan);
+        // 7. Check they are eligible for liquidation.
+        require(collateralRatio(loan) < minCratio, "Cratio above liquidation ratio");
 
-        // 8. Check they are eligible for liquidation.
-        require(cratio < minCratio, "Cratio above liquidation ratio");
-
-        // 9. Determine how much needs to be liquidated to fix their c ratio.
+        // 8. Determine how much needs to be liquidated to fix their c ratio.
         uint liqAmount = liquidationAmount(loan);
 
-        // 10. Only allow them to liquidate enough to fix the c ratio.
+        // 9. Only allow them to liquidate enough to fix the c ratio.
         uint amountToLiquidate = liqAmount < payment ? liqAmount : payment;
 
-        // 11. Work out the total amount owing on the loan.
+        // 10. Work out the total amount owing on the loan.
         uint amountOwing = loan.amount.add(loan.accruedInterest);
 
-        // 12. If its greater than the amount owing, we need to close the loan.
+        // 11. If its greater than the amount owing, we need to close the loan.
         if (amountToLiquidate >= amountOwing) {
             return closeByLiquidationInternal(borrower, msg.sender, loan);
         }
 
-        // 13. Process the payment to workout interest/principal split.
+        // 12. Process the payment to workout interest/principal split.
         loan = _processPayment(loan, amountToLiquidate);
 
-        // 14. Work out how much collateral to redeem.
+        // 13. Work out how much collateral to redeem.
         collateralLiquidated = collateralRedeemed(loan.currency, amountToLiquidate);
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
-        // 15. Update the last interaction time.
+        // 14. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 16. Burn the synths from the liquidator.
+        // 15. Burn the synths from the liquidator.
         require(!_exchanger().hasWaitingPeriodOrSettlementOwing(msg.sender, loan.currency), "Waiting or settlement owing");
         _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
 
-        // 17. Store the loan.
+        // 16. Store the loan.
         state.updateLoan(loan);
 
-        // 18. Emit the event
+        // 17. Emit the event
         emit LoanPartiallyLiquidated(borrower, id, msg.sender, amountToLiquidate, collateralLiquidated);
     }
 
@@ -653,19 +635,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         // 5. Add the requested amount.
         loan.amount = loan.amount.add(amount);
 
-        // 6. Get the new c ratio.
-        uint cratio = collateralRatio(loan);
+        // 6. If it is below the minimum, don't allow this draw.
+        require(collateralRatio(loan) > minCratio, "Cannot draw this much");
 
-        // 7. If it is below the minimum, don't allow this draw.
-        require(cratio > minCratio, "Cannot draw this much");
-
-        // 8. This fee is denominated in the currency of the loan
+        // 7. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
 
-        // 9. Calculate the minting fee and subtract it from the draw amount
+        // 8. Calculate the minting fee and subtract it from the draw amount
         uint amountMinusFee = amount.sub(issueFee);
 
-        // 10. If its short, let the child handle it, otherwise issue the synths.
+        // 9. If its short, let the child handle it, otherwise issue the synths.
         if (loan.short) {
             _manager().incrementShorts(loan.currency, amount);
             _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
@@ -678,16 +657,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
             _synth(synthsByKey[loan.currency]).issue(msg.sender, amountMinusFee);
         }
 
-        // 11. Pay the minting fees to the fee pool
+        // 10. Pay the minting fees to the fee pool
         _payFees(issueFee, loan.currency);
 
-        // 12. Update the last interaction time.
+        // 11. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 13. Store the loan
+        // 12. Store the loan
         state.updateLoan(loan);
 
-        // 14. Emit the event.
+        // 13. Emit the event.
         emit LoanDrawnDown(msg.sender, id, amount);
     }
 
