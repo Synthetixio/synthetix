@@ -10,6 +10,7 @@ import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
@@ -64,7 +65,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
 
     function _initiateRewardDeposit(uint amount) internal {
         // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("completeRewardDeposit(uint256)", amount);
+        ISynthetixBridgeToBase bridgeToBase;
+        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.completeRewardDeposit.selector, amount);
 
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(getCrossDomainMessageGasLimit()));
@@ -106,7 +108,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         synthetixERC20().transferFrom(msg.sender, address(this), amount);
 
         // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("completeDeposit(address,uint256)", msg.sender, amount);
+        ISynthetixBridgeToBase bridgeToBase;
+        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.completeDeposit.selector, msg.sender, amount);
 
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(getCrossDomainMessageGasLimit()));
