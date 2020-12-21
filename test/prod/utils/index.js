@@ -4,6 +4,7 @@ const {
 	ensureAccountHasEther,
 	ensureAccountHasSNX,
 	ensureAccountHassUSD,
+	ensureAccountHasRenBTC,
 } = require('./ensureAccountHasBalance');
 const { exchangeSynths } = require('./exchangeSynths');
 const { readSetting, writeSetting } = require('./systemSettings');
@@ -20,6 +21,7 @@ module.exports = {
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	ensureAccountHasSNX,
+	ensureAccountHasRenBTC,
 	exchangeSynths,
 	readSetting,
 	writeSetting,
