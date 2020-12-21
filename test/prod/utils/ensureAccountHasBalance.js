@@ -143,11 +143,7 @@ async function ensureAccountHassETH({ network, deploymentPath, amount, account }
 }
 
 module.exports = {
-<<<<<<< HEAD
-	knownMainnetWallet,
 	ensureAccountHasRenBTC,
-=======
->>>>>>> origin
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	ensureAccountHassETH,
