@@ -144,18 +144,18 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 
 				describe('when invoked by the messenger (aka relayer)', async () => {
-					let mintSecondaryTx;
-					const mintSecondaryAmount = 100;
+					let completeDepositTx;
+					const depositAmount = 100;
 					beforeEach('completeDeposit is called', async () => {
-						mintSecondaryTx = await instance.completeDeposit(user1, mintSecondaryAmount, {
+						completeDepositTx = await instance.completeDeposit(user1, depositAmount, {
 							from: smockedMessenger,
 						});
 					});
 
-					it('should emit a MintedSecondary event', async () => {
-						assert.eventEqual(mintSecondaryTx, 'MintedSecondary', {
+					it('should emit a DepositCompleted event', async () => {
+						assert.eventEqual(completeDepositTx, 'DepositCompleted', {
 							account: user1,
-							amount: mintSecondaryAmount,
+							amount: depositAmount,
 						});
 					});
 
@@ -164,7 +164,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[0][0], user1);
 						assert.equal(
 							mintableSynthetix.smocked.mintSecondary.calls[0][1].toString(),
-							mintSecondaryAmount
+							depositAmount
 						);
 					});
 				});
@@ -195,17 +195,17 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 
 				describe('when invoked by the bridge on the other layer', async () => {
-					let mintSecondaryTx;
-					const mintSecondaryAmount = 100;
+					let completeRewardDepositTx;
+					const rewardAmount = 100;
 					beforeEach('completeRewardDeposit is called', async () => {
-						mintSecondaryTx = await instance.completeRewardDeposit(mintSecondaryAmount, {
+						completeRewardDepositTx = await instance.completeRewardDeposit(rewardAmount, {
 							from: smockedMessenger,
 						});
 					});
 
-					it('should emit a MintedSecondaryRewards event', async () => {
-						assert.eventEqual(mintSecondaryTx, 'MintedSecondaryRewards', {
-							amount: mintSecondaryAmount,
+					it('should emit a RewardDepositCompleted event', async () => {
+						assert.eventEqual(completeRewardDepositTx, 'RewardDepositCompleted', {
+							amount: rewardAmount,
 						});
 					});
 
@@ -213,7 +213,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.equal(mintableSynthetix.smocked.mintSecondaryRewards.calls.length, 1);
 						assert.equal(
 							mintableSynthetix.smocked.mintSecondaryRewards.calls[0][0].toString(),
-							mintSecondaryAmount
+							rewardAmount
 						);
 					});
 				});

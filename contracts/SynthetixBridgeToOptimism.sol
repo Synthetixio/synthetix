@@ -71,7 +71,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(getCrossDomainMessageGasLimit()));
 
-        emit RewardDeposit(msg.sender, amount);
+        emit RewardDepositInitiated(msg.sender, amount);
     }
 
     /* ========== VIEWS ========== */
@@ -114,7 +114,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(getCrossDomainMessageGasLimit()));
 
-        emit Deposit(msg.sender, amount);
+        emit DepositInitiated(msg.sender, amount);
     }
 
     // invoked by a generous user on L1
@@ -164,7 +164,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     // ========== EVENTS ==========
 
     event BridgeMigrated(address oldBridge, address newBridge, uint amount);
-    event Deposit(address indexed account, uint amount);
-    event RewardDeposit(address indexed account, uint amount);
+    event DepositInitiated(address indexed account, uint amount);
+    event RewardDepositInitiated(address indexed account, uint amount);
     event WithdrawalCompleted(address indexed account, uint amount);
 }

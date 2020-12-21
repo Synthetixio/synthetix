@@ -95,7 +95,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
         synthetix().mintSecondary(account, amount);
 
-        emit MintedSecondary(account, amount);
+        emit DepositCompleted(account, amount);
     }
 
     // invoked by Messenger on L2
@@ -103,11 +103,11 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 
-        emit MintedSecondaryRewards(amount);
+        emit RewardDepositCompleted(amount);
     }
 
     // ========== EVENTS ==========
-    event MintedSecondary(address indexed account, uint amount);
-    event MintedSecondaryRewards(uint amount);
+    event DepositCompleted(address indexed account, uint amount);
+    event RewardDepositCompleted(uint amount);
     event WithdrawalInitiated(address indexed account, uint amount);
 }

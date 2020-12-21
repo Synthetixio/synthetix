@@ -140,13 +140,13 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
-					it('and a Deposit event is emitted', async () => {
-						assert.eventEqual(txn, 'Deposit', [user1, amount]);
+					it('and a DepositInitiated event is emitted', async () => {
+						assert.eventEqual(txn, 'DepositInitiated', [user1, amount]);
 					});
 				});
 			});
 
-			describe('initiateRewardDepositrewardDeposit', () => {
+			describe('initiateRewardDeposit', () => {
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
 						await instance.migrateBridge(randomAddress, { from: owner });
@@ -181,8 +181,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
-					it('and a RewardDeposit event is emitted', async () => {
-						assert.eventEqual(txn, 'RewardDeposit', [user1, amount]);
+					it('and a RewardDepositInitiated event is emitted', async () => {
+						assert.eventEqual(txn, 'RewardDepositInitiated', [user1, amount]);
 					});
 				});
 			});
@@ -227,8 +227,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
-					it('and a RewardDeposit event is emitted', async () => {
-						assert.eventEqual(txn, 'RewardDeposit', [rewardsDistribution, amount]);
+					it('and a RewardDepositInitiated event is emitted', async () => {
+						assert.eventEqual(txn, 'RewardDepositInitiated', [rewardsDistribution, amount]);
 					});
 				});
 			});
