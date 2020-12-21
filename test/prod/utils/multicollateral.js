@@ -9,7 +9,6 @@ async function implementsMultiCollateral({ network, deploymentPath }) {
 	});
 
 	const collateralManager = await AddressResolver.getAddress(toBytes32('CollateralManager'));
-
 	return collateralManager !== '0x0000000000000000000000000000000000000000';
 }
 

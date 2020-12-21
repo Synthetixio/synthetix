@@ -48,7 +48,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			return this.skip();
 		}
 
-		if (!implementsMultiCollateral({ network, deploymentPath })) {
+		if (!(await implementsMultiCollateral({ network, deploymentPath }))) {
 			this.skip();
 		}
 
