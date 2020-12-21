@@ -15,7 +15,6 @@ import "./SafeDecimalMath.sol";
 import "./CollateralManagerState.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/ICollateral.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IDebtCache.sol";
 import "./interfaces/IERC20.sol";

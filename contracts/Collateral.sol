@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
 import "./Pausable.sol";
-import "./interfaces/ICollateral.sol";
 import "./interfaces/ICollateralLoan.sol";
 
 // Libraries
@@ -24,7 +23,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IShortingRewards.sol";
 
 
-contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings, Pausable {
+contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;

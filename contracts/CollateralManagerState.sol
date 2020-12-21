@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Owned.sol";
 import "./State.sol";
-import "./interfaces/ICollateral.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
