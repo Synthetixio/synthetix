@@ -33,10 +33,6 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
     bytes32 private constant sUSD = "sUSD";
 
-    // Time in seconds that a user must wait between interacting with a loan.
-    // Provides front running and flash loan protection.
-    uint public constant INTERACTION_DELAY = 300;
-
     // ========== STATE VARIABLES ==========
 
     // The synth corresponding to the collateral.
@@ -69,6 +65,10 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
 
     // The maximum number of loans that an account can create with this collateral.
     uint public maxLoansPerAccount = 50;
+
+    // Time in seconds that a user must wait between interacting with a loan.
+    // Provides front running and flash loan protection.
+    uint public interactionDelay = 300;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -198,7 +198,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
     // We set the interest index to 0 to indicate the loan has been closed.
     function _checkLoanAvailable(Loan memory _loan) internal view {
         require(_loan.interestIndex > 0, "Loan does not exist");
-        require(_loan.lastInteraction.add(INTERACTION_DELAY) <= block.timestamp, "Loan recently interacted with");
+        require(_loan.lastInteraction.add(interactionDelay) <= block.timestamp, "Loan recently interacted with");
     }
 
     function issuanceRatio() internal view returns (uint ratio) {
@@ -255,6 +255,12 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         emit MaxLoansPerAccountUpdated(maxLoansPerAccount);
     }
 
+    function setInteractionDelay(uint _interactionDelay) external onlyOwner {
+        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Too long");
+        interactionDelay = _interactionDelay;
+        emit InteractionDelayUpdated(interactionDelay);
+    }
+
     function setManager(address _newManager) external onlyOwner {
         manager = _newManager;
         emit ManagerUpdated(manager);
@@ -298,7 +304,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
 
         // 9. Calculate the minting fee and subtract it from the loan amount
-        uint loanAmountMinusFee = amount.sub(amount.multiplyDecimalRound(issueFeeRate));
+        uint loanAmountMinusFee = amount.sub(issueFee);
 
         // 10. Get a Loan ID
         id = _manager().getLoanId();
@@ -654,26 +660,35 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
         // 7. If it is below the minimum, don't allow this draw.
         require(cratio > minCratio, "Cannot draw this much");
 
-        // 8. If its short, let the child handle it, otherwise issue the synths.
+        // 8. This fee is denominated in the currency of the loan
+        uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
+
+        // 9. Calculate the minting fee and subtract it from the draw amount
+        uint amountMinusFee = amount.sub(issueFee);
+
+        // 10. If its short, let the child handle it, otherwise issue the synths.
         if (loan.short) {
             _manager().incrementShorts(loan.currency, amount);
-            _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amount, sUSD));
+            _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
 
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).enrol(msg.sender, amount);
             }
         } else {
             _manager().incrementLongs(loan.currency, amount);
-            _synth(synthsByKey[loan.currency]).issue(msg.sender, amount);
+            _synth(synthsByKey[loan.currency]).issue(msg.sender, amountMinusFee);
         }
 
-        // 9. Update the last interaction time.
+        // 11. Pay the minting fees to the fee pool
+        _payFees(issueFee, loan.currency);
+
+        // 12. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 10. Store the loan
+        // 13. Store the loan
         state.updateLoan(loan);
 
-        // 11. Emit the event.
+        // 14. Emit the event.
         emit LoanDrawnDown(msg.sender, id, amount);
     }
 
@@ -759,6 +774,7 @@ contract Collateral is ICollateral, ICollateralLoan, Owned, MixinSystemSettings,
     event MinCollateralUpdated(uint minCollateral);
     event IssueFeeRateUpdated(uint issueFeeRate);
     event MaxLoansPerAccountUpdated(uint maxLoansPerAccount);
+    event InteractionDelayUpdated(uint interactionDelay);
     event ManagerUpdated(address manager);
 
     // Loans

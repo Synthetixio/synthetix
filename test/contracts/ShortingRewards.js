@@ -7,7 +7,7 @@ const {
 } = require('../..');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { mockToken, setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts, setupContract } = require('./setup');
 const { currentTime, toUnit, fastForward } = require('../utils')();
 
 const CollateralManager = artifacts.require(`CollateralManager`);
@@ -23,6 +23,7 @@ contract('ShortingRewards', accounts => {
 		rewardEscrowAddress,
 		account1,
 		mockRewardsDistributionAddress,
+		account2,
 	] = accounts;
 
 	const sUSD = toBytes32('sUSD');
@@ -31,7 +32,6 @@ contract('ShortingRewards', accounts => {
 
 	// Synthetix is the rewardsToken
 	let rewardsToken,
-		externalRewardsToken,
 		exchangeRates,
 		shortingRewards,
 		rewardsDistribution,
@@ -225,12 +225,6 @@ contract('ShortingRewards', accounts => {
 
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 
-		({ token: externalRewardsToken } = await mockToken({
-			accounts,
-			name: 'External Rewards Token',
-			symbol: 'MOAR',
-		}));
-
 		shortingRewards = await setupContract({
 			accounts,
 			contract: 'ShortingRewards',
@@ -370,75 +364,6 @@ contract('ShortingRewards', accounts => {
 		});
 	});
 
-	describe('External Rewards Recovery', () => {
-		const amount = toUnit('5000');
-		beforeEach(async () => {
-			// Send ERC20 to shortingRewards Contract
-			await externalRewardsToken.transfer(shortingRewards.address, amount, { from: owner });
-			assert.bnEqual(await externalRewardsToken.balanceOf(shortingRewards.address), amount);
-		});
-		// 	it('only owner can call recoverERC20', async () => {
-		// 		await onlyGivenAddressCanInvoke({
-		// 			fnc: shortingRewards.recoverERC20,
-		// 			args: [externalRewardsToken.address, amount],
-		// 			address: owner,
-		// 			accounts,
-		// 			reason: 'Only the contract owner may perform this action',
-		// 		});
-		// 	});
-		// 	it('should revert if recovering staking token', async () => {
-		// 		await assert.revert(
-		// 			shortingRewards.recoverERC20(stakingToken.address, amount, {
-		// 				from: owner,
-		// 			}),
-		// 			'Cannot withdraw the staking or rewards tokens'
-		// 		);
-		// 	});
-		// 	it('should revert if recovering rewards token (SNX)', async () => {
-		// 		// rewardsToken in these tests is the underlying contract
-		// 		await assert.revert(
-		// 			shortingRewards.recoverERC20(rewardsToken.address, amount, {
-		// 				from: owner,
-		// 			}),
-		// 			'Cannot withdraw the staking or rewards tokens'
-		// 		);
-		// 	});
-		// 	it('should revert if recovering the SNX Proxy', async () => {
-		// 		const snxProxy = await rewardsToken.proxy();
-		// 		await assert.revert(
-		// 			shortingRewards.recoverERC20(snxProxy, amount, {
-		// 				from: owner,
-		// 			}),
-		// 			'Cannot withdraw the staking or rewards tokens'
-		// 		);
-		// 	});
-		// 	it('should retrieve external token from shortingRewards and reduce contracts balance', async () => {
-		// 		await shortingRewards.recoverERC20(externalRewardsToken.address, amount, {
-		// 			from: owner,
-		// 		});
-		// 		assert.bnEqual(await externalRewardsToken.balanceOf(shortingRewards.address), ZERO_BN);
-		// 	});
-		// 	it('should retrieve external token from shortingRewards and increase owners balance', async () => {
-		// 		const ownerMOARBalanceBefore = await externalRewardsToken.balanceOf(owner);
-
-		// 		await shortingRewards.recoverERC20(externalRewardsToken.address, amount, {
-		// 			from: owner,
-		// 		});
-
-		// 		const ownerMOARBalanceAfter = await externalRewardsToken.balanceOf(owner);
-		// 		assert.bnEqual(ownerMOARBalanceAfter.sub(ownerMOARBalanceBefore), amount);
-		// 	});
-		// 	it('should emit Recovered event', async () => {
-		// 		const transaction = await shortingRewards.recoverERC20(externalRewardsToken.address, amount, {
-		// 			from: owner,
-		// 		});
-		// 		assert.eventEqual(transaction, 'Recovered', {
-		// 			token: externalRewardsToken.address,
-		// 			amount: amount,
-		// 		});
-		// 	});
-	});
-
 	describe('lastTimeRewardApplicable()', () => {
 		it('should return 0', async () => {
 			assert.bnEqual(await shortingRewards.lastTimeRewardApplicable(), ZERO_BN);
@@ -464,7 +389,8 @@ contract('ShortingRewards', accounts => {
 		});
 
 		it('should be > 0', async () => {
-			await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(20000), toUnit(1), sBTC, { from: account1 });
+			id = await getid(tx);
 
 			const totalSupply = await shortingRewards.totalSupply();
 			assert.bnGt(totalSupply, ZERO_BN);
@@ -479,13 +405,19 @@ contract('ShortingRewards', accounts => {
 
 			const rewardPerToken = await shortingRewards.rewardPerToken();
 			assert.bnGt(rewardPerToken, ZERO_BN);
+
+			await short.draw(id, toUnit(0.1), { from: account1 });
+
+			await fastForward(DAY);
+
+			const newRewardsPerToken = await shortingRewards.rewardPerToken();
+			assert.bnGt(newRewardsPerToken, rewardPerToken);
 		});
 	});
 
-	describe('stake()', () => {
-		it('staking increases staking balance', async () => {
+	describe('enrol()', () => {
+		it('enroling increases staking balance', async () => {
 			const initialStakeBal = await shortingRewards.balanceOf(account1);
-			// const initialLpBal = await stakingToken.balanceOf(stakingAccount1);
 
 			await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
 
@@ -493,9 +425,31 @@ contract('ShortingRewards', accounts => {
 
 			assert.bnGt(postStakeBal, initialStakeBal);
 		});
+	});
 
-		xit('cannot stake 0', async () => {
-			await assert.revert(shortingRewards.stake('0'), 'Cannot stake 0');
+	describe('If a position is closed by liquidation, they are withdrawn.', () => {
+		it('closing reduces the balance', async () => {
+			const initialStakeBal = await shortingRewards.balanceOf(account1);
+
+			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			id = await getid(tx);
+
+			await fastForward(DAY);
+
+			// Make the short so underwater it must get closed.
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([sBTC], ['20000'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+
+			// close the loan via liquidation
+			await issuesBTCtoAccount(toUnit(1), account2);
+			await short.liquidate(account1, id, toUnit(1), { from: account2 });
+
+			const postStakeBal = await shortingRewards.balanceOf(account1);
+
+			// Should be back to 0
+			assert.bnEqual(postStakeBal, initialStakeBal);
 		});
 	});
 

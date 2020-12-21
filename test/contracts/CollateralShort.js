@@ -239,7 +239,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		);
 	});
 
-	describe('opening shorts', async () => {
+	describe('interacting with shorts', async () => {
 		describe('should open a btc short', async () => {
 			const oneBTC = toUnit(1);
 			const susdCollateral = toUnit(15000);

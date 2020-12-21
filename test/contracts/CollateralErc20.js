@@ -538,6 +538,25 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			});
 		});
 
+		describe('setMinCollateral', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						cerc20.setMinCollateral(toUnit(1), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await cerc20.setMinCollateral(toUnit(2), { from: owner });
+				});
+				it('should update the min collateral', async () => {
+					assert.bnEqual(await cerc20.minCollateral(), toUnit(2));
+				});
+			});
+		});
+
 		describe('setIssueFeeRate', async () => {
 			describe('revert condtions', async () => {
 				it('should fail if not called by the owner', async () => {
@@ -557,6 +576,50 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				it('should allow the issue fee rate to be  0', async () => {
 					await cerc20.setIssueFeeRate(toUnit(0), { from: owner });
 					assert.bnEqual(await cerc20.issueFeeRate(), toUnit(0));
+				});
+			});
+		});
+
+		describe('setAccountLoanLimit', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						cerc20.setMaxLoansPerAccount(toUnit(1), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await cerc20.setMaxLoansPerAccount(toUnit(100), { from: owner });
+				});
+				it('should update the account loan limit', async () => {
+					assert.bnEqual(await cerc20.maxLoansPerAccount(), toUnit(100));
+				});
+			});
+		});
+
+		describe('setInteractionDelay', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						cerc20.setInteractionDelay(toUnit(1), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+				it('should fail if the owner passes to big of a value', async () => {
+					await assert.revert(
+						cerc20.setInteractionDelay(toUnit(3601), { from: owner }),
+						'Too long'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await cerc20.setInteractionDelay(toUnit(50), { from: owner });
+				});
+				it('should update the interaction delay', async () => {
+					assert.bnEqual(await cerc20.interactionDelay(), toUnit(50));
 				});
 			});
 		});

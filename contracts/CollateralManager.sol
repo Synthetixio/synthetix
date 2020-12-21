@@ -72,9 +72,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_ISSUER, CONTRACT_EXRATES, CONTRACT_DEBTCACHE];
+    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_ISSUER, CONTRACT_EXRATES];
 
     /* ========== CONSTRUCTOR ========== */
     constructor(
@@ -99,11 +98,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
+        bytes32[] memory newAddresses = new bytes32[](3);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[3] = CONTRACT_DEBTCACHE;
         bytes32[] memory staticAddresses = combineArrays(newAddresses, existingAddresses);
 
         // we want to cache the name of the synth and the name of its corresponding iSynth
@@ -140,10 +138,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
-    }
-
-    function _debtCache() internal view returns (IDebtCache) {
-        return IDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
     }
 
     function _synth(bytes32 synthName) internal view returns (ISynth) {

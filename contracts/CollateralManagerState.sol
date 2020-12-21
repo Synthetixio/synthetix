@@ -103,9 +103,7 @@ contract CollateralManagerState is Owned, State {
     // Short rates, one array per currency.
 
     function addShortCurrency(bytes32 currency) external onlyAssociatedContract {
-        if (shortRates[currency].length > 0) {
-            return;
-        } else {
+        if (shortRates[currency].length > 0) {} else {
             shortRates[currency].push(0);
             shortRatesLastUpdated[currency] = block.timestamp;
         }

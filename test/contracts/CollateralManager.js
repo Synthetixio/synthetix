@@ -385,6 +385,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
 			await cerc20.open(toUnit(1), toUnit(100), sUSD, { from: account1 });
 			await cerc20.open(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
+			await short.open(toUnit(200), toUnit(1), sETH, { from: account1 });
 
 			id = await getid(tx);
 		});
@@ -401,11 +402,39 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			assert.bnEqual(await manager.long(sBTC), toUnit(0.01));
 		});
 
-		it('should get the total balance in sUSD correctly', async () => {
+		it('should correctly get the total short ETTH balance', async () => {
+			assert.bnEqual(await manager.short(sETH), toUnit(1));
+		});
+
+		it('should get the total long balance in sUSD correctly', async () => {
 			const total = await manager.totalLong();
 			const debt = total.susdValue;
 
 			assert.bnEqual(debt, toUnit(400));
+		});
+
+		it('should get the total short balance in sUSD correctly', async () => {
+			const total = await manager.totalShort();
+			const debt = total.susdValue;
+
+			assert.bnEqual(debt, toUnit(100));
+		});
+
+		it('should report if a rate is invalid', async () => {
+			await fastForward(await exchangeRates.rateStalePeriod());
+
+			const long = await manager.totalLong();
+			const debt = long.susdValue;
+			const invalid = long.anyRateIsInvalid;
+
+			const short = await manager.totalShort();
+			const shortDebt = short.susdValue;
+			const shortInvalid = short.anyRateIsInvalid;
+
+			assert.bnEqual(debt, toUnit(400));
+			assert.bnEqual(shortDebt, toUnit(100));
+			assert.isTrue(invalid);
+			assert.isTrue(shortInvalid);
 		});
 
 		it('should reduce the sUSD balance when a loan is closed', async () => {
@@ -521,6 +550,65 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 			it('if a collateral is not in the manager, it should return false', async () => {
 				assert.isFalse(await manager.hasCollateral(ZERO_ADDRESS));
+			});
+		});
+	});
+
+	describe('removing collateral', async () => {
+		describe('revert conditions', async () => {
+			it('should revert if the caller is not the owner', async () => {
+				await assert.revert(
+					manager.removeCollaterals([sBTCSynth.address], { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+
+		describe('when a collateral is removed', async () => {
+			beforeEach(async () => {
+				await manager.removeCollaterals([sBTCSynth.address], { from: owner });
+			});
+
+			it('should not have the collateral', async () => {
+				assert.isFalse(await manager.hasCollateral(sBTCSynth.address));
+			});
+		});
+	});
+
+	describe('removing synths', async () => {
+		describe('revert conditions', async () => {
+			it('should revert if the caller is not the owner', async () => {
+				await assert.revert(
+					manager.removeSynths([toBytes32('SynthsBTC')], { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+
+		describe('it should remove a synth', async () => {
+			beforeEach(async () => {
+				await manager.removeSynths([toBytes32('SynthsBTC')], { from: owner });
+			});
+		});
+	});
+
+	describe('removing shortable synths', async () => {
+		describe('revert conditions', async () => {
+			it('should revert if the caller is not the owner', async () => {
+				await assert.revert(
+					manager.removeShortableSynths([toBytes32('SynthsBTC')], { from: account1 }),
+					'Only the contract owner may perform this action'
+				);
+			});
+		});
+
+		describe('when a shortable synth is removed', async () => {
+			beforeEach(async () => {
+				await manager.removeShortableSynths([toBytes32('SynthsBTC')], { from: owner });
+			});
+
+			it('should zero out the inverse mapping', async () => {
+				assert.equal(await manager.synthToInverseSynth(toBytes32('SynthsBTC')), toBytes32('0'));
 			});
 		});
 	});
