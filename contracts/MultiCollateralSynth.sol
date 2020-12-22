@@ -37,7 +37,7 @@ contract MultiCollateralSynth is Synth {
     }
 
     function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL));
+        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETH_COLLATERAL));
     }
 
     function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
@@ -46,9 +46,11 @@ contract MultiCollateralSynth is Synth {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](1);
+        bytes32[] memory newAddresses = new bytes32[](3);
         newAddresses[0] = CONTRACT_COLLATERALMANAGER;
-        return combineArrays(existingAddresses, newAddresses);
+        newAddresses[1] = CONTRACT_ETH_COLLATERAL;
+        newAddresses[2] = CONTRACT_ETH_COLLATERAL_SUSD;
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -83,7 +85,7 @@ contract MultiCollateralSynth is Synth {
         bool isMultiCollateral = collateralManager().hasCollateral(msg.sender);
 
         require(
-            isFeePool || isExchanger || isIssuer || isMultiCollateral,
+            isFeePool || isExchanger || isIssuer || isEtherCollateral || isEtherCollateralsUSD || isMultiCollateral,
             "Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed"
         );
         _;
