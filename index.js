@@ -104,6 +104,7 @@ const defaults = {
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_MESSAGE_GAS_LIMIT: `${3e6}`,
+	COLLATERAL_SHORT_INTERACTION_DELAY: '3600', // 1 hour in secs
 };
 
 /**

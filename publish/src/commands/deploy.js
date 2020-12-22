@@ -2023,10 +2023,10 @@ const deploy = async ({
 		await runStep({
 			contract: 'CollateralShort',
 			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'interactionDelay',
+			expected: input => input !== '0', // only change if zero
 			write: 'setInteractionDelay',
-			writeArg: 3600,
+			writeArg: await getDeployParameter('COLLATERAL_SHORT_INTERACTION_DELAY'),
 		});
 	}
 
