@@ -65,7 +65,7 @@ contract EmptyCollateralManager is ICollateralManager {
     }
 
     // Loans
-    function getLoanId() external returns (uint id) {
+    function getNewLoanId() external returns (uint id) {
         return 0;
     }
 

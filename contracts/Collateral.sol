@@ -238,7 +238,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
-        require(_issueFeeRate >= 0, "Must be greater than or equal to 0");
         issueFeeRate = _issueFeeRate;
         emit IssueFeeRateUpdated(issueFeeRate);
     }
@@ -302,7 +301,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint loanAmountMinusFee = amount.sub(issueFee);
 
         // 10. Get a Loan ID
-        id = _manager().getLoanId();
+        id = _manager().getNewLoanId();
 
         // 11. Create the loan struct.
         Loan memory loan = Loan({
