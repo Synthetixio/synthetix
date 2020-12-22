@@ -63,7 +63,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
         newAddresses[4] = CONTRACT_ETHERCOLLATERAL;
         newAddresses[5] = CONTRACT_ETHERCOLLATERAL_SUSD;
         newAddresses[6] = CONTRACT_COLLATERALMANAGER;
-        return combineArrays(existingAddresses, newAddresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function issuer() internal view returns (IIssuer) {

@@ -105,7 +105,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
         newAddresses[10] = CONTRACT_REWARDSDISTRIBUTION;
         newAddresses[11] = CONTRACT_COLLATERALMANAGER;
-        return combineArrays(existingAddresses, newAddresses);
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
