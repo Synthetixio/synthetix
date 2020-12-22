@@ -239,7 +239,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		);
 	});
 
-	describe('interacting with shorts', async () => {
+	describe('opening shorts', async () => {
 		describe('should open a btc short', async () => {
 			const oneBTC = toUnit(1);
 			const susdCollateral = toUnit(15000);
@@ -430,16 +430,16 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			await issue(sUSDSynth, susdCollateral, account1);
 
 			await debtCache.takeDebtSnapshot();
-			let result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111100));
+			let result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111100));
 
 			tx = await short.open(toUnit(500), oneETH, sETH, { from: account1 });
 
 			id = await getid(tx);
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111100));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111100));
 
 			await fastForwardAndUpdateRates(3600);
 
@@ -449,23 +449,23 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			});
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111100));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111100));
 
 			// simulate buying sETH for 150 susd.
 			await sUSDSynth.burn(account1, toUnit(150));
 			await issue(sETHSynth, oneETH, account1);
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111100));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111100));
 
 			// now close the short
 			await short.close(id, { from: account1 });
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111100));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111100));
 
 			// shorter has made 50 sUSD loss
 			assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(950));
@@ -475,16 +475,16 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			await issue(sUSDSynth, susdCollateral, account1);
 
 			await debtCache.takeDebtSnapshot();
-			let result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111100));
+			let result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111100));
 
 			tx = await short.open(toUnit(500), twoETH, sETH, { from: account1 });
 
 			id = await getid(tx);
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111100));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111100));
 
 			await fastForwardAndUpdateRates(3600);
 
@@ -496,23 +496,23 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			// 111100 + 50 - (2 * 50) = 111,050
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111050));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111050));
 
 			// simulate buying 2 sETH for 300 susd.
 			await sUSDSynth.burn(account1, toUnit(300));
 			await issue(sETHSynth, twoETH, account1);
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111050));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111050));
 
 			// now close the short
 			await short.close(id, { from: account1 });
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111050));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111050));
 
 			// shorter has made 50 sUSD loss
 			assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(900));
@@ -522,16 +522,16 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			await issue(sUSDSynth, susdCollateral, account1);
 
 			await debtCache.takeDebtSnapshot();
-			let result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111100));
+			let result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111100));
 
 			tx = await short.open(toUnit(500), twoETH, sETH, { from: account1 });
 
 			id = await getid(tx);
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111100));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111100));
 
 			await fastForwardAndUpdateRates(3600);
 
@@ -543,23 +543,23 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			// 111100 - 50 + (2 * 50) = 111,150
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111150));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111150));
 
 			// simulate buying 2 sETH for 100 susd.
 			await sUSDSynth.burn(account1, toUnit(100));
 			await issue(sETHSynth, twoETH, account1);
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111150));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111150));
 
 			// now close the short
 			await short.close(id, { from: account1 });
 
 			await debtCache.takeDebtSnapshot();
-			result = await debtCache.currentDebt();
-			assert.bnEqual(result.debt, toUnit(111150));
+			result = await debtCache.cachedDebt();
+			assert.bnEqual(result, toUnit(111150));
 
 			// shorter has made 100 sUSD profit
 			assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(1100));

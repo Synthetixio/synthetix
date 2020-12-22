@@ -39,6 +39,7 @@ contract('SynthUtil', accounts => {
 				'SystemSettings',
 				'DebtCache',
 				'Issuer',
+				'CollateralManager',
 			],
 		}));
 	});

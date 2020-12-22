@@ -1277,7 +1277,7 @@ const deploy = async ({
 				addressOf(readProxyForResolver),
 				toBytes32('sETH'),
 				w3utils.toWei('1.5'),
-				w3utils.toWei('0.1'),
+				w3utils.toWei('0.5'),
 			],
 		});
 
@@ -1308,7 +1308,7 @@ const deploy = async ({
 				addressOf(readProxyForResolver),
 				toBytes32('sBTC'),
 				w3utils.toWei('1.5'),
-				w3utils.toWei('0.1'),
+				w3utils.toWei('0.025'),
 				RENBTC_ADDRESS,
 			],
 		});
@@ -1455,7 +1455,7 @@ const deploy = async ({
 		}
 	} else {
 		await runStep({
-			gasLimit: 8e6, // higher gas required
+			gasLimit: 10e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'rebuildCaches',

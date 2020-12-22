@@ -249,6 +249,9 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
         (uint[] memory values, bool isInvalid) = _currentSynthDebts(currencyKeys);
 
+        // Subtract the USD value of all shorts.
+        (uint shortValue, ) = collateralManager().totalShort();
+
         uint numValues = values.length;
         uint snxCollateralDebt;
         for (uint i; i < numValues; i++) {
@@ -256,7 +259,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
             snxCollateralDebt = snxCollateralDebt.add(value);
             _cachedSynthDebt[currencyKeys[i]] = value;
         }
-        _cachedDebt = snxCollateralDebt;
+        _cachedDebt = snxCollateralDebt.sub(shortValue);
         _cacheTimestamp = block.timestamp;
         emit DebtCacheUpdated(snxCollateralDebt);
         emit DebtCacheSnapshotTaken(block.timestamp);
