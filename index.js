@@ -60,7 +60,7 @@ const knownAccounts = {
 		},
 		{
 			name: 'renBTCWallet',
-			address: '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE',
+			address: '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E',
 		},
 	],
 };
