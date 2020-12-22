@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { contract, config } = require('@nomiclabs/buidler');
+const { contract, config, artifacts } = require('@nomiclabs/buidler');
 const { wrap } = require('../../index.js');
 const { web3 } = require('@nomiclabs/buidler');
 const { assert } = require('../contracts/common');
@@ -64,7 +64,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 			CollateralEth,
 			CollateralShort,
 			DebtCache,
-			// SynthsETH,
 			SynthsUSD,
 			ReadProxyAddressResolver,
 		} = await connectContracts({
@@ -103,7 +102,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	describe.only('misc state', () => {
+	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await CollateralManager.resolver(), ReadProxyAddressResolver.address);
 		});
@@ -125,16 +124,13 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	describe.only('ETH backed loans works and interact with the manager and the system debt properly', () => {
-		let ethBalance, sUSDBalance, tx, id, systemDebtBefore;
+	describe('ETH backed loans works and interacted with the manager and the system debt properly', () => {
+		let tx, id, systemDebtBefore;
 		const oneHundressUSD = toUnit('100');
 		const oneETH = toUnit('1');
 		const sUSD = toBytes32('sUSD');
 
 		before(async () => {
-			ethBalance = await web3.eth.getBalance(user1);
-			sUSDBalance = await SynthsUSD.balanceOf(user1);
-
 			systemDebtBefore = (await DebtCache.currentDebt()).debt;
 
 			tx = await CollateralEth.open(oneHundressUSD, sUSD, {
@@ -157,55 +153,19 @@ contract('MultiCollateral (prod tests)', accounts => {
 		it('the system debt is unchanged because we do not count eth collateral', async () => {
 			assert.bnEqual((await DebtCache.currentDebt()).debt, systemDebtBefore);
 		});
-
-		describe('closing the loans', () => {
-			before(async () => {
-				// if (network === 'local') {
-				// 	const amount = toUnit('1000');
-
-				// 	const balance = await SynthsUSD.balanceOf(Depot.address);
-				// 	if (balance.lt(amount)) {
-				// 		await SynthsUSD.approve(Depot.address, amount, {
-				// 			from: user1,
-				// 		});
-
-				// 		await Depot.depositSynths(amount, {
-				// 			from: user1,
-				// 		});
-				// 	}
-				// }
-
-				ethBalance = await web3.eth.getBalance(user1);
-				sUSDBalance = await SynthsUSD.balanceOf(user1);
-
-				await CollateralEth.close(id, {
-					from: user1,
-				});
-			});
-
-			it('should increase their ETH balances', async () => {
-				assert.bnGt(web3.utils.toBN(await web3.eth.getBalance(user1)), web3.utils.toBN(ethBalance));
-			});
-
-			it('should decrease their sUSD balance', async () => {
-				assert.bnLt(await SynthsUSD.balanceOf(user1), sUSDBalance);
-			});
-		});
 	});
 
-	describe.only('renBTC loans work correctly and interact with the manager and system debt properly', async () => {
-		let ethBalance, sUSDBalance, tx, id, systemDebtBefore;
+	describe('renBTC loans work correctly and interact with the manager and system debt properly', async () => {
+		let tx, id, systemDebtBefore;
 		const oneHundressUSD = toUnit('100');
 		const oneRenBTC = toUnit('1');
 		const sUSD = toBytes32('sUSD');
+		const renbtc = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
 
 		before(async () => {
-			// const RENBTC = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
+			const RENBTC = await artifacts.require('ERC20').at(renbtc);
 
-			// renBalance = await RENBTC.balanceOf(user1);
-			sUSDBalance = await SynthsUSD.balanceOf(user1);
-
-			// await RENBTC.approve(CollateralEth.address, oneRenBTC, { from: user1 });
+			await RENBTC.approve(CollateralErc20.address, oneRenBTC, { from: user1 });
 
 			systemDebtBefore = (await DebtCache.currentDebt()).debt;
 
@@ -228,24 +188,37 @@ contract('MultiCollateral (prod tests)', accounts => {
 		it('the system debt is unchanged because we do not count eth collateral', async () => {
 			assert.bnEqual((await DebtCache.currentDebt()).debt, systemDebtBefore);
 		});
+	});
 
-		describe('closing the loans', () => {
-			before(async () => {
-				// renBalance = awaist RENBTC.balanceOf(user1);
-				sUSDBalance = await SynthsUSD.balanceOf(user1);
+	describe('sUSD shorts work correctly and interact with the manager and system debt properly', async () => {
+		let tx, id, systemDebtBefore;
+		const oneThousandsUSD = toUnit('1000');
+		const sETH = toBytes32('sETH');
+		const shortAmount = toUnit('200');
 
-				await CollateralErc20.close(id, {
-					from: user1,
-				});
+		before(async () => {
+			await SynthsUSD.approve(CollateralShort.address, oneThousandsUSD, { from: user1 });
+
+			systemDebtBefore = (await DebtCache.currentDebt()).debt;
+
+			tx = await CollateralShort.open(oneThousandsUSD, shortAmount, sETH, {
+				from: user1,
 			});
 
-			xit('should increase their ETH balances', async () => {
-				assert.bnGt(web3.utils.toBN(await web3.eth.getBalance(user1)), web3.utils.toBN(ethBalance));
-			});
+			({ id } = tx.receipt.logs.find(log => log.event === 'LoanCreated').args);
+		});
 
-			xit('should decrease their sUSD balance', async () => {
-				assert.bnLt(await SynthsUSD.balanceOf(user1), sUSDBalance);
-			});
+		it('produces a valid loan id', async () => {
+			assert.notEqual(id.toString(), '0');
+		});
+
+		it('updates the managers long and total long', async () => {
+			assert.bnEqual(await CollateralManager.short(sETH), shortAmount);
+			assert.bnEqual((await CollateralManager.totalShort()).susdValue, shortAmount);
+		});
+
+		it('the system debt is unchanged because we do not count eth collateral', async () => {
+			assert.bnEqual((await DebtCache.currentDebt()).debt, systemDebtBefore);
 		});
 	});
 });
