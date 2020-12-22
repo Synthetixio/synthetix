@@ -256,7 +256,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
         canOpenLoans = _canOpenLoans;
-        emit CanOpenLoansUpdated(_canOpenLoans);
+        emit CanOpenLoansUpdated(canOpenLoans);
     }
 
     /* ---------- LOAN INTERACTIONS ---------- */
