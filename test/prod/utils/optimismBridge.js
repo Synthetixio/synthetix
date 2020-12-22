@@ -1,5 +1,6 @@
 const { connectContract } = require('./connectContract');
 const { toBytes32 } = require('../../..');
+const { gray } = require('chalk');
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const MOCK_ADDRESS = '0x0000000000000000000000000000000000000001';
@@ -29,7 +30,7 @@ async function mockOptimismBridge({ network, deploymentPath }) {
 		return;
 	}
 
-	console.log('Mocking Optimism bridge...');
+	console.log(gray('    > Mocking Optimism bridge...'));
 
 	const AddressResolver = await connectContract({
 		network,

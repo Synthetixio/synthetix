@@ -4,7 +4,7 @@ const { contract, config, artifacts } = require('@nomiclabs/buidler');
 const { wrap } = require('../../index.js');
 const { assert } = require('../contracts/common');
 const { toUnit, fastForward } = require('../utils')();
-const { Web3 } = require('web3');
+const Web3 = require('web3');
 const {
 	detectNetworkName,
 	connectContracts,
@@ -124,12 +124,12 @@ contract('MultiCollateral (prod tests)', accounts => {
 	// START
 	// ------------------------------------------------------------
 
-	const itCorrectlyManagesLoans = ({ type, borrowCurrency }) => {
+	const itCorrectlyManagesLoans = ({ type, amountToDeposit, borrowCurrency, amountToBorrow }) => {
 		let CollateralContract, CollateralStateContract;
 
 		const borrowCurrencyBytes = toBytes32(borrowCurrency);
 
-		describe('when borrowing borrowCurrencyBytes with ETH as collateral', () => {
+		describe(`when using ${type} to borrow ${borrowCurrency}`, () => {
 			let tx;
 			let issueFeeRate;
 
@@ -137,6 +137,9 @@ contract('MultiCollateral (prod tests)', accounts => {
 				switch (type) {
 					case 'CollateralEth':
 						CollateralContract = CollateralEth;
+						break;
+					case 'CollateralErc20':
+						CollateralContract = CollateralErc20;
 						break;
 					default:
 						throw new Error(`Unsupported collateral type ${type}`);
@@ -152,9 +155,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 			});
 
 			describe('when opening the loan', () => {
-				const amountToBorrow = toUnit('1');
-				const amountToDeposit = toUnit('10');
-
 				let loan, loanId;
 				let totalLoansBefore, longBefore, totalLongBefore, systemDebtBefore;
 
@@ -166,6 +166,20 @@ contract('MultiCollateral (prod tests)', accounts => {
 				});
 
 				before('open the loan', async () => {
+					if (type === 'CollateralErc20') {
+						// TODO: Move out to ensureAccountHasRen - also could be done in the top of the tests
+						const renbtc = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
+						const renHolder = '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E';
+
+						const RENBTC = await artifacts.require('ERC20').at(renbtc);
+
+						await RENBTC.transfer(user1, amountToDeposit, {
+							from: renHolder,
+						});
+
+						await RENBTC.approve(CollateralContract.address, amountToDeposit, { from: renHolder });
+					}
+
 					tx = await CollateralContract.open(amountToBorrow, borrowCurrencyBytes, {
 						from: user1,
 						value: amountToDeposit,
@@ -273,14 +287,22 @@ contract('MultiCollateral (prod tests)', accounts => {
 					});
 
 					describe('when closing the loan', () => {
+						before('skip waiting period', async () => {
+							const period = await CollateralContract.interactionDelay();
+
+							await fastForward(period.toString());
+						});
+
 						before('close the loan', async () => {
-							tx = await CollateralContract.close(loanId);
+							tx = await CollateralContract.close(loanId, {
+								from: user1,
+							});
 
 							loan = await CollateralStateContract.getLoan(user1, loanId);
 						});
 
-						it('description', async () => {
-							console.log(loan);
+						it('shows that the loan amount is zero', async () => {
+							assert.bnEqual(loan.amount, '0');
 						});
 					});
 				});
@@ -288,7 +310,19 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	};
 
-	itCorrectlyManagesLoans({ type: 'CollateralEth', borrowCurrency: 'sUSD' });
+	itCorrectlyManagesLoans({
+		type: 'CollateralEth',
+		amountToDeposit: toUnit('1'),
+		borrowCurrency: 'sUSD',
+		amountToBorrow: toUnit('10'),
+	});
+
+	itCorrectlyManagesLoans({
+		type: 'CollateralErc20',
+		amountToDeposit: toUnit('0.001'),
+		borrowCurrency: 'sUSD',
+		amountToBorrow: toUnit('10'),
+	});
 
 	// ------------------------------------------------------------
 	// END
@@ -304,11 +338,10 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		it('on mainnet it works properly', async () => {
 			if (network === 'mainnet') {
-				const RENBTC = await artifacts.require('ERC20').at(renbtc);
-
 				longBefore = await CollateralManager.long(sUSD);
 				totalLongBefore = (await CollateralManager.totalLong()).susdValue;
 
+				const RENBTC = await artifacts.require('ERC20').at(renbtc);
 				await RENBTC.approve(CollateralErc20.address, oneRenBTC, { from: renHolder });
 
 				tx = await CollateralErc20.open(oneRenBTC, oneHundressUSD, sUSD, {
