@@ -241,7 +241,7 @@ const setupContract = async ({
 			tryGetAddressOf('CollateralManagerState'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
-			toUnit(10000000),
+			toUnit(50000000),
 			0,
 			0,
 		],

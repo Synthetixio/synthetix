@@ -96,6 +96,7 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 				'SystemStatus',
 				'Exchanger',
 				'FeePool',
+				'CollateralManager',
 			],
 		}));
 
@@ -139,6 +140,7 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 
 		await manager.rebuildCache();
 		await feePool.rebuildCache();
+		await debtCache.rebuildCache();
 
 		await manager.addCollaterals([ceth.address], { from: owner });
 

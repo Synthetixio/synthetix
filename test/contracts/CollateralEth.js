@@ -315,10 +315,6 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 		});
 	});
 
-	describe('issuance ratio test', async () => {
-		it('should work', async () => {});
-	});
-
 	describe('max loan test', async () => {
 		it('should convert correctly', async () => {
 			// $150 worth of eth should allow 100 sUSD to be issued.
@@ -540,7 +536,10 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 					);
 				});
 				it('should fail if the owner passes to big of a value', async () => {
-					await assert.revert(ceth.setInteractionDelay(toUnit(3601), { from: owner }), 'Too long');
+					await assert.revert(
+						ceth.setInteractionDelay(toUnit(3601), { from: owner }),
+						'Max 1 hour'
+					);
 				});
 			});
 			describe('when it succeeds', async () => {

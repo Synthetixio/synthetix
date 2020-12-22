@@ -352,8 +352,6 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		});
 	});
 
-	describe('issuance ratio test', async () => {});
-
 	describe('max loan test', async () => {
 		it('should convert correctly', async () => {
 			// $150 worth of btc should allow 100 sUSD to be issued.
@@ -572,7 +570,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				it('should fail if the owner passes to big of a value', async () => {
 					await assert.revert(
 						cerc20.setInteractionDelay(toUnit(3601), { from: owner }),
-						'Too long'
+						'Max 1 hour'
 					);
 				});
 			});
@@ -862,7 +860,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
 						it('then calling deposit() succeeds', async () => {
-							cerc20.withdraw(id, oneRenBTC, { from: account1 });
+							await cerc20.withdraw(id, oneRenBTC, { from: account1 });
 						});
 					});
 				});
@@ -935,7 +933,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 							await setStatus({ owner, systemStatus, section, suspend: false });
 						});
 						it('then calling repay() succeeds', async () => {
-							cerc20.repay(account1, id, onesUSD, { from: account1 });
+							await cerc20.repay(account1, id, onesUSD, { from: account1 });
 						});
 					});
 				});

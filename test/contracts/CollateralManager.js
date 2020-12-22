@@ -608,7 +608,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			});
 
 			it('should zero out the inverse mapping', async () => {
-				assert.equal(await manager.synthToInverseSynth(toBytes32('SynthsBTC')), toBytes32('0'));
+				assert.equal(await manager.synthToInverseSynth(toBytes32('SynthsBTC')), 0);
 			});
 		});
 	});
