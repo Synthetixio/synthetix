@@ -1342,6 +1342,7 @@ const deploy = async ({
 				w3utils.toWei('1.5'),
 				w3utils.toWei('0.1'),
 				addressOf(deployer.getExistingContract({ contract: 'ProxyERC20sUSD' })),
+				18,
 			],
 		});
 
