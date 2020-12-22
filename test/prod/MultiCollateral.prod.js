@@ -10,6 +10,7 @@ const {
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
+	ensureAccountHassETH,
 	skipWaitingPeriod,
 	simulateExchangeRates,
 	takeDebtSnapshot,
@@ -20,7 +21,7 @@ const {
 const { toBytes32 } = require('../..');
 
 contract('MultiCollateral (prod tests)', accounts => {
-	const [, user1] = accounts;
+	const [, , user1] = accounts;
 
 	let owner;
 
@@ -76,28 +77,33 @@ contract('MultiCollateral (prod tests)', accounts => {
 				{ contractName: 'CollateralShort' },
 				{ contractName: 'DebtCache' },
 				{ contractName: 'ReadProxyAddressResolver' },
-				{ contractName: 'SynthsETH', abiName: 'Synth' },
 				{ contractName: 'SynthsUSD', abiName: 'Synth' },
 			],
 		}));
 
 		await skipWaitingPeriod({ network });
 
-		// await ensureAccountHasEther({
-		// 	amount: toUnit('1'),
-		// 	account: owner,
-		// 	fromAccount: accounts[7],
-		// 	network,
-		// });
+		await ensureAccountHasEther({
+			amount: toUnit('1'),
+			account: owner,
+			fromAccount: accounts[7],
+			network,
+		});
 		await ensureAccountHassUSD({
 			amount: toUnit('1000'),
 			account: user1,
 			fromAccount: owner,
 			network,
 		});
+		await ensureAccountHassETH({
+			amount: toUnit('1'),
+			account: user1,
+			fromAccount: owner,
+			network,
+		});
 	});
 
-	describe('misc state', () => {
+	describe('general multicollateral state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await CollateralManager.resolver(), ReadProxyAddressResolver.address);
 		});
@@ -119,21 +125,44 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	// ------------------------------------------------------------
-	// START
-	// ------------------------------------------------------------
+	describe('when using multiple types of loans', () => {
+		itCorrectlyManagesLoansWith({
+			type: 'CollateralEth',
+			collateralCurrency: 'ETH',
+			amountToDeposit: toUnit('1'),
+			borrowCurrency: 'sUSD',
+			amountToBorrow: toUnit('10'),
+		});
 
-	const itCorrectlyManagesLoansWith = ({
+		itCorrectlyManagesLoansWith({
+			type: 'CollateralErc20',
+			collateralCurrency: 'renBTC',
+			amountToDeposit: Web3.utils.toBN('100000000'), // 1 renBTC (renBTC uses 8 decimals)
+			borrowCurrency: 'sUSD',
+			amountToBorrow: toUnit('10'),
+		});
+
+		itCorrectlyManagesLoansWith({
+			type: 'CollateralShort',
+			collateralCurrency: 'sUSD',
+			amountToDeposit: toUnit('500'),
+			borrowCurrency: 'sETH',
+			amountToBorrow: toUnit('0.1'),
+		});
+	});
+
+	function itCorrectlyManagesLoansWith({
 		type,
+		collateralCurrency,
 		amountToDeposit,
 		borrowCurrency,
 		amountToBorrow,
-	}) => {
+	}) {
 		let CollateralContract, CollateralStateContract;
 
 		const borrowCurrencyBytes = toBytes32(borrowCurrency);
 
-		describe(`when depositing ${amountToDeposit.toString()} ${type} to borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
+		describe(`when using ${type} to deposit ${amountToDeposit.toString()} ${collateralCurrency} and borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
 			let tx;
 			let issueFeeRate;
 
@@ -231,9 +260,18 @@ contract('MultiCollateral (prod tests)', accounts => {
 					assert.equal(event.args.account, user1);
 					assert.bnEqual(event.args.id, totalLoansBefore.add(Web3.utils.toBN(1)));
 					assert.bnEqual(event.args.amount, amountToBorrow);
-					assert.bnEqual(event.args.collateral, amountToDeposit);
 					assert.equal(event.args.currency, borrowCurrencyBytes);
 					assert.bnEqual(event.args.issuanceFee, amountToBorrow.mul(issueFeeRate));
+
+					if (type === 'CollateralErc20') {
+						// Account for renBTC scaling
+						assert.bnEqual(
+							event.args.collateral,
+							amountToDeposit.mul(Web3.utils.toBN('10000000000'))
+						);
+					} else {
+						assert.bnEqual(event.args.collateral, amountToDeposit);
+					}
 				});
 
 				it('updates the managers short/long values', async () => {
@@ -273,7 +311,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 					before('deposit', async () => {
 						if (type === 'CollateralErc20' || type === 'CollateralShort') {
-							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('1000000'), {
+							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('1000'), {
 								from: user1,
 							});
 						} else {
@@ -307,7 +345,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 					});
 
 					before('withdraw', async () => {
-						tx = await CollateralContract.withdraw(loanId, toUnit('1'), {
+						tx = await CollateralContract.withdraw(loanId, Web3.utils.toBN('100'), {
 							from: user1,
 						});
 
@@ -356,88 +394,5 @@ contract('MultiCollateral (prod tests)', accounts => {
 				});
 			});
 		});
-	};
-
-	// itCorrectlyManagesLoansWith({
-	// 	type: 'CollateralEth',
-	// 	amountToDeposit: toUnit('1'),
-	// 	borrowCurrency: 'sUSD',
-	// 	amountToBorrow: toUnit('10'),
-	// });
-
-	// itCorrectlyManagesLoansWith({
-	// 	type: 'CollateralErc20',
-	// 	amountToDeposit: Web3.utils.toBN('100000000'), // 1 renBTC (renBTC uses 8 decimals)
-	// 	borrowCurrency: 'sUSD',
-	// 	amountToBorrow: toUnit('10'),
-	// });
-
-	itCorrectlyManagesLoansWith({
-		type: 'CollateralShort',
-		amountToDeposit: toUnit('1000'),
-		borrowCurrency: 'sETH',
-		amountToBorrow: toUnit('1'),
-	});
-
-	// ------------------------------------------------------------
-	// END
-	// ------------------------------------------------------------
-
-	describe.skip('renBTC loans work correctly and interact with the manager and system debt properly', async () => {
-		let tx, id, longBefore, totalLongBefore;
-		const oneHundressUSD = toUnit('100');
-		const oneRenBTC = 100000000;
-		const sUSD = toBytes32('sUSD');
-		const renbtc = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
-		const renHolder = '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E';
-
-		it('on mainnet it works properly', async () => {
-			if (network === 'mainnet') {
-				longBefore = await CollateralManager.long(sUSD);
-				totalLongBefore = (await CollateralManager.totalLong()).susdValue;
-
-				const RENBTC = await artifacts.require('ERC20').at(renbtc);
-				await RENBTC.approve(CollateralErc20.address, oneRenBTC, { from: renHolder });
-
-				tx = await CollateralErc20.open(oneRenBTC, oneHundressUSD, sUSD, {
-					from: renHolder,
-				});
-
-				({ id } = tx.receipt.logs.find(log => log.event === 'LoanCreated').args);
-				assert.notEqual(id.toString(), '0');
-
-				assert.bnGt(await CollateralManager.long(sUSD), longBefore);
-				assert.bnGt((await CollateralManager.totalLong()).susdValue, totalLongBefore);
-			}
-		});
-	});
-
-	describe.skip('sUSD shorts work correctly and interact with the manager and system debt properly', async () => {
-		let tx, id, shortBefore, totalShortBefore;
-		const oneThousandsUSD = toUnit('1000');
-		const sETH = toBytes32('sETH');
-		const shortAmount = toUnit('0.5');
-
-		before(async () => {
-			await SynthsUSD.approve(CollateralShort.address, oneThousandsUSD, { from: user1 });
-
-			shortBefore = await CollateralManager.short(sETH);
-			totalShortBefore = (await CollateralManager.totalShort()).susdValue;
-
-			tx = await CollateralShort.open(oneThousandsUSD, shortAmount, sETH, {
-				from: user1,
-			});
-
-			({ id } = tx.receipt.logs.find(log => log.event === 'LoanCreated').args);
-		});
-
-		it('produces a valid loan id', async () => {
-			assert.notEqual(id.toString(), '0');
-		});
-
-		it('updates the managers short and total short', async () => {
-			assert.bnGt(await CollateralManager.short(sETH), shortBefore);
-			assert.bnGt((await CollateralManager.totalShort()).susdValue, totalShortBefore);
-		});
-	});
+	}
 });
