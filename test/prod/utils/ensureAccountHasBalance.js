@@ -37,23 +37,6 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 	});
 }
 
-async function ensureAccountHasRenBTC({ network, deploymentPath, amount, account }) {
-	const fromAccount =
-		network === 'mainnet' ? renBTCWallet : getUser({ network, deploymentPath, user: 'owner' });
-
-	const RENBTC = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
-	const balance = toBN(await RENBTC.balanceOf(fromAccount));
-	if (balance.lt(amount)) {
-		throw new Error(
-			`Account ${fromAccount} only has ${balance} renBTC and cannot transfer ${amount} renBTC to ${account} `
-		);
-	}
-
-	await RENBTC.transfer(account, amount, {
-		from: fromAccount,
-	});
-}
-
 async function ensureAccountHasSNX({ network, deploymentPath, amount, account }) {
 	console.log(gray(`  > Ensuring ${account} has SNX...`));
 

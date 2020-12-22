@@ -93,12 +93,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 			fromAccount: owner,
 			network,
 		});
-		await ensureAccountHasRenBTC({
-			amount: toUnit('10'),
-			account: user1,
-			fromAccount: owner,
-			network,
-		});
 	});
 
 	describe('misc state', () => {
@@ -156,42 +150,39 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	xdescribe('renBTC loans work correctly and interact with the manager and system debt properly', async () => {
+	describe.only('renBTC loans work correctly and interact with the manager and system debt properly', async () => {
 		let tx, id, longBefore, totalLongBefore;
 		const oneHundressUSD = toUnit('100');
-		const oneRenBTC = toUnit('1');
+		const oneRenBTC = 100000000;
 		const sUSD = toBytes32('sUSD');
 		const renbtc = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
+		const renHolder = '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E';
 
-		before(async () => {
-			if (network === 'local') {
-				return this.skip();
+		it('on mainnet it works properly', async () => {
+			if (network === 'mainnet') {
+				const RENBTC = await artifacts.require('ERC20').at(renbtc);
+
+				longBefore = await CollateralManager.long(sUSD);
+				totalLongBefore = (await CollateralManager.totalLong()).susdValue;
+
+				await RENBTC.approve(CollateralErc20.address, oneRenBTC, { from: renHolder });
+
+				const allowance = await RENBTC.allowance(renHolder, CollateralErc20.address);
+				const balance = await RENBTC.balanceOf(renHolder);
+
+				console.log(allowance.toString());
+				console.log(balance.toString());
+
+				tx = await CollateralErc20.open(oneRenBTC, oneHundressUSD, sUSD, {
+					from: renHolder,
+				});
+
+				({ id } = tx.receipt.logs.find(log => log.event === 'LoanCreated').args);
+				assert.notEqual(id.toString(), '0');
+
+				assert.bnGt(await CollateralManager.long(sUSD), longBefore);
+				assert.bnGt((await CollateralManager.totalLong()).susdValue, totalLongBefore);
 			}
-
-			const RENBTC = await artifacts.require('ERC20').at(renbtc);
-
-			longBefore = await CollateralManager.long(sUSD);
-			totalLongBefore = (await CollateralManager.totalLong()).susdValue;
-
-			await RENBTC.approve(CollateralErc20.address, oneRenBTC, { from: user1 });
-
-			console.log(await RENBTC.allowance(CollateralErc20.address, user1));
-			console.log(await RENBTC.balanceOf(user1));
-
-			tx = await CollateralErc20.open(oneRenBTC, oneHundressUSD, sUSD, {
-				from: user1,
-			});
-
-			({ id } = tx.receipt.logs.find(log => log.event === 'LoanCreated').args);
-		});
-
-		it('produces a valid loan id', async () => {
-			assert.notEqual(id.toString(), '0');
-		});
-
-		it('updates the managers long and total long', async () => {
-			assert.bnGt(await CollateralManager.long(sUSD), longBefore);
-			assert.bnGt((await CollateralManager.totalLong()).susdValue, totalLongBefore);
 		});
 	});
 
