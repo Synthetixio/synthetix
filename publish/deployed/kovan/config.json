@@ -12,22 +12,22 @@
 		"deploy": false
 	},
 	"CollateralManager": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralManagerState": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralEth": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralErc20": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralShort": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralState": {
-		"deploy": true
+		"deploy": false
 	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
