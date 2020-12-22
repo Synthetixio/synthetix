@@ -21,7 +21,7 @@ contract CollateralShort is CollateralErc20 {
         address _underlyingContract
     )
         public
-        CollateralErc20(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral, _underlyingContract)
+        CollateralErc20(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral, _underlyingContract, 18)
     {}
 
     function open(
