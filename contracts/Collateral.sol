@@ -256,7 +256,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
         canOpenLoans = _canOpenLoans;
-        emit ManagerUpdated(manager);
+        emit CanOpenLoansUpdated(_canOpenLoans);
     }
 
     /* ---------- LOAN INTERACTIONS ---------- */
@@ -762,6 +762,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     event MaxLoansPerAccountUpdated(uint maxLoansPerAccount);
     event InteractionDelayUpdated(uint interactionDelay);
     event ManagerUpdated(address manager);
+    event CanOpenLoansUpdated(bool canOpenLoans);
 
     // Loans
     event LoanCreated(address indexed account, uint id, uint amount, uint collateral, bytes32 currency, uint issuanceFee);

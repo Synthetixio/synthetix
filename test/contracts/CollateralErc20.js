@@ -620,6 +620,25 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				});
 			});
 		});
+
+		describe('setCanOpenLoans', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						cerc20.setCanOpenLoans(false, { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await cerc20.setCanOpenLoans(false, { from: owner });
+				});
+				it('should update the manager', async () => {
+					assert.isFalse(await cerc20.canOpenLoans());
+				});
+			});
+		});
 	});
 
 	// // LOAN INTERACTIONS
