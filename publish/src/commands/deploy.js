@@ -1297,7 +1297,7 @@ const deploy = async ({
 			args: [account, account],
 		});
 
-		const RENBTC_ADDRESS = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
+		const RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
 
 		collateralErc20 = await deployer.deployContract({
 			name: 'CollateralErc20',
