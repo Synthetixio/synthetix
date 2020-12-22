@@ -370,14 +370,14 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 	describe('scaling collateral test', async () => {
 		it('should convert correctly', async () => {
-			// $150 worth of btc should allow 100 sUSD to be issued.
+			// Scaling up 1 renBTC to 18 decimals works.
 			const scaledCollateral = await cerc20.scaleUpCollateral(oneRenBTC);
 
 			assert.bnEqual(scaledCollateral, toUnit(1));
 		});
 
 		it('should convert down correctly', async () => {
-			// $150 worth of btc should allow 100 sUSD to be issued.
+			// Scaling down 1 renBTC to 8 decimals works.
 			const scaledCollateral = await cerc20.scaleDownCollateral(toUnit(1));
 
 			assert.bnEqual(scaledCollateral, oneRenBTC);
