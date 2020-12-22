@@ -183,7 +183,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		let tx, id, shortBefore, totalShortBefore;
 		const oneThousandsUSD = toUnit('1000');
 		const sETH = toBytes32('sETH');
-		const shortAmount = toUnit('2');
+		const shortAmount = toUnit('0.5');
 
 		before(async () => {
 			await SynthsUSD.approve(CollateralShort.address, oneThousandsUSD, { from: user1 });
