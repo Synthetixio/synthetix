@@ -1467,8 +1467,26 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"CollateralState": {
-			"name": "CollateralState",
+		"CollateralStateErc20": {
+			"name": "CollateralStateErc20",
+			"address": "0x8D11865B2EfBeB9f73fa2621167e93690AE599af",
+			"source": "CollateralState",
+			"link": "https://kovan.etherscan.io/address/0x8D11865B2EfBeB9f73fa2621167e93690AE599af",
+			"timestamp": "2020-12-22T13:57:01.741Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"CollateralStateEth": {
+			"name": "CollateralStateEth",
+			"address": "0xda2331Aa29486A8d3c2fF448c6B4f1E2194a6664",
+			"source": "CollateralState",
+			"link": "https://kovan.etherscan.io/address/0xda2331Aa29486A8d3c2fF448c6B4f1E2194a6664",
+			"timestamp": "2020-12-22T13:57:01.741Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"CollateralStateShort": {
+			"name": "CollateralStateShort",
 			"address": "0x8d08f82A1e76E43b78b0F64F1a9fbcA41f6fCf68",
 			"source": "CollateralState",
 			"link": "https://kovan.etherscan.io/address/0x8d08f82A1e76E43b78b0F64F1a9fbcA41f6fCf68",
@@ -1490,8 +1508,8 @@
 			"address": "0xBca433dE144e375034F21e2DDf7e38E0dC820B31",
 			"source": "CollateralErc20",
 			"link": "https://kovan.etherscan.io/address/0xBca433dE144e375034F21e2DDf7e38E0dC820B31",
-			"timestamp": "2020-12-22T13:56:41.027Z",
-			"txn": "",
+			"timestamp": "2020-12-22T13:56:40.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xcc343c793eef13006b81afdc902352b04d317ace2b2d32d08fa986aeebfac634",
 			"network": "kovan"
 		},
 		"CollateralShort": {
