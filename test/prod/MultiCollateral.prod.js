@@ -3,7 +3,8 @@ const path = require('path');
 const { contract, config, artifacts } = require('@nomiclabs/buidler');
 const { wrap } = require('../../index.js');
 const { assert } = require('../contracts/common');
-const { toUnit } = require('../utils')();
+const { toUnit, fastForward } = require('../utils')();
+const { Web3 } = require('web3');
 const {
 	detectNetworkName,
 	connectContracts,
@@ -26,6 +27,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 	let network, deploymentPath;
 
 	let CollateralManager,
+		CollateralManagerState,
 		CollateralErc20,
 		CollateralEth,
 		CollateralShort,
@@ -58,6 +60,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		({
 			CollateralManager,
+			CollateralManagerState,
 			CollateralErc20,
 			CollateralEth,
 			CollateralShort,
@@ -67,6 +70,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		} = await connectContracts({
 			network,
 			requests: [
+				{ contractName: 'CollateralManagerState' },
 				{ contractName: 'CollateralManager' },
 				{ contractName: 'CollateralErc20' },
 				{ contractName: 'CollateralEth' },
@@ -116,40 +120,181 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	describe('ETH backed loans works and interacted with the manager and the system debt properly', () => {
-		let tx, id, systemDebtBefore, longBefore, totalLongBefore;
-		const tensUSD = toUnit('10');
-		const hundredEth = toUnit('100');
-		const sUSD = toBytes32('sUSD');
+	// ------------------------------------------------------------
+	// START
+	// ------------------------------------------------------------
 
-		before(async () => {
-			systemDebtBefore = (await DebtCache.currentDebt()).debt;
-			longBefore = await CollateralManager.long(sUSD);
-			totalLongBefore = (await CollateralManager.totalLong()).susdValue;
+	const itCorrectlyManagesLoans = ({ type, borrowCurrency }) => {
+		let CollateralContract, CollateralStateContract;
 
-			tx = await CollateralEth.open(tensUSD, sUSD, {
-				from: user1,
-				value: hundredEth,
+		const borrowCurrencyBytes = toBytes32(borrowCurrency);
+
+		describe('when borrowing borrowCurrencyBytes with ETH as collateral', () => {
+			let tx;
+			let issueFeeRate;
+
+			before('retrieve the collateral/state contract pair', async () => {
+				switch (type) {
+					case 'CollateralEth':
+						CollateralContract = CollateralEth;
+						break;
+					default:
+						throw new Error(`Unsupported collateral type ${type}`);
+				}
+
+				CollateralStateContract = await artifacts
+					.require('CollateralState')
+					.at(await CollateralContract.state());
 			});
 
-			({ id } = tx.receipt.logs.find(log => log.event === 'LoanCreated').args);
-		});
+			before('record current values', async () => {
+				issueFeeRate = await CollateralContract.issueFeeRate();
+			});
 
-		it('produces a valid loan id', async () => {
-			assert.notEqual(id.toString(), '0');
-		});
+			describe('when opening the loan', () => {
+				const amountToBorrow = toUnit('1');
+				const amountToDeposit = toUnit('10');
 
-		it('updates the managers long and total long', async () => {
-			assert.bnGt(await CollateralManager.long(sUSD), longBefore);
-			assert.bnGt((await CollateralManager.totalLong()).susdValue, totalLongBefore);
-		});
+				let loan, loanId;
+				let totalLoansBefore, longBefore, totalLongBefore, systemDebtBefore;
 
-		it('the system debt is unchanged because we do not count eth collateral', async () => {
-			assert.bnEqual((await DebtCache.currentDebt()).debt, systemDebtBefore);
-		});
-	});
+				before('record current values', async () => {
+					totalLoansBefore = await CollateralManagerState.totalLoans();
+					longBefore = await CollateralManager.long(borrowCurrencyBytes);
+					totalLongBefore = (await CollateralManager.totalLong()).susdValue;
+					systemDebtBefore = (await DebtCache.currentDebt()).debt;
+				});
 
-	describe('renBTC loans work correctly and interact with the manager and system debt properly', async () => {
+				before('open the loan', async () => {
+					tx = await CollateralContract.open(amountToBorrow, borrowCurrencyBytes, {
+						from: user1,
+						value: amountToDeposit,
+					});
+
+					const event = tx.receipt.logs.find(l => l.event === 'LoanCreated');
+					loanId = event.args.id;
+
+					loan = await CollateralStateContract.getLoan(user1, loanId);
+				});
+
+				it('emits a LoanCreated event with the expected parameters', async () => {
+					const event = tx.receipt.logs.find(l => l.event === 'LoanCreated');
+
+					assert.equal(event.args.account, user1);
+					assert.bnEqual(event.args.id, totalLoansBefore.add(Web3.utils.toBN(1)));
+					assert.bnEqual(event.args.amount, amountToBorrow);
+					assert.bnEqual(event.args.collateral, amountToDeposit);
+					assert.equal(event.args.currency, borrowCurrencyBytes);
+					assert.bnEqual(event.args.issuanceFee, amountToBorrow.mul(issueFeeRate));
+				});
+
+				it('updates the managers long and total long values', async () => {
+					const longAfter = await CollateralManager.long(borrowCurrencyBytes);
+					const totalLongAfter = (await CollateralManager.totalLong()).susdValue;
+
+					assert.bnEqual(longAfter, longBefore.add(amountToBorrow));
+					assert.bnEqual(totalLongAfter, totalLongBefore.add(amountToBorrow));
+				});
+
+				it('does not increment the system debt', async () => {
+					const systemDebtAfter = (await DebtCache.currentDebt()).debt;
+
+					assert.bnEqual(systemDebtAfter, systemDebtBefore);
+				});
+
+				describe('when depositing more collateral', () => {
+					let cratioBefore;
+
+					before('record current values', async () => {
+						cratioBefore = await CollateralContract.collateralRatio(loan);
+					});
+
+					before('skip waiting period', async () => {
+						const period = await CollateralContract.interactionDelay();
+
+						await fastForward(period.toString());
+					});
+
+					before('deposit', async () => {
+						tx = await CollateralContract.deposit(user1, loanId, {
+							from: user1,
+							value: toUnit('1'),
+						});
+
+						loan = await CollateralStateContract.getLoan(user1, loanId);
+					});
+
+					it('incrementes the cratio', async () => {
+						const cratioAfter = await CollateralContract.collateralRatio(loan);
+
+						assert.bnGt(cratioAfter, cratioBefore);
+					});
+				});
+
+				describe('when removing collateral', () => {
+					let cratioBefore;
+
+					before('record current values', async () => {
+						cratioBefore = await CollateralContract.collateralRatio(loan);
+					});
+
+					before('skip waiting period', async () => {
+						const period = await CollateralContract.interactionDelay();
+
+						await fastForward(period.toString());
+					});
+
+					before('withdraw', async () => {
+						tx = await CollateralContract.withdraw(loanId, toUnit('1'), {
+							from: user1,
+						});
+
+						loan = await CollateralStateContract.getLoan(user1, loanId);
+					});
+
+					it('decrementes the cratio', async () => {
+						const cratioAfter = await CollateralContract.collateralRatio(loan);
+
+						assert.bnLt(cratioAfter, cratioBefore);
+					});
+				});
+
+				describe('when repaying the loan', () => {
+					before('skip waiting period', async () => {
+						const period = await CollateralContract.interactionDelay();
+
+						await fastForward(period.toString());
+					});
+
+					before('repay all debt', async () => {
+						tx = await CollateralContract.repay(user1, loanId, amountToBorrow, {
+							from: user1,
+						});
+					});
+
+					describe('when closing the loan', () => {
+						before('close the loan', async () => {
+							tx = await CollateralContract.close(loanId);
+
+							loan = await CollateralStateContract.getLoan(user1, loanId);
+						});
+
+						it('description', async () => {
+							console.log(loan);
+						});
+					});
+				});
+			});
+		});
+	};
+
+	itCorrectlyManagesLoans({ type: 'CollateralEth', borrowCurrency: 'sUSD' });
+
+	// ------------------------------------------------------------
+	// END
+	// ------------------------------------------------------------
+
+	describe.skip('renBTC loans work correctly and interact with the manager and system debt properly', async () => {
 		let tx, id, longBefore, totalLongBefore;
 		const oneHundressUSD = toUnit('100');
 		const oneRenBTC = 100000000;
@@ -179,7 +324,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	describe('sUSD shorts work correctly and interact with the manager and system debt properly', async () => {
+	describe.skip('sUSD shorts work correctly and interact with the manager and system debt properly', async () => {
 		let tx, id, shortBefore, totalShortBefore;
 		const oneThousandsUSD = toUnit('1000');
 		const sETH = toBytes32('sETH');
