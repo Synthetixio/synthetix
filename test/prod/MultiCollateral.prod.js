@@ -149,7 +149,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	describe.only('renBTC loans work correctly and interact with the manager and system debt properly', async () => {
+	describe('renBTC loans work correctly and interact with the manager and system debt properly', async () => {
 		let tx, id, longBefore, totalLongBefore;
 		const oneHundressUSD = toUnit('100');
 		const oneRenBTC = 100000000;
