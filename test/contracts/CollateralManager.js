@@ -28,6 +28,8 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 	const INTERACTION_DELAY = 300;
 
+	const oneRenBTC = 100000000;
+
 	let ceth,
 		mcstate,
 		mcstateErc20,
@@ -82,11 +84,12 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		minColat,
 		minSize,
 		underCon,
+		decimals,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralErc20',
-			args: [mcState, owner, manager, resolver, collatKey, minColat, minSize, underCon],
+			args: [mcState, owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
 		});
 	};
 
@@ -99,11 +102,12 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		minColat,
 		minSize,
 		underCon,
+		decimals,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
 		});
 	};
 
@@ -200,9 +204,9 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		});
 		tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		const PublicEST = artifacts.require('PublicEST');
+		const PublicEST8Decimals = artifacts.require('PublicEST8Decimals');
 
-		renBTC = await PublicEST.new(
+		renBTC = await PublicEST8Decimals.new(
 			proxy.address,
 			tokenState.address,
 			'Some Token',
@@ -232,6 +236,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 			underCon: renBTC.address,
+			decimals: 8,
 		});
 
 		await mcstateErc20.setAssociatedContract(cerc20.address, { from: owner });
@@ -247,6 +252,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 			underCon: sUSDSynth.address,
+			decimals: 18,
 		});
 
 		await shortState.setAssociatedContract(short.address, { from: owner });
@@ -408,8 +414,8 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		beforeEach(async () => {
 			tx = await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
 			await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
-			await cerc20.open(toUnit(1), toUnit(100), sUSD, { from: account1 });
-			await cerc20.open(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
+			await cerc20.open(oneRenBTC, toUnit(100), sUSD, { from: account1 });
+			await cerc20.open(oneRenBTC, toUnit(0.01), sBTC, { from: account1 });
 			await short.open(toUnit(200), toUnit(1), sETH, { from: account1 });
 
 			id = getid(tx);

@@ -83,11 +83,12 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		minColat,
 		minSize,
 		underCon,
+		decimals,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
 		});
 	};
 
@@ -149,6 +150,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 			underCon: sUSDSynth.address,
+			decimals: 18,
 		});
 
 		await state.setAssociatedContract(short.address, { from: owner });

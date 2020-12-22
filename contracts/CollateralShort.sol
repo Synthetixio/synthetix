@@ -18,10 +18,21 @@ contract CollateralShort is CollateralErc20 {
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral,
-        address _underlyingContract
+        address _underlyingContract,
+        uint decimals
     )
         public
-        CollateralErc20(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral, _underlyingContract, 18)
+        CollateralErc20(
+            _state,
+            _owner,
+            _manager,
+            _resolver,
+            _collateralKey,
+            _minCratio,
+            _minCollateral,
+            _underlyingContract,
+            18
+        )
     {}
 
     function open(

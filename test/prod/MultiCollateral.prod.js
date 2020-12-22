@@ -169,9 +169,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 				const allowance = await RENBTC.allowance(renHolder, CollateralErc20.address);
 				const balance = await RENBTC.balanceOf(renHolder);
 
-				console.log(allowance.toString());
-				console.log(balance.toString());
-
 				tx = await CollateralErc20.open(oneRenBTC, oneHundressUSD, sUSD, {
 					from: renHolder,
 				});

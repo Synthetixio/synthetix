@@ -114,11 +114,12 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		minColat,
 		minSize,
 		underCon,
+		decimals,
 	}) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralErc20',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
 		});
 	};
 
@@ -203,6 +204,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
 			underCon: renBTC.address,
+			decimals: 8,
 		});
 
 		await state.setAssociatedContract(cerc20.address, { from: owner });
