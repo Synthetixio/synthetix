@@ -3,10 +3,11 @@ const path = require('path');
 const { connectContract } = require('./connectContract');
 const { web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
-const { wrap, toBytes32 } = require('../../..');
+const { knownAccounts, wrap, toBytes32 } = require('../../..');
+const { gray } = require('chalk');
 
-const knownMainnetWallet = '0xF977814e90dA44bFA03b6295A0616a897441aceC'; // Binance 8 wallet
-const renBTCWallet = '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE';
+const knownMainnetAccount = knownAccounts['mainnet'].find(a => a.name === 'binance').address;
+const renBTCWallet = knownAccounts['mainnet'].find(a => a.name === 'renBTCWallet').address;
 
 function getUser({ network, deploymentPath, user }) {
 	const { getUsers } = wrap({ network, deploymentPath, fs, path });
@@ -15,9 +16,11 @@ function getUser({ network, deploymentPath, user }) {
 }
 
 async function ensureAccountHasEther({ network, deploymentPath, amount, account }) {
+	console.log(gray(`  > Ensuring ${account} has Ether...`));
+
 	const fromAccount =
 		network === 'mainnet'
-			? knownMainnetWallet
+			? knownMainnetAccount
 			: getUser({ network, deploymentPath, user: 'owner' });
 
 	const balance = toBN(await web3.eth.getBalance(fromAccount));
@@ -52,9 +55,11 @@ async function ensureAccountHasRenBTC({ network, deploymentPath, amount, account
 }
 
 async function ensureAccountHasSNX({ network, deploymentPath, amount, account }) {
+	console.log(gray(`  > Ensuring ${account} has SNX...`));
+
 	const fromAccount =
 		network === 'mainnet'
-			? knownMainnetWallet
+			? knownMainnetAccount
 			: getUser({
 					network,
 					deploymentPath,
@@ -76,9 +81,11 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 }
 
 async function ensureAccountHassUSD({ network, deploymentPath, amount, account }) {
+	console.log(gray(`  > Ensuring ${account} has sUSD...`));
+
 	const fromAccount =
 		network === 'mainnet'
-			? knownMainnetWallet
+			? knownMainnetAccount
 			: getUser({
 					network,
 					deploymentPath,
@@ -118,6 +125,8 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 }
 
 async function ensureAccountHassETH({ network, deploymentPath, amount, account }) {
+	console.log(gray(`  > Ensuring ${account} has sETH...`));
+
 	const sUSDAmount = amount.mul(toBN('50'));
 	await ensureAccountHassUSD({ network, deploymentPath, amount: sUSDAmount, account });
 
@@ -134,7 +143,6 @@ async function ensureAccountHassETH({ network, deploymentPath, amount, account }
 }
 
 module.exports = {
-	knownMainnetWallet,
 	ensureAccountHasRenBTC,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
