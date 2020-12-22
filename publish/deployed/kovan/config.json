@@ -11,6 +11,24 @@
 	"BinaryOptionMarketData": {
 		"deploy": false
 	},
+	"CollateralManager": {
+		"deploy": false
+	},
+	"CollateralManagerState": {
+		"deploy": false
+	},
+	"CollateralEth": {
+		"deploy": false
+	},
+	"CollateralErc20": {
+		"deploy": false
+	},
+	"CollateralShort": {
+		"deploy": false
+	},
+	"CollateralState": {
+		"deploy": false
+	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},

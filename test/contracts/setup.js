@@ -3,6 +3,7 @@
 const { artifacts, web3, log, linkWithLegacySupport } = require('@nomiclabs/buidler');
 
 const { toWei } = web3.utils;
+const { toUnit } = require('../utils')();
 const {
 	toBytes32,
 	getUsers,
@@ -236,6 +237,14 @@ const setupContract = async ({
 			toWei('0.02'), // refund fee
 		],
 		BinaryOptionMarketData: [],
+		CollateralManager: [
+			tryGetAddressOf('CollateralManagerState'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+			toUnit(50000000),
+			0,
+			0,
+		],
 	};
 
 	let instance;
@@ -610,6 +619,7 @@ const setupAllContracts = async ({
 			mocks: [
 				'EtherCollateral',
 				'EtherCollateralsUSD',
+				'CollateralManager',
 				'Synthetix',
 				'SynthetixState',
 				'Exchanger',
@@ -726,6 +736,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'FlexibleStorage',
 				'EtherCollateralsUSD',
+				'CollateralManager',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
@@ -747,6 +758,10 @@ const setupAllContracts = async ({
 		{
 			contract: 'BinaryOptionMarketData',
 			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
+		},
+		{
+			contract: 'CollateralManager',
+			deps: ['AddressResolver', 'SystemStatus', 'Issuer', 'ExchangeRates', 'DebtCache'],
 		},
 	];
 

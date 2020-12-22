@@ -174,6 +174,7 @@ contract('Rewards Integration Tests', async accounts => {
 				'SupplySchedule',
 				'Synthetix',
 				'SystemSettings',
+				'CollateralManager',
 			],
 		}));
 

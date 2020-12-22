@@ -4,6 +4,7 @@ const {
 	ensureAccountHasEther,
 	ensureAccountHasSNX,
 	ensureAccountHassUSD,
+	ensureAccountHasRenBTC,
 } = require('./ensureAccountHasBalance');
 const { exchangeSynths } = require('./exchangeSynths');
 const { readSetting, writeSetting } = require('./systemSettings');
@@ -12,6 +13,7 @@ const { simulateExchangeRates } = require('./exchangeRates');
 const { takeDebtSnapshot } = require('./debtSnapshot');
 const { mockOptimismBridge } = require('./optimismBridge');
 const { implementsVirtualSynths } = require('./virtualSynths');
+const { implementsMultiCollateral } = require('./multicollateral');
 
 module.exports = {
 	detectNetworkName,
@@ -20,6 +22,7 @@ module.exports = {
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	ensureAccountHasSNX,
+	ensureAccountHasRenBTC,
 	exchangeSynths,
 	readSetting,
 	writeSetting,
@@ -29,4 +32,5 @@ module.exports = {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsVirtualSynths,
+	implementsMultiCollateral,
 };

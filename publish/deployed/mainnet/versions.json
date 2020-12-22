@@ -770,6 +770,10 @@
 			"ProxysUSD": {
 				"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
 				"status": "current"
+			},
+			"ProxyERC20sUSD": {
+				"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
+				"status": "current"
 			}
 		}
 	},
