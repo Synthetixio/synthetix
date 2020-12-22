@@ -10,11 +10,13 @@ import "./interfaces/ICollateralErc20.sol";
 import "./CollateralState.sol";
 import "./interfaces/IERC20.sol";
 
+
 // This contract handles the specific ERC20 implementation details of managing a loan.
 contract CollateralErc20 is ICollateralErc20, Collateral {
-
     // The underlying asset for this ERC20 collateral
     address public underlyingContract;
+
+    uint public underlyingContractDecimals;
 
     constructor(
         CollateralState _state,
@@ -25,23 +27,21 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         uint _minCratio,
         uint _minCollateral,
         address _underlyingContract
-    )
-    public
-    Collateral(
-        _state,
-        _owner,
-        _manager,
-        _resolver,
-        _collateralKey,
-        _minCratio,
-        _minCollateral
-        )
-    {
+    ) public Collateral(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {
         underlyingContract = _underlyingContract;
+
+        underlyingContractDecimals = IERC20(underlyingContract).decimals();
     }
 
-    function open(uint collateral, uint amount, bytes32 currency) external {
+    function open(
+        uint collateral,
+        uint amount,
+        bytes32 currency
+    ) external {
         require(collateral <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
+
+        // scale up before entering the system.
+        collateral = scaleUpCollateral(collateral);
 
         openInternal(collateral, amount, currency, false);
 
@@ -51,11 +51,21 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     function close(uint id) external {
         uint collateral = closeInternal(msg.sender, id);
 
+        // scale down before transferring back.
+        collateral = scaleDownCollateral(collateral);
+
         IERC20(underlyingContract).transfer(msg.sender, collateral);
     }
 
-    function deposit(address borrower, uint id, uint amount) external {
+    function deposit(
+        address borrower,
+        uint id,
+        uint amount
+    ) external {
         require(amount <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
+
+        // scale up before entering the system.
+        amount = scaleUpCollateral(amount);
 
         depositInternal(borrower, id, amount);
 
@@ -63,12 +73,22 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     }
 
     function withdraw(uint id, uint amount) external {
-        withdrawInternal(id, amount);
+        // scale up before entering the system.
+        uint scaledAmount = scaleUpCollateral(amount);
 
-        IERC20(underlyingContract).transfer(msg.sender, amount);
+        uint withdrawnAmount = withdrawInternal(id, scaledAmount);
+
+        // scale down before transferring back.
+        uint scaledWithdraw = scaleDownCollateral(withdrawnAmount);
+
+        IERC20(underlyingContract).transfer(msg.sender, scaledWithdraw);
     }
 
-    function repay(address borrower, uint id, uint amount) external {
+    function repay(
+        address borrower,
+        uint id,
+        uint amount
+    ) external {
         repayInternal(borrower, msg.sender, id, amount);
     }
 
@@ -76,9 +96,28 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         drawInternal(id, amount);
     }
 
-    function liquidate(address borrower, uint id, uint amount) external {
+    function liquidate(
+        address borrower,
+        uint id,
+        uint amount
+    ) external {
         uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 
-        IERC20(underlyingContract).transfer(msg.sender, collateralLiquidated);
+        // scale down before transferring back.
+        uint scaledCollateral = scaleDownCollateral(collateralLiquidated);
+
+        IERC20(underlyingContract).transfer(msg.sender, scaledCollateral);
+    }
+
+    function scaleUpCollateral(uint collateral) public view returns (uint scaledUp) {
+        uint conversionFactor = 10**uint(SafeMath.sub(18, underlyingContractDecimals));
+
+        scaledUp = uint(uint(collateral).mul(conversionFactor));
+    }
+
+    function scaleDownCollateral(uint collateral) public view returns (uint scaledDown) {
+        uint conversionFactor = 10**uint(SafeMath.sub(18, underlyingContractDecimals));
+
+        scaledDown = collateral.div(conversionFactor);
     }
 }
