@@ -66,7 +66,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		debtCache,
 		FEE_ADDRESS;
 
-	const getid = async tx => {
+	const getid = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
 		return event.args.id;
 	};
@@ -290,7 +290,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 					from: account1,
 				});
 
-				id = await getid(tx);
+				id = getid(tx);
 				loan = await state.getLoan(account1, id);
 			});
 
@@ -332,7 +332,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 					from: account1,
 				});
 
-				id = await getid(tx);
+				id = getid(tx);
 				loan = await state.getLoan(account1, id);
 			});
 
@@ -386,7 +386,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 
-			id = await getid(tx);
+			id = getid(tx);
 			loan = await state.getLoan(account1, id);
 		});
 
@@ -435,7 +435,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await exchangeRates.updateRates([sBTC], ['7500'].map(toUnit), await currentTime(), {
 				from: oracle,
@@ -453,7 +453,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 
-			id = await getid(tx);
+			id = getid(tx);
 			loan = await state.getLoan(account1, id);
 
 			await exchangeRates.updateRates([sBTC], ['9000'].map(toUnit), await currentTime(), {
@@ -689,7 +689,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 					from: account1,
 				});
 
-				id = await getid(tx);
+				id = getid(tx);
 
 				loan = await state.getLoan(account1, id);
 
@@ -737,7 +737,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 					from: account1,
 				});
 
-				id = await getid(tx);
+				id = getid(tx);
 
 				loan = await state.getLoan(account1, id);
 
@@ -783,7 +783,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
@@ -840,7 +840,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 
-			id = await getid(loan);
+			id = getid(loan);
 
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
@@ -915,7 +915,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			// to get past fee reclamation and settlement owing.
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 
-			id = await getid(tx);
+			id = getid(tx);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -1004,7 +1004,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 				await fastForwardAndUpdateRates(INTERACTION_DELAY);
 
-				id = await getid(tx);
+				id = getid(tx);
 
 				loan = await state.getLoan(account1, id);
 
@@ -1046,7 +1046,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 
-			id = await getid(tx);
+			id = getid(tx);
 		});
 
 		describe('potential blocking conditions', async () => {
@@ -1209,7 +1209,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});
@@ -1297,7 +1297,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				from: account1,
 			});
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await fastForwardAndUpdateRates(INTERACTION_DELAY);
 		});

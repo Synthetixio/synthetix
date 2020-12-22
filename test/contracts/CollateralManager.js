@@ -52,7 +52,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		tx,
 		id;
 
-	const getid = async tx => {
+	const getid = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
 		return event.args.id;
 	};
@@ -387,7 +387,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			await cerc20.open(toUnit(1), toUnit(0.01), sBTC, { from: account1 });
 			await short.open(toUnit(200), toUnit(1), sETH, { from: account1 });
 
-			id = await getid(tx);
+			id = getid(tx);
 		});
 
 		it('should correctly get the total sUSD balance', async () => {
@@ -465,7 +465,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 			tx = await ceth.open(toUnit(100), sUSD, { value: toUnit(2), from: account1 });
 
-			id = await getid(tx);
+			id = getid(tx);
 		});
 
 		it('should not change the system debt.', async () => {
@@ -608,7 +608,10 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			});
 
 			it('should zero out the inverse mapping', async () => {
-				assert.equal(await manager.synthToInverseSynth(toBytes32('SynthsBTC')), toBytes32('0'));
+				assert.equal(
+					await manager.synthToInverseSynth(toBytes32('SynthsBTC')),
+					'0x0000000000000000000000000000000000000000000000000000000000000000'
+				);
 			});
 		});
 	});
