@@ -41,21 +41,22 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     ) external {
         require(collateral <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
 
-        // scale up before entering the system.
-        collateral = scaleUpCollateral(collateral);
-
-        openInternal(collateral, amount, currency, false);
-
+        // only transfer the actual collateral
         IERC20(underlyingContract).transferFrom(msg.sender, address(this), collateral);
+
+        // scale up before entering the system.
+        uint scaledCollateral = scaleUpCollateral(collateral);
+
+        openInternal(scaledCollateral, amount, currency, false);
     }
 
     function close(uint id) external {
         uint collateral = closeInternal(msg.sender, id);
 
         // scale down before transferring back.
-        collateral = scaleDownCollateral(collateral);
+        uint scaledCollateral = scaleDownCollateral(collateral);
 
-        IERC20(underlyingContract).transfer(msg.sender, collateral);
+        IERC20(underlyingContract).transfer(msg.sender, scaledCollateral);
     }
 
     function deposit(
@@ -65,12 +66,12 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     ) external {
         require(amount <= IERC20(underlyingContract).allowance(msg.sender, address(this)), "Allowance not high enough");
 
-        // scale up before entering the system.
-        amount = scaleUpCollateral(amount);
-
-        depositInternal(borrower, id, amount);
-
         IERC20(underlyingContract).transferFrom(msg.sender, address(this), amount);
+
+        // scale up before entering the system.
+        uint scaledAmount = scaleUpCollateral(amount);
+
+        depositInternal(borrower, id, scaledAmount);
     }
 
     function withdraw(uint id, uint amount) external {
