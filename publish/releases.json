@@ -85,7 +85,6 @@
 			"AddressResolver",
 			"BinaryOptionMarketFactory",
 			"BinaryOptionMarketManager",
-			"Collateral",
 			"CollateralErc20",
 			"CollateralEth",
 			"CollateralManager",
