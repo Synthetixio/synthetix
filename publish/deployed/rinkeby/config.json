@@ -1,12 +1,12 @@
 {
 	"AddressResolver": {
-		"deploy": false
+		"deploy": true
 	},
 	"BinaryOptionMarketFactory": {
-		"deploy": false
+		"deploy": true
 	},
 	"BinaryOptionMarketManager": {
-		"deploy": false
+		"deploy": true
 	},
 	"BinaryOptionMarketData": {
 		"deploy": false
@@ -15,7 +15,7 @@
 		"deploy": false
 	},
 	"DebtCache": {
-		"deploy": false
+		"deploy": true
 	},
 	"DelegateApprovals": {
 		"deploy": false
@@ -36,16 +36,16 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": false
+		"deploy": true
 	},
 	"Exchanger": {
-		"deploy": false
+		"deploy": true
 	},
 	"ExchangeState": {
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -54,13 +54,13 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
 	},
 	"Liquidations": {
-		"deploy": false
+		"deploy": true
 	},
 	"RewardEscrow": {
 		"deploy": false
@@ -72,7 +72,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
@@ -90,31 +90,31 @@
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsEUR": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsJPY": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsAUD": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsGBP": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsCHF": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsXAU": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsXAG": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsBTC": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyERC20": {
 		"deploy": false
@@ -195,7 +195,7 @@
 		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesBNB": {
 		"deploy": false
@@ -204,7 +204,7 @@
 		"deploy": false
 	},
 	"SynthsBNB": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesTRX": {
 		"deploy": false
@@ -213,7 +213,7 @@
 		"deploy": false
 	},
 	"SynthsTRX": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesXTZ": {
 		"deploy": false
@@ -222,7 +222,7 @@
 		"deploy": false
 	},
 	"SynthsXTZ": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiBTC": {
 		"deploy": false
@@ -231,7 +231,7 @@
 		"deploy": false
 	},
 	"SynthiBTC": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiETH": {
 		"deploy": false
@@ -240,7 +240,7 @@
 		"deploy": false
 	},
 	"SynthiETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiBNB": {
 		"deploy": false
@@ -249,7 +249,7 @@
 		"deploy": false
 	},
 	"SynthiBNB": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiTRX": {
 		"deploy": false
@@ -258,7 +258,7 @@
 		"deploy": false
 	},
 	"SynthiTRX": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiXTZ": {
 		"deploy": false
@@ -267,7 +267,7 @@
 		"deploy": false
 	},
 	"SynthiXTZ": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesCEX": {
 		"deploy": false
@@ -276,7 +276,7 @@
 		"deploy": false
 	},
 	"SynthsCEX": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiCEX": {
 		"deploy": false
@@ -285,7 +285,7 @@
 		"deploy": false
 	},
 	"SynthiCEX": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyERC20sUSD": {
 		"deploy": false
@@ -297,7 +297,7 @@
 		"deploy": false
 	},
 	"SynthsXRP": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesLTC": {
 		"deploy": false
@@ -306,7 +306,7 @@
 		"deploy": false
 	},
 	"SynthsLTC": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesLINK": {
 		"deploy": false
@@ -315,7 +315,7 @@
 		"deploy": false
 	},
 	"SynthsLINK": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesDEFI": {
 		"deploy": false
@@ -324,7 +324,7 @@
 		"deploy": false
 	},
 	"SynthsDEFI": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiXRP": {
 		"deploy": false
@@ -333,7 +333,7 @@
 		"deploy": false
 	},
 	"SynthiXRP": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiLINK": {
 		"deploy": false
@@ -342,7 +342,7 @@
 		"deploy": false
 	},
 	"SynthiLINK": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiLTC": {
 		"deploy": false
@@ -351,7 +351,7 @@
 		"deploy": false
 	},
 	"SynthiLTC": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiDEFI": {
 		"deploy": false
@@ -360,7 +360,7 @@
 		"deploy": false
 	},
 	"SynthiDEFI": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesEOS": {
 		"deploy": false
@@ -369,7 +369,7 @@
 		"deploy": false
 	},
 	"SynthsEOS": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesBCH": {
 		"deploy": false
@@ -378,7 +378,7 @@
 		"deploy": false
 	},
 	"SynthsBCH": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesETC": {
 		"deploy": false
@@ -387,7 +387,7 @@
 		"deploy": false
 	},
 	"SynthsETC": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesDASH": {
 		"deploy": false
@@ -396,7 +396,7 @@
 		"deploy": false
 	},
 	"SynthsDASH": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesXMR": {
 		"deploy": false
@@ -405,7 +405,7 @@
 		"deploy": false
 	},
 	"SynthsXMR": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesADA": {
 		"deploy": false
@@ -414,7 +414,7 @@
 		"deploy": false
 	},
 	"SynthsADA": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiEOS": {
 		"deploy": false
@@ -423,7 +423,7 @@
 		"deploy": false
 	},
 	"SynthiEOS": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiBCH": {
 		"deploy": false
@@ -432,7 +432,7 @@
 		"deploy": false
 	},
 	"SynthiBCH": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiETC": {
 		"deploy": false
@@ -441,7 +441,7 @@
 		"deploy": false
 	},
 	"SynthiETC": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiDASH": {
 		"deploy": false
@@ -450,7 +450,7 @@
 		"deploy": false
 	},
 	"SynthiDASH": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiXMR": {
 		"deploy": false
@@ -459,7 +459,7 @@
 		"deploy": false
 	},
 	"SynthiXMR": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStateiADA": {
 		"deploy": false
@@ -468,15 +468,39 @@
 		"deploy": false
 	},
 	"SynthiADA": {
-		"deploy": false
+		"deploy": true
 	},
 	"FlexibleStorage": {
 		"deploy": false
 	},
 	"SystemSettings": {
-		"deploy": false
+		"deploy": true
 	},
 	"TradingRewards": {
-		"deploy": false
+		"deploy": true
+	},
+	"CollateralErc20": {
+		"deploy": true
+	},
+	"CollateralEth": {
+		"deploy": true
+	},
+	"CollateralManager": {
+		"deploy": true
+	},
+	"CollateralManagerState": {
+		"deploy": true
+	},
+	"CollateralStateErc20": {
+		"deploy": true
+	},
+	"CollateralStateEth": {
+		"deploy": true
+	},
+	"CollateralStateShort": {
+		"deploy": true
+	},
+	"CollateralShort": {
+		"deploy": true
 	}
 }
