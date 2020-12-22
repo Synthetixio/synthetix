@@ -1310,6 +1310,7 @@ const deploy = async ({
 				w3utils.toWei('1.5'),
 				w3utils.toWei('0.025'),
 				RENBTC_ADDRESS,
+				8,
 			],
 		});
 
