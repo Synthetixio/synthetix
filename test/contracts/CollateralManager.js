@@ -350,7 +350,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'setMaxDebt',
 				'setBaseBorrowRate',
 				'setBaseShortRate',
-				'getLoanId',
+				'getNewLoanId',
 				'addCollaterals',
 				'removeCollaterals',
 				'addSynths',
