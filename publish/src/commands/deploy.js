@@ -1257,9 +1257,9 @@ const deploy = async ({
 				contract: 'ManagerState',
 				target: managerState,
 				read: 'associatedContract',
-				expected: input => input === collateralManager.options.address,
+				expected: input => input === addressOf(collateralManager),
 				write: 'setAssociatedContract',
-				writeArg: collateralManager.options.address,
+				writeArg: addressOf(collateralManager),
 			});
 		}
 
@@ -1287,9 +1287,9 @@ const deploy = async ({
 				contract: 'CollateralStateEth',
 				target: collateralStateEth,
 				read: 'associatedContract',
-				expected: input => input === collateralEth.options.address,
+				expected: input => input === addressOf(collateralEth),
 				write: 'setAssociatedContract',
-				writeArg: collateralEth.options.address,
+				writeArg: addressOf(collateralEth),
 			});
 		}
 
@@ -1321,22 +1321,22 @@ const deploy = async ({
 				contract: 'CollateralStateErc20',
 				target: collateralStateErc20,
 				read: 'associatedContract',
-				expected: input => input === collateralErc20.options.address,
+				expected: input => input === addressOf(collateralErc20),
 				write: 'setAssociatedContract',
-				writeArg: collateralErc20.options.address,
+				writeArg: addressOf(collateralErc20),
 			});
 		}
 
-		const collateralShortState = await deployer.deployContract({
-			name: 'CollateralState',
+		const collateralStateShort = await deployer.deployContract({
+			name: 'CollateralStateShort',
+			source: 'CollateralState',
 			args: [account, account],
 		});
 
 		collateralShort = await deployer.deployContract({
 			name: 'CollateralShort',
-			source: 'CollateralShort',
 			args: [
-				addressOf(collateralShortState),
+				addressOf(collateralStateShort),
 				account,
 				addressOf(collateralManager),
 				addressOf(readProxyForResolver),
@@ -1348,10 +1348,10 @@ const deploy = async ({
 			],
 		});
 
-		if (collateralShortState && collateralShort) {
+		if (collateralStateShort && collateralShort) {
 			await runStep({
-				contract: 'CollateralState',
-				target: collateralShortState,
+				contract: 'CollateralStateShort',
+				target: collateralStateShort,
 				read: 'associatedContract',
 				expected: input => input === collateralShort.options.address,
 				write: 'setAssociatedContract',
