@@ -7,7 +7,6 @@ const { knownAccounts, wrap, toBytes32 } = require('../../..');
 const { gray } = require('chalk');
 
 const knownMainnetAccount = knownAccounts['mainnet'].find(a => a.name === 'binance').address;
-const renBTCWallet = knownAccounts['mainnet'].find(a => a.name === 'renBTCWallet').address;
 
 function getUser({ network, deploymentPath, user }) {
 	const { getUsers } = wrap({ network, deploymentPath, fs, path });
@@ -126,7 +125,6 @@ async function ensureAccountHassETH({ network, deploymentPath, amount, account }
 }
 
 module.exports = {
-	ensureAccountHasRenBTC,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	ensureAccountHassETH,

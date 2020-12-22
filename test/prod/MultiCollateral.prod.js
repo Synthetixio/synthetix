@@ -9,7 +9,6 @@ const {
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
-	ensureAccountHasRenBTC,
 	skipWaitingPeriod,
 	simulateExchangeRates,
 	takeDebtSnapshot,
