@@ -10,8 +10,6 @@ const { fastForward, getEthBalance, toUnit, multiplyDecimal, currentTime } = req
 
 const { mockGenericContractFnc, mockToken, setupAllContracts, setupContract } = require('./setup');
 
-// const { GAS_PRICE } = require('../../buidler.config');
-
 const {
 	setStatus,
 	onlyGivenAddressCanInvoke,
@@ -56,7 +54,7 @@ contract('EtherCollateralsUSD', async accounts => {
 		});
 	};
 
-	const getLoanID = async tx => {
+	const getLoanID = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
 		return event.args.loanID;
 	};
@@ -576,7 +574,7 @@ contract('EtherCollateralsUSD', async accounts => {
 					value: tenETH,
 					from: address1,
 				});
-				loan1ID = await getLoanID(openLoanTransaction);
+				loan1ID = getLoanID(openLoanTransaction);
 			});
 
 			it('increase the totalLoansCreated', async () => {
@@ -684,7 +682,7 @@ contract('EtherCollateralsUSD', async accounts => {
 						value: fiveThousandETH,
 						from: address1,
 					});
-					loan2ID = await getLoanID(loan2Transaction);
+					loan2ID = getLoanID(loan2Transaction);
 				});
 
 				it('then increase the totalLoansCreated', async () => {
@@ -724,7 +722,7 @@ contract('EtherCollateralsUSD', async accounts => {
 							value: threeNintyETH,
 							from: address2,
 						});
-						loan3ID = await getLoanID(loan3Transaction);
+						loan3ID = getLoanID(loan3Transaction);
 					});
 
 					it('then increase the totalLoansCreated', async () => {
@@ -921,7 +919,7 @@ contract('EtherCollateralsUSD', async accounts => {
 						value: twelveHalfETH,
 						from: address1,
 					});
-					loanID = await getLoanID(openLoanTransaction);
+					loanID = getLoanID(openLoanTransaction);
 					synthLoan = await etherCollateral.getLoan(address1, loanID);
 				});
 
@@ -1191,7 +1189,7 @@ contract('EtherCollateralsUSD', async accounts => {
 						value: tenETH,
 						from: address1,
 					});
-					loanID = await getLoanID(openLoanTransaction);
+					loanID = getLoanID(openLoanTransaction);
 					await fastForwardAndUpdateRates(WEEK * 2);
 				});
 
@@ -1292,7 +1290,7 @@ contract('EtherCollateralsUSD', async accounts => {
 						value: tenETH,
 						from: address1,
 					});
-					openLoanID = await getLoanID(openLoanTransaction);
+					openLoanID = getLoanID(openLoanTransaction);
 					// gasPaidOpenLoan = web3.utils.toBN(openLoanTransaction.receipt.gasUsed * GAS_PRICE);
 
 					// Go into the future
@@ -1394,7 +1392,7 @@ contract('EtherCollateralsUSD', async accounts => {
 				value: oneETH,
 				from: alice,
 			});
-			loanID = await getLoanID(openLoanTransaction);
+			loanID = getLoanID(openLoanTransaction);
 
 			// Chad opens sUSD loan to liquidate Alice
 			const chadLoanAmount = await etherCollateral.loanAmountFromCollateral(toUnit('20'));
@@ -1587,7 +1585,7 @@ contract('EtherCollateralsUSD', async accounts => {
 				value: oneETH,
 				from: alice,
 			});
-			loanID = await getLoanID(openLoanTransaction);
+			loanID = getLoanID(openLoanTransaction);
 		});
 
 		it('should revert if the sender does not send any eth', async () => {
@@ -1649,7 +1647,7 @@ contract('EtherCollateralsUSD', async accounts => {
 				value: oneETH,
 				from: alice,
 			});
-			loanID = await getLoanID(openLoanTransaction);
+			loanID = getLoanID(openLoanTransaction);
 		});
 
 		it('should revert if the sender passes 0 as the withdraw amount', async () => {
@@ -1715,7 +1713,7 @@ contract('EtherCollateralsUSD', async accounts => {
 				value: oneETH,
 				from: alice,
 			});
-			loanID = await getLoanID(openLoanTransaction);
+			loanID = getLoanID(openLoanTransaction);
 		});
 
 		it('should revert if the sender does not have enough sUSD to repay the amount requested', async () => {
