@@ -2019,6 +2019,15 @@ const deploy = async ({
 			// expected: input => input !== '0', // only change if zero
 			write: 'addShortableSynthsToState',
 		});
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			// read: 'synths',
+			// expected: input => input !== '0', // only change if zero
+			write: 'setInteractionDelay',
+			writeArg: 3600,
+		});
 	}
 
 	console.log(gray(`\n------ CHECKING DEBT CACHE ------\n`));
