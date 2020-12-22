@@ -158,7 +158,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		maxDebt = toUnit(10000000);
+		maxDebt = toUnit(50000000);
 
 		manager = await CollateralManager.new(
 			managerState.address,
@@ -376,6 +376,31 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		it('should add the collaterals during construction', async () => {
 			assert.isTrue(await manager.hasCollateral(ceth.address));
 			assert.isTrue(await manager.hasCollateral(cerc20.address));
+		});
+	});
+
+	describe('default values for totalLong and totalShort', async () => {
+		it('totalLong should be 0', async () => {
+			const long = await manager.totalLong();
+			assert.bnEqual(long.susdValue, toUnit('0'));
+		});
+		it('totalShort should be 0', async () => {
+			const short = await manager.totalShort();
+			assert.bnEqual(short.susdValue, toUnit('0'));
+		});
+	});
+
+	describe('should only allow opening positions up to the debt limiit', async () => {
+		beforeEach(async () => {
+			await issue(sUSDSynth, toUnit(15000000), account1);
+			await sUSDSynth.approve(short.address, toUnit(15000000), { from: account1 });
+		});
+
+		it('should not allow opening a position that would surpass the debt limit', async () => {
+			await assert.revert(
+				short.open(toUnit(15000000), toUnit(6000000), sETH, { from: account1 }),
+				'Debt limit or invalid rate'
+			);
 		});
 	});
 
