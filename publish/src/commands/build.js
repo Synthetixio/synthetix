@@ -129,7 +129,8 @@ const build = async ({
 		if (prevSizeIfAny) {
 			previousSizes.push(prevSizeIfAny);
 		}
-		let runs = optimizerRuns; // default
+		let runs = parseInt(optimizerRuns); // default
+
 		if (typeof overrides[contract] === 'object') {
 			runs = overrides[contract].runs;
 		}
