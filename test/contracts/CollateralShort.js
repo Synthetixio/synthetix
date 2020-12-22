@@ -46,7 +46,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 	let tx, loan, id;
 
-	const getid = async tx => {
+	const getid = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
 		return event.args.id;
 	};
@@ -249,7 +249,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 				tx = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
 
-				id = await getid(tx);
+				id = getid(tx);
 
 				loan = await state.getLoan(account1, id);
 			});
@@ -297,7 +297,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 				tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
 
-				id = await getid(tx);
+				id = getid(tx);
 
 				loan = await state.getLoan(account1, id);
 			});
@@ -342,7 +342,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await fastForwardAndUpdateRates(3600);
 
@@ -368,14 +368,12 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 		const oneETH = toUnit(1);
 		const susdCollateral = toUnit(1000);
 
-		beforeEach(async () => {});
-
 		it('if the eth price goes down, the shorter makes profit', async () => {
 			await issue(sUSDSynth, susdCollateral, account1);
 
 			tx = await short.open(toUnit(500), oneETH, sETH, { from: account1 });
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await fastForwardAndUpdateRates(3600);
 
@@ -400,7 +398,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			tx = await short.open(toUnit(500), oneETH, sETH, { from: account1 });
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await fastForwardAndUpdateRates(3600);
 
@@ -435,7 +433,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			tx = await short.open(toUnit(500), oneETH, sETH, { from: account1 });
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await debtCache.takeDebtSnapshot();
 			result = await debtCache.cachedDebt();
@@ -480,7 +478,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			tx = await short.open(toUnit(500), twoETH, sETH, { from: account1 });
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await debtCache.takeDebtSnapshot();
 			result = await debtCache.cachedDebt();
@@ -527,7 +525,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 			tx = await short.open(toUnit(500), twoETH, sETH, { from: account1 });
 
-			id = await getid(tx);
+			id = getid(tx);
 
 			await debtCache.takeDebtSnapshot();
 			result = await debtCache.cachedDebt();
@@ -567,8 +565,6 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 	});
 
 	describe('Determining the skew and interest rate', async () => {
-		beforeEach(async () => {});
-
 		it('should correctly determine the interest on a short', async () => {
 			const oneBTC = toUnit(1);
 			const susdCollateral = toUnit(15000);
@@ -576,7 +572,7 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			await issue(sUSDSynth, susdCollateral, account1);
 
 			tx = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
-			id = await getid(tx);
+			id = getid(tx);
 
 			// after a year we should have accrued 33%.
 
