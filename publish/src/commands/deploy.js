@@ -1263,15 +1263,16 @@ const deploy = async ({
 			});
 		}
 
-		const collateralEthState = await deployer.deployContract({
-			name: 'CollateralState',
+		const collateralStateEth = await deployer.deployContract({
+			name: 'CollateralStateEth',
+			source: 'CollateralState',
 			args: [account, account],
 		});
 
 		collateralEth = await deployer.deployContract({
 			name: 'CollateralEth',
 			args: [
-				addressOf(collateralEthState),
+				addressOf(collateralStateEth),
 				account,
 				addressOf(collateralManager),
 				addressOf(readProxyForResolver),
@@ -1281,10 +1282,10 @@ const deploy = async ({
 			],
 		});
 
-		if (collateralEthState && collateralEth) {
+		if (collateralStateEth && collateralEth) {
 			await runStep({
-				contract: 'CollateralState',
-				target: collateralEthState,
+				contract: 'CollateralStateEth',
+				target: collateralStateEth,
 				read: 'associatedContract',
 				expected: input => input === collateralEth.options.address,
 				write: 'setAssociatedContract',
@@ -1292,8 +1293,9 @@ const deploy = async ({
 			});
 		}
 
-		const collateralErc20State = await deployer.deployContract({
-			name: 'CollateralState',
+		const collateralStateErc20 = await deployer.deployContract({
+			name: 'CollateralStateErc20',
+			source: 'CollateralState',
 			args: [account, account],
 		});
 
@@ -1302,7 +1304,7 @@ const deploy = async ({
 		collateralErc20 = await deployer.deployContract({
 			name: 'CollateralErc20',
 			args: [
-				addressOf(collateralErc20State),
+				addressOf(collateralStateErc20),
 				account,
 				addressOf(collateralManager),
 				addressOf(readProxyForResolver),
@@ -1314,10 +1316,10 @@ const deploy = async ({
 			],
 		});
 
-		if (collateralErc20State && collateralErc20) {
+		if (collateralStateErc20 && collateralErc20) {
 			await runStep({
-				contract: 'CollateralState',
-				target: collateralErc20State,
+				contract: 'CollateralStateErc20',
+				target: collateralStateErc20,
 				read: 'associatedContract',
 				expected: input => input === collateralErc20.options.address,
 				write: 'setAssociatedContract',
