@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
-import "./Pausable.sol";
 import "./interfaces/ICollateralLoan.sol";
 
 // Libraries
@@ -23,7 +22,7 @@ import "./interfaces/IExchanger.sol";
 import "./interfaces/IShortingRewards.sol";
 
 
-contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
+contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -69,6 +68,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
     // Provides front running and flash loan protection.
     uint public interactionDelay = 300;
 
+    bool public canOpenLoans = true;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -87,7 +88,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    ) public Owned(_owner) Pausable() MixinSystemSettings(_resolver) {
+    ) public Owned(_owner) MixinSystemSettings(_resolver) {
         manager = _manager;
         state = _state;
         collateralKey = _collateralKey;
@@ -243,13 +244,18 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
     }
 
     function setInteractionDelay(uint _interactionDelay) external onlyOwner {
-        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Too long");
+        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
         interactionDelay = _interactionDelay;
         emit InteractionDelayUpdated(interactionDelay);
     }
 
     function setManager(address _newManager) external onlyOwner {
         manager = _newManager;
+        emit ManagerUpdated(manager);
+    }
+
+    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
+        canOpenLoans = _canOpenLoans;
         emit ManagerUpdated(manager);
     }
 
@@ -260,9 +266,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         uint amount,
         bytes32 currency,
         bool short
-    ) internal notPaused returns (uint id) {
+    ) internal returns (uint id) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
+
+        require(canOpenLoans, "Opening is disabled");
 
         // 1. Make sure the collateral rate is valid.
         require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
@@ -397,7 +405,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         address borrower,
         address liquidator,
         Loan memory loan
-    ) internal notPaused returns (uint collateral) {
+    ) internal returns (uint collateral) {
         // 1. Work out the total amount owing on the loan.
         uint total = loan.amount.add(loan.accruedInterest);
 
@@ -441,7 +449,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         address account,
         uint id,
         uint amount
-    ) internal notPaused {
+    ) internal {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -473,7 +481,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         emit CollateralDeposited(account, id, amount, loan.collateral);
     }
 
-    function withdrawInternal(uint id, uint amount) internal notPaused returns (uint withdraw) {
+    function withdrawInternal(uint id, uint amount) internal returns (uint withdraw) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -512,7 +520,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         address borrower,
         uint id,
         uint payment
-    ) internal notPaused returns (uint collateralLiquidated) {
+    ) internal returns (uint collateralLiquidated) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -577,7 +585,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         address repayer,
         uint id,
         uint payment
-    ) internal notPaused {
+    ) internal {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
@@ -616,7 +624,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings, Pausable {
         emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
     }
 
-    function drawInternal(uint id, uint amount) internal notPaused {
+    function drawInternal(uint id, uint amount) internal {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
