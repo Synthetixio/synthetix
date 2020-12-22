@@ -26,7 +26,13 @@
 	"CollateralShort": {
 		"deploy": false
 	},
-	"CollateralState": {
+	"CollateralStateErc20": {
+		"deploy": false
+	},
+	"CollateralStateEth": {
+		"deploy": false
+	},
+	"CollateralStateShort": {
 		"deploy": false
 	},
 	"ReadProxyAddressResolver": {

@@ -35,7 +35,13 @@
 	"CollateralShort": {
 		"deploy": true
 	},
-	"CollateralState": {
+	"CollateralStateErc20": {
+		"deploy": true
+	},
+	"CollateralStateEth": {
+		"deploy": true
+	},
+	"CollateralStateShort": {
 		"deploy": true
 	},
 	"DebtCache": {
