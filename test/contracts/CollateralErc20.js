@@ -966,10 +966,13 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		});
 
 		describe('should allow repayments on an sUSD loan', async () => {
-			// I don't want to test interest here. I just want to test repayment.
+			// I'm not testing interest here, just that payment reduces the amounts.
+			const expectedString = '90000';
+
 			beforeEach(async () => {
 				await issuesUSDToAccount(oneHundredsUSD, account2);
 				tx = await cerc20.repay(account1, id, tensUSD, { from: account2 });
+				loan = await state.getLoan(account1, id);
 			});
 
 			it('should work reduce the repayers balance', async () => {
@@ -977,10 +980,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				assert.bnEqual(await sUSDSynth.balanceOf(account2), expectedBalance);
 			});
 
-			xit('should update the loan', async () => {
-				loan = await state.getLoan(account1, id);
-
-				assert.bnClose(loan.amount, 90);
+			it('should update the loan', async () => {
+				assert.bnClose(loan.amount.substring(0, 5), expectedString);
 			});
 
 			xit('should emit the event properly', async () => {
@@ -989,12 +990,14 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 					repayer: account2,
 					id: id,
 					amountRepaid: tensUSD,
-					amountAfter: 90,
+					amountAfter: parseInt(loan.amount),
 				});
 			});
 		});
 
 		describe('it should allow repayments on an sBTC loan', async () => {
+			const expectedString = '10000';
+
 			beforeEach(async () => {
 				tx = await cerc20.open(fiveRenBTC, twoRenBTC, sBTC, {
 					from: account1,
@@ -1004,11 +1007,11 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 				id = getid(tx);
 
-				loan = await state.getLoan(account1, id);
-
 				await issuesBTCtoAccount(twoRenBTC, account2);
 
 				tx = await cerc20.repay(account1, id, oneRenBTC, { from: account2 });
+
+				loan = await state.getLoan(account1, id);
 			});
 
 			it('should work reduce the repayers balance', async () => {
@@ -1017,10 +1020,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				assert.bnEqual(await sBTCSynth.balanceOf(account2), expectedBalance);
 			});
 
-			xit('should update the loan', async () => {
-				loan = await state.getLoan(account1, id);
-
-				// assert.equal(loan.amount.substring(0, 6), expected.toString().substring(0, 6));
+			it('should update the loan', async () => {
+				assert.equal(loan.amount.substring(0, 5), expectedString);
 			});
 
 			xit('should emit the event properly', async () => {
@@ -1029,7 +1030,6 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 					repayer: account2,
 					id: id,
 					amountRepaid: oneRenBTC,
-					// amountAfter: expected.toString().substring(0, 6),
 				});
 			});
 		});
