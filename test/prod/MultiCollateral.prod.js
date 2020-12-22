@@ -33,7 +33,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 		CollateralShort,
 		DebtCache,
 		ReadProxyAddressResolver,
-		// SynthsETH,
 		SynthsUSD;
 
 	before('prepare', async function() {
@@ -84,12 +83,12 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		await skipWaitingPeriod({ network });
 
-		await ensureAccountHasEther({
-			amount: toUnit('1'),
-			account: owner,
-			fromAccount: accounts[7],
-			network,
-		});
+		// await ensureAccountHasEther({
+		// 	amount: toUnit('1'),
+		// 	account: owner,
+		// 	fromAccount: accounts[7],
+		// 	network,
+		// });
 		await ensureAccountHassUSD({
 			amount: toUnit('1000'),
 			account: user1,
@@ -124,12 +123,17 @@ contract('MultiCollateral (prod tests)', accounts => {
 	// START
 	// ------------------------------------------------------------
 
-	const itCorrectlyManagesLoans = ({ type, amountToDeposit, borrowCurrency, amountToBorrow }) => {
+	const itCorrectlyManagesLoansWith = ({
+		type,
+		amountToDeposit,
+		borrowCurrency,
+		amountToBorrow,
+	}) => {
 		let CollateralContract, CollateralStateContract;
 
 		const borrowCurrencyBytes = toBytes32(borrowCurrency);
 
-		describe(`when using ${type} to borrow ${borrowCurrency}`, () => {
+		describe(`when depositing ${amountToDeposit.toString()} ${type} to borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
 			let tx;
 			let issueFeeRate;
 
@@ -140,6 +144,9 @@ contract('MultiCollateral (prod tests)', accounts => {
 						break;
 					case 'CollateralErc20':
 						CollateralContract = CollateralErc20;
+						break;
+					case 'CollateralShort':
+						CollateralContract = CollateralShort;
 						break;
 					default:
 						throw new Error(`Unsupported collateral type ${type}`);
@@ -156,34 +163,61 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 			describe('when opening the loan', () => {
 				let loan, loanId;
-				let totalLoansBefore, longBefore, totalLongBefore, systemDebtBefore;
+				let totalLoansBefore,
+					longBefore,
+					totalLongBefore,
+					shortBefore,
+					totalShortBefore,
+					systemDebtBefore;
 
 				before('record current values', async () => {
 					totalLoansBefore = await CollateralManagerState.totalLoans();
 					longBefore = await CollateralManager.long(borrowCurrencyBytes);
 					totalLongBefore = (await CollateralManager.totalLong()).susdValue;
+					shortBefore = await CollateralManager.short(borrowCurrencyBytes);
+					totalShortBefore = (await CollateralManager.totalShort()).susdValue;
 					systemDebtBefore = (await DebtCache.currentDebt()).debt;
 				});
 
 				before('open the loan', async () => {
 					if (type === 'CollateralErc20') {
-						// TODO: Move out to ensureAccountHasRen - also could be done in the top of the tests
+						// TODO: Move elswhere or clean up where addresses are retrieved from?
 						const renbtc = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
 						const renHolder = '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E';
 
-						const RENBTC = await artifacts.require('ERC20').at(renbtc);
+						const renBTC = await artifacts.require('ERC20').at(renbtc);
 
-						await RENBTC.transfer(user1, amountToDeposit, {
+						await renBTC.transfer(user1, amountToDeposit, {
 							from: renHolder,
 						});
 
-						await RENBTC.approve(CollateralContract.address, amountToDeposit, { from: renHolder });
-					}
+						await renBTC.approve(CollateralContract.address, toUnit('10000'), { from: user1 });
 
-					tx = await CollateralContract.open(amountToBorrow, borrowCurrencyBytes, {
-						from: user1,
-						value: amountToDeposit,
-					});
+						tx = await CollateralContract.open(
+							amountToDeposit,
+							amountToBorrow,
+							borrowCurrencyBytes,
+							{
+								from: user1,
+							}
+						);
+					} else if (type === 'CollateralShort') {
+						await SynthsUSD.approve(CollateralContract.address, toUnit('10000'), { from: user1 });
+
+						tx = await CollateralContract.open(
+							amountToDeposit,
+							amountToBorrow,
+							borrowCurrencyBytes,
+							{
+								from: user1,
+							}
+						);
+					} else {
+						tx = await CollateralContract.open(amountToBorrow, borrowCurrencyBytes, {
+							from: user1,
+							value: amountToDeposit,
+						});
+					}
 
 					const event = tx.receipt.logs.find(l => l.event === 'LoanCreated');
 					loanId = event.args.id;
@@ -202,12 +236,20 @@ contract('MultiCollateral (prod tests)', accounts => {
 					assert.bnEqual(event.args.issuanceFee, amountToBorrow.mul(issueFeeRate));
 				});
 
-				it('updates the managers long and total long values', async () => {
-					const longAfter = await CollateralManager.long(borrowCurrencyBytes);
-					const totalLongAfter = (await CollateralManager.totalLong()).susdValue;
+				it('updates the managers short/long values', async () => {
+					if (type === 'CollateralShort') {
+						const shortAfter = await CollateralManager.short(borrowCurrencyBytes);
+						const totalShortAfter = (await CollateralManager.totalShort()).susdValue;
 
-					assert.bnEqual(longAfter, longBefore.add(amountToBorrow));
-					assert.bnEqual(totalLongAfter, totalLongBefore.add(amountToBorrow));
+						assert.bnGt(shortAfter, shortBefore);
+						assert.bnGt(totalShortAfter, totalShortBefore);
+					} else {
+						const longAfter = await CollateralManager.long(borrowCurrencyBytes);
+						const totalLongAfter = (await CollateralManager.totalLong()).susdValue;
+
+						assert.bnEqual(longAfter, longBefore.add(amountToBorrow));
+						assert.bnEqual(totalLongAfter, totalLongBefore.add(amountToBorrow));
+					}
 				});
 
 				it('does not increment the system debt', async () => {
@@ -230,10 +272,16 @@ contract('MultiCollateral (prod tests)', accounts => {
 					});
 
 					before('deposit', async () => {
-						tx = await CollateralContract.deposit(user1, loanId, {
-							from: user1,
-							value: toUnit('1'),
-						});
+						if (type === 'CollateralErc20' || type === 'CollateralShort') {
+							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('1000000'), {
+								from: user1,
+							});
+						} else {
+							tx = await CollateralContract.deposit(user1, loanId, {
+								from: user1,
+								value: toUnit('1'),
+							});
+						}
 
 						loan = await CollateralStateContract.getLoan(user1, loanId);
 					});
@@ -310,18 +358,25 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	};
 
-	itCorrectlyManagesLoans({
-		type: 'CollateralEth',
-		amountToDeposit: toUnit('1'),
-		borrowCurrency: 'sUSD',
-		amountToBorrow: toUnit('10'),
-	});
+	// itCorrectlyManagesLoansWith({
+	// 	type: 'CollateralEth',
+	// 	amountToDeposit: toUnit('1'),
+	// 	borrowCurrency: 'sUSD',
+	// 	amountToBorrow: toUnit('10'),
+	// });
 
-	itCorrectlyManagesLoans({
-		type: 'CollateralErc20',
-		amountToDeposit: toUnit('0.001'),
-		borrowCurrency: 'sUSD',
-		amountToBorrow: toUnit('10'),
+	// itCorrectlyManagesLoansWith({
+	// 	type: 'CollateralErc20',
+	// 	amountToDeposit: Web3.utils.toBN('100000000'), // 1 renBTC (renBTC uses 8 decimals)
+	// 	borrowCurrency: 'sUSD',
+	// 	amountToBorrow: toUnit('10'),
+	// });
+
+	itCorrectlyManagesLoansWith({
+		type: 'CollateralShort',
+		amountToDeposit: toUnit('1000'),
+		borrowCurrency: 'sETH',
+		amountToBorrow: toUnit('1'),
 	});
 
 	// ------------------------------------------------------------
