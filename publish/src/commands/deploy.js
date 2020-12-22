@@ -1896,79 +1896,58 @@ const deploy = async ({
 			writeArg: [[collateralEth, collateralErc20, collateralShort].map(addressOf)],
 		});
 
+		const collateralEthSynths = ['sUSD', 'sETH'];
 		await runStep({
 			contract: 'CollateralEth',
+			gasLimit: 1e6,
 			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralEthSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralEthSynths.map(toBytes32),
+			],
+			expected: input => input,
 			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsETH'].map(toBytes32)],
+			writeArg: [
+				collateralEthSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralEthSynths.map(toBytes32),
+			],
 		});
 
+		const collateralErc20Synths = ['sUSD', 'sBTC'];
 		await runStep({
 			contract: 'CollateralErc20',
+			gasLimit: 1e6,
 			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
+				collateralErc20Synths.map(toBytes32),
+			],
+			expected: input => input,
 			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsBTC'].map(toBytes32)],
+			writeArg: [
+				collateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
+				collateralErc20Synths.map(toBytes32),
+			],
 		});
 
+		const collateralShortSynths = ['sBTC', 'sETH'];
 		await runStep({
 			contract: 'CollateralShort',
+			gasLimit: 1e6,
 			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralShortSynths.map(toBytes32),
+			],
+			expected: input => input,
 			write: 'addSynths',
-			writeArg: [['SynthsBTC', 'SynthsETH'].map(toBytes32)],
-		});
-
-		await runStep({
-			contract: 'CollateralEth',
-			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralEth',
-			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'setCurrencies',
-		});
-
-		await runStep({
-			contract: 'CollateralErc20',
-			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralErc20',
-			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'setCurrencies',
-		});
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'setCurrencies',
+			writeArg: [
+				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralShortSynths.map(toBytes32),
+			],
 		});
 
 		// add to the manager.
@@ -1999,8 +1978,8 @@ const deploy = async ({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'isResolverCached',
+			expected: input => input,
 			write: 'rebuildCache',
 		});
 

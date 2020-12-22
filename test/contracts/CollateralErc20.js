@@ -217,7 +217,6 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			}
 		);
 
-		await cerc20.rebuildCache();
 		await feePool.rebuildCache();
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
@@ -225,10 +224,11 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 		await manager.addCollaterals([cerc20.address], { from: owner });
 
-		await cerc20.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
-		await cerc20.rebuildCache();
-
-		await cerc20.setCurrencies({ from: owner });
+		await cerc20.addSynths(
+			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
+			['sUSD', 'sBTC'].map(toBytes32),
+			{ from: owner }
+		);
 
 		await manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
 		// rebuild the cache to add the synths we need.
@@ -681,7 +681,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			it('should revert if they send 0 collateral', async () => {
 				await assert.revert(
 					cerc20.open(toUnit(0), onesUSD, sUSD, { from: account1 }),
-					'Not enough collateral to create a loan'
+					'Not enough collateral to open'
 				);
 			});
 

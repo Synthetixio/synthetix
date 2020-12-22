@@ -280,18 +280,21 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		await manager.addCollaterals([ceth.address, cerc20.address, short.address], { from: owner });
 
-		await ceth.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsETH')], { from: owner });
-		await cerc20.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
-		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
-
-		await ceth.rebuildCache();
-		await ceth.setCurrencies({ from: owner });
-
-		await cerc20.rebuildCache();
-		await cerc20.setCurrencies({ from: owner });
-
-		await short.rebuildCache();
-		await short.setCurrencies({ from: owner });
+		await ceth.addSynths(
+			['SynthsUSD', 'SynthsETH'].map(toBytes32),
+			['sUSD', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
+		await cerc20.addSynths(
+			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
+			['sUSD', 'sBTC'].map(toBytes32),
+			{ from: owner }
+		);
+		await short.addSynths(
+			['SynthsBTC', 'SynthsETH'].map(toBytes32),
+			['sBTC', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
 
 		await manager.addSynths(
 			[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],

@@ -198,7 +198,6 @@ contract('ShortingRewards', accounts => {
 			}
 		);
 
-		await short.rebuildCache();
 		await feePool.rebuildCache();
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
@@ -206,9 +205,11 @@ contract('ShortingRewards', accounts => {
 
 		await manager.addCollaterals([short.address], { from: owner });
 
-		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
-		await short.rebuildCache();
-		await short.setCurrencies({ from: owner });
+		await short.addSynths(
+			['SynthsBTC', 'SynthsETH'].map(toBytes32),
+			['sBTC', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
 
 		await manager.addShortableSynths(
 			[
