@@ -161,6 +161,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
      * V = Collateral VALUE in sUSD
      * P = liquidation penalty
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     * Note: if you pass a loan in here that is not eligible for liquidation it will revert.
+     * We check the ratio first in liquidateInternal and only pass eligible loans in.
      */
     function liquidationAmount(Loan memory loan) public view returns (uint amount) {
         uint liquidationPenalty = getLiquidationPenalty();
