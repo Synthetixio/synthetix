@@ -41,7 +41,7 @@ interface ICollateralManager {
     function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue, bool anyRateIsInvalid);
 
     // Loans
-    function getLoanId() external returns (uint id);
+    function getNewLoanId() external returns (uint id);
 
     // Manager mutative
     function addCollaterals(address[] calldata collaterals) external;

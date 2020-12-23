@@ -1236,19 +1236,15 @@ const deploy = async ({
 			args: [account, account],
 		});
 
-		const maxDebt = w3utils.toWei('50000000'); // 5 million sUSD worth.
-		const baseBorrowRate = w3utils.toWei('0'); //
-		const baseShortRate = w3utils.toWei('0'); //
-
 		collateralManager = await deployer.deployContract({
 			name: 'CollateralManager',
 			args: [
 				addressOf(managerState),
 				account,
 				addressOf(readProxyForResolver),
-				maxDebt,
-				baseBorrowRate,
-				baseShortRate,
+				(await getDeployParameter('COLLATERAL_MANAGER'))['MAX_DEBT'],
+				(await getDeployParameter('COLLATERAL_MANAGER'))['BASE_BORROW_RATE'],
+				(await getDeployParameter('COLLATERAL_MANAGER'))['BASE_SHORT_RATE'],
 			],
 		});
 
@@ -1277,8 +1273,8 @@ const deploy = async ({
 				addressOf(collateralManager),
 				addressOf(readProxyForResolver),
 				toBytes32('sETH'),
-				w3utils.toWei('1.5'),
-				w3utils.toWei('0.5'),
+				(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
 			],
 		});
 
@@ -1316,8 +1312,8 @@ const deploy = async ({
 				addressOf(collateralManager),
 				addressOf(readProxyForResolver),
 				toBytes32('sBTC'),
-				w3utils.toWei('1.5'),
-				w3utils.toWei('0.025'),
+				(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_COLLATERAL'],
 				RENBTC_ADDRESS,
 				8,
 			],
@@ -1348,8 +1344,8 @@ const deploy = async ({
 				addressOf(collateralManager),
 				addressOf(readProxyForResolver),
 				toBytes32('sUSD'),
-				w3utils.toWei('1.5'),
-				w3utils.toWei('500'),
+				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
 				addressOf(deployer.getExistingContract({ contract: 'ProxyERC20sUSD' })),
 				18,
 			],
@@ -1909,7 +1905,7 @@ const deploy = async ({
 			// read: 'synths',
 			// expected: input => input !== '0', // only change if zero
 			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsETH'].map(toBytes32)],
+			writeArg: [(await getDeployParameter('COLLATERAL_ETH'))['SYNTHS'].map(toBytes32)],
 		});
 
 		await runStep({
@@ -1918,7 +1914,7 @@ const deploy = async ({
 			// read: 'synths',
 			// expected: input => input !== '0', // only change if zero
 			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsBTC'].map(toBytes32)],
+			writeArg: [(await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS'].map(toBytes32)],
 		});
 
 		await runStep({
@@ -1927,7 +1923,7 @@ const deploy = async ({
 			// read: 'synths',
 			// expected: input => input !== '0', // only change if zero
 			write: 'addSynths',
-			writeArg: [['SynthsBTC', 'SynthsETH'].map(toBytes32)],
+			writeArg: [(await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS'].map(toBytes32)],
 		});
 
 		await runStep({
@@ -2025,6 +2021,42 @@ const deploy = async ({
 			// read: 'synths',
 			// expected: input => input !== '0', // only change if zero
 			write: 'addShortableSynthsToState',
+		});
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'interactionDelay',
+			expected: input => input !== '0', // only change if zero
+			write: 'setInteractionDelay',
+			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'],
+		});
+
+		await runStep({
+			contract: 'CollateralEth',
+			target: collateralEth,
+			// read: 'synths',
+			// expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
+		});
+
+		await runStep({
+			contract: 'CollateralErc20',
+			target: collateralErc20,
+			// read: 'synths',
+			// expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
+		});
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			// read: 'synths',
+			// expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
 		});
 	}
 
