@@ -1892,7 +1892,7 @@ const deploy = async ({
 			writeArg: [[collateralEth, collateralErc20, collateralShort].map(addressOf)],
 		});
 
-		const collateralEthSynths = await getDeployParameter('COLLATERAL_ETH')['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
+		const collateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
 		await runStep({
 			contract: 'CollateralEth',
 			gasLimit: 1e6,
@@ -1910,7 +1910,7 @@ const deploy = async ({
 			],
 		});
 
-		const collateralErc20Synths = await getDeployParameter('COLLATERAL_RENBTC')['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
+		const collateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
 		await runStep({
 			contract: 'CollateralErc20',
 			gasLimit: 1e6,
@@ -1928,7 +1928,7 @@ const deploy = async ({
 			],
 		});
 
-		const collateralShortSynths = await getDeployParameter('COLLATERAL_SHORT')['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
+		const collateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
 		await runStep({
 			contract: 'CollateralShort',
 			gasLimit: 1e6,
