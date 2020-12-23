@@ -72,7 +72,7 @@ contract EmptyCollateralManager is ICollateralManager {
         return false;
     }
 
-    function areShortableSynthsSet(bytes32[] calldata) external view returns (bool) {
+    function areShortableSynthsSet(bytes32[] calldata, bytes32[] calldata) external view returns (bool) {
         return false;
     }
 
@@ -90,11 +90,9 @@ contract EmptyCollateralManager is ICollateralManager {
 
     function removeSynths(bytes32[] calldata, bytes32[] calldata) external {}
 
-    function addShortableSynths(bytes32[2][] calldata) external {}
+    function addShortableSynths(bytes32[2][] calldata, bytes32[] calldata) external {}
 
     function removeShortableSynths(bytes32[] calldata) external {}
-
-    function addShortableSynthsToState() external {}
 
     // State mutative
     function updateBorrowRates(uint) external {}

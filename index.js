@@ -104,6 +104,10 @@ const defaults = {
 	CROSS_DOMAIN_MESSAGE_GAS_LIMIT: `${3e6}`,
 	COLLATERAL_MANAGER: {
 		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
+		SHORTS: [
+			{ long: 'sBTC', short: 'iBTC' },
+			{ long: 'sETH', short: 'iETH' },
+		],
 		MAX_DEBT: w3utils.toWei('100000000'),
 		BASE_BORROW_RATE: w3utils.toWei('0.0005'),
 		BASE_SHORT_RATE: w3utils.toWei('0.0005'),

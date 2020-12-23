@@ -155,6 +155,15 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         return _collaterals.contains(collateral);
     }
 
+    function hasAllCollaterals(address[] memory collaterals) public view returns (bool) {
+        for (uint i = 0; i < collaterals.length; i++) {
+            if (!hasCollateral(collaterals[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /* ---------- State Information ---------- */
 
     function long(bytes32 synth) external view returns (uint amount) {
@@ -391,8 +400,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     // When we add a shortable synth, we need to know the iSynth as well
     // This is so we can get the proper skew for the short rate.
-    function addShortableSynths(bytes32[2][] calldata synthWithInverse) external onlyOwner {
+    function addShortableSynths(bytes32[2][] calldata synthWithInverse, bytes32[] calldata synthKeys) external onlyOwner {
         _systemStatus().requireSystemActive();
+
+        require(synthWithInverse.length == synthKeys.length, "Input array length mismatch");
 
         for (uint i = 0; i < synthWithInverse.length; i++) {
             // setting these explicitly for clarity
@@ -409,20 +420,38 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
                 emit ShortableSynthAdded(synth);
             }
+
+            state.addShortCurrency(synthKeys[i]);
         }
+
+        rebuildCache();
     }
 
-    function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver) external view returns (bool) {
+    function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        view
+        returns (bool)
+    {
+        require(requiredSynthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+
         if (_shortableSynths.elements.length != requiredSynthNamesInResolver.length) {
             return false;
         }
 
+        // first check contract state
         for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
             bytes32 synthName = requiredSynthNamesInResolver[i];
             if (!_shortableSynths.contains(requiredSynthNamesInResolver[i])) {
                 return false;
             }
             if (synthToInverseSynth[synthName] == 0) {
+                return false;
+            }
+        }
+
+        // now check everything added to external state contract
+        for (uint i = 0; i < synthKeys.length; i++) {
+            if (state.getShortRatesLength(synthKeys[i]) == 0) {
                 return false;
             }
         }
@@ -447,14 +476,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
                 emit ShortableSynthRemoved(synths[i]);
             }
-        }
-    }
-
-    // Call this after adding synths to the short side.
-    function addShortableSynthsToState() external onlyOwner {
-        for (uint i = 0; i < _shortableSynths.elements.length; i++) {
-            bytes32 synthKey = _synth(_shortableSynths.elements[i]).currencyKey();
-            state.addShortCurrency(synthKey);
         }
     }
 

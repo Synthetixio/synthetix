@@ -47,7 +47,10 @@ interface ICollateralManager {
         view
         returns (bool);
 
-    function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver) external view returns (bool);
+    function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        view
+        returns (bool);
 
     // Loans
     function getNewLoanId() external returns (uint id);
@@ -61,11 +64,9 @@ interface ICollateralManager {
 
     function removeSynths(bytes32[] calldata synths, bytes32[] calldata synthKeys) external;
 
-    function addShortableSynths(bytes32[2][] calldata synthsWithInverses) external;
+    function addShortableSynths(bytes32[2][] calldata synthsWithInverses, bytes32[] calldata synthKeys) external;
 
     function removeShortableSynths(bytes32[] calldata synths) external;
-
-    function addShortableSynthsToState() external;
 
     // State mutative
     function updateBorrowRates(uint rate) external;
