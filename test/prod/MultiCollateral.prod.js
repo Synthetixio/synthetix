@@ -131,7 +131,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			collateralCurrency: 'ETH',
 			amountToDeposit: toUnit('1'),
 			borrowCurrency: 'sUSD',
-			amountToBorrow: toUnit('10'),
+			amountToBorrow: toUnit('0.5'),
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -165,6 +165,12 @@ contract('MultiCollateral (prod tests)', accounts => {
 		describe(`when using ${type} to deposit ${amountToDeposit.toString()} ${collateralCurrency} and borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
 			let tx;
 			let issueFeeRate;
+
+			before('check network', async function() {
+				if (network === 'local' && type === 'CollateralErc20') {
+					this.skip();
+				}
+			});
 
 			before('retrieve the collateral/state contract pair', async () => {
 				switch (type) {
@@ -210,10 +216,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 				before('open the loan', async () => {
 					if (type === 'CollateralErc20') {
-						// TODO: Move elswhere or clean up where addresses are retrieved from?
 						const renbtc = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
 						const renHolder = '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E';
-
 						const renBTC = await artifacts.require('ERC20').at(renbtc);
 
 						await renBTC.transfer(user1, amountToDeposit, {
