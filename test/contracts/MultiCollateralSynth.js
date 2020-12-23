@@ -18,7 +18,7 @@ const {
 
 const { setupAllContracts, setupContract } = require('./setup');
 
-contract('MultiCollateralSynth @ovm-skip', accounts => {
+contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
