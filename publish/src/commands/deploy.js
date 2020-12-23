@@ -1947,26 +1947,36 @@ const deploy = async ({
 		});
 
 		// add to the manager.
-
+		const collateralManagerSynths = (await getDeployParameter('COLLATERAL_MANAGER'))['SYNTHS'];
 		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
+			],
+			expected: input => input,
 			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32)],
+			writeArg: [
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
+			],
 		});
 
+		const collateralManagerShortBTC = ['SynthsBTC', 'SynthiBTC'];
+		const collateralManagerShortETH = ['SynthsETH', 'SynthiETH'];
 		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'areShortableSynthsSet',
+			readArg: [['SynthsBTC', 'SynthsETH'].map(toBytes32)],
+			expected: input => input,
 			write: 'addShortableSynths',
 			writeArg: [
-				[['SynthsBTC', 'SynthiBTC'].map(toBytes32), ['SynthsETH', 'SynthiETH'].map(toBytes32)],
+				[collateralManagerShortBTC.map(toBytes32), collateralManagerShortETH.map(toBytes32)],
 			],
 		});
 
@@ -1977,14 +1987,6 @@ const deploy = async ({
 			read: 'isResolverCached',
 			expected: input => input,
 			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynthsToFlexibleStorage',
 		});
 
 		await runStep({

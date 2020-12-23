@@ -136,12 +136,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
 
-            bool mcIssued = flexibleStorage().getBoolValue(
-                CONTRACT_COLLATERALMANAGER,
-                keccak256(abi.encodePacked(COLLATERAL_SYNTHS, key))
-            );
-
-            if (mcIssued) {
+            if (collateralManager().synthsByKey(key) != 0) {
                 uint collateralIssued = collateralManager().long(key);
 
                 // this is an edge case --
