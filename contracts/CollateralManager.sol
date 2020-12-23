@@ -353,13 +353,22 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         }
     }
 
-    function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver) external view returns (bool) {
+    function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        view
+        returns (bool)
+    {
         if (_synths.elements.length != requiredSynthNamesInResolver.length) {
             return false;
         }
 
         for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
-            if (!_synths.contains(requiredSynthNamesInResolver[i])) return false;
+            if (!_synths.contains(requiredSynthNamesInResolver[i])) {
+                return false;
+            }
+            if (synthsByKey[synthKeys[i]] != requiredSynthNamesInResolver[i]) {
+                return false;
+            }
         }
 
         return true;

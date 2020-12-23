@@ -42,7 +42,10 @@ interface ICollateralManager {
 
     function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue, bool anyRateIsInvalid);
 
-    function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver) external view returns (bool);
+    function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        view
+        returns (bool);
 
     function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver) external view returns (bool);
 
