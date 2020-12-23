@@ -74,15 +74,19 @@ contract EmptyCollateralManager is ICollateralManager {
 
     function removeCollaterals(address[] calldata) external {}
 
-    function addSynths(bytes32[] calldata) external {}
+    function addSynths(bytes32[] calldata, bytes32[] calldata) external {}
 
-    function areSynthsAndCurrenciesSet(bytes32[] calldata, bytes32[] calldata) external view returns (bool) { return false; }
+    function areSynthsAndCurrenciesSet(bytes32[] calldata, bytes32[] calldata) external view returns (bool) {
+        return false;
+    }
 
     function removeSynths(bytes32[] calldata) external {}
 
     function addShortableSynths(bytes32[2][] calldata) external {}
 
-    function areShortableSynthsSet(bytes32[] calldata) external view returns (bool) { return false; }
+    function areShortableSynthsSet(bytes32[] calldata) external view returns (bool) {
+        return false;
+    }
 
     function removeShortableSynths(bytes32[] calldata) external {}
 
