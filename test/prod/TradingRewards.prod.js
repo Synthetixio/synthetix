@@ -14,6 +14,7 @@ const {
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
+	writeSetting,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -38,6 +39,14 @@ contract('TradingRewards (prod tests)', accounts => {
 		if (config.useOvm) {
 			return this.skip();
 		}
+
+		await writeSetting({
+			setting: 'setRateStalePeriod',
+			value: '10000',
+			owner,
+			network,
+			deploymentPath,
+		});
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });

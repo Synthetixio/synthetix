@@ -16,6 +16,7 @@ const {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsMultiCollateral,
+	writeSetting,
 } = require('./utils');
 
 const { toBytes32 } = require('../..');
@@ -51,6 +52,14 @@ contract('MultiCollateral (prod tests)', accounts => {
 		if (!(await implementsMultiCollateral({ network, deploymentPath }))) {
 			this.skip();
 		}
+
+		await writeSetting({
+			setting: 'setRateStalePeriod',
+			value: '10000',
+			owner,
+			network,
+			deploymentPath,
+		});
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });

@@ -42,6 +42,14 @@ contract('Synthetix (prod tests)', accounts => {
 
 		owner = getUsers({ network, user: 'owner' }).address;
 
+		await writeSetting({
+			setting: 'setRateStalePeriod',
+			value: '10000',
+			owner,
+			network,
+			deploymentPath,
+		});
+
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
 			await takeDebtSnapshot({ network, deploymentPath });
