@@ -1,4 +1,5 @@
 const { connectContract } = require('./connectContract');
+const { gray } = require('chalk');
 
 async function takeDebtSnapshot({ network, deploymentPath }) {
 	const DebtCache = await connectContract({
@@ -13,7 +14,7 @@ async function takeDebtSnapshot({ network, deploymentPath }) {
 		return;
 	}
 
-	console.log('Taking debt snapshot...');
+	console.log(gray('    > Taking debt snapshot...'));
 
 	await DebtCache.takeDebtSnapshot();
 }
