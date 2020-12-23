@@ -129,7 +129,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		itCorrectlyManagesLoansWith({
 			type: 'CollateralEth',
 			collateralCurrency: 'ETH',
-			amountToDeposit: toUnit('1'),
+			amountToDeposit: toUnit('2'),
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
 		});
@@ -145,7 +145,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		itCorrectlyManagesLoansWith({
 			type: 'CollateralShort',
 			collateralCurrency: 'sUSD',
-			amountToDeposit: toUnit('500'),
+			amountToDeposit: toUnit('1000'),
 			borrowCurrency: 'sETH',
 			amountToBorrow: toUnit('0.1'),
 		});
