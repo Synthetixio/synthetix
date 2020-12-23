@@ -445,10 +445,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         // first check contract state
         for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
             bytes32 synthName = requiredSynthNamesInResolver[i];
-            if (!_shortableSynths.contains(requiredSynthNamesInResolver[i])) {
-                return false;
-            }
-            if (synthToInverseSynth[synthName] == 0) {
+            if (!_shortableSynths.contains(synthName) || synthToInverseSynth[synthName] == bytes32(0)) {
                 return false;
             }
         }
