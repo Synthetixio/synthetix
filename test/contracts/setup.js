@@ -527,6 +527,15 @@ const setupContract = async ({
 						returns: ['0'],
 					}),
 				]);
+			} else if (mock === 'CollateralManager') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'isSynthManaged',
+						returns: [false],
+					}),
+				]);
 			}
 		},
 	};
