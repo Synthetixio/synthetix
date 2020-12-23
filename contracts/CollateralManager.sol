@@ -400,16 +400,19 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     // When we add a shortable synth, we need to know the iSynth as well
     // This is so we can get the proper skew for the short rate.
-    function addShortableSynths(bytes32[2][] calldata synthWithInverse, bytes32[] calldata synthKeys) external onlyOwner {
+    function addShortableSynths(bytes32[2][] calldata requiredSynthAndInverseNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        onlyOwner
+    {
         _systemStatus().requireSystemActive();
 
-        require(synthWithInverse.length == synthKeys.length, "Input array length mismatch");
+        require(requiredSynthAndInverseNamesInResolver.length == synthKeys.length, "Input array length mismatch");
 
-        for (uint i = 0; i < synthWithInverse.length; i++) {
+        for (uint i = 0; i < requiredSynthAndInverseNamesInResolver.length; i++) {
             // setting these explicitly for clarity
             // Each entry in the array is [Synth, iSynth]
-            bytes32 synth = synthWithInverse[i][0];
-            bytes32 iSynth = synthWithInverse[i][1];
+            bytes32 synth = requiredSynthAndInverseNamesInResolver[i][0];
+            bytes32 iSynth = requiredSynthAndInverseNamesInResolver[i][1];
 
             if (!_shortableSynths.contains(synth)) {
                 // Add it to the address set lib.
@@ -419,9 +422,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
                 synthToInverseSynth[synth] = iSynth;
 
                 emit ShortableSynthAdded(synth);
-            }
 
-            state.addShortCurrency(synthKeys[i]);
+                // now the associated synth key to the CollateralManagerState
+                state.addShortCurrency(synthKeys[i]);
+            }
         }
 
         rebuildCache();

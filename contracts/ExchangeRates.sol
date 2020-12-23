@@ -719,7 +719,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         _;
     }
 
-    function _onlyOracle() internal {
+    function _onlyOracle() internal view {
         require(msg.sender == oracle, "Only the oracle can perform this action");
     }
 

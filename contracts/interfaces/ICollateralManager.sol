@@ -64,7 +64,8 @@ interface ICollateralManager {
 
     function removeSynths(bytes32[] calldata synths, bytes32[] calldata synthKeys) external;
 
-    function addShortableSynths(bytes32[2][] calldata synthsWithInverses, bytes32[] calldata synthKeys) external;
+    function addShortableSynths(bytes32[2][] calldata requiredSynthAndInverseNamesInResolver, bytes32[] calldata synthKeys)
+        external;
 
     function removeShortableSynths(bytes32[] calldata synths) external;
 
