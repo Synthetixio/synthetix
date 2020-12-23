@@ -159,7 +159,7 @@ contract('TradingRewards', accounts => {
 			});
 		});
 
-		describe.only('when SystemSettings tradingRewardsEnabled is set to true', () => {
+		describe('when SystemSettings tradingRewardsEnabled is set to true', () => {
 			before('set tradingRewardsEnabled to true', async () => {
 				await systemSettings.setTradingRewardsEnabled(true, { from: owner });
 			});
