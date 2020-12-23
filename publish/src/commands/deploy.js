@@ -1393,8 +1393,8 @@ const deploy = async ({
 			contract: `AddressResolver`,
 			target: addressResolver,
 			read: 'areAddressesImported',
-			expected: input => input,
 			readArg: addressArgs,
+			expected: input => input,
 			write: 'importAddresses',
 			writeArg: addressArgs,
 		});
@@ -1902,11 +1902,15 @@ const deploy = async ({
 
 	if (!useOvm) {
 		console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
+		const collateralsArg = [collateralEth, collateralErc20, collateralShort].map(addressOf);
 		await runStep({
 			contract: 'CollateralManager',
 			target: collateralManager,
+			read: 'hasAllCollaterals',
+			readArg: [collateralsArg],
+			expected: input => input,
 			write: 'addCollaterals',
-			writeArg: [[collateralEth, collateralErc20, collateralShort].map(addressOf)],
+			writeArg: [collateralsArg],
 		});
 
 		const collateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
@@ -1982,36 +1986,24 @@ const deploy = async ({
 			],
 		});
 
-		const collateralManagerShortBTC = ['SynthsBTC', 'SynthiBTC'];
-		const collateralManagerShortETH = ['SynthsETH', 'SynthiETH'];
+		const collateralManagerShorts = (await getDeployParameter('COLLATERAL_MANAGER'))['SHORTS'];
 		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'areShortableSynthsSet',
-			readArg: [['SynthsBTC', 'SynthsETH'].map(toBytes32)],
+			readArg: [
+				collateralManagerShorts.map(({ long }) => toBytes32(`Synth${long}`)),
+				collateralManagerShorts.map(({ long }) => toBytes32(long)),
+			],
 			expected: input => input,
 			write: 'addShortableSynths',
 			writeArg: [
-				[collateralManagerShortBTC.map(toBytes32), collateralManagerShortETH.map(toBytes32)],
+				collateralManagerShorts.map(({ long, short }) =>
+					[`Synth${long}`, `Synth${short}`].map(toBytes32)
+				),
+				collateralManagerShorts.map(({ long }) => toBytes32(long)),
 			],
-		});
-
-		await runStep({
-			gasLimit: 1e6,
-			contract: 'CollateralManager',
-			target: collateralManager,
-			read: 'isResolverCached',
-			expected: input => input,
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addShortableSynthsToState',
 		});
 
 		await runStep({

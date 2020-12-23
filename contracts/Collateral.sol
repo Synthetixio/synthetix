@@ -234,6 +234,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ---------- Synths ---------- */
 
     function addSynths(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys) external onlyOwner {
+        require(_synthNamesInResolver.length == _synthKeys.length, "Input array length mismatch");
+
         for (uint i = 0; i < _synthNamesInResolver.length; i++) {
             bytes32 synthName = _synthNamesInResolver[i];
             synths.push(synthName);
