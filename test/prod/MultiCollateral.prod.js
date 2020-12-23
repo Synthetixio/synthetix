@@ -96,7 +96,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			network,
 		});
 		await ensureAccountHassETH({
-			amount: toUnit('1'),
+			amount: toUnit('2'),
 			account: user1,
 			fromAccount: owner,
 			network,
@@ -220,7 +220,10 @@ contract('MultiCollateral (prod tests)', accounts => {
 						const renHolder = '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E';
 						const renBTC = await artifacts.require('ERC20').at(renbtc);
 
-						await renBTC.transfer(user1, amountToDeposit, {
+						// give them more, so they can deposit after opening
+						const transferAmount = Web3.utils.toBN('200000000');
+
+						await renBTC.transfer(user1, transferAmount, {
 							from: renHolder,
 						});
 
