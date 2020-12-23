@@ -2883,7 +2883,7 @@
 		"commit": "bfb75b3e33898572769f99a54e0b97c97d3754fa",
 		"contracts": {
 			"ProxysUSD": {
-				"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
+				"address": "0xC674ad732Dfd4E1359ec4B18fA5472c0747E480A",
 				"status": "current"
 			}
 		}
@@ -3186,7 +3186,7 @@
 		"commit": "48278f3376c6770dba6f88e854b917a891678baa",
 		"contracts": {
 			"ProxyERC20sUSD": {
-				"address": "0x2d8E96278df430fD9cFdc5819836f5702fa07980",
+				"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
 				"status": "current"
 			},
 			"TokenStatesXRP": {
