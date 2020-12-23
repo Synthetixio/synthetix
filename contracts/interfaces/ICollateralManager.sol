@@ -50,7 +50,7 @@ interface ICollateralManager {
     function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver) external view returns (bool);
 
     // Loans
-    function getLoanId() external returns (uint id);
+    function getNewLoanId() external returns (uint id);
 
     // Manager mutative
     function addCollaterals(address[] calldata collaterals) external;
