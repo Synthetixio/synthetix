@@ -1374,26 +1374,6 @@ const deploy = async ({
 
 	let addressesAreImported = false;
 
-	const filterTargetsWith = ({ prop }) =>
-		Object.entries(deployer.deployedContracts).filter(([, target]) =>
-			target.options.jsonInterface.find(({ name }) => name === prop)
-		);
-
-	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
-		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
-		.filter(([contract]) => {
-			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
-				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
-				console.log(
-					redBright(
-						`WARNING: Not invoking ${contract}.rebuildCache(). Run node publish connect-bridge after deployment.`
-					)
-				);
-				return false;
-			}
-			return true;
-		});
-
 	if (addressResolver) {
 		// Now we add everything into the AddressResolver
 		const addressArgs = [
@@ -1444,19 +1424,39 @@ const deploy = async ({
 
 	console.log(gray('Addresses are correctly set up, continuing...'));
 
-	// now ensure all resolvers are set
-	// NOTE: If using OVM, split the array of addresses to cache,
-	// since things spend signifficantly more gas in OVM
-	const addressesToCache = contractsWithRebuildableCache.map(
-		([
-			,
-			{
-				options: { address },
-			},
-		]) => address
-	);
+	const filterTargetsWith = ({ prop }) =>
+		Object.entries(deployer.deployedContracts).filter(([, target]) =>
+			target.options.jsonInterface.find(({ name }) => name === prop)
+		);
+
+	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
+		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
+		.filter(([contract]) => {
+			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
+				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
+				console.log(
+					redBright(
+						`WARNING: Not invoking ${contract}.rebuildCache(). Run node publish connect-bridge after deployment.`
+					)
+				);
+				return false;
+			}
+			return true;
+		});
+
+	// now ensure all caches are rebuilt for those in need
+	const contractsToRebuildCache = [];
+	for (const [, target] of contractsWithRebuildableCache) {
+		const isCached = await target.methods.isResolverCached().call();
+		if (!isCached) {
+			contractsToRebuildCache.push(target.options.address);
+		}
+	}
+
 	if (useOvm) {
-		const chunks = splitArrayIntoChunks(addressesToCache, 4);
+		// NOTE: If using OVM, split the array of addresses to cache,
+		// since things spend signifficantly more gas in OVM
+		const chunks = splitArrayIntoChunks(contractsToRebuildCache, 4);
 		for (let i = 0; i < chunks.length; i++) {
 			const chunk = chunks[i];
 			await runStep({
@@ -1467,13 +1467,13 @@ const deploy = async ({
 				writeArg: [chunk],
 			});
 		}
-	} else {
+	} else if (contractsToRebuildCache.length) {
 		await runStep({
 			gasLimit: 10e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			write: 'rebuildCaches',
-			writeArg: [addressesToCache],
+			writeArg: [contractsToRebuildCache],
 		});
 	}
 
