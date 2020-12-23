@@ -23,6 +23,7 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
+import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IDebtCache.sol";
 
 
@@ -76,6 +77,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
+    bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
@@ -86,7 +88,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](12);
+        bytes32[] memory newAddresses = new bytes32[](13);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -99,7 +101,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[9] = CONTRACT_SYNTHETIXESCROW;
         newAddresses[10] = CONTRACT_LIQUIDATIONS;
         newAddresses[11] = CONTRACT_DEBTCACHE;
-        addresses = combineArrays(existingAddresses, newAddresses);
+        newAddresses[12] = CONTRACT_COLLATERALMANAGER;
+        return combineArrays(existingAddresses, newAddresses);
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -138,6 +141,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD));
     }
 
+    function collateralManager() internal view returns (ICollateralManager) {
+        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
+    }
+
     function rewardEscrow() internal view returns (IRewardEscrow) {
         return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
@@ -168,7 +175,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return currencyKeys;
     }
 
-    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeCollateral)
         internal
         view
         returns (uint totalIssued, bool anyRateIsInvalid)
@@ -178,9 +185,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         IExchangeRates exRates = exchangeRates();
 
-        // Add total issued synths from Ether Collateral back into the total if not excluded
-        if (!excludeEtherCollateral) {
-            // Add ether collateral sUSD
+        // Add total issued synths from non snx collateral back into the total if not excluded
+        if (!excludeCollateral) {
+            // Get the sUSD equivalent amount of all the MC issued synths.
+            (uint nonSnxDebt, bool invalid) = collateralManager().totalLong();
+            debt = debt.add(nonSnxDebt);
+            anyRateIsInvalid = anyRateIsInvalid || invalid;
+
+            // Now add the ether collateral stuff as we are still supporting it.
             debt = debt.add(etherCollateralsUSD().totalIssuedSynths());
 
             // Add ether collateral sETH

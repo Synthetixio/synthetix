@@ -52,6 +52,19 @@ const constants = {
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
 
+const knownAccounts = {
+	mainnet: [
+		{
+			name: 'binance', // Binance 8 Wallet
+			address: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
+		},
+		{
+			name: 'renBTCWallet',
+			address: '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E',
+		},
+	],
+};
+
 // The solidity defaults are managed here in the same format they will be stored, hence all
 // numbers are converted to strings and those with 18 decimals are also converted to wei amounts
 const defaults = {
@@ -81,6 +94,13 @@ const defaults = {
 	AGGREGATOR_WARNING_FLAGS: {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
+	},
+	RENBTC_ERC20_ADDRESSES: {
+		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
+		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		rinkey: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
+		ropsten: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
+		local: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_MESSAGE_GAS_LIMIT: `${3e6}`,
@@ -394,13 +414,16 @@ const getVersions = ({
 
 	if (byContract) {
 		// compile from the contract perspective
-		return Object.values(versions).reduce((memo, entry) => {
-			for (const [contract, contractEntry] of Object.entries(entry.contracts)) {
-				memo[contract] = memo[contract] || [];
-				memo[contract].push(contractEntry);
-			}
-			return memo;
-		}, {});
+		return Object.values(versions).reduce(
+			(memo, { tag, release, date, commit, block, contracts }) => {
+				for (const [contract, contractEntry] of Object.entries(contracts)) {
+					memo[contract] = memo[contract] || [];
+					memo[contract].push(Object.assign({ tag, release, date, commit, block }, contractEntry));
+				}
+				return memo;
+			},
+			{}
+		);
 	}
 	return versions;
 };
@@ -508,4 +531,5 @@ module.exports = {
 	wrap,
 	ovmIgnored,
 	releases,
+	knownAccounts,
 };
