@@ -60,6 +60,10 @@ contract EmptyCollateralManager is ICollateralManager {
         return (0, 0, 0, 0);
     }
 
+    function isSynthManaged(bytes32) external view returns (bool) {
+        return false;
+    }
+
     function exceedsDebtLimit(uint, bytes32) external view returns (bool canIssue, bool anyRateIsInvalid) {
         return (false, false);
     }

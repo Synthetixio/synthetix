@@ -128,6 +128,11 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         }
     }
 
+    // helper function to check whether synth "by key" is a collateral issued by multi-collateral
+    function isSynthManaged(bytes32 currencyKey) external view returns (bool) {
+        return synthsByKey[currencyKey] != bytes32(0);
+    }
+
     /* ---------- Related Contracts ---------- */
 
     function _systemStatus() internal view returns (ISystemStatus) {

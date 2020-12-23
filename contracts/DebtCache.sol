@@ -35,10 +35,6 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 internal constant sUSD = "sUSD";
     bytes32 internal constant sETH = "sETH";
 
-    // Flexible storage names
-    bytes32 internal constant COLLATERAL_SYNTHS = "collateralSynth";
-    bytes32 internal constant COLLATERAL_SHORTS = "collateralShort";
-
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
@@ -136,7 +132,7 @@ contract DebtCache is Owned, MixinSystemSettings, IDebtCache {
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
 
-            if (collateralManager().synthsByKey(key) != 0) {
+            if (collateralManager().isSynthManaged(key)) {
                 uint collateralIssued = collateralManager().long(key);
 
                 // this is an edge case --

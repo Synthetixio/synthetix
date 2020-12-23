@@ -611,8 +611,8 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger'],
-			deps: ['FlexibleStorage', 'ExchangeRates', 'SystemStatus'],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager'],
+			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
 			contract: 'Issuer',
