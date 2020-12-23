@@ -223,7 +223,6 @@ contract('ShortingRewards', accounts => {
 
 		// rebuild the cache to add the synths we need.
 		await manager.rebuildCache();
-		await manager.addSynthsToFlexibleStorage({ from: owner });
 		await manager.addShortableSynthsToState({ from: owner });
 
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });

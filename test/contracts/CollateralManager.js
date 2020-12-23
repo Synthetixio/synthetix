@@ -316,11 +316,10 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		// check synths are set and currencyKeys set
 		assert.isTrue(
-			await manager.areSynthsAndCurrenciesSet([
-				toBytes32('SynthsUSD'),
-				toBytes32('SynthsBTC'),
-				toBytes32('SynthsETH'),
-			])
+			await manager.areSynthsAndCurrenciesSet(
+				['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
+				['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+			)
 		);
 
 		// rebuild the cache to add the synths we need.
