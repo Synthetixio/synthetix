@@ -42,7 +42,7 @@ contract('TradingRewards (prod tests)', accounts => {
 
 		await writeSetting({
 			setting: 'setRateStalePeriod',
-			value: '10000',
+			value: '1000000',
 			owner,
 			network,
 			deploymentPath,
