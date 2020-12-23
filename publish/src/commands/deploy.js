@@ -1947,7 +1947,7 @@ const deploy = async ({
 		});
 
 		// add to the manager.
-		const collateralManagerSynths = ['sUSD', 'sBTC', 'sETH'];
+		const collateralManagerSynths = (await getDeployParameter('COLLATERAL_MANAGER'))['SYNTHS'];
 		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
