@@ -1250,7 +1250,7 @@ const deploy = async ({
 
 		if (managerState && collateralManager) {
 			await runStep({
-				contract: 'ManagerState',
+				contract: 'CollateralManagerState',
 				target: managerState,
 				read: 'associatedContract',
 				expected: input => input === addressOf(collateralManager),
@@ -1470,7 +1470,7 @@ const deploy = async ({
 		}
 	} else if (contractsToRebuildCache.length) {
 		await runStep({
-			gasLimit: 10e6, // higher gas required
+			gasLimit: 9e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			publiclyCallable: true, // does not require owner
@@ -2006,13 +2006,17 @@ const deploy = async ({
 			],
 		});
 
+		const collateralShortInteractionDelay = (await getDeployParameter('COLLATERAL_SHORT'))[
+			'INTERACTION_DELAY'
+		];
+
 		await runStep({
 			contract: 'CollateralShort',
 			target: collateralShort,
 			read: 'interactionDelay',
-			expected: input => input !== '0', // only change if zero
+			expected: input => input === collateralShortInteractionDelay,
 			write: 'setInteractionDelay',
-			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'],
+			writeArg: collateralShortInteractionDelay,
 		});
 
 		await runStep({
