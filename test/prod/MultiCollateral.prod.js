@@ -132,6 +132,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('2'),
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
+			issuanceFee: toUnit('0.0005'),
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -140,6 +141,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: Web3.utils.toBN('100000000'), // 1 renBTC (renBTC uses 8 decimals)
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('10'),
+			issuanceFee: toUnit('0.01'),
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -148,6 +150,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('1000'),
 			borrowCurrency: 'sETH',
 			amountToBorrow: toUnit('0.1'),
+			issuanceFee: toUnit('0.0001'),
 		});
 	});
 
@@ -157,6 +160,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		amountToDeposit,
 		borrowCurrency,
 		amountToBorrow,
+		issuanceFee,
 	}) {
 		let CollateralContract, CollateralStateContract;
 
@@ -190,10 +194,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 				CollateralStateContract = await artifacts
 					.require('CollateralState')
 					.at(await CollateralContract.state());
-			});
-
-			before('record current values', async () => {
-				issueFeeRate = await CollateralContract.issueFeeRate();
 			});
 
 			describe('when opening the loan', () => {
@@ -268,7 +268,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 					assert.bnEqual(event.args.id, totalLoansBefore.add(Web3.utils.toBN(1)));
 					assert.bnEqual(event.args.amount, amountToBorrow);
 					assert.equal(event.args.currency, borrowCurrencyBytes);
-					assert.bnEqual(event.args.issuanceFee, amountToBorrow.mul(issueFeeRate));
+					assert.bnEqual(event.args.issuanceFee, issuanceFee);
 
 					if (type === 'CollateralErc20') {
 						// Account for renBTC scaling
