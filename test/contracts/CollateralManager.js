@@ -298,6 +298,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		await manager.addSynths(
 			[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
+			[toBytes32('sUSD'), toBytes32('sBTC'), toBytes32('sETH')],
 			{
 				from: owner,
 			}
@@ -313,9 +314,17 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 			}
 		);
 
+		// check synths are set and currencyKeys set
+		assert.isTrue(
+			await manager.areSynthsAndCurrenciesSet([
+				toBytes32('SynthsUSD'),
+				toBytes32('SynthsBTC'),
+				toBytes32('SynthsETH'),
+			])
+		);
+
 		// rebuild the cache to add the synths we need.
 		await manager.rebuildCache();
-		await manager.addSynthsToFlexibleStorage({ from: owner });
 		await manager.addShortableSynthsToState({ from: owner });
 
 		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
@@ -613,7 +622,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		describe('revert conditions', async () => {
 			it('should revert if the caller is not the owner', async () => {
 				await assert.revert(
-					manager.removeSynths([toBytes32('SynthsBTC')], { from: account1 }),
+					manager.removeSynths([toBytes32('SynthsBTC')], [toBytes32('sBTC')], { from: account1 }),
 					'Only the contract owner may perform this action'
 				);
 			});
@@ -621,7 +630,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		describe('it should remove a synth', async () => {
 			beforeEach(async () => {
-				await manager.removeSynths([toBytes32('SynthsBTC')], { from: owner });
+				await manager.removeSynths([toBytes32('SynthsBTC')], [toBytes32('sBTC')], { from: owner });
 			});
 		});
 	});

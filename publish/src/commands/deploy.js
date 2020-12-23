@@ -1956,7 +1956,11 @@ const deploy = async ({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
-			// read: 'synths',
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralShortSynths.map(toBytes32),
+			],
 			// expected: input => input !== '0', // only change if zero
 			write: 'addSynths',
 			writeArg: [['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32)],
@@ -1966,7 +1970,7 @@ const deploy = async ({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
-			// read: 'synths',
+			read: 'collateralManager',
 			// expected: input => input !== '0', // only change if zero
 			write: 'addShortableSynths',
 			writeArg: [
@@ -1981,14 +1985,6 @@ const deploy = async ({
 			read: 'isResolverCached',
 			expected: input => input,
 			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynthsToFlexibleStorage',
 		});
 
 		await runStep({

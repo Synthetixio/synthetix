@@ -49,6 +49,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     // The set of all synths issuable by the various collateral contracts
     Bytes32SetLib.Bytes32Set internal _synths;
 
+    // Map from currency key to synth contract name.
+    mapping(bytes32 => bytes32) public synthsByKey;
+
     // The set of all synths that are shortable.
     Bytes32SetLib.Bytes32Set internal _shortableSynths;
 
@@ -337,31 +340,39 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         }
     }
 
-    function addSynths(bytes32[] calldata synths) external onlyOwner {
+    function addSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external onlyOwner {
         _systemStatus().requireSystemActive();
 
-        for (uint i = 0; i < synths.length; i++) {
-            if (!_synths.contains(synths[i])) {
-                _synths.add(synths[i]);
-                emit SynthAdded(synths[i]);
+        for (uint i = 0; i < synthNamesInResolver.length; i++) {
+            if (!_synths.contains(synthNamesInResolver[i])) {
+                bytes32 synthName = synthNamesInResolver[i];
+                _synths.add(synthName);
+                synthsByKey[synthKeys[i]] = synthName;
+                emit SynthAdded(synthName);
             }
         }
     }
 
-    function removeSynths(bytes32[] calldata synths) external onlyOwner {
+    function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver) external view returns (bool) {
+        if (_synths.elements.length != requiredSynthNamesInResolver.length) {
+            return false;
+        }
+
+        for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
+            if (!_synths.contains(requiredSynthNamesInResolver[i])) return false;
+        }
+
+        return true;
+    }
+
+    function removeSynths(bytes32[] calldata synths, bytes32[] calldata synthKeys) external onlyOwner {
         _systemStatus().requireSystemActive();
 
         for (uint i = 0; i < synths.length; i++) {
             if (_synths.contains(synths[i])) {
                 // Remove it from the the address set lib.
                 _synths.remove(synths[i]);
-
-                // Now tell flexible storage which the debt cache will read from.
-                flexibleStorage().setBoolValue(
-                    CONTRACT_NAME,
-                    keccak256(abi.encodePacked(COLLATERAL_SYNTHS, _synth(synths[i]).currencyKey())),
-                    false
-                );
+                delete synthsByKey[synthKeys[i]];
 
                 emit SynthRemoved(synths[i]);
             }
@@ -391,6 +402,24 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         }
     }
 
+    function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver) external view returns (bool) {
+        if (_shortableSynths.elements.length != requiredSynthNamesInResolver.length) {
+            return false;
+        }
+
+        for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
+            bytes32 synthName = requiredSynthNamesInResolver[i];
+            if (!_shortableSynths.contains(requiredSynthNamesInResolver[i])) {
+                return false;
+            }
+            if (synthToInverseSynth[synthName] == 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     function removeShortableSynths(bytes32[] calldata synths) external onlyOwner {
         _systemStatus().requireSystemActive();
 
@@ -408,18 +437,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
 
                 emit ShortableSynthRemoved(synths[i]);
             }
-        }
-    }
-
-    // Call this after adding synths to the long side.
-    function addSynthsToFlexibleStorage() external onlyOwner {
-        for (uint i = 0; i < _synths.elements.length; i++) {
-            // Now tell flexible storage which the debt cache will read from.
-            flexibleStorage().setBoolValue(
-                CONTRACT_NAME,
-                keccak256(abi.encodePacked(COLLATERAL_SYNTHS, _synth(_synths.elements[i]).currencyKey())),
-                true
-            );
         }
     }
 
