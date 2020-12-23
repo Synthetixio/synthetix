@@ -168,7 +168,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		describe(`when using ${type} to deposit ${amountToDeposit.toString()} ${collateralCurrency} and borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
 			let tx;
-			let issueFeeRate;
 
 			before('check network', async function() {
 				if (network === 'local' && type === 'CollateralErc20') {
