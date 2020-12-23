@@ -1996,7 +1996,9 @@ const deploy = async ({
 			expected: input => input,
 			write: 'addShortableSynths',
 			writeArg: [
-				collateralManagerShorts.map(({ long, short }) => [`Synth${long}`, `Synth${short}`]),
+				collateralManagerShorts.map(({ long, short }) =>
+					[`Synth${long}`, `Synth${short}`].map(toBytes32)
+				),
 				collateralManagerShorts.map(({ long }) => toBytes32(long)),
 			],
 		});
