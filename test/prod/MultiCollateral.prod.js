@@ -1,8 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const { contract, config, artifacts } = require('@nomiclabs/buidler');
-const { wrap } = require('../../index.js');
+const { wrap, knownAccounts } = require('../..');
 const { assert } = require('../contracts/common');
+const { gray } = require('chalk');
 const { toUnit, fastForward } = require('../utils')();
 const Web3 = require('web3');
 const {
@@ -72,7 +73,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			requests: [
 				{ contractName: 'CollateralManagerState' },
 				{ contractName: 'CollateralManager' },
-				{ contractName: 'CollateralErc20' },
+				{ contractName: 'CollateralErc20', abiName: 'CollateralErc20Settable' },
 				{ contractName: 'CollateralEth' },
 				{ contractName: 'CollateralShort' },
 				{ contractName: 'DebtCache' },
@@ -126,14 +127,14 @@ contract('MultiCollateral (prod tests)', accounts => {
 	});
 
 	describe('when using multiple types of loans', () => {
-		itCorrectlyManagesLoansWith({
-			type: 'CollateralEth',
-			collateralCurrency: 'ETH',
-			amountToDeposit: toUnit('2'),
-			borrowCurrency: 'sUSD',
-			amountToBorrow: toUnit('0.5'),
-			issuanceFee: toUnit('0.0005'),
-		});
+		// itCorrectlyManagesLoansWith({
+		// 	type: 'CollateralEth',
+		// 	collateralCurrency: 'ETH',
+		// 	amountToDeposit: toUnit('2'),
+		// 	borrowCurrency: 'sUSD',
+		// 	amountToBorrow: toUnit('0.5'),
+		// 	issuanceFee: toUnit('0.0005'),
+		// });
 
 		itCorrectlyManagesLoansWith({
 			type: 'CollateralErc20',
@@ -144,14 +145,14 @@ contract('MultiCollateral (prod tests)', accounts => {
 			issuanceFee: toUnit('0.01'),
 		});
 
-		itCorrectlyManagesLoansWith({
-			type: 'CollateralShort',
-			collateralCurrency: 'sUSD',
-			amountToDeposit: toUnit('1000'),
-			borrowCurrency: 'sETH',
-			amountToBorrow: toUnit('0.1'),
-			issuanceFee: toUnit('0.0005'),
-		});
+		// itCorrectlyManagesLoansWith({
+		// 	type: 'CollateralShort',
+		// 	collateralCurrency: 'sUSD',
+		// 	amountToDeposit: toUnit('1000'),
+		// 	borrowCurrency: 'sETH',
+		// 	amountToBorrow: toUnit('0.1'),
+		// 	issuanceFee: toUnit('0.0005'),
+		// });
 	});
 
 	function itCorrectlyManagesLoansWith({
@@ -168,12 +169,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		describe(`when using ${type} to deposit ${amountToDeposit.toString()} ${collateralCurrency} and borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
 			let tx;
-
-			before('check network', async function() {
-				if (network === 'local' && type === 'CollateralErc20') {
-					this.skip();
-				}
-			});
 
 			before('retrieve the collateral/state contract pair', async () => {
 				switch (type) {
@@ -193,6 +188,20 @@ contract('MultiCollateral (prod tests)', accounts => {
 				CollateralStateContract = await artifacts
 					.require('CollateralState')
 					.at(await CollateralContract.state());
+			});
+
+			before('deploy auxiliary tokens if needed', async () => {
+				if (type === 'CollateralErc20' && network === 'local') {
+					const underlying = await CollateralContract.underlyingContract();
+					console.log('underlying', underlying);
+					if (underlying === '0x0000000000000000000000000000000000000000') {
+						console.log(gray(`      > Deploying mock renBTC...`));
+						const token = await artifacts.require('MockToken').new('renBTC', 'renBTC', 8);
+						console.log(token.address);
+
+						await CollateralContract.setUnderlyingContract(token.address);
+					}
+				}
 			});
 
 			describe('when opening the loan', () => {
@@ -215,9 +224,16 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 				before('open the loan', async () => {
 					if (type === 'CollateralErc20') {
-						const renbtc = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
-						const renHolder = '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E';
-						const renBTC = await artifacts.require('ERC20').at(renbtc);
+						const underlyingToken = await CollateralErc20.underlyingContract();
+						const renBTC = await artifacts.require('ERC20').at(underlyingToken);
+
+						const renHolder =
+							network === 'local'
+								? owner
+								: knownAccounts[network].find(a => a.name === 'renBTCWallet').address;
+						if (!renHolder) {
+							throw new Error(`No known renBTC holder for network ${network}`);
+						}
 
 						// give them more, so they can deposit after opening
 						const transferAmount = Web3.utils.toBN('200000000');
@@ -317,7 +333,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 					before('deposit', async () => {
 						if (type === 'CollateralErc20' || type === 'CollateralShort') {
-							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('1000'), {
+							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('100000000'), {
 								from: user1,
 							});
 						} else {

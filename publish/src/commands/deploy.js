@@ -1301,11 +1301,13 @@ const deploy = async ({
 				throw new Error('renBTC address is not known');
 			}
 
-			RENBTC_ADDRESS = '0x0000000000000000000000000000000000000001';
+			// Use a placeholder address, to be re-assigned in testing.
+			RENBTC_ADDRESS = '0x0000000000000000000000000000000000000000';
 		}
 
 		collateralErc20 = await deployer.deployContract({
 			name: 'CollateralErc20',
+			source: network === 'local' ? 'CollateralErc20Settable' : 'CollateralErc20',
 			args: [
 				addressOf(collateralStateErc20),
 				account,
