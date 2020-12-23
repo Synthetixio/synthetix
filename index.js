@@ -110,19 +110,19 @@ const defaults = {
 		BASE_SHORT_RATE: w3utils.toWei('0.0005'),
 	},
 	COLLATERAL_ETH: {
-		SYNTHS: ['SynthsUSD', 'SynthsETH'],
+		SYNTHS: ['sUSD', 'sETH'],
 		MIN_CRATIO: w3utils.toWei('1.3'),
 		MIN_COLLATERAL: w3utils.toWei('2'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
 	},
 	COLLATERAL_RENBTC: {
-		SYNTHS: ['SynthsUSD', 'SynthsBTC'],
+		SYNTHS: ['sUSD', 'sBTC'],
 		MIN_CRATIO: w3utils.toWei('1.3'),
 		MIN_COLLATERAL: w3utils.toWei('0.05'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
 	},
 	COLLATERAL_SHORT: {
-		SYNTHS: ['SynthsBTC', 'SynthsETH'],
+		SYNTHS: ['sBTC', 'sETH'],
 		MIN_CRATIO: w3utils.toWei('1.2'),
 		MIN_COLLATERAL: w3utils.toWei('1000'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
