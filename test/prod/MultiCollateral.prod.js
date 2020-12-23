@@ -3,8 +3,7 @@ const path = require('path');
 const { contract, config, artifacts } = require('@nomiclabs/buidler');
 const { wrap, knownAccounts } = require('../..');
 const { assert } = require('../contracts/common');
-const { gray } = require('chalk');
-const { toUnit, fastForward } = require('../utils')();
+const { toUnit, multiplyDecimalRound, fastForward } = require('../utils')();
 const Web3 = require('web3');
 const {
 	detectNetworkName,
@@ -73,7 +72,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			requests: [
 				{ contractName: 'CollateralManagerState' },
 				{ contractName: 'CollateralManager' },
-				{ contractName: 'CollateralErc20', abiName: 'CollateralErc20Settable' },
+				{ contractName: 'CollateralErc20' },
 				{ contractName: 'CollateralEth' },
 				{ contractName: 'CollateralShort' },
 				{ contractName: 'DebtCache' },
@@ -91,7 +90,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			network,
 		});
 		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
+			amount: toUnit('1100'),
 			account: user1,
 			fromAccount: owner,
 			network,
@@ -133,7 +132,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('2'),
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
-			issuanceFee: toUnit('0.0005'),
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -142,7 +140,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: Web3.utils.toBN('100000000'), // 1 renBTC (renBTC uses 8 decimals)
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
-			issuanceFee: toUnit('0.0005'),
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -150,8 +147,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			collateralCurrency: 'sUSD',
 			amountToDeposit: toUnit('1000'),
 			borrowCurrency: 'sETH',
-			amountToBorrow: toUnit('0.1'),
-			issuanceFee: toUnit('0.0005'),
+			amountToBorrow: toUnit('0.01'),
 		});
 	});
 
@@ -161,7 +157,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 		amountToDeposit,
 		borrowCurrency,
 		amountToBorrow,
-		issuanceFee,
 	}) {
 		let CollateralContract, CollateralStateContract;
 
@@ -190,18 +185,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 					.at(await CollateralContract.state());
 			});
 
-			before('deploy auxiliary tokens if needed', async () => {
-				if (type === 'CollateralErc20' && network === 'local') {
-					const underlying = await CollateralContract.underlyingContract();
-					if (underlying === '0x0000000000000000000000000000000000000000') {
-						console.log(gray(`      > Deploying mock renBTC...`));
-						const token = await artifacts.require('MockToken').new('renBTC', 'renBTC', 8);
-
-						await CollateralContract.setUnderlyingContract(token.address);
-					}
-				}
-			});
-
 			describe('when opening the loan', () => {
 				let loan, loanId;
 				let totalLoansBefore,
@@ -209,9 +192,11 @@ contract('MultiCollateral (prod tests)', accounts => {
 					totalLongBefore,
 					shortBefore,
 					totalShortBefore,
+					issueFeeRate,
 					systemDebtBefore;
 
 				before('record current values', async () => {
+					issueFeeRate = await CollateralContract.issueFeeRate();
 					totalLoansBefore = await CollateralManagerState.totalLoans();
 					longBefore = await CollateralManager.long(borrowCurrencyBytes);
 					totalLongBefore = (await CollateralManager.totalLong()).susdValue;
@@ -281,7 +266,10 @@ contract('MultiCollateral (prod tests)', accounts => {
 					assert.bnEqual(event.args.id, totalLoansBefore.add(Web3.utils.toBN(1)));
 					assert.bnEqual(event.args.amount, amountToBorrow);
 					assert.equal(event.args.currency, borrowCurrencyBytes);
-					assert.bnEqual(event.args.issuanceFee, issuanceFee);
+					assert.bnEqual(
+						event.args.issuanceFee,
+						multiplyDecimalRound(amountToBorrow, issueFeeRate)
+					);
 
 					if (type === 'CollateralErc20') {
 						// Account for renBTC scaling
