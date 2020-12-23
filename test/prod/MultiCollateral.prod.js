@@ -150,7 +150,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('1000'),
 			borrowCurrency: 'sETH',
 			amountToBorrow: toUnit('0.1'),
-			issuanceFee: toUnit('0.0001'),
+			issuanceFee: toUnit('0.0005'),
 		});
 	});
 
