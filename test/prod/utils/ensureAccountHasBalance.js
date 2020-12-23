@@ -15,7 +15,7 @@ function getUser({ network, deploymentPath, user }) {
 }
 
 async function ensureAccountHasEther({ network, deploymentPath, amount, account }) {
-	console.log(gray(`  > Ensuring ${account} has Ether...`));
+	console.log(gray(`    > Ensuring ${account} has Ether...`));
 
 	const fromAccount =
 		network === 'mainnet'
@@ -37,7 +37,7 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 }
 
 async function ensureAccountHasSNX({ network, deploymentPath, amount, account }) {
-	console.log(gray(`  > Ensuring ${account} has SNX...`));
+	console.log(gray(`    > Ensuring ${account} has SNX...`));
 
 	const fromAccount =
 		network === 'mainnet'
@@ -63,7 +63,7 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 }
 
 async function ensureAccountHassUSD({ network, deploymentPath, amount, account }) {
-	console.log(gray(`  > Ensuring ${account} has sUSD...`));
+	console.log(gray(`    > Ensuring ${account} has sUSD...`));
 
 	const fromAccount =
 		network === 'mainnet'
@@ -82,8 +82,8 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 	});
 
 	const balance = toBN(await sUSD.transferableSynths(fromAccount));
+	const snxToTransfer = amount.mul(toBN(10));
 	if (balance.lt(amount)) {
-		const snxToTransfer = amount.mul(toBN('50'));
 		await ensureAccountHasSNX({
 			network,
 			deploymentPath,
@@ -107,7 +107,7 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 }
 
 async function ensureAccountHassETH({ network, deploymentPath, amount, account }) {
-	console.log(gray(`  > Ensuring ${account} has sETH...`));
+	console.log(gray(`    > Ensuring ${account} has sETH...`));
 
 	const sUSDAmount = amount.mul(toBN('50'));
 	await ensureAccountHassUSD({ network, deploymentPath, amount: sUSDAmount, account });
