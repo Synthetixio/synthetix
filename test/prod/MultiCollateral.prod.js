@@ -210,10 +210,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 						const underlyingToken = await CollateralErc20.underlyingContract();
 						const renBTC = await artifacts.require('ERC20').at(underlyingToken);
 
-						const renHolder =
-							network === 'local'
-								? owner
-								: knownAccounts[network].find(a => a.name === 'renBTCWallet').address;
+						const altHolder = knownAccounts[network].find(a => a.name === 'renBTCWallet');
+						const renHolder = network === 'local' ? owner : altHolder || owner;
 						if (!renHolder) {
 							throw new Error(`No known renBTC holder for network ${network}`);
 						}
@@ -318,8 +316,12 @@ contract('MultiCollateral (prod tests)', accounts => {
 					});
 
 					before('deposit', async () => {
-						if (type === 'CollateralErc20' || type === 'CollateralShort') {
-							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('100000000'), {
+						if (type === 'CollateralErc20') {
+							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('1000000000'), {
+								from: user1,
+							});
+						} else if (type === 'CollateralShort') {
+							tx = await CollateralContract.deposit(user1, loanId, toUnit('1'), {
 								from: user1,
 							});
 						} else {
@@ -332,7 +334,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 						loan = await CollateralStateContract.getLoan(user1, loanId);
 					});
 
-					it('incrementes the cratio', async () => {
+					it.only('incrementes the cratio', async () => {
 						const cratioAfter = await CollateralContract.collateralRatio(loan);
 
 						assert.bnGt(cratioAfter, cratioBefore);
