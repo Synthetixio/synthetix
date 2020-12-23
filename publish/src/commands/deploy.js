@@ -1951,30 +1951,36 @@ const deploy = async ({
 		});
 
 		// add to the manager.
-
+		const collateralManagerSynths = ['sUSD', 'sBTC', 'sETH'];
 		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'areSynthsAndCurrenciesSet',
 			readArg: [
-				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
-				collateralShortSynths.map(toBytes32),
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
 			],
-			// expected: input => input !== '0', // only change if zero
+			expected: input => input,
 			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32)],
+			writeArg: [
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
+			],
 		});
 
+		const collateralManagerShortBTC = ['SynthsBTC', 'SynthiBTC'];
+		const collateralManagerShortETH = ['SynthsETH', 'SynthiETH'];
 		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
-			read: 'collateralManager',
-			// expected: input => input !== '0', // only change if zero
+			read: 'areShortableSynthsSet',
+			readArg: [['SynthsBTC', 'SynthsETH'].map(toBytes32)],
+			expected: input => input,
 			write: 'addShortableSynths',
 			writeArg: [
-				[['SynthsBTC', 'SynthiBTC'].map(toBytes32), ['SynthsETH', 'SynthiETH'].map(toBytes32)],
+				[collateralManagerShortBTC.map(toBytes32), collateralManagerShortETH.map(toBytes32)],
 			],
 		});
 

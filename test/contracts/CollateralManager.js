@@ -369,7 +369,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'removeSynths',
 				'addShortableSynths',
 				'removeShortableSynths',
-				'addSynthsToFlexibleStorage',
 				'addShortableSynthsToState',
 				'updateBorrowRates',
 				'updateShortRates',
