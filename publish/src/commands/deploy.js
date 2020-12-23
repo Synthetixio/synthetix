@@ -1463,6 +1463,7 @@ const deploy = async ({
 				gasLimit: 7e6, // higher gas required
 				contract: `AddressResolver`,
 				target: addressResolver,
+				publiclyCallable: true, // does not require owner
 				write: 'rebuildCaches',
 				writeArg: [chunk],
 			});
@@ -1472,6 +1473,7 @@ const deploy = async ({
 			gasLimit: 10e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
+			publiclyCallable: true, // does not require owner
 			write: 'rebuildCaches',
 			writeArg: [contractsToRebuildCache],
 		});
@@ -1485,6 +1487,7 @@ const deploy = async ({
 			target,
 			read: 'isResolverCached',
 			expected: input => input,
+			publiclyCallable: true, // does not require owner
 			write: 'rebuildCache',
 		});
 	}
