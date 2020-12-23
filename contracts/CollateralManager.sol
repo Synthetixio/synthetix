@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
-import "./MixinSystemSettings.sol";
+import "./MixinResolver.sol";
 import "./interfaces/ICollateralManager.sol";
 
 // Libraries
@@ -21,7 +21,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ISynth.sol";
 
 
-contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSettings {
+contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -85,7 +85,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         uint _maxDebt,
         uint _baseBorrowRate,
         uint _baseShortRate
-    ) public Owned(_owner) Pausable() MixinSystemSettings(_resolver) {
+    ) public Owned(_owner) Pausable() MixinResolver(_resolver) {
         owner = msg.sender;
         state = _state;
 
@@ -99,12 +99,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](3);
-        newAddresses[0] = CONTRACT_ISSUER;
-        newAddresses[1] = CONTRACT_EXRATES;
-        newAddresses[2] = CONTRACT_SYSTEMSTATUS;
-        bytes32[] memory staticAddresses = combineArrays(newAddresses, existingAddresses);
+        bytes32[] memory staticAddresses = new bytes32[](3);
+        staticAddresses[0] = CONTRACT_ISSUER;
+        staticAddresses[1] = CONTRACT_EXRATES;
+        staticAddresses[2] = CONTRACT_SYSTEMSTATUS;
 
         // we want to cache the name of the synth and the name of its corresponding iSynth
         bytes32[] memory shortAddresses;

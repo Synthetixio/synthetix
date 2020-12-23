@@ -84,7 +84,7 @@ contract EmptyCollateralManager is ICollateralManager {
         return false;
     }
 
-    function removeSynths(bytes32[] calldata) external {}
+    function removeSynths(bytes32[] calldata, bytes32[] calldata) external;
 
     function addShortableSynths(bytes32[2][] calldata) external {}
 

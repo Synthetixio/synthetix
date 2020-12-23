@@ -2009,8 +2009,8 @@ const deploy = async ({
 		await runStep({
 			contract: 'CollateralEth',
 			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
 			writeArg: (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
 		});
@@ -2018,8 +2018,8 @@ const deploy = async ({
 		await runStep({
 			contract: 'CollateralErc20',
 			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
 			writeArg: (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
 		});
@@ -2027,8 +2027,8 @@ const deploy = async ({
 		await runStep({
 			contract: 'CollateralShort',
 			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
 			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
 		});
