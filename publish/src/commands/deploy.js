@@ -1453,6 +1453,25 @@ const deploy = async ({
 		}
 	}
 
+	const addressChunkSize = useOvm ? 12 : 20;
+	console.log(
+		gray(
+			`There are ${
+				contractsToRebuildCache.length
+			} addreseses to cache: \n${contractsToRebuildCache.join('\n')}`
+		)
+	);
+	for (let i = 0; i < contractsToRebuildCache.length; i += addressChunkSize) {
+		const chunk = contractsToRebuildCache.slice(i, i + addressChunkSize);
+		await runStep({
+			gasLimit: 7e6, // higher gas required
+			contract: `AddressResolver`,
+			target: addressResolver,
+			write: 'rebuildCaches',
+			writeArg: [chunk],
+		});
+	}
+
 	if (useOvm) {
 		// NOTE: If using OVM, split the array of addresses to cache,
 		// since things spend signifficantly more gas in OVM
