@@ -21,7 +21,7 @@ const CollateralManager = artifacts.require(`CollateralManager`);
 const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
+contract('CollateralEth @ovm-skip', async accounts => {
 	const YEAR = 31556926;
 	const INTERACTION_DELAY = 300;
 
@@ -168,15 +168,19 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 
 		await manager.addCollaterals([ceth.address], { from: owner });
 
-		await ceth.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsETH')], { from: owner });
-		await ceth.rebuildCache();
+		await ceth.addSynths(
+			['SynthsUSD', 'SynthsETH'].map(toBytes32),
+			['sUSD', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
 
-		await ceth.setCurrencies({ from: owner });
-
-		await manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsETH')], { from: owner });
+		await manager.addSynths(
+			['SynthsUSD', 'SynthsETH'].map(toBytes32),
+			['sUSD', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
 		// rebuild the cache to add the synths we need.
 		await manager.rebuildCache();
-		await manager.addSynthsToFlexibleStorage({ from: owner });
 
 		await ceth.setIssueFeeRate(toUnit('0.001'), { from: owner });
 	};
@@ -624,7 +628,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			it('should revert if they send 0 collateral', async () => {
 				await assert.revert(
 					ceth.open(onesUSD, sUSD, { value: oneETH, from: account1 }),
-					'Not enough collateral to create a loan'
+					'Not enough collateral to open'
 				);
 			});
 

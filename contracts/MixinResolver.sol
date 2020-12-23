@@ -41,7 +41,7 @@ contract MixinResolver {
     // Note: this function is public not external in order for it to be overridden and invoked via super in subclasses
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {}
 
-    function rebuildCache() external {
+    function rebuildCache() public {
         bytes32[] memory requiredAddresses = resolverAddressesRequired();
         // The resolver must call this function whenver it updates its state
         for (uint i = 0; i < requiredAddresses.length; i++) {

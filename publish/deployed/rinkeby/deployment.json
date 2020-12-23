@@ -14,8 +14,8 @@
 			"address": "0x8a8DeBDF5Ca68d381dE99244AAEa8b906Daf78A7",
 			"source": "ExchangeRates",
 			"link": "https://rinkeby.etherscan.io/address/0x8a8DeBDF5Ca68d381dE99244AAEa8b906Daf78A7",
-			"timestamp": null,
-			"txn": "",
+			"timestamp": "2020-12-22T20:29:27.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x3210610e17d56a9195cfc2f6f994e99604f92bea2e3d62ca53179b8ad37c8629",
 			"network": "rinkeby"
 		},
 		"ProxyFeePool": {

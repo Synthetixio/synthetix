@@ -1393,8 +1393,8 @@ const deploy = async ({
 			contract: `AddressResolver`,
 			target: addressResolver,
 			read: 'areAddressesImported',
-			expected: input => input,
 			readArg: addressArgs,
+			expected: input => input,
 			write: 'importAddresses',
 			writeArg: addressArgs,
 		});
@@ -1902,135 +1902,108 @@ const deploy = async ({
 
 	if (!useOvm) {
 		console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
+		const collateralsArg = [collateralEth, collateralErc20, collateralShort].map(addressOf);
 		await runStep({
 			contract: 'CollateralManager',
 			target: collateralManager,
+			read: 'hasAllCollaterals',
+			readArg: [collateralsArg],
+			expected: input => input,
 			write: 'addCollaterals',
-			writeArg: [[collateralEth, collateralErc20, collateralShort].map(addressOf)],
+			writeArg: [collateralsArg],
 		});
 
+		const collateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
 		await runStep({
 			contract: 'CollateralEth',
-			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynths',
-			writeArg: [(await getDeployParameter('COLLATERAL_ETH'))['SYNTHS'].map(toBytes32)],
-		});
-
-		await runStep({
-			contract: 'CollateralErc20',
-			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynths',
-			writeArg: [(await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS'].map(toBytes32)],
-		});
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynths',
-			writeArg: [(await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS'].map(toBytes32)],
-		});
-
-		await runStep({
-			contract: 'CollateralEth',
-			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralEth',
-			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'setCurrencies',
-		});
-
-		await runStep({
-			contract: 'CollateralErc20',
-			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralErc20',
-			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'setCurrencies',
-		});
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'setCurrencies',
-		});
-
-		// add to the manager.
-
-		await runStep({
 			gasLimit: 1e6,
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			target: collateralEth,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralEthSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralEthSynths.map(toBytes32),
+			],
+			expected: input => input,
 			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32)],
-		});
-
-		await runStep({
-			gasLimit: 1e6,
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addShortableSynths',
 			writeArg: [
-				[['SynthsBTC', 'SynthiBTC'].map(toBytes32), ['SynthsETH', 'SynthiETH'].map(toBytes32)],
+				collateralEthSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralEthSynths.map(toBytes32),
 			],
 		});
 
+		const collateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
+		await runStep({
+			contract: 'CollateralErc20',
+			gasLimit: 1e6,
+			target: collateralErc20,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
+				collateralErc20Synths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
+				collateralErc20Synths.map(toBytes32),
+			],
+		});
+
+		const collateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
+		await runStep({
+			contract: 'CollateralShort',
+			gasLimit: 1e6,
+			target: collateralShort,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralShortSynths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralShortSynths.map(toBytes32),
+			],
+		});
+
+		// add to the manager.
+		const collateralManagerSynths = (await getDeployParameter('COLLATERAL_MANAGER'))['SYNTHS'];
 		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
+			],
 		});
 
+		const collateralManagerShorts = (await getDeployParameter('COLLATERAL_MANAGER'))['SHORTS'];
 		await runStep({
+			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynthsToFlexibleStorage',
-		});
-
-		await runStep({
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addShortableSynthsToState',
+			read: 'areShortableSynthsSet',
+			readArg: [
+				collateralManagerShorts.map(({ long }) => toBytes32(`Synth${long}`)),
+				collateralManagerShorts.map(({ long }) => toBytes32(long)),
+			],
+			expected: input => input,
+			write: 'addShortableSynths',
+			writeArg: [
+				collateralManagerShorts.map(({ long, short }) =>
+					[`Synth${long}`, `Synth${short}`].map(toBytes32)
+				),
+				collateralManagerShorts.map(({ long }) => toBytes32(long)),
+			],
 		});
 
 		await runStep({
@@ -2045,8 +2018,8 @@ const deploy = async ({
 		await runStep({
 			contract: 'CollateralEth',
 			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
 			writeArg: (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
 		});
@@ -2054,8 +2027,8 @@ const deploy = async ({
 		await runStep({
 			contract: 'CollateralErc20',
 			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
 			writeArg: (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
 		});
@@ -2063,8 +2036,8 @@ const deploy = async ({
 		await runStep({
 			contract: 'CollateralShort',
 			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
 			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
 		});
