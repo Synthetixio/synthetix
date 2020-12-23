@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const { contract, config, artifacts } = require('@nomiclabs/buidler');
-const { wrap } = require('../../index.js');
+const { wrap, knownAccounts } = require('../..');
 const { assert } = require('../contracts/common');
-const { toUnit, fastForward } = require('../utils')();
+const { toUnit, multiplyDecimalRound, fastForward } = require('../utils')();
 const Web3 = require('web3');
 const {
 	detectNetworkName,
@@ -90,7 +90,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			network,
 		});
 		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
+			amount: toUnit('1100'),
 			account: user1,
 			fromAccount: owner,
 			network,
@@ -132,7 +132,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('2'),
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
-			issuanceFee: toUnit('0.0005'),
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -140,8 +139,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			collateralCurrency: 'renBTC',
 			amountToDeposit: Web3.utils.toBN('100000000'), // 1 renBTC (renBTC uses 8 decimals)
 			borrowCurrency: 'sUSD',
-			amountToBorrow: toUnit('10'),
-			issuanceFee: toUnit('0.01'),
+			amountToBorrow: toUnit('0.5'),
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -149,8 +147,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			collateralCurrency: 'sUSD',
 			amountToDeposit: toUnit('1000'),
 			borrowCurrency: 'sETH',
-			amountToBorrow: toUnit('0.1'),
-			issuanceFee: toUnit('0.0005'),
+			amountToBorrow: toUnit('0.01'),
 		});
 	});
 
@@ -160,7 +157,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 		amountToDeposit,
 		borrowCurrency,
 		amountToBorrow,
-		issuanceFee,
 	}) {
 		let CollateralContract, CollateralStateContract;
 
@@ -168,12 +164,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		describe(`when using ${type} to deposit ${amountToDeposit.toString()} ${collateralCurrency} and borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
 			let tx;
-
-			before('check network', async function() {
-				if (network === 'local' && type === 'CollateralErc20') {
-					this.skip();
-				}
-			});
 
 			before('retrieve the collateral/state contract pair', async () => {
 				switch (type) {
@@ -202,9 +192,11 @@ contract('MultiCollateral (prod tests)', accounts => {
 					totalLongBefore,
 					shortBefore,
 					totalShortBefore,
+					issueFeeRate,
 					systemDebtBefore;
 
 				before('record current values', async () => {
+					issueFeeRate = await CollateralContract.issueFeeRate();
 					totalLoansBefore = await CollateralManagerState.totalLoans();
 					longBefore = await CollateralManager.long(borrowCurrencyBytes);
 					totalLongBefore = (await CollateralManager.totalLong()).susdValue;
@@ -215,9 +207,16 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 				before('open the loan', async () => {
 					if (type === 'CollateralErc20') {
-						const renbtc = '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D';
-						const renHolder = '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E';
-						const renBTC = await artifacts.require('ERC20').at(renbtc);
+						const underlyingToken = await CollateralErc20.underlyingContract();
+						const renBTC = await artifacts.require('ERC20').at(underlyingToken);
+
+						const renHolder =
+							network === 'local'
+								? owner
+								: knownAccounts[network].find(a => a.name === 'renBTCWallet').address;
+						if (!renHolder) {
+							throw new Error(`No known renBTC holder for network ${network}`);
+						}
 
 						// give them more, so they can deposit after opening
 						const transferAmount = Web3.utils.toBN('200000000');
@@ -267,7 +266,10 @@ contract('MultiCollateral (prod tests)', accounts => {
 					assert.bnEqual(event.args.id, totalLoansBefore.add(Web3.utils.toBN(1)));
 					assert.bnEqual(event.args.amount, amountToBorrow);
 					assert.equal(event.args.currency, borrowCurrencyBytes);
-					assert.bnEqual(event.args.issuanceFee, issuanceFee);
+					assert.bnEqual(
+						event.args.issuanceFee,
+						multiplyDecimalRound(amountToBorrow, issueFeeRate)
+					);
 
 					if (type === 'CollateralErc20') {
 						// Account for renBTC scaling

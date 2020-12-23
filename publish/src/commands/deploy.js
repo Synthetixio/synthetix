@@ -1301,11 +1301,18 @@ const deploy = async ({
 				throw new Error('renBTC address is not known');
 			}
 
-			RENBTC_ADDRESS = '0x0000000000000000000000000000000000000001';
+			// On local, deploy a mock renBTC token to use as the underlying in CollateralErc20
+			const renBTC = await deployer.deployContract({
+				name: 'MockToken',
+				args: ['renBTC', 'renBTC', 8],
+			});
+
+			RENBTC_ADDRESS = renBTC.options.address;
 		}
 
 		collateralErc20 = await deployer.deployContract({
 			name: 'CollateralErc20',
+			source: 'CollateralErc20',
 			args: [
 				addressOf(collateralStateErc20),
 				account,

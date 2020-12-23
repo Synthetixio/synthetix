@@ -442,5 +442,8 @@
 	},
 	"SynthsNIKKEI": {
 		"deploy": true
+	},
+	"MockToken": {
+		"deploy": true
 	}
 }
