@@ -27,7 +27,7 @@
 		"test:prod:gas": "buidler test:prod --gas --network localhost --optimizer --gas-output-file test-gas-used-prod.log",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",
-		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 90000\""
+		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 120000\""
 	},
 	"husky": {
 		"hooks": {
