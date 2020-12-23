@@ -104,6 +104,30 @@ const defaults = {
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_MESSAGE_GAS_LIMIT: `${3e6}`,
+	COLLATERAL_MANAGER: {
+		MAX_DEBT: w3utils.toWei('100000000'),
+		BASE_BORROW_RATE: w3utils.toWei('0.0005'),
+		BASE_SHORT_RATE: w3utils.toWei('0.0005'),
+	},
+	COLLATERAL_ETH: {
+		SYNTHS: ['SynthsUSD', 'SynthsETH'],
+		MIN_CRATIO: w3utils.toWei('1.3'),
+		MIN_COLLATERAL: w3utils.toWei('2'),
+		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
+	},
+	COLLATERAL_RENBTC: {
+		SYNTHS: ['SynthsUSD', 'SynthsBTC'],
+		MIN_CRATIO: w3utils.toWei('1.3'),
+		MIN_COLLATERAL: w3utils.toWei('0.05'),
+		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
+	},
+	COLLATERAL_SHORT: {
+		SYNTHS: ['SynthsBTC', 'SynthsETH'],
+		MIN_CRATIO: w3utils.toWei('1.2'),
+		MIN_COLLATERAL: w3utils.toWei('1000'),
+		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
+		INTERACTION_DELAY: '3600', // 1 hour in secs
+	},
 };
 
 /**

@@ -296,20 +296,18 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     }
 
     function setBaseBorrowRate(uint _baseBorrowRate) public onlyOwner {
-        require(_baseBorrowRate >= 0, "Must be greater than or equal to 0");
         baseBorrowRate = _baseBorrowRate;
         emit BaseBorrowRateUpdated(baseBorrowRate);
     }
 
     function setBaseShortRate(uint _baseShortRate) public onlyOwner {
-        require(_baseShortRate >= 0, "Must be greater than or equal to 0");
         baseShortRate = _baseShortRate;
         emit BaseShortRateUpdated(baseShortRate);
     }
 
     /* ---------- LOANS ---------- */
 
-    function getLoanId() external onlyCollateral returns (uint id) {
+    function getNewLoanId() external onlyCollateral returns (uint id) {
         id = state.incrementTotalLoans();
     }
 

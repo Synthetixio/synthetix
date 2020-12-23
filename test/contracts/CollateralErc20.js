@@ -33,9 +33,9 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 	const sETH = toBytes32('sETH');
 	const sBTC = toBytes32('sBTC');
 
-	const oneRenBTC = 100000000;
-	const twoRenBTC = 200000000;
-	const fiveRenBTC = 500000000;
+	const oneRenBTC = web3.utils.toBN('100000000');
+	const twoRenBTC = web3.utils.toBN('200000000');
+	const fiveRenBTC = web3.utils.toBN('500000000');
 
 	const onesUSD = toUnit(1);
 	const tensUSD = toUnit(10);
@@ -236,8 +236,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		await manager.addSynthsToFlexibleStorage({ from: owner });
 
 		// Issue ren and set allowance
-		await issueRenBTCtoAccount(toUnit(100), account1);
-		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
+		await issueRenBTCtoAccount(100 * 1e8, account1);
+		await renBTC.approve(cerc20.address, 100 * 1e8, { from: account1 });
 	};
 
 	before(async () => {
@@ -265,6 +265,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 		assert.bnEqual(await cerc20.minCratio(), toUnit(1.5));
 		assert.bnEqual(await cerc20.minCollateral(), toUnit(0.1));
 		assert.equal(await cerc20.underlyingContract(), renBTC.address);
+		assert.bnEqual(await cerc20.underlyingContractDecimals(), await renBTC.decimals());
 	});
 
 	it('should ensure only expected functions are mutative', async () => {
@@ -369,18 +370,40 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 	});
 
 	describe('scaling collateral test', async () => {
-		it('should convert correctly', async () => {
-			// $150 worth of btc should allow 100 sUSD to be issued.
+		it('should scale up 1e8 to 1e18 correctly', async () => {
+			// Scaling up 1 renBTC to 18 decimals works.
 			const scaledCollateral = await cerc20.scaleUpCollateral(oneRenBTC);
 
 			assert.bnEqual(scaledCollateral, toUnit(1));
 		});
 
-		it('should convert down correctly', async () => {
-			// $150 worth of btc should allow 100 sUSD to be issued.
-			const scaledCollateral = await cerc20.scaleDownCollateral(toUnit(1));
+		it('should scaled up 1.23456789 correctly', async () => {
+			// Scaling up 1.2345678 renBTC to 8 decimals works.
+			const bal = 123456789;
+			const scaledCollateral = await cerc20.scaleUpCollateral(bal);
+
+			assert.bnEqual(scaledCollateral, toUnit('1.23456789'));
+		});
+
+		it('should scale down 1e18 to 1e8 correctly', async () => {
+			// Scaling down 1.2345678 renBTC to 8 decimals works.
+			const scaledCollateral = await cerc20.scaleDownCollateral(toUnit('1'));
 
 			assert.bnEqual(scaledCollateral, oneRenBTC);
+		});
+
+		it('should scale down 1.23456789 correctly', async () => {
+			// Scaling down 1 renBTC to 8 decimals works.
+			const scaledCollateral = await cerc20.scaleDownCollateral(toUnit('1.23456789'));
+
+			assert.bnEqual(scaledCollateral, 123456789);
+		});
+
+		it('if more than 8 decimals come back, it truncates and does not round', async () => {
+			// If we round, we might run out of ren in the contract.
+			const scaledCollateral = await cerc20.scaleDownCollateral(toUnit('1.23456789999999999'));
+
+			assert.bnEqual(scaledCollateral, 123456789);
 		});
 	});
 
@@ -620,6 +643,25 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				});
 			});
 		});
+
+		describe('setCanOpenLoans', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						cerc20.setCanOpenLoans(false, { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await cerc20.setCanOpenLoans(false, { from: owner });
+				});
+				it('should update the manager', async () => {
+					assert.isFalse(await cerc20.canOpenLoans());
+				});
+			});
+		});
 	});
 
 	// // LOAN INTERACTIONS
@@ -709,7 +751,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 				loan = await state.getLoan(account1, id);
 
-				issueFeeRate = await cerc20.issueFeeRate();
+				issueFeeRate = new BN(await cerc20.issueFeeRate());
 				issueFee = fiveHundredSUSD.mul(issueFeeRate);
 			});
 
@@ -851,6 +893,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 	});
 
 	describe('withdraws', async () => {
+		let accountRenBalBefore;
+
 		beforeEach(async () => {
 			loan = await cerc20.open(twoRenBTC, oneHundredsUSD, sUSD, {
 				from: account1,
@@ -904,6 +948,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 		describe('should allow withdraws', async () => {
 			beforeEach(async () => {
+				accountRenBalBefore = await renBTC.balanceOf(account1);
+
 				await cerc20.withdraw(id, oneRenBTC, {
 					from: account1,
 				});
@@ -915,6 +961,12 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 				const expectedCollateral = toUnit(2).sub(toUnit(1));
 
 				assert.bnEqual(loan.collateral, expectedCollateral);
+			});
+
+			it('should transfer the withdrawn collateral to the borrower', async () => {
+				const bal = await renBTC.balanceOf(account1);
+
+				assert.bnEqual(bal, accountRenBalBefore.add(oneRenBTC));
 			});
 		});
 	});
@@ -1218,8 +1270,10 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 	});
 
 	describe('closing', async () => {
+		let accountRenBalBefore;
+
 		beforeEach(async () => {
-			// let accountRenBalBefore = await renBTC.balanceOf(account1);
+			accountRenBalBefore = await renBTC.balanceOf(account1);
 
 			// make a loan here so we have a valid ID to pass to the blockers and reverts.
 			tx = await cerc20.open(twoRenBTC, oneHundredsUSD, sUSD, {
@@ -1288,8 +1342,8 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			});
 
 			it('should transfer the collateral back to the borrower', async () => {
-				// const bal = await renBTC.balanceOf(account1);
-				// assert.bnEqual(bal, expected);
+				const bal = await renBTC.balanceOf(account1);
+				assert.bnEqual(bal, accountRenBalBefore);
 			});
 
 			it('should emit the event', async () => {
