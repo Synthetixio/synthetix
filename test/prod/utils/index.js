@@ -9,7 +9,7 @@ const {
 const { exchangeSynths } = require('./exchangeSynths');
 const { readSetting, writeSetting } = require('./systemSettings');
 const { skipWaitingPeriod, skipStakeTime } = require('./skipWaiting');
-const { simulateExchangeRates } = require('./exchangeRates');
+const { simulateExchangeRates, avoidStaleRates } = require('./exchangeRates');
 const { takeDebtSnapshot } = require('./debtSnapshot');
 const { mockOptimismBridge } = require('./optimismBridge');
 const { implementsVirtualSynths } = require('./virtualSynths');
@@ -29,6 +29,7 @@ module.exports = {
 	skipWaitingPeriod,
 	skipStakeTime,
 	simulateExchangeRates,
+	avoidStaleRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsVirtualSynths,

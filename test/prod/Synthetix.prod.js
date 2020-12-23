@@ -15,6 +15,7 @@ const {
 	skipWaitingPeriod,
 	skipStakeTime,
 	writeSetting,
+	avoidStaleRates,
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
@@ -42,13 +43,7 @@ contract('Synthetix (prod tests)', accounts => {
 
 		owner = getUsers({ network, user: 'owner' }).address;
 
-		await writeSetting({
-			setting: 'setRateStalePeriod',
-			value: '1000000',
-			owner,
-			network,
-			deploymentPath,
-		});
+		await avoidStaleRates({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });

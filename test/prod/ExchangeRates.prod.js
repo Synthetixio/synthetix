@@ -14,7 +14,7 @@ const {
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
-	writeSetting,
+	avoidStaleRates,
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
@@ -35,13 +35,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
-		await writeSetting({
-			setting: 'setRateStalePeriod',
-			value: '1000000',
-			owner,
-			network,
-			deploymentPath,
-		});
+		await avoidStaleRates({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
