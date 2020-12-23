@@ -127,32 +127,32 @@ contract('MultiCollateral (prod tests)', accounts => {
 	});
 
 	describe('when using multiple types of loans', () => {
-		// itCorrectlyManagesLoansWith({
-		// 	type: 'CollateralEth',
-		// 	collateralCurrency: 'ETH',
-		// 	amountToDeposit: toUnit('2'),
-		// 	borrowCurrency: 'sUSD',
-		// 	amountToBorrow: toUnit('0.5'),
-		// 	issuanceFee: toUnit('0.0005'),
-		// });
+		itCorrectlyManagesLoansWith({
+			type: 'CollateralEth',
+			collateralCurrency: 'ETH',
+			amountToDeposit: toUnit('2'),
+			borrowCurrency: 'sUSD',
+			amountToBorrow: toUnit('0.5'),
+			issuanceFee: toUnit('0.0005'),
+		});
 
 		itCorrectlyManagesLoansWith({
 			type: 'CollateralErc20',
 			collateralCurrency: 'renBTC',
 			amountToDeposit: Web3.utils.toBN('100000000'), // 1 renBTC (renBTC uses 8 decimals)
 			borrowCurrency: 'sUSD',
-			amountToBorrow: toUnit('10'),
-			issuanceFee: toUnit('0.01'),
+			amountToBorrow: toUnit('0.5'),
+			issuanceFee: toUnit('0.0005'),
 		});
 
-		// itCorrectlyManagesLoansWith({
-		// 	type: 'CollateralShort',
-		// 	collateralCurrency: 'sUSD',
-		// 	amountToDeposit: toUnit('1000'),
-		// 	borrowCurrency: 'sETH',
-		// 	amountToBorrow: toUnit('0.1'),
-		// 	issuanceFee: toUnit('0.0005'),
-		// });
+		itCorrectlyManagesLoansWith({
+			type: 'CollateralShort',
+			collateralCurrency: 'sUSD',
+			amountToDeposit: toUnit('1000'),
+			borrowCurrency: 'sETH',
+			amountToBorrow: toUnit('0.1'),
+			issuanceFee: toUnit('0.0005'),
+		});
 	});
 
 	function itCorrectlyManagesLoansWith({
@@ -193,11 +193,9 @@ contract('MultiCollateral (prod tests)', accounts => {
 			before('deploy auxiliary tokens if needed', async () => {
 				if (type === 'CollateralErc20' && network === 'local') {
 					const underlying = await CollateralContract.underlyingContract();
-					console.log('underlying', underlying);
 					if (underlying === '0x0000000000000000000000000000000000000000') {
 						console.log(gray(`      > Deploying mock renBTC...`));
 						const token = await artifacts.require('MockToken').new('renBTC', 'renBTC', 8);
-						console.log(token.address);
 
 						await CollateralContract.setUnderlyingContract(token.address);
 					}
