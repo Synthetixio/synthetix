@@ -6,6 +6,7 @@
 	"BinaryOptionMarketManager",
 	"Collateral",
 	"CollateralErc20",
+	"CollateralErc20Settable",
 	"CollateralEth",
 	"CollateralShort",
 	"EtherCollateral",
