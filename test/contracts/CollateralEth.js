@@ -624,7 +624,7 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 
 			it('should revert if they send 0 collateral', async () => {
 				await assert.revert(
-					ceth.open(onesUSD, sUSD, { value: toUnit(0), from: account1 }),
+					ceth.open(onesUSD, sUSD, { value: oneETH, from: account1 }),
 					'Not enough collateral to open'
 				);
 			});
