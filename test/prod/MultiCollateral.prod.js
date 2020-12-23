@@ -317,7 +317,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 					before('deposit', async () => {
 						if (type === 'CollateralErc20' || type === 'CollateralShort') {
-							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('1000'), {
+							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('100000000'), {
 								from: user1,
 							});
 						} else {
