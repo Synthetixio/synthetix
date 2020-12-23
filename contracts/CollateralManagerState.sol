@@ -116,7 +116,7 @@ contract CollateralManagerState is Owned, State {
         return shortRates[currency][index];
     }
 
-    function getShortRatesLength(bytes32 currency) internal view returns (uint) {
+    function getShortRatesLength(bytes32 currency) public view returns (uint) {
         return shortRates[currency].length;
     }
 

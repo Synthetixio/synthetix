@@ -25,7 +25,7 @@ const CollateralState = artifacts.require(`CollateralState`);
 const ProxyERC20 = artifacts.require(`ProxyERC20`);
 const TokenState = artifacts.require(`TokenState`);
 
-contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
+contract('CollateralErc20 @ovm-skip', async accounts => {
 	const YEAR = 31536000;
 	const INTERACTION_DELAY = 300;
 
@@ -217,7 +217,6 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			}
 		);
 
-		await cerc20.rebuildCache();
 		await feePool.rebuildCache();
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
@@ -225,15 +224,19 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 
 		await manager.addCollaterals([cerc20.address], { from: owner });
 
-		await cerc20.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
-		await cerc20.rebuildCache();
+		await cerc20.addSynths(
+			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
+			['sUSD', 'sBTC'].map(toBytes32),
+			{ from: owner }
+		);
 
-		await cerc20.setCurrencies({ from: owner });
-
-		await manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
+		await manager.addSynths(
+			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
+			['sUSD', 'sBTC'].map(toBytes32),
+			{ from: owner }
+		);
 		// rebuild the cache to add the synths we need.
 		await manager.rebuildCache();
-		await manager.addSynthsToFlexibleStorage({ from: owner });
 
 		// Issue ren and set allowance
 		await issueRenBTCtoAccount(100 * 1e8, account1);
@@ -723,7 +726,7 @@ contract('CollateralErc20 @gas-skip @ovm-skip', async accounts => {
 			it('should revert if they send 0 collateral', async () => {
 				await assert.revert(
 					cerc20.open(toUnit(0), onesUSD, sUSD, { from: account1 }),
-					'Not enough collateral to create a loan'
+					'Not enough collateral to open'
 				);
 			});
 
