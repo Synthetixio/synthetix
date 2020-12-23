@@ -174,10 +174,13 @@ contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
 			{ from: owner }
 		);
 
-		await manager.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsETH')], { from: owner });
+		await manager.addSynths(
+			['SynthsUSD', 'SynthsETH'].map(toBytes32),
+			['sUSD', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
 		// rebuild the cache to add the synths we need.
 		await manager.rebuildCache();
-		await manager.addSynthsToFlexibleStorage({ from: owner });
 
 		await ceth.setIssueFeeRate(toUnit('0.001'), { from: owner });
 	};
