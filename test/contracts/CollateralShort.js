@@ -19,7 +19,7 @@ const CollateralManager = artifacts.require(`CollateralManager`);
 const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
+contract('CollateralShort @ovm-skip', async accounts => {
 	const YEAR = 31556926;
 
 	const sUSD = toBytes32('sUSD');

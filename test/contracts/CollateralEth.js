@@ -21,7 +21,7 @@ const CollateralManager = artifacts.require(`CollateralManager`);
 const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-contract('CollateralEth @gas-skip @ovm-skip', async accounts => {
+contract('CollateralEth @ovm-skip', async accounts => {
 	const YEAR = 31556926;
 	const INTERACTION_DELAY = 300;
 

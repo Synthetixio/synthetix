@@ -19,7 +19,7 @@ const CollateralManager = artifacts.require(`CollateralManager`);
 const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
+contract('CollateralManager @ovm-skip', async accounts => {
 	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
