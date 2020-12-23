@@ -309,6 +309,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
 				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
 			],
+			['sBTC', 'sETH'].map(toBytes32),
 			{
 				from: owner,
 			}
@@ -321,10 +322,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				['sUSD', 'sBTC', 'sETH'].map(toBytes32)
 			)
 		);
-
-		// rebuild the cache to add the synths we need.
-		await manager.rebuildCache();
-		await manager.addShortableSynthsToState({ from: owner });
 
 		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
@@ -368,7 +365,6 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'removeSynths',
 				'addShortableSynths',
 				'removeShortableSynths',
-				'addShortableSynthsToState',
 				'updateBorrowRates',
 				'updateShortRates',
 				'incrementLongs',
