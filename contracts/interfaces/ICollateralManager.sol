@@ -5,8 +5,6 @@ interface ICollateralManager {
     // Manager information
     function hasCollateral(address collateral) external view returns (bool);
 
-    function synthsByKey(bytes32 currencyKey) external view returns (bytes32);
-
     function isSynthManaged(bytes32 currencyKey) external view returns (bool);
 
     // State information
