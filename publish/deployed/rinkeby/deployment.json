@@ -1454,8 +1454,8 @@
 			"address": "0xe8Cf8DBeFdf50DD2C5F8E03fee5E3FbfA928B9A3",
 			"source": "CollateralManagerState",
 			"link": "https://rinkeby.etherscan.io/address/0xe8Cf8DBeFdf50DD2C5F8E03fee5E3FbfA928B9A3",
-			"timestamp": "2020-12-23T22:42:08.875Z",
-			"txn": "",
+			"timestamp": "2020-12-23T22:42:07.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0x9b663b9584eceadf2bda6476af6c0373f03bd333ec2eb277a86465bf833fd02c",
 			"network": "rinkeby"
 		},
 		"CollateralManager": {
@@ -1463,8 +1463,8 @@
 			"address": "0xFC4B21B7CC5DCC62aE4ae229Ee96Af1DB1678F35",
 			"source": "CollateralManager",
 			"link": "https://rinkeby.etherscan.io/address/0xFC4B21B7CC5DCC62aE4ae229Ee96Af1DB1678F35",
-			"timestamp": null,
-			"txn": "https://rinkeby.etherscan.io/tx/undefined",
+			"timestamp": "2020-12-23T22:42:22.000Z",
+			"txn": "https://rinkeby.etherscan.io/tx/0xfc7eb660e191fdad5e91b379653fc89f1106eccf093344c78eec3bec6ea56cb6",
 			"network": "rinkeby"
 		},
 		"CollateralStateEth": {

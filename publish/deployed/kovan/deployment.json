@@ -1454,8 +1454,8 @@
 			"address": "0x8D65Ed88D6162a2b3B5F71c45D433d4aeAc93065",
 			"source": "CollateralManagerState",
 			"link": "https://kovan.etherscan.io/address/0x8D65Ed88D6162a2b3B5F71c45D433d4aeAc93065",
-			"timestamp": "2020-12-23T22:02:32.812Z",
-			"txn": "",
+			"timestamp": "2020-12-23T22:02:32.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x773f7fb5d432e96d5e1ec19322314601a2b9f68473ed67cf1ef29d1c7c2bb28c",
 			"network": "kovan"
 		},
 		"CollateralManager": {
@@ -1463,8 +1463,8 @@
 			"address": "0x53baE964339e8A742B5b47F6C10bbfa8Ff138F34",
 			"source": "CollateralManager",
 			"link": "https://kovan.etherscan.io/address/0x53baE964339e8A742B5b47F6C10bbfa8Ff138F34",
-			"timestamp": null,
-			"txn": "",
+			"timestamp": "2020-12-23T22:02:40.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x2fc65fb3e84b50058cceb5a83eb29e412848d1dd52ba2c6a05fbb996f2ee214b",
 			"network": "kovan"
 		},
 		"CollateralStateErc20": {

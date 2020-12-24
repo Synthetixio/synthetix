@@ -13,7 +13,6 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./CollateralManagerState.sol";
-import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IDebtCache.sol";
@@ -71,11 +70,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_ISSUER, CONTRACT_EXRATES];
+    bytes32[24] private addressesToCache = [CONTRACT_ISSUER, CONTRACT_EXRATES];
 
     /* ========== CONSTRUCTOR ========== */
     constructor(
@@ -99,10 +97,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory staticAddresses = new bytes32[](3);
+        bytes32[] memory staticAddresses = new bytes32[](2);
         staticAddresses[0] = CONTRACT_ISSUER;
         staticAddresses[1] = CONTRACT_EXRATES;
-        staticAddresses[2] = CONTRACT_SYSTEMSTATUS;
 
         // we want to cache the name of the synth and the name of its corresponding iSynth
         bytes32[] memory shortAddresses;
@@ -132,10 +129,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     /* ---------- Related Contracts ---------- */
-
-    function _systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
-    }
 
     function _issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
@@ -329,8 +322,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     /* ---------- MANAGER ---------- */
 
     function addCollaterals(address[] calldata collaterals) external onlyOwner {
-        _systemStatus().requireSystemActive();
-
         for (uint i = 0; i < collaterals.length; i++) {
             if (!_collaterals.contains(collaterals[i])) {
                 _collaterals.add(collaterals[i]);
@@ -340,8 +331,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function removeCollaterals(address[] calldata collaterals) external onlyOwner {
-        _systemStatus().requireSystemActive();
-
         for (uint i = 0; i < collaterals.length; i++) {
             if (_collaterals.contains(collaterals[i])) {
                 _collaterals.remove(collaterals[i]);
@@ -351,8 +340,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function addSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external onlyOwner {
-        _systemStatus().requireSystemActive();
-
         for (uint i = 0; i < synthNamesInResolver.length; i++) {
             if (!_synths.contains(synthNamesInResolver[i])) {
                 bytes32 synthName = synthNamesInResolver[i];
@@ -385,8 +372,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function removeSynths(bytes32[] calldata synths, bytes32[] calldata synthKeys) external onlyOwner {
-        _systemStatus().requireSystemActive();
-
         for (uint i = 0; i < synths.length; i++) {
             if (_synths.contains(synths[i])) {
                 // Remove it from the the address set lib.
@@ -404,8 +389,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         external
         onlyOwner
     {
-        _systemStatus().requireSystemActive();
-
         require(requiredSynthAndInverseNamesInResolver.length == synthKeys.length, "Input array length mismatch");
 
         for (uint i = 0; i < requiredSynthAndInverseNamesInResolver.length; i++) {
@@ -461,8 +444,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function removeShortableSynths(bytes32[] calldata synths) external onlyOwner {
-        _systemStatus().requireSystemActive();
-
         for (uint i = 0; i < synths.length; i++) {
             if (_shortableSynths.contains(synths[i])) {
                 // Remove it from the the address set lib.

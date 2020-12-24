@@ -16,6 +16,7 @@ const {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsMultiCollateral,
+	resumeSystem,
 } = require('./utils');
 
 const { toBytes32 } = require('../..');
@@ -47,6 +48,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 		if (config.useOvm) {
 			return this.skip();
 		}
+
+		await resumeSystem({ owner, network, deploymentPath });
 
 		if (!(await implementsMultiCollateral({ network, deploymentPath }))) {
 			this.skip();

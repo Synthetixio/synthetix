@@ -14,6 +14,7 @@ const {
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
+	resumeSystem,
 } = require('./utils');
 const { yellow } = require('chalk');
 
@@ -38,6 +39,8 @@ contract('EtherCollateral (prod tests)', accounts => {
 		if (config.useOvm) {
 			return this.skip();
 		}
+
+		await resumeSystem({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
