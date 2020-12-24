@@ -1915,6 +1915,15 @@ const deploy = async ({
 			writeArg: [collateralsArg],
 		});
 
+		await runStep({
+			contract: 'CollateralEth',
+			target: collateralEth,
+			read: 'manager',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setManager',
+			writeArg: addressOf(collateralManager),
+		});
+
 		const collateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
 		await runStep({
 			contract: 'CollateralEth',
@@ -1933,6 +1942,15 @@ const deploy = async ({
 			],
 		});
 
+		await runStep({
+			contract: 'CollateralErc20',
+			target: collateralErc20,
+			read: 'manager',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setManager',
+			writeArg: addressOf(collateralManager),
+		});
+
 		const collateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
 		await runStep({
 			contract: 'CollateralErc20',
@@ -1949,6 +1967,15 @@ const deploy = async ({
 				collateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
 				collateralErc20Synths.map(toBytes32),
 			],
+		});
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'manager',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setManager',
+			writeArg: addressOf(collateralManager),
 		});
 
 		const collateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
