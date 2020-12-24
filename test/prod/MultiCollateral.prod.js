@@ -210,10 +210,15 @@ contract('MultiCollateral (prod tests)', accounts => {
 						const underlyingToken = await CollateralErc20.underlyingContract();
 						const renBTC = await artifacts.require('ERC20').at(underlyingToken);
 
-						const renHolder =
-							network === 'local'
-								? owner
-								: knownAccounts[network].find(a => a.name === 'renBTCWallet') || owner;
+						let altHolder;
+						if (network !== 'local') {
+							const account = knownAccounts[network].find(a => a.name === 'renBTCWallet');
+							if (account) {
+								altHolder = account.address;
+							}
+						}
+
+						const renHolder = network === 'local' ? owner : altHolder || owner;
 						if (!renHolder) {
 							throw new Error(`No known renBTC holder for network ${network}`);
 						}
@@ -307,14 +312,15 @@ contract('MultiCollateral (prod tests)', accounts => {
 				describe('when depositing more collateral', () => {
 					let cratioBefore;
 
-					before('record current values', async () => {
-						cratioBefore = await CollateralContract.collateralRatio(loan);
-					});
-
 					before('skip waiting period', async () => {
 						const period = await CollateralContract.interactionDelay();
 
 						await fastForward(period.toString());
+					});
+
+					before('record current values', async () => {
+						loan = await CollateralStateContract.getLoan(user1, loanId);
+						cratioBefore = await CollateralContract.collateralRatio(loan);
 					});
 
 					before('deposit', async () => {
@@ -346,14 +352,15 @@ contract('MultiCollateral (prod tests)', accounts => {
 				describe('when removing collateral', () => {
 					let cratioBefore;
 
-					before('record current values', async () => {
-						cratioBefore = await CollateralContract.collateralRatio(loan);
-					});
-
 					before('skip waiting period', async () => {
 						const period = await CollateralContract.interactionDelay();
 
 						await fastForward(period.toString());
+					});
+
+					before('record current values', async () => {
+						loan = await CollateralStateContract.getLoan(user1, loanId);
+						cratioBefore = await CollateralContract.collateralRatio(loan);
 					});
 
 					before('withdraw', async () => {
