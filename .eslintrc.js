@@ -5,7 +5,7 @@ module.exports = {
 		mocha: true,
 		node: true,
 	},
-	plugins: ['havven'],
+	plugins: ['havven', 'no-only-tests'],
 	rules: {
 		'havven/no-assert-revert-without-await': 'error',
 		'havven/no-assert-invalid-opcode-without-await': 'error',
@@ -13,5 +13,6 @@ module.exports = {
 		'prefer-const': 'error',
 		'no-process-exit': 'off',
 		'standard/computed-property-even-spacing': 'off',
+		'no-only-tests/no-only-tests': 'error',
 	},
 };
