@@ -63,6 +63,8 @@ const knownAccounts = {
 			address: '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E',
 		},
 	],
+	rinkeby: [],
+	kovan: [],
 };
 
 // The solidity defaults are managed here in the same format they will be stored, hence all
