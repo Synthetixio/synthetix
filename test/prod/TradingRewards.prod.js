@@ -15,6 +15,7 @@ const {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	avoidStaleRates,
+	resumeSystem,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -41,6 +42,7 @@ contract('TradingRewards (prod tests)', accounts => {
 		}
 
 		await avoidStaleRates({ owner, network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });

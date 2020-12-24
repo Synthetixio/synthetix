@@ -15,6 +15,7 @@ const {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	avoidStaleRates,
+	resumeSystem,
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
@@ -36,6 +37,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
 		await avoidStaleRates({ owner, network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });

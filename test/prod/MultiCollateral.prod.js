@@ -17,6 +17,7 @@ const {
 	mockOptimismBridge,
 	implementsMultiCollateral,
 	avoidStaleRates,
+	resumeSystem,
 } = require('./utils');
 
 const { toBytes32 } = require('../..');
@@ -49,11 +50,12 @@ contract('MultiCollateral (prod tests)', accounts => {
 			return this.skip();
 		}
 
+		await avoidStaleRates({ owner, network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
+
 		if (!(await implementsMultiCollateral({ network, deploymentPath }))) {
 			this.skip();
 		}
-
-		await avoidStaleRates({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });

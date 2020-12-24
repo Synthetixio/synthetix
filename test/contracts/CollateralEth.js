@@ -1367,8 +1367,8 @@ contract('CollateralEth @ovm-skip', async accounts => {
 
 	describe('Accrue Interest', async () => {
 		beforeEach(async () => {
-			// 5% / 31536000 (seconds in common year)
-			await manager.setBaseBorrowRate(1585489599, { from: owner });
+			// 0.005% / 31556926 (seconds in common year)
+			await manager.setBaseBorrowRate(158443823, { from: owner });
 		});
 
 		it('should correctly determine the interest on loans', async () => {
@@ -1379,7 +1379,7 @@ contract('CollateralEth @ovm-skip', async accounts => {
 
 			id = getid(tx);
 
-			// after a year we should have accrued about 5% + (100/2100) = 0.09761904762
+			// after a year we should have accrued about 0.005% + (100/2100) = 0.05261904762
 
 			await fastForwardAndUpdateRates(YEAR);
 
@@ -1391,7 +1391,7 @@ contract('CollateralEth @ovm-skip', async accounts => {
 
 			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 9.7652);
+			assert.equal(interest, 5.2619);
 
 			tx = await ceth.open(oneHundredsUSD, sUSD, {
 				value: twoETH,
@@ -1400,7 +1400,7 @@ contract('CollateralEth @ovm-skip', async accounts => {
 
 			const id2 = getid(tx);
 
-			// after a year we should have accrued abot 5% + (200/2200) = 0.1409090909
+			// after a year we should have accrued about 0.005% + (200/2200) = 0.09590909091
 
 			await fastForwardAndUpdateRates(YEAR);
 
@@ -1410,12 +1410,12 @@ contract('CollateralEth @ovm-skip', async accounts => {
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 14.0942);
+			assert.equal(interest, 9.5909);
 
 			// after two years we should have accrued (this math is rough)
-			// 5% + (100/2100) = 0.09761904762 +
-			// 5% + (200/2200) = 0.1409090909 +
-			//                 = 0.2385281385
+			// 0.005% + (100/2100) = 0.05261904762 +
+			// 0.005% + (200/2200) = 0.09590909091 +
+			//                     = 0.1485281385
 
 			tx = await ceth.deposit(account1, id, { from: account1, value: oneETH });
 
@@ -1423,7 +1423,7 @@ contract('CollateralEth @ovm-skip', async accounts => {
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 23.8595);
+			assert.equal(interest, 14.8528);
 		});
 	});
 });
