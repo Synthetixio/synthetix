@@ -19,6 +19,7 @@ const {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsVirtualSynths,
+	resumeSystem,
 } = require('./utils');
 
 const gasFromReceipt = ({ receipt }) =>
@@ -41,6 +42,8 @@ contract('Synthetix (prod tests)', accounts => {
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
 		owner = getUsers({ network, user: 'owner' }).address;
+
+		await resumeSystem({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });

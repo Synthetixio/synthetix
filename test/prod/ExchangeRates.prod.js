@@ -14,6 +14,7 @@ const {
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
+	resumeSystem,
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
@@ -33,6 +34,8 @@ contract('ExchangeRates (prod tests)', accounts => {
 		owner = getUsers({ network, user: 'owner' }).address;
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+
+		await resumeSystem({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
