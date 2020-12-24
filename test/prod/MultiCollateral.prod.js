@@ -323,7 +323,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 								from: user1,
 							});
 						} else if (type === 'CollateralShort') {
-							tx = await CollateralContract.deposit(user1, loanId, toUnit('1'), {
+							tx = await CollateralContract.deposit(user1, loanId, toUnit('200'), {
 								from: user1,
 							});
 						} else {
