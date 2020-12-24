@@ -129,7 +129,7 @@ const build = async ({
 		if (prevSizeIfAny) {
 			previousSizes.push(prevSizeIfAny);
 		}
-		let runs = optimizerRuns; // default
+		let runs = parseInt(optimizerRuns); // default, use ParseInt: runs setting must be an unsigned number.
 		if (typeof overrides[contract] === 'object') {
 			runs = overrides[contract].runs;
 		}
