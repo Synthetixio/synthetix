@@ -30,10 +30,10 @@ module.exports = {
 	skipWaitingPeriod,
 	skipStakeTime,
 	simulateExchangeRates,
-	avoidStaleRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsVirtualSynths,
 	implementsMultiCollateral,
+	avoidStaleRates,
 	resumeSystem,
 };

@@ -36,12 +36,12 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
-		await avoidStaleRates({ owner, network, deploymentPath });
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
 		await resumeSystem({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
 			await mockOptimismBridge({ network, deploymentPath });
 		}
 
@@ -82,10 +82,6 @@ contract('ExchangeRates (prod tests)', accounts => {
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await ExchangeRates.resolver(), ReadProxyAddressResolver.address);
-		});
-
-		it('has the expected owner set', async () => {
-			assert.equal(await ExchangeRates.owner(), owner);
 		});
 	});
 

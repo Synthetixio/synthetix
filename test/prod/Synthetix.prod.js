@@ -44,12 +44,12 @@ contract('Synthetix (prod tests)', accounts => {
 
 		owner = getUsers({ network, user: 'owner' }).address;
 
-		await avoidStaleRates({ owner, network, deploymentPath });
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
 		await resumeSystem({ owner, network, deploymentPath });
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
 			await mockOptimismBridge({ network, deploymentPath });
 		}
 
@@ -99,10 +99,6 @@ contract('Synthetix (prod tests)', accounts => {
 				assert.equal(await Synthetix.resolver(), ReadProxyAddressResolver.address);
 			});
 
-			it('has the expected owner set', async () => {
-				assert.equal(await Synthetix.owner(), owner);
-			});
-
 			it('does not report any rate to be stale or invalid', async () => {
 				assert.isFalse(await Synthetix.anySynthOrSNXRateIsInvalid());
 			});
@@ -145,7 +141,6 @@ contract('Synthetix (prod tests)', accounts => {
 				await writeSetting({
 					setting: 'setMinimumStakeTime',
 					value: '60',
-					owner,
 					network,
 					deploymentPath,
 				});
