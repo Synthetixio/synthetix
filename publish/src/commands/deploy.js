@@ -44,18 +44,6 @@ const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
 
-function splitArrayIntoChunks(array, chunkSize) {
-	const chunks = [];
-	for (let i = 0; i < array.length; i += chunkSize) {
-		const chunk = array.slice(i, i + chunkSize);
-		if (chunk.length > 0) {
-			chunks.push(chunk);
-		}
-	}
-
-	return chunks;
-}
-
 const deploy = async ({
 	addNewSynths,
 	gasPrice = DEFAULTS.gasPrice,
@@ -1471,32 +1459,6 @@ const deploy = async ({
 			target: addressResolver,
 			write: 'rebuildCaches',
 			writeArg: [chunk],
-		});
-	}
-
-	if (useOvm) {
-		// NOTE: If using OVM, split the array of addresses to cache,
-		// since things spend signifficantly more gas in OVM
-		const chunks = splitArrayIntoChunks(contractsToRebuildCache, 4);
-		for (let i = 0; i < chunks.length; i++) {
-			const chunk = chunks[i];
-			await runStep({
-				gasLimit: 7e6, // higher gas required
-				contract: `AddressResolver`,
-				target: addressResolver,
-				publiclyCallable: true, // does not require owner
-				write: 'rebuildCaches',
-				writeArg: [chunk],
-			});
-		}
-	} else if (contractsToRebuildCache.length) {
-		await runStep({
-			gasLimit: 9e6, // higher gas required
-			contract: `AddressResolver`,
-			target: addressResolver,
-			publiclyCallable: true, // does not require owner
-			write: 'rebuildCaches',
-			writeArg: [contractsToRebuildCache],
 		});
 	}
 
