@@ -1389,7 +1389,7 @@ const deploy = async ({
 		];
 
 		const { pending } = await runStep({
-			gasLimit: 4e6, // higher gas required
+			gasLimit: 6e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			read: 'areAddressesImported',
