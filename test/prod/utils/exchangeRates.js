@@ -5,6 +5,7 @@ const { toWei } = require('web3-utils');
 const { connectContract } = require('./connectContract');
 const { ensureAccountHasEther } = require('./ensureAccountHasBalance');
 const { readSetting, writeSetting } = require('./systemSettings');
+const { takeDebtSnapshot } = require('./debtSnapshot');
 const { toUnit } = require('../../utils')();
 const { gray } = require('chalk');
 
@@ -63,6 +64,8 @@ async function simulateExchangeRates({ network, deploymentPath }) {
 			from: oracle,
 		}
 	);
+
+	await takeDebtSnapshot({ network, deploymentPath });
 }
 
 async function avoidStaleRates({ owner, network, deploymentPath }) {
