@@ -527,6 +527,15 @@ const setupContract = async ({
 						returns: ['0'],
 					}),
 				]);
+			} else if (mock === 'CollateralManager') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'isSynthManaged',
+						returns: [false],
+					}),
+				]);
 			}
 		},
 	};
@@ -611,8 +620,8 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger'],
-			deps: ['FlexibleStorage', 'ExchangeRates', 'SystemStatus'],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager'],
+			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
 			contract: 'Issuer',

@@ -19,7 +19,7 @@ const CollateralManager = artifacts.require(`CollateralManager`);
 const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
+contract('CollateralShort @ovm-skip', async accounts => {
 	const YEAR = 31556926;
 
 	const sUSD = toBytes32('sUSD');
@@ -163,7 +163,6 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 			}
 		);
 
-		await short.rebuildCache();
 		await feePool.rebuildCache();
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
@@ -171,24 +170,22 @@ contract('CollateralShort @gas-skip @ovm-skip', async accounts => {
 
 		await manager.addCollaterals([short.address], { from: owner });
 
-		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
-		await short.rebuildCache();
-		await short.setCurrencies({ from: owner });
+		await short.addSynths(
+			['SynthsBTC', 'SynthsETH'].map(toBytes32),
+			['sBTC', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
 
 		await manager.addShortableSynths(
 			[
 				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
 				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
 			],
+			['sBTC', 'sETH'].map(toBytes32),
 			{
 				from: owner,
 			}
 		);
-
-		// rebuild the cache to add the synths we need.
-		await manager.rebuildCache();
-
-		await manager.addShortableSynthsToState({ from: owner });
 
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 	};

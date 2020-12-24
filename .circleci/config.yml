@@ -53,7 +53,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: node publish build
+      - run: node publish build --test-helpers
       - cmd-local-start
       - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
       - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
@@ -68,7 +68,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: node publish build
+      - run: node publish build --test-helpers
       - cmd-local-start
       - run: node publish deploy --network local --fresh-deploy --yes
       - run: npm run test:prod -- --patch-fresh-deployment

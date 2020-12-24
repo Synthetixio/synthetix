@@ -15,7 +15,12 @@ function getUser({ network, deploymentPath, user }) {
 }
 
 async function ensureAccountHasEther({ network, deploymentPath, amount, account }) {
-	console.log(gray(`  > Ensuring ${account} has Ether...`));
+	const currentBalance = web3.utils.toBN(await web3.eth.getBalance(account));
+	if (currentBalance.gte(amount)) {
+		return;
+	}
+
+	console.log(gray(`    > Ensuring ${account} has Ether...`));
 
 	const fromAccount =
 		network === 'mainnet'
@@ -37,7 +42,12 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 }
 
 async function ensureAccountHasSNX({ network, deploymentPath, amount, account }) {
-	console.log(gray(`  > Ensuring ${account} has SNX...`));
+	const SNX = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
+	if ((await SNX.balanceOf(account)).gte(amount)) {
+		return;
+	}
+
+	console.log(gray(`    > Ensuring ${account} has SNX...`));
 
 	const fromAccount =
 		network === 'mainnet'
@@ -47,8 +57,6 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 					deploymentPath,
 					user: 'owner',
 			  });
-
-	const SNX = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
 
 	const balance = toBN(await SNX.balanceOf(fromAccount));
 	if (balance.lt(amount)) {
@@ -63,7 +71,17 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 }
 
 async function ensureAccountHassUSD({ network, deploymentPath, amount, account }) {
-	console.log(gray(`  > Ensuring ${account} has sUSD...`));
+	const sUSD = await connectContract({
+		network,
+		deploymentPath,
+		contractName: 'SynthsUSD',
+		abiName: 'Synth',
+	});
+	if ((await sUSD.balanceOf(account)).gte(amount)) {
+		return;
+	}
+
+	console.log(gray(`    > Ensuring ${account} has sUSD...`));
 
 	const fromAccount =
 		network === 'mainnet'
@@ -74,16 +92,9 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 					user: 'owner',
 			  });
 
-	const sUSD = await connectContract({
-		network,
-		deploymentPath,
-		contractName: 'SynthsUSD',
-		abiName: 'Synth',
-	});
-
 	const balance = toBN(await sUSD.transferableSynths(fromAccount));
+	const snxToTransfer = amount.mul(toBN(20));
 	if (balance.lt(amount)) {
-		const snxToTransfer = amount.mul(toBN('50'));
 		await ensureAccountHasSNX({
 			network,
 			deploymentPath,
@@ -107,7 +118,17 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 }
 
 async function ensureAccountHassETH({ network, deploymentPath, amount, account }) {
-	console.log(gray(`  > Ensuring ${account} has sETH...`));
+	const sETH = await connectContract({
+		network,
+		deploymentPath,
+		contractName: 'SynthsETH',
+		abiName: 'Synth',
+	});
+	if ((await sETH.balanceOf(account)).gte(amount)) {
+		return;
+	}
+
+	console.log(gray(`    > Ensuring ${account} has sETH...`));
 
 	const sUSDAmount = amount.mul(toBN('50'));
 	await ensureAccountHassUSD({ network, deploymentPath, amount: sUSDAmount, account });

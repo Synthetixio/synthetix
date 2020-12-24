@@ -161,6 +161,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
      * V = Collateral VALUE in sUSD
      * P = liquidation penalty
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     * Note: if you pass a loan in here that is not eligible for liquidation it will revert.
+     * We check the ratio first in liquidateInternal and only pass eligible loans in.
      */
     function liquidationAmount(Loan memory loan) public view returns (uint amount) {
         uint liquidationPenalty = getLiquidationPenalty();
@@ -182,6 +184,28 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
 
         collateral = collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+    }
+
+    function areSynthsAndCurrenciesSet(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys)
+        external
+        view
+        returns (bool)
+    {
+        if (synths.length != _synthNamesInResolver.length) {
+            return false;
+        }
+
+        for (uint i = 0; i < _synthNamesInResolver.length; i++) {
+            bytes32 synthName = _synthNamesInResolver[i];
+            if (synths[i] != synthName) {
+                return false;
+            }
+            if (synthsByKey[_synthKeys[i]] != synths[i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /* ---------- UTILITIES ---------- */
@@ -209,18 +233,17 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- Synths ---------- */
 
-    function addSynths(bytes32[] calldata _synthNames) external onlyOwner {
-        for (uint i = 0; i < _synthNames.length; i++) {
-            synths.push(_synthNames[i]);
-        }
-    }
+    function addSynths(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys) external onlyOwner {
+        require(_synthNamesInResolver.length == _synthKeys.length, "Input array length mismatch");
 
-    // We split this out because we need to rebuild the cache after adding synths.
-    function setCurrencies() external onlyOwner {
-        for (uint i = 0; i < synths.length; i++) {
-            ISynth synth = ISynth(requireAndGetAddress(synths[i]));
-            synthsByKey[synth.currencyKey()] = synths[i];
+        for (uint i = 0; i < _synthNamesInResolver.length; i++) {
+            bytes32 synthName = _synthNamesInResolver[i];
+            synths.push(synthName);
+            synthsByKey[_synthKeys[i]] = synthName;
         }
+
+        // ensure cache has the latest
+        rebuildCache();
     }
 
     /* ---------- Rewards Contracts ---------- */
@@ -238,7 +261,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
-        require(_issueFeeRate >= 0, "Must be greater than or equal to 0");
         issueFeeRate = _issueFeeRate;
         emit IssueFeeRateUpdated(issueFeeRate);
     }
@@ -256,7 +278,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
         canOpenLoans = _canOpenLoans;
-        emit ManagerUpdated(manager);
+        emit CanOpenLoansUpdated(canOpenLoans);
     }
 
     /* ---------- LOAN INTERACTIONS ---------- */
@@ -282,7 +304,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(!_exchangeRates().rateIsInvalid(currency), "Currency rate is invalid");
 
         // 4. Collateral >= minimum collateral size.
-        require(collateral >= minCollateral, "Not enough collateral to create a loan");
+        require(collateral >= minCollateral, "Not enough collateral to open");
 
         // 5. Cap the number of loans so that the array doesn't get too big.
         require(state.getNumLoans(msg.sender) < maxLoansPerAccount, "Max loans exceeded");
@@ -302,7 +324,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint loanAmountMinusFee = amount.sub(issueFee);
 
         // 10. Get a Loan ID
-        id = _manager().getLoanId();
+        id = _manager().getNewLoanId();
 
         // 11. Create the loan struct.
         Loan memory loan = Loan({
@@ -368,7 +390,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 7. Burn the synths
         require(
             !_exchanger().hasWaitingPeriodOrSettlementOwing(borrower, loan.currency),
-            "Waiting period or settlement owing"
+            "Waiting secs or settlement owing"
         );
         _synth(synthsByKey[loan.currency]).burn(borrower, total);
 
@@ -762,6 +784,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     event MaxLoansPerAccountUpdated(uint maxLoansPerAccount);
     event InteractionDelayUpdated(uint interactionDelay);
     event ManagerUpdated(address manager);
+    event CanOpenLoansUpdated(bool canOpenLoans);
 
     // Loans
     event LoanCreated(address indexed account, uint id, uint amount, uint collateral, bytes32 currency, uint issuanceFee);

@@ -191,6 +191,7 @@ const performTransactionalStep = async ({
 	dryRun,
 	encodeABI,
 	nonceManager,
+	publiclyCallable,
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
@@ -212,7 +213,7 @@ const performTransactionalStep = async ({
 	}
 	// otherwise check the owner
 	const owner = await target.methods.owner().call();
-	if (owner === account) {
+	if (owner === account || publiclyCallable) {
 		// perform action
 		let hash;
 		let gasUsed = 0;
