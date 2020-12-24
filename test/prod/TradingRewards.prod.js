@@ -93,7 +93,7 @@ contract('TradingRewards (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			writeSetting({
+			await writeSetting({
 				setting: 'setTradingRewardsEnabled',
 				value: false,
 				network,
@@ -133,7 +133,7 @@ contract('TradingRewards (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			writeSetting({
+			await writeSetting({
 				setting: 'setTradingRewardsEnabled',
 				value: true,
 				network,
