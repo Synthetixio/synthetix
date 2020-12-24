@@ -16,6 +16,7 @@ const {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsMultiCollateral,
+	avoidStaleRates,
 	resumeSystem,
 } = require('./utils');
 
@@ -49,6 +50,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 			return this.skip();
 		}
 
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
 		await resumeSystem({ owner, network, deploymentPath });
 
 		if (!(await implementsMultiCollateral({ network, deploymentPath }))) {
@@ -57,7 +60,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
 			await mockOptimismBridge({ network, deploymentPath });
 		}
 
@@ -109,22 +111,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 	describe('general multicollateral state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await CollateralManager.resolver(), ReadProxyAddressResolver.address);
-		});
-
-		it('CollateralManager has the expected owner set', async () => {
-			assert.equal(await CollateralManager.owner(), owner);
-		});
-
-		it('CollateralErc20 hase the expected owner set', async () => {
-			assert.equal(await CollateralErc20.owner(), owner);
-		});
-
-		it('CollateralEth hase the expected owner set', async () => {
-			assert.equal(await CollateralEth.owner(), owner);
-		});
-
-		it('CollateralShort hase the expected owner set', async () => {
-			assert.equal(await CollateralShort.owner(), owner);
 		});
 	});
 
