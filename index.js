@@ -109,8 +109,8 @@ const defaults = {
 			{ long: 'sETH', short: 'iETH' },
 		],
 		MAX_DEBT: w3utils.toWei('100000000'),
-		BASE_BORROW_RATE: w3utils.toWei('0.0005'),
-		BASE_SHORT_RATE: w3utils.toWei('0.0005'),
+		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
+		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
 	COLLATERAL_ETH: {
 		SYNTHS: ['sUSD', 'sETH'],
