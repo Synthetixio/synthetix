@@ -1228,6 +1228,8 @@ const deploy = async ({
 	// ----------------
 	let collateralManager, collateralEth, collateralErc20, collateralShort;
 
+	const collateralManagerDefaults = await getDeployParameter('COLLATERAL_MANAGER');
+
 	if (!useOvm) {
 		console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
 
@@ -1242,9 +1244,9 @@ const deploy = async ({
 				addressOf(managerState),
 				account,
 				addressOf(readProxyForResolver),
-				(await getDeployParameter('COLLATERAL_MANAGER'))['MAX_DEBT'],
-				(await getDeployParameter('COLLATERAL_MANAGER'))['BASE_BORROW_RATE'],
-				(await getDeployParameter('COLLATERAL_MANAGER'))['BASE_SHORT_RATE'],
+				collateralManagerDefaults['MAX_DEBT'],
+				collateralManagerDefaults['BASE_BORROW_RATE'],
+				collateralManagerDefaults['BASE_SHORT_RATE'],
 			],
 		});
 
@@ -1967,8 +1969,35 @@ const deploy = async ({
 			],
 		});
 
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'maxDebt',
+			expected: input => input === collateralManagerDefaults['MAX_DEBT'],
+			write: 'setMaxDebt',
+			writeArg: [collateralManagerDefaults['MAX_DEBT']],
+		});
+
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'baseBorrowRate',
+			expected: input => input === collateralManagerDefaults['BASE_BORROW_RATE'],
+			write: 'setBaseBorrowRate',
+			writeArg: [collateralManagerDefaults['BASE_BORROW_RATE']],
+		});
+
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'baseShortRate',
+			expected: input => input === collateralManagerDefaults['BASE_SHORT_RATE'],
+			write: 'setBaseShortRate',
+			writeArg: [collateralManagerDefaults['BASE_SHORT_RATE']],
+		});
+
 		// add to the manager.
-		const collateralManagerSynths = (await getDeployParameter('COLLATERAL_MANAGER'))['SYNTHS'];
+		const collateralManagerSynths = collateralManagerDefaults['SYNTHS'];
 		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
@@ -1986,7 +2015,7 @@ const deploy = async ({
 			],
 		});
 
-		const collateralManagerShorts = (await getDeployParameter('COLLATERAL_MANAGER'))['SHORTS'];
+		const collateralManagerShorts = collateralManagerDefaults['SHORTS'];
 		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
