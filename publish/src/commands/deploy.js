@@ -1919,7 +1919,7 @@ const deploy = async ({
 			contract: 'CollateralEth',
 			target: collateralEth,
 			read: 'manager',
-			expected: input => addressOf(collateralManager),
+			expected: input => input === addressOf(collateralManager),
 			write: 'setManager',
 			writeArg: addressOf(collateralManager),
 		});
@@ -1946,7 +1946,7 @@ const deploy = async ({
 			contract: 'CollateralErc20',
 			target: collateralErc20,
 			read: 'manager',
-			expected: input => addressOf(collateralManager),
+			expected: input => input === addressOf(collateralManager),
 			write: 'setManager',
 			writeArg: addressOf(collateralManager),
 		});
@@ -1973,7 +1973,7 @@ const deploy = async ({
 			contract: 'CollateralShort',
 			target: collateralShort,
 			read: 'manager',
-			expected: input => addressOf(collateralManager),
+			expected: input => input === addressOf(collateralManager),
 			write: 'setManager',
 			writeArg: addressOf(collateralManager),
 		});
