@@ -144,17 +144,14 @@ jobs:
             - node_modules
   job-prod-tests-ovm:
     working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
+    machine:
+      image: ubuntu-2004:202010-01
+      docker_layer_caching: true
     resource_class: large
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - setup_remote_docker
       - run:
           name: Prepare docker
           command: |
