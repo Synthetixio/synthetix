@@ -761,6 +761,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
                 synthLoans[i].loanAmount = _newLoanAmount;
                 synthLoans[i].accruedInterest = _newAccruedInterest;
                 synthLoans[i].lastInterestAccrued = uint40(_lastInterestAccrued);
+                return;
             }
         }
     }
@@ -786,6 +787,7 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             if (synthLoans[i].loanID == synthLoan.loanID) {
                 // Record the time the loan was closed
                 synthLoans[i].timeClosed = block.timestamp;
+                return;
             }
         }
 

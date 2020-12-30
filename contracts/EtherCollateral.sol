@@ -406,6 +406,7 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
             if (synthLoans[i].loanID == synthLoan.loanID) {
                 // Record the time the loan was closed
                 synthLoans[i].timeClosed = now;
+                return;
             }
         }
 
