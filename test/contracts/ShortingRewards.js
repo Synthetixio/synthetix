@@ -233,7 +233,7 @@ contract('ShortingRewards', accounts => {
 				rewardsDistribution.address,
 				rewardsToken.address,
 				short.address,
-				toBytes32('SynthsBTC'),
+				toBytes32('sBTC'),
 			],
 		});
 
@@ -276,7 +276,6 @@ contract('ShortingRewards', accounts => {
 			expected: [
 				'enrol',
 				'withdraw',
-				'exit',
 				'getReward',
 				'notifyRewardAmount',
 				'setPaused',
@@ -292,7 +291,7 @@ contract('ShortingRewards', accounts => {
 		});
 
 		it('should staking token on constructor', async () => {
-			assert.equal(await shortingRewards.synth(), toBytes32('SynthsBTC'));
+			assert.equal(await shortingRewards.synth(), toBytes32('sBTC'));
 		});
 
 		it('should set owner on constructor', async () => {
@@ -411,6 +410,29 @@ contract('ShortingRewards', accounts => {
 
 			const newRewardsPerToken = await shortingRewards.rewardPerToken();
 			assert.bnGt(newRewardsPerToken, rewardPerToken);
+		});
+	});
+
+	describe('onlyShort modifier', async () => {
+		it('enrol() can only be called by the short contract', async () => {
+			await assert.revert(
+				shortingRewards.enrol(account1, toUnit(1), { from: account1 }),
+				'Only Short Contract'
+			);
+		});
+
+		it('withdraw() can only be called by the short contract', async () => {
+			await assert.revert(
+				shortingRewards.withdraw(account1, toUnit(1), { from: account1 }),
+				'Only Short Contract'
+			);
+		});
+
+		it('getReward() can only be called by the short contract', async () => {
+			await assert.revert(
+				shortingRewards.getReward(account1, { from: account1 }),
+				'Only Short Contract'
+			);
 		});
 	});
 
@@ -715,7 +737,7 @@ contract('ShortingRewards', accounts => {
 					rewardsDistribution.address,
 					rewardsToken.address,
 					short.address,
-					toBytes32('SynthsBTC'),
+					toBytes32('sBTC'),
 				],
 			});
 

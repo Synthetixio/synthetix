@@ -1,5 +1,6 @@
 pragma solidity >=0.4.24;
 
+
 // https://docs.synthetix.io/contracts/source/interfaces/istakingrewards
 interface IShortingRewards {
     // Views
@@ -22,6 +23,4 @@ interface IShortingRewards {
     function withdraw(address account, uint256 amount) external;
 
     function getReward(address account) external;
-
-    function exit(address account) external;
 }

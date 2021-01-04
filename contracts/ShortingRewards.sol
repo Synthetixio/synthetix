@@ -102,7 +102,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // the shorting contract calls stake when a short is opened.
+    // the shorting contract calls enrol when a short is opened or increased.
     function enrol(address account, uint256 amount) external onlyShortContract nonReentrant notPaused updateReward(account) {
         require(amount > 0, "Cannot stake 0");
         _totalSupply = _totalSupply.add(amount);
@@ -110,25 +110,22 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
         emit Enrol(account, amount);
     }
 
-    function withdraw(address account, uint256 amount) public onlyShortContract nonReentrant updateReward(account) {
+    // the shorting contract calls withdraw when a short is closed, liquidated or repaid.
+    function withdraw(address account, uint256 amount) external onlyShortContract nonReentrant updateReward(account) {
         require(amount > 0, "Cannot withdraw 0");
         _totalSupply = _totalSupply.sub(amount);
         _balances[account] = _balances[account].sub(amount);
         emit Withdrawn(account, amount);
     }
 
-    function getReward(address account) public nonReentrant updateReward(account) {
+    // this can be called by anyone on the short contract to claim the rewards.
+    function getReward(address account) external onlyShortContract nonReentrant updateReward(account) {
         uint256 reward = rewards[account];
         if (reward > 0) {
             rewards[account] = 0;
             rewardsToken.safeTransfer(account, reward);
             emit RewardPaid(account, reward);
         }
-    }
-
-    function exit(address account) external onlyShortContract {
-        withdraw(account, _balances[account]);
-        getReward(account);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
