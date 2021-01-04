@@ -556,6 +556,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getPathToNetwork',
 		'getSource',
 		'getStakingRewards',
+		'getShortingRewards',
 		'getFeeds',
 		'getSynths',
 		'getTarget',
