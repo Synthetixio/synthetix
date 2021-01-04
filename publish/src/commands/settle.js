@@ -27,7 +27,7 @@ const fromBlockMap = {
 	kovan: 20528323,
 	rinkeby: 7100439,
 	// Note: ropsten was not settled. Needs to be done after https://github.com/Synthetixio/synthetix/pull/699
-	mainnet: 11586050,
+	mainnet: 11590207, // system exchanged after SCCP-68 implemented
 };
 
 const pathToLocal = name => path.join(__dirname, `${name}.json`);
