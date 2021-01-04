@@ -27,5 +27,6 @@ require('./src/commands/prepare-deploy-detect-diff').cmd(program);
 require('./src/commands/connect-bridge').cmd(program);
 require('./src/commands/migrate-bridge').cmd(program);
 require('./src/commands/deploy-ovm-pair').cmd(program);
+require('./src/commands/deploy-shorting-rewards').cmd(program);
 
 program.parse(process.argv);
