@@ -21,7 +21,7 @@ const {
 	constants: {
 		BUILD_FOLDER,
 		CONTRACTS_FOLDER,
-		STAKING_REWARDS_FILENAME,
+		SHORTING_REWARDS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		ZERO_ADDRESS,
 	},
@@ -52,7 +52,7 @@ const deployShortingRewards = async ({
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
-	const { stakingRewards, deployment, deploymentFile } = loadAndCheckRequiredSources({
+	const { shortingRewards, deployment, deploymentFile } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
@@ -66,7 +66,7 @@ const deployShortingRewards = async ({
 	// 1. RewardsDistribution, CollateralShort
 	// 2. rewardsToken that is not an address
 	const requiredContractDeployments = ['RewardsDistribution', 'CollateralShort'];
-	const requiredTokenDeployments = stakingRewards
+	const requiredTokenDeployments = shortingRewards
 		.map(x => {
 			return [x.rewardsToken].filter(y => !w3utils.isAddress(y));
 		})
@@ -174,7 +174,7 @@ const deployShortingRewards = async ({
 	// ----------------
 	// Shorting Rewards
 	// ----------------
-	for (const { name, rewardsToken } of stakingRewards) {
+	for (const { name, rewardsToken } of shortingRewards) {
 		const shortingRewardNameFixed = `ShortingRewards${name}`;
 		const shortinggRewardsConfig = config[shortingRewardNameFixed] || {};
 
@@ -260,7 +260,7 @@ module.exports = {
 			.description('Deploy shorting rewards')
 			.option(
 				'-t, --rewards-to-deploy <items>',
-				`Deploys shorting rewards with matching names in ${STAKING_REWARDS_FILENAME}`,
+				`Deploys shorting rewards with matching names in ${SHORTING_REWARDS_FILENAME}`,
 				v => v.split(','),
 				DEFAULTS.rewardsToDeploy
 			)
@@ -277,7 +277,7 @@ module.exports = {
 			)
 			.option(
 				'-d, --deployment-path <value>',
-				`Path to a folder that has the rewards file ${STAKING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+				`Path to a folder that has the rewards file ${SHORTING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option(

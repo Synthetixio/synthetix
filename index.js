@@ -38,6 +38,7 @@ const constants = {
 	PARAMS_FILENAME: 'params.json',
 	SYNTHS_FILENAME: 'synths.json',
 	STAKING_REWARDS_FILENAME: 'rewards.json',
+	SHORTING_REWARDS_FILENAME: 'shorting-rewards.json',
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
@@ -381,6 +382,34 @@ const getStakingRewards = ({
 };
 
 /**
+ * Retrieve the list of shorting rewards for the network - returning the names and rewardTokens
+ */
+const getShortingRewards = ({
+	network = 'mainnet',
+	useOvm = false,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+		return data[getFolderNameForNetwork({ network, useOvm })].rewards;
+	}
+
+	const pathToShortingRewardsList = deploymentPath
+		? path.join(deploymentPath, constants.SHORTING_REWARDS_FILENAME)
+		: getPathToNetwork({
+				network,
+				path,
+				useOvm,
+				file: constants.SHORTING_REWARDS_FILENAME,
+		  });
+	if (!fs.existsSync(pathToShortingRewardsList)) {
+		return [];
+	}
+	return JSON.parse(fs.readFileSync(pathToShortingRewardsList));
+};
+
+/**
  * Retrieve the list of system user addresses
  */
 const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
@@ -547,6 +576,7 @@ module.exports = {
 	getPathToNetwork,
 	getSource,
 	getStakingRewards,
+	getShortingRewards,
 	getSuspensionReasons,
 	getFeeds,
 	getSynths,
