@@ -25,7 +25,6 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
     /* ========== STATE VARIABLES ========== */
 
     IERC20 public rewardsToken;
-    ICollateralErc20 public short;
     bytes32 public synth;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
@@ -50,11 +49,9 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
         address _resolver,
         address _rewardsDistribution,
         address _rewardsToken,
-        address _short,
         bytes32 _synth
     ) public Owned(_owner) MixinResolver(_resolver) {
         rewardsToken = IERC20(_rewardsToken);
-        short = ICollateralErc20(_short);
         rewardsDistribution = _rewardsDistribution;
         synth = _synth;
     }
