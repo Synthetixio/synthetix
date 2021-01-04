@@ -27,7 +27,7 @@ const fromBlockMap = {
 	kovan: 20528323,
 	rinkeby: 7100439,
 	// Note: ropsten was not settled. Needs to be done after https://github.com/Synthetixio/synthetix/pull/699
-	mainnet: 11229090,
+	mainnet: 11586050,
 };
 
 const pathToLocal = name => path.join(__dirname, `${name}.json`);
@@ -222,7 +222,9 @@ const settle = async ({
 			const wasReclaimOrRebate = reclaimAmount > 0 || rebateAmount > 0;
 			let skipIfWillFail = false;
 
-			const secsLeft = await Exchanger.methods.maxSecsLeftInWaitingPeriod(account, toCurrencyKey);
+			const secsLeft = await Exchanger.methods
+				.maxSecsLeftInWaitingPeriod(account, toCurrencyKey)
+				.call();
 
 			skipIfWillFail = +secsLeft > 0;
 
@@ -301,7 +303,7 @@ const settle = async ({
 				try {
 					const { transactionHash } = await Exchanger.methods.settle(account, toCurrencyKey).send({
 						from: user.address,
-						gas: Math.max(gas * numEntries, 500e3),
+						gas: Math.max(gas * numEntries, 650e3),
 						gasPrice,
 						nonce: nonce++,
 					});
