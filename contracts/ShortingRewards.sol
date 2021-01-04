@@ -177,6 +177,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
 
     modifier onlyShortContract {
         bool isShort = msg.sender == address(_short());
+        require(isShort, "Only Short Contract");
         _;
     }
 
