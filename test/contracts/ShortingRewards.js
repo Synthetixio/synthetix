@@ -232,7 +232,6 @@ contract('ShortingRewards', accounts => {
 				addressResolver.address,
 				rewardsDistribution.address,
 				rewardsToken.address,
-				short.address,
 				toBytes32('sBTC'),
 			],
 		});
@@ -736,7 +735,6 @@ contract('ShortingRewards', accounts => {
 					addressResolver.address,
 					rewardsDistribution.address,
 					rewardsToken.address,
-					short.address,
 					toBytes32('sBTC'),
 				],
 			});
