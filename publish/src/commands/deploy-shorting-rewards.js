@@ -18,6 +18,7 @@ const {
 } = require('../util');
 
 const {
+	toBytes32,
 	constants: {
 		BUILD_FOLDER,
 		CONTRACTS_FOLDER,
@@ -169,7 +170,7 @@ const deployShortingRewards = async ({
 
 	// Contract dependencies
 	const rewardsDistributionAddress = deployment.targets['RewardsDistribution'].address;
-	const resolverAddress = deployment.targets['ReadProxyForAddressRessolver'].address;
+	const resolverAddress = deployment.targets['ReadProxyAddressResolver'].address;
 
 	// ----------------
 	// Shorting Rewards
@@ -229,7 +230,13 @@ const deployShortingRewards = async ({
 			name: shortingRewardNameFixed,
 			deps: [rewardsToken].filter(x => !w3utils.isAddress(x)),
 			source: 'ShortingRewards',
-			args: [account, resolverAddress, rewardsDistributionAddress, rewardsTokenAddress, name],
+			args: [
+				account,
+				resolverAddress,
+				rewardsDistributionAddress,
+				rewardsTokenAddress,
+				toBytes32(name),
+			],
 		});
 	}
 
