@@ -7,13 +7,13 @@ const { getSource } = require('.');
 
 // We're just using the ERC20 members `balanceOf` and `Transfer`, so any ERC20 contract will do.
 const { abi: snxABI } = getSource({
-	contract: 'Synth',
+	contract: 'Synthetix',
 });
 
 /** *********** Replace Settings Here *********** **/
 
 // The RPC endpoint that the results will be retrieved from. Preferably this is an archive node.
-const infuraEndpoint = 'https://network.infura.io/v3/13873b0ed4164f7ca39bc3c02b21fba1';
+const infuraEndpoint = process.env.PROVIDER_URL;
 
 // The filename the results will be saved to.
 const owedFile = 'owedBalances.csv';
