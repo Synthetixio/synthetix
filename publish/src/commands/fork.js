@@ -1,7 +1,7 @@
 'use strict';
 
 const { ensureNetwork, loadConnections } = require('../util');
-const { getUsers, networkToChainId } = require('../../..');
+const { knownAccounts, getUsers, networkToChainId } = require('../../..');
 const ganache = require('ganache-core');
 const { red, green, gray, yellow } = require('chalk');
 const path = require('path');
@@ -23,7 +23,11 @@ const forkChain = async ({ network, reset, providerUrl, unlockAccounts = [] }) =
 	const chainId = networkToChainId[network];
 	console.log(gray(`Forking ${network} (id=${chainId})...`));
 
-	const users = getUsers({ network });
+	let users = getUsers({ network });
+	if (knownAccounts[network]) {
+		users = users.concat(knownAccounts[network]);
+	}
+	users.map(a => console.log(gray(`  > Pwning ${a.name}: ${a.address}`)));
 
 	const fee = users.find(user => user.name === 'fee');
 	const zero = users.find(user => user.name === 'zero');

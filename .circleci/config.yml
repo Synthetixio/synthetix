@@ -10,7 +10,7 @@ commands:
         default: false
     steps:
       - run:
-          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >> --unlock-accounts 0xF977814e90dA44bFA03b6295A0616a897441aceC
+          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
           background: true
       - cmd-wait-for-rpc
   cmd-local-start:
@@ -53,7 +53,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: node publish build
+      - run: node publish build --test-helpers
       - cmd-local-start
       - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
       - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
@@ -68,7 +68,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: node publish build
+      - run: node publish build --test-helpers
       - cmd-local-start
       - run: node publish deploy --network local --fresh-deploy --yes
       - run: npm run test:prod -- --patch-fresh-deployment
@@ -382,16 +382,6 @@ workflows:
           network: mainnet
           requires:
             - job-prepare
-      - job-prod-tests:
-          name: job-prod-tests-rinkeby
-          network: rinkeby
-          requires:
-            - job-prepare
-      - job-prod-tests:
-          name: job-prod-tests-kovan
-          network: kovan
-          requires:
-            - job-prepare
       - job-diff-prod-tests-local:
           name: job-diff-prod-tests-local
           requires:
@@ -426,22 +416,6 @@ workflows:
               only: /.*(staging|master).*/
           requires:
             - job-prepare
-      - job-prod-tests:
-          name: job-prod-tests-rinkeby
-          network: rinkeby
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-prod-tests:
-          name: job-prod-tests-kovan
-          network: kovan
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
       - job-diff-prod-tests-local:
           name: job-diff-prod-tests-local
           filters:
@@ -459,22 +433,6 @@ workflows:
       - job-diff-prod-tests:
           name: job-diff-prod-tests-mainnet
           network: mainnet
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-diff-prod-tests:
-          name: job-diff-prod-tests-rinkeby
-          network: rinkeby
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-diff-prod-tests:
-          name: job-diff-prod-tests-kovan
-          network: kovan
           filters:
             branches:
               only: /.*(staging|master).*/

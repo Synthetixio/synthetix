@@ -4,7 +4,10 @@ const { web3 } = require('@nomiclabs/buidler');
 const { toWei } = require('web3-utils');
 const { connectContract } = require('./connectContract');
 const { ensureAccountHasEther } = require('./ensureAccountHasBalance');
+const { readSetting, writeSetting } = require('./systemSettings');
+const { takeDebtSnapshot } = require('./debtSnapshot');
 const { toUnit } = require('../../utils')();
+const { gray } = require('chalk');
 
 async function checkRates({ network, deploymentPath }) {
 	const Synthetix = await connectContract({
@@ -31,9 +34,9 @@ async function simulateExchangeRates({ network, deploymentPath }) {
 
 	let currencyKeys = await Issuer.availableCurrencyKeys();
 	currencyKeys = currencyKeys.filter(key => key !== toBytes32('sUSD'));
-	const additionalKeys = ['ETH'].map(toBytes32); // The Depot uses the key "ETH" as opposed to "sETH" for its ether price
+	const additionalKeys = ['SNX', 'ETH'].map(toBytes32); // The Depot uses the key "ETH" as opposed to "sETH" for its ether price
 	currencyKeys.push(...additionalKeys);
-	console.log(`Updating ${currencyKeys.length} exchange rates...`);
+	console.log(gray(`    > Updating ${currencyKeys.length} exchange rates...`));
 
 	const ExchangeRates = await connectContract({
 		network,
@@ -61,8 +64,35 @@ async function simulateExchangeRates({ network, deploymentPath }) {
 			from: oracle,
 		}
 	);
+
+	await takeDebtSnapshot({ network, deploymentPath });
+}
+
+async function avoidStaleRates({ owner, network, deploymentPath }) {
+	const currentValue = (
+		await readSetting({
+			setting: 'rateStalePeriod',
+			network,
+			deploymentPath,
+		})
+	).toString();
+
+	const targetValue = '1000000000';
+
+	if (currentValue === targetValue) {
+		return;
+	}
+
+	await writeSetting({
+		setting: 'setRateStalePeriod',
+		value: targetValue,
+		owner,
+		network,
+		deploymentPath,
+	});
 }
 
 module.exports = {
 	simulateExchangeRates,
+	avoidStaleRates,
 };
