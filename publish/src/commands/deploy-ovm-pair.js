@@ -15,7 +15,7 @@ const L1_PROVIDER_URL = 'http://localhost:9545';
 const L2_PROVIDER_URL = 'http://localhost:8545';
 const DATA_PROVIDER_URL = 'http://localhost:8080';
 
-const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl }) => {
+const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl, dataProviderUrl }) => {
 	// This private key is #4 displayed when starting optimism-integration.
 	// When used on a fresh L2 chain, it passes all safety checks.
 	// Account #0: 0x023ffdc1530468eb8c8eebc3e38380b5bc19cc5d (10000 ETH)
@@ -33,7 +33,7 @@ const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl }) => {
 	await deployInstance({ useOvm: false, privateKey, l1ProviderUrl, l2ProviderUrl });
 	await deployInstance({ useOvm: true, privateKey, l1ProviderUrl, l2ProviderUrl });
 
-	const { l1Messenger, l2Messenger } = await getMessengers();
+	const { l1Messenger, l2Messenger } = await getMessengers({ dataProviderUrl });
 
 	await commands.connectBridge({
 		l1Network: 'local',
@@ -67,8 +67,8 @@ const deployInstance = async ({ useOvm, privateKey, l1ProviderUrl, l2ProviderUrl
 	});
 };
 
-const getMessengers = async () => {
-	const response = await axios.get(`${DATA_PROVIDER_URL}/addresses.json`);
+const getMessengers = async ({ dataProviderUrl }) => {
+	const response = await axios.get(`${dataProviderUrl}/addresses.json`);
 	const addresses = response.data;
 
 	return {
