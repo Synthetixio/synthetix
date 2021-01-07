@@ -14,7 +14,7 @@ const L1_PROVIDER_URL = 'http://localhost:9545';
 const L2_PROVIDER_URL = 'http://localhost:8545';
 const DATA_PROVIDER_URL = 'http://localhost:8080';
 
-const deployOvmPair = async () => {
+const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl }) => {
 	// This private key is #4 displayed when starting optimism-integration.
 	// When used on a fresh L2 chain, it passes all safety checks.
 	// Account #0: 0x023ffdc1530468eb8c8eebc3e38380b5bc19cc5d (10000 ETH)
@@ -37,8 +37,8 @@ const deployOvmPair = async () => {
 	await commands.connectBridge({
 		l1Network: 'local',
 		l2Network: 'local',
-		l1ProviderUrl: L1_PROVIDER_URL,
-		l2ProviderUrl: L2_PROVIDER_URL,
+		l1ProviderUrl: l1ProviderUrl,
+		l2ProviderUrl: l2ProviderUrl,
 		l1Messenger,
 		l2Messenger,
 		l1PrivateKey: privateKey,
@@ -84,6 +84,8 @@ module.exports = {
 			.description(
 				'Deploys a pair of L1 and L2 instances on local running chains started with `optimism-integration`, and connects them together. To be used exclusively for local testing.'
 			)
+			.option('--l1-provider-url <value>', 'The L1 provider to use', L1_PROVIDER_URL)
+			.option('--l2-provider-url <value>', 'The L2 provider to use', L2_PROVIDER_URL)
 			.action(async (...args) => {
 				try {
 					await deployOvmPair(...args);
