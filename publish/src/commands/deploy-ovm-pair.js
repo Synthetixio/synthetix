@@ -10,11 +10,6 @@ const {
 	constants: { OVM_MAX_GAS_LIMIT },
 } = require('../../../.');
 
-// Default values for CLI flags
-const L1_PROVIDER_URL = 'http://localhost:9545';
-const L2_PROVIDER_URL = 'http://localhost:8545';
-const DATA_PROVIDER_URL = 'http://localhost:8080';
-
 const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl, dataProviderUrl }) => {
 	// This private key is #4 displayed when starting optimism-integration.
 	// When used on a fresh L2 chain, it passes all safety checks.
@@ -85,9 +80,9 @@ module.exports = {
 			.description(
 				'Deploys a pair of L1 and L2 instances on local running chains started with `optimism-integration`, and connects them together. To be used exclusively for local testing.'
 			)
-			.option('--l1-provider-url <value>', 'The L1 provider to use', L1_PROVIDER_URL)
-			.option('--l2-provider-url <value>', 'The L2 provider to use', L2_PROVIDER_URL)
-			.option('--data-provider-url <value>', 'The data provider to use', DATA_PROVIDER_URL)
+			.option('--l1-provider-url <value>', 'The L1 provider to use', 'http://localhost:9545')
+			.option('--l2-provider-url <value>', 'The L2 provider to use', 'http://localhost:8545')
+			.option('--data-provider-url <value>', 'The data provider to use', 'http://localhost:8080')
 			.action(async (...args) => {
 				try {
 					await deployOvmPair(...args);
