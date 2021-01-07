@@ -10,6 +10,7 @@ const {
 	constants: { OVM_MAX_GAS_LIMIT },
 } = require('../../../.');
 
+// Default values for CLI flags
 const L1_PROVIDER_URL = 'http://localhost:9545';
 const L2_PROVIDER_URL = 'http://localhost:8545';
 const DATA_PROVIDER_URL = 'http://localhost:8080';
@@ -29,8 +30,8 @@ const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl }) => {
 	// Private Key: 0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7
 	const privateKey = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
 
-	await deployInstance({ useOvm: false, privateKey });
-	await deployInstance({ useOvm: true, privateKey });
+	await deployInstance({ useOvm: false, privateKey, l1ProviderUrl, l2ProviderUrl });
+	await deployInstance({ useOvm: true, privateKey, l1ProviderUrl, l2ProviderUrl });
 
 	const { l1Messenger, l2Messenger } = await getMessengers();
 
@@ -49,14 +50,14 @@ const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl }) => {
 	});
 };
 
-const deployInstance = async ({ useOvm, privateKey }) => {
+const deployInstance = async ({ useOvm, privateKey, l1ProviderUrl, l2ProviderUrl }) => {
 	await commands.build({ useOvm, optimizerRuns: useOvm ? 1 : 200, testHelpers: true });
 
 	await commands.deploy({
 		network: 'local',
 		freshDeploy: true,
 		yes: true,
-		providerUrl: useOvm ? L2_PROVIDER_URL : L1_PROVIDER_URL,
+		providerUrl: useOvm ? l2ProviderUrl : l1ProviderUrl,
 		gasPrice: '0',
 		useOvm,
 		methodCallGasLimit: '3500000',
