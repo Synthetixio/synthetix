@@ -86,6 +86,7 @@ module.exports = {
 			)
 			.option('--l1-provider-url <value>', 'The L1 provider to use', L1_PROVIDER_URL)
 			.option('--l2-provider-url <value>', 'The L2 provider to use', L2_PROVIDER_URL)
+			.option('--data-provider-url <value>', 'The data provider to use', DATA_PROVIDER_URL)
 			.action(async (...args) => {
 				try {
 					await deployOvmPair(...args);
