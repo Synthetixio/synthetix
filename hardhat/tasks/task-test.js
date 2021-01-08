@@ -1,4 +1,3 @@
-const path = require('path');
 const { task } = require('hardhat/config');
 const { gray, yellow } = require('chalk');
 const optimizeIfRequired = require('../util/optimizeIfRequired');
@@ -17,10 +16,8 @@ task('test')
 			hre.ovm = true;
 
 			console.log(gray('Compiling and running tests in the OVM...'));
-			hre.config.solc = {
-				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc'),
-			};
-			await hre.config.startOvmNode();
+			require('@eth-optimism/plugins/hardhat/compiler/0.5.16');
+			require('@eth-optimism/plugins/hardhat/web3');
 			if (!grep) {
 				console.log(gray(`Ignoring test specs containing`, yellow('@ovm-skip')));
 				hre.config.mocha.grep = '@ovm-skip';
