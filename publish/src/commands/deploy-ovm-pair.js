@@ -33,8 +33,8 @@ const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl, dataProviderUrl }) 
 	await commands.connectBridge({
 		l1Network: 'local',
 		l2Network: 'local',
-		l1ProviderUrl: l1ProviderUrl,
-		l2ProviderUrl: l2ProviderUrl,
+		l1ProviderUrl,
+		l2ProviderUrl,
 		l1Messenger,
 		l2Messenger,
 		l1PrivateKey: privateKey,
