@@ -5,7 +5,7 @@ steps:
   - attach_workspace:
       at: .
   # Compile
-  - run: node publish build
+  - run: node publish build --test-helpers
   # Start local chain
   - cmd-local-start
   # Deploy

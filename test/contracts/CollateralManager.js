@@ -19,7 +19,7 @@ const CollateralManager = artifacts.require(`CollateralManager`);
 const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
+contract('CollateralManager @ovm-skip', async accounts => {
 	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
@@ -280,21 +280,25 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		await manager.addCollaterals([ceth.address, cerc20.address, short.address], { from: owner });
 
-		await ceth.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsETH')], { from: owner });
-		await cerc20.addSynths([toBytes32('SynthsUSD'), toBytes32('SynthsBTC')], { from: owner });
-		await short.addSynths([toBytes32('SynthsBTC'), toBytes32('SynthsETH')], { from: owner });
-
-		await ceth.rebuildCache();
-		await ceth.setCurrencies({ from: owner });
-
-		await cerc20.rebuildCache();
-		await cerc20.setCurrencies({ from: owner });
-
-		await short.rebuildCache();
-		await short.setCurrencies({ from: owner });
+		await ceth.addSynths(
+			['SynthsUSD', 'SynthsETH'].map(toBytes32),
+			['sUSD', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
+		await cerc20.addSynths(
+			['SynthsUSD', 'SynthsBTC'].map(toBytes32),
+			['sUSD', 'sBTC'].map(toBytes32),
+			{ from: owner }
+		);
+		await short.addSynths(
+			['SynthsBTC', 'SynthsETH'].map(toBytes32),
+			['sBTC', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
 
 		await manager.addSynths(
 			[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
+			[toBytes32('sUSD'), toBytes32('sBTC'), toBytes32('sETH')],
 			{
 				from: owner,
 			}
@@ -305,15 +309,19 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
 				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
 			],
+			['sBTC', 'sETH'].map(toBytes32),
 			{
 				from: owner,
 			}
 		);
 
-		// rebuild the cache to add the synths we need.
-		await manager.rebuildCache();
-		await manager.addSynthsToFlexibleStorage({ from: owner });
-		await manager.addShortableSynthsToState({ from: owner });
+		// check synths are set and currencyKeys set
+		assert.isTrue(
+			await manager.areSynthsAndCurrenciesSet(
+				['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
+				['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+			)
+		);
 
 		await renBTC.approve(cerc20.address, toUnit(100), { from: account1 });
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
@@ -350,15 +358,13 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 				'setMaxDebt',
 				'setBaseBorrowRate',
 				'setBaseShortRate',
-				'getLoanId',
+				'getNewLoanId',
 				'addCollaterals',
 				'removeCollaterals',
 				'addSynths',
 				'removeSynths',
 				'addShortableSynths',
 				'removeShortableSynths',
-				'addSynthsToFlexibleStorage',
-				'addShortableSynthsToState',
 				'updateBorrowRates',
 				'updateShortRates',
 				'incrementLongs',
@@ -610,7 +616,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 		describe('revert conditions', async () => {
 			it('should revert if the caller is not the owner', async () => {
 				await assert.revert(
-					manager.removeSynths([toBytes32('SynthsBTC')], { from: account1 }),
+					manager.removeSynths([toBytes32('SynthsBTC')], [toBytes32('sBTC')], { from: account1 }),
 					'Only the contract owner may perform this action'
 				);
 			});
@@ -618,7 +624,7 @@ contract('CollateralManager @gas-skip @ovm-skip', async accounts => {
 
 		describe('it should remove a synth', async () => {
 			beforeEach(async () => {
-				await manager.removeSynths([toBytes32('SynthsBTC')], { from: owner });
+				await manager.removeSynths([toBytes32('SynthsBTC')], [toBytes32('sBTC')], { from: owner });
 			});
 		});
 	});

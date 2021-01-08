@@ -1239,6 +1239,8 @@ const deploy = async ({
 	// ----------------
 	let collateralManager, collateralEth, collateralErc20, collateralShort;
 
+	const collateralManagerDefaults = await getDeployParameter('COLLATERAL_MANAGER');
+
 	if (!useOvm) {
 		console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
 
@@ -1247,25 +1249,21 @@ const deploy = async ({
 			args: [account, account],
 		});
 
-		const maxDebt = w3utils.toWei('50000000'); // 5 million sUSD worth.
-		const baseBorrowRate = w3utils.toWei('0'); //
-		const baseShortRate = w3utils.toWei('0'); //
-
 		collateralManager = await deployer.deployContract({
 			name: 'CollateralManager',
 			args: [
 				addressOf(managerState),
 				account,
 				addressOf(readProxyForResolver),
-				maxDebt,
-				baseBorrowRate,
-				baseShortRate,
+				collateralManagerDefaults['MAX_DEBT'],
+				collateralManagerDefaults['BASE_BORROW_RATE'],
+				collateralManagerDefaults['BASE_SHORT_RATE'],
 			],
 		});
 
 		if (managerState && collateralManager) {
 			await runStep({
-				contract: 'ManagerState',
+				contract: 'CollateralManagerState',
 				target: managerState,
 				read: 'associatedContract',
 				expected: input => input === addressOf(collateralManager),
@@ -1288,8 +1286,8 @@ const deploy = async ({
 				addressOf(collateralManager),
 				addressOf(readProxyForResolver),
 				toBytes32('sETH'),
-				w3utils.toWei('1.5'),
-				w3utils.toWei('0.5'),
+				(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
 			],
 		});
 
@@ -1310,18 +1308,32 @@ const deploy = async ({
 			args: [account, account],
 		});
 
-		const RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
+		let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
+		if (!RENBTC_ADDRESS) {
+			if (network !== 'local') {
+				throw new Error('renBTC address is not known');
+			}
+
+			// On local, deploy a mock renBTC token to use as the underlying in CollateralErc20
+			const renBTC = await deployer.deployContract({
+				name: 'MockToken',
+				args: ['renBTC', 'renBTC', 8],
+			});
+
+			RENBTC_ADDRESS = renBTC.options.address;
+		}
 
 		collateralErc20 = await deployer.deployContract({
 			name: 'CollateralErc20',
+			source: 'CollateralErc20',
 			args: [
 				addressOf(collateralStateErc20),
 				account,
 				addressOf(collateralManager),
 				addressOf(readProxyForResolver),
 				toBytes32('sBTC'),
-				w3utils.toWei('1.5'),
-				w3utils.toWei('0.025'),
+				(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_COLLATERAL'],
 				RENBTC_ADDRESS,
 				8,
 			],
@@ -1352,8 +1364,8 @@ const deploy = async ({
 				addressOf(collateralManager),
 				addressOf(readProxyForResolver),
 				toBytes32('sUSD'),
-				w3utils.toWei('1.5'),
-				w3utils.toWei('500'),
+				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
 				addressOf(deployer.getExistingContract({ contract: 'ProxyERC20sUSD' })),
 				18,
 			],
@@ -1375,26 +1387,6 @@ const deploy = async ({
 
 	let addressesAreImported = false;
 
-	const filterTargetsWith = ({ prop }) =>
-		Object.entries(deployer.deployedContracts).filter(([, target]) =>
-			target.options.jsonInterface.find(({ name }) => name === prop)
-		);
-
-	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
-		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
-		.filter(([contract]) => {
-			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
-				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
-				console.log(
-					redBright(
-						`WARNING: Not invoking ${contract}.rebuildCache(). Run node publish connect-bridge after deployment.`
-					)
-				);
-				return false;
-			}
-			return true;
-		});
-
 	if (addressResolver) {
 		// Now we add everything into the AddressResolver
 		const addressArgs = [
@@ -1410,12 +1402,12 @@ const deploy = async ({
 		];
 
 		const { pending } = await runStep({
-			gasLimit: 4e6, // higher gas required
+			gasLimit: 6e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
 			read: 'areAddressesImported',
-			expected: input => input,
 			readArg: addressArgs,
+			expected: input => input,
 			write: 'importAddresses',
 			writeArg: addressArgs,
 		});
@@ -1445,36 +1437,58 @@ const deploy = async ({
 
 	console.log(gray('Addresses are correctly set up, continuing...'));
 
-	// now ensure all resolvers are set
-	// NOTE: If using OVM, split the array of addresses to cache,
-	// since things spend signifficantly more gas in OVM
-	const addressesToCache = contractsWithRebuildableCache.map(
-		([
-			,
-			{
-				options: { address },
-			},
-		]) => address
-	);
+	const filterTargetsWith = ({ prop }) =>
+		Object.entries(deployer.deployedContracts).filter(([, target]) =>
+			target.options.jsonInterface.find(({ name }) => name === prop)
+		);
+
+	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
+		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
+		.filter(([contract]) => {
+			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
+				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
+				console.log(
+					redBright(
+						`WARNING: Not invoking ${contract}.rebuildCache(). Run node publish connect-bridge after deployment.`
+					)
+				);
+				return false;
+			}
+			return true;
+		});
+
+	// now ensure all caches are rebuilt for those in need
+	const contractsToRebuildCache = [];
+	for (const [, target] of contractsWithRebuildableCache) {
+		const isCached = await target.methods.isResolverCached().call();
+		if (!isCached) {
+			contractsToRebuildCache.push(target.options.address);
+		}
+	}
+
 	if (useOvm) {
-		const chunks = splitArrayIntoChunks(addressesToCache, 4);
+		// NOTE: If using OVM, split the array of addresses to cache,
+		// since things spend signifficantly more gas in OVM
+		const chunks = splitArrayIntoChunks(contractsToRebuildCache, 4);
 		for (let i = 0; i < chunks.length; i++) {
 			const chunk = chunks[i];
 			await runStep({
 				gasLimit: 7e6, // higher gas required
 				contract: `AddressResolver`,
 				target: addressResolver,
+				publiclyCallable: true, // does not require owner
 				write: 'rebuildCaches',
 				writeArg: [chunk],
 			});
 		}
-	} else {
+	} else if (contractsToRebuildCache.length) {
 		await runStep({
-			gasLimit: 10e6, // higher gas required
+			gasLimit: 9e6, // higher gas required
 			contract: `AddressResolver`,
 			target: addressResolver,
+			publiclyCallable: true, // does not require owner
 			write: 'rebuildCaches',
-			writeArg: [addressesToCache],
+			writeArg: [contractsToRebuildCache],
 		});
 	}
 
@@ -1486,6 +1500,7 @@ const deploy = async ({
 			target,
 			read: 'isResolverCached',
 			expected: input => input,
+			publiclyCallable: true, // does not require owner
 			write: 'rebuildCache',
 		});
 	}
@@ -1886,7 +1901,8 @@ const deploy = async ({
 		});
 
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
-		if (aggregatorWarningFlags) {
+		// If deploying to OVM avoid ivoking setAggregatorWarningFlags for now.
+		if (aggregatorWarningFlags && !useOvm) {
 			await runStep({
 				contract: 'SystemSettings',
 				target: systemSettings,
@@ -1900,135 +1916,202 @@ const deploy = async ({
 
 	if (!useOvm) {
 		console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
+		const collateralsArg = [collateralEth, collateralErc20, collateralShort].map(addressOf);
 		await runStep({
 			contract: 'CollateralManager',
 			target: collateralManager,
+			read: 'hasAllCollaterals',
+			readArg: [collateralsArg],
+			expected: input => input,
 			write: 'addCollaterals',
-			writeArg: [[collateralEth, collateralErc20, collateralShort].map(addressOf)],
+			writeArg: [collateralsArg],
 		});
 
 		await runStep({
 			contract: 'CollateralEth',
 			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsETH'].map(toBytes32)],
+			read: 'manager',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setManager',
+			writeArg: addressOf(collateralManager),
 		});
 
-		await runStep({
-			contract: 'CollateralErc20',
-			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsBTC'].map(toBytes32)],
-		});
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynths',
-			writeArg: [['SynthsBTC', 'SynthsETH'].map(toBytes32)],
-		});
-
+		const collateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
 		await runStep({
 			contract: 'CollateralEth',
-			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralEth',
-			target: collateralEth,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'setCurrencies',
-		});
-
-		await runStep({
-			contract: 'CollateralErc20',
-			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralErc20',
-			target: collateralErc20,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'setCurrencies',
-		});
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
-		});
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'setCurrencies',
-		});
-
-		// add to the manager.
-
-		await runStep({
 			gasLimit: 1e6,
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
+			target: collateralEth,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralEthSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralEthSynths.map(toBytes32),
+			],
+			expected: input => input,
 			write: 'addSynths',
-			writeArg: [['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32)],
-		});
-
-		await runStep({
-			gasLimit: 1e6,
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addShortableSynths',
 			writeArg: [
-				[['SynthsBTC', 'SynthiBTC'].map(toBytes32), ['SynthsETH', 'SynthiETH'].map(toBytes32)],
+				collateralEthSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralEthSynths.map(toBytes32),
 			],
 		});
 
 		await runStep({
+			contract: 'CollateralErc20',
+			target: collateralErc20,
+			read: 'manager',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setManager',
+			writeArg: addressOf(collateralManager),
+		});
+
+		const collateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
+		await runStep({
+			contract: 'CollateralErc20',
+			gasLimit: 1e6,
+			target: collateralErc20,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
+				collateralErc20Synths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
+				collateralErc20Synths.map(toBytes32),
+			],
+		});
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'manager',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setManager',
+			writeArg: addressOf(collateralManager),
+		});
+
+		const collateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
+		await runStep({
+			contract: 'CollateralShort',
+			gasLimit: 1e6,
+			target: collateralShort,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralShortSynths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralShortSynths.map(toBytes32),
+			],
+		});
+
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'maxDebt',
+			expected: input => input === collateralManagerDefaults['MAX_DEBT'],
+			write: 'setMaxDebt',
+			writeArg: [collateralManagerDefaults['MAX_DEBT']],
+		});
+
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'baseBorrowRate',
+			expected: input => input === collateralManagerDefaults['BASE_BORROW_RATE'],
+			write: 'setBaseBorrowRate',
+			writeArg: [collateralManagerDefaults['BASE_BORROW_RATE']],
+		});
+
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'baseShortRate',
+			expected: input => input === collateralManagerDefaults['BASE_SHORT_RATE'],
+			write: 'setBaseShortRate',
+			writeArg: [collateralManagerDefaults['BASE_SHORT_RATE']],
+		});
+
+		// add to the manager.
+		const collateralManagerSynths = collateralManagerDefaults['SYNTHS'];
+		await runStep({
 			gasLimit: 1e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'rebuildCache',
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
+			],
+		});
+
+		const collateralManagerShorts = collateralManagerDefaults['SHORTS'];
+		await runStep({
+			gasLimit: 1e6,
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'areShortableSynthsSet',
+			readArg: [
+				collateralManagerShorts.map(({ long }) => toBytes32(`Synth${long}`)),
+				collateralManagerShorts.map(({ long }) => toBytes32(long)),
+			],
+			expected: input => input,
+			write: 'addShortableSynths',
+			writeArg: [
+				collateralManagerShorts.map(({ long, short }) =>
+					[`Synth${long}`, `Synth${short}`].map(toBytes32)
+				),
+				collateralManagerShorts.map(({ long }) => toBytes32(long)),
+			],
+		});
+
+		const collateralShortInteractionDelay = (await getDeployParameter('COLLATERAL_SHORT'))[
+			'INTERACTION_DELAY'
+		];
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'interactionDelay',
+			expected: input => input === collateralShortInteractionDelay,
+			write: 'setInteractionDelay',
+			writeArg: collateralShortInteractionDelay,
 		});
 
 		await runStep({
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addSynthsToFlexibleStorage',
+			contract: 'CollateralEth',
+			target: collateralEth,
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
 		});
 
 		await runStep({
-			contract: 'CollateralManager',
-			target: collateralManager,
-			// read: 'synths',
-			// expected: input => input !== '0', // only change if zero
-			write: 'addShortableSynthsToState',
+			contract: 'CollateralErc20',
+			target: collateralErc20,
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
+		});
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
 		});
 	}
 
@@ -2040,7 +2123,7 @@ const deploy = async ({
 		if (force || validityChanged) {
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
-				gasLimit: 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths
+				gasLimit: useOvm ? 3.5e6 : 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths on L1
 				contract: 'DebtCache',
 				target: debtCache,
 				write: 'takeDebtSnapshot',
