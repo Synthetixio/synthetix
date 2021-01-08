@@ -5,6 +5,8 @@ interface ICollateralManager {
     // Manager information
     function hasCollateral(address collateral) external view returns (bool);
 
+    function isSynthManaged(bytes32 currencyKey) external view returns (bool);
+
     // State information
     function long(bytes32 synth) external view returns (uint amount);
 
@@ -40,25 +42,32 @@ interface ICollateralManager {
 
     function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue, bool anyRateIsInvalid);
 
+    function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        view
+        returns (bool);
+
+    function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        view
+        returns (bool);
+
     // Loans
-    function getLoanId() external returns (uint id);
+    function getNewLoanId() external returns (uint id);
 
     // Manager mutative
     function addCollaterals(address[] calldata collaterals) external;
 
     function removeCollaterals(address[] calldata collaterals) external;
 
-    function addSynths(bytes32[] calldata synths) external;
+    function addSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external;
 
-    function removeSynths(bytes32[] calldata synths) external;
+    function removeSynths(bytes32[] calldata synths, bytes32[] calldata synthKeys) external;
 
-    function addShortableSynths(bytes32[2][] calldata synthsWithInverses) external;
+    function addShortableSynths(bytes32[2][] calldata requiredSynthAndInverseNamesInResolver, bytes32[] calldata synthKeys)
+        external;
 
     function removeShortableSynths(bytes32[] calldata synths) external;
-
-    function addSynthsToFlexibleStorage() external;
-
-    function addShortableSynthsToState() external;
 
     // State mutative
     function updateBorrowRates(uint rate) external;

@@ -9,6 +9,10 @@ contract EmptyCollateralManager is ICollateralManager {
         return false;
     }
 
+    function isSynthManaged(bytes32) external view returns (bool) {
+        return false;
+    }
+
     // State information
     function long(bytes32) external view returns (uint amount) {
         return 0;
@@ -64,8 +68,16 @@ contract EmptyCollateralManager is ICollateralManager {
         return (false, false);
     }
 
+    function areSynthsAndCurrenciesSet(bytes32[] calldata, bytes32[] calldata) external view returns (bool) {
+        return false;
+    }
+
+    function areShortableSynthsSet(bytes32[] calldata, bytes32[] calldata) external view returns (bool) {
+        return false;
+    }
+
     // Loans
-    function getLoanId() external returns (uint id) {
+    function getNewLoanId() external returns (uint id) {
         return 0;
     }
 
@@ -74,19 +86,19 @@ contract EmptyCollateralManager is ICollateralManager {
 
     function removeCollaterals(address[] calldata) external {}
 
-    function addSynths(bytes32[] calldata) external {}
+    function addSynths(bytes32[] calldata, bytes32[] calldata) external {}
 
-    function removeSynths(bytes32[] calldata) external {}
+    function removeSynths(bytes32[] calldata, bytes32[] calldata) external {}
 
-    function addShortableSynths(bytes32[2][] calldata) external {}
+    function addShortableSynths(bytes32[2][] calldata, bytes32[] calldata) external {}
 
     function removeShortableSynths(bytes32[] calldata) external {}
 
-    function addSynthsToFlexibleStorage() external {}
-
-    function addShortableSynthsToState() external {}
-
     // State mutative
+    function updateBorrowRates(uint) external {}
+
+    function updateShortRates(bytes32, uint) external {}
+
     function incrementLongs(bytes32, uint) external {}
 
     function decrementLongs(bytes32, uint) external {}
@@ -94,8 +106,4 @@ contract EmptyCollateralManager is ICollateralManager {
     function incrementShorts(bytes32, uint) external {}
 
     function decrementShorts(bytes32, uint) external {}
-
-    function updateBorrowRates(uint) external {}
-
-    function updateShortRates(bytes32, uint) external {}
 }

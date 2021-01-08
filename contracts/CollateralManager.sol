@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
-import "./MixinSystemSettings.sol";
+import "./MixinResolver.sol";
 import "./interfaces/ICollateralManager.sol";
 
 // Libraries
@@ -13,7 +13,6 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./CollateralManagerState.sol";
-import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IDebtCache.sol";
@@ -21,7 +20,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ISynth.sol";
 
 
-contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSettings {
+contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -49,6 +48,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     // The set of all synths issuable by the various collateral contracts
     Bytes32SetLib.Bytes32Set internal _synths;
 
+    // Map from currency key to synth contract name.
+    mapping(bytes32 => bytes32) public synthsByKey;
+
     // The set of all synths that are shortable.
     Bytes32SetLib.Bytes32Set internal _shortableSynths;
 
@@ -68,11 +70,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_ISSUER, CONTRACT_EXRATES];
+    bytes32[24] private addressesToCache = [CONTRACT_ISSUER, CONTRACT_EXRATES];
 
     /* ========== CONSTRUCTOR ========== */
     constructor(
@@ -82,7 +83,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         uint _maxDebt,
         uint _baseBorrowRate,
         uint _baseShortRate
-    ) public Owned(_owner) Pausable() MixinSystemSettings(_resolver) {
+    ) public Owned(_owner) Pausable() MixinResolver(_resolver) {
         owner = msg.sender;
         state = _state;
 
@@ -96,12 +97,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](3);
-        newAddresses[0] = CONTRACT_ISSUER;
-        newAddresses[1] = CONTRACT_EXRATES;
-        newAddresses[2] = CONTRACT_SYSTEMSTATUS;
-        bytes32[] memory staticAddresses = combineArrays(newAddresses, existingAddresses);
+        bytes32[] memory staticAddresses = new bytes32[](2);
+        staticAddresses[0] = CONTRACT_ISSUER;
+        staticAddresses[1] = CONTRACT_EXRATES;
 
         // we want to cache the name of the synth and the name of its corresponding iSynth
         bytes32[] memory shortAddresses;
@@ -125,11 +123,12 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         }
     }
 
-    /* ---------- Related Contracts ---------- */
-
-    function _systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
+    // helper function to check whether synth "by key" is a collateral issued by multi-collateral
+    function isSynthManaged(bytes32 currencyKey) external view returns (bool) {
+        return synthsByKey[currencyKey] != bytes32(0);
     }
+
+    /* ---------- Related Contracts ---------- */
 
     function _issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
@@ -147,6 +146,15 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
 
     function hasCollateral(address collateral) public view returns (bool) {
         return _collaterals.contains(collateral);
+    }
+
+    function hasAllCollaterals(address[] memory collaterals) public view returns (bool) {
+        for (uint i = 0; i < collaterals.length; i++) {
+            if (!hasCollateral(collaterals[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /* ---------- State Information ---------- */
@@ -296,28 +304,24 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     }
 
     function setBaseBorrowRate(uint _baseBorrowRate) public onlyOwner {
-        require(_baseBorrowRate >= 0, "Must be greater than or equal to 0");
         baseBorrowRate = _baseBorrowRate;
         emit BaseBorrowRateUpdated(baseBorrowRate);
     }
 
     function setBaseShortRate(uint _baseShortRate) public onlyOwner {
-        require(_baseShortRate >= 0, "Must be greater than or equal to 0");
         baseShortRate = _baseShortRate;
         emit BaseShortRateUpdated(baseShortRate);
     }
 
     /* ---------- LOANS ---------- */
 
-    function getLoanId() external onlyCollateral returns (uint id) {
+    function getNewLoanId() external onlyCollateral returns (uint id) {
         id = state.incrementTotalLoans();
     }
 
     /* ---------- MANAGER ---------- */
 
     function addCollaterals(address[] calldata collaterals) external onlyOwner {
-        _systemStatus().requireSystemActive();
-
         for (uint i = 0; i < collaterals.length; i++) {
             if (!_collaterals.contains(collaterals[i])) {
                 _collaterals.add(collaterals[i]);
@@ -327,8 +331,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
     }
 
     function removeCollaterals(address[] calldata collaterals) external onlyOwner {
-        _systemStatus().requireSystemActive();
-
         for (uint i = 0; i < collaterals.length; i++) {
             if (_collaterals.contains(collaterals[i])) {
                 _collaterals.remove(collaterals[i]);
@@ -337,31 +339,44 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
         }
     }
 
-    function addSynths(bytes32[] calldata synths) external onlyOwner {
-        _systemStatus().requireSystemActive();
-
-        for (uint i = 0; i < synths.length; i++) {
-            if (!_synths.contains(synths[i])) {
-                _synths.add(synths[i]);
-                emit SynthAdded(synths[i]);
+    function addSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external onlyOwner {
+        for (uint i = 0; i < synthNamesInResolver.length; i++) {
+            if (!_synths.contains(synthNamesInResolver[i])) {
+                bytes32 synthName = synthNamesInResolver[i];
+                _synths.add(synthName);
+                synthsByKey[synthKeys[i]] = synthName;
+                emit SynthAdded(synthName);
             }
         }
     }
 
-    function removeSynths(bytes32[] calldata synths) external onlyOwner {
-        _systemStatus().requireSystemActive();
+    function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        view
+        returns (bool)
+    {
+        if (_synths.elements.length != requiredSynthNamesInResolver.length) {
+            return false;
+        }
 
+        for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
+            if (!_synths.contains(requiredSynthNamesInResolver[i])) {
+                return false;
+            }
+            if (synthsByKey[synthKeys[i]] != requiredSynthNamesInResolver[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function removeSynths(bytes32[] calldata synths, bytes32[] calldata synthKeys) external onlyOwner {
         for (uint i = 0; i < synths.length; i++) {
             if (_synths.contains(synths[i])) {
                 // Remove it from the the address set lib.
                 _synths.remove(synths[i]);
-
-                // Now tell flexible storage which the debt cache will read from.
-                flexibleStorage().setBoolValue(
-                    CONTRACT_NAME,
-                    keccak256(abi.encodePacked(COLLATERAL_SYNTHS, _synth(synths[i]).currencyKey())),
-                    false
-                );
+                delete synthsByKey[synthKeys[i]];
 
                 emit SynthRemoved(synths[i]);
             }
@@ -370,14 +385,17 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
 
     // When we add a shortable synth, we need to know the iSynth as well
     // This is so we can get the proper skew for the short rate.
-    function addShortableSynths(bytes32[2][] calldata synthWithInverse) external onlyOwner {
-        _systemStatus().requireSystemActive();
+    function addShortableSynths(bytes32[2][] calldata requiredSynthAndInverseNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        onlyOwner
+    {
+        require(requiredSynthAndInverseNamesInResolver.length == synthKeys.length, "Input array length mismatch");
 
-        for (uint i = 0; i < synthWithInverse.length; i++) {
+        for (uint i = 0; i < requiredSynthAndInverseNamesInResolver.length; i++) {
             // setting these explicitly for clarity
             // Each entry in the array is [Synth, iSynth]
-            bytes32 synth = synthWithInverse[i][0];
-            bytes32 iSynth = synthWithInverse[i][1];
+            bytes32 synth = requiredSynthAndInverseNamesInResolver[i][0];
+            bytes32 iSynth = requiredSynthAndInverseNamesInResolver[i][1];
 
             if (!_shortableSynths.contains(synth)) {
                 // Add it to the address set lib.
@@ -387,13 +405,45 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
                 synthToInverseSynth[synth] = iSynth;
 
                 emit ShortableSynthAdded(synth);
+
+                // now the associated synth key to the CollateralManagerState
+                state.addShortCurrency(synthKeys[i]);
             }
         }
+
+        rebuildCache();
+    }
+
+    function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+        external
+        view
+        returns (bool)
+    {
+        require(requiredSynthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+
+        if (_shortableSynths.elements.length != requiredSynthNamesInResolver.length) {
+            return false;
+        }
+
+        // first check contract state
+        for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
+            bytes32 synthName = requiredSynthNamesInResolver[i];
+            if (!_shortableSynths.contains(synthName) || synthToInverseSynth[synthName] == bytes32(0)) {
+                return false;
+            }
+        }
+
+        // now check everything added to external state contract
+        for (uint i = 0; i < synthKeys.length; i++) {
+            if (state.getShortRatesLength(synthKeys[i]) == 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     function removeShortableSynths(bytes32[] calldata synths) external onlyOwner {
-        _systemStatus().requireSystemActive();
-
         for (uint i = 0; i < synths.length; i++) {
             if (_shortableSynths.contains(synths[i])) {
                 // Remove it from the the address set lib.
@@ -408,26 +458,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinSystemSe
 
                 emit ShortableSynthRemoved(synths[i]);
             }
-        }
-    }
-
-    // Call this after adding synths to the long side.
-    function addSynthsToFlexibleStorage() external onlyOwner {
-        for (uint i = 0; i < _synths.elements.length; i++) {
-            // Now tell flexible storage which the debt cache will read from.
-            flexibleStorage().setBoolValue(
-                CONTRACT_NAME,
-                keccak256(abi.encodePacked(COLLATERAL_SYNTHS, _synth(_synths.elements[i]).currencyKey())),
-                true
-            );
-        }
-    }
-
-    // Call this after adding synths to the short side.
-    function addShortableSynthsToState() external onlyOwner {
-        for (uint i = 0; i < _shortableSynths.elements.length; i++) {
-            bytes32 synthKey = _synth(_shortableSynths.elements[i]).currencyKey();
-            state.addShortCurrency(synthKey);
         }
     }
 

@@ -2883,7 +2883,7 @@
 		"commit": "bfb75b3e33898572769f99a54e0b97c97d3754fa",
 		"contracts": {
 			"ProxysUSD": {
-				"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
+				"address": "0xC674ad732Dfd4E1359ec4B18fA5472c0747E480A",
 				"status": "current"
 			}
 		}
@@ -3186,7 +3186,7 @@
 		"commit": "48278f3376c6770dba6f88e854b917a891678baa",
 		"contracts": {
 			"ProxyERC20sUSD": {
-				"address": "0x2d8E96278df430fD9cFdc5819836f5702fa07980",
+				"address": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
 				"status": "current"
 			},
 			"TokenStatesXRP": {
@@ -6191,48 +6191,112 @@
 			},
 			"DebtCache": {
 				"address": "0x2dC79215005767c7A8cF1954586Dd804eA1a8685",
-				"status": "current",
-				"keccak256": "0xbd01509a360de9f0784e2eabd54226d678363f6c32276ab20f5b9d70d65273f6"
+				"status": "replaced",
+				"keccak256": "0xbd01509a360de9f0784e2eabd54226d678363f6c32276ab20f5b9d70d65273f6",
+				"replaced_in": "v2.35.2-beta"
 			},
 			"CollateralManagerState": {
 				"address": "0x0D69b7f60dc6f26c1b5c0e424cD95A83d9FEFb3a",
-				"status": "current",
-				"keccak256": "0x19e76f6a4819427a6a7f0f8e432218055923892950ca0cace4b7c7cd5c92a829"
+				"status": "replaced",
+				"keccak256": "0x19e76f6a4819427a6a7f0f8e432218055923892950ca0cace4b7c7cd5c92a829",
+				"replaced_in": "v2.35.2-beta"
 			},
 			"CollateralManager": {
 				"address": "0x057ee6230Fe8342ED627D99FB4E5169970f29b42",
-				"status": "current",
-				"keccak256": "0xfb1346ce549b3d2e0d67f328489b712b5cbb63e0a1661e9f872274b6b5fb8a12"
+				"status": "replaced",
+				"keccak256": "0xfb1346ce549b3d2e0d67f328489b712b5cbb63e0a1661e9f872274b6b5fb8a12",
+				"replaced_in": "v2.35.2-beta"
 			},
 			"CollateralStateErc20": {
 				"address": "0x8D11865B2EfBeB9f73fa2621167e93690AE599af",
+				"status": "replaced",
+				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c",
+				"replaced_in": "v2.35.2-beta"
+			},
+			"CollateralStateEth": {
+				"address": "0xda2331Aa29486A8d3c2fF448c6B4f1E2194a6664",
+				"status": "replaced",
+				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c",
+				"replaced_in": "v2.35.2-beta"
+			},
+			"CollateralStateShort": {
+				"address": "0x8d08f82A1e76E43b78b0F64F1a9fbcA41f6fCf68",
+				"status": "replaced",
+				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c",
+				"replaced_in": "v2.35.2-beta"
+			},
+			"CollateralEth": {
+				"address": "0x9458436ccd294d0e465f9b4B6C0edC034F68145B",
+				"status": "replaced",
+				"keccak256": "0x67ae878d2e86acd16cf79af03fc47fa3d8f278b25de4ca145815066d10e76190",
+				"replaced_in": "v2.35.2-beta"
+			},
+			"CollateralErc20": {
+				"address": "0xBca433dE144e375034F21e2DDf7e38E0dC820B31",
+				"status": "replaced",
+				"keccak256": "0xddbc67a64ca2a4ed2dcb4011baf5b6424ec9a2e28e04d87d40d78c1d9b595731",
+				"replaced_in": "v2.35.2-beta"
+			},
+			"CollateralShort": {
+				"address": "0x00fAaC0807a9928Bd84bD8958acAf8A2eA5DE14C",
+				"status": "replaced",
+				"keccak256": "0x4e801d2e9cfc393ea332daeb0a0e944c9466428b1f7184663f463ccc5995f426",
+				"replaced_in": "v2.35.2-beta"
+			}
+		}
+	},
+	"v2.35.2-beta": {
+		"tag": "v2.35.2-beta",
+		"fulltag": "v2.35.2-beta",
+		"release": "Shaula",
+		"network": "kovan",
+		"date": "2020-12-23T17:40:26-05:00",
+		"commit": "47ecb2a0dd53a6c458bd16f2a4970de951e3f37f",
+		"contracts": {
+			"DebtCache": {
+				"address": "0xDcB48E969E69Df65F72f77b2AAE145509733E5C0",
+				"status": "current",
+				"keccak256": "0x071d5e77712e76f9ce095244ed31be9ece5efbe76a73b97bde41582f727f91c9"
+			},
+			"CollateralManagerState": {
+				"address": "0x8D65Ed88D6162a2b3B5F71c45D433d4aeAc93065",
+				"status": "current",
+				"keccak256": "0x614dd98ef6d3ac07a6f11efcf61e17925555e41e6bc964956eeca7c541af4d54"
+			},
+			"CollateralManager": {
+				"address": "0x53baE964339e8A742B5b47F6C10bbfa8Ff138F34",
+				"status": "current",
+				"keccak256": "0x8a5fc59992f851f8e9e2f08f1561ae9d14c2870748e53e4feb32fb419bcfc5bf"
+			},
+			"CollateralStateErc20": {
+				"address": "0x8e6669A625c92279E137f887c0175de8C47a3622",
 				"status": "current",
 				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c"
 			},
 			"CollateralStateEth": {
-				"address": "0xda2331Aa29486A8d3c2fF448c6B4f1E2194a6664",
+				"address": "0xb0243A27b8c08B78B4d7Ae0730670Cf824345114",
 				"status": "current",
 				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c"
 			},
 			"CollateralStateShort": {
-				"address": "0x8d08f82A1e76E43b78b0F64F1a9fbcA41f6fCf68",
+				"address": "0x153d4BE15626736B9208958d5796EED017aB766c",
 				"status": "current",
 				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c"
 			},
 			"CollateralEth": {
-				"address": "0x9458436ccd294d0e465f9b4B6C0edC034F68145B",
+				"address": "0xbBe35b80B6F82F17Def6Ed6F76AC9DDf5029EC73",
 				"status": "current",
-				"keccak256": "0x67ae878d2e86acd16cf79af03fc47fa3d8f278b25de4ca145815066d10e76190"
+				"keccak256": "0x1c9a753645e530b04a7d8ac4d394154efe5b4d0c097cd3dcb410ad03d477918d"
 			},
 			"CollateralErc20": {
-				"address": "0xBca433dE144e375034F21e2DDf7e38E0dC820B31",
+				"address": "0x42e1B593178BC75e452e5C88A706C9d4cDeBeAF8",
 				"status": "current",
-				"keccak256": "0xddbc67a64ca2a4ed2dcb4011baf5b6424ec9a2e28e04d87d40d78c1d9b595731"
+				"keccak256": "0xd179858cd8df017e9c0a4313a6d9b2ad2af1a528498a1c1633aaa65b79395c12"
 			},
 			"CollateralShort": {
-				"address": "0x00fAaC0807a9928Bd84bD8958acAf8A2eA5DE14C",
+				"address": "0x0AC93512426e7D3C346E5a59B87504644f0780d0",
 				"status": "current",
-				"keccak256": "0x4e801d2e9cfc393ea332daeb0a0e944c9466428b1f7184663f463ccc5995f426"
+				"keccak256": "0xcfd4c10190e41e869cd9dfce6881f7f54d106c6a93bea6ea4f242c21608024b4"
 			}
 		}
 	}

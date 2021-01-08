@@ -14,6 +14,8 @@ const {
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
+	avoidStaleRates,
+	resumeSystem,
 } = require('./utils');
 const { yellow } = require('chalk');
 
@@ -39,9 +41,12 @@ contract('EtherCollateral (prod tests)', accounts => {
 			return this.skip();
 		}
 
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
+
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
 			await mockOptimismBridge({ network, deploymentPath });
 		}
 
@@ -81,10 +86,6 @@ contract('EtherCollateral (prod tests)', accounts => {
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await EtherCollateral.resolver(), ReadProxyAddressResolver.address);
-		});
-
-		it('has the expected owner set', async () => {
-			assert.equal(await EtherCollateral.owner(), owner);
 		});
 	});
 
