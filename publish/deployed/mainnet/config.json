@@ -83,6 +83,12 @@
 	"SynthUtil": {
 		"deploy": false
 	},
+	"StakingRewardsiBTC": {
+		"deploy": false
+	},
+	"StakingRewardsiETH": {
+		"deploy": false
+	},
 	"DappMaintenance": {
 		"deploy": false
 	},
