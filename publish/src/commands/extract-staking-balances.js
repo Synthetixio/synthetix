@@ -29,7 +29,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	ensureDeploymentPath(deploymentPath);
 
 	// We're just using the ERC20 members `balanceOf` and `Transfer`, so any ERC20 contract will do.
-	const { getSource, getTarget } = wrap({ network, deploymentPath, fs, path });
+	const { getSource, getTarget, getVersions } = wrap({ network, deploymentPath, fs, path });
 
 	const { abi: snxABI } = getSource({ contract: 'Synthetix' });
 
@@ -55,7 +55,12 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	console.log(gray(`Using Proxy${synth} address of`), yellow(iSynthAddress));
 
 	// Address of the staking contract, which we will retrieve staked balances from.
-	const stakingAddress = getTarget({ contract: `StakingRewards${synth}` }).address;
+	// Note: this only works before it is released
+	const lastStakingVersionThatsCurrent = getVersions({ byContract: true })[
+		`StakingRewards${synth}`
+	].find(({ status }) => status === 'current');
+
+	const stakingAddress = lastStakingVersionThatsCurrent.address;
 	console.log(gray(`Using StakingRewards${synth} address of`), yellow(stakingAddress));
 
 	const result = await axios.get(etherscanUrl, {
