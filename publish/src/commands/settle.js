@@ -27,7 +27,7 @@ const fromBlockMap = {
 	kovan: 20528323,
 	rinkeby: 7100439,
 	// Note: ropsten was not settled. Needs to be done after https://github.com/Synthetixio/synthetix/pull/699
-	mainnet: 10892310,
+	mainnet: 11590207, // system exchanged after SCCP-68 implemented
 };
 
 const pathToLocal = name => path.join(__dirname, `${name}.json`);
@@ -173,8 +173,6 @@ const settle = async ({
 		if (cache[account + toCurrencyKey]) continue;
 		cache[account + toCurrencyKey] = true;
 
-		if (synth && !new RegExp(synth).test(web3.utils.hexToUtf8(toCurrencyKey))) continue;
-
 		// get the current exchanger and state
 		const Exchanger = getContract({ label: 'Exchanger' });
 		const ExchangeState = getContract({ label: 'ExchangeState' });
@@ -190,6 +188,8 @@ const settle = async ({
 		if (+numEntries > 0) {
 			// Fetch all entries within the settlement
 			const results = [];
+			let earliestTimestamp = Infinity;
+			const fromSynths = [];
 			for (let i = 0; i < numEntries; i++) {
 				const { src, amount, timestamp } = await ExchangeState.methods
 					.getEntryAt(account, toCurrencyKey, i)
@@ -200,6 +200,16 @@ const settle = async ({
 						timestamp * 1000
 					).toString()}`
 				);
+
+				fromSynths.push(src);
+				earliestTimestamp = Math.min(timestamp, earliestTimestamp);
+			}
+			const isSynthTheDest = new RegExp(synth).test(web3.utils.hexToUtf8(toCurrencyKey));
+			const isSynthOneSrcEntry = !!fromSynths.find(src => web3.utils.hexToUtf8(src) === synth);
+
+			// skip when filtered by synth if not the destination and not any of the sources
+			if (synth && !isSynthTheDest && !isSynthOneSrcEntry) {
+				continue;
 			}
 
 			process.stdout.write(
@@ -218,6 +228,13 @@ const settle = async ({
 
 			const wasReclaimOrRebate = reclaimAmount > 0 || rebateAmount > 0;
 			let skipIfWillFail = false;
+
+			const secsLeft = await Exchanger.methods
+				.maxSecsLeftInWaitingPeriod(account, toCurrencyKey)
+				.call();
+
+			skipIfWillFail = +secsLeft > 0;
+
 			if (showDebt) {
 				const valueInUSD = wasReclaimOrRebate
 					? web3.utils.fromWei(
@@ -261,7 +278,7 @@ const settle = async ({
 						yellow(web3.utils.fromWei(reclaimAmount.toString())),
 						+reclaimAmount > +balance ? red('not enough!') : green('sufficient')
 					);
-					skipIfWillFail = +reclaimAmount > +balance;
+					skipIfWillFail = skipIfWillFail || +reclaimAmount > +balance;
 				}
 			} else {
 				console.log(
@@ -285,29 +302,23 @@ const settle = async ({
 				console.log(green(`[DRY RUN] > Invoke settle()`));
 			} else if (skipIfWillFail) {
 				console.log(green(`Skipping - will fail`));
+				// } else if (earliestTimestamp > new Date().getTime() / 1000 - 3600 * 24 * 2) {
+				// 	console.log(green(`Skipping - too recent`));
 			} else {
 				console.log(green(`Invoking settle()`));
 
-				// do not await, just emit using the nonce
-				Exchanger.methods
-					.settle(account, toCurrencyKey)
-					.send({
+				try {
+					const { transactionHash } = await Exchanger.methods.settle(account, toCurrencyKey).send({
 						from: user.address,
-						gas: Math.max(gas * numEntries, 500e3),
+						gas: Math.max(gas * numEntries, 650e3),
 						gasPrice,
 						nonce: nonce++,
-					})
-					.then(({ transactionHash }) =>
-						console.log(gray(`${etherscanLinkPrefix}/tx/${transactionHash}`))
-					)
-					.catch(err => {
-						console.error(
-							red('Error settling'),
-							yellow(account),
-							yellow(web3.utils.hexToAscii(toCurrencyKey)),
-							gray(`${etherscanLinkPrefix}/tx/${err.receipt.transactionHash}`)
-						);
 					});
+
+					console.log(gray(`${etherscanLinkPrefix}/tx/${transactionHash}`));
+				} catch (err) {
+					console.log(red('Could not transact:', err));
+				}
 			}
 		} else if (process.env.DEBUG) {
 			console.log(
@@ -341,7 +352,7 @@ module.exports = {
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
 				false
 			)
-			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 250e3)
+			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 350e3)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-r, --dry-run',

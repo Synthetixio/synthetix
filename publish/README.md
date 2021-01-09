@@ -144,6 +144,7 @@ node publish release # "--help" for options
 ```
 
 ## 9. Staking Rewards
+
 Will deploy an instance of StakingRewards.sol with the configured stakingToken and rewardsToken in rewards.json. Then `run node publish verify`
 
 ```bash
