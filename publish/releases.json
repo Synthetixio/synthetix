@@ -85,6 +85,14 @@
 			"AddressResolver",
 			"BinaryOptionMarketFactory",
 			"BinaryOptionMarketManager",
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralManager",
+			"CollateralManagerState",
+			"CollateralStateErc20",
+			"CollateralStateEth",
+			"CollateralStateShort",
+			"CollateralShort",
 			"DebtCache",
 			"ExchangeRates",
 			"Exchanger",
@@ -96,6 +104,6 @@
 			"TradingRewards",
 			"Synth(s|i).+"
 		],
-		"sips": []
+		"sips": [97, 100, 103]
 	}
 ]

@@ -20,6 +20,30 @@
 	"BinaryOptionMarketData": {
 		"deploy": true
 	},
+	"CollateralManager": {
+		"deploy": true
+	},
+	"CollateralManagerState": {
+		"deploy": true
+	},
+	"CollateralEth": {
+		"deploy": true
+	},
+	"CollateralErc20": {
+		"deploy": true
+	},
+	"CollateralShort": {
+		"deploy": true
+	},
+	"CollateralStateErc20": {
+		"deploy": true
+	},
+	"CollateralStateEth": {
+		"deploy": true
+	},
+	"CollateralStateShort": {
+		"deploy": true
+	},
 	"DebtCache": {
 		"deploy": true
 	},
@@ -417,6 +441,9 @@
 		"deploy": true
 	},
 	"SynthsNIKKEI": {
+		"deploy": true
+	},
+	"MockToken": {
 		"deploy": true
 	}
 }

@@ -113,6 +113,7 @@ contract('FeePool', async accounts => {
 				'SystemStatus',
 				'RewardEscrow',
 				'DelegateApprovals',
+				'CollateralManager',
 			],
 		}));
 

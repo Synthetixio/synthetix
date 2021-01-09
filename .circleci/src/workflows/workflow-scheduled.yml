@@ -21,14 +21,6 @@ jobs:
       name: job-prod-tests-mainnet
       network: mainnet
       {{> require-prepare.yml}}
-  - job-prod-tests:
-      name: job-prod-tests-rinkeby
-      network: rinkeby
-      {{> require-prepare.yml}}
-  - job-prod-tests:
-      name: job-prod-tests-kovan
-      network: kovan
-      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Differential local production tests

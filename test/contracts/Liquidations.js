@@ -72,6 +72,7 @@ contract('Liquidations', accounts => {
 				'SystemSettings',
 				'Synthetix',
 				'SynthetixState',
+				'CollateralManager',
 			],
 		}));
 	});

@@ -160,6 +160,12 @@ class Deployer {
 
 		const compiled = this.compiled[source];
 
+		if (!compiled) {
+			throw new Error(
+				`No compiled source for: ${name}. The source file is set to ${source}.sol - is that correct?`
+			);
+		}
+
 		if (!this.ignoreSafetyChecks) {
 			const compilerVersion = compiled.metadata.compiler.version;
 			const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
@@ -182,12 +188,6 @@ class Deployer {
 			: '';
 		const existingABI = this.deployment.sources[source] ? this.deployment.sources[source].abi : '';
 
-		if (!compiled) {
-			throw new Error(
-				`No compiled source for: ${name}. The source file is set to ${source}.sol - is that correct?`
-			);
-		}
-
 		// Any contract after SafeDecimalMath can automatically get linked.
 		// Doing this with bytecode that doesn't require the library is a no-op.
 		let bytecode = compiled.evm.bytecode.object;
@@ -206,7 +206,9 @@ class Deployer {
 		let deployedContract;
 
 		if (deploy) {
-			console.log(gray(` - Attempting to deploy ${name}`));
+			console.log(
+				gray(` - Attempting to deploy ${name}${name !== source ? ` (with source ${source})` : ''}`)
+			);
 			let gasUsed;
 			if (dryRun) {
 				this._dryRunCounter++;

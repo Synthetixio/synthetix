@@ -55,6 +55,7 @@ contract('BaseSynthetix', async accounts => {
 				'Issuer',
 				'Exchanger',
 				'RewardsDistribution',
+				'CollateralManager',
 			],
 		}));
 
