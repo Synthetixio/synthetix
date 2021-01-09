@@ -16,6 +16,7 @@ const {
 	takeDebtSnapshot,
 	mockOptimismBridge,
 	implementsMultiCollateral,
+	avoidStaleRates,
 	resumeSystem,
 } = require('./utils');
 
@@ -49,6 +50,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 			return this.skip();
 		}
 
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
 		await resumeSystem({ owner, network, deploymentPath });
 
 		if (!(await implementsMultiCollateral({ network, deploymentPath }))) {
@@ -57,7 +60,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
 			await mockOptimismBridge({ network, deploymentPath });
 		}
 
@@ -110,22 +112,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await CollateralManager.resolver(), ReadProxyAddressResolver.address);
 		});
-
-		it('CollateralManager has the expected owner set', async () => {
-			assert.equal(await CollateralManager.owner(), owner);
-		});
-
-		it('CollateralErc20 hase the expected owner set', async () => {
-			assert.equal(await CollateralErc20.owner(), owner);
-		});
-
-		it('CollateralEth hase the expected owner set', async () => {
-			assert.equal(await CollateralEth.owner(), owner);
-		});
-
-		it('CollateralShort hase the expected owner set', async () => {
-			assert.equal(await CollateralShort.owner(), owner);
-		});
 	});
 
 	describe('when using multiple types of loans', () => {
@@ -140,7 +126,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		itCorrectlyManagesLoansWith({
 			type: 'CollateralErc20',
 			collateralCurrency: 'renBTC',
-			amountToDeposit: Web3.utils.toBN('100000000'), // 1 renBTC (renBTC uses 8 decimals)
+			amountToDeposit: Web3.utils.toBN('1000000000'), // 10 renBTC (renBTC uses 8 decimals)
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
 		});
@@ -213,16 +199,21 @@ contract('MultiCollateral (prod tests)', accounts => {
 						const underlyingToken = await CollateralErc20.underlyingContract();
 						const renBTC = await artifacts.require('ERC20').at(underlyingToken);
 
-						const renHolder =
-							network === 'local'
-								? owner
-								: knownAccounts[network].find(a => a.name === 'renBTCWallet').address;
+						let altHolder;
+						if (network !== 'local') {
+							const account = knownAccounts[network].find(a => a.name === 'renBTCWallet');
+							if (account) {
+								altHolder = account.address;
+							}
+						}
+
+						const renHolder = network === 'local' ? owner : altHolder || owner;
 						if (!renHolder) {
 							throw new Error(`No known renBTC holder for network ${network}`);
 						}
 
 						// give them more, so they can deposit after opening
-						const transferAmount = Web3.utils.toBN('200000000');
+						const transferAmount = Web3.utils.toBN('10000000000');
 
 						await renBTC.transfer(user1, transferAmount, {
 							from: renHolder,
@@ -310,19 +301,24 @@ contract('MultiCollateral (prod tests)', accounts => {
 				describe('when depositing more collateral', () => {
 					let cratioBefore;
 
-					before('record current values', async () => {
-						cratioBefore = await CollateralContract.collateralRatio(loan);
-					});
-
 					before('skip waiting period', async () => {
 						const period = await CollateralContract.interactionDelay();
 
 						await fastForward(period.toString());
 					});
 
+					before('record current values', async () => {
+						loan = await CollateralStateContract.getLoan(user1, loanId);
+						cratioBefore = await CollateralContract.collateralRatio(loan);
+					});
+
 					before('deposit', async () => {
-						if (type === 'CollateralErc20' || type === 'CollateralShort') {
-							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('100000000'), {
+						if (type === 'CollateralErc20') {
+							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('1000000000'), {
+								from: user1,
+							});
+						} else if (type === 'CollateralShort') {
+							tx = await CollateralContract.deposit(user1, loanId, toUnit('200'), {
 								from: user1,
 							});
 						} else {
@@ -345,14 +341,15 @@ contract('MultiCollateral (prod tests)', accounts => {
 				describe('when removing collateral', () => {
 					let cratioBefore;
 
-					before('record current values', async () => {
-						cratioBefore = await CollateralContract.collateralRatio(loan);
-					});
-
 					before('skip waiting period', async () => {
 						const period = await CollateralContract.interactionDelay();
 
 						await fastForward(period.toString());
+					});
+
+					before('record current values', async () => {
+						loan = await CollateralStateContract.getLoan(user1, loanId);
+						cratioBefore = await CollateralContract.collateralRatio(loan);
 					});
 
 					before('withdraw', async () => {
