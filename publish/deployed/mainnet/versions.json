@@ -2535,6 +2535,7 @@
 		"network": "mainnet",
 		"date": "2020-12-23T23:30:50-05:00",
 		"commit": "ec70aac92af3387b45f7667130fb910fd0a8456c",
+		"block": 11514332,
 		"contracts": {
 			"ExchangeRates": {
 				"address": "0xd69b189020EF614796578AfE4d10378c5e7e1138",
@@ -2865,6 +2866,7 @@
 		"network": "mainnet",
 		"date": "2020-12-27T23:33:03+11:00",
 		"commit": "6adcdf4643199987cd86839891016f6c066cb7cc",
+		"block": 11534500,
 		"contracts": {
 			"StakingRewardsiBTC": {
 				"address": "0xDcdD9e45FA94cf50eCd3251dd8f8157B2D492DD9",
@@ -2879,6 +2881,7 @@
 		"network": "mainnet",
 		"date": "2021-01-04T13:14:53+11:00",
 		"commit": "fcc5b6dc68ea17e24230f6862819f04a8a3ab994",
+		"block": 11584931,
 		"contracts": {
 			"StakingRewardsiETH": {
 				"address": "0x6d4F135aF7DFCd4BDF6dCb9D7911F5d243872a52",
