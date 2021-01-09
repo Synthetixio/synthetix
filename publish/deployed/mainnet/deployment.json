@@ -2916,7 +2916,8 @@
 					],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "constructor"
+					"type": "constructor",
+					"signature": "constructor"
 				},
 				{
 					"anonymous": false,
@@ -2935,7 +2936,8 @@
 						}
 					],
 					"name": "OwnerChanged",
-					"type": "event"
+					"type": "event",
+					"signature": "0xb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c"
 				},
 				{
 					"anonymous": false,
@@ -2948,7 +2950,28 @@
 						}
 					],
 					"name": "OwnerNominated",
-					"type": "event"
+					"type": "event",
+					"signature": "0x906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce22"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"internalType": "address",
+							"name": "token",
+							"type": "address"
+						},
+						{
+							"indexed": false,
+							"internalType": "uint256",
+							"name": "amount",
+							"type": "uint256"
+						}
+					],
+					"name": "Recovered",
+					"type": "event",
+					"signature": "0x8c1256b8896378cd5044f80c202f9772b9d77dc85c8a6eb51967210b09bfaa28"
 				},
 				{
 					"anonymous": false,
@@ -2993,7 +3016,8 @@
 						}
 					],
 					"name": "RewardAdded",
-					"type": "event"
+					"type": "event",
+					"signature": "0xde88a922e0d3b88b24e9623efeb464919c6bf9f66857a65e2bfcf2ce87a9433d"
 				},
 				{
 					"anonymous": false,
@@ -3012,7 +3036,22 @@
 						}
 					],
 					"name": "RewardPaid",
-					"type": "event"
+					"type": "event",
+					"signature": "0xe2403640ba68fed3a2f88b7557551d1993f84b99bb10ff833f0cf8db0c5e0486"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"internalType": "uint256",
+							"name": "newDuration",
+							"type": "uint256"
+						}
+					],
+					"name": "RewardsDurationUpdated",
+					"type": "event",
+					"signature": "0xfb46ca5a5e06d4540d6387b930a7c978bce0db5f449ec6b3f5d07c6e1d44f2d3"
 				},
 				{
 					"anonymous": false,
@@ -3044,7 +3083,8 @@
 						}
 					],
 					"name": "Staked",
-					"type": "event"
+					"type": "event",
+					"signature": "0x9e71bc8eea02a63969f509818f2dafb9254532904319f9dbda79b67bd34a5f3d"
 				},
 				{
 					"anonymous": false,
@@ -3072,7 +3112,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0x79ba5097"
 				},
 				{
 					"constant": true,
@@ -3093,7 +3134,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x70a08231"
 				},
 				{
 					"constant": true,
@@ -3114,7 +3156,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x008cc262"
 				},
 				{
 					"constant": false,
@@ -3123,7 +3166,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0xe9fad8ee"
 				},
 				{
 					"constant": false,
@@ -3132,7 +3176,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0x3d18b912"
 				},
 				{
 					"constant": true,
@@ -3147,7 +3192,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x1c1f78eb"
 				},
 				{
 					"constant": true,
@@ -3177,7 +3223,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x80faa57d"
 				},
 				{
 					"constant": true,
@@ -3192,7 +3239,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0xc8f33c91"
 				},
 				{
 					"constant": false,
@@ -3207,7 +3255,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0x1627540c"
 				},
 				{
 					"constant": true,
@@ -3222,7 +3271,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x53a47bb7"
 				},
 				{
 					"constant": false,
@@ -3237,7 +3287,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0x3c6b16ab"
 				},
 				{
 					"constant": true,
@@ -3252,7 +3303,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x8da5cb5b"
 				},
 				{
 					"constant": true,
@@ -3282,7 +3334,29 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0xebe2b12b"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"internalType": "address",
+							"name": "tokenAddress",
+							"type": "address"
+						},
+						{
+							"internalType": "uint256",
+							"name": "tokenAmount",
+							"type": "uint256"
+						}
+					],
+					"name": "recoverERC20",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0x8980f11f"
 				},
 				{
 					"constant": false,
@@ -3317,7 +3391,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0xcd3daf9d"
 				},
 				{
 					"constant": true,
@@ -3332,7 +3407,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0xdf136d65"
 				},
 				{
 					"constant": true,
@@ -3347,7 +3423,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x7b0a47ee"
 				},
 				{
 					"constant": true,
@@ -3368,7 +3445,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x0700037d"
 				},
 				{
 					"constant": true,
@@ -3383,7 +3461,24 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x3fc6df6e"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "rewardsDuration",
+					"outputs": [
+						{
+							"internalType": "uint256",
+							"name": "",
+							"type": "uint256"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x386a9525"
 				},
 				{
 					"constant": true,
@@ -3413,7 +3508,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0xd1af0c7d"
 				},
 				{
 					"constant": false,
@@ -3443,7 +3539,24 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0x19762143"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"internalType": "uint256",
+							"name": "_rewardsDuration",
+							"type": "uint256"
+						}
+					],
+					"name": "setRewardsDuration",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0xcc1a378f"
 				},
 				{
 					"constant": false,
@@ -3473,7 +3586,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0xa694fc3a"
 				},
 				{
 					"constant": true,
@@ -3488,7 +3602,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x72f702f3"
 				},
 				{
 					"constant": true,
@@ -3503,7 +3618,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x18160ddd"
 				},
 				{
 					"constant": true,
@@ -3524,7 +3640,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x8b876347"
 				},
 				{
 					"constant": false,
@@ -3539,7 +3656,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0x2e1a7d4d"
 				}
 			]
 		},
