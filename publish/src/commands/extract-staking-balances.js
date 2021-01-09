@@ -21,9 +21,6 @@ const {
 
 const DEFAULTS = {
 	network: 'kovan',
-	gasLimit: 3e6,
-	gasPrice: '1',
-	batchSize: 15,
 };
 
 async function extractStakingBalances({ network = DEFAULTS.network, deploymentPath, synth }) {
