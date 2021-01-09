@@ -2467,7 +2467,8 @@
 		"contracts": {
 			"StakingRewardsiBTC": {
 				"address": "0x32C9F03490A9F560EccC9f107e71560C1b0A2535",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.35.4"
 			}
 		}
 	},
@@ -2505,7 +2506,8 @@
 		"contracts": {
 			"StakingRewardsiETH": {
 				"address": "0x3fdbbbd81b0962fdf486d74f94a68c70ba87c6c7",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.35.5"
 			}
 		}
 	},
@@ -2853,6 +2855,34 @@
 				"address": "0x188C2274B04Ea392B21487b5De299e382Ff84246",
 				"status": "current",
 				"keccak256": "0xcfd4c10190e41e869cd9dfce6881f7f54d106c6a93bea6ea4f242c21608024b4"
+			}
+		}
+	},
+	"v2.35.4": {
+		"tag": "v2.35.4",
+		"fulltag": "v2.35.4",
+		"release": "Shaula",
+		"network": "mainnet",
+		"date": "2020-12-27T23:33:03+11:00",
+		"commit": "6adcdf4643199987cd86839891016f6c066cb7cc",
+		"contracts": {
+			"StakingRewardsiBTC": {
+				"address": "0xDcdD9e45FA94cf50eCd3251dd8f8157B2D492DD9",
+				"status": "current"
+			}
+		}
+	},
+	"v2.35.5": {
+		"tag": "v2.35.5",
+		"fulltag": "v2.35.5",
+		"release": "Shaula",
+		"network": "mainnet",
+		"date": "2021-01-04T13:14:53+11:00",
+		"commit": "fcc5b6dc68ea17e24230f6862819f04a8a3ab994",
+		"contracts": {
+			"StakingRewardsiETH": {
+				"address": "0x6d4F135aF7DFCd4BDF6dCb9D7911F5d243872a52",
+				"status": "current"
 			}
 		}
 	}

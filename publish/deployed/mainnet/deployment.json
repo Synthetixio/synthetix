@@ -1393,20 +1393,20 @@
 		},
 		"StakingRewardsiETH": {
 			"name": "StakingRewardsiETH",
-			"address": "0x3fdbbbd81b0962fdf486d74f94a68c70ba87c6c7",
+			"address": "0x6d4F135aF7DFCd4BDF6dCb9D7911F5d243872a52",
 			"source": "StakingRewardsiETH",
-			"link": "https://etherscan.io/address/0x3fdbbbd81b0962fdf486d74f94a68c70ba87c6c7",
-			"timestamp": "2020-11-23",
-			"txn": "https://etherscan.io/tx/0x6ba42b73dc3b430785612bbd61f4fb299f640b09461eff5bdf538a216ecb2d02",
+			"link": "https://etherscan.io/address/0x6d4f135af7dfcd4bdf6dcb9d7911f5d243872a52",
+			"timestamp": "2021-01-04",
+			"txn": "https://etherscan.io/tx/0x488136287cfea754c18f569dd3c16132d54cd944d5f294402dc9895b5dfbc334",
 			"network": "mainnet"
 		},
 		"StakingRewardsiBTC": {
 			"name": "StakingRewardsiBTC",
-			"address": "0x32C9F03490A9F560EccC9f107e71560C1b0A2535",
+			"address": "0xDcdD9e45FA94cf50eCd3251dd8f8157B2D492DD9",
 			"source": "StakingRewardsiBTC",
-			"link": "https://etherscan.io/address/0x32C9F03490A9F560EccC9f107e71560C1b0A2535",
-			"timestamp": "2020-11-06",
-			"txn": "https://etherscan.io/tx/0xd425cc41f214a972daf8b4ef01957d05922d34a79501cbf2dde8eb1fc768ac02",
+			"link": "https://etherscan.io/address/0xDcdD9e45FA94cf50eCd3251dd8f8157B2D492DD9",
+			"timestamp": "2020-12-27",
+			"txn": "https://etherscan.io/tx/0xe627e2f9df1682b091eb48e787b06e998bc6037281bf51aa5bc37d1196305cce",
 			"network": "mainnet"
 		},
 		"StakingRewardssBTCCurve": {
