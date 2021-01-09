@@ -42,4 +42,4 @@ process.yml
 .tmp/
 
 # CSV files
-.csv
+*.csv

@@ -3,6 +3,7 @@ const path = require('path');
 const axios = require('axios');
 const BN = require('bn.js');
 const Web3 = require('web3');
+const uniq = require('lodash.uniq');
 const { toBN, fromWei, toWei } = require('web3-utils');
 const {
 	wrap,
@@ -54,9 +55,11 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	}
 
 	const iSynthAddress = iSynthContract.address;
+	console.log(gray(`Using Proxy${synth} address of`), yellow(iSynthAddress));
 
 	// Address of the staking contract, which we will retrieve staked balances from.
 	const stakingAddress = getTarget({ contract: `StakingRewards${synth}` }).address;
+	console.log(gray(`Using StakingRewards${synth} address of`), yellow(stakingAddress));
 
 	const result = await axios.get(etherscanUrl, {
 		params: {
@@ -165,7 +168,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 			fromBlock: deploymentBlock - 1,
 		});
 
-		const candidates = _.uniq(transferEvents.map(e => e.returnValues.from));
+		const candidates = uniq(transferEvents.map(e => e.returnValues.from));
 
 		const nonzero = [];
 
