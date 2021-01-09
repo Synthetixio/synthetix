@@ -229,9 +229,9 @@
 		"asset": "ETH",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 578.01,
-			"upperLimit": 867.02,
-			"lowerLimit": 289.01
+			"entryPoint": 970,
+			"upperLimit": 1455,
+			"lowerLimit": 485
 		}
 	},
 	{
