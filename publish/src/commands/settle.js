@@ -173,8 +173,6 @@ const settle = async ({
 		if (cache[account + toCurrencyKey]) continue;
 		cache[account + toCurrencyKey] = true;
 
-		if (synth && !new RegExp(synth).test(web3.utils.hexToUtf8(toCurrencyKey))) continue;
-
 		// get the current exchanger and state
 		const Exchanger = getContract({ label: 'Exchanger' });
 		const ExchangeState = getContract({ label: 'ExchangeState' });
@@ -191,6 +189,7 @@ const settle = async ({
 			// Fetch all entries within the settlement
 			const results = [];
 			let earliestTimestamp = Infinity;
+			const fromSynths = [];
 			for (let i = 0; i < numEntries; i++) {
 				const { src, amount, timestamp } = await ExchangeState.methods
 					.getEntryAt(account, toCurrencyKey, i)
@@ -202,7 +201,15 @@ const settle = async ({
 					).toString()}`
 				);
 
+				fromSynths.push(src);
 				earliestTimestamp = Math.min(timestamp, earliestTimestamp);
+			}
+			const isSynthTheDest = new RegExp(synth).test(web3.utils.hexToUtf8(toCurrencyKey));
+			const isSynthOneSrcEntry = !!fromSynths.find(src => web3.utils.hexToUtf8(src) === synth);
+
+			// skip when filtered by synth if not the destination and not any of the sources
+			if (synth && !isSynthTheDest && !isSynthOneSrcEntry) {
+				continue;
 			}
 
 			process.stdout.write(
