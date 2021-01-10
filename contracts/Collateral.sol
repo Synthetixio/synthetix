@@ -175,7 +175,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint dividend = debtValue.sub(collateralValue.divideDecimal(minCratio));
         uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(minCratio));
 
-        return dividend.divideDecimal(divisor);
+        uint sUSDamount = dividend.divideDecimal(divisor);
+
+        return _exchangeRates().effectiveValue(sUSD, sUSDamount, loan.currency);
     }
 
     // amount is the amount of synths we are liquidating
