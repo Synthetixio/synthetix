@@ -80,7 +80,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
 
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {
-        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot withdraw with debt");
+        require(synthetix().transferableSynthetix(msg.sender) >= amount, "Not enough transferable SNX");
 
         // instruct L2 Synthetix to burn this supply
         synthetix().burnSecondary(msg.sender, amount);
