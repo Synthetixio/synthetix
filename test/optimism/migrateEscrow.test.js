@@ -3,7 +3,7 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 
 const itCanPerformEscrowMigration = ({ ctx }) => {
-	describe.only('[ESCROW_MIGRATION] when migrating L1 rewardEscrowV2 entries to L2', () => {
+	describe('[ESCROW_MIGRATION] when migrating L1 rewardEscrowV2 entries to L2', () => {
 		const SECOND = 1000;
 		const MINUTE = SECOND * 60;
 
@@ -60,6 +60,12 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 		describe('when a user owns enough SNX', () => {
 			const snxAmount = ethers.utils.parseEther('100');
 
+			let user1BalanceL1;
+
+			before('record current values', async () => {
+				user1BalanceL1 = await SynthetixL1.balanceOf(user1L1.address);
+			});
+
 			before('transfer SNX to the L1 user', async () => {
 				SynthetixL1 = SynthetixL1.connect(ctx.ownerL1);
 
@@ -68,7 +74,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 			});
 
 			it('updates user balance', async () => {
-				assert.bnEqual(await SynthetixL1.balanceOf(user1L1.address), snxAmount);
+				assert.bnEqual(await SynthetixL1.balanceOf(user1L1.address), user1BalanceL1.add(snxAmount));
 			});
 
 			describe('when the user approves the reward escrow to transfer their SNX', () => {
