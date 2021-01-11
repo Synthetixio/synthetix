@@ -39,6 +39,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
+    uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
+    uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
+
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
@@ -132,6 +135,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         external
         onlyOwner
     {
+        require(
+            _crossDomainMessageGasLimit >= MIN_CROSS_DOMAIN_GAS_LIMIT &&
+                _crossDomainMessageGasLimit <= MAX_CROSS_DOMAIN_GAS_LIMIT,
+            "Out of range xDomain gasLimit"
+        );
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             _getGasLimitSetting(_gasLimitType),
