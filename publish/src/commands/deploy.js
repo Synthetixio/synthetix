@@ -1896,9 +1896,39 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'crossDomainMessageGasLimit',
+			readArg: 0,
 			expected: input => input !== '0', // only change if zero
 			write: 'setCrossDomainMessageGasLimit',
-			writeArg: await getDeployParameter('CROSS_DOMAIN_MESSAGE_GAS_LIMIT'),
+			writeArg: [0, await getDeployParameter('CROSS_DOMAIN_DEPOSIT_GAS_LIMIT')],
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 1,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [1, await getDeployParameter('CROSS_DOMAIN_ESCROW_GAS_LIMIT')],
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 2,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [2, await getDeployParameter('CROSS_DOMAIN_REWARD_GAS_LIMIT')],
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 3,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [3, await getDeployParameter('CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT')],
 		});
 
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];

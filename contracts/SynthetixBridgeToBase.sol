@@ -82,7 +82,11 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
-        messenger().sendMessage(synthetixBridgeToOptimism(), messageData, uint32(getCrossDomainMessageGasLimit()));
+        messenger().sendMessage(
+            synthetixBridgeToOptimism(),
+            messageData,
+            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
+        );
 
         emit WithdrawalInitiated(msg.sender, amount);
     }
