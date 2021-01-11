@@ -27,6 +27,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_CROSS_DOMAIN_DEPOSIT_GAS_LIMIT = "crossDomainDepositGasLimit";
     bytes32 internal constant SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT = "crossDomainEscrowGasLimit";
     bytes32 internal constant SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT = "crossDomainRewardGasLimit";
+    bytes32 internal constant SETTING_CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT = "crossDomainWithdrawalGasLimit";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -43,19 +44,22 @@ contract MixinSystemSettings is MixinResolver {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
     }
 
-    function _getGasLimit(CrossDomainMessageGasLimits gasLimitType) internal pure returns (bytes32) {
-        if (gasLimitType == CrossDomainMessageGasLimits.Deposit || gasLimitType == CrossDomainMessageGasLimits.Withdrawal) {
+    function _getGasLimitSetting(CrossDomainMessageGasLimits gasLimitType) internal pure returns (bytes32) {
+        if (gasLimitType == CrossDomainMessageGasLimits.Deposit) {
             return SETTING_CROSS_DOMAIN_DEPOSIT_GAS_LIMIT;
+        } else if (gasLimitType == CrossDomainMessageGasLimits.Escrow) {
+            return SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT;
         } else if (gasLimitType == CrossDomainMessageGasLimits.Reward) {
             return SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT;
+        } else if (gasLimitType == CrossDomainMessageGasLimits.Withdrawal) {
+            return SETTING_CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT;
         } else {
-            // default assignment is the highest gasLimit
-            return SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT;
+            revert("Unknown gas limit type");
         }
     }
 
     function getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits gasLimitType) internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, _getGasLimit(gasLimitType));
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, _getGasLimitSetting(gasLimitType));
     }
 
     function getTradingRewardsEnabled() internal view returns (bool) {

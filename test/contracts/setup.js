@@ -23,6 +23,7 @@ const {
 		CROSS_DOMAIN_DEPOSIT_GAS_LIMIT,
 		CROSS_DOMAIN_REWARD_GAS_LIMIT,
 		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
+		CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
 	},
 } = require('../../');
 
@@ -957,6 +958,13 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setCrossDomainMessageGasLimit(2, CROSS_DOMAIN_REWARD_GAS_LIMIT, {
 				from: owner,
 			}),
+			returnObj['SystemSettings'].setCrossDomainMessageGasLimit(
+				3,
+				CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
+				{
+					from: owner,
+				}
+			),
 			returnObj['SystemSettings'].setFeePeriodDuration(FEE_PERIOD_DURATION, { from: owner }),
 			returnObj['SystemSettings'].setTargetThreshold(TARGET_THRESHOLD, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),

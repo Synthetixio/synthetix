@@ -2,6 +2,14 @@ const { contract, web3 } = require('@nomiclabs/buidler');
 const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const { toBN } = web3.utils;
+const {
+	defaults: {
+		CROSS_DOMAIN_DEPOSIT_GAS_LIMIT,
+		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
+		CROSS_DOMAIN_REWARD_GAS_LIMIT,
+		CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
+	},
+} = require('../../');
 
 contract('SynthetixBridgeToBase (spec tests)', accounts => {
 	const [, owner, user] = accounts;
@@ -29,10 +37,23 @@ contract('SynthetixBridgeToBase (spec tests)', accounts => {
 			});
 		});
 
-		it('shows the expected cross domain message gas limit', async () => {
-			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(0), 3e6);
-			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(1), 8e6);
-			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(2), 3e6);
+		it('returns the expected cross domain message gas limit', async () => {
+			assert.bnEqual(
+				await systemSettings.crossDomainMessageGasLimit(0),
+				CROSS_DOMAIN_DEPOSIT_GAS_LIMIT
+			);
+			assert.bnEqual(
+				await systemSettings.crossDomainMessageGasLimit(1),
+				CROSS_DOMAIN_ESCROW_GAS_LIMIT
+			);
+			assert.bnEqual(
+				await systemSettings.crossDomainMessageGasLimit(2),
+				CROSS_DOMAIN_REWARD_GAS_LIMIT
+			);
+			assert.bnEqual(
+				await systemSettings.crossDomainMessageGasLimit(3),
+				CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT
+			);
 		});
 
 		describe('when a user has the required balance', () => {

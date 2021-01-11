@@ -132,7 +132,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         external
         onlyOwner
     {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, _getGasLimit(_gasLimitType), _crossDomainMessageGasLimit);
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            _getGasLimitSetting(_gasLimitType),
+            _crossDomainMessageGasLimit
+        );
         emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
@@ -255,7 +259,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // ========== EVENTS ==========
-    event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits, uint newLimit);
+    event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
