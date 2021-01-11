@@ -85,6 +85,18 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 				},
 			});
 
+			if (!+result.data.status) {
+				console.log(
+					red(` - Unable to verify ${name} - Etherscan returned "${result.data.result}"`)
+				);
+				tableData.push([
+					name,
+					address,
+					`Unable to verify, Etherscan returned "${result.data.result}`,
+				]);
+				continue;
+			}
+
 			// Get the bytecode that was in that transaction.
 			const deployedBytecode = result.data.result[0].input;
 

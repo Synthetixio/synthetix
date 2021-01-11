@@ -94,6 +94,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
 				'DelegateApprovals', // necessary for *OnBehalf functions
 				'FlexibleStorage',
+				'CollateralManager',
 			],
 		}));
 	});

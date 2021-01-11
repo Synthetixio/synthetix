@@ -83,11 +83,13 @@ describe('Layer 2 production tests', () => {
 			async function simulateExchangeRates({ provider, owner, useOvm }) {
 				const Issuer = connectContract({
 					contract: 'Issuer',
+					source: useOvm ? 'IssuerWithoutLiquidations' : 'Issuer',
 					provider,
 					useOvm,
 				});
 				let ExchangeRates = connectContract({
 					contract: 'ExchangeRates',
+					source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
 					provider,
 					useOvm,
 				});

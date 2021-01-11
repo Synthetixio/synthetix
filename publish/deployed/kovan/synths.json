@@ -34,7 +34,8 @@
 	},
 	{
 		"name": "sBTC",
-		"asset": "BTC"
+		"asset": "BTC",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sETH",

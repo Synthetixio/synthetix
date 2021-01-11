@@ -47,7 +47,24 @@ const constants = {
 
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 
+	OVM_MAX_GAS_LIMIT: '8900000',
+
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
+};
+
+const knownAccounts = {
+	mainnet: [
+		{
+			name: 'binance', // Binance 8 Wallet
+			address: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
+		},
+		{
+			name: 'renBTCWallet',
+			address: '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E',
+		},
+	],
+	rinkeby: [],
+	kovan: [],
 };
 
 // The solidity defaults are managed here in the same format they will be stored, hence all
@@ -80,10 +97,45 @@ const defaults = {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
+	RENBTC_ERC20_ADDRESSES: {
+		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
+		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		rinkeby: '0xEDC0C23864B041607D624E2d9a67916B6cf40F7a',
+	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
 	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${3e6}`,
 	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
+	CROSS_DOMAIN_MESSAGE_GAS_LIMIT: `${3e6}`,
+	COLLATERAL_MANAGER: {
+		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
+		SHORTS: [
+			{ long: 'sBTC', short: 'iBTC' },
+			{ long: 'sETH', short: 'iETH' },
+		],
+		MAX_DEBT: w3utils.toWei('100000000'),
+		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
+		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
+	},
+	COLLATERAL_ETH: {
+		SYNTHS: ['sUSD', 'sETH'],
+		MIN_CRATIO: w3utils.toWei('1.3'),
+		MIN_COLLATERAL: w3utils.toWei('2'),
+		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
+	},
+	COLLATERAL_RENBTC: {
+		SYNTHS: ['sUSD', 'sBTC'],
+		MIN_CRATIO: w3utils.toWei('1.3'),
+		MIN_COLLATERAL: w3utils.toWei('0.05'),
+		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
+	},
+	COLLATERAL_SHORT: {
+		SYNTHS: ['sBTC', 'sETH'],
+		MIN_CRATIO: w3utils.toWei('1.2'),
+		MIN_COLLATERAL: w3utils.toWei('1000'),
+		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
+		INTERACTION_DELAY: '3600', // 1 hour in secs
+	},
 };
 
 /**
@@ -394,13 +446,16 @@ const getVersions = ({
 
 	if (byContract) {
 		// compile from the contract perspective
-		return Object.values(versions).reduce((memo, entry) => {
-			for (const [contract, contractEntry] of Object.entries(entry.contracts)) {
-				memo[contract] = memo[contract] || [];
-				memo[contract].push(contractEntry);
-			}
-			return memo;
-		}, {});
+		return Object.values(versions).reduce(
+			(memo, { tag, release, date, commit, block, contracts }) => {
+				for (const [contract, contractEntry] of Object.entries(contracts)) {
+					memo[contract] = memo[contract] || [];
+					memo[contract].push(Object.assign({ tag, release, date, commit, block }, contractEntry));
+				}
+				return memo;
+			},
+			{}
+		);
 	}
 	return versions;
 };
@@ -508,4 +563,5 @@ module.exports = {
 	wrap,
 	ovmIgnored,
 	releases,
+	knownAccounts,
 };

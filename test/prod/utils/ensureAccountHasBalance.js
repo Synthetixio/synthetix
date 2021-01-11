@@ -3,9 +3,10 @@ const path = require('path');
 const { connectContract } = require('./connectContract');
 const { web3 } = require('@nomiclabs/buidler');
 const { toBN } = web3.utils;
-const { wrap, toBytes32 } = require('../../..');
+const { knownAccounts, wrap, toBytes32 } = require('../../..');
+const { gray } = require('chalk');
 
-const knownMainnetWallet = '0xF977814e90dA44bFA03b6295A0616a897441aceC'; // Binance 8 wallet
+const knownMainnetAccount = knownAccounts['mainnet'].find(a => a.name === 'binance').address;
 
 function getUser({ network, deploymentPath, user }) {
 	const { getUsers } = wrap({ network, deploymentPath, fs, path });
@@ -14,9 +15,16 @@ function getUser({ network, deploymentPath, user }) {
 }
 
 async function ensureAccountHasEther({ network, deploymentPath, amount, account }) {
+	const currentBalance = web3.utils.toBN(await web3.eth.getBalance(account));
+	if (currentBalance.gte(amount)) {
+		return;
+	}
+
+	console.log(gray(`    > Ensuring ${account} has Ether...`));
+
 	const fromAccount =
 		network === 'mainnet'
-			? knownMainnetWallet
+			? knownMainnetAccount
 			: getUser({ network, deploymentPath, user: 'owner' });
 
 	const balance = toBN(await web3.eth.getBalance(fromAccount));
@@ -34,16 +42,21 @@ async function ensureAccountHasEther({ network, deploymentPath, amount, account 
 }
 
 async function ensureAccountHasSNX({ network, deploymentPath, amount, account }) {
+	const SNX = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
+	if ((await SNX.balanceOf(account)).gte(amount)) {
+		return;
+	}
+
+	console.log(gray(`    > Ensuring ${account} has SNX...`));
+
 	const fromAccount =
 		network === 'mainnet'
-			? knownMainnetWallet
+			? knownMainnetAccount
 			: getUser({
 					network,
 					deploymentPath,
 					user: 'owner',
 			  });
-
-	const SNX = await connectContract({ network, deploymentPath, contractName: 'ProxyERC20' });
 
 	const balance = toBN(await SNX.balanceOf(fromAccount));
 	if (balance.lt(amount)) {
@@ -58,25 +71,30 @@ async function ensureAccountHasSNX({ network, deploymentPath, amount, account })
 }
 
 async function ensureAccountHassUSD({ network, deploymentPath, amount, account }) {
-	const fromAccount =
-		network === 'mainnet'
-			? knownMainnetWallet
-			: getUser({
-					network,
-					deploymentPath,
-					user: 'owner',
-			  });
-
 	const sUSD = await connectContract({
 		network,
 		deploymentPath,
 		contractName: 'SynthsUSD',
 		abiName: 'Synth',
 	});
+	if ((await sUSD.balanceOf(account)).gte(amount)) {
+		return;
+	}
+
+	console.log(gray(`    > Ensuring ${account} has sUSD...`));
+
+	const fromAccount =
+		network === 'mainnet'
+			? knownMainnetAccount
+			: getUser({
+					network,
+					deploymentPath,
+					user: 'owner',
+			  });
 
 	const balance = toBN(await sUSD.transferableSynths(fromAccount));
+	const snxToTransfer = amount.mul(toBN(20));
 	if (balance.lt(amount)) {
-		const snxToTransfer = amount.mul(toBN('50'));
 		await ensureAccountHasSNX({
 			network,
 			deploymentPath,
@@ -100,6 +118,18 @@ async function ensureAccountHassUSD({ network, deploymentPath, amount, account }
 }
 
 async function ensureAccountHassETH({ network, deploymentPath, amount, account }) {
+	const sETH = await connectContract({
+		network,
+		deploymentPath,
+		contractName: 'SynthsETH',
+		abiName: 'Synth',
+	});
+	if ((await sETH.balanceOf(account)).gte(amount)) {
+		return;
+	}
+
+	console.log(gray(`    > Ensuring ${account} has sETH...`));
+
 	const sUSDAmount = amount.mul(toBN('50'));
 	await ensureAccountHassUSD({ network, deploymentPath, amount: sUSDAmount, account });
 
@@ -116,7 +146,6 @@ async function ensureAccountHassETH({ network, deploymentPath, amount, account }
 }
 
 module.exports = {
-	knownMainnetWallet,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	ensureAccountHassETH,
