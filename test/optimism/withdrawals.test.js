@@ -42,6 +42,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			});
 			IssuerL2 = connectContract({
 				contract: 'Issuer',
+				source: 'IssuerWithoutLiquidations',
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
@@ -170,7 +171,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 						await SystemStatusL2.resumeSystem();
 					});
 
-					it('reverts when the user attempts to initiate a deposit', async () => {
+					it('reverts when the user attempts to initiate a withdrawal', async () => {
 						SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
 						const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(1);

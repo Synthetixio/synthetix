@@ -71,6 +71,10 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         require(activated, "Function deactivated");
     }
 
+    function hasZeroDebt() internal view {
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
+    }
+
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -92,17 +96,18 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         _;
     }
 
+    modifier requireZeroDebt() {
+        hasZeroDebt();
+        _;
+    }
+
     // ========== PUBLIC FUNCTIONS =========
 
-    function initiateDeposit(uint256 depositAmount) external requireActive {
-        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
-        // escrow amount should beset to 0
+    function initiateDeposit(uint256 depositAmount) external requireActive requireZeroDebt {
         _initiateDeposit(depositAmount);
     }
 
-    function initiateEscrowMigration(uint256[][] calldata entryIDs) external requireActive {
-        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
-
+    function initiateEscrowMigration(uint256[][] memory entryIDs) public requireActive requireZeroDebt {
         _initiateEscrowMigration(entryIDs);
     }
 
@@ -150,17 +155,19 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         _initiateRewardDeposit(amount);
     }
 
-    // function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] calldata entryIDs) external requireActive {
-    //     require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
+    function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] memory entryIDs)
+        public
+        requireActive
+        requireZeroDebt
+    {
+        if (entryIDs.length > 0) {
+            _initiateEscrowMigration(entryIDs);
+        }
 
-    //     if (entryIDs.length > 0) {
-    //         _initiateEscrowMigration(entryIDs);
-    //     }
-
-    //     if (depositAmount > 0) {
-    //         _initiateDeposit(depositAmount);
-    //     }
-    // }
+        if (depositAmount > 0) {
+            _initiateDeposit(depositAmount);
+        }
+    }
 
     // ========== PRIVATE/INTERNAL FUNCTIONS =========
 

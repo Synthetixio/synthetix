@@ -80,7 +80,8 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 
 				const escrowNum = 26;
 				const escrowBatches = 2;
-				describe(`when the user creates ${escrowNum} escrow entries`, () => {
+				const totalEntriesCreated = escrowNum * escrowBatches;
+				describe(`when the user creates ${totalEntriesCreated} escrow entries`, () => {
 					const escrowEntryAmount = ethers.utils.parseEther('1');
 					const duration = MINUTE;
 					let currentId;
@@ -113,16 +114,18 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 						);
 					});
 
-					// it(`Should create ${escrowNum} entry IDs`, async () => {
-					// 	assert.equal(userEntries.length, escrowNum);
-					// 	assert.bnEqual(await RewardEscrowV2L1.nextEntryId(), (escrowNum + 1).toString());
-					// });
+					it(`Should create ${totalEntriesCreated} new entry IDs`, async () => {
+						assert.bnEqual(
+							await RewardEscrowV2L1.nextEntryId(),
+							(totalEntriesCreated + 1).toString()
+						);
+					});
 
 					it('should update the L1 escrow state', async () => {
 						assert.bnEqual(await RewardEscrowV2L1.totalEscrowedBalance(), totalEscrowed);
 						assert.bnEqual(
 							await RewardEscrowV2L1.numVestingEntries(user1L1.address),
-							(escrowNum * escrowBatches).toString()
+							totalEntriesCreated.toString()
 						);
 						assert.bnEqual(
 							await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address),
@@ -132,153 +135,128 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 					});
 
 					describe('when the user has no outstanding debt on L1', () => {
-						describe('when the user wants to migrate their escrow and deposit SNX', () => {
-							describe('when the user has approved the L1 bridge to transfer their SNX', () => {
-								let depositAndMigrateReceipt;
-								const depositAmount = ethers.utils.parseEther('20');
-								before('approve L1 bridge', async () => {
-									SynthetixL1 = SynthetixL1.connect(user1L1);
-									const tx = await SynthetixL1.approve(
-										SynthetixBridgeToOptimismL1.address,
-										depositAmount
+						describe('when the user migrates their escrow', () => {
+							let initiateEscrowMigrationReceipt;
+							let user1BalanceL2;
+							let totalSupplyL2;
+
+							const importedVestingEntriesEvents = [];
+
+							const importedVestingEntriesEventListener = (account, amount, entries, event) => {
+								if (event && event.event === 'ImportedVestingEntries') {
+									importedVestingEntriesEvents.push(event);
+								}
+							};
+
+							before('listen to events on l2', async () => {
+								SynthetixBridgeToBaseL2.on(
+									'ImportedVestingEntries',
+									importedVestingEntriesEventListener
+								);
+							});
+
+							before('record current values', async () => {
+								user1BalanceL2 = await SynthetixL2.balanceOf(user1L1.address);
+								totalSupplyL2 = await SynthetixL2.totalSupply();
+							});
+
+							before('initiateEscrowMigration', async () => {
+								SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
+								const tx = await SynthetixBridgeToOptimismL1.initiateEscrowMigration(
+									userEntryBatch
+								);
+								initiateEscrowMigrationReceipt = await tx.wait();
+							});
+
+							it('emitted two ExportedVestingEntries events', async () => {
+								const events = initiateEscrowMigrationReceipt.events.filter(
+									e => e.event === 'ExportedVestingEntries'
+								);
+								assert.equal(events.length, 2);
+								assert.equal(events[0].args.account, user1L1.address);
+								assert.bnEqual(events[0].args.escrowedAccountBalance, batchEscrowAmounts[0]);
+								assert.equal(events[1].args.account, user1L1.address);
+								assert.bnEqual(events[1].args.escrowedAccountBalance, batchEscrowAmounts[1]);
+							});
+
+							it('should update the L1 escrow state', async () => {
+								assert.bnEqual(await RewardEscrowV2L1.totalEscrowedBalance(), '0');
+								assert.bnEqual(
+									await RewardEscrowV2L1.numVestingEntries(user1L1.address),
+									totalEntriesCreated.toString()
+								);
+								assert.bnEqual(
+									await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address),
+									'0'
+								);
+								assert.bnEqual(
+									await RewardEscrowV2L1.totalVestedAccountBalance(user1L1.address),
+									'0'
+								);
+							});
+
+							// --------------------------
+							// Wait...
+							// --------------------------
+
+							describe('when waiting for the tx to complete on L2', () => {
+								before('listen for completion', async () => {
+									const [
+										messageHashL2ImportEntries,
+										messageHashL2Deposit,
+									] = await ctx.watcher.getMessageHashesFromL1Tx(
+										initiateEscrowMigrationReceipt.transactionHash
 									);
-									await tx.wait();
+									await ctx.watcher.getL2TransactionReceipt(messageHashL2ImportEntries);
+									await ctx.watcher.getL2TransactionReceipt(messageHashL2Deposit);
 								});
 
-								describe('when the user deposits SNX along with the migration', () => {
-									let mintedSecondaryEvent;
-									const importedVestingEntriesEvents = [];
+								before('stop listening to events on L2', async () => {
+									SynthetixBridgeToBaseL2.off(
+										'ImportedVestingEntries',
+										importedVestingEntriesEventListener
+									);
+								});
 
-									const mintedSecondaryEventListener = (account, amount, event) => {
-										if (event && event.event === 'MintedSecondary') {
-											mintedSecondaryEvent = event;
-										}
-									};
+								it('emitted two ImportedVestingEntries events', async () => {
+									assert.equal(importedVestingEntriesEvents.length, 2);
+									assert.equal(importedVestingEntriesEvents[0].args.account, user1L1.address);
+									assert.bnEqual(
+										importedVestingEntriesEvents[0].args.escrowedAmount,
+										batchEscrowAmounts[0]
+									);
+									assert.equal(importedVestingEntriesEvents[1].args.account, user1L1.address);
+									assert.bnEqual(
+										importedVestingEntriesEvents[1].args.escrowedAmount,
+										batchEscrowAmounts[1]
+									);
+								});
 
-									const importedVestingEntriesEventListener = (account, amount, entries, event) => {
-										if (event && event.event === 'ImportedVestingEntries') {
-											importedVestingEntriesEvents.push(event);
-										}
-									};
+								it('should update the L2 escrow state', async () => {
+									assert.bnEqual(await RewardEscrowV2L2.totalEscrowedBalance(), totalEscrowed);
+									assert.bnEqual(
+										await RewardEscrowV2L2.numVestingEntries(user1L1.address),
+										(escrowNum * escrowBatches).toString()
+									);
+									assert.bnEqual(
+										await RewardEscrowV2L2.totalEscrowedAccountBalance(user1L1.address),
+										totalEscrowed
+									);
+									assert.bnEqual(
+										await RewardEscrowV2L2.totalVestedAccountBalance(user1L1.address),
+										'0'
+									);
+								});
 
-									before('listen to events on l2', async () => {
-										SynthetixBridgeToBaseL2.on(
-											'ImportedVestingEntries',
-											importedVestingEntriesEventListener
-										);
-										SynthetixBridgeToBaseL2.on('MintedSecondary', mintedSecondaryEventListener);
-									});
-
-									before('depositAndMigrateEscrow', async () => {
-										SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
-										const tx = await SynthetixBridgeToOptimismL1.depositAndMigrateEscrow(
-											depositAmount,
-											userEntryBatch
-										);
-										depositAndMigrateReceipt = await tx.wait();
-									});
-
-									it('emitted a Deposit event', async () => {
-										const event = depositAndMigrateReceipt.events.find(e => e.event === 'Deposit');
-										assert.exists(event);
-										assert.bnEqual(event.args.amount, depositAmount);
-										assert.equal(event.args.account, user1L1.address);
-									});
-
-									it('emitted two ExportedVestingEntries events', async () => {
-										const events = depositAndMigrateReceipt.events.filter(
-											e => e.event === 'ExportedVestingEntries'
-										);
-										assert.exists(events);
-										// assert.equal(event.args.account, user1L1.address);
-										// assert.bnEqual(event.args.escrowedAccountBalance, totalEscrowed);
-									});
-
-									it('should update the L1 escrow state', async () => {
-										assert.bnEqual(
-											await RewardEscrowV2L1.numVestingEntries(user1L1.address),
-											(escrowNum * escrowBatches).toString()
-										);
-										assert.bnEqual(
-											await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address),
-											'0'
-										);
-										assert.bnEqual(
-											await RewardEscrowV2L1.totalVestedAccountBalance(user1L1.address),
-											'0'
-										);
-									});
-
-									// --------------------------
-									// Wait...
-									// --------------------------
-
-									describe('when waiting for the tx to complete on L2', () => {
-										before('listen for completion', async () => {
-											const [
-												messageHashL2ImportEntries,
-												messageHashL2Deposit,
-											] = await ctx.watcher.getMessageHashesFromL1Tx(
-												depositAndMigrateReceipt.transactionHash
-											);
-											const importEntriesReceiptL2 = await ctx.watcher.getL2TransactionReceipt(
-												messageHashL2ImportEntries
-											);
-											await ctx.watcher.getL2TransactionReceipt(messageHashL2Deposit);
-										});
-
-										before('stop listening to events on L2', async () => {
-											SynthetixBridgeToBaseL2.off(
-												'ImportedVestingEntries',
-												importedVestingEntriesEventListener
-											);
-											SynthetixBridgeToBaseL2.off('MintedSecondary', mintedSecondaryEventListener);
-										});
-
-										it('emitted two ImportedVestingEntries events', async () => {
-											assert.equal(importedVestingEntriesEvents.length, 2);
-											assert.equal(importedVestingEntriesEvents[0].args.account, user1L1.address);
-											assert.bnEqual(
-												importedVestingEntriesEvents[0].args.escrowedAmount,
-												batchEscrowAmounts[0]
-											);
-											assert.equal(importedVestingEntriesEvents[1].args.account, user1L1.address);
-											assert.bnEqual(
-												importedVestingEntriesEvents[1].args.escrowedAmount,
-												batchEscrowAmounts[1]
-											);
-										});
-
-										it('emitted a MintedSecondary event', async () => {
-											assert.exists(mintedSecondaryEvent);
-											assert.bnEqual(mintedSecondaryEvent.args.amount, depositAmount);
-											assert.equal(mintedSecondaryEvent.args.account, user1L1.address);
-										});
-
-										it('should update the L2 escrow state', async () => {
-											assert.bnEqual(await RewardEscrowV2L2.totalEscrowedBalance(), totalEscrowed);
-											assert.bnEqual(
-												await RewardEscrowV2L2.numVestingEntries(user1L1.address),
-												(escrowNum * escrowBatches).toString()
-											);
-											assert.bnEqual(
-												await RewardEscrowV2L2.totalEscrowedAccountBalance(user1L1.address),
-												totalEscrowed
-											);
-											assert.bnEqual(
-												await RewardEscrowV2L2.totalVestedAccountBalance(user1L1.address),
-												'0'
-											);
-										});
-
-										it('should update the L2 Synthetix state', async () => {
-											assert.bnEqual(await SynthetixL2.balanceOf(user1L1.address), depositAmount);
-											assert.bnEqual(
-												await SynthetixL2.balanceOf(RewardEscrowV2L2.address),
-												totalEscrowed
-											);
-										});
-									});
+								it('should update the L2 Synthetix state', async () => {
+									// no change in user balance
+									assert.bnEqual(await SynthetixL2.balanceOf(user1L1.address), user1BalanceL2);
+									//
+									assert.bnEqual(
+										await SynthetixL2.balanceOf(RewardEscrowV2L2.address),
+										totalEscrowed
+									);
+									assert.bnEqual(await SynthetixL2.totalSupply(), totalSupplyL2.add(totalEscrowed));
 								});
 							});
 						});

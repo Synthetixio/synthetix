@@ -13,5 +13,5 @@ interface ISynthetixBridgeToOptimism {
 
     function initiateRewardDeposit(uint amount) external;
 
-    // function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] calldata entryIDs) external;
+    function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] calldata entryIDs) external;
 }
