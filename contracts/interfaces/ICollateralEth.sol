@@ -1,5 +1,6 @@
 pragma solidity >=0.4.24;
 
+
 interface ICollateralEth {
     function open(uint amount, bytes32 currency) external payable;
 
@@ -9,9 +10,17 @@ interface ICollateralEth {
 
     function withdraw(uint id, uint amount) external;
 
-    function repay(address borrower, uint id, uint amount) external;
+    function repay(
+        address borrower,
+        uint id,
+        uint amount
+    ) external;
 
-    function liquidate(address borrower, uint id, uint amount) external;
+    function liquidate(
+        address borrower,
+        uint id,
+        uint amount
+    ) external;
 
     function claim(uint amount) external;
 }

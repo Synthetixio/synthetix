@@ -524,6 +524,9 @@ describe('publish scripts', () => {
 						'sXAUUniswapV2',
 						'sUSDCurve',
 						'iETH',
+						'iETH2',
+						'iETH3',
+						'iBTC',
 						'SNXBalancer',
 					];
 
