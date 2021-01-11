@@ -3,7 +3,7 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 
 const itCanPerformEscrowMigration = ({ ctx }) => {
-	describe.only('[ESCROW_MIGRATION] when migrating L1 rewardEscrowV2 entries to L2', () => {
+	describe('[ESCROW_MIGRATION] when migrating L1 rewardEscrowV2 entries to L2', () => {
 		const SECOND = 1000;
 		const MINUTE = SECOND * 60;
 

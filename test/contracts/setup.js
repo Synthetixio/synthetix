@@ -20,7 +20,10 @@ const {
 		RATE_STALE_PERIOD,
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
-		CROSS_DOMAIN_MESSAGE_GAS_LIMIT,
+		CROSS_DOMAIN_DEPOSIT_GAS_LIMIT,
+		CROSS_DOMAIN_REWARD_GAS_LIMIT,
+		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
+		CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
 	},
 } = require('../../');
 
@@ -946,9 +949,22 @@ const setupAllContracts = async ({
 				{ from: owner }
 			),
 			returnObj['SystemSettings'].setIssuanceRatio(ISSUANCE_RATIO, { from: owner }),
-			returnObj['SystemSettings'].setCrossDomainMessageGasLimit(CROSS_DOMAIN_MESSAGE_GAS_LIMIT, {
+			returnObj['SystemSettings'].setCrossDomainMessageGasLimit(0, CROSS_DOMAIN_DEPOSIT_GAS_LIMIT, {
 				from: owner,
 			}),
+			returnObj['SystemSettings'].setCrossDomainMessageGasLimit(1, CROSS_DOMAIN_ESCROW_GAS_LIMIT, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setCrossDomainMessageGasLimit(2, CROSS_DOMAIN_REWARD_GAS_LIMIT, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setCrossDomainMessageGasLimit(
+				3,
+				CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
+				{
+					from: owner,
+				}
+			),
 			returnObj['SystemSettings'].setFeePeriodDuration(FEE_PERIOD_DURATION, { from: owner }),
 			returnObj['SystemSettings'].setTargetThreshold(TARGET_THRESHOLD, { from: owner }),
 			returnObj['SystemSettings'].setLiquidationDelay(LIQUIDATION_DELAY, { from: owner }),

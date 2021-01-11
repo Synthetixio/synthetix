@@ -39,6 +39,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;
 
+    uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
+    uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
+
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
@@ -122,19 +125,27 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getTradingRewardsEnabled();
     }
 
-    function crossDomainMessageGasLimit() external view returns (uint) {
-        return getCrossDomainMessageGasLimit();
+    function crossDomainMessageGasLimit(CrossDomainMessageGasLimits gasLimitType) external view returns (uint) {
+        return getCrossDomainMessageGasLimit(gasLimitType);
     }
 
     // ========== RESTRICTED ==========
 
-    function setCrossDomainMessageGasLimit(uint _crossDomainMessageGasLimit) external onlyOwner {
+    function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
+        external
+        onlyOwner
+    {
+        require(
+            _crossDomainMessageGasLimit >= MIN_CROSS_DOMAIN_GAS_LIMIT &&
+                _crossDomainMessageGasLimit <= MAX_CROSS_DOMAIN_GAS_LIMIT,
+            "Out of range xDomain gasLimit"
+        );
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
-            SETTING_CROSS_DOMAIN_MESSAGE_GAS_LIMIT,
+            _getGasLimitSetting(_gasLimitType),
             _crossDomainMessageGasLimit
         );
-        emit CrossDomainMessageGasLimitChanged(_crossDomainMessageGasLimit);
+        emit CrossDomainMessageGasLimitChanged(_gasLimitType, _crossDomainMessageGasLimit);
     }
 
     function setTradingRewardsEnabled(bool _tradingRewardsEnabled) external onlyOwner {
@@ -256,7 +267,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // ========== EVENTS ==========
-    event CrossDomainMessageGasLimitChanged(uint newLimit);
+    event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
     event WaitingPeriodSecsUpdated(uint waitingPeriodSecs);
     event PriceDeviationThresholdUpdated(uint threshold);
