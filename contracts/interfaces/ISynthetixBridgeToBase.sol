@@ -12,7 +12,7 @@ interface ISynthetixBridgeToBase {
     function completeRewardDeposit(uint amount) external;
 
     // invoked by the xDomain messenger on L2
-    function importVestingEntries(
+    function completeEscrowMigration(
         address account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries
