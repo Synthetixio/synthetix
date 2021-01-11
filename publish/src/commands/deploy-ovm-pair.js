@@ -10,11 +10,7 @@ const {
 	constants: { OVM_MAX_GAS_LIMIT },
 } = require('../../../.');
 
-const L1_PROVIDER_URL = 'http://localhost:9545';
-const L2_PROVIDER_URL = 'http://localhost:8545';
-const DATA_PROVIDER_URL = 'http://localhost:8080';
-
-const deployOvmPair = async () => {
+const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl, dataProviderUrl }) => {
 	// This private key is #4 displayed when starting optimism-integration.
 	// When used on a fresh L2 chain, it passes all safety checks.
 	// Account #0: 0x023ffdc1530468eb8c8eebc3e38380b5bc19cc5d (10000 ETH)
@@ -29,16 +25,16 @@ const deployOvmPair = async () => {
 	// Private Key: 0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7
 	const privateKey = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
 
-	await deployInstance({ useOvm: false, privateKey });
-	await deployInstance({ useOvm: true, privateKey });
+	await deployInstance({ useOvm: false, privateKey, l1ProviderUrl, l2ProviderUrl });
+	await deployInstance({ useOvm: true, privateKey, l1ProviderUrl, l2ProviderUrl });
 
-	const { l1Messenger, l2Messenger } = await getMessengers();
+	const { l1Messenger, l2Messenger } = await getMessengers({ dataProviderUrl });
 
 	await commands.connectBridge({
 		l1Network: 'local',
 		l2Network: 'local',
-		l1ProviderUrl: L1_PROVIDER_URL,
-		l2ProviderUrl: L2_PROVIDER_URL,
+		l1ProviderUrl,
+		l2ProviderUrl,
 		l1Messenger,
 		l2Messenger,
 		l1PrivateKey: privateKey,
@@ -49,14 +45,14 @@ const deployOvmPair = async () => {
 	});
 };
 
-const deployInstance = async ({ useOvm, privateKey }) => {
-	await commands.build({ useOvm, optimizerRuns: useOvm ? 1 : 200 });
+const deployInstance = async ({ useOvm, privateKey, l1ProviderUrl, l2ProviderUrl }) => {
+	await commands.build({ useOvm, optimizerRuns: useOvm ? 1 : 200, testHelpers: true });
 
 	await commands.deploy({
 		network: 'local',
 		freshDeploy: true,
 		yes: true,
-		providerUrl: useOvm ? L2_PROVIDER_URL : L1_PROVIDER_URL,
+		providerUrl: useOvm ? l2ProviderUrl : l1ProviderUrl,
 		gasPrice: '0',
 		useOvm,
 		methodCallGasLimit: '3500000',
@@ -66,8 +62,8 @@ const deployInstance = async ({ useOvm, privateKey }) => {
 	});
 };
 
-const getMessengers = async () => {
-	const response = await axios.get(`${DATA_PROVIDER_URL}/addresses.json`);
+const getMessengers = async ({ dataProviderUrl }) => {
+	const response = await axios.get(`${dataProviderUrl}/addresses.json`);
 	const addresses = response.data;
 
 	return {
@@ -84,6 +80,9 @@ module.exports = {
 			.description(
 				'Deploys a pair of L1 and L2 instances on local running chains started with `optimism-integration`, and connects them together. To be used exclusively for local testing.'
 			)
+			.option('--l1-provider-url <value>', 'The L1 provider to use', 'http://localhost:9545')
+			.option('--l2-provider-url <value>', 'The L2 provider to use', 'http://localhost:8545')
+			.option('--data-provider-url <value>', 'The data provider to use', 'http://localhost:8080')
 			.action(async (...args) => {
 				try {
 					await deployOvmPair(...args);
