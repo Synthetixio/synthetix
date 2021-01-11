@@ -10,7 +10,6 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 // Internal references
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
-import "./interfaces/IIssuer.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
@@ -21,7 +20,6 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
-    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
     // ========== CONSTRUCTOR ==========
@@ -37,10 +35,6 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
-
-    function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
@@ -67,12 +61,11 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](4);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
-        newAddresses[3] = CONTRACT_ISSUER;
-        newAddresses[4] = CONTRACT_REWARDESCROW;
+        newAddresses[3] = CONTRACT_REWARDESCROW;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
