@@ -100,37 +100,10 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         _initiateDeposit(depositAmount);
     }
 
-    function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] calldata entryIDs) external requireActive {
+    function initiateEscrowMigration(uint256[][] calldata entryIDs) external requireActive {
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
 
-        // loop through the entryID array
-        for (uint256 i = 0; i < entryIDs.length; i++) {
-            // Cannot send more than 26 entries due to ovm gas restrictions
-            require(entryIDs[i].length <= 26, "Exceeds maximum migration entries number");
-            // Burn their reward escrow first
-            // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
-            uint256 escrowedAccountBalance;
-            VestingEntries.VestingEntry[] memory vestingEntries;
-            (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, entryIDs[i]);
-
-            // if there is an escrow amount to be migrated
-            if (escrowedAccountBalance > 0) {
-                // create message payload for L2
-                bytes memory messageData = abi.encodeWithSignature(
-                    "importVestingEntries(address,uint256,(uint64,uint64,uint64,uint256,uint256)[])",
-                    msg.sender,
-                    escrowedAccountBalance,
-                    vestingEntries
-                );
-                // relay the message to this contract on L2 via L1 Messenger
-                messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(8e6));
-                emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
-            }
-        }
-
-        if (depositAmount > 0) {
-            _initiateDeposit(depositAmount);
-        }
+        _initiateEscrowMigration(entryIDs);
     }
 
     // invoked by a generous user on L1
@@ -177,6 +150,18 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         _initiateRewardDeposit(amount);
     }
 
+    // function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] calldata entryIDs) external requireActive {
+    //     require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
+
+    //     if (entryIDs.length > 0) {
+    //         _initiateEscrowMigration(entryIDs);
+    //     }
+
+    //     if (depositAmount > 0) {
+    //         _initiateDeposit(depositAmount);
+    //     }
+    // }
+
     // ========== PRIVATE/INTERNAL FUNCTIONS =========
 
     function _initiateRewardDeposit(uint256 _amount) internal {
@@ -198,6 +183,32 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(getCrossDomainMessageGasLimit()));
         emit Deposit(msg.sender, _depositAmount);
+    }
+
+    function _initiateEscrowMigration(uint256[][] memory _entryIDs) private {
+        // loop through the entryID array
+        for (uint256 i = 0; i < _entryIDs.length; i++) {
+            // Cannot send more than 26 entries due to ovm gas restrictions
+            require(_entryIDs[i].length <= 26, "Exceeds maximum migration entries number");
+            // Burn their reward escrow first
+            // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
+            uint256 escrowedAccountBalance;
+            VestingEntries.VestingEntry[] memory vestingEntries;
+            (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, _entryIDs[i]);
+            // if there is an escrow amount to be migrated
+            if (escrowedAccountBalance > 0) {
+                // create message payload for L2
+                bytes memory messageData = abi.encodeWithSignature(
+                    "importVestingEntries(address,uint256,(uint64,uint64,uint64,uint256,uint256)[])",
+                    msg.sender,
+                    escrowedAccountBalance,
+                    vestingEntries
+                );
+                // relay the message to this contract on L2 via L1 Messenger
+                messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(8e6));
+                emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
+            }
+        }
     }
 
     // ========== EVENTS ==========
