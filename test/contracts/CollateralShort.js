@@ -74,21 +74,11 @@ contract('CollateralShort @ovm-skip', async accounts => {
 		});
 	};
 
-	const deployShort = async ({
-		state,
-		owner,
-		manager,
-		resolver,
-		collatKey,
-		minColat,
-		minSize,
-		underCon,
-		decimals,
-	}) => {
+	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
@@ -149,8 +139,6 @@ contract('CollateralShort @ovm-skip', async accounts => {
 			collatKey: sUSD,
 			minColat: toUnit(1.2),
 			minSize: toUnit(0.1),
-			underCon: sUSDSynth.address,
-			decimals: 18,
 		});
 
 		await state.setAssociatedContract(short.address, { from: owner });
@@ -218,7 +206,6 @@ contract('CollateralShort @ovm-skip', async accounts => {
 		assert.equal(await short.synths(0), toBytes32('SynthsBTC'));
 		assert.equal(await short.synths(1), toBytes32('SynthsETH'));
 		assert.bnEqual(await short.minCratio(), toUnit(1.2));
-		assert.equal(await short.underlyingContract(), sUSDSynth.address);
 	});
 
 	it('should ensure only expected functions are mutative', async () => {
@@ -421,6 +408,10 @@ contract('CollateralShort @ovm-skip', async accounts => {
 	describe('Liquidating shorts', async () => {
 		const oneETH = toUnit(1);
 		const susdCollateral = toUnit('130');
+		const expectedCollateralRemaining = toUnit('108.000000000000000143');
+		const expectedCollateralLiquidated = toUnit('21.999999999999999857');
+		const expectedLiquidationAmount = toUnit('0.181818181818181817');
+		const expectedLoanRemaining = toUnit('0.818181818181818183');
 
 		beforeEach(async () => {
 			await issue(sUSDSynth, susdCollateral, account1);
@@ -443,11 +434,24 @@ contract('CollateralShort @ovm-skip', async accounts => {
 
 			await issue(sETHSynth, oneETH, account2);
 
-			await short.liquidate(account1, id, oneETH, { from: account2 });
+			tx = await short.liquidate(account1, id, oneETH, { from: account2 });
+
+			assert.eventEqual(tx, 'LoanPartiallyLiquidated', {
+				account: account1,
+				id: id,
+				liquidator: account2,
+				amountLiquidated: expectedLiquidationAmount,
+				collateralLiquidated: expectedCollateralLiquidated,
+			});
 
 			loan = await state.getLoan(account1, id);
 
-			assert.bnEqual(loan.amount, toUnit('0.818181818181818183'));
+			assert.bnEqual(loan.amount, expectedLoanRemaining);
+			assert.bnEqual(loan.collateral, expectedCollateralRemaining);
+
+			const ratio = await short.collateralRatio(loan);
+
+			assert.bnClose(ratio, await short.minCratio(), '100');
 		});
 	});
 
