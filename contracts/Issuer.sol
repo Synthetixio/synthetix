@@ -321,6 +321,20 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return balance;
     }
 
+    function _collateralDetailed(address account) internal view returns (uint escrowed) {
+        uint balance = IERC20(address(synthetix())).balanceOf(account);
+
+        if (address(synthetixEscrow()) != address(0)) {
+            balance = balance.add(synthetixEscrow().balanceOf(account));
+        }
+
+        if (address(rewardEscrow()) != address(0)) {
+            balance = balance.add(rewardEscrow().balanceOf(account));
+        }
+
+        return balance;
+    }
+
     function minimumStakeTime() external view returns (uint) {
         return getMinimumStakeTime();
     }
@@ -618,6 +632,23 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             // Remove liquidation
             liquidations().removeAccountInLiquidation(account);
         }
+    }
+
+    function liquidateEscrowedSNX(
+        address account,
+        uint[] calldata entryIDs,
+        address liquidator
+    ) external {
+        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
+
+        // Check account is liquidation open
+        require(liquidations().isOpenForLiquidation(account), "Account not open for liquidation");
+
+        // require liquidator has enough sUSD
+        uint susdAmount;
+
+        require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

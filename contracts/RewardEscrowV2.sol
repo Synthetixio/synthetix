@@ -53,43 +53,6 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== MIGRATION OLD ESCROW ========== */
 
-    /* Function to allow any address to migrate vesting entries from previous reward escrow */
-    function migrateVestingSchedule(address addressToMigrate) external systemActive {
-        /* Ensure account escrow balance pending migration is not zero */
-        require(totalBalancePendingMigration[addressToMigrate] > 0, "No escrow migration pending");
-        /* Ensure account escrow balance is not zero */
-        require(totalEscrowedAccountBalance[addressToMigrate] > 0, "Address escrow balance is 0");
-
-        uint numEntries = oldRewardEscrow().numVestingEntries(addressToMigrate);
-
-        /* iterate from the nextVestingIndex, skipping already vested entries */
-        uint nextVestingIndex = oldRewardEscrow().getNextVestingIndex(addressToMigrate);
-
-        /* iterate and migrate old escrow schedules from vestingSchedules[nextVestingIndex]
-         * stop at the end of the vesting schedule list */
-        for (uint i = nextVestingIndex; i < numEntries; i++) {
-            uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(addressToMigrate, i);
-
-            uint amount = vestingSchedule[QUANTITY_INDEX];
-
-            _importVestingEntry(
-                addressToMigrate,
-                VestingEntries.VestingEntry({
-                    endTime: uint64(vestingSchedule[TIME_INDEX]),
-                    duration: uint64(52 weeks),
-                    lastVested: 0,
-                    escrowAmount: amount,
-                    remainingAmount: amount
-                })
-            );
-
-            /* subtract amount from totalBalancePendingMigration - reverts if insufficient */
-            totalBalancePendingMigration[addressToMigrate] = totalBalancePendingMigration[addressToMigrate].sub(amount);
-        }
-
-        emit MigratedVestingSchedules(addressToMigrate, block.timestamp);
-    }
-
     /**
      * Import function for owner to import vesting schedule
      * Addresses with totalEscrowedAccountBalance == 0 will not be migrated as they have all vested
@@ -239,7 +202,6 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== EVENTS ========== */
     event MigratedAccountEscrow(address indexed account, uint escrowedAmount, uint vestedAmount, uint time);
-    event MigratedVestingSchedules(address indexed account, uint time);
     event ImportedVestingSchedule(address indexed account, uint time, uint escrowAmount);
     event BurnedForMigrationToL2(address indexed account, uint[] entryIDs, uint escrowedAmountMigrated, uint time);
     event ImportedVestingEntry(

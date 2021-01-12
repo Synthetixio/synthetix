@@ -44,6 +44,9 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* Max escrow duration */
     uint public max_duration = 2 * 52 weeks; // Default max 2 years duration
 
+    /* Max account merging duration */
+    uint public constant MAX_ACC_MERGING_DURATION = 4 weeks;
+
     /* ========== ACCOUNT MERGING CONFIGURATION ========== */
 
     uint public accountMergingDuration = 1 weeks;
@@ -224,7 +227,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /**
      * Vest escrowed amounts that have been emitted
-     * Public function allows any account to be vested by another account
+     * Allows users to vest their vesting entries based on msg.sender
      */
 
     function vest(uint256[] calldata entryIDs) external {
@@ -344,7 +347,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function setAccountMergingDuration(uint256 duration) external onlyOwner {
-        // TODO - some checks to ensure not above max
+        require(duration <= MAX_ACC_MERGING_DURATION, "exceeds max merging duration");
         accountMergingDuration = duration;
         emit AccountMergingDurationUpdated(duration);
     }
@@ -356,6 +359,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* Nominate an account to merge escrow and vesting schedule */
     function nominateAccountToMerge(address account) external {
+        require(account != msg.sender, "Cannot nominate own account to merge");
         require(accountMergingIsOpen(), "Account merging has ended");
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot merge accounts with debt");
         nominatedReceiver[msg.sender] = account;
