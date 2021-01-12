@@ -6299,5 +6299,27 @@
 				"keccak256": "0xcfd4c10190e41e869cd9dfce6881f7f54d106c6a93bea6ea4f242c21608024b4"
 			}
 		}
+	},
+	"v2.35.6": {
+		"tag": "v2.35.6",
+		"fulltag": "v2.35.6",
+		"release": "Shaula",
+		"network": "kovan",
+		"date": "2021-01-09T11:45:41+11:00",
+		"commit": "e4adf72676e79ad57e84a66f04fb60b417b1e42b",
+		"contracts": {
+			"StakingRewardsiBTC": {
+				"address": "0x72Bfefac12fAbC2224fE66d7840E8134BEf95e39",
+				"status": "current"
+			},
+			"StakingRewardsiETH2": {
+				"address": "0xbd700862ef238028E3C28D0670851eA1230ac7B1",
+				"status": "current"
+			},
+			"StakingRewardsiETH": {
+				"address": "0x347E15f035B4645C6E330d758F73eC3AD2bFa5B5",
+				"status": "current"
+			}
+		}
 	}
 }
