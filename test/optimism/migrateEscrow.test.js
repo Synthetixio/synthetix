@@ -6,6 +6,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 	describe('[ESCROW_MIGRATION] when migrating L1 rewardEscrowV2 entries to L2', () => {
 		const SECOND = 1000;
 		const MINUTE = SECOND * 60;
+		const HOUR = MINUTE * 60;
 
 		let user1L1;
 		let RewardEscrowV2L1, SynthetixBridgeToOptimismL1, SynthetixL1;
@@ -48,13 +49,30 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 			});
 		});
 
-		describe('when no escrow has been created', () => {
-			it('the initial state should be the expected one', async () => {
-				assert.bnEqual(await RewardEscrowV2L1.totalEscrowedBalance(), '0');
-				assert.bnEqual(await RewardEscrowV2L1.numVestingEntries(user1L1.address), '0');
-				assert.bnEqual(await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address), '0');
-				assert.bnEqual(await RewardEscrowV2L1.totalVestedAccountBalance(user1L1.address), '0');
-			});
+		let initialEntriesL1;
+		let initialEscrowedBalanceL1;
+		let initialEscrowedBalanceL2;
+		let user1NumVestingEntriesL1;
+		let user1NumVestingEntriesL2;
+		let user1EscrowedBalanceL1;
+		let user1EscrowedBalanceL2;
+		let user1VestedAccountBalanceL1;
+		let user1VestedAccountBalanceL2;
+
+		before('record current escrow state', async () => {
+			initialEntriesL1 = await RewardEscrowV2L1.nextEntryId();
+			initialEscrowedBalanceL1 = await RewardEscrowV2L1.totalEscrowedBalance();
+			initialEscrowedBalanceL2 = await RewardEscrowV2L2.totalEscrowedBalance();
+			user1NumVestingEntriesL1 = await RewardEscrowV2L1.numVestingEntries(user1L1.address);
+			user1NumVestingEntriesL2 = await RewardEscrowV2L2.numVestingEntries(user1L1.address);
+			user1EscrowedBalanceL1 = await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address);
+			user1EscrowedBalanceL2 = await RewardEscrowV2L2.totalEscrowedAccountBalance(user1L1.address);
+			user1VestedAccountBalanceL1 = await RewardEscrowV2L1.totalVestedAccountBalance(
+				user1L1.address
+			);
+			user1VestedAccountBalanceL2 = await RewardEscrowV2L2.totalVestedAccountBalance(
+				user1L1.address
+			);
 		});
 
 		describe('when a user owns enough SNX', () => {
@@ -89,7 +107,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 				const totalEntriesCreated = escrowNum * escrowBatches;
 				describe(`when the user creates ${totalEntriesCreated} escrow entries`, () => {
 					const escrowEntryAmount = ethers.utils.parseEther('1');
-					const duration = MINUTE;
+					const duration = HOUR;
 					let currentId;
 					const batchEscrowAmounts = [];
 					const userEntryBatch = [];
@@ -123,21 +141,27 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 					it(`Should create ${totalEntriesCreated} new entry IDs`, async () => {
 						assert.bnEqual(
 							await RewardEscrowV2L1.nextEntryId(),
-							(totalEntriesCreated + 1).toString()
+							initialEntriesL1.add(totalEntriesCreated)
 						);
 					});
 
 					it('should update the L1 escrow state', async () => {
-						assert.bnEqual(await RewardEscrowV2L1.totalEscrowedBalance(), totalEscrowed);
+						assert.bnEqual(
+							await RewardEscrowV2L1.totalEscrowedBalance(),
+							initialEscrowedBalanceL1.add(totalEscrowed)
+						);
 						assert.bnEqual(
 							await RewardEscrowV2L1.numVestingEntries(user1L1.address),
-							totalEntriesCreated.toString()
+							user1NumVestingEntriesL1.add(totalEntriesCreated)
 						);
 						assert.bnEqual(
 							await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address),
-							totalEscrowed
+							user1EscrowedBalanceL1.add(totalEscrowed)
 						);
-						assert.bnEqual(await RewardEscrowV2L1.totalVestedAccountBalance(user1L1.address), '0');
+						assert.bnEqual(
+							await RewardEscrowV2L1.totalVestedAccountBalance(user1L1.address),
+							user1VestedAccountBalanceL1
+						);
 					});
 
 					describe('when the user has no outstanding debt on L1', () => {
@@ -145,6 +169,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 							let initiateEscrowMigrationReceipt;
 							let user1BalanceL2;
 							let totalSupplyL2;
+							let rewardEscrowBalanceL2;
 
 							const importedVestingEntriesEvents = [];
 
@@ -164,6 +189,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 							before('record current values', async () => {
 								user1BalanceL2 = await SynthetixL2.balanceOf(user1L1.address);
 								totalSupplyL2 = await SynthetixL2.totalSupply();
+								rewardEscrowBalanceL2 = await SynthetixL2.balanceOf(RewardEscrowV2L2.address);
 							});
 
 							before('initiateEscrowMigration', async () => {
@@ -186,18 +212,21 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 							});
 
 							it('should update the L1 escrow state', async () => {
-								assert.bnEqual(await RewardEscrowV2L1.totalEscrowedBalance(), '0');
+								assert.bnEqual(
+									await RewardEscrowV2L1.totalEscrowedBalance(),
+									initialEscrowedBalanceL1
+								);
 								assert.bnEqual(
 									await RewardEscrowV2L1.numVestingEntries(user1L1.address),
-									totalEntriesCreated.toString()
+									user1NumVestingEntriesL1.add(totalEntriesCreated)
 								);
 								assert.bnEqual(
 									await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address),
-									'0'
+									user1EscrowedBalanceL1
 								);
 								assert.bnEqual(
 									await RewardEscrowV2L1.totalVestedAccountBalance(user1L1.address),
-									'0'
+									user1VestedAccountBalanceL1
 								);
 							});
 
@@ -239,18 +268,21 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 								});
 
 								it('should update the L2 escrow state', async () => {
-									assert.bnEqual(await RewardEscrowV2L2.totalEscrowedBalance(), totalEscrowed);
+									assert.bnEqual(
+										await RewardEscrowV2L2.totalEscrowedBalance(),
+										initialEscrowedBalanceL2.add(totalEscrowed)
+									);
 									assert.bnEqual(
 										await RewardEscrowV2L2.numVestingEntries(user1L1.address),
-										(escrowNum * escrowBatches).toString()
+										user1NumVestingEntriesL2.add(totalEntriesCreated)
 									);
 									assert.bnEqual(
 										await RewardEscrowV2L2.totalEscrowedAccountBalance(user1L1.address),
-										totalEscrowed
+										user1EscrowedBalanceL2.add(totalEscrowed)
 									);
 									assert.bnEqual(
 										await RewardEscrowV2L2.totalVestedAccountBalance(user1L1.address),
-										'0'
+										user1VestedAccountBalanceL2
 									);
 								});
 
@@ -260,7 +292,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 									//
 									assert.bnEqual(
 										await SynthetixL2.balanceOf(RewardEscrowV2L2.address),
-										totalEscrowed
+										rewardEscrowBalanceL2.add(totalEscrowed)
 									);
 									assert.bnEqual(await SynthetixL2.totalSupply(), totalSupplyL2.add(totalEscrowed));
 								});

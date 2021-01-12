@@ -6,6 +6,7 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 	describe('[DEPOSIT_AND_ESCROW_MIGRATION] when depositing and migrating L1 rewardEscrowV2 entries to L2', () => {
 		const SECOND = 1000;
 		const MINUTE = SECOND * 60;
+		const HOUR = MINUTE * 60;
 
 		let user1L1;
 		let RewardEscrowV2L1, SynthetixBridgeToOptimismL1, SynthetixL1;
@@ -81,7 +82,7 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 
 				describe(`when the user creates ${totalEntriesCreated.toString()} escrow entries`, () => {
 					const escrowEntryAmount = ethers.utils.parseEther('1');
-					const duration = MINUTE;
+					const duration = HOUR;
 					let currentId;
 					const batchEscrowAmounts = [];
 					const userEntryBatch = [];
@@ -231,18 +232,17 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 									});
 
 									it('should update the L1 escrow state', async () => {
-										assert.bnEqual(await RewardEscrowV2L1.totalEscrowedBalance(), '0');
+										assert.bnEqual(
+											await RewardEscrowV2L1.totalEscrowedBalance(),
+											initialEscrowedBalanceL1
+										);
 										assert.bnEqual(
 											await RewardEscrowV2L1.numVestingEntries(user1L1.address),
 											user1NumVestingEntriesL1.add(totalEntriesCreated)
 										);
 										assert.bnEqual(
 											await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address),
-											'0'
-										);
-										assert.bnEqual(
-											await RewardEscrowV2L1.totalVestedAccountBalance(user1L1.address),
-											'0'
+											user1EscrowedBalanceL1
 										);
 									});
 
