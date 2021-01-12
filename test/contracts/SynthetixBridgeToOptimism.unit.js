@@ -153,6 +153,40 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 			});
 
+			describe('initiateEscrowMigration', () => {
+				const entryIds = [
+					[1, 2, 3],
+					[4, 5, 6],
+				];
+				describe('failure modes', () => {
+					it('does not work when the contract has been deactivated', async () => {
+						await instance.migrateBridge(randomAddress, { from: owner });
+
+						await assert.revert(instance.initiateEscrowMigration(entryIds), 'Function deactivated');
+					});
+
+					it('does not work when user has any debt', async () => {
+						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
+						await assert.revert(
+							instance.initiateEscrowMigration(entryIds),
+							'Cannot deposit or migrate with debt'
+						);
+					});
+
+					it('reverts when an entriesId subarray contains more than 26 entries', async () => {
+						const subArray = [];
+						for (let i = 0; i < 27; i++) {
+							subArray[i] = i;
+						}
+						const entryIds27Entries = [[1, 2, 3], subArray];
+						await assert.revert(
+							instance.initiateEscrowMigration(entryIds27Entries),
+							'Exceeds max entries per migration'
+						);
+					});
+				});
+			});
+
 			describe('depositAndMigrateEscrow', () => {
 				const entryIds = [
 					[1, 2, 3],

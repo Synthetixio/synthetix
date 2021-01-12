@@ -26,7 +26,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_OVM_SYNTHETIXBRIDGETOBASE = "ovm:SynthetixBridgeToBase";
 
-    uint8 private constant MAX_ENTRIES_MIGRATED_PER_MESSAGE = 4;
+    uint8 private constant MAX_ENTRIES_MIGRATED_PER_MESSAGE = 26;
 
     bool public activated;
 
@@ -203,8 +203,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     function _initiateEscrowMigration(uint256[][] memory _entryIDs) private {
         // loop through the entryID array
         for (uint256 i = 0; i < _entryIDs.length; i++) {
-            // Cannot send more than 26 entries due to ovm gas restrictions
-            require(_entryIDs[i].length <= 26, "Exceeds maximum migration entries number");
+            // Cannot send more than MAX_ENTRIES_MIGRATED_PER_MESSAGE entries due to ovm gas restrictions
+            require(_entryIDs[i].length <= MAX_ENTRIES_MIGRATED_PER_MESSAGE, "Exceeds max entries per migration");
             // Burn their reward escrow first
             // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
             uint256 escrowedAccountBalance;
