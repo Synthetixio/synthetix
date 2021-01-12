@@ -143,6 +143,28 @@ Will initiate the synthetix release process, publishing the synthetix `npm` modu
 node publish release # "--help" for options
 ```
 
+## 9. Staking Rewards
+
+Will deploy an instance of StakingRewards.sol with the configured stakingToken and rewardsToken in rewards.json. Then `run node publish verify`
+
+```bash
+node publish deploy-staking-rewards # "--help" for options
+```
+
+### Examples
+
+```bash
+node publish deploy-staking-rewards -n kovan -d publish/deployed/kovan -t iBTC --dry-run
+node publish deploy-staking-rewards -n local -d publish/deployed/local
+
+```
+
+### Example
+
+```bash
+node publish release --version 2.22.0 --branch master --release Altair
+```
+
 ### Branching
 
 For `synthetix` repo, we are using the following branch mapping:
