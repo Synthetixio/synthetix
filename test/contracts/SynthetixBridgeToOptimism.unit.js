@@ -240,7 +240,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 								args: [user1, escrowAmount, emptyArray],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
-							assert.equal(messenger.smocked.sendMessage.calls[0][2], (8e6).toString());
+							assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 
 							assert.equal(messenger.smocked.sendMessage.calls[1][0], snxBridgeToBase);
 							expectedData = getDataOfEncodedFncCall({
@@ -249,7 +249,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 								args: [user1, escrowAmount, emptyArray],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[1][1], expectedData);
-							assert.equal(messenger.smocked.sendMessage.calls[1][2], (8e6).toString());
+							assert.equal(messenger.smocked.sendMessage.calls[1][2], (3e6).toString());
 
 							assert.equal(messenger.smocked.sendMessage.calls[2][0], snxBridgeToBase);
 							expectedData = getDataOfEncodedFncCall({
@@ -329,7 +329,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 								args: [user1, escrowAmount, []],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
-							assert.equal(messenger.smocked.sendMessage.calls[0][2], (8e6).toString());
+							assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 
 							assert.equal(messenger.smocked.sendMessage.calls[1][0], snxBridgeToBase);
 							expectedData = getDataOfEncodedFncCall({
@@ -338,7 +338,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 								args: [user1, escrowAmount, []],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[1][1], expectedData);
-							assert.equal(messenger.smocked.sendMessage.calls[1][2], (8e6).toString());
+							assert.equal(messenger.smocked.sendMessage.calls[1][2], (3e6).toString());
 						});
 
 						it('and two events are emitted (ExportedVestingEntries)', async () => {

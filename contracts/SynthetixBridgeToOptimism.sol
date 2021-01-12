@@ -220,7 +220,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
                     vestingEntries
                 );
                 // relay the message to this contract on L2 via L1 Messenger
-                messenger().sendMessage(synthetixBridgeToBase(), messageData, uint32(8e6));
+                messenger().sendMessage(
+                    synthetixBridgeToBase(),
+                    messageData,
+                    uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Escrow))
+                );
                 emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
             }
         }
