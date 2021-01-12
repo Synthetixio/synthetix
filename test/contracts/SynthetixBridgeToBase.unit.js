@@ -15,10 +15,10 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			abi: SynthetixBridgeToBase.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
-				'initiateWithdrawal',
 				'completeDeposit',
+				'completeEscrowMigration',
 				'completeRewardDeposit',
-				'importVestingEntries',
+				'initiateWithdrawal',
 			],
 		});
 	});
@@ -34,7 +34,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let mintableSynthetix;
 		let resolver;
 		let rewardEscrow;
-		let issuer;
 		let flexibleStorage;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
@@ -44,7 +43,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			rewardEscrow = await smockit(artifacts.require('IRewardEscrowV2').abi);
 
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
-			issuer = await smockit(artifacts.require('IIssuer').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
@@ -55,7 +53,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					'Synthetix',
 					'base:SynthetixBridgeToOptimism',
 					'RewardEscrowV2',
-					'Issuer',
 				].map(toBytes32),
 				[
 					flexibleStorage.address,
@@ -63,7 +60,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					mintableSynthetix.address,
 					snxBridgeToOptimism,
 					rewardEscrow.address,
-					issuer.address,
 				],
 				{ from: owner }
 			);
@@ -74,10 +70,10 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			mintableSynthetix.smocked.burnSecondary.will.return.with(() => {});
 			mintableSynthetix.smocked.mintSecondary.will.return.with(() => {});
 			mintableSynthetix.smocked.balanceOf.will.return.with(() => web3.utils.toWei('1'));
+			mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => web3.utils.toWei('1'));
 			messenger.smocked.sendMessage.will.return.with(() => {});
 			messenger.smocked.xDomainMessageSender.will.return.with(() => snxBridgeToOptimism);
 			rewardEscrow.smocked.importVestingEntries.will.return.with(() => {});
-			issuer.smocked.debtBalanceOf.will.return.with(() => '0');
 			flexibleStorage.smocked.getUIntValue.will.return.with(() => '3000000');
 		});
 
@@ -95,7 +91,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				describe('failure modes', () => {
 					it('should only allow the relayer (aka messenger) to call importVestingEntries()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: instance.importVestingEntries,
+							fnc: instance.completeEscrowMigration,
 							args: [user1, escrowedAmount, emptyArray],
 							accounts,
 							address: smockedMessenger,
@@ -107,7 +103,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.importVestingEntries(user1, escrowedAmount, emptyArray, {
+							instance.completeEscrowMigration(user1, escrowedAmount, emptyArray, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -118,7 +114,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				describe('when invoked by the messenger (aka relayer)', async () => {
 					let importVestingEntriesTx;
 					beforeEach('importVestingEntries is called', async () => {
-						importVestingEntriesTx = await instance.importVestingEntries(
+						importVestingEntriesTx = await instance.completeEscrowMigration(
 							user1,
 							escrowedAmount,
 							emptyArray,
@@ -146,9 +142,9 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 			describe('initiateWithdrawal', () => {
 				describe('failure modes', () => {
-					it('does not work when user has debt', async () => {
-						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
-						await assert.revert(instance.initiateWithdrawal('1'), 'Cannot withdraw with debt');
+					it('does not work when user has less trasferable snx than the withdrawal amount', async () => {
+						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
+						await assert.revert(instance.initiateWithdrawal('1'), 'Not enough transferable SNX');
 					});
 				});
 
