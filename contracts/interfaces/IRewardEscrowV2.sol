@@ -81,6 +81,15 @@ interface IRewardEscrowV2 {
 
     function nominateAccountToMerge(address account) external;
 
+    // Escrowed SNX Liquidation
+
+    function liquidateEscrowEntries(
+        address account,
+        uint[] calldata entryIDs,
+        address liquidator,
+        uint amountToRedeem
+    ) external returns (uint);
+
     // L2 Migration
     function importVestingEntries(
         address account,

@@ -19,7 +19,7 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
-import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
@@ -78,7 +78,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
@@ -97,7 +97,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[6] = CONTRACT_ETHERCOLLATERAL;
         newAddresses[7] = CONTRACT_ETHERCOLLATERAL_SUSD;
-        newAddresses[8] = CONTRACT_REWARDESCROW;
+        newAddresses[8] = CONTRACT_REWARDESCROW_V2;
         newAddresses[9] = CONTRACT_SYNTHETIXESCROW;
         newAddresses[10] = CONTRACT_LIQUIDATIONS;
         newAddresses[11] = CONTRACT_DEBTCACHE;
@@ -145,8 +145,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
 
-    function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW));
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
 
     function synthetixEscrow() internal view returns (IHasBalance) {
@@ -314,8 +314,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             balance = balance.add(synthetixEscrow().balanceOf(account));
         }
 
-        if (address(rewardEscrow()) != address(0)) {
-            balance = balance.add(rewardEscrow().balanceOf(account));
+        if (address(rewardEscrowV2()) != address(0)) {
+            balance = balance.add(rewardEscrowV2().balanceOf(account));
         }
 
         return balance;
@@ -599,9 +599,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // if total SNX to redeem is greater than account's collateral
         // account is under collateralised, liquidate all collateral and reduce sUSD to burn
-        // an insurance fund will be added to cover these undercollateralised positions
         if (totalRedeemed > collateralForAccount) {
-            // set totalRedeemed to all collateral
+            // set totalRedeemed to all transferable collateral
             totalRedeemed = collateralForAccount;
 
             // whats the equivalent sUSD to burn for all collateral less penalty
@@ -614,7 +613,60 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // burn sUSD from messageSender (liquidator) and reduce account's debt
         _burnSynths(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
 
+        // Remove liquidation flag if amount liquidated fixes ratio
         if (amountToLiquidate == amountToFixRatio) {
+            // Remove liquidation
+            liquidations().removeAccountInLiquidation(account);
+        }
+    }
+
+    function liquidateEscrowedSNX(
+        address account,
+        uint[] calldata entryIDs,
+        uint susdAmount,
+        address liquidator
+    ) external onlySynthetix {
+        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
+
+        // require liquidator has enough sUSD
+        require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
+
+        // Check account is open for liquidation
+        require(liquidations().isOpenForLiquidation(account), "Account not open for liquidation");
+
+        // What is their debt in sUSD?
+        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
+        (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
+
+        _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
+
+        // Redeem escrowed SNX for liquidation
+        uint amountToFixRatio = liquidations().calculateAmountToFixCollateral(
+            debtBalance,
+            _snxToUSD(_collateral(account), snxRate)
+        );
+
+        // Cap amount to liquidate to repair collateral ratio based on issuance ratio
+        uint amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
+
+        // what's the equivalent amount of snx for the amountToLiquidate + penalty ?
+        uint totalToRedeem = _usdToSnx(amountToLiquidate, snxRate).multiplyDecimal(
+            SafeDecimalMath.unit().add(liquidations().liquidationPenalty())
+        );
+
+        // Transfer escrowed SNX to liquidator
+        uint totalEscrowLiquidated = rewardEscrowV2().liquidateEscrowEntries(account, entryIDs, liquidator, totalToRedeem);
+
+        /* Burn sUSD that was actually liquidated from messageSender (liquidator)
+         * and reduce account's debt
+         * returns the amount of escrowed snx liquidated based on entryID's provided
+         * Caps the amount to how much escrowed snx balance there is
+         */
+        _burnSynths(account, liquidator, _snxToUSD(totalEscrowLiquidated, snxRate), debtBalance, totalDebtIssued);
+
+        // Remove liquidation flag if amount liquidated fixes ratio
+        if (_snxToUSD(totalEscrowLiquidated, snxRate) == amountToFixRatio) {
             // Remove liquidation
             liquidations().removeAccountInLiquidation(account);
         }

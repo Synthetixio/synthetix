@@ -44,6 +44,9 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* Max escrow duration */
     uint public max_duration = 2 * 52 weeks; // Default max 2 years duration
 
+    /* Max account merging duration */
+    uint public constant MAX_ACC_MERGING_DURATION = 4 weeks;
+
     /* ========== ACCOUNT MERGING CONFIGURATION ========== */
 
     uint public accountMergingDuration = 1 weeks;
@@ -224,7 +227,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /**
      * Vest escrowed amounts that have been emitted
-     * Public function allows any account to be vested by another account
+     * Allows users to vest their vesting entries based on msg.sender
      */
 
     function vest(uint256[] calldata entryIDs) external {
@@ -344,7 +347,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function setAccountMergingDuration(uint256 duration) external onlyOwner {
-        // TODO - some checks to ensure not above max
+        require(duration <= MAX_ACC_MERGING_DURATION, "exceeds max merging duration");
         accountMergingDuration = duration;
         emit AccountMergingDurationUpdated(duration);
     }
@@ -356,6 +359,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
 
     /* Nominate an account to merge escrow and vesting schedule */
     function nominateAccountToMerge(address account) external {
+        require(account != msg.sender, "Cannot nominate own account to merge");
         require(accountMergingIsOpen(), "Account merging has ended");
         require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot merge accounts with debt");
         nominatedReceiver[msg.sender] = account;
@@ -395,6 +399,89 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         totalEscrowedAccountBalance[msg.sender] = totalEscrowedAccountBalance[msg.sender].add(totalEscrowAmountMerged);
 
         emit AccountMerged(accountToMerge, msg.sender, totalEscrowAmountMerged, entryIDs, block.timestamp);
+    }
+
+    /* ========== ESCROW LIQUIDATION ========== */
+
+    function liquidateEscrowEntries(
+        address account,
+        uint[] calldata entryIDs,
+        address liquidator,
+        uint amountToRedeem
+    ) external onlyIssuer returns (uint totalEscrowLiquidated) {
+        uint remainingToRedeem = amountToRedeem;
+
+        for (uint i = 0; i < entryIDs.length; i++) {
+            /* when remainingToRedeem is 0 stop iterating */
+            if (remainingToRedeem == 0) {
+                break;
+            }
+
+            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
+
+            /* ignore vesting entries with zero remainingAmount */
+            if (entry.remainingAmount != 0) {
+                uint liquidatedAmount;
+
+                /* If the remainingToRedeem is less than entry.remainingAmount
+                 * partially redeem the entry */
+                if (remainingToRedeem < entry.remainingAmount) {
+                    /* partially liquidate entry subracting the redeemed amount from remaining */
+                    entry.remainingAmount = entry.remainingAmount.sub(remainingToRedeem);
+
+                    /* Track liquidated amount as the remaining to redeem amount */
+                    liquidatedAmount = remainingToRedeem;
+
+                    /* create new entry for liquidator */
+                    _addVestingEntry(
+                        liquidator,
+                        VestingEntries.VestingEntry({
+                            endTime: entry.endTime,
+                            duration: entry.duration,
+                            lastVested: entry.lastVested,
+                            escrowAmount: entry.escrowAmount,
+                            remainingAmount: remainingToRedeem
+                        })
+                    );
+                } else {
+                    /* copy entry to liquidator address */
+                    vestingSchedules[liquidator][entryIDs[i]] = entry;
+
+                    /* Track liquidated amount as the remainingAmount */
+                    liquidatedAmount = entry.remainingAmount;
+
+                    /* append entryID to list of entries for liquidator */
+                    accountVestingEntryIDs[liquidator].push(entryIDs[i]);
+
+                    /* Delete entry from account */
+                    delete vestingSchedules[account][entryIDs[i]];
+                }
+
+                /* Sub liquidatedAmount from remainingToRedeem */
+                remainingToRedeem = remainingToRedeem.sub(liquidatedAmount);
+
+                /* Add liquidatedAmount to totalEscrowLiquidated */
+                totalEscrowLiquidated = totalEscrowLiquidated.add(liquidatedAmount);
+            }
+        }
+
+        /* update totalEscrowedAccountBalance for the account and liquidator */
+        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].sub(totalEscrowLiquidated);
+        totalEscrowedAccountBalance[liquidator] = totalEscrowedAccountBalance[liquidator].add(totalEscrowLiquidated);
+    }
+
+    /* Internal function for importing vesting entry and creating new entry for escrow liquidations */
+    function _addVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal returns (uint) {
+        uint entryID = nextEntryId;
+        vestingSchedules[account][entryID] = entry;
+
+        /* append entryID to list of entries for account */
+        accountVestingEntryIDs[account].push(entryID);
+
+        /* Increment the next entry id. */
+        nextEntryId = nextEntryId.add(1);
+
+        return entryID;
     }
 
     /* ========== MIGRATION OLD ESCROW ========== */
@@ -473,6 +560,11 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* ========== MODIFIERS ========== */
     modifier onlyFeePool() {
         require(msg.sender == address(feePool()), "Only the FeePool can perform this action");
+        _;
+    }
+
+    modifier onlyIssuer() {
+        require(msg.sender == address(issuer()), "Only the Issuer can perform this action");
         _;
     }
 
