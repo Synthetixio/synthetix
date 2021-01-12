@@ -32,7 +32,7 @@ contract('SynthetixBridgeToBase (spec tests)', accounts => {
 			it('the withdrawal should fail', async () => {
 				await assert.revert(
 					synthetixBridgeToBase.initiateWithdrawal('1', { from: user }),
-					'SafeMath: subtraction overflow'
+					'Not enough transferable SNX'
 				);
 			});
 		});

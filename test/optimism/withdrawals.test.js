@@ -10,7 +10,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 		let user1L2;
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1;
-		let SynthetixL2, SynthetixBridgeToBaseL2, IssuerL2, SystemStatusL2;
+		let SynthetixL2, SynthetixBridgeToBaseL2, SystemStatusL2;
 
 		// --------------------------
 		// Setup
@@ -37,11 +37,6 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			});
 			SynthetixBridgeToBaseL2 = connectContract({
 				contract: 'SynthetixBridgeToBase',
-				useOvm: true,
-				provider: ctx.providerL2,
-			});
-			IssuerL2 = connectContract({
-				contract: 'Issuer',
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
@@ -93,64 +88,15 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			});
 
 			// --------------------------
-			// With debt
+			// At least one issuance
 			// --------------------------
 
-			// TODO: Not working because of Optimism's issues with "now"
-			// describe.skip('when a user has debt in L2', () => {
-			// 	before('issue sUSD', async () => {
-			// 		SynthetixL2 = SynthetixL2.connect(user1L2);
+			describe('when there has been ta least one issuance', () => {
+				before('issue sUSD', async () => {
+					SynthetixL2 = SynthetixL2.connect(ctx.ownerL2);
 
-			// 		const tx = await SynthetixL2.issueSynths(1);
-			// 		await tx.wait();
-			// 	});
-
-			// 	after('remove all debt', async () => {
-			// 		const time = (await IssuerL2.minimumStakeTime()).toString();
-			// 		await wait(time);
-
-			// 		SynthetixL2 = SynthetixL2.connect(user1L2);
-
-			// 		const debt = await IssuerL2.debtBalanceOf(
-			// 			user1L2.address,
-			// 			ethers.utils.formatBytes32String('sUSD')
-			// 		);
-			// 		console.log('debt', debt.toString());
-
-			// 		const tx = await SynthetixL2.burnSynths(debt);
-			// 		await tx.wait();
-			// 	});
-
-			// 	it('shows the user has debt', async () => {
-			// 		assert.bnGte(
-			// 			await IssuerL2.debtBalanceOf(user1L2.address, ethers.utils.formatBytes32String('sUSD')),
-			// 			1
-			// 		);
-			// 	});
-
-			// 	it('reverts if the user attemtps to withdraw to L1', async () => {
-			// 		SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
-
-			// 		const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(1);
-
-			// 		await assertRevertOptimism({
-			// 			tx,
-			// 			reason: 'Cannot withdraw with debt',
-			// 			provider: ctx.providerL2,
-			// 		});
-			// 	});
-			// });
-
-			// --------------------------
-			// Without debt
-			// --------------------------
-
-			describe('when a user doesnt have debt in L2', () => {
-				it('shows that the user does not have debt', async () => {
-					assert.bnEqual(
-						await IssuerL2.debtBalanceOf(user1L2.address, ethers.utils.formatBytes32String('sUSD')),
-						0
-					);
+					const tx = await SynthetixL2.issueSynths(1);
+					await tx.wait();
 				});
 
 				// --------------------------
@@ -170,7 +116,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 						await SystemStatusL2.resumeSystem();
 					});
 
-					it('reverts when the user attempts to initiate a deposit', async () => {
+					it('reverts when the user attempts to initiate a withdrawal', async () => {
 						SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
 						const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(1);

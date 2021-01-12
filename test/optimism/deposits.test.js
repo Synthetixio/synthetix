@@ -139,7 +139,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 
 						await assert.revert(
 							SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit),
-							'Cannot deposit with debt'
+							'Cannot deposit or migrate with debt'
 						);
 					});
 				});

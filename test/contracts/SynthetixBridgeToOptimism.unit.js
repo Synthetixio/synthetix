@@ -28,9 +28,10 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				'completeWithdrawal',
 				'depositAndMigrateEscrow',
 				'initiateDeposit',
+				'initiateEscrowMigration',
+				'initiateRewardDeposit',
 				'migrateBridge',
 				'notifyRewardAmount',
-				'initiateRewardDeposit',
 			],
 		});
 	});
@@ -120,7 +121,10 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 					it('does not work when user has any debt', async () => {
 						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
-						await assert.revert(instance.initiateDeposit('1'), 'Cannot deposit with debt');
+						await assert.revert(
+							instance.initiateDeposit('1'),
+							'Cannot deposit or migrate with debt'
+						);
 					});
 				});
 
@@ -149,8 +153,45 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 			});
 
+			describe('initiateEscrowMigration', () => {
+				const entryIds = [
+					[1, 2, 3],
+					[4, 5, 6],
+				];
+				describe('failure modes', () => {
+					it('does not work when the contract has been deactivated', async () => {
+						await instance.migrateBridge(randomAddress, { from: owner });
+
+						await assert.revert(instance.initiateEscrowMigration(entryIds), 'Function deactivated');
+					});
+
+					it('does not work when user has any debt', async () => {
+						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
+						await assert.revert(
+							instance.initiateEscrowMigration(entryIds),
+							'Cannot deposit or migrate with debt'
+						);
+					});
+
+					it('reverts when an entriesId subarray contains more than 26 entries', async () => {
+						const subArray = [];
+						for (let i = 0; i < 27; i++) {
+							subArray[i] = i;
+						}
+						const entryIds27Entries = [[1, 2, 3], subArray];
+						await assert.revert(
+							instance.initiateEscrowMigration(entryIds27Entries),
+							'Exceeds max entries per migration'
+						);
+					});
+				});
+			});
+
 			describe('depositAndMigrateEscrow', () => {
-				const entryIds = [1, 2, 3];
+				const entryIds = [
+					[1, 2, 3],
+					[4, 5, 6],
+				];
 
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
@@ -181,18 +222,21 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							txn = await instance.depositAndMigrateEscrow(amount, entryIds, { from: user1 });
 						});
 
-						it('the L1 escrow is burned (via rewardEscrowV2.burnForMigration', async () => {
+						it('the L1 escrow is burned (via rewardEscrowV2.burnForMigration)', async () => {
+							assert.equal(rewardEscrow.smocked.burnForMigration.calls.length, 2);
 							assert.equal(rewardEscrow.smocked.burnForMigration.calls[0][0], user1);
-							assert.bnEqual(rewardEscrow.smocked.burnForMigration.calls[0][1], entryIds);
+							assert.bnEqual(rewardEscrow.smocked.burnForMigration.calls[0][1], entryIds[0]);
+							assert.equal(rewardEscrow.smocked.burnForMigration.calls[1][0], user1);
+							assert.bnEqual(rewardEscrow.smocked.burnForMigration.calls[1][1], entryIds[1]);
 						});
 
-						it('two messages are relayed: importVestingEntries & completeDeposit', async () => {
-							assert.equal(messenger.smocked.sendMessage.calls.length, 2);
+						it('three messages are relayed from L1 to L2: completeEscrowMigration & completeDeposit', async () => {
+							assert.equal(messenger.smocked.sendMessage.calls.length, 3);
 
 							assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 							let expectedData = getDataOfEncodedFncCall({
-								contract: 'IRewardEscrowV2',
-								fnc: 'importVestingEntries',
+								contract: 'ISynthetixBridgeToBase',
+								fnc: 'completeEscrowMigration',
 								args: [user1, escrowAmount, emptyArray],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
@@ -200,13 +244,22 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 							assert.equal(messenger.smocked.sendMessage.calls[1][0], snxBridgeToBase);
 							expectedData = getDataOfEncodedFncCall({
+								contract: 'ISynthetixBridgeToBase',
+								fnc: 'completeEscrowMigration',
+								args: [user1, escrowAmount, emptyArray],
+							});
+							assert.equal(messenger.smocked.sendMessage.calls[1][1], expectedData);
+							assert.equal(messenger.smocked.sendMessage.calls[1][2], (3e6).toString());
+
+							assert.equal(messenger.smocked.sendMessage.calls[2][0], snxBridgeToBase);
+							expectedData = getDataOfEncodedFncCall({
 								contract: 'SynthetixBridgeToBase',
 								fnc: 'completeDeposit',
 								args: [user1, amount],
 							});
 
-							assert.equal(messenger.smocked.sendMessage.calls[1][1], expectedData);
-							assert.equal(messenger.smocked.sendMessage.calls[1][2], (3e6).toString());
+							assert.equal(messenger.smocked.sendMessage.calls[2][1], expectedData);
+							assert.equal(messenger.smocked.sendMessage.calls[2][2], (3e6).toString());
 						});
 
 						it('SNX is transferred from the user to the deposit contract', async () => {
@@ -215,13 +268,18 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							assert.equal(synthetix.smocked.transferFrom.calls[0][2].toString(), amount);
 						});
 
-						it('and two events are emitted', async () => {
+						it('and three events are emitted', async () => {
 							assert.eventEqual(txn.logs[0], 'ExportedVestingEntries', [
 								user1,
 								escrowAmount,
 								emptyArray,
 							]);
-							assert.eventEqual(txn.logs[1], 'Deposit', [user1, amount]);
+							assert.eventEqual(txn.logs[1], 'ExportedVestingEntries', [
+								user1,
+								escrowAmount,
+								emptyArray,
+							]);
+							assert.eventEqual(txn.logs[2], 'Deposit', [user1, amount]);
 						});
 					});
 
@@ -255,25 +313,42 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						});
 
 						it('the L1 escrow is burned (via rewardEscrowV2.burnForMigration', async () => {
+							assert.equal(rewardEscrow.smocked.burnForMigration.calls.length, 2);
 							assert.equal(rewardEscrow.smocked.burnForMigration.calls[0][0], user1);
-							assert.bnEqual(rewardEscrow.smocked.burnForMigration.calls[0][1], entryIds);
+							assert.bnEqual(rewardEscrow.smocked.burnForMigration.calls[0][1], entryIds[0]);
+							assert.equal(rewardEscrow.smocked.burnForMigration.calls[1][0], user1);
+							assert.bnEqual(rewardEscrow.smocked.burnForMigration.calls[1][1], entryIds[1]);
 						});
 
-						it('one message is relayed: importVestingEntries', async () => {
-							assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+						it('two messages are relayed: completeEscrowMigration', async () => {
+							assert.equal(messenger.smocked.sendMessage.calls.length, 2);
 							assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
-							const expectedData = getDataOfEncodedFncCall({
-								contract: 'IRewardEscrowV2',
-								fnc: 'importVestingEntries',
+							let expectedData = getDataOfEncodedFncCall({
+								contract: 'ISynthetixBridgeToBase',
+								fnc: 'completeEscrowMigration',
 								args: [user1, escrowAmount, []],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
 							assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
+
+							assert.equal(messenger.smocked.sendMessage.calls[1][0], snxBridgeToBase);
+							expectedData = getDataOfEncodedFncCall({
+								contract: 'ISynthetixBridgeToBase',
+								fnc: 'completeEscrowMigration',
+								args: [user1, escrowAmount, []],
+							});
+							assert.equal(messenger.smocked.sendMessage.calls[1][1], expectedData);
+							assert.equal(messenger.smocked.sendMessage.calls[1][2], (3e6).toString());
 						});
 
-						it('and one event is emitted (ExportedVestingEntries)', async () => {
-							assert.equal(txn.logs.length, 1);
+						it('and two events are emitted (ExportedVestingEntries)', async () => {
+							assert.equal(txn.logs.length, 2);
 							assert.eventEqual(txn.logs[0], 'ExportedVestingEntries', [
+								user1,
+								escrowAmount,
+								emptyArray,
+							]);
+							assert.eventEqual(txn.logs[1], 'ExportedVestingEntries', [
 								user1,
 								escrowAmount,
 								emptyArray,
@@ -283,7 +358,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 			});
 
-			describe('initiateRewardDepositrewardDeposit', () => {
+			describe('initiateRewardDeposit', () => {
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
 						await instance.migrateBridge(randomAddress, { from: owner });

@@ -5,19 +5,19 @@ import "./IRewardEscrowV2.sol";
 
 
 interface ISynthetixBridgeToBase {
-    // invoked by the xDomain messenger on L2
+    // invoked by users on L2
+    function initiateWithdrawal(uint amount) external;
+
+    //  // The following functions can only be invoked by the xDomain messenger on L2
     function completeDeposit(address account, uint depositAmount) external;
 
     // invoked by the xDomain messenger on L2
-    function completeRewardDeposit(uint amount) external;
-
-    // invoked by the xDomain messenger on L2
-    function importVestingEntries(
+    function completeEscrowMigration(
         address account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries
     ) external;
 
-    // invoked by users on L2
-    function initiateWithdrawal(uint amount) external;
+    // invoked by the xDomain messenger on L2
+    function completeRewardDeposit(uint amount) external;
 }

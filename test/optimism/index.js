@@ -8,6 +8,7 @@ const { itCanPerformDeposits } = require('./deposits.test');
 const { itCanPerformRewardDeposits } = require('./rewards.test');
 const { itCanPerformWithdrawals } = require('./withdrawals.test');
 const { itCanPerformEscrowMigration } = require('./migrateEscrow.test');
+const { itCanPerformDepositAndEscrowMigration } = require('./depositAndMigrateEscrow.test');
 
 /*
  * ===== L2 GOTCHAS =====
@@ -168,5 +169,6 @@ describe('Layer 2 production tests', () => {
 		itCanPerformWithdrawals({ ctx: this });
 		itCanPerformRewardDeposits({ ctx: this });
 		itCanPerformEscrowMigration({ ctx: this });
+		itCanPerformDepositAndEscrowMigration({ ctx: this });
 	});
 });
