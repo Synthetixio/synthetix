@@ -234,7 +234,7 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 										assert.bnEqual(await RewardEscrowV2L1.totalEscrowedBalance(), '0');
 										assert.bnEqual(
 											await RewardEscrowV2L1.numVestingEntries(user1L1.address),
-											totalEntriesCreated.toString()
+											user1NumVestingEntriesL1.add(totalEntriesCreated)
 										);
 										assert.bnEqual(
 											await RewardEscrowV2L1.totalEscrowedAccountBalance(user1L1.address),
