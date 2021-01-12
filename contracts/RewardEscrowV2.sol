@@ -131,14 +131,8 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* Internal function to add entry to vestingSchedules and emit event */
     function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
-        uint entryID = nextEntryId;
-        vestingSchedules[account][entryID] = entry;
-
-        /* append entryID to list of entries for account */
-        accountVestingEntryIDs[account].push(entryID);
-
-        /* Increment the next entry id. */
-        nextEntryId = nextEntryId.add(1);
+        /* add vesting entry to account and assign an entryID to it */
+        uint entryID = BaseRewardEscrowV2._addVestingEntry(account, entry);
 
         emit ImportedVestingEntry(
             account,
