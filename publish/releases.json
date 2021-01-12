@@ -105,5 +105,14 @@
 			"Synth(s|i).+"
 		],
 		"sips": [97, 100, 103]
+	},
+	{
+		"name": "Castor",
+		"version": {
+			"major": 2,
+			"minor": 36
+		},
+		"sources": ["SynthetixBridgeToOptimism"],
+		"sips": [60, 102]
 	}
 ]
