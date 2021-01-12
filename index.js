@@ -47,7 +47,7 @@ const constants = {
 
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 
-	OVM_MAX_GAS_LIMIT: '8999999',
+	OVM_MAX_GAS_LIMIT: '8990000',
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
