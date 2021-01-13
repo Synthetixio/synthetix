@@ -566,14 +566,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint susdAmount,
         address liquidator
     ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {
-        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
-        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
-
-        // Check account is liquidation open
-        require(liquidations().isOpenForLiquidation(account), "Account not open for liquidation");
-
-        // require liquidator has enough sUSD
-        require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
+        // Check account liquidation status and liquidator has enough sUSD
+        _checkLiquidationStatus(account, liquidator, susdAmount);
 
         uint liquidationPenalty = liquidations().liquidationPenalty();
 
@@ -626,14 +620,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint susdAmount,
         address liquidator
     ) external onlySynthetix {
-        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
-        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
-
-        // require liquidator has enough sUSD
-        require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
-
-        // Check account is open for liquidation
-        require(liquidations().isOpenForLiquidation(account), "Account not open for liquidation");
+        // Check account liquidation status and liquidator has enough sUSD
+        _checkLiquidationStatus(account, liquidator, susdAmount);
 
         // What is their debt in sUSD?
         (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
@@ -670,6 +658,21 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             // Remove liquidation
             liquidations().removeAccountInLiquidation(account);
         }
+    }
+
+    function _checkLiquidationStatus(
+        address account,
+        address liquidator,
+        uint susdAmount
+    ) internal view {
+        // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
+        require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
+
+        // require liquidator has enough sUSD
+        require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
+
+        // Check account is open for liquidation
+        require(liquidations().isOpenForLiquidation(account), "Account not open for liquidation");
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
