@@ -32,8 +32,8 @@
 			"address": "0xa0354C17832E34dAf2aEae968AF3Dc558d5c6Dc6",
 			"source": "FeePool",
 			"link": "https://kovan.etherscan.io/address/0xa0354C17832E34dAf2aEae968AF3Dc558d5c6Dc6",
-			"timestamp": "2021-01-13T15:45:33.129Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:45:32.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x762510a891971503e04e7cf555d1ba35ae773a96f957568edae9e1c6426d3b1e",
 			"network": "kovan"
 		},
 		"ProxyFeePool": {
@@ -149,8 +149,8 @@
 			"address": "0xdd0D0b23558696eB461Df7154F20cBe6443C918b",
 			"source": "Synthetix",
 			"link": "https://kovan.etherscan.io/address/0xdd0D0b23558696eB461Df7154F20cBe6443C918b",
-			"timestamp": "2021-01-13T15:46:06.110Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:46:04.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xf4aa50ffcf29e1cc477436419e2fdeaf8717c75d237b621c275972ee0d83adc0",
 			"network": "kovan"
 		},
 		"SynthetixEscrow": {
@@ -968,8 +968,8 @@
 			"address": "0x2709b3568a79D7E00d6729E96b84a1996CDB89ef",
 			"source": "Issuer",
 			"link": "https://kovan.etherscan.io/address/0x2709b3568a79D7E00d6729E96b84a1996CDB89ef",
-			"timestamp": "2021-01-13T15:46:41.476Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:46:40.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xf6d9a8318ad01a58da783efeb23ffd34b3a0934ab76ba1c76e3081d8a7fb0baa",
 			"network": "kovan"
 		},
 		"EtherCollateral": {
@@ -1418,8 +1418,8 @@
 			"address": "0x596024E2F73532bDb75ff33c0bD515a70e2D11C9",
 			"source": "SystemSettings",
 			"link": "https://kovan.etherscan.io/address/0x596024E2F73532bDb75ff33c0bD515a70e2D11C9",
-			"timestamp": "2021-01-13T15:45:13.284Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:45:12.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x040381ce165a50b4bde15ddc371b7ec6a4507aac9fd89b06410077e1cc970c79",
 			"network": "kovan"
 		},
 		"TradingRewards": {
@@ -1472,8 +1472,8 @@
 			"address": "0x04C3f6207BE48De777967eB1886469E4E268FE07",
 			"source": "CollateralState",
 			"link": "https://kovan.etherscan.io/address/0x04C3f6207BE48De777967eB1886469E4E268FE07",
-			"timestamp": "2021-01-13T15:48:33.020Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:48:32.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x08318a7de98843a83d78963b27ffdb19bef0087f033f39778bb2a7e1843e9c8e",
 			"network": "kovan"
 		},
 		"StakingRewardsiBTC": {
@@ -1526,8 +1526,8 @@
 			"address": "0xdFd01d828D34982DFE882B9fDC6DC17fcCA33C25",
 			"source": "CollateralEth",
 			"link": "https://kovan.etherscan.io/address/0xdFd01d828D34982DFE882B9fDC6DC17fcCA33C25",
-			"timestamp": "2021-01-13T15:48:12.956Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:48:12.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x4eb14fa9d70e3abf8f13393c3921ea4e600f19193acd7ae207363e048bc34ecb",
 			"network": "kovan"
 		},
 		"CollateralErc20": {
@@ -1535,8 +1535,8 @@
 			"address": "0x5AD5469D8A1Eee2cF7c8B8205CbeD95A032cdff3",
 			"source": "CollateralErc20",
 			"link": "https://kovan.etherscan.io/address/0x5AD5469D8A1Eee2cF7c8B8205CbeD95A032cdff3",
-			"timestamp": "2021-01-13T15:48:41.324Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:48:40.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xfb862ac4eb84439ca715eeb402df4f3dc7e004d309b2c41ad17cd3e948f63359",
 			"network": "kovan"
 		},
 		"CollateralShort": {
@@ -1544,8 +1544,8 @@
 			"address": "0x9712DdCC43F42402acC483e297eeFf650d18D354",
 			"source": "CollateralShort",
 			"link": "https://kovan.etherscan.io/address/0x9712DdCC43F42402acC483e297eeFf650d18D354",
-			"timestamp": "2021-01-13T15:49:01.812Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:49:00.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x504475b38eec61080fd20ebfd3418e6840facc82c101c8de2febf4a76c43c146",
 			"network": "kovan"
 		},
 		"RewardEscrowV2": {
@@ -1553,8 +1553,8 @@
 			"address": "0xecaf976197176EC196080b2222a449DBc8BCE330",
 			"source": "RewardEscrowV2",
 			"link": "https://kovan.etherscan.io/address/0xecaf976197176EC196080b2222a449DBc8BCE330",
-			"timestamp": "2021-01-13T15:45:22.730Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:45:20.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0x8a6b1b75ecf6c013f0e5b3a2837d432444e83ae567f6f3f151d58b7aa99f7a07",
 			"network": "kovan"
 		},
 		"SynthetixBridgeToOptimism": {
@@ -1562,8 +1562,8 @@
 			"address": "0x049aF77985EEc52289A9C03e4fEC59fAA6Ce2dc2",
 			"source": "SynthetixBridgeToOptimism",
 			"link": "https://kovan.etherscan.io/address/0x049aF77985EEc52289A9C03e4fEC59fAA6Ce2dc2",
-			"timestamp": "2021-01-13T15:48:00.960Z",
-			"txn": "",
+			"timestamp": "2021-01-13T15:48:00.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xe8ad86095c2c811f42381abe9efbcef3b505df0db6d4d52a61e6c66747956d25",
 			"network": "kovan"
 		}
 	},
