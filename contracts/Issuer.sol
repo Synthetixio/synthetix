@@ -668,11 +668,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Ensure waitingPeriod and sUSD balance is settled as burning impacts the size of debt pool
         require(!exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, sUSD), "sUSD needs to be settled");
 
+        // Check account is liquidation open
+        require(liquidations().isOpenForLiquidation(account), "Account not open for liquidation");
+
         // require liquidator has enough sUSD
         require(IERC20(address(synths[sUSD])).balanceOf(liquidator) >= susdAmount, "Not enough sUSD");
-
-        // Check account is open for liquidation
-        require(liquidations().isOpenForLiquidation(account), "Account not open for liquidation");
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
