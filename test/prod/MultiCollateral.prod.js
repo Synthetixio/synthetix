@@ -450,6 +450,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 				});
 
 				const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
+				const period = await oldEthContract.interactionDelay();
 				// First loan was opened by SNX test account.
 				const id = 1;
 				const repayAmount = toUnit(100);
@@ -467,6 +468,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 				const withdrawAmount = toUnit(0.5);
 				const amountRemaining = toUnit(1.5);
 
+				await fastForward(period.toString());
+
 				tx = await oldEthContract.withdraw(id, withdrawAmount, {
 					from: loansAccount,
 				});
@@ -476,6 +479,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 				assert.equal(event.args.account, loansAccount);
 				assert.bnEqual(event.args.amountWithdrawn, withdrawAmount);
 				assert.bnEqual(event.args.collateralAfter, amountRemaining);
+
+				await fastForward(period.toString());
 
 				tx = await oldEthContract.close(id, {
 					from: loansAccount,
