@@ -118,8 +118,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	xdescribe('old contracts still work', () => {
-		xit('has the old and new contracts in the manager', async () => {
+	describe('old contracts still work', () => {
+		it('has the old and new contracts in the manager', async () => {
 			const result = await CollateralManager.hasAllCollaterals([
 				oldEthAddress,
 				oldRenAddress,
@@ -131,7 +131,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			assert.isTrue(result);
 		});
 
-		xit('closing a loan on the old ETH contract works', async () => {
+		it('closing a loan on the old ETH contract works', async () => {
 			const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
 			// First loan was opened by SNX test account.
 			const id = 1;
