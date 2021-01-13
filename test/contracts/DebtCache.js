@@ -82,6 +82,7 @@ contract('DebtCache', async accounts => {
 				'DelegateApprovals', // necessary for *OnBehalf functions
 				'FlexibleStorage',
 				'CollateralManager',
+				'RewardEscrowV2', // necessary for issuer._collateral()
 			],
 		}));
 	});
