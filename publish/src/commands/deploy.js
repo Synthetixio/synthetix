@@ -1356,8 +1356,6 @@ const deploy = async ({
 				toBytes32('sUSD'),
 				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
 				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
-				addressOf(deployer.getExistingContract({ contract: 'ProxyERC20sUSD' })),
-				18,
 			],
 		});
 
