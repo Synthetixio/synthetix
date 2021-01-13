@@ -651,16 +651,14 @@ const deploy = async ({
 		});
 	}
 
-	const rewardEscrowAddress = useOvm ? addressOf(rewardEscrowV2) : addressOf(rewardEscrow);
-
 	const rewardsDistribution = await deployer.deployContract({
 		name: 'RewardsDistribution',
-		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrow', 'ProxyFeePool'],
+		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrowV2', 'ProxyFeePool'],
 		args: [
 			account, // owner
 			ZERO_ADDRESS, // authority (synthetix)
 			ZERO_ADDRESS, // Synthetix Proxy
-			rewardEscrowAddress,
+			addressOf(rewardEscrowV2),
 			addressOf(proxyFeePool),
 		],
 	});
