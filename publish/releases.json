@@ -112,7 +112,12 @@
 			"major": 2,
 			"minor": 36
 		},
-		"sources": ["SynthetixBridgeToOptimism"],
-		"sips": [60, 102]
+		"sources": [
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralShort",
+			"SynthetixBridgeToOptimism"
+		],
+		"sips": [60, 102, 105]
 	}
 ]
