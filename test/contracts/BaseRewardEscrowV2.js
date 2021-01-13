@@ -58,6 +58,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				'migrateAccountEscrowBalances',
 				'burnForMigration',
 				'importVestingEntries',
+				'liquidateEscrowEntries',
 				'createEscrowEntry',
 				'vest',
 			],
