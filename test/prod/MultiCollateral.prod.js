@@ -114,6 +114,17 @@ contract('MultiCollateral (prod tests)', accounts => {
 			fromAccount: owner,
 			network,
 		});
+
+		if (network === 'mainnet') {
+			loansAccount = knownAccounts[network].find(a => a.name === 'loansAccount').address;
+
+			await ensureAccountHassUSD({
+				amount: toUnit('1000'),
+				account: loansAccount,
+				fromAccount: owner,
+				network,
+			});
+		}
 	});
 
 	describe('general multicollateral state', () => {
@@ -440,15 +451,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		it('interacting with a loan on the old ETH contract works', async () => {
 			if (network === 'mainnet') {
-				loansAccount = knownAccounts[network].find(a => a.name === 'loansAccount').address;
-
-				await ensureAccountHassUSD({
-					amount: toUnit('1000'),
-					account: loansAccount,
-					fromAccount: owner,
-					network,
-				});
-
 				const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
 				const period = await oldEthContract.interactionDelay();
 				// First loan was opened by SNX test account.
