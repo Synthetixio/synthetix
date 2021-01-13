@@ -436,7 +436,7 @@ contract('ShortingRewards', accounts => {
 	});
 
 	describe('enrol()', () => {
-		it('enroling increases staking balance', async () => {
+		it('opening a short increases staking balance', async () => {
 			const initialStakeBal = await shortingRewards.balanceOf(account1);
 
 			await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
@@ -445,10 +445,30 @@ contract('ShortingRewards', accounts => {
 
 			assert.bnGt(postStakeBal, initialStakeBal);
 		});
+
+		it('drawing on a short increases the staking balance', async () => {
+			const initialStakeBal = await shortingRewards.balanceOf(account1);
+
+			tx = await short.open(toUnit(20000), toUnit(1), sBTC, { from: account1 });
+			id = await getid(tx);
+
+			const postOpenBal = await shortingRewards.balanceOf(account1);
+
+			assert.bnGt(postOpenBal, initialStakeBal);
+			assert.bnEqual(postOpenBal, toUnit(1));
+
+			await fastForward(DAY);
+			await short.draw(id, toUnit(0.1), { from: account1 });
+
+			const postDrawBal = await shortingRewards.balanceOf(account1);
+
+			assert.bnGt(postDrawBal, postOpenBal);
+			assert.bnEqual(postDrawBal, toUnit(1.1));
+		});
 	});
 
-	describe('If a position is closed by liquidation, they are withdrawn.', () => {
-		it('closing reduces the balance', async () => {
+	describe('When positions are liquidated, they are withdraw from the rewards', () => {
+		it('closing reduces the balance to 0', async () => {
 			const initialStakeBal = await shortingRewards.balanceOf(account1);
 
 			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
@@ -470,6 +490,30 @@ contract('ShortingRewards', accounts => {
 
 			// Should be back to 0
 			assert.bnEqual(postStakeBal, initialStakeBal);
+		});
+
+		it('partial liquidation reduces the balannce', async () => {
+			const initialStakeBal = await shortingRewards.balanceOf(account1);
+
+			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			id = await getid(tx);
+
+			await fastForward(DAY);
+
+			// Make the short so underwater it must get closed.
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([sBTC], ['20000'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+
+			// close the loan via liquidation
+			await issuesBTCtoAccount(toUnit(1), account2);
+			await short.liquidate(account1, id, toUnit(0.1), { from: account2 });
+
+			const postStakeBal = await shortingRewards.balanceOf(account1);
+
+			// Should be back to 0
+			assert.bnEqual(postStakeBal, toUnit(0.9));
 		});
 	});
 
