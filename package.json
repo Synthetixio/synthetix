@@ -85,7 +85,7 @@
 		"@pinata/sdk": "1.1.11",
 		"@uniswap/token-lists": "^1.0.0-beta.11",
 		"ajv": "^6.12.4",
-		"axios": "0.19.2",
+		"axios": "0.21.1",
 		"bn.js": "4.11.8",
 		"buidler-ast-doc": "0.0.14-rc",
 		"buidler-gas-reporter": "^0.1.4",
