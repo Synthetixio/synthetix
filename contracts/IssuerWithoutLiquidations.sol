@@ -13,4 +13,11 @@ contract IssuerWithoutLiquidations is Issuer {
         uint susdAmount,
         address liquidator
     ) external onlySynthetix returns (uint totalRedeemed, uint amountToLiquidate) {}
+
+    function liquidateEscrowedSNX(
+        address account,
+        uint[] calldata entryIDs,
+        uint susdAmount,
+        address liquidator
+    ) external onlySynthetix {}
 }

@@ -624,7 +624,7 @@ const setupAllContracts = async ({
 		{ contract: 'Liquidations', deps: ['EternalStorage', 'FlexibleStorage'] },
 		{
 			contract: 'RewardsDistribution',
-			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'ProxyFeePool'],
+			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'RewardEscrowV2', 'ProxyFeePool'],
 		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
 		{ contract: 'SynthUtil', deps: ['AddressResolver'] },
@@ -706,6 +706,7 @@ const setupAllContracts = async ({
 				'Exchanger',
 				'SupplySchedule',
 				'RewardEscrow',
+				'RewardEscrowV2',
 				'SynthetixEscrow',
 				'RewardsDistribution',
 				'Liquidations',

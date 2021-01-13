@@ -73,6 +73,7 @@ contract('Liquidations', accounts => {
 				'Synthetix',
 				'SynthetixState',
 				'CollateralManager',
+				'RewardEscrowV2', // required for Issuer._collateral() to load balances
 			],
 		}));
 	});

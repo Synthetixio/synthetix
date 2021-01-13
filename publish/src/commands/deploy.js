@@ -651,16 +651,14 @@ const deploy = async ({
 		});
 	}
 
-	const rewardEscrowAddress = useOvm ? addressOf(rewardEscrowV2) : addressOf(rewardEscrow);
-
 	const rewardsDistribution = await deployer.deployContract({
 		name: 'RewardsDistribution',
-		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrow', 'ProxyFeePool'],
+		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrowV2', 'ProxyFeePool'],
 		args: [
 			account, // owner
 			ZERO_ADDRESS, // authority (synthetix)
 			ZERO_ADDRESS, // Synthetix Proxy
-			rewardEscrowAddress,
+			addressOf(rewardEscrowV2),
 			addressOf(proxyFeePool),
 		],
 	});
@@ -915,6 +913,18 @@ const deploy = async ({
 			expected: input => input === addressOf(proxyERC20Synthetix),
 			write: 'setSynthetixProxy',
 			writeArg: addressOf(proxyERC20Synthetix),
+		});
+	}
+
+	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
+	if (rewardEscrowV2 && rewardsDistribution) {
+		await runStep({
+			contract: 'RewardsDistribution',
+			target: rewardsDistribution,
+			read: 'rewardEscrow',
+			expected: input => input === addressOf(rewardEscrowV2),
+			write: 'setRewardEscrow',
+			writeArg: addressOf(rewardEscrowV2),
 		});
 	}
 

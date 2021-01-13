@@ -103,9 +103,7 @@
 			"SystemSettings",
 			"Synthetix",
 			"TradingRewards",
-			"Synth(s|i).+",
-			"SynthetixBridgeToOptimism",
-			"SynthetixBridgeToBase"
+			"Synth(s|i).+"
 		],
 		"sips": [97, 100, 103]
 	},
@@ -115,7 +113,14 @@
 			"major": 2,
 			"minor": 36
 		},
-		"sources": ["SynthetixBridgeToOptimism"],
+		"sources": [
+			"SynthetixBridgeToOptimism",
+			"RewardEscrowV2",
+			"Issuer",
+			"FeePool",
+			"Synthetix",
+			"SystemSettings"
+		],
 		"sips": [60, 102]
 	}
 ]
