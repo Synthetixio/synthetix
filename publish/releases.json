@@ -105,5 +105,22 @@
 			"Synth(s|i).+"
 		],
 		"sips": [97, 100, 103]
+	},
+	{
+		"name": "Castor",
+		"version": {
+			"major": 2,
+			"minor": 36
+		},
+		"sources": [
+			"SynthetixBridgeToOptimism",
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralStateErc20",
+			"CollateralStateEth",
+			"CollateralStateShort",
+			"CollateralShort"
+		],
+		"sips": [60, 102, 105]
 	}
 ]
