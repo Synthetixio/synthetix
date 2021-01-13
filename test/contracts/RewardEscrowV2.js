@@ -41,7 +41,7 @@ contract('RewardEscrowV2', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: rewardEscrowV2.abi,
 			ignoreParents: ['BaseRewardEscrowV2'],
-			expected: [],
+			expected: ['importVestingSchedule'],
 		});
 	});
 

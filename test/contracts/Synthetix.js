@@ -67,6 +67,7 @@ contract('Synthetix', async accounts => {
 				'Exchanger',
 				'RewardsDistribution',
 				'CollateralManager',
+				'RewardEscrowV2', // required for issuer._collateral to read collateral
 			],
 		}));
 

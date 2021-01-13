@@ -608,12 +608,12 @@ const setupAllContracts = async ({
 		{
 			contract: 'RewardEscrowV2',
 			deps: ['AddressResolver', 'SystemStatus'],
-			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'SynthetixBridgeToOptimism'],
+			mocks: ['Synthetix', 'FeePool', 'RewardEscrow', 'SynthetixBridgeToOptimism', 'Issuer'],
 		},
 		{
 			contract: 'ImportableRewardEscrowV2',
 			deps: ['AddressResolver'],
-			mocks: ['Synthetix', 'FeePool', 'SynthetixBridgeToBase'],
+			mocks: ['Synthetix', 'FeePool', 'SynthetixBridgeToBase', 'Issuer'],
 		},
 		{ contract: 'SynthetixEscrow' },
 		{ contract: 'FeePoolEternalStorage' },
