@@ -32,7 +32,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 	const oldEthAddress = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
 	const oldRenAddress = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
 	const oldShortAddress = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
-	const loansAccount =
 
 	let oldContractsOnly = false;
 	let loansAccount;
