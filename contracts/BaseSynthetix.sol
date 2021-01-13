@@ -291,6 +291,14 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _notImplemented();
     }
 
+    function liquidateEscrowedSNX(
+        address,
+        uint[] calldata,
+        uint
+    ) external {
+        _notImplemented();
+    }
+
     function mintSecondary(address, uint) external {
         _notImplemented();
     }
