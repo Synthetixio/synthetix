@@ -651,13 +651,26 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
          * returns the amount of escrowed snx liquidated based on entryID's provided
          * Caps the amount to how much escrowed snx balance there is
          */
-        _burnSynths(account, liquidator, _snxToUSD(totalEscrowLiquidated, snxRate), debtBalance, totalDebtIssued);
+        _burnSynths(
+            account,
+            liquidator,
+            _getBurnAmountForSnxRedeemed(totalEscrowLiquidated, snxRate),
+            debtBalance,
+            totalDebtIssued
+        );
 
         // Remove liquidation flag if amount liquidated fixes ratio
         if (_snxToUSD(totalEscrowLiquidated, snxRate) == amountToFixRatio) {
             // Remove liquidation
             liquidations().removeAccountInLiquidation(account);
         }
+    }
+
+    function _getBurnAmountForSnxRedeemed(uint amountLiquidated, uint snxRate) internal view returns (uint sUSDAmount) {
+        return
+            _snxToUSD(amountLiquidated, snxRate).divideDecimalRound(
+                SafeDecimalMath.unit().add(liquidations().liquidationPenalty())
+            );
     }
 
     function _checkLiquidationStatus(
