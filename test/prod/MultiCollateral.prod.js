@@ -108,13 +108,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 			network,
 		});
 
-		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
-			account: loansAccount,
-			fromAccount: owner,
-			network,
-		});
-
 		await ensureAccountHassETH({
 			amount: toUnit('2'),
 			account: user1,
@@ -445,17 +438,35 @@ contract('MultiCollateral (prod tests)', accounts => {
 			}
 		});
 
-		it('closing a loan on the old ETH contract works', async () => {
+		it('interacting with a loan on the old ETH contract works', async () => {
 			if (network === 'mainnet') {
 				const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
 				// First loan was opened by SNX test account.
 				const id = 1;
-				const tx = await oldEthContract.close(id, { from: loansAccount });
+				const repayAmount = toUnit(100);
+				let tx = await oldEthContract.repay(loansAccount, id, repayAmount, {
+					from: loansAccount,
+				});
 
-				const event = tx.receipt.logs.find(l => l.event === 'LoanClosed');
+				let event = tx.receipt.logs.find(l => l.event === 'LoanRepaymentMade');
 
 				assert.equal(event.args.account, loansAccount);
+				assert.equal(event.args.account, loansAccount);
 				assert.equal(event.args.id, id);
+				assert.equal(event.args.id, repayAmount);
+
+				const withdrawAmount = toUnit(0.5);
+				const amountRemaining = toUnit(1.5);
+
+				tx = await oldEthContract.withdraw(id, withdrawAmount, {
+					from: loansAccount,
+				});
+
+				event = tx.receipt.logs.find(l => l.event === 'CollateralWithdrawn');
+
+				assert.equal(event.args.account, loansAccount);
+				assert.equal(event.args.amountWithdrawn, withdrawAmount);
+				assert.equal(event.args.collateralAfter, amountRemaining);
 			}
 		});
 	});
