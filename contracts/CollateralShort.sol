@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./CollateralErc20.sol";
+import "./Collateral.sol";
 
 // Internal references
 import "./CollateralState.sol";
