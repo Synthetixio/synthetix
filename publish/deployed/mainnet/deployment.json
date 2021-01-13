@@ -1660,6 +1660,15 @@
 			"timestamp": "2020-12-24T01:39:14.000Z",
 			"txn": "https://etherscan.io/tx/0x2f3fe90af2f7849b92541ef4245708421021042af4b3f5db58a8a6f5841c0347",
 			"network": "mainnet"
+		},
+		"StakingRewardssEURCurve": {
+			"name": "StakingRewardssEURCurve",
+			"address": "0xc0d8994Cd78eE1980885DF1A0C5470fC977b5cFe",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0xc0d8994Cd78eE1980885DF1A0C5470fC977b5cFe",
+			"timestamp": "2021-01-11T04:11:51.905Z",
+			"txn": "",
+			"network": "mainnet"
 		}
 	},
 	"sources": {

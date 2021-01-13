@@ -89,6 +89,9 @@
 	"StakingRewardsiETH": {
 		"deploy": false
 	},
+	"StakingRewardssEURCurve": {
+		"deploy": false
+	},
 	"DappMaintenance": {
 		"deploy": false
 	},
