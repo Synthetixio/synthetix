@@ -91,14 +91,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			// At least one issuance
 			// --------------------------
 
-			describe('when there has been ta least one issuance', () => {
-				before('issue sUSD', async () => {
-					SynthetixL2 = SynthetixL2.connect(ctx.ownerL2);
-
-					const tx = await SynthetixL2.issueSynths(1);
-					await tx.wait();
-				});
-
+			describe('when the SNX rate has been updated', () => {
 				// --------------------------
 				// Suspended
 				// --------------------------

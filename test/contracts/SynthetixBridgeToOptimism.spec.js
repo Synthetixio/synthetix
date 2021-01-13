@@ -46,6 +46,27 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 				CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT
 			);
 		});
+
+		describe('initiateEscrowMigration', () => {
+			it('reverts when an entriesId subarray contains an empty array', async () => {
+				const entryIdsEmpty = [[1, 2, 3], []];
+				await assert.revert(
+					synthetixBridgeToOptimism.initiateEscrowMigration(entryIdsEmpty),
+					'Entry IDs required'
+				);
+			});
+		});
+
+		describe('initiateEscrowMigration', () => {
+			it('reverts when an entriesId subarray contains an empty array', async () => {
+				const entryIdsEmpty = [[], [1, 2, 3]];
+				await assert.revert(
+					synthetixBridgeToOptimism.depositAndMigrateEscrow(1, entryIdsEmpty),
+					'Entry IDs required'
+				);
+			});
+		});
+
 		describe('initiateDeposit', () => {
 			const amountToDeposit = 1;
 
