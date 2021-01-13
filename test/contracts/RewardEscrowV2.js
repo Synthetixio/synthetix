@@ -27,7 +27,7 @@ contract('RewardEscrowV2', async accounts => {
 
 		({ RewardEscrowV2: rewardEscrowV2 } = await setupAllContracts({
 			accounts,
-			contracts: ['RewardEscrow', 'RewardEscrowV2'],
+			contracts: ['RewardEscrowV2'],
 			mocks: {
 				Synthetix: synthetix,
 				FeePool: feePool,

@@ -2,7 +2,7 @@
 
 const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
-const { assert } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { mockToken } = require('./setup');
 
@@ -26,10 +26,12 @@ contract('BaseRewardEscrowV2', async accounts => {
 	const [, owner, account1, account2] = accounts;
 	let baseRewardEscrowV2, mocks, feePoolAccount, resolver;
 
+	addSnapshotBeforeRestoreAfterEach();
+
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	beforeEach(async () => {
 		({ mocks, resolver } = await prepareSmocks({
-			contracts: ['FeePool', 'Issuer', 'Synthetix', 'RewardEscrow'],
+			contracts: ['FeePool', 'Issuer', 'Synthetix'],
 			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
 
