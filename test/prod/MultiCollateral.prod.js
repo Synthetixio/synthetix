@@ -443,6 +443,13 @@ contract('MultiCollateral (prod tests)', accounts => {
 				const id = 1;
 				const testAccount = '0x62f7A1F94aba23eD2dD108F8D23Aa3e7d452565B';
 
+				await ensureAccountHassUSD({
+					amount: toUnit('1000'),
+					account: testAccount,
+					fromAccount: owner,
+					network,
+				});
+
 				const tx = await oldEthContract.close(id, { from: testAccount });
 
 				const event = tx.receipt.logs.find(l => l.event === 'LoanClosed');
