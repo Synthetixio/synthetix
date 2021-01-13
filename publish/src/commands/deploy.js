@@ -916,6 +916,18 @@ const deploy = async ({
 		});
 	}
 
+	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
+	if (rewardEscrowV2 && rewardsDistribution) {
+		await runStep({
+			contract: 'RewardsDistribution',
+			target: rewardsDistribution,
+			read: 'rewardEscrow',
+			expected: input => input === addressOf(rewardEscrowV2),
+			write: 'setRewardEscrow',
+			writeArg: addressOf(rewardEscrowV2),
+		});
+	}
+
 	// ----------------
 	// Setting proxyERC20 Synthetix for synthetixEscrow
 	// ----------------
