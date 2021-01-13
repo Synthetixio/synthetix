@@ -197,14 +197,6 @@ contract Synthetix is BaseSynthetix {
         return _transferByProxy(account, messageSender, totalRedeemed);
     }
 
-    function liquidateEscrowedSNX(
-        address account,
-        uint[] calldata entryIDs,
-        uint susdAmount
-    ) external systemActive optionalProxy {
-        issuer().liquidateEscrowedSNX(account, entryIDs, susdAmount, messageSender);
-    }
-
     /* Once off function for SIP-60 to migrate SNX balances in the RewardEscrow contract
      * To the new RewardEscrowV2 contract
      */

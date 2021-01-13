@@ -142,7 +142,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 				'removeSynth',
 				'removeSynths',
 				'liquidateDelinquentAccount',
-				'liquidateEscrowedSNX',
 			],
 		});
 	});

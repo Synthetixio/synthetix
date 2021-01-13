@@ -93,7 +93,6 @@ contract('BaseSynthetix', async accounts => {
 				'transfer',
 				'transferFrom',
 				'liquidateDelinquentAccount',
-				'liquidateEscrowedSNX',
 			],
 		});
 	});
