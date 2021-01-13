@@ -442,7 +442,11 @@ contract('MultiCollateral (prod tests)', accounts => {
 					const id = 1;
 					const account = knownAccounts[network].find(a => a.name === 'loansTesting');
 
+					console.log(oldEthContract);
+
 					if (account) {
+						const x = await oldEthContract.issueFeeRate();
+						console.log(x);
 						const tx = await oldEthContract.close(id, { from: account });
 
 						const event = tx.receipt.logs.find(l => l.event === 'LoanClosed');
