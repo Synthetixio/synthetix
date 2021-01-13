@@ -19,12 +19,17 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
-import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IDebtCache.sol";
+
+
+interface IRewardEscrowV2 {
+    // Views
+    function balanceOf(address account) external view returns (uint);
+}
 
 
 interface IIssuerInternalDebtCache {
