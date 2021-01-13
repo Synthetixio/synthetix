@@ -401,75 +401,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         emit AccountMerged(accountToMerge, msg.sender, totalEscrowAmountMerged, entryIDs, block.timestamp);
     }
 
-    /* ========== ESCROW LIQUIDATION ========== */
-
-    function liquidateEscrowEntries(
-        address account,
-        uint[] calldata entryIDs,
-        address liquidator,
-        uint amountToRedeem
-    ) external onlyIssuer returns (uint totalEscrowLiquidated) {
-        uint remainingToRedeem = amountToRedeem;
-
-        for (uint i = 0; i < entryIDs.length; i++) {
-            /* when remainingToRedeem is 0 stop iterating */
-            if (remainingToRedeem == 0) {
-                break;
-            }
-
-            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
-
-            /* ignore vesting entries with zero remainingAmount */
-            if (entry.remainingAmount != 0) {
-                uint liquidatedAmount;
-
-                /* If the remainingToRedeem is less than entry.remainingAmount
-                 * partially redeem the entry */
-                if (remainingToRedeem < entry.remainingAmount) {
-                    /* partially liquidate entry subracting the redeemed amount from remaining */
-                    entry.remainingAmount = entry.remainingAmount.sub(remainingToRedeem);
-
-                    /* Track liquidated amount as the remaining to redeem amount */
-                    liquidatedAmount = remainingToRedeem;
-
-                    /* create new entry for liquidator */
-                    _addVestingEntry(
-                        liquidator,
-                        VestingEntries.VestingEntry({
-                            endTime: entry.endTime,
-                            duration: entry.duration,
-                            lastVested: entry.lastVested,
-                            escrowAmount: entry.escrowAmount,
-                            remainingAmount: remainingToRedeem
-                        })
-                    );
-                } else {
-                    /* copy entry to liquidator address */
-                    vestingSchedules[liquidator][entryIDs[i]] = entry;
-
-                    /* Track liquidated amount as the remainingAmount */
-                    liquidatedAmount = entry.remainingAmount;
-
-                    /* append entryID to list of entries for liquidator */
-                    accountVestingEntryIDs[liquidator].push(entryIDs[i]);
-
-                    /* Delete entry from account */
-                    delete vestingSchedules[account][entryIDs[i]];
-                }
-
-                /* Sub liquidatedAmount from remainingToRedeem */
-                remainingToRedeem = remainingToRedeem.sub(liquidatedAmount);
-
-                /* Add liquidatedAmount to totalEscrowLiquidated */
-                totalEscrowLiquidated = totalEscrowLiquidated.add(liquidatedAmount);
-            }
-        }
-
-        /* update totalEscrowedAccountBalance for the account and liquidator */
-        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].sub(totalEscrowLiquidated);
-        totalEscrowedAccountBalance[liquidator] = totalEscrowedAccountBalance[liquidator].add(totalEscrowLiquidated);
-    }
-
     /* Internal function for importing vesting entry and creating new entry for escrow liquidations */
     function _addVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal returns (uint) {
         uint entryID = nextEntryId;
@@ -560,11 +491,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     /* ========== MODIFIERS ========== */
     modifier onlyFeePool() {
         require(msg.sender == address(feePool()), "Only the FeePool can perform this action");
-        _;
-    }
-
-    modifier onlyIssuer() {
-        require(msg.sender == address(issuer()), "Only the Issuer can perform this action");
         _;
     }
 

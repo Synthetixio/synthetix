@@ -87,11 +87,4 @@ interface IIssuer {
         uint susdAmount,
         address liquidator
     ) external returns (uint totalRedeemed, uint amountToLiquidate);
-
-    function liquidateEscrowedSNX(
-        address account,
-        uint[] calldata entryIDs,
-        uint susdAmount,
-        address liquidator
-    ) external;
 }

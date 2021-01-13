@@ -614,52 +614,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function liquidateEscrowedSNX(
-        address account,
-        uint[] calldata entryIDs,
-        uint susdAmount,
-        address liquidator
-    ) external onlySynthetix {
-        // Check account liquidation status and liquidator has enough sUSD
-        _checkLiquidationStatus(account, liquidator, susdAmount);
-
-        // What is their debt in sUSD?
-        (uint debtBalance, uint totalDebtIssued, bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(account, sUSD);
-        (uint snxRate, bool snxRateInvalid) = exchangeRates().rateAndInvalid(SNX);
-
-        _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
-
-        // Redeem escrowed SNX for liquidation
-        uint amountToFixRatio = liquidations().calculateAmountToFixCollateral(
-            debtBalance,
-            _snxToUSD(_collateral(account), snxRate)
-        );
-
-        // Cap amount to liquidate to repair collateral ratio based on issuance ratio
-        uint amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
-
-        // what's the equivalent amount of snx for the amountToLiquidate + penalty ?
-        uint totalToRedeem = _usdToSnx(amountToLiquidate, snxRate).multiplyDecimal(
-            SafeDecimalMath.unit().add(liquidations().liquidationPenalty())
-        );
-
-        // Transfer escrowed SNX to liquidator
-        uint totalEscrowLiquidated = rewardEscrowV2().liquidateEscrowEntries(account, entryIDs, liquidator, totalToRedeem);
-
-        /* Burn sUSD that was actually liquidated from messageSender (liquidator)
-         * and reduce account's debt
-         * returns the amount of escrowed snx liquidated based on entryID's provided
-         * Caps the amount to how much escrowed snx balance there is
-         */
-        _burnSynths(account, liquidator, _snxToUSD(totalEscrowLiquidated, snxRate), debtBalance, totalDebtIssued);
-
-        // Remove liquidation flag if amount liquidated fixes ratio
-        if (_snxToUSD(totalEscrowLiquidated, snxRate) == amountToFixRatio) {
-            // Remove liquidation
-            liquidations().removeAccountInLiquidation(account);
-        }
-    }
-
     function _checkLiquidationStatus(
         address account,
         address liquidator,

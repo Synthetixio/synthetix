@@ -111,12 +111,6 @@ interface ISynthetix {
     // Liquidations
     function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool);
 
-    function liquidateEscrowedSNX(
-        address account,
-        uint[] calldata entryIDs,
-        uint susdAmount
-    ) external;
-
     // Restricted Functions
 
     function mintSecondary(address account, uint amount) external;
