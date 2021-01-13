@@ -62,6 +62,10 @@ const knownAccounts = {
 			name: 'renBTCWallet',
 			address: '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E',
 		},
+		{
+			name: 'loansTesting',
+			address: '0x62f7A1F94aba23eD2dD108F8D23Aa3e7d452565B',
+		},
 	],
 	rinkeby: [],
 	kovan: [],

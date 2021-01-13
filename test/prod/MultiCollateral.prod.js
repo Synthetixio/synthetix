@@ -114,6 +114,40 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
+	xdescribe('old contracts still work', () => {
+		const oldEthAddress = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
+		const oldRenAddress = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
+		const oldShortAddress = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
+
+		xit('has the old and new contracts in the manager', async () => {
+			const result = await CollateralManager.hasAllCollaterals([
+				oldEthAddress,
+				oldRenAddress,
+				oldShortAddress,
+				CollateralEth.address,
+				CollateralErc20.address,
+				CollateralShort.address,
+			]);
+			assert.isTrue(result);
+		});
+
+		xit('closing a loan on the old ETH contract works', async () => {
+			const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
+			// SNX controlled test account.
+			const id = 1;
+			const account = knownAccounts[network].find(a => a.name === 'loansTesting');
+
+			if (account) {
+				const tx = await oldEthContract.close(id, { from: account });
+
+				const event = tx.receipt.logs.find(l => l.event === 'LoanClosed');
+
+				assert.equal(event.args.account, account);
+				assert.equal(event.args.id, id);
+			}
+		});
+	});
+
 	describe('when using multiple types of loans', () => {
 		itCorrectlyManagesLoansWith({
 			type: 'CollateralEth',
