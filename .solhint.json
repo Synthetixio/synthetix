@@ -2,6 +2,7 @@
 	"extends": ["solhint:recommended"],
 	"plugins": [],
 	"rules": {
+		"avoid-call-value": "off",
 		"bracket-align": "off",
 		"compiler-version": ["error", "^0.5.0"],
 		"const-name-snakecase": "off",
