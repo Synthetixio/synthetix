@@ -29,6 +29,10 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 	let network, deploymentPath;
 
+	const oldEthAddress = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
+	const oldRenAddress = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
+	const oldShortAddress = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
+
 	let CollateralManager,
 		CollateralManagerState,
 		CollateralErc20,
@@ -115,10 +119,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 	});
 
 	xdescribe('old contracts still work', () => {
-		const oldEthAddress = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
-		const oldRenAddress = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
-		const oldShortAddress = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
-
 		xit('has the old and new contracts in the manager', async () => {
 			const result = await CollateralManager.hasAllCollaterals([
 				oldEthAddress,
@@ -133,7 +133,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		xit('closing a loan on the old ETH contract works', async () => {
 			const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
-			// SNX controlled test account.
+			// First loan was opened by SNX test account.
 			const id = 1;
 			const account = knownAccounts[network].find(a => a.name === 'loansTesting');
 
@@ -155,6 +155,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('2'),
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
+			oldAddress: oldEthAddress,
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -163,6 +164,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: Web3.utils.toBN('1000000000'), // 10 renBTC (renBTC uses 8 decimals)
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
+			oldAddress: oldRenAddress,
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -171,6 +173,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('1000'),
 			borrowCurrency: 'sETH',
 			amountToBorrow: toUnit('0.01'),
+			oldAddress: oldShortAddress,
 		});
 	});
 
@@ -180,6 +183,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		amountToDeposit,
 		borrowCurrency,
 		amountToBorrow,
+		oldAddress,
 	}) {
 		let CollateralContract, CollateralStateContract;
 
@@ -201,6 +205,10 @@ contract('MultiCollateral (prod tests)', accounts => {
 						break;
 					default:
 						throw new Error(`Unsupported collateral type ${type}`);
+				}
+
+				if (CollateralContract.address === oldAddress) {
+					return this.skip();
 				}
 
 				CollateralStateContract = await artifacts
