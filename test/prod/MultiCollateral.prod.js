@@ -118,36 +118,6 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	describe('old contracts still work', () => {
-		it('has the old and new contracts in the manager', async () => {
-			const result = await CollateralManager.hasAllCollaterals([
-				oldEthAddress,
-				oldRenAddress,
-				oldShortAddress,
-				CollateralEth.address,
-				CollateralErc20.address,
-				CollateralShort.address,
-			]);
-			assert.isTrue(result);
-		});
-
-		it('closing a loan on the old ETH contract works', async () => {
-			const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
-			// First loan was opened by SNX test account.
-			const id = 1;
-			const account = knownAccounts[network].find(a => a.name === 'loansTesting');
-
-			if (account) {
-				const tx = await oldEthContract.close(id, { from: account });
-
-				const event = tx.receipt.logs.find(l => l.event === 'LoanClosed');
-
-				assert.equal(event.args.account, account);
-				assert.equal(event.args.id, id);
-			}
-		});
-	});
-
 	describe('when using multiple types of loans', () => {
 		itCorrectlyManagesLoansWith({
 			type: 'CollateralEth',
@@ -191,6 +161,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 		describe(`when using ${type} to deposit ${amountToDeposit.toString()} ${collateralCurrency} and borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
 			let tx;
+			let oldContractsOnly = false;
 
 			before('retrieve the collateral/state contract pair', async () => {
 				switch (type) {
@@ -208,7 +179,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 				}
 
 				if (CollateralContract.address === oldAddress) {
-					return this.skip();
+					oldContractsOnly = true;
 				}
 
 				CollateralStateContract = await artifacts
@@ -216,233 +187,272 @@ contract('MultiCollateral (prod tests)', accounts => {
 					.at(await CollateralContract.state());
 			});
 
-			describe('when opening the loan', () => {
-				let loan, loanId;
-				let totalLoansBefore,
-					longBefore,
-					totalLongBefore,
-					shortBefore,
-					totalShortBefore,
-					issueFeeRate,
-					systemDebtBefore;
-
-				before('record current values', async () => {
-					issueFeeRate = await CollateralContract.issueFeeRate();
-					totalLoansBefore = await CollateralManagerState.totalLoans();
-					longBefore = await CollateralManager.long(borrowCurrencyBytes);
-					totalLongBefore = (await CollateralManager.totalLong()).susdValue;
-					shortBefore = await CollateralManager.short(borrowCurrencyBytes);
-					totalShortBefore = (await CollateralManager.totalShort()).susdValue;
-					systemDebtBefore = (await DebtCache.currentDebt()).debt;
-				});
-
-				before('open the loan', async () => {
-					if (type === 'CollateralErc20') {
-						const underlyingToken = await CollateralErc20.underlyingContract();
-						const renBTC = await artifacts.require('ERC20').at(underlyingToken);
-
-						let altHolder;
-						if (network !== 'local') {
-							const account = knownAccounts[network].find(a => a.name === 'renBTCWallet');
-							if (account) {
-								altHolder = account.address;
-							}
-						}
-
-						const renHolder = network === 'local' ? owner : altHolder || owner;
-						if (!renHolder) {
-							throw new Error(`No known renBTC holder for network ${network}`);
-						}
-
-						// give them more, so they can deposit after opening
-						const transferAmount = Web3.utils.toBN('10000000000');
-
-						await renBTC.transfer(user1, transferAmount, {
-							from: renHolder,
-						});
-
-						await renBTC.approve(CollateralContract.address, toUnit('10000'), { from: user1 });
-
-						tx = await CollateralContract.open(
-							amountToDeposit,
-							amountToBorrow,
-							borrowCurrencyBytes,
-							{
-								from: user1,
-							}
-						);
-					} else if (type === 'CollateralShort') {
-						await SynthsUSD.approve(CollateralContract.address, toUnit('10000'), { from: user1 });
-
-						tx = await CollateralContract.open(
-							amountToDeposit,
-							amountToBorrow,
-							borrowCurrencyBytes,
-							{
-								from: user1,
-							}
-						);
-					} else {
-						tx = await CollateralContract.open(amountToBorrow, borrowCurrencyBytes, {
-							from: user1,
-							value: amountToDeposit,
-						});
-					}
-
-					const event = tx.receipt.logs.find(l => l.event === 'LoanCreated');
-					loanId = event.args.id;
-
-					loan = await CollateralStateContract.getLoan(user1, loanId);
-				});
-
-				it('emits a LoanCreated event with the expected parameters', async () => {
-					const event = tx.receipt.logs.find(l => l.event === 'LoanCreated');
-
-					assert.equal(event.args.account, user1);
-					assert.bnEqual(event.args.id, totalLoansBefore.add(Web3.utils.toBN(1)));
-					assert.bnEqual(event.args.amount, amountToBorrow);
-					assert.equal(event.args.currency, borrowCurrencyBytes);
-					assert.bnEqual(
-						event.args.issuanceFee,
-						multiplyDecimalRound(amountToBorrow, issueFeeRate)
-					);
-
-					if (type === 'CollateralErc20') {
-						// Account for renBTC scaling
-						assert.bnEqual(
-							event.args.collateral,
-							amountToDeposit.mul(Web3.utils.toBN('10000000000'))
-						);
-					} else {
-						assert.bnEqual(event.args.collateral, amountToDeposit);
-					}
-				});
-
-				it('updates the managers short/long values', async () => {
-					if (type === 'CollateralShort') {
-						const shortAfter = await CollateralManager.short(borrowCurrencyBytes);
-						const totalShortAfter = (await CollateralManager.totalShort()).susdValue;
-
-						assert.bnGt(shortAfter, shortBefore);
-						assert.bnGt(totalShortAfter, totalShortBefore);
-					} else {
-						const longAfter = await CollateralManager.long(borrowCurrencyBytes);
-						const totalLongAfter = (await CollateralManager.totalLong()).susdValue;
-
-						assert.bnEqual(longAfter, longBefore.add(amountToBorrow));
-						assert.bnEqual(totalLongAfter, totalLongBefore.add(amountToBorrow));
-					}
-				});
-
-				it('does not increment the system debt', async () => {
-					const systemDebtAfter = (await DebtCache.currentDebt()).debt;
-
-					assert.bnEqual(systemDebtAfter, systemDebtBefore);
-				});
-
-				describe('when depositing more collateral', () => {
-					let cratioBefore;
-
-					before('skip waiting period', async () => {
-						const period = await CollateralContract.interactionDelay();
-
-						await fastForward(period.toString());
-					});
+			if (!oldContractsOnly) {
+				describe('when opening the loan', () => {
+					let loan, loanId;
+					let totalLoansBefore,
+						longBefore,
+						totalLongBefore,
+						shortBefore,
+						totalShortBefore,
+						issueFeeRate,
+						systemDebtBefore;
 
 					before('record current values', async () => {
-						loan = await CollateralStateContract.getLoan(user1, loanId);
-						cratioBefore = await CollateralContract.collateralRatio(loan);
+						issueFeeRate = await CollateralContract.issueFeeRate();
+						totalLoansBefore = await CollateralManagerState.totalLoans();
+						longBefore = await CollateralManager.long(borrowCurrencyBytes);
+						totalLongBefore = (await CollateralManager.totalLong()).susdValue;
+						shortBefore = await CollateralManager.short(borrowCurrencyBytes);
+						totalShortBefore = (await CollateralManager.totalShort()).susdValue;
+						systemDebtBefore = (await DebtCache.currentDebt()).debt;
 					});
 
-					before('deposit', async () => {
+					before('open the loan', async () => {
 						if (type === 'CollateralErc20') {
-							tx = await CollateralContract.deposit(user1, loanId, Web3.utils.toBN('1000000000'), {
-								from: user1,
+							const underlyingToken = await CollateralErc20.underlyingContract();
+							const renBTC = await artifacts.require('ERC20').at(underlyingToken);
+
+							let altHolder;
+							if (network !== 'local') {
+								const account = knownAccounts[network].find(a => a.name === 'renBTCWallet');
+								if (account) {
+									altHolder = account.address;
+								}
+							}
+
+							const renHolder = network === 'local' ? owner : altHolder || owner;
+							if (!renHolder) {
+								throw new Error(`No known renBTC holder for network ${network}`);
+							}
+
+							// give them more, so they can deposit after opening
+							const transferAmount = Web3.utils.toBN('10000000000');
+
+							await renBTC.transfer(user1, transferAmount, {
+								from: renHolder,
 							});
+
+							await renBTC.approve(CollateralContract.address, toUnit('10000'), { from: user1 });
+
+							tx = await CollateralContract.open(
+								amountToDeposit,
+								amountToBorrow,
+								borrowCurrencyBytes,
+								{
+									from: user1,
+								}
+							);
 						} else if (type === 'CollateralShort') {
-							tx = await CollateralContract.deposit(user1, loanId, toUnit('200'), {
-								from: user1,
-							});
+							await SynthsUSD.approve(CollateralContract.address, toUnit('10000'), { from: user1 });
+
+							tx = await CollateralContract.open(
+								amountToDeposit,
+								amountToBorrow,
+								borrowCurrencyBytes,
+								{
+									from: user1,
+								}
+							);
 						} else {
-							tx = await CollateralContract.deposit(user1, loanId, {
+							tx = await CollateralContract.open(amountToBorrow, borrowCurrencyBytes, {
 								from: user1,
-								value: toUnit('1'),
+								value: amountToDeposit,
 							});
 						}
 
-						loan = await CollateralStateContract.getLoan(user1, loanId);
-					});
-
-					it('incrementes the cratio', async () => {
-						const cratioAfter = await CollateralContract.collateralRatio(loan);
-
-						assert.bnGt(cratioAfter, cratioBefore);
-					});
-				});
-
-				describe('when removing collateral', () => {
-					let cratioBefore;
-
-					before('skip waiting period', async () => {
-						const period = await CollateralContract.interactionDelay();
-
-						await fastForward(period.toString());
-					});
-
-					before('record current values', async () => {
-						loan = await CollateralStateContract.getLoan(user1, loanId);
-						cratioBefore = await CollateralContract.collateralRatio(loan);
-					});
-
-					before('withdraw', async () => {
-						tx = await CollateralContract.withdraw(loanId, Web3.utils.toBN('100'), {
-							from: user1,
-						});
+						const event = tx.receipt.logs.find(l => l.event === 'LoanCreated');
+						loanId = event.args.id;
 
 						loan = await CollateralStateContract.getLoan(user1, loanId);
 					});
 
-					it('decrementes the cratio', async () => {
-						const cratioAfter = await CollateralContract.collateralRatio(loan);
+					it('emits a LoanCreated event with the expected parameters', async () => {
+						const event = tx.receipt.logs.find(l => l.event === 'LoanCreated');
 
-						assert.bnLt(cratioAfter, cratioBefore);
+						assert.equal(event.args.account, user1);
+						assert.bnEqual(event.args.id, totalLoansBefore.add(Web3.utils.toBN(1)));
+						assert.bnEqual(event.args.amount, amountToBorrow);
+						assert.equal(event.args.currency, borrowCurrencyBytes);
+						assert.bnEqual(
+							event.args.issuanceFee,
+							multiplyDecimalRound(amountToBorrow, issueFeeRate)
+						);
+
+						if (type === 'CollateralErc20') {
+							// Account for renBTC scaling
+							assert.bnEqual(
+								event.args.collateral,
+								amountToDeposit.mul(Web3.utils.toBN('10000000000'))
+							);
+						} else {
+							assert.bnEqual(event.args.collateral, amountToDeposit);
+						}
 					});
-				});
 
-				describe('when repaying the loan', () => {
-					before('skip waiting period', async () => {
-						const period = await CollateralContract.interactionDelay();
+					it('updates the managers short/long values', async () => {
+						if (type === 'CollateralShort') {
+							const shortAfter = await CollateralManager.short(borrowCurrencyBytes);
+							const totalShortAfter = (await CollateralManager.totalShort()).susdValue;
 
-						await fastForward(period.toString());
+							assert.bnGt(shortAfter, shortBefore);
+							assert.bnGt(totalShortAfter, totalShortBefore);
+						} else {
+							const longAfter = await CollateralManager.long(borrowCurrencyBytes);
+							const totalLongAfter = (await CollateralManager.totalLong()).susdValue;
+
+							assert.bnEqual(longAfter, longBefore.add(amountToBorrow));
+							assert.bnEqual(totalLongAfter, totalLongBefore.add(amountToBorrow));
+						}
 					});
 
-					before('repay all debt', async () => {
-						tx = await CollateralContract.repay(user1, loanId, amountToBorrow, {
-							from: user1,
-						});
+					it('does not increment the system debt', async () => {
+						const systemDebtAfter = (await DebtCache.currentDebt()).debt;
+
+						assert.bnEqual(systemDebtAfter, systemDebtBefore);
 					});
 
-					describe('when closing the loan', () => {
+					describe('when depositing more collateral', () => {
+						let cratioBefore;
+
 						before('skip waiting period', async () => {
 							const period = await CollateralContract.interactionDelay();
 
 							await fastForward(period.toString());
 						});
 
-						before('close the loan', async () => {
-							tx = await CollateralContract.close(loanId, {
+						before('record current values', async () => {
+							loan = await CollateralStateContract.getLoan(user1, loanId);
+							cratioBefore = await CollateralContract.collateralRatio(loan);
+						});
+
+						before('deposit', async () => {
+							if (type === 'CollateralErc20') {
+								tx = await CollateralContract.deposit(
+									user1,
+									loanId,
+									Web3.utils.toBN('1000000000'),
+									{
+										from: user1,
+									}
+								);
+							} else if (type === 'CollateralShort') {
+								tx = await CollateralContract.deposit(user1, loanId, toUnit('200'), {
+									from: user1,
+								});
+							} else {
+								tx = await CollateralContract.deposit(user1, loanId, {
+									from: user1,
+									value: toUnit('1'),
+								});
+							}
+
+							loan = await CollateralStateContract.getLoan(user1, loanId);
+						});
+
+						it('incrementes the cratio', async () => {
+							const cratioAfter = await CollateralContract.collateralRatio(loan);
+
+							assert.bnGt(cratioAfter, cratioBefore);
+						});
+					});
+
+					describe('when removing collateral', () => {
+						let cratioBefore;
+
+						before('skip waiting period', async () => {
+							const period = await CollateralContract.interactionDelay();
+
+							await fastForward(period.toString());
+						});
+
+						before('record current values', async () => {
+							loan = await CollateralStateContract.getLoan(user1, loanId);
+							cratioBefore = await CollateralContract.collateralRatio(loan);
+						});
+
+						before('withdraw', async () => {
+							tx = await CollateralContract.withdraw(loanId, Web3.utils.toBN('100'), {
 								from: user1,
 							});
 
 							loan = await CollateralStateContract.getLoan(user1, loanId);
 						});
 
-						it('shows that the loan amount is zero', async () => {
-							assert.bnEqual(loan.amount, '0');
+						it('decrementes the cratio', async () => {
+							const cratioAfter = await CollateralContract.collateralRatio(loan);
+
+							assert.bnLt(cratioAfter, cratioBefore);
+						});
+					});
+
+					describe('when repaying the loan', () => {
+						before('skip waiting period', async () => {
+							const period = await CollateralContract.interactionDelay();
+
+							await fastForward(period.toString());
+						});
+
+						before('repay all debt', async () => {
+							tx = await CollateralContract.repay(user1, loanId, amountToBorrow, {
+								from: user1,
+							});
+						});
+
+						describe('when closing the loan', () => {
+							before('skip waiting period', async () => {
+								const period = await CollateralContract.interactionDelay();
+
+								await fastForward(period.toString());
+							});
+
+							before('close the loan', async () => {
+								tx = await CollateralContract.close(loanId, {
+									from: user1,
+								});
+
+								loan = await CollateralStateContract.getLoan(user1, loanId);
+							});
+
+							it('shows that the loan amount is zero', async () => {
+								assert.bnEqual(loan.amount, '0');
+							});
 						});
 					});
 				});
-			});
+			} else {
+				if (network === 'mainnet') {
+					describe('old contracts still work', () => {
+						it('has the old and new contracts in the manager', async () => {
+							const result = await CollateralManager.hasAllCollaterals([
+								oldEthAddress,
+								oldRenAddress,
+								oldShortAddress,
+								CollateralEth.address,
+								CollateralErc20.address,
+								CollateralShort.address,
+							]);
+							assert.isTrue(result);
+						});
+
+						it('closing a loan on the old ETH contract works', async () => {
+							const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
+							// First loan was opened by SNX test account.
+							const id = 1;
+							const account = knownAccounts[network].find(a => a.name === 'loansTesting');
+
+							if (account) {
+								const tx = await oldEthContract.close(id, { from: account });
+
+								const event = tx.receipt.logs.find(l => l.event === 'LoanClosed');
+
+								assert.equal(event.args.account, account);
+								assert.equal(event.args.id, id);
+							}
+						});
+					});
+				}
+			}
 		});
 	}
 });
