@@ -32,6 +32,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 	const oldEthAddress = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
 	const oldRenAddress = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
 	const oldShortAddress = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
+	const loansAccount = '0x62f7A1F94aba23eD2dD108F8D23Aa3e7d452565B';
 
 	let oldContractsOnly = false;
 
@@ -106,6 +107,14 @@ contract('MultiCollateral (prod tests)', accounts => {
 			fromAccount: owner,
 			network,
 		});
+
+		await ensureAccountHassUSD({
+			amount: toUnit('1000'),
+			account: loansAccount,
+			fromAccount: owner,
+			network,
+		});
+
 		await ensureAccountHassETH({
 			amount: toUnit('2'),
 			account: user1,
@@ -441,20 +450,11 @@ contract('MultiCollateral (prod tests)', accounts => {
 				const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
 				// First loan was opened by SNX test account.
 				const id = 1;
-				const testAccount = '0x62f7A1F94aba23eD2dD108F8D23Aa3e7d452565B';
-
-				await ensureAccountHassUSD({
-					amount: toUnit('1000'),
-					account: testAccount,
-					fromAccount: owner,
-					network,
-				});
-
-				const tx = await oldEthContract.close(id, { from: testAccount });
+				const tx = await oldEthContract.close(id, { from: loansAccount });
 
 				const event = tx.receipt.logs.find(l => l.event === 'LoanClosed');
 
-				assert.equal(event.args.account, testAccount);
+				assert.equal(event.args.account, loansAccount);
 				assert.equal(event.args.id, id);
 			}
 		});
