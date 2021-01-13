@@ -178,7 +178,11 @@ contract('MultiCollateral (prod tests)', accounts => {
 						throw new Error(`Unsupported collateral type ${type}`);
 				}
 
+				console.log('Contract address: ' + CollateralContract.address);
+				console.log('Old address: ' + oldAddress);
+
 				if (CollateralContract.address === oldAddress) {
+					console.log('Check statement');
 					oldContractsOnly = true;
 				}
 
