@@ -111,7 +111,7 @@ describe('deployments', () => {
 										);
 										const tokenName = await tokenContract.methods.name().call();
 
-										if (token === 'Synthetix') {
+										if (token === 'Synthetix' || token === 'ProxyERC20') {
 											assert.strictEqual(tokenName, 'Synthetix Network Token');
 										} else if (token.includes('Proxy')) {
 											const synthType = token.slice(5);
