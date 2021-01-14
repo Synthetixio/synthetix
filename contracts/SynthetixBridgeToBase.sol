@@ -10,6 +10,7 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 // Internal references
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
+import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
@@ -79,7 +80,8 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         synthetix().burnSecondary(msg.sender, amount);
 
         // create message payload for L1
-        bytes memory messageData = abi.encodeWithSignature("completeWithdrawal(address,uint256)", msg.sender, amount);
+        ISynthetixBridgeToOptimism bridgeToOptimism;
+        bytes memory messageData = abi.encodeWithSelector(bridgeToOptimism.completeWithdrawal.selector, msg.sender, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
         messenger().sendMessage(
