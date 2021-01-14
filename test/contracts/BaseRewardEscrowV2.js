@@ -529,6 +529,15 @@ contract('BaseRewardEscrowV2', async accounts => {
 				// There should be no Escrowed balance left in the contract
 				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), toUnit('0'));
 			});
+			it('should vest and update entryID.escrowAmount to 0', async () => {
+				await baseRewardEscrowV2.vest([entryID], {
+					from: account1,
+				});
+
+				// There should be no escrowedAmount on entry
+				const entry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
+				assert.bnEqual(entry.escrowAmount, toUnit('0'));
+			});
 		});
 
 		describe('Vesting multiple vesting entries', () => {

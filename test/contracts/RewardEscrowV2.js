@@ -16,7 +16,7 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 contract('RewardEscrowV2', async accounts => {
 	const [, owner, feePoolAccount, account1] = accounts;
-	let rewardEscrowV2, synthetix, feePool;
+	let rewardEscrowV2, synthetix, feePool, rewardEscrow;
 
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
@@ -31,6 +31,7 @@ contract('RewardEscrowV2', async accounts => {
 			mocks: {
 				Synthetix: synthetix,
 				FeePool: feePool,
+				RewardEscrow: rewardEscrow,
 			},
 		}));
 	});
@@ -73,6 +74,10 @@ contract('RewardEscrowV2', async accounts => {
 	});
 
 	describe('importVestingSchedule', () => {
+		beforeEach(async () => {});
+	});
+
+	describe('migrateVestingSchedule', () => {
 		beforeEach(async () => {});
 	});
 });
