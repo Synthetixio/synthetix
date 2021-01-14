@@ -114,13 +114,19 @@
 			"minor": 36
 		},
 		"sources": [
-			"SynthetixBridgeToOptimism",
-			"RewardEscrowV2",
-			"Issuer",
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralStateErc20",
+			"CollateralStateEth",
+			"CollateralStateShort",
+			"CollateralShort",
 			"FeePool",
+			"Issuer",
+			"RewardEscrowV2",
 			"Synthetix",
+			"SynthetixBridgeToOptimism",
 			"SystemSettings"
 		],
-		"sips": [60, 102]
+		"sips": [60, 102, 105]
 	}
 ]

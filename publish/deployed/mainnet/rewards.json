@@ -30,6 +30,11 @@
 		"rewardsToken": "ProxyERC20"
 	},
 	{
+		"name": "sEURCurve",
+		"stakingToken": "0x194eBd173F6cDacE046C53eACcE9B953F28411d1",
+		"rewardsToken": "ProxyERC20"
+	},
+	{
 		"name": "SNXBalancer",
 		"stakingToken": "0x815f8ef4863451f4faf34fbc860034812e7377d9",
 		"rewardsToken": "ProxyERC20"

@@ -68,6 +68,7 @@ contract('Synthetix', async accounts => {
 				'RewardsDistribution',
 				'CollateralManager',
 				'RewardEscrowV2', // required for issuer._collateral to read collateral
+				'RewardEscrow',
 			],
 		}));
 
@@ -553,7 +554,7 @@ contract('Synthetix', async accounts => {
 			assert.equal(newTotalSupplyDecimal.toFixed(2), expectedNewTotalSupply);
 
 			assert.bnEqual(newTotalSupply, existingSupply.add(mintableSupply));
-			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), expectedEscrowBalance);
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrowV2.address), expectedEscrowBalance);
 		});
 
 		it('should allow synthetix contract to mint 2 weeks of supply and minus minterReward', async () => {
@@ -589,7 +590,7 @@ contract('Synthetix', async accounts => {
 			assert.equal(newTotalSupplyDecimal.toFixed(2), expectedNewTotalSupplyDecimal.toFixed(2));
 
 			assert.bnEqual(newTotalSupply, existingSupply.add(mintableSupply));
-			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), expectedEscrowBalance);
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrowV2.address), expectedEscrowBalance);
 		});
 
 		it('should allow synthetix contract to mint the same supply for 39 weeks into the inflation prior to decay', async () => {
@@ -620,7 +621,7 @@ contract('Synthetix', async accounts => {
 			assert.bnClose(mintableSupply, expectedSupplyToMint, 27);
 
 			assert.bnClose(newTotalSupply, existingTotalSupply.add(expectedSupplyToMint), 27);
-			assert.bnClose(await synthetix.balanceOf(rewardEscrow.address), expectedEscrowBalance, 27);
+			assert.bnClose(await synthetix.balanceOf(rewardEscrowV2.address), expectedEscrowBalance, 27);
 		});
 
 		it('should allow synthetix contract to mint 2 weeks into Terminal Inflation', async () => {

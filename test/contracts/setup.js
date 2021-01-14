@@ -201,7 +201,7 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('Synthetix'),
 			tryGetAddressOf('ProxyERC20Synthetix'),
-			tryGetAddressOf('RewardEscrow'),
+			tryGetAddressOf('RewardEscrowV2'),
 			tryGetAddressOf('ProxyFeePool'),
 		],
 		RewardEscrow: [owner, tryGetAddressOf('Synthetix'), tryGetAddressOf('FeePool')],
@@ -746,8 +746,8 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'SynthetixBridgeToOptimism',
-			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase', 'RewardEscrowV2'],
-			deps: ['AddressResolver', 'Issuer'],
+			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase'],
+			deps: ['AddressResolver', 'Issuer', 'RewardEscrowV2'],
 		},
 		{
 			contract: 'SynthetixBridgeToBase',
