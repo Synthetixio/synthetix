@@ -77,32 +77,40 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
                     escrowAmount: totalBalancePendingMigration[addressToMigrate]
                 })
             );
+
+            /* Remove totalBalancePendingMigration[addressToMigrate] */
+            delete totalBalancePendingMigration[addressToMigrate];
         } else {
             uint numEntries = oldRewardEscrow().numVestingEntries(addressToMigrate);
+
+            /* iterate and migrate old escrow schedules from rewardEscrow.vestingSchedules
+             * starting from the last entry in each staker's vestingSchedules
+             * cap max entries to copy at 53 */
+            uint entries;
+            for (uint i = numEntries - 1; entries <= 53; i--) {
+                uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(addressToMigrate, i);
+
+                uint time = vestingSchedule[TIME_INDEX];
+                uint amount = vestingSchedule[QUANTITY_INDEX];
+
+                /* The list is sorted, when we reach the first entry that can be vested stop */
+                if (time < block.timestamp) {
+                    break;
+                }
+
+                /* import vesting entry */
+                _importVestingEntry(
+                    addressToMigrate,
+                    VestingEntries.VestingEntry({endTime: uint64(time), escrowAmount: amount})
+                );
+
+                /* subtract amount from totalBalancePendingMigration - reverts if insufficient */
+                totalBalancePendingMigration[addressToMigrate] = totalBalancePendingMigration[addressToMigrate].sub(amount);
+
+                /* increment entries */
+                entries++;
+            }
         }
-
-        uint numEntries = oldRewardEscrow().numVestingEntries(addressToMigrate);
-
-        // take only the last 52 entries (up to 52 entries)
-
-        /* iterate and migrate old escrow schedules from vestingSchedules[nextVestingIndex] start from the last entry
-         * stop at the end of the vesting schedule list */
-        uint count;
-        for (uint i = numEntries - 1; count <= 52; i++) {
-            uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(addressToMigrate, i);
-
-            uint amount = vestingSchedule[QUANTITY_INDEX];
-
-            _importVestingEntry(
-                addressToMigrate,
-                VestingEntries.VestingEntry({endTime: uint64(vestingSchedule[TIME_INDEX]), escrowAmount: amount})
-            );
-
-            /* subtract amount from totalBalancePendingMigration - reverts if insufficient */
-            totalBalancePendingMigration[addressToMigrate] = totalBalancePendingMigration[addressToMigrate].sub(amount);
-        }
-
-        // emit MigratedVestingSchedules(addressToMigrate, block.timestamp);
     }
 
     /**
