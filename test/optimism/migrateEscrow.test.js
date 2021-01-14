@@ -104,14 +104,17 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 
 				const escrowNum = 26;
 				const escrowBatches = 2;
-				const totalEntriesCreated = escrowNum * escrowBatches;
+				const numExtraEntries = 3;
+				const totalEntriesCreated = escrowNum * escrowBatches + numExtraEntries;
 				describe(`when the user creates ${totalEntriesCreated} escrow entries`, () => {
 					const escrowEntryAmount = ethers.utils.parseEther('1');
 					const duration = HOUR;
 					let currentId;
 					const batchEscrowAmounts = [];
 					const userEntryBatch = [];
-					let totalEscrowed;
+					let totalEscrowed = ethers.BigNumber.from('0');
+					const extraEntries = [];
+					let extraEscrowAmount = ethers.BigNumber.from('0');
 
 					before('create and append escrow entries', async () => {
 						RewardEscrowV2L1 = RewardEscrowV2L1.connect(user1L1);
@@ -132,10 +135,21 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 							userEntryBatch.push(userEntries);
 						}
 
-						totalEscrowed = batchEscrowAmounts.reduce(
-							(a, b) => a.add(b),
-							ethers.BigNumber.from('0')
-						);
+						totalEscrowed = batchEscrowAmounts.reduce((a, b) => a.add(b));
+
+						// this loop creates entries [1-numExtraEntries], e.g. 1,2,3 if numExtraEntries = 3
+						for (let i = 0; i < numExtraEntries; i++) {
+							currentId = await RewardEscrowV2L1.nextEntryId();
+							const tx = await RewardEscrowV2L1.createEscrowEntry(
+								user1L1.address,
+								escrowEntryAmount,
+								duration
+							);
+							await tx.wait();
+							extraEscrowAmount = extraEscrowAmount.add(escrowEntryAmount);
+							extraEntries.push(currentId);
+						}
+						totalEscrowed = totalEscrowed.add(extraEscrowAmount);
 					});
 
 					it(`Should create ${totalEntriesCreated} new entry IDs`, async () => {
@@ -166,7 +180,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 
 					describe('when the user has no outstanding debt on L1', () => {
 						describe('when the user migrates their escrow', () => {
-							let initiateEscrowMigrationReceipt;
+							let initiateEscrowMigrationReceipt, initiateEscrowMigrationReceiptExtra;
 							let user1BalanceL2;
 							let totalSupplyL2;
 							let rewardEscrowBalanceL2;
@@ -194,14 +208,16 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 
 							before('initiateEscrowMigration', async () => {
 								SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
-								const tx = await SynthetixBridgeToOptimismL1.initiateEscrowMigration(
-									userEntryBatch
-								);
+								// first test migrating a few entries using random extra invalid Ids!
+								const randomEntries = [extraEntries, [0, 100, 3, 2]];
+								let tx = await SynthetixBridgeToOptimismL1.initiateEscrowMigration(userEntryBatch);
 								initiateEscrowMigrationReceipt = await tx.wait();
+								tx = await SynthetixBridgeToOptimismL1.initiateEscrowMigration(randomEntries);
+								initiateEscrowMigrationReceiptExtra = await tx.wait();
 							});
 
-							it('emitted two ExportedVestingEntries events', async () => {
-								const events = initiateEscrowMigrationReceipt.events.filter(
+							it('emitted three ExportedVestingEntries events', async () => {
+								let events = initiateEscrowMigrationReceipt.events.filter(
 									e => e.event === 'ExportedVestingEntries'
 								);
 								assert.equal(events.length, 2);
@@ -209,6 +225,13 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 								assert.bnEqual(events[0].args.escrowedAccountBalance, batchEscrowAmounts[0]);
 								assert.equal(events[1].args.account, user1L1.address);
 								assert.bnEqual(events[1].args.escrowedAccountBalance, batchEscrowAmounts[1]);
+
+								events = initiateEscrowMigrationReceiptExtra.events.filter(
+									e => e.event === 'ExportedVestingEntries'
+								);
+								assert.equal(events.length, 1);
+								assert.equal(events[0].args.account, user1L1.address);
+								assert.bnEqual(events[0].args.escrowedAccountBalance, extraEscrowAmount);
 							});
 
 							it('should update the L1 escrow state', async () => {
@@ -236,14 +259,16 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 
 							describe('when waiting for the tx to complete on L2', () => {
 								before('listen for completion', async () => {
-									const [
-										messageHashL2ImportEntries,
-										messageHashL2Deposit,
-									] = await ctx.watcher.getMessageHashesFromL1Tx(
+									const [messageHashL2ImportEntries] = await ctx.watcher.getMessageHashesFromL1Tx(
 										initiateEscrowMigrationReceipt.transactionHash
 									);
 									await ctx.watcher.getL2TransactionReceipt(messageHashL2ImportEntries);
-									await ctx.watcher.getL2TransactionReceipt(messageHashL2Deposit);
+									const [
+										messageHashL2ImportEntriesExtra,
+									] = await ctx.watcher.getMessageHashesFromL1Tx(
+										initiateEscrowMigrationReceiptExtra.transactionHash
+									);
+									await ctx.watcher.getL2TransactionReceipt(messageHashL2ImportEntriesExtra);
 								});
 
 								before('stop listening to events on L2', async () => {
@@ -253,8 +278,8 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 									);
 								});
 
-								it('emitted two ImportedVestingEntries events', async () => {
-									assert.equal(importedVestingEntriesEvents.length, 2);
+								it('emitted three ImportedVestingEntries events', async () => {
+									assert.equal(importedVestingEntriesEvents.length, 3);
 									assert.equal(importedVestingEntriesEvents[0].args.account, user1L1.address);
 									assert.bnEqual(
 										importedVestingEntriesEvents[0].args.escrowedAmount,
@@ -264,6 +289,11 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 									assert.bnEqual(
 										importedVestingEntriesEvents[1].args.escrowedAmount,
 										batchEscrowAmounts[1]
+									);
+									assert.equal(importedVestingEntriesEvents[2].args.account, user1L1.address);
+									assert.bnEqual(
+										importedVestingEntriesEvents[2].args.escrowedAmount,
+										extraEscrowAmount
 									);
 								});
 

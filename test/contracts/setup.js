@@ -704,7 +704,6 @@ const setupAllContracts = async ({
 			contract: 'BaseSynthetix',
 			mocks: [
 				'Exchanger',
-				'SupplySchedule',
 				'RewardEscrow',
 				'RewardEscrowV2',
 				'SynthetixEscrow',
@@ -726,7 +725,6 @@ const setupAllContracts = async ({
 			contract: 'MintableSynthetix',
 			mocks: [
 				'Exchanger',
-				'SupplySchedule',
 				'SynthetixEscrow',
 				'Liquidations',
 				'Issuer',
@@ -746,8 +744,8 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'SynthetixBridgeToOptimism',
-			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase', 'RewardEscrowV2'],
-			deps: ['AddressResolver', 'Issuer'],
+			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase'],
+			deps: ['AddressResolver', 'Issuer', 'RewardEscrowV2'],
 		},
 		{
 			contract: 'SynthetixBridgeToBase',
