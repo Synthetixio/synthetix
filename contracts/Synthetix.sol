@@ -31,7 +31,7 @@ contract Synthetix is BaseSynthetix {
         bytes32[] memory newAddresses = new bytes32[](3);
         newAddresses[0] = CONTRACT_REWARD_ESCROW;
         newAddresses[1] = CONTRACT_REWARDESCROW_V2;
-        addresses[2] = CONTRACT_SUPPLYSCHEDULE;
+        newAddresses[2] = CONTRACT_SUPPLYSCHEDULE;
         return combineArrays(existingAddresses, newAddresses);
     }
 
