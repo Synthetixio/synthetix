@@ -5,17 +5,11 @@ pragma experimental ABIEncoderV2;
 library VestingEntries {
     struct VestingEntry {
         uint64 endTime;
-        uint64 duration;
-        uint64 lastVested;
         uint256 escrowAmount;
-        uint256 remainingAmount;
     }
     struct VestingEntryWithID {
         uint64 endTime;
-        uint64 duration;
-        uint64 lastVested;
         uint256 escrowAmount;
-        uint256 remainingAmount;
         uint256 entryID;
     }
 }
@@ -46,10 +40,6 @@ interface IRewardEscrowV2 {
     ) external view returns (uint256[] memory);
 
     function getVestingEntryClaimable(address account, uint256 entryID) external view returns (uint);
-
-    function timeSinceLastVested(address account, uint256 entryID) external view returns (uint);
-
-    function ratePerSecond(address account, uint256 entryID) external view returns (uint);
 
     // Mutative functions
     function vest(uint256[] calldata entryIDs) external;
