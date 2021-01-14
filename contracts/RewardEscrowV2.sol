@@ -85,10 +85,9 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
             /* iterate and migrate old escrow schedules from rewardEscrow.vestingSchedules
              * starting from the last entry in each staker's vestingSchedules
-             * cap max entries to copy at 53 */
-            uint entries;
-            for (uint i = numEntries - 1; entries <= 53; i--) {
-                uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(addressToMigrate, i);
+             */
+            for (uint i = 1; i <= numEntries; i++) {
+                uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(addressToMigrate, numEntries - i);
 
                 uint time = vestingSchedule[TIME_INDEX];
                 uint amount = vestingSchedule[QUANTITY_INDEX];
@@ -106,9 +105,6 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
                 /* subtract amount from totalBalancePendingMigration - reverts if insufficient */
                 totalBalancePendingMigration[addressToMigrate] = totalBalancePendingMigration[addressToMigrate].sub(amount);
-
-                /* increment entries */
-                entries++;
             }
         }
     }

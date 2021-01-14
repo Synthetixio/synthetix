@@ -87,12 +87,56 @@ contract('RewardEscrowV2', async accounts => {
 		});
 	});
 
-	describe('migrateAccountEscrowBalances', () => {
-		beforeEach(async () => {});
+	describe('importVestingSchedule', () => {
+		it('should revert after setup period over', async () => {
+			const setupPeriod = 4 * WEEK;
+			await fastForward(setupPeriod + 100);
+
+			await assert.revert(
+				rewardEscrowV2.importVestingSchedule([account1], [toUnit('10')], {
+					from: owner,
+				}),
+				'Can only perform this action during setup'
+			);
+		});
+		it('should revert if migrateAccountEscrowBalances isnt called first', async () => {
+			await assert.revert(
+				rewardEscrowV2.importVestingSchedule([account1], [toUnit('10')], {
+					from: owner,
+				}),
+				'Address escrow balance is 0'
+			);
+		});
+		describe('importing escrowBalances and vestedBalances for accounts', () => {
+			beforeEach(async () => {});
+		});
 	});
 
-	describe('importVestingSchedule', () => {
-		beforeEach(async () => {});
+	describe('migrateAccountEscrowBalances', () => {
+		it('should revert after setup period over', async () => {
+			const setupPeriod = 4 * WEEK;
+			await fastForward(setupPeriod + 100);
+
+			await assert.revert(
+				rewardEscrowV2.migrateAccountEscrowBalances([account1], [toUnit('10')], [0], {
+					from: owner,
+				}),
+				'Can only perform this action during setup'
+			);
+		});
+		it('should revert trying to re-import for same account', async () => {
+			await rewardEscrowV2.migrateAccountEscrowBalances([account1], [toUnit('10')], [0], {
+				from: owner,
+			});
+
+			// second time should revert
+			await assert.revert(
+				rewardEscrowV2.migrateAccountEscrowBalances([account1], [toUnit('10')], [0], {
+					from: owner,
+				}),
+				'Account migration is pending already'
+			);
+		});
 	});
 
 	describe('migrateVestingSchedule', () => {
@@ -199,6 +243,50 @@ contract('RewardEscrowV2', async accounts => {
 
 				// check 52nd entry is not claimable yet
 				assert.bnEqual(await rewardEscrowV2.getVestingEntryClaimable(account1, 52), 0);
+			});
+		});
+		describe('when migrating pending vesting entries but less than 52 entries', () => {
+			const quantity = toUnit('500');
+
+			beforeEach(async () => {
+				// setup vesting entries on old RewardEscrow
+				await synthetix.transfer(rewardEscrow.address, toUnit('2000'), { from: owner });
+
+				// migrateAccountEscrowBalance to RewardEscrowV2 for 2000 SNX
+				await rewardEscrowV2.migrateAccountEscrowBalances([account1], [toUnit('2000')], [0], {
+					from: owner,
+				});
+
+				// append vesting entries for account1 - 4 vesting entries of 500 SNX
+				for (let i = 0; i < 4; i++) {
+					await rewardEscrow.appendVestingEntry(account1, quantity, { from: feePoolAccount });
+
+					// fastForward one week
+					await fastForward(WEEK);
+				}
+
+				// should have 4 entries on rewardEscrow
+				assert.bnEqual(await rewardEscrow.numVestingEntries(account1), 4);
+			});
+			it('should migrate 4 pending vesting entry schedule from old rewardEscrouw', async () => {
+				await rewardEscrowV2.migrateVestingSchedule(account1, { from: owner });
+
+				// account 1 should have 4 vesting entries copied
+				assert.bnEqual(await rewardEscrowV2.numVestingEntries(account1), new BN(4));
+
+				// totalBalancePendingMigration for account1 should be 0
+				assert.bnEqual(await rewardEscrowV2.totalBalancePendingMigration(account1), toUnit('0'));
+
+				// check 4 entries are setup
+				for (let id = 1; id <= 4; id++) {
+					const entry = await rewardEscrowV2.getVestingEntry(account1, id);
+
+					// check all entries have 500 SNX
+					assert.bnEqual(entry.escrowAmount, quantity);
+				}
+
+				// check 4th entry is not claimable yet
+				assert.bnEqual(await rewardEscrowV2.getVestingEntryClaimable(account1, 4), 0);
 			});
 		});
 	});
