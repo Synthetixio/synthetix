@@ -13,6 +13,8 @@ import "./interfaces/ISystemStatus.sol";
 contract RewardEscrowV2 is BaseRewardEscrowV2 {
     mapping(address => uint256) public totalBalancePendingMigration;
 
+    uint public migrateEntriesThresholdAmount = SafeDecimalMath.unit() * 1000; // Default 1000 SNX
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM = "SynthetixBridgeToOptimism";
@@ -53,23 +55,40 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
     /* ========== MIGRATION OLD ESCROW ========== */
 
+    /* Threshold amount for migrating escrow entries from old RewardEscrow */
+    function setMigrateEntriesThresholdAmount(uint amount) external onlyOwner {
+        migrateEntriesThresholdAmount = amount;
+        emit MigrateEntriesThresholdAmountUpdated(amount);
+    }
+
     /* Function to allow any address to migrate vesting entries from previous reward escrow */
     function migrateVestingSchedule(address addressToMigrate) external systemActive {
         /* Ensure account escrow balance pending migration is not zero */
+        /* Ensure account escrowed balance is not zero - should have been migrated */
         require(totalBalancePendingMigration[addressToMigrate] > 0, "No escrow migration pending");
-        /* Ensure account escrow balance is not zero */
         require(totalEscrowedAccountBalance[addressToMigrate] > 0, "Address escrow balance is 0");
+
+        /* Add a vestable entry for addresses with totalBalancePendingMigration <= migrateEntriesThreshold amount of SNX */
+        if (totalBalancePendingMigration[addressToMigrate] <= migrateEntriesThresholdAmount) {
+            _importVestingEntry(
+                addressToMigrate,
+                VestingEntries.VestingEntry({
+                    endTime: uint64(block.timestamp),
+                    escrowAmount: totalBalancePendingMigration[addressToMigrate]
+                })
+            );
+        } else {
+            uint numEntries = oldRewardEscrow().numVestingEntries(addressToMigrate);
+        }
 
         uint numEntries = oldRewardEscrow().numVestingEntries(addressToMigrate);
 
-        /* iterate from the nextVestingIndex, skipping already vested entries */
-        uint nextVestingIndex = oldRewardEscrow().getNextVestingIndex(addressToMigrate);
-
         // take only the last 52 entries (up to 52 entries)
 
-        /* iterate and migrate old escrow schedules from vestingSchedules[nextVestingIndex]
+        /* iterate and migrate old escrow schedules from vestingSchedules[nextVestingIndex] start from the last entry
          * stop at the end of the vesting schedule list */
-        for (uint i = nextVestingIndex; i < numEntries; i++) {
+        uint count;
+        for (uint i = numEntries - 1; count <= 52; i++) {
             uint[2] memory vestingSchedule = oldRewardEscrow().getVestingScheduleEntry(addressToMigrate, i);
 
             uint amount = vestingSchedule[QUANTITY_INDEX];
@@ -219,4 +238,5 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     event ImportedVestingSchedule(address indexed account, uint time, uint escrowAmount);
     event BurnedForMigrationToL2(address indexed account, uint[] entryIDs, uint escrowedAmountMigrated, uint time);
     event ImportedVestingEntry(address indexed account, uint entryID, uint escrowAmount, uint endTime);
+    event MigrateEntriesThresholdAmountUpdated(uint newAmount);
 }

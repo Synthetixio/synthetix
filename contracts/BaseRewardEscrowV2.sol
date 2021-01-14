@@ -224,10 +224,10 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     }
 
     function _claimableAmount(VestingEntries.VestingEntry memory _entry) internal view returns (uint256) {
-        uint quantity;
+        uint256 quantity;
         if (_entry.escrowAmount != 0) {
             /* Escrow amounts claimable if block.timestamp equal to or after entry endTime */
-            quantity = block.timestamp >= _entry.endTime ? _entry.escrowAmount : 0;
+            quantity = block.timestamp > _entry.endTime ? _entry.escrowAmount : 0;
         }
         return quantity;
     }
@@ -403,10 +403,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
     ) internal {
         /* No empty or already-passed vesting entries allowed. */
         require(quantity != 0, "Quantity cannot be zero");
-        require(duration > 0 && duration < max_duration, "Cannot escrow with 0 duration OR above max_duration");
-
-        /* Escrow quantity needs to be larger than duration as ratePerSecond division will result in 0 if less */
-        require(quantity > duration, "Escrow quantity less than duration");
+        require(duration > 0 && duration <= max_duration, "Cannot escrow with 0 duration OR above max_duration");
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         totalEscrowedBalance = totalEscrowedBalance.add(quantity);
