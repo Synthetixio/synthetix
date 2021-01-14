@@ -298,4 +298,25 @@ contract Synthetix is BaseSynthetix {
             0
         );
     }
+
+    // ========== MODIFIERS ==========
+
+    modifier onlyExchanger() {
+        _onlyExchanger();
+        _;
+    }
+
+    function _onlyExchanger() private {
+        require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
+    }
+
+    modifier exchangeActive(bytes32 src, bytes32 dest) {
+        _exchangeActive(src, dest);
+        _;
+    }
+
+    function _exchangeActive(bytes32 src, bytes32 dest) private {
+        systemStatus().requireExchangeActive();
+        systemStatus().requireSynthsActive(src, dest);
+    }
 }
