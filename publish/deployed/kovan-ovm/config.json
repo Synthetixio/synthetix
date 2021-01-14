@@ -71,6 +71,9 @@
 	"SynthetixEscrow": {
 		"deploy": false
 	},
+	"RewardEscrow": {
+		"deploy": false
+	},
 	"RewardsDistribution": {
 		"deploy": false
 	},
