@@ -18,7 +18,7 @@ import "./interfaces/IIssuer.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
+contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
