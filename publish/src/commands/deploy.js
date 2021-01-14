@@ -853,33 +853,7 @@ const deploy = async ({
 		});
 	}
 
-	if (useOvm) {
-		// these values are for the OVM testnet
-		const inflationStartDate = (Math.round(new Date().getTime() / 1000) - 3600 * 24 * 7).toString(); // 1 week ago
-		const fixedPeriodicSupply = w3utils.toWei('50000');
-		const mintPeriod = (3600 * 24 * 7).toString(); // 1 week
-		const mintBuffer = '600'; // 10 minutes
-		const minterReward = w3utils.toWei('100');
-		const supplyEnd = '5'; // allow 4 mints in total
-
-		await deployer.deployContract({
-			// name is supply schedule as it behaves as supply schedule in the address resolver
-			name: 'SupplySchedule',
-			source: 'FixedSupplySchedule',
-			args: [
-				account,
-				addressOf(readProxyForResolver),
-				inflationStartDate,
-				'0',
-				'0',
-				mintPeriod,
-				mintBuffer,
-				fixedPeriodicSupply,
-				supplyEnd,
-				minterReward,
-			],
-		});
-	} else {
+	if (!useOvm) {
 		const supplySchedule = await deployer.deployContract({
 			name: 'SupplySchedule',
 			args: [account, currentLastMintEvent, currentWeekOfInflation],
