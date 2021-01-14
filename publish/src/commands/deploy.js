@@ -410,6 +410,7 @@ const deploy = async ({
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
 			: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') + deploymentPath,
+		Provider: providerUrl,
 		'Local build last modified': `${new Date(earliestCompiledTimestamp)} ${yellow(
 			((new Date().getTime() - earliestCompiledTimestamp) / 60000).toFixed(2) + ' mins ago'
 		)}`,
@@ -1355,8 +1356,6 @@ const deploy = async ({
 				toBytes32('sUSD'),
 				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
 				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
-				addressOf(deployer.getExistingContract({ contract: 'ProxyERC20sUSD' })),
-				18,
 			],
 		});
 
@@ -1723,9 +1722,10 @@ const deploy = async ({
 		// override individual currencyKey / synths exchange rates
 		const synthExchangeRateOverride = {
 			sETH: w3utils.toWei('0.003'),
-			iETH: w3utils.toWei('0.003'),
+			iETH: w3utils.toWei('0.007'),
 			sBTC: w3utils.toWei('0.003'),
 			iBTC: w3utils.toWei('0.003'),
+			iBNB: w3utils.toWei('0.021'),
 		};
 
 		const synthsRatesToUpdate = synths

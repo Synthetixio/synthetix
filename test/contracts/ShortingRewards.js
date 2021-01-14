@@ -104,21 +104,11 @@ contract('ShortingRewards', accounts => {
 		await sETHSynth.issue(receiver, issueAmount, { from: owner });
 	};
 
-	const deployShort = async ({
-		state,
-		owner,
-		manager,
-		resolver,
-		collatKey,
-		minColat,
-		minSize,
-		underCon,
-		decimals,
-	}) => {
+	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
@@ -184,8 +174,6 @@ contract('ShortingRewards', accounts => {
 			collatKey: sUSD,
 			minColat: toUnit(1.5),
 			minSize: toUnit(0.1),
-			underCon: sUSDSynth.address,
-			decimals: 18,
 		});
 
 		await state.setAssociatedContract(short.address, { from: owner });
@@ -493,8 +481,6 @@ contract('ShortingRewards', accounts => {
 		});
 
 		it('partial liquidation reduces the balannce', async () => {
-			const initialStakeBal = await shortingRewards.balanceOf(account1);
-
 			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
 			id = await getid(tx);
 
@@ -512,7 +498,7 @@ contract('ShortingRewards', accounts => {
 
 			const postStakeBal = await shortingRewards.balanceOf(account1);
 
-			// Should be back to 0
+			// Should be at 0.9 now
 			assert.bnEqual(postStakeBal, toUnit(0.9));
 		});
 	});

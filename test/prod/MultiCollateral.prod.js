@@ -29,6 +29,13 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 	let network, deploymentPath;
 
+	const oldEthAddress = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
+	const oldRenAddress = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
+	const oldShortAddress = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
+
+	let oldContractsOnly = false;
+	let loansAccount;
+
 	let CollateralManager,
 		CollateralManagerState,
 		CollateralErc20,
@@ -100,12 +107,24 @@ contract('MultiCollateral (prod tests)', accounts => {
 			fromAccount: owner,
 			network,
 		});
+
 		await ensureAccountHassETH({
 			amount: toUnit('2'),
 			account: user1,
 			fromAccount: owner,
 			network,
 		});
+
+		if (network === 'mainnet') {
+			loansAccount = knownAccounts[network].find(a => a.name === 'loansAccount').address;
+
+			await ensureAccountHassUSD({
+				amount: toUnit('1000'),
+				account: loansAccount,
+				fromAccount: owner,
+				network,
+			});
+		}
 	});
 
 	describe('general multicollateral state', () => {
@@ -121,6 +140,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('2'),
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
+			oldAddress: oldEthAddress,
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -129,6 +149,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: Web3.utils.toBN('1000000000'), // 10 renBTC (renBTC uses 8 decimals)
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
+			oldAddress: oldRenAddress,
 		});
 
 		itCorrectlyManagesLoansWith({
@@ -137,6 +158,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('1000'),
 			borrowCurrency: 'sETH',
 			amountToBorrow: toUnit('0.01'),
+			oldAddress: oldShortAddress,
 		});
 	});
 
@@ -146,6 +168,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		amountToDeposit,
 		borrowCurrency,
 		amountToBorrow,
+		oldAddress,
 	}) {
 		let CollateralContract, CollateralStateContract;
 
@@ -154,7 +177,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		describe(`when using ${type} to deposit ${amountToDeposit.toString()} ${collateralCurrency} and borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
 			let tx;
 
-			before('retrieve the collateral/state contract pair', async () => {
+			before('retrieve the collateral/state contract pair', async function() {
 				switch (type) {
 					case 'CollateralEth':
 						CollateralContract = CollateralEth;
@@ -167,6 +190,11 @@ contract('MultiCollateral (prod tests)', accounts => {
 						break;
 					default:
 						throw new Error(`Unsupported collateral type ${type}`);
+				}
+
+				if (CollateralContract.address === oldAddress) {
+					oldContractsOnly = true;
+					this.skip();
 				}
 
 				CollateralStateContract = await artifacts
@@ -221,14 +249,16 @@ contract('MultiCollateral (prod tests)', accounts => {
 
 						await renBTC.approve(CollateralContract.address, toUnit('10000'), { from: user1 });
 
-						tx = await CollateralContract.open(
-							amountToDeposit,
-							amountToBorrow,
-							borrowCurrencyBytes,
-							{
-								from: user1,
-							}
-						);
+						if (!oldContractsOnly) {
+							tx = await CollateralContract.open(
+								amountToDeposit,
+								amountToBorrow,
+								borrowCurrencyBytes,
+								{
+									from: user1,
+								}
+							);
+						}
 					} else if (type === 'CollateralShort') {
 						await SynthsUSD.approve(CollateralContract.address, toUnit('10000'), { from: user1 });
 
@@ -403,4 +433,66 @@ contract('MultiCollateral (prod tests)', accounts => {
 			});
 		});
 	}
+
+	describe('old contracts still work', () => {
+		it('has the old and new contracts in the manager', async () => {
+			if (network === 'mainnet' && !oldContractsOnly) {
+				const result = await CollateralManager.hasAllCollaterals([
+					oldEthAddress,
+					oldRenAddress,
+					oldShortAddress,
+					CollateralEth.address,
+					CollateralErc20.address,
+					CollateralShort.address,
+				]);
+				assert.isTrue(result);
+			}
+		});
+
+		it('interacting with a loan on the old ETH contract works', async () => {
+			if (network === 'mainnet') {
+				const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
+				const period = await oldEthContract.interactionDelay();
+				// First loan was opened by SNX test account.
+				const id = 1;
+				const repayAmount = toUnit(100);
+				let tx = await oldEthContract.repay(loansAccount, id, repayAmount, {
+					from: loansAccount,
+				});
+
+				let event = tx.receipt.logs.find(l => l.event === 'LoanRepaymentMade');
+
+				assert.equal(event.args.account, loansAccount);
+				assert.equal(event.args.repayer, loansAccount);
+				assert.equal(event.args.id, id);
+				assert.bnEqual(event.args.amountRepaid, repayAmount);
+
+				const withdrawAmount = toUnit(0.5);
+				const amountRemaining = toUnit(1.5);
+
+				await fastForward(period.toString());
+
+				tx = await oldEthContract.withdraw(id, withdrawAmount, {
+					from: loansAccount,
+				});
+
+				event = tx.receipt.logs.find(l => l.event === 'CollateralWithdrawn');
+
+				assert.equal(event.args.account, loansAccount);
+				assert.bnEqual(event.args.amountWithdrawn, withdrawAmount);
+				assert.bnEqual(event.args.collateralAfter, amountRemaining);
+
+				await fastForward(period.toString());
+
+				tx = await oldEthContract.close(id, {
+					from: loansAccount,
+				});
+
+				event = tx.receipt.logs.find(l => l.event === 'LoanClosed');
+
+				assert.equal(event.args.account, loansAccount);
+				assert.equal(event.args.id, id);
+			}
+		});
+	});
 });

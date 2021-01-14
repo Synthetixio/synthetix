@@ -2,17 +2,17 @@
 	{
 		"name": "sETHUniswapV1",
 		"stakingToken": "0xe9cf7887b93150d4f2da7dfc6d502b216438f244",
-		"rewardsToken": "Synthetix"
+		"rewardsToken": "ProxyERC20"
 	},
 	{
 		"name": "sXAUUniswapV2",
 		"stakingToken": "0x34a0216C5057bC18e5d34D4405284564eFd759b2",
-		"rewardsToken": "Synthetix"
+		"rewardsToken": "ProxyERC20"
 	},
 	{
 		"name": "sUSDCurve",
 		"stakingToken": "0xc25a3a3b969415c80451098fa907ec722572917f",
-		"rewardsToken": "Synthetix"
+		"rewardsToken": "ProxyERC20"
 	},
 	{
 		"name": "sBTCCurve",
@@ -22,16 +22,21 @@
 	{
 		"name": "iETH",
 		"stakingToken": "ProxyiETH",
-		"rewardsToken": "Synthetix"
+		"rewardsToken": "ProxyERC20"
 	},
 	{
 		"name": "iBTC",
 		"stakingToken": "ProxyiBTC",
-		"rewardsToken": "Synthetix"
+		"rewardsToken": "ProxyERC20"
+	},
+	{
+		"name": "sEURCurve",
+		"stakingToken": "0x194eBd173F6cDacE046C53eACcE9B953F28411d1",
+		"rewardsToken": "ProxyERC20"
 	},
 	{
 		"name": "SNXBalancer",
 		"stakingToken": "0x815f8ef4863451f4faf34fbc860034812e7377d9",
-		"rewardsToken": "Synthetix"
+		"rewardsToken": "ProxyERC20"
 	}
 ]
