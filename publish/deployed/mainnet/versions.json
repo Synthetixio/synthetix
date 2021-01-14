@@ -2904,5 +2904,20 @@
 				"keccak256": "0x887fbc76ddd8d83f704e96ada13cdc7f01adf45c2bff445a83b721780bfe1479"
 			}
 		}
+	},
+	"v2.36.0-alpha": {
+		"tag": "v2.36.0-alpha",
+		"fulltag": "v2.36.0-alpha",
+		"release": "Castor",
+		"network": "mainnet",
+		"date": "2021-01-14T06:03:45+11:00",
+		"commit": "e0b70b7f704771c45e3ab3fefc9850ee21baa1f0",
+		"contracts": {
+			"StakingRewardssEURCurve": {
+				"address": "0xc0d8994Cd78eE1980885DF1A0C5470fC977b5cFe",
+				"status": "current",
+				"keccak256": "0x887fbc76ddd8d83f704e96ada13cdc7f01adf45c2bff445a83b721780bfe1479"
+			}
+		}
 	}
 }
