@@ -115,5 +115,11 @@
 	},
 	"TokenStatesUSD": {
 		"deploy": false
+	},
+	"CollateralManager": {
+		"deploy": false
+	},
+	"RewardEscrowV2": {
+		"deploy": false
 	}
 }
