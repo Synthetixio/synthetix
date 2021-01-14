@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -53,6 +53,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				'appendVestingEntry',
 				'startMergingWindow',
 				'setAccountMergingDuration',
+				'setMaxAccountMergingWindow',
 				'setMaxEscrowDuration',
 				'nominateAccountToMerge',
 				'mergeAccount',
@@ -183,15 +184,6 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 					// escrowAmount is 10
 					assert.bnEqual(vestingEntry.escrowAmount, escrowAmount);
-
-					// remainingAmount is 10
-					assert.bnEqual(vestingEntry.remainingAmount, escrowAmount);
-
-					// duration is 1 year
-					assert.bnEqual(vestingEntry.duration, duration);
-
-					// last vested timestamp is 0
-					assert.bnEqual(vestingEntry.lastVested, new BN(0));
 				});
 				it('Should increment the nextEntryID', async () => {
 					assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
@@ -209,113 +201,27 @@ contract('BaseRewardEscrowV2', async accounts => {
 					assert.bnEqual(await baseRewardEscrowV2.numVestingEntries(account1), new BN(1));
 				});
 				describe('When 6 months has passed', () => {
-					let vestingEntry, timeElapsed;
+					let timeElapsed;
 					beforeEach(async () => {
 						timeElapsed = YEAR / 2;
 						await fastForward(timeElapsed);
-						vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
 					});
-					it('last vested timestamp on entry is 0', async () => {
-						assert.bnEqual(vestingEntry.lastVested, new BN(0));
-					});
-					it('remaining amount is same as the escrowAmount', async () => {
-						assert.bnEqual(vestingEntry.remainingAmount, escrowAmount);
-					});
-					it('then the timeSinceLastVested the vesting entry is 1/2 year', async () => {
-						const delta = await baseRewardEscrowV2.timeSinceLastVested(account1, entryID);
-						assert.bnEqual(delta, vestingEntry.duration.div(new BN(2)));
-					});
-					it('then the vesting entry has 1/2 year * ratePerSecond claimable', async () => {
-						const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
-						const expectedAmount = ratePerSecond.mul(new BN(timeElapsed));
+					it('then the vesting entry has 0 snx claimable', async () => {
 						const claimable = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
-						assert.bnEqual(claimable, expectedAmount);
+						assert.bnEqual(claimable, 0);
 					});
 				});
-				describe('When one year has passed', () => {
+				describe('When one year has passed after the vesting end time', () => {
 					let vestingEntry;
 					beforeEach(async () => {
 						await fastForward(YEAR + 1);
 						vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
 					});
-					it('last vested timestamp on entry is 0', async () => {
-						assert.bnEqual(vestingEntry.lastVested, new BN(0));
-					});
-					it('remaining amount is same as the escrowAmount', async () => {
-						assert.bnEqual(vestingEntry.remainingAmount, escrowAmount);
-					});
-					it('then the timeSinceLastVested the vesting entry is the whole duration (1 year)', async () => {
-						const delta = await baseRewardEscrowV2.timeSinceLastVested(account1, entryID);
-						assert.bnEqual(delta, vestingEntry.duration);
-					});
 					it('then the vesting entry is fully claimable', async () => {
 						const claimable = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
-						assert.bnEqual(claimable, escrowAmount);
+						assert.bnEqual(claimable, vestingEntry.escrowAmount);
 					});
 				});
-			});
-		});
-
-		describe('Calculating the ratePerSecond emission of each entry', () => {
-			beforeEach(async () => {
-				// Transfer of SNX to the escrow must occur before creating an entry
-				mocks['Synthetix'].smocked.balanceOf.will.return.with(parseEther('31556926'));
-			});
-			it('should be 1 SNX per second with entry of 31556926 SNX for 1 year (31556926 seconds) duration', async () => {
-				const duration = 1 * YEAR;
-				const expectedRatePerSecond = toUnit(1);
-
-				const entryID = await baseRewardEscrowV2.nextEntryId();
-
-				await baseRewardEscrowV2.appendVestingEntry(account1, toUnit('31556926'), duration, {
-					from: feePoolAccount,
-				});
-
-				const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
-
-				assert.bnEqual(ratePerSecond, expectedRatePerSecond);
-			});
-			it('should be 0.5 SNX per second with entry of 15,778,463 SNX for 1 year (31556926 seconds) duration', async () => {
-				const duration = 1 * YEAR;
-				const expectedRatePerSecond = toUnit('0.5');
-
-				const entryID = await baseRewardEscrowV2.nextEntryId();
-
-				await baseRewardEscrowV2.appendVestingEntry(account1, toUnit('15778463'), duration, {
-					from: feePoolAccount,
-				});
-
-				const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
-
-				assert.bnEqual(ratePerSecond, expectedRatePerSecond);
-			});
-			it('should be 0.25 SNX per second with entry of 7,889,231.5 SNX for 1 year (31556926 seconds) duration', async () => {
-				const duration = 1 * YEAR;
-				const expectedRatePerSecond = toUnit('0.25');
-
-				const entryID = await baseRewardEscrowV2.nextEntryId();
-
-				await baseRewardEscrowV2.appendVestingEntry(account1, toUnit('7889231.5'), duration, {
-					from: feePoolAccount,
-				});
-
-				const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
-
-				assert.bnEqual(ratePerSecond, expectedRatePerSecond);
-			});
-			it('should return very small amount SNX per second with escrow amount of 31556927 wei for 1 year (31556926 seconds) duration', async () => {
-				const duration = 1 * YEAR;
-				const expectedRatePerSecond = web3.utils.toWei('1', 'wei');
-
-				const entryID = await baseRewardEscrowV2.nextEntryId();
-
-				await baseRewardEscrowV2.appendVestingEntry(account1, new BN(31556927), duration, {
-					from: feePoolAccount,
-				});
-
-				const ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
-
-				assert.bnEqual(ratePerSecond, expectedRatePerSecond);
 			});
 		});
 	});
@@ -334,10 +240,21 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 			duration = 1 * YEAR;
 		});
-		it('should revert if escrow quanity is equal or less than duration seconds, as will result in 0 ratePerSecond', async () => {
+		it('should revert if escrow duration is greater than max_duration', async () => {
+			const maxDuration = await baseRewardEscrowV2.max_duration();
 			await assert.revert(
-				baseRewardEscrowV2.createEscrowEntry(account1, new BN(1000), duration, { from: owner }),
-				'Escrow quantity less than duration'
+				baseRewardEscrowV2.createEscrowEntry(account1, new BN(1000), maxDuration + 10, {
+					from: owner,
+				}),
+				'Cannot escrow with 0 duration OR above max_duration'
+			);
+		});
+		it('should revert if escrow duration is 0', async () => {
+			await assert.revert(
+				baseRewardEscrowV2.createEscrowEntry(account1, new BN(1000), 0, {
+					from: owner,
+				}),
+				'Cannot escrow with 0 duration OR above max_duration'
 			);
 		});
 		it('should revert when beneficiary is address zero', async () => {
@@ -380,15 +297,6 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 				// escrowAmount is 10
 				assert.bnEqual(vestingEntry.escrowAmount, escrowAmount);
-
-				// remainingAmount is 10
-				assert.bnEqual(vestingEntry.remainingAmount, escrowAmount);
-
-				// duration is 1 year
-				assert.bnEqual(vestingEntry.duration, duration);
-
-				// last vested timestamp is 0
-				assert.bnEqual(vestingEntry.lastVested, new BN(0));
 			});
 			it('Should increment the nextEntryID', async () => {
 				assert.bnEqual(nextEntryIdAfter, entryID.add(new BN(1)));
@@ -441,10 +349,10 @@ contract('BaseRewardEscrowV2', async accounts => {
 				from: owner,
 			});
 		});
-		describe('Partial vesting of vesting entry after 6 months', () => {
+		describe('Vesting of vesting entry after 6 months (before escrow ends)', () => {
 			const duration = 1 * YEAR;
 
-			let escrowAmount, timeElapsed, entryID, ratePerSecond, claimableSNX;
+			let escrowAmount, timeElapsed, entryID, claimableSNX;
 			beforeEach(async () => {
 				escrowAmount = toUnit('1000');
 				timeElapsed = 26 * WEEK;
@@ -458,8 +366,6 @@ contract('BaseRewardEscrowV2', async accounts => {
 
 				// Need to go into the future to vest
 				await fastForward(timeElapsed);
-
-				ratePerSecond = await baseRewardEscrowV2.ratePerSecond(account1, entryID);
 			});
 
 			it('should vest 0 amount if entryID does not exist for user', async () => {
@@ -485,15 +391,15 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(totalVestedAccountBalance, toUnit('0'));
 			});
 
-			it('should have 50% of the vesting entry claimable', async () => {
-				const expectedAmount = ratePerSecond.mul(new BN(timeElapsed));
+			it('should have 0% of the vesting entry claimable', async () => {
+				const expectedAmount = 0;
 				assert.bnEqual(
 					await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID),
 					expectedAmount
 				);
 			});
 
-			it('should vest and transfer snx from contract to the user', async () => {
+			it('should vest and transfer 0 SNX from contract to the user', async () => {
 				claimableSNX = await baseRewardEscrowV2.getVestingEntryClaimable(account1, entryID);
 
 				const escrowBalanceBefore = await mockedSynthetix.balanceOf(baseRewardEscrowV2.address);
@@ -508,69 +414,37 @@ contract('BaseRewardEscrowV2', async accounts => {
 				// Vest
 				await baseRewardEscrowV2.vest([entryID], { from: account1 });
 
-				// Check user has the claimable vested SNX
-				assert.bnGte(await mockedSynthetix.balanceOf(account1), claimableSNX);
+				// Check user has the 0 vested SNX
+				assert.bnEqual(await mockedSynthetix.balanceOf(account1), 0);
 
-				// Check rewardEscrow contract has less SNX
-				assert.bnLte(
+				// Check rewardEscrow contract has same amount of SNX
+				assert.bnEqual(
 					await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
 					escrowBalanceBefore
 				);
 
 				const vestingEntryAfter = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
 
-				const vestedAmount = vestingEntryAfter.escrowAmount.sub(vestingEntryAfter.remainingAmount);
+				// claimableSNX is 0
+				assert.bnEqual(claimableSNX, 0);
 
-				// contract total escrowed balance reduced by vested amount
-				assert.bnEqual(
-					await baseRewardEscrowV2.totalEscrowedBalance(),
-					totalEscrowedBalanceBefore.sub(vestedAmount)
-				);
+				// same total escrowed balance
+				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), totalEscrowedBalanceBefore);
 
-				// user totalEscrowedAccountBalance is reduced
+				// same user totalEscrowedAccountBalance
 				assert.bnEqual(
 					await baseRewardEscrowV2.totalEscrowedAccountBalance(account1),
-					accountEscrowedBalanceBefore.sub(vestedAmount)
+					accountEscrowedBalanceBefore
 				);
 
-				// user totalVestedAccountBalance is increased by vested amount
+				// user totalVestedAccountBalance is same
 				assert.bnEqual(
 					await baseRewardEscrowV2.totalVestedAccountBalance(account1),
-					accountTotalVestedBefore.add(vestedAmount)
+					accountTotalVestedBefore
 				);
-			});
 
-			it('should vest entryID 1 and update vesting entry', async () => {
-				const now = await currentTime();
-
-				// Vest
-				await baseRewardEscrowV2.vest([entryID], { from: account1 });
-
-				// Get vesting entry after
-				const vestingEntry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
-
-				// lastVested is currentTime + 1 second
-				assert.bnEqual(vestingEntry.lastVested, now + 1);
-
-				// escrowAmount remains the same
-				assert.bnEqual(vestingEntry.escrowAmount, escrowAmount);
-			});
-
-			it('should vest and emit a Vest event', async () => {
-				const vestTransaction = await baseRewardEscrowV2.vest([entryID], {
-					from: account1,
-				});
-
-				const vestingEntryAfter = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
-
-				const vestedAmount = vestingEntryAfter.escrowAmount.sub(vestingEntryAfter.remainingAmount);
-
-				// Vested(msg.sender, now, total);
-				const vestedEvent = vestTransaction.logs.find(log => log.event === 'Vested');
-				assert.eventEqual(vestedEvent, 'Vested', {
-					beneficiary: account1,
-					value: vestedAmount,
-				});
+				// escrow amount still same on entry
+				assert.bnEqual(vestingEntryAfter.escrowAmount, escrowAmount);
 			});
 		});
 
@@ -655,6 +529,15 @@ contract('BaseRewardEscrowV2', async accounts => {
 				// There should be no Escrowed balance left in the contract
 				assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), toUnit('0'));
 			});
+			it('should vest and update entryID.escrowAmount to 0', async () => {
+				await baseRewardEscrowV2.vest([entryID], {
+					from: account1,
+				});
+
+				// There should be no escrowedAmount on entry
+				const entry = await baseRewardEscrowV2.getVestingEntry(account1, entryID);
+				assert.bnEqual(entry.escrowAmount, toUnit('0'));
+			});
 		});
 
 		describe('Vesting multiple vesting entries', () => {
@@ -693,7 +576,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(numOfEntries, new BN(3));
 			});
 
-			describe('When another user vests all entries but dont exist for them', () => {
+			describe('When another user (account 1) vests all their entries', () => {
 				it('should vest all entries and transfer snx to the user', async () => {
 					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
 						from: account2,
@@ -802,6 +685,178 @@ contract('BaseRewardEscrowV2', async accounts => {
 				assert.bnEqual(await mockedSynthetix.balanceOf(baseRewardEscrowV2.address), toUnit('0'));
 			});
 		});
+
+		describe('Vesting multiple vesting entries with different duration / end time', () => {
+			const duration = 1 * YEAR;
+			let escrowAmount1, escrowAmount2, escrowAmount3, entryID1, entryID2, entryID3;
+
+			beforeEach(async () => {
+				escrowAmount1 = toUnit('200');
+				escrowAmount2 = toUnit('300');
+				escrowAmount3 = toUnit('500');
+
+				// Add a few vesting entries as the feepool address
+				entryID1 = await baseRewardEscrowV2.nextEntryId();
+				await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount1, duration, {
+					from: feePoolAccount,
+				});
+				await fastForward(WEEK);
+
+				entryID2 = await baseRewardEscrowV2.nextEntryId();
+				await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount2, duration, {
+					from: feePoolAccount,
+				});
+				await fastForward(WEEK);
+
+				// EntryID3 has a longer duration than other entries
+				const twoYears = 2 * 52 * WEEK;
+				entryID3 = await baseRewardEscrowV2.nextEntryId();
+				await baseRewardEscrowV2.appendVestingEntry(account1, escrowAmount3, twoYears, {
+					from: feePoolAccount,
+				});
+			});
+
+			it('should have three vesting entries for the user', async () => {
+				const numOfEntries = await baseRewardEscrowV2.numVestingEntries(account1);
+				assert.bnEqual(numOfEntries, new BN(3));
+			});
+
+			describe('When another user (account 1) vests all their entries', () => {
+				it('should vest all entries and transfer snx to the user', async () => {
+					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+						from: account2,
+					});
+
+					// Check account1 has no SNX in their balance
+					assert.bnEqual(await mockedSynthetix.balanceOf(account1), toUnit('0'));
+
+					// Check account2 has no SNX in their balance
+					assert.bnEqual(await mockedSynthetix.balanceOf(account2), toUnit('0'));
+
+					// Check rewardEscrow has all the SNX
+					assert.bnEqual(
+						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
+						toUnit('1000')
+					);
+				});
+			});
+
+			describe('when the first two entrys are vestable', () => {
+				beforeEach(async () => {
+					// Need to go into the future to vest first two entries
+					await fastForward(duration + WEEK * 2);
+				});
+
+				it('should vest only first 2 entries and transfer snx from contract to the user', async () => {
+					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
+
+					// Check user has entry1 + entry2 amount
+					assert.bnEqual(
+						await mockedSynthetix.balanceOf(account1),
+						escrowAmount1.add(escrowAmount2)
+					);
+
+					// Check rewardEscrow has remaining entry3 amount
+					assert.bnEqual(
+						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
+						escrowAmount3
+					);
+				});
+
+				it('should vest and emit a Vest event', async () => {
+					const vestTx = await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
+
+					// Vested(msg.sender, now, total);
+					const vestedEvent = vestTx.logs.find(log => log.event === 'Vested');
+					assert.eventEqual(vestedEvent, 'Vested', {
+						beneficiary: account1,
+						value: toUnit('500'),
+					});
+				});
+
+				it('should vest and update totalEscrowedAccountBalance', async () => {
+					// This account should have an escrowedAccountBalance
+					let escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(
+						account1
+					);
+					assert.bnEqual(escrowedAccountBalance, toUnit('1000'));
+
+					// Vest
+					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
+
+					// This account should have any 500 SNX escrowed
+					escrowedAccountBalance = await baseRewardEscrowV2.totalEscrowedAccountBalance(account1);
+					assert.bnEqual(escrowedAccountBalance, escrowAmount3);
+				});
+
+				it('should vest and update totalVestedAccountBalance', async () => {
+					// This account should have zero totalVestedAccountBalance before
+					let totalVestedAccountBalance = await baseRewardEscrowV2.totalVestedAccountBalance(
+						account1
+					);
+					assert.bnEqual(totalVestedAccountBalance, toUnit('0'));
+
+					// Vest
+					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
+
+					// This account should have vested entry 1 and entry 2 amounts
+					totalVestedAccountBalance = await baseRewardEscrowV2.totalVestedAccountBalance(account1);
+					assert.bnEqual(totalVestedAccountBalance, escrowAmount1.add(escrowAmount2));
+				});
+
+				it('should vest and update totalEscrowedBalance', async () => {
+					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
+					// There should be escrowAmount3's Escrowed balance left in the contract
+					assert.bnEqual(await baseRewardEscrowV2.totalEscrowedBalance(), escrowAmount3);
+				});
+
+				it('should vest entryID1 and entryID2 and ignore duplicate attempts to vest same entries again', async () => {
+					// Vest attempt 1
+					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
+
+					// Check user have vested escrowAmount1 and escrowAmount2 SNX
+					assert.bnEqual(
+						await mockedSynthetix.balanceOf(account1),
+						escrowAmount1.add(escrowAmount2)
+					);
+
+					// Check rewardEscrow does has escrowAmount3 SNX
+					assert.bnEqual(
+						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
+						escrowAmount3
+					);
+
+					// Vest attempt 2
+					await baseRewardEscrowV2.vest([entryID1, entryID2, entryID3], {
+						from: account1,
+					});
+
+					// Check user has same amount of SNX
+					assert.bnEqual(
+						await mockedSynthetix.balanceOf(account1),
+						escrowAmount1.add(escrowAmount2)
+					);
+
+					// Check rewardEscrow has same escrowAmount3 SNX
+					assert.bnEqual(
+						await mockedSynthetix.balanceOf(baseRewardEscrowV2.address),
+						escrowAmount3
+					);
+				});
+			});
+		});
 	});
 
 	describe('Read Vesting Schedule', () => {
@@ -839,7 +894,6 @@ contract('BaseRewardEscrowV2', async accounts => {
 			// escrowAmounts should match for the entries in order
 			entries.forEach((entry, i) => {
 				assert.bnEqual(entry.escrowAmount, escrowAmounts[i]);
-				assert.bnEqual(entry.remainingAmount, escrowAmounts[i]);
 				assert.bnEqual(entry.entryID, i + 1);
 			});
 		});
@@ -981,6 +1035,13 @@ contract('BaseRewardEscrowV2', async accounts => {
 				);
 			});
 
+			it('reverts when user nominating their own address', async () => {
+				await assert.revert(
+					baseRewardEscrowV2.nominateAccountToMerge(account1, { from: account1 }),
+					'Cannot nominate own account to merge'
+				);
+			});
+
 			it('should allow account to nominate another destination account', async () => {
 				await baseRewardEscrowV2.nominateAccountToMerge(account2, { from: account1 });
 
@@ -1041,25 +1102,24 @@ contract('BaseRewardEscrowV2', async accounts => {
 				});
 
 				it('should merge entry1 into account 2', async () => {
-					// account 2 totalEscrowedAccountBalance should be increased by entryID1 remainingAmount
+					// account 2 totalEscrowedAccountBalance should be increased by entryID1 escrowAmount
 					assert.bnEqual(
 						await baseRewardEscrowV2.totalEscrowedAccountBalance(account2),
-						entry1.remainingAmount
+						entry1.escrowAmount
 					);
 
-					// account 1 totalEscrowedAccountBalance should be less entryID1 remainingAmount
+					// account 1 totalEscrowedAccountBalance should be less entryID1 escrowAmount
 					assert.bnEqual(
 						await baseRewardEscrowV2.totalEscrowedAccountBalance(account1),
-						account1BalanceBefore.sub(entry1.remainingAmount)
+						account1BalanceBefore.sub(entry1.escrowAmount)
 					);
 
 					// account1's entry for entryID1 should be 0 (not set)
 					const entry1After = await baseRewardEscrowV2.getVestingEntry(account1, entryID1);
-					assert.bnEqual(entry1After.remainingAmount, 0);
-					assert.bnEqual(entry1After.ratePerSecond, 0);
+					assert.bnEqual(entry1After.escrowAmount, 0);
 				});
 
-				it('should have the same totalEscrowedBalance before and after', async () => {
+				it('should have the same contract totalEscrowedBalance before and after', async () => {
 					// totalEscrowedBalanceBefore is same before and after
 					assert.bnEqual(
 						await baseRewardEscrowV2.totalEscrowedBalance(),
@@ -1070,9 +1130,7 @@ contract('BaseRewardEscrowV2', async accounts => {
 				it('should be able to get entry1 from account 2 vestingSchedule', async () => {
 					const entry1OnAccount2 = await baseRewardEscrowV2.getVestingEntry(account2, entryID1);
 					assert.bnEqual(entry1OnAccount2.endTime, entry1.endTime);
-					assert.bnEqual(entry1OnAccount2.duration, entry1.duration);
 					assert.bnEqual(entry1OnAccount2.escrowAmount, entry1.escrowAmount);
-					assert.bnEqual(entry1OnAccount2.ratePerSecond, entry1.ratePerSecond);
 				});
 
 				it('should have added the entryID to account2 accountVestingEntryIDs', async () => {
@@ -1139,29 +1197,29 @@ contract('BaseRewardEscrowV2', async accounts => {
 					await baseRewardEscrowV2.mergeAccount(account1, [entryID1, entryID2], { from: account2 });
 				});
 				it('should merge entry1, entry2 into account 2', async () => {
-					const combinedRemainingAmounts = entry1.remainingAmount.add(entry2.remainingAmount);
+					const combinedEscrowedAmounts = entry1.escrowAmount.add(entry2.escrowAmount);
 
 					// account 2 totalEscrowedAccountBalance should be increased by entryID1 & entryID2 remainingAmount
 					assert.bnEqual(
 						await baseRewardEscrowV2.totalEscrowedAccountBalance(account2),
-						account2BalanceBefore.add(combinedRemainingAmounts)
+						account2BalanceBefore.add(combinedEscrowedAmounts)
 					);
 
 					// account 1 totalEscrowedAccountBalance should be less entryID1 & entryID2 remainingAmount
 					assert.bnEqual(
 						await baseRewardEscrowV2.totalEscrowedAccountBalance(account1),
-						account1BalanceBefore.sub(combinedRemainingAmounts)
+						account1BalanceBefore.sub(combinedEscrowedAmounts)
 					);
 
 					// account1's entry for entryID1 should be 0 (not set)
 					const entry1After = await baseRewardEscrowV2.getVestingEntry(account1, entryID1);
-					assert.bnEqual(entry1After.remainingAmount, 0);
-					assert.bnEqual(entry1After.ratePerSecond, 0);
+					assert.bnEqual(entry1After.escrowAmount, 0);
+					assert.bnEqual(entry1After.endTime, 0);
 
 					// account1's entry for entryID2 should be 0 (not set)
 					const entry2After = await baseRewardEscrowV2.getVestingEntry(account1, entryID2);
-					assert.bnEqual(entry2After.remainingAmount, 0);
-					assert.bnEqual(entry2After.ratePerSecond, 0);
+					assert.bnEqual(entry2After.escrowAmount, 0);
+					assert.bnEqual(entry2After.endTime, 0);
 				});
 				it('should have the same totalEscrowedBalance on escrow contract before and after', async () => {
 					// totalEscrowedBalanceBefore is same before and after
@@ -1173,18 +1231,12 @@ contract('BaseRewardEscrowV2', async accounts => {
 				it('should be able to get entry1 from account 2 vestingSchedule', async () => {
 					const entry1OnAccount2 = await baseRewardEscrowV2.getVestingEntry(account2, entryID1);
 					assert.bnEqual(entry1OnAccount2.endTime, entry1.endTime);
-					assert.bnEqual(entry1OnAccount2.duration, entry1.duration);
 					assert.bnEqual(entry1OnAccount2.escrowAmount, entry1.escrowAmount);
-					assert.bnEqual(entry1OnAccount2.remainingAmount, entry1.remainingAmount);
-					assert.bnEqual(entry1OnAccount2.ratePerSecond, entry1.ratePerSecond);
 				});
 				it('should be able to get entry2 from account 2 vestingSchedule', async () => {
 					const entry2OnAccount2 = await baseRewardEscrowV2.getVestingEntry(account2, entryID2);
 					assert.bnEqual(entry2OnAccount2.endTime, entry2.endTime);
-					assert.bnEqual(entry2OnAccount2.duration, entry2.duration);
 					assert.bnEqual(entry2OnAccount2.escrowAmount, entry2.escrowAmount);
-					assert.bnEqual(entry2OnAccount2.remainingAmount, entry2.remainingAmount);
-					assert.bnEqual(entry2OnAccount2.ratePerSecond, entry2.ratePerSecond);
 				});
 				it('should have added the entryIDs to account2 accountVestingEntryIDs', async () => {
 					assert.bnEqual(await baseRewardEscrowV2.numVestingEntries(account2), new BN(2));
