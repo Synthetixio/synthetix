@@ -910,7 +910,7 @@ const deploy = async ({
 	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
 		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
 		// it is "havven" and the ABI we have here is not sufficient
-		if (network === 'mainnet') {
+		if (network === 'mainnet' && !useOvm) {
 			await runStep({
 				contract: 'SynthetixEscrow',
 				target: synthetixEscrow,

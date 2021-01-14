@@ -302,24 +302,21 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // ========== MODIFIERS ==========
 
-    modifier onlyExchanger() {
-        require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
+    modifier systemActive() {
+        _systemActive();
         _;
     }
 
-    modifier systemActive() {
+    function _systemActive() private {
         systemStatus().requireSystemActive();
-        _;
     }
 
     modifier issuanceActive() {
-        systemStatus().requireIssuanceActive();
+        _issuanceActive();
         _;
     }
 
-    modifier exchangeActive(bytes32 src, bytes32 dest) {
-        systemStatus().requireExchangeActive();
-        systemStatus().requireSynthsActive(src, dest);
-        _;
+    function _issuanceActive() private {
+        systemStatus().requireIssuanceActive();
     }
 }
