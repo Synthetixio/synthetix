@@ -35,6 +35,7 @@ contract('Synthetix', async accounts => {
 		systemSettings,
 		supplySchedule,
 		rewardEscrow,
+		rewardEscrowV2,
 		oracle,
 		addressResolver,
 		systemStatus;
@@ -48,6 +49,7 @@ contract('Synthetix', async accounts => {
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			RewardEscrow: rewardEscrow,
+			RewardEscrowV2: rewardEscrowV2,
 			SupplySchedule: supplySchedule,
 		} = await setupAllContracts({
 			accounts,
@@ -65,6 +67,8 @@ contract('Synthetix', async accounts => {
 				'Exchanger',
 				'RewardsDistribution',
 				'CollateralManager',
+				'RewardEscrowV2', // required for issuer._collateral to read collateral
+				'RewardEscrow',
 			],
 		}));
 
@@ -83,6 +87,7 @@ contract('Synthetix', async accounts => {
 				'emitExchangeReclaim',
 				'emitSynthExchange',
 				'emitExchangeTracking',
+				'migrateEscrowBalanceToRewardEscrowV2',
 			],
 		});
 	});
@@ -549,7 +554,7 @@ contract('Synthetix', async accounts => {
 			assert.equal(newTotalSupplyDecimal.toFixed(2), expectedNewTotalSupply);
 
 			assert.bnEqual(newTotalSupply, existingSupply.add(mintableSupply));
-			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), expectedEscrowBalance);
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrowV2.address), expectedEscrowBalance);
 		});
 
 		it('should allow synthetix contract to mint 2 weeks of supply and minus minterReward', async () => {
@@ -585,7 +590,7 @@ contract('Synthetix', async accounts => {
 			assert.equal(newTotalSupplyDecimal.toFixed(2), expectedNewTotalSupplyDecimal.toFixed(2));
 
 			assert.bnEqual(newTotalSupply, existingSupply.add(mintableSupply));
-			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), expectedEscrowBalance);
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrowV2.address), expectedEscrowBalance);
 		});
 
 		it('should allow synthetix contract to mint the same supply for 39 weeks into the inflation prior to decay', async () => {
@@ -616,7 +621,7 @@ contract('Synthetix', async accounts => {
 			assert.bnClose(mintableSupply, expectedSupplyToMint, 27);
 
 			assert.bnClose(newTotalSupply, existingTotalSupply.add(expectedSupplyToMint), 27);
-			assert.bnClose(await synthetix.balanceOf(rewardEscrow.address), expectedEscrowBalance, 27);
+			assert.bnClose(await synthetix.balanceOf(rewardEscrowV2.address), expectedEscrowBalance, 27);
 		});
 
 		it('should allow synthetix contract to mint 2 weeks into Terminal Inflation', async () => {
@@ -713,6 +718,32 @@ contract('Synthetix', async accounts => {
 
 			// should revert if try to mint again within 7 day period / mintable supply is 0
 			await assert.revert(synthetix.mint(), 'No supply is mintable');
+		});
+	});
+
+	describe('migration - transfer escrow balances to reward escrow v2', () => {
+		let rewardEscrowBalanceBefore;
+		beforeEach(async () => {
+			// transfer SNX to rewardEscrow
+			await synthetix.transfer(rewardEscrow.address, toUnit('100'), { from: owner });
+
+			rewardEscrowBalanceBefore = await synthetix.balanceOf(rewardEscrow.address);
+		});
+		it('should revert if called by non-owner account', async () => {
+			await assert.revert(
+				synthetix.migrateEscrowBalanceToRewardEscrowV2({ from: account1 }),
+				'Only the contract owner may perform this action'
+			);
+		});
+		it('should have transferred reward escrow balance to reward escrow v2', async () => {
+			// call the migrate function
+			await synthetix.migrateEscrowBalanceToRewardEscrowV2({ from: owner });
+
+			// should have transferred balance to rewardEscrowV2
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrowV2.address), rewardEscrowBalanceBefore);
+
+			// rewardEscrow should have 0 balance
+			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), 0);
 		});
 	});
 });

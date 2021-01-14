@@ -67,6 +67,7 @@ contract('Synth', async accounts => {
 				'SystemSettings',
 				'FlexibleStorage',
 				'CollateralManager',
+				'RewardEscrowV2', // required for issuer._collateral() to read collateral
 			],
 		}));
 

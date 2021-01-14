@@ -153,7 +153,7 @@ contract('Rewards Integration Tests', async accounts => {
 			Exchanger: exchanger,
 			DebtCache: debtCache,
 			FeePool: feePool,
-			RewardEscrow: rewardEscrow,
+			RewardEscrowV2: rewardEscrow,
 			SupplySchedule: supplySchedule,
 			Synthetix: synthetix,
 			SynthsUSD: sUSDContract,
@@ -169,7 +169,7 @@ contract('Rewards Integration Tests', async accounts => {
 				'FeePoolEternalStorage', // necessary to claimFees()
 				'FeePoolState', // necessary to claimFees()
 				'DebtCache',
-				'RewardEscrow',
+				'RewardEscrowV2',
 				'RewardsDistribution', // required for Synthetix.mint()
 				'SupplySchedule',
 				'Synthetix',
@@ -241,14 +241,17 @@ contract('Rewards Integration Tests', async accounts => {
 			await feePool.claimFees({ from: account3 });
 
 			// All 3 accounts have 1/3 of the rewards
-			const accOneEscrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnEqual(accOneEscrowed[1], third(periodOneMintableSupplyMinusMinterReward));
+			const accOneEscrowed = await rewardEscrow.getVestingEntry(account1, 1);
+			assert.bnEqual(accOneEscrowed.escrowAmount, third(periodOneMintableSupplyMinusMinterReward));
 
-			const accTwoEscrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-			assert.bnEqual(accTwoEscrowed[1], third(periodOneMintableSupplyMinusMinterReward));
+			const accTwoEscrowed = await rewardEscrow.getVestingEntry(account2, 2);
+			assert.bnEqual(accTwoEscrowed.escrowAmount, third(periodOneMintableSupplyMinusMinterReward));
 
-			const accThreeEscrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-			assert.bnEqual(accThreeEscrowed[1], third(periodOneMintableSupplyMinusMinterReward));
+			const accThreeEscrowed = await rewardEscrow.getVestingEntry(account3, 3);
+			assert.bnEqual(
+				accThreeEscrowed.escrowAmount,
+				third(periodOneMintableSupplyMinusMinterReward)
+			);
 		});
 
 		it('should show the totalRewardsAvailable in the claimable period 1', async () => {
@@ -350,14 +353,14 @@ contract('Rewards Integration Tests', async accounts => {
 			const twoWeeksRewards = third(mintedRewardsSupply).mul(web3.utils.toBN(CLAIMABLE_PERIODS));
 
 			// All 3 accounts have 1/3 of the rewards
-			const accOneEscrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnEqual(accOneEscrowed[1], twoWeeksRewards, '1');
+			const accOneEscrowed = await rewardEscrow.getVestingEntry(account1, 1);
+			assert.bnEqual(accOneEscrowed.escrowAmount, twoWeeksRewards, '1');
 
-			const accTwoEscrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-			assert.bnEqual(accTwoEscrowed[1], twoWeeksRewards, '1');
+			const accTwoEscrowed = await rewardEscrow.getVestingEntry(account2, 2);
+			assert.bnEqual(accTwoEscrowed.escrowAmount, twoWeeksRewards, '1');
 
-			const accThreeEscrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-			assert.bnEqual(accThreeEscrowed[1], twoWeeksRewards, '1');
+			const accThreeEscrowed = await rewardEscrow.getVestingEntry(account3, 3);
+			assert.bnEqual(accThreeEscrowed.escrowAmount, twoWeeksRewards, '1');
 		});
 
 		it('should rollover the unclaimed SNX rewards', async () => {
@@ -499,8 +502,8 @@ contract('Rewards Integration Tests', async accounts => {
 			// [1] -------------------------------------------------------
 
 			// Assert Account 1 has their rewards
-			const account1EscrowEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnEqual(account1EscrowEntry[1], rewardsAmount);
+			const account1EscrowEntry = await rewardEscrow.getVestingEntry(account1, 1);
+			assert.bnEqual(account1EscrowEntry.escrowAmount, rewardsAmount);
 		});
 
 		it('should allocate correct SNX rewards as others leave the system', async () => {
@@ -512,8 +515,12 @@ contract('Rewards Integration Tests', async accounts => {
 			await feePool.claimFees({ from: account1 });
 
 			// All Account 1 has 1/3 of the rewards escrowed
-			const account1Escrowed = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnClose(account1Escrowed[1], third(periodOneMintableSupplyMinusMinterReward), 1);
+			const account1Escrowed = await rewardEscrow.getVestingEntry(account1, 1);
+			assert.bnClose(
+				account1Escrowed.escrowAmount,
+				third(periodOneMintableSupplyMinusMinterReward),
+				1
+			);
 
 			// Account 1 leaves the system
 			const burnableTotal = await synthetix.debtBalanceOf(account1, sUSD);
@@ -563,12 +570,12 @@ contract('Rewards Integration Tests', async accounts => {
 			await feePool.claimFees({ from: account3 });
 
 			// Accounts 2 & 3 now have the rewards escrowed
-			const account2Escrowed = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-			// console.log('account2Escrowed[1]', account2Escrowed[1].toString());
-			assert.bnClose(account2Escrowed[1], rewardsAmount, '1');
-			const account3Escrowed = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-			// console.log('account3Escrowed[1]', account2Escrowed[1].toString());
-			assert.bnClose(account3Escrowed[1], rewardsAmount, '1');
+			const account2Escrowed = await rewardEscrow.getVestingEntry(account2, 2);
+			// console.log('account2Escrowed[3]', account2Escrowed[1].toString());
+			assert.bnClose(account2Escrowed.escrowAmount, rewardsAmount, '1');
+			const account3Escrowed = await rewardEscrow.getVestingEntry(account3, 3);
+			// console.log('account3Escrowed[3]', account2Escrowed[1].toString());
+			assert.bnClose(account3Escrowed.escrowAmount, rewardsAmount, '1');
 		});
 	});
 
@@ -600,13 +607,21 @@ contract('Rewards Integration Tests', async accounts => {
 			await feePool.claimFees({ from: account2 });
 
 			// Assert Accounts 1&2 have 50% of the minted rewards in their initial escrow entry
-			const account1Escrow = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			// console.log('account1Escrow[1]', account1Escrow[1].toString());
-			assert.bnClose(account1Escrow[1], half(periodOneMintableSupplyMinusMinterReward), 1);
+			const account1Escrow = await rewardEscrow.getVestingEntry(account1, 1);
+			// console.log('account1Escrow[3]', account1Escrow[3].toString());
+			assert.bnClose(
+				account1Escrow.escrowAmount,
+				half(periodOneMintableSupplyMinusMinterReward),
+				1
+			);
 
-			const account2Escrow = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-			// console.log('account2Escrow[1]', account2Escrow[1].toString());
-			assert.bnClose(account2Escrow[1], half(periodOneMintableSupplyMinusMinterReward), 1);
+			const account2Escrow = await rewardEscrow.getVestingEntry(account2, 2);
+			// console.log('account2Escrow[3]', account2Escrow[3].toString());
+			assert.bnClose(
+				account2Escrow.escrowAmount,
+				half(periodOneMintableSupplyMinusMinterReward),
+				1
+			);
 
 			// Increase sBTC price by 100%
 			const timestamp = await currentTime();
@@ -667,28 +682,28 @@ contract('Rewards Integration Tests', async accounts => {
 			// await logFeePeriods();
 
 			// Assert (1,2,3) have (40%,40%,20%) of the rewards in their 2nd escrow entry
-			const account1EscrowEntry2 = await rewardEscrow.getVestingScheduleEntry(account1, 1);
-			const account2EscrowEntry2 = await rewardEscrow.getVestingScheduleEntry(account2, 1);
-			const account3EscrowEntry1 = await rewardEscrow.getVestingScheduleEntry(account3, 0); // Account3's first escrow entry
-			// console.log('account1EscrowEntry2[1]', account1EscrowEntry2[1].toString());
+			const account1EscrowEntry2 = await rewardEscrow.getVestingEntry(account1, 3);
+			const account2EscrowEntry2 = await rewardEscrow.getVestingEntry(account2, 4);
+			const account3EscrowEntry1 = await rewardEscrow.getVestingEntry(account3, 5); // Account3's first escrow entry
+			// console.log('account1EscrowEntry2[3]', account1EscrowEntry2[3].toString());
 			// console.log(
 			// 	'twoFifths(periodTwoMintableSupply)',
 			// 	twoFifths(periodTwoMintableSupply).toString()
 			// );
-			// console.log('account2EscrowEntry2[1]', account2EscrowEntry2[1].toString());
+			// console.log('account2EscrowEntry2[3]', account2EscrowEntry2[3].toString());
 			// console.log(
 			// 	'twoFifths(periodTwoMintableSupply)',
 			// 	twoFifths(periodTwoMintableSupply).toString()
 			// );
-			// console.log('account3EscrowEntry1[1]', account3EscrowEntry1[1].toString());
+			// console.log('account3EscrowEntry1[3]', account3EscrowEntry1[3].toString());
 			// console.log(
 			// 	'oneFifth(periodTwoMintableSupply)',
 			// 	oneFifth(periodTwoMintableSupply).toString()
 			// );
 
-			assert.bnClose(account1EscrowEntry2[1], twoFifths(periodTwoMintableSupply));
-			assert.bnClose(account2EscrowEntry2[1], twoFifths(periodTwoMintableSupply));
-			assert.bnClose(account3EscrowEntry1[1], oneFifth(periodTwoMintableSupply), 17);
+			assert.bnClose(account1EscrowEntry2.escrowAmount, twoFifths(periodTwoMintableSupply));
+			assert.bnClose(account2EscrowEntry2.escrowAmount, twoFifths(periodTwoMintableSupply));
+			assert.bnClose(account3EscrowEntry1.escrowAmount, oneFifth(periodTwoMintableSupply), 17);
 
 			// Commenting out this logic for now (v2.14.x) - needs to be relooked at -JJ
 
@@ -730,7 +745,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// await logFeePeriods();
 
 			// Account2 should have 67% of the minted rewards
-			// const account2Escrow3 = await rewardEscrow.getVestingScheduleEntry(account2, 2); // Account2's 3rd escrow entry
+			// const account2Escrow3 = await rewardEscrow.getVestingEntry(account2, 2); // Account2's 3rd escrow entry
 			// console.log('account2Escrow3[1]', account2Escrow3[1].toString());
 			// console.log(
 			// 	'twoThirds(periodThreeMintableSupply)',
@@ -740,7 +755,7 @@ contract('Rewards Integration Tests', async accounts => {
 			// assert.bnEqual(account2Escrow3[1], twoFifths(periodThreeMintableSupply));
 
 			// // Account3 should have 33% of the minted rewards
-			// const account3Escrow2 = await rewardEscrow.getVestingScheduleEntry(account3, 1); // Account3's 2nd escrow entry
+			// const account3Escrow2 = await rewardEscrow.getVestingEntry(account3, 1); // Account3's 2nd escrow entry
 			// console.log('account3Escrow3[1]', account3Escrow2[1].toString());
 			// console.log(
 			// 	'third(periodThreeMintableSupply)',
@@ -772,9 +787,9 @@ contract('Rewards Integration Tests', async accounts => {
 			// await feePool.claimFees({ from: account3 });
 
 			// // Assert (1,2,3) have (40%,40%,20%) of the rewards in their 2nd escrow entry
-			// const account1EscrowEntry4 = await rewardEscrow.getVestingScheduleEntry(account1, 1);
-			// const account2EscrowEntry4 = await rewardEscrow.getVestingScheduleEntry(account2, 1);
-			// const account3EscrowEntry3 = await rewardEscrow.getVestingScheduleEntry(account3, 0); // Account3's first escrow entry
+			// const account1EscrowEntry4 = await rewardEscrow.getVestingEntry(account1, 1);
+			// const account2EscrowEntry4 = await rewardEscrow.getVestingEntry(account2, 1);
+			// const account3EscrowEntry3 = await rewardEscrow.getVestingEntry(account3, 0); // Account3's first escrow entry
 			// console.log('account1EscrowEntry4[1]', account1EscrowEntry4[1].toString());
 			// console.log('account1EscrowEntry4[1]', account2EscrowEntry4[1].toString());
 			// console.log('account1EscrowEntry4[1]', account3EscrowEntry3[1].toString());
@@ -809,12 +824,12 @@ contract('Rewards Integration Tests', async accounts => {
 			await feePool.claimFees({ from: account3 });
 
 			// Assert Accounts 1 has 50% & 2&3 have 25% of the minted rewards in their initial escrow entry
-			const account1Escrow = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			const account2Escrow = await rewardEscrow.getVestingScheduleEntry(account2, 0);
-			const account3Escrow = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-			// console.log('account1Escrow[1]', account1Escrow[1].toString());
-			// console.log('account2Escrow[1]', account2Escrow[1].toString());
-			// console.log('account3Escrow[1]', account3Escrow[1].toString());
+			const account1Escrow = await rewardEscrow.getVestingEntry(account1, 1);
+			const account2Escrow = await rewardEscrow.getVestingEntry(account2, 2);
+			const account3Escrow = await rewardEscrow.getVestingEntry(account3, 3);
+			// console.log('account1Escrow[3]', account1Escrow[3].toString());
+			// console.log('account2Escrow[3]', account2Escrow[3].toString());
+			// console.log('account3Escrow[3]', account3Escrow[3].toString());
 			// console.log(
 			// 	'half(periodOneMintableSupplyMinusMinterReward',
 			// 	half(periodOneMintableSupplyMinusMinterReward).toString()
@@ -823,9 +838,21 @@ contract('Rewards Integration Tests', async accounts => {
 			// 	'quarter(periodOneMintableSupplyMinusMinterReward)',
 			// 	quarter(periodOneMintableSupplyMinusMinterReward).toString()
 			// );
-			assert.bnClose(account1Escrow[1], half(periodOneMintableSupplyMinusMinterReward), 49);
-			assert.bnClose(account2Escrow[1], quarter(periodOneMintableSupplyMinusMinterReward), 26);
-			assert.bnClose(account3Escrow[1], quarter(periodOneMintableSupplyMinusMinterReward), 24);
+			assert.bnClose(
+				account1Escrow.escrowAmount,
+				half(periodOneMintableSupplyMinusMinterReward),
+				49
+			);
+			assert.bnClose(
+				account2Escrow.escrowAmount,
+				quarter(periodOneMintableSupplyMinusMinterReward),
+				26
+			);
+			assert.bnClose(
+				account3Escrow.escrowAmount,
+				quarter(periodOneMintableSupplyMinusMinterReward),
+				24
+			);
 
 			// Acc1 Burns all
 			await synthetix.burnSynths(twentyK, { from: account1 });
@@ -860,17 +887,17 @@ contract('Rewards Integration Tests', async accounts => {
 			await feePool.claimFees({ from: account3 });
 
 			// Assert Accounts 2&3 have 25% of the minted rewards in their initial escrow entry
-			const account1Escrow2 = await rewardEscrow.getVestingScheduleEntry(account1, 1);
-			const account2Escrow2 = await rewardEscrow.getVestingScheduleEntry(account2, 1);
-			const account3Escrow2 = await rewardEscrow.getVestingScheduleEntry(account3, 1);
-			// console.log('account1Escrow2[1]', account1Escrow2[1].toString());
-			// console.log('account2Escrow2[1]', account2Escrow2[1].toString());
-			// console.log('account3Escrow2[1]', account3Escrow2[1].toString());
+			const account1Escrow2 = await rewardEscrow.getVestingEntry(account1, 4);
+			const account2Escrow2 = await rewardEscrow.getVestingEntry(account2, 5);
+			const account3Escrow2 = await rewardEscrow.getVestingEntry(account3, 6);
+			// console.log('account1Escrow2[3]', account1Escrow2[3].toString());
+			// console.log('account2Escrow2[3]', account2Escrow2[3].toString());
+			// console.log('account3Escrow2[3]', account3Escrow2[3].toString());
 			// console.log('half(periodTwoMintableSupply', half(periodTwoMintableSupply).toString());
 			// console.log('quarter(periodTwoMintableSupply)', quarter(periodTwoMintableSupply).toString());
-			assert.bnClose(account1Escrow2[1], half(periodTwoMintableSupply), 49);
-			assert.bnClose(account2Escrow2[1], quarter(periodTwoMintableSupply), 26);
-			assert.bnClose(account3Escrow2[1], quarter(periodTwoMintableSupply), 24);
+			assert.bnClose(account1Escrow2.escrowAmount, half(periodTwoMintableSupply), 49);
+			assert.bnClose(account2Escrow2.escrowAmount, quarter(periodTwoMintableSupply), 26);
+			assert.bnClose(account3Escrow2.escrowAmount, quarter(periodTwoMintableSupply), 24);
 		});
 	});
 
@@ -913,8 +940,12 @@ contract('Rewards Integration Tests', async accounts => {
 			await feePool.claimFees({ from: account1 });
 
 			// We should have our decreased rewards amount in escrow
-			const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account1, 0);
-			assert.bnClose(vestingScheduleEntry[1], third(periodOneMintableSupplyMinusMinterReward), 2);
+			const vestingScheduleEntry = await rewardEscrow.getVestingEntry(account1, 1);
+			assert.bnClose(
+				vestingScheduleEntry.escrowAmount,
+				third(periodOneMintableSupplyMinusMinterReward),
+				2
+			);
 		});
 		it('should block user from claiming fees and rewards when users claim rewards >10% threshold collateralisation ratio', async () => {
 			// But if the price of SNX decreases a lot...
