@@ -704,7 +704,6 @@ const setupAllContracts = async ({
 			contract: 'BaseSynthetix',
 			mocks: [
 				'Exchanger',
-				'SupplySchedule',
 				'RewardEscrow',
 				'RewardEscrowV2',
 				'SynthetixEscrow',
@@ -726,7 +725,6 @@ const setupAllContracts = async ({
 			contract: 'MintableSynthetix',
 			mocks: [
 				'Exchanger',
-				'SupplySchedule',
 				'SynthetixEscrow',
 				'Liquidations',
 				'Issuer',
