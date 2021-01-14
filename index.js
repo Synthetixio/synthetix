@@ -411,6 +411,7 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
 		}),
 		kovan: Object.assign({}, base),
+		'kovan-ovm': Object.assign({}, base),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),
