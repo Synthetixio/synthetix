@@ -56,6 +56,7 @@
 		"contracts/**/*.sol",
 		"publish/*.json",
 		"publish/deployed/kovan/*",
+		"publish/deployed/kovan-ovm/*",
 		"publish/deployed/rinkeby/*",
 		"publish/deployed/ropsten/*",
 		"publish/deployed/mainnet/*",

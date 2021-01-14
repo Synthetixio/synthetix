@@ -11,6 +11,7 @@ const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
+	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 };
 
 const assets = require('./publish/assets.json');
