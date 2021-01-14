@@ -18,7 +18,7 @@ import "./interfaces/IIssuer.sol";
 
 
 // https://docs.synthetix.io/contracts/RewardEscrow
-contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), MixinResolver {
+contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -191,6 +191,15 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         return _claimableAmount(entry);
     }
 
+    function _claimableAmount(VestingEntries.VestingEntry memory _entry) internal view returns (uint256) {
+        uint256 quantity;
+        if (_entry.escrowAmount != 0) {
+            /* Escrow amounts claimable if block.timestamp equal to or after entry endTime */
+            quantity = block.timestamp >= _entry.endTime ? _entry.escrowAmount : 0;
+        }
+        return quantity;
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
@@ -221,15 +230,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(4 weeks), Mi
         if (total != 0) {
             _transferVestedTokens(msg.sender, total);
         }
-    }
-
-    function _claimableAmount(VestingEntries.VestingEntry memory _entry) internal view returns (uint256) {
-        uint256 quantity;
-        if (_entry.escrowAmount != 0) {
-            /* Escrow amounts claimable if block.timestamp equal to or after entry endTime */
-            quantity = block.timestamp > _entry.endTime ? _entry.escrowAmount : 0;
-        }
-        return quantity;
     }
 
     /**
