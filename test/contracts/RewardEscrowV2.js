@@ -89,7 +89,7 @@ contract('RewardEscrowV2', async accounts => {
 
 	describe('importVestingSchedule', () => {
 		it('should revert after setup period over', async () => {
-			const setupPeriod = 4 * WEEK;
+			const setupPeriod = 8 * WEEK;
 			await fastForward(setupPeriod + 100);
 
 			await assert.revert(
@@ -114,7 +114,7 @@ contract('RewardEscrowV2', async accounts => {
 
 	describe('migrateAccountEscrowBalances', () => {
 		it('should revert after setup period over', async () => {
-			const setupPeriod = 4 * WEEK;
+			const setupPeriod = 8 * WEEK;
 			await fastForward(setupPeriod + 100);
 
 			await assert.revert(
