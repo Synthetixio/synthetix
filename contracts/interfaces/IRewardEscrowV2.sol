@@ -41,6 +41,8 @@ interface IRewardEscrowV2 {
 
     function getVestingEntryClaimable(address account, uint256 entryID) external view returns (uint);
 
+    function getVestingEntry(address account, uint256 entryID) external view returns (uint64, uint256);
+
     // Mutative functions
     function vest(uint256[] calldata entryIDs) external;
 
@@ -70,6 +72,8 @@ interface IRewardEscrowV2 {
     function mergeAccount(address accountToMerge, uint256[] calldata entryIDs) external;
 
     function nominateAccountToMerge(address account) external;
+
+    function accountMergingIsOpen() external view returns (bool);
 
     // L2 Migration
     function importVestingEntries(
