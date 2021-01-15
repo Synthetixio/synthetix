@@ -74,6 +74,9 @@
 	"RewardEscrow": {
 		"deploy": true
 	},
+	"RewardEscrowV2": {
+		"deploy": true
+	},
 	"RewardsDistribution": {
 		"deploy": true
 	},

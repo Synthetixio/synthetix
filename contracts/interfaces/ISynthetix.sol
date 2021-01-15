@@ -108,6 +108,7 @@ interface ISynthetix {
             uint numEntries
         );
 
+    // Liquidations
     function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool);
 
     // Restricted Functions

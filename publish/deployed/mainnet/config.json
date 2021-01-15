@@ -89,6 +89,9 @@
 	"StakingRewardsiETH": {
 		"deploy": false
 	},
+	"StakingRewardssEURCurve": {
+		"deploy": false
+	},
 	"DappMaintenance": {
 		"deploy": false
 	},
@@ -543,6 +546,12 @@
 		"deploy": false
 	},
 	"CollateralShort": {
+		"deploy": false
+	},
+	"RewardEscrowV2": {
+		"deploy": false
+	},
+	"SynthetixBridgeToOptimism": {
 		"deploy": false
 	}
 }

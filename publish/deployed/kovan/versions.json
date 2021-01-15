@@ -5941,13 +5941,15 @@
 			},
 			"FeePool": {
 				"address": "0x771FeFCe3706A38BD49F0Dea8eb53cCd1D8d8B59",
-				"status": "current",
-				"keccak256": "0x02ee61be66961086dd445a06e910b23cef8233768409b50dcb304b9feffe1045"
+				"status": "replaced",
+				"keccak256": "0x02ee61be66961086dd445a06e910b23cef8233768409b50dcb304b9feffe1045",
+				"replaced_in": "v2.36.0-alpha"
 			},
 			"Synthetix": {
 				"address": "0x87505821709A7fbfe3317CF622a5Df018D9d38E6",
-				"status": "current",
-				"keccak256": "0x4645c711b8e6f659196b4d6ec9da1f69d16f3cd00e2a012f52e0c82c21408754"
+				"status": "replaced",
+				"keccak256": "0x4645c711b8e6f659196b4d6ec9da1f69d16f3cd00e2a012f52e0c82c21408754",
+				"replaced_in": "v2.36.0-alpha"
 			},
 			"SynthsAUD": {
 				"address": "0x2a6BCfE6Ef91a7679053875a540737636Ec30E4f",
@@ -6101,8 +6103,9 @@
 			},
 			"Issuer": {
 				"address": "0x9Fe11221CC742B05b541A31862b46D8FB57eacB4",
-				"status": "current",
-				"keccak256": "0x8c37b9762e83c45e2f358c02ae73ea7820246c8b0f1a23cbcf6a66153cfee438"
+				"status": "replaced",
+				"keccak256": "0x8c37b9762e83c45e2f358c02ae73ea7820246c8b0f1a23cbcf6a66153cfee438",
+				"replaced_in": "v2.36.0-alpha"
 			},
 			"SynthsEOS": {
 				"address": "0x63417fCE3a75eB4FA5Df2a26d8fD82BB952eE9C0",
@@ -6181,8 +6184,9 @@
 			},
 			"SystemSettings": {
 				"address": "0x27e886EA9C82980b4351878CF6459043F77126e7",
-				"status": "current",
-				"keccak256": "0x97a7fd23405c2fee666c00568e7326c5afdba1d0703f427357004420b07fe9c0"
+				"status": "replaced",
+				"keccak256": "0x97a7fd23405c2fee666c00568e7326c5afdba1d0703f427357004420b07fe9c0",
+				"replaced_in": "v2.36.0-alpha"
 			},
 			"TradingRewards": {
 				"address": "0xBBfAd9112203b943f26320B330B75BABF6e2aF2a",
@@ -6270,33 +6274,39 @@
 			},
 			"CollateralStateErc20": {
 				"address": "0x8e6669A625c92279E137f887c0175de8C47a3622",
-				"status": "current",
-				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c"
+				"status": "replaced",
+				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c",
+				"replaced_in": "v2.36.0-alpha"
 			},
 			"CollateralStateEth": {
 				"address": "0xb0243A27b8c08B78B4d7Ae0730670Cf824345114",
-				"status": "current",
-				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c"
+				"status": "replaced",
+				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c",
+				"replaced_in": "v2.36.0-alpha"
 			},
 			"CollateralStateShort": {
 				"address": "0x153d4BE15626736B9208958d5796EED017aB766c",
-				"status": "current",
-				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c"
+				"status": "replaced",
+				"keccak256": "0xc238df01b6845ebf985ef266b8a50321f5410843b04b9de084a771bb5b95459c",
+				"replaced_in": "v2.36.0-alpha"
 			},
 			"CollateralEth": {
 				"address": "0xbBe35b80B6F82F17Def6Ed6F76AC9DDf5029EC73",
-				"status": "current",
-				"keccak256": "0x1c9a753645e530b04a7d8ac4d394154efe5b4d0c097cd3dcb410ad03d477918d"
+				"status": "replaced",
+				"keccak256": "0x1c9a753645e530b04a7d8ac4d394154efe5b4d0c097cd3dcb410ad03d477918d",
+				"replaced_in": "v2.36.0-alpha"
 			},
 			"CollateralErc20": {
 				"address": "0x42e1B593178BC75e452e5C88A706C9d4cDeBeAF8",
-				"status": "current",
-				"keccak256": "0xd179858cd8df017e9c0a4313a6d9b2ad2af1a528498a1c1633aaa65b79395c12"
+				"status": "replaced",
+				"keccak256": "0xd179858cd8df017e9c0a4313a6d9b2ad2af1a528498a1c1633aaa65b79395c12",
+				"replaced_in": "v2.36.0-alpha"
 			},
 			"CollateralShort": {
 				"address": "0x0AC93512426e7D3C346E5a59B87504644f0780d0",
-				"status": "current",
-				"keccak256": "0xcfd4c10190e41e869cd9dfce6881f7f54d106c6a93bea6ea4f242c21608024b4"
+				"status": "replaced",
+				"keccak256": "0xcfd4c10190e41e869cd9dfce6881f7f54d106c6a93bea6ea4f242c21608024b4",
+				"replaced_in": "v2.36.0-alpha"
 			}
 		}
 	},
@@ -6319,6 +6329,76 @@
 			"StakingRewardsiETH": {
 				"address": "0x347E15f035B4645C6E330d758F73eC3AD2bFa5B5",
 				"status": "current"
+			}
+		}
+	},
+	"v2.36.0-alpha": {
+		"tag": "v2.36.0-alpha",
+		"fulltag": "v2.36.0-alpha",
+		"release": "Castor",
+		"network": "kovan",
+		"date": "2021-01-14T17:45:09-03:00",
+		"commit": "0b9d5c92e7a85aa3b02686b7190e18b30cf7d7c9",
+		"contracts": {
+			"FeePool": {
+				"address": "0xa0354C17832E34dAf2aEae968AF3Dc558d5c6Dc6",
+				"status": "current",
+				"keccak256": "0xcb489886cfe28bca0bb8ec730c7e66db26a5d2f24aad09bbacc9d57b201093c9"
+			},
+			"Synthetix": {
+				"address": "0x74A729c5EDc84b68c52A9198DDa9293Ca11B241B",
+				"status": "current",
+				"keccak256": "0x9f159ef4bee179bf0d8ae712ee58594846f1ad76aaaf295624b90a91f5f64106"
+			},
+			"Issuer": {
+				"address": "0x2709b3568a79D7E00d6729E96b84a1996CDB89ef",
+				"status": "current",
+				"keccak256": "0x5081661c90f6d4e491c8a8f44cbd17e23c27f44dbae57c407f3a108cf45e0d27"
+			},
+			"SystemSettings": {
+				"address": "0x596024E2F73532bDb75ff33c0bD515a70e2D11C9",
+				"status": "current",
+				"keccak256": "0x8f9dd57d480d9ffe5ed1e2501055b47affe94d8dcf63ee7c3b889311d0962330"
+			},
+			"CollateralStateErc20": {
+				"address": "0x04C3f6207BE48De777967eB1886469E4E268FE07",
+				"status": "current",
+				"keccak256": "0x30ca2798b72c79907035679c274da0e6692b585e6792e7977d70b3b1d966d508"
+			},
+			"CollateralStateEth": {
+				"address": "0x4B58bbB4Ff947315b558904fDcEbbdA65b9523aD",
+				"status": "current",
+				"keccak256": "0x30ca2798b72c79907035679c274da0e6692b585e6792e7977d70b3b1d966d508"
+			},
+			"CollateralStateShort": {
+				"address": "0xd74E3A605A1a7A8a83D25DF00D4057985E3CAC30",
+				"status": "current",
+				"keccak256": "0x30ca2798b72c79907035679c274da0e6692b585e6792e7977d70b3b1d966d508"
+			},
+			"CollateralEth": {
+				"address": "0xdFd01d828D34982DFE882B9fDC6DC17fcCA33C25",
+				"status": "current",
+				"keccak256": "0xa48ff50e2dbdb646cb5933caf7f577a673f7e535eb520e7e9b32ff86e3bc9784"
+			},
+			"CollateralErc20": {
+				"address": "0x5AD5469D8A1Eee2cF7c8B8205CbeD95A032cdff3",
+				"status": "current",
+				"keccak256": "0xcba65179bf463952f22a9a8d0543d767b233039d0ebcf7721b86cd60b3e8c948"
+			},
+			"CollateralShort": {
+				"address": "0x9712DdCC43F42402acC483e297eeFf650d18D354",
+				"status": "current",
+				"keccak256": "0x332ba7664d15521a81c57ff5f1f5a8d18216ae4e3843991f25ac9ff524b90758"
+			},
+			"RewardEscrowV2": {
+				"address": "0x64ac15AB583fFfA6a7401B83E3aA5cf4Ad1aA92A",
+				"status": "current",
+				"keccak256": "0x521f5f888e8833f1f184b6ebb42a62725f8b82a1c181dcb62f0435ba311f230a"
+			},
+			"SynthetixBridgeToOptimism": {
+				"address": "0xE8Bf8fe5ce9e15D30F478E1647A57CB6B0271228",
+				"status": "current",
+				"keccak256": "0x072ba93f033853347432cd3d6f47d4a4d54cd106185de9382cde9977636a00a7"
 			}
 		}
 	}

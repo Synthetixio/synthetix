@@ -410,6 +410,7 @@ const deploy = async ({
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
 			: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') + deploymentPath,
+		Provider: providerUrl,
 		'Local build last modified': `${new Date(earliestCompiledTimestamp)} ${yellow(
 			((new Date().getTime() - earliestCompiledTimestamp) / 60000).toFixed(2) + ' mins ago'
 		)}`,
@@ -532,6 +533,13 @@ const deploy = async ({
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
 	});
 
+	const rewardEscrowV2 = await deployer.deployContract({
+		name: 'RewardEscrowV2',
+		source: useOvm ? 'ImportableRewardEscrowV2' : 'RewardEscrowV2',
+		args: [account, addressOf(readProxyForResolver)],
+		deps: ['AddressResolver'],
+	});
+
 	const synthetixEscrow = await deployer.deployContract({
 		name: 'SynthetixEscrow',
 		args: [account, ZERO_ADDRESS],
@@ -645,12 +653,12 @@ const deploy = async ({
 
 	const rewardsDistribution = await deployer.deployContract({
 		name: 'RewardsDistribution',
-		deps: ['RewardEscrow', 'ProxyFeePool'],
+		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrowV2', 'ProxyFeePool'],
 		args: [
 			account, // owner
 			ZERO_ADDRESS, // authority (synthetix)
 			ZERO_ADDRESS, // Synthetix Proxy
-			addressOf(rewardEscrow),
+			addressOf(rewardEscrowV2),
 			addressOf(proxyFeePool),
 		],
 	});
@@ -845,33 +853,7 @@ const deploy = async ({
 		});
 	}
 
-	if (useOvm) {
-		// these values are for the OVM testnet
-		const inflationStartDate = (Math.round(new Date().getTime() / 1000) - 3600 * 24 * 7).toString(); // 1 week ago
-		const fixedPeriodicSupply = w3utils.toWei('50000');
-		const mintPeriod = (3600 * 24 * 7).toString(); // 1 week
-		const mintBuffer = '600'; // 10 minutes
-		const minterReward = w3utils.toWei('100');
-		const supplyEnd = '5'; // allow 4 mints in total
-
-		await deployer.deployContract({
-			// name is supply schedule as it behaves as supply schedule in the address resolver
-			name: 'SupplySchedule',
-			source: 'FixedSupplySchedule',
-			args: [
-				account,
-				addressOf(readProxyForResolver),
-				inflationStartDate,
-				'0',
-				'0',
-				mintPeriod,
-				mintBuffer,
-				fixedPeriodicSupply,
-				supplyEnd,
-				minterReward,
-			],
-		});
-	} else {
+	if (!useOvm) {
 		const supplySchedule = await deployer.deployContract({
 			name: 'SupplySchedule',
 			args: [account, currentLastMintEvent, currentWeekOfInflation],
@@ -908,6 +890,18 @@ const deploy = async ({
 		});
 	}
 
+	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
+	if (rewardEscrowV2 && rewardsDistribution) {
+		await runStep({
+			contract: 'RewardsDistribution',
+			target: rewardsDistribution,
+			read: 'rewardEscrow',
+			expected: input => input === addressOf(rewardEscrowV2),
+			write: 'setRewardEscrow',
+			writeArg: addressOf(rewardEscrowV2),
+		});
+	}
+
 	// ----------------
 	// Setting proxyERC20 Synthetix for synthetixEscrow
 	// ----------------
@@ -916,7 +910,7 @@ const deploy = async ({
 	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
 		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
 		// it is "havven" and the ABI we have here is not sufficient
-		if (network === 'mainnet') {
+		if (network === 'mainnet' && !useOvm) {
 			await runStep({
 				contract: 'SynthetixEscrow',
 				target: synthetixEscrow,
@@ -1126,6 +1120,7 @@ const deploy = async ({
 		});
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToBase',
+			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
 		await deployer.deployContract({
@@ -1146,6 +1141,7 @@ const deploy = async ({
 		});
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
+			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
 	}
@@ -1355,8 +1351,6 @@ const deploy = async ({
 				toBytes32('sUSD'),
 				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
 				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
-				addressOf(deployer.getExistingContract({ contract: 'ProxyERC20sUSD' })),
-				18,
 			],
 		});
 
@@ -1885,9 +1879,39 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'crossDomainMessageGasLimit',
+			readArg: 0,
 			expected: input => input !== '0', // only change if zero
 			write: 'setCrossDomainMessageGasLimit',
-			writeArg: await getDeployParameter('CROSS_DOMAIN_MESSAGE_GAS_LIMIT'),
+			writeArg: [0, await getDeployParameter('CROSS_DOMAIN_DEPOSIT_GAS_LIMIT')],
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 1,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [1, await getDeployParameter('CROSS_DOMAIN_ESCROW_GAS_LIMIT')],
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 2,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [2, await getDeployParameter('CROSS_DOMAIN_REWARD_GAS_LIMIT')],
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 3,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [3, await getDeployParameter('CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT')],
 		});
 
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];

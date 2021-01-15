@@ -11,6 +11,7 @@ const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
+	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 };
 
 const assets = require('./publish/assets.json');
@@ -47,7 +48,7 @@ const constants = {
 
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 
-	OVM_MAX_GAS_LIMIT: '8900000',
+	OVM_MAX_GAS_LIMIT: '8999999',
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
@@ -61,6 +62,10 @@ const knownAccounts = {
 		{
 			name: 'renBTCWallet',
 			address: '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E',
+		},
+		{
+			name: 'loansAccount',
+			address: '0x62f7A1F94aba23eD2dD108F8D23Aa3e7d452565B',
 		},
 	],
 	rinkeby: [],
@@ -103,14 +108,18 @@ const defaults = {
 		rinkeby: '0xEDC0C23864B041607D624E2d9a67916B6cf40F7a',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
-	CROSS_DOMAIN_MESSAGE_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
+	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
+
 	COLLATERAL_MANAGER: {
 		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
 		SHORTS: [
 			{ long: 'sBTC', short: 'iBTC' },
 			{ long: 'sETH', short: 'iETH' },
 		],
-		MAX_DEBT: w3utils.toWei('100000000'),
+		MAX_DEBT: w3utils.toWei('20000000'), // 20 million sUSD
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
@@ -402,6 +411,7 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
 		}),
 		kovan: Object.assign({}, base),
+		'kovan-ovm': Object.assign({}, base),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),

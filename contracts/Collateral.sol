@@ -158,7 +158,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /**
      * r = target issuance ratio
      * D = debt value in sUSD
-     * V = Collateral VALUE in sUSD
+     * V = collateral value in sUSD
      * P = liquidation penalty
      * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
      * Note: if you pass a loan in here that is not eligible for liquidation it will revert.
@@ -166,16 +166,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
      */
     function liquidationAmount(Loan memory loan) public view returns (uint amount) {
         uint liquidationPenalty = getLiquidationPenalty();
-        uint debtValue = loan.amount.add(loan.accruedInterest).multiplyDecimal(
-            _exchangeRates().rateForCurrency(loan.currency)
-        );
-        uint collateralValue = loan.collateral.multiplyDecimal(_exchangeRates().rateForCurrency(collateralKey));
+        uint debtValue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
+        uint collateralValue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
         uint unit = SafeDecimalMath.unit();
 
         uint dividend = debtValue.sub(collateralValue.divideDecimal(minCratio));
         uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(minCratio));
 
-        return dividend.divideDecimal(divisor);
+        uint sUSDamount = dividend.divideDecimal(divisor);
+
+        return _exchangeRates().effectiveValue(sUSD, sUSDamount, loan.currency);
     }
 
     // amount is the amount of synths we are liquidating
