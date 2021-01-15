@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.36.0-alpha",
+	"version": "2.36.1",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -60,6 +60,7 @@
 		"publish/deployed/rinkeby/*",
 		"publish/deployed/ropsten/*",
 		"publish/deployed/mainnet/*",
+		"publish/deployed/mainnet-ovm/*",
 		"publish/deployed/goerli/*",
 		"publish/deployed/goerli-ovm/*"
 	],
