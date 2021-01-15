@@ -197,7 +197,7 @@ const importFeePeriods = async ({
 			index,
 			feePeriod.feePeriodId,
 			feePeriod.startingDebtIndex,
-			index === 0 ? +feePeriod.startTime - 32400 : feePeriod.startTime,
+			feePeriod.startTime,
 			feePeriod.feesToDistribute,
 			feePeriod.feesClaimed,
 			feePeriod.rewardsToDistribute,
