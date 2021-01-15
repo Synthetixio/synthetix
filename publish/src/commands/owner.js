@@ -41,9 +41,10 @@ const owner = async ({
 	gasLimit = DEFAULTS.gasLimit,
 	privateKey,
 	yes,
+	useOvm,
 }) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	function logTx(tx) {
@@ -51,7 +52,7 @@ const owner = async ({
 	}
 
 	if (!newOwner) {
-		newOwner = getUsers({ network, user: 'owner' }).address;
+		newOwner = getUsers({ network, useOvm, user: 'owner' }).address;
 	}
 
 	if (!w3utils.isAddress(newOwner)) {
@@ -307,5 +308,6 @@ module.exports = {
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.action(owner),
 };

@@ -18,13 +18,21 @@ const {
 	confirmAction,
 } = require('../util');
 
-const nominate = async ({ network, newOwner, contracts, deploymentPath, gasPrice, gasLimit }) => {
+const nominate = async ({
+	network,
+	newOwner,
+	contracts,
+	deploymentPath,
+	gasPrice,
+	gasLimit,
+	useOvm,
+}) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	if (!newOwner) {
-		newOwner = getUsers({ network, user: 'owner' }).address;
+		newOwner = getUsers({ network, useOvm, user: 'owner' }).address;
 	}
 
 	if (!newOwner || !w3utils.isAddress(newOwner)) {
@@ -121,6 +129,7 @@ module.exports = {
 				'-o, --new-owner <value>',
 				'The address of the new owner (please include the 0x prefix)'
 			)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.option(
 				'-c, --contracts [value]',
 				'The list of contracts. Applies to all contract by default',
