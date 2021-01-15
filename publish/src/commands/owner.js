@@ -42,6 +42,7 @@ const owner = async ({
 	privateKey,
 	yes,
 	useOvm,
+	providerUrl,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -67,9 +68,16 @@ const owner = async ({
 		network,
 	});
 
-	const { providerUrl, privateKey: envPrivateKey } = loadConnections({
+	const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
 	});
+	if (!providerUrl) {
+		if (!envProviderUrl) {
+			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
+		}
+
+		providerUrl = envProviderUrl;
+	}
 
 	if (!privateKey) {
 		privateKey = envPrivateKey;
@@ -309,5 +317,9 @@ module.exports = {
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+			.option(
+				'-p, --provider-url <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
+			)
 			.action(owner),
 };

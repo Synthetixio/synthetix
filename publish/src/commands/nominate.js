@@ -26,6 +26,7 @@ const nominate = async ({
 	gasPrice,
 	gasLimit,
 	useOvm,
+	providerUrl,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -58,7 +59,15 @@ const nominate = async ({
 		contracts = Object.keys(config).filter(contract => contract !== 'DappMaintenance');
 	}
 
-	const { providerUrl, privateKey } = loadConnections({ network });
+	const { providerUrl: envProviderUrl, privateKey } = loadConnections({ network });
+	if (!providerUrl) {
+		if (!envProviderUrl) {
+			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
+		}
+
+		providerUrl = envProviderUrl;
+	}
+
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 	web3.eth.accounts.wallet.add(privateKey);
 	const account = web3.eth.accounts.wallet[0].address;
@@ -130,6 +139,10 @@ module.exports = {
 				'The address of the new owner (please include the 0x prefix)'
 			)
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+			.option(
+				'-p, --provider-url <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
+			)
 			.option(
 				'-c, --contracts [value]',
 				'The list of contracts. Applies to all contract by default',
