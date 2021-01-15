@@ -12,6 +12,7 @@ const data = {
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
+	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
 };
 
 const assets = require('./publish/assets.json');
@@ -412,6 +413,9 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		}),
 		kovan: Object.assign({}, base),
 		'kovan-ovm': Object.assign({}, base),
+		'mainnet-ovm': Object.assign({}, base, {
+			owner: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
+		}),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),

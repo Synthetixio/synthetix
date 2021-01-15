@@ -1687,6 +1687,33 @@
 			"timestamp": "2021-01-14T23:50:12.000Z",
 			"txn": "https://etherscan.io/tx/0x8f2538b27584286121e27803d5193a6c38e80ae954e9459b128142cba01bcbcd",
 			"network": "mainnet"
+		},
+		"StakingRewardssEURCurve": {
+			"name": "StakingRewardssEURCurve",
+			"address": "0xc0d8994Cd78eE1980885DF1A0C5470fC977b5cFe",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0xc0d8994Cd78eE1980885DF1A0C5470fC977b5cFe",
+			"timestamp": "2021-01-11T04:11:51.905Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"RewardEscrowV2": {
+			"name": "RewardEscrowV2",
+			"address": "0xDA4eF8520b1A57D7d63f1E249606D1A459698876",
+			"source": "RewardEscrowV2",
+			"link": "https://etherscan.io/address/0xDA4eF8520b1A57D7d63f1E249606D1A459698876",
+			"timestamp": "2021-01-14T23:48:34.000Z",
+			"txn": "https://etherscan.io/tx/0x24873410d8b6171332163491139cc27ca3dc76fe474f695affc4688cd1735373",
+			"network": "mainnet"
+		},
+		"SynthetixBridgeToOptimism": {
+			"name": "SynthetixBridgeToOptimism",
+			"address": "0x045e507925d2e05D114534D0810a1abD94aca8d6",
+			"source": "SynthetixBridgeToOptimism",
+			"link": "https://etherscan.io/address/0x045e507925d2e05D114534D0810a1abD94aca8d6",
+			"timestamp": "2021-01-14T23:50:12.000Z",
+			"txn": "https://etherscan.io/tx/0x8f2538b27584286121e27803d5193a6c38e80ae954e9459b128142cba01bcbcd",
+			"network": "mainnet"
 		}
 	},
 	"sources": {
