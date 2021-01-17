@@ -547,6 +547,7 @@ const deploy = async ({
 
 	const synthetixState = await deployer.deployContract({
 		name: 'SynthetixState',
+		source: useOvm ? 'SynthetixStateWithLimitedSetup' : 'SynthetixState',
 		args: [account, account],
 	});
 
