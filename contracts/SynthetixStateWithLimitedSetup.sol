@@ -11,13 +11,17 @@ import "./SafeDecimalMath.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetixstate
-contract SynthetixStateWithLimitedSetup is SynthetixState {
+contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
     uint public importedDebtAmount;
 
-    constructor(address _owner, address _associatedContract) public SynthetixState(_owner, _associatedContract) {}
+    constructor(address _owner, address _associatedContract)
+        public
+        SynthetixState(_owner, _associatedContract)
+        LimitedSetup(1 weeks)
+    {}
 
     /* ========== SETTERS ========== */
 

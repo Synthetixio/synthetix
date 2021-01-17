@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./State.sol";
-import "./LimitedSetup.sol";
 import "./interfaces/ISynthetixState.sol";
 
 // Libraries
@@ -11,7 +10,7 @@ import "./SafeDecimalMath.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetixstate
-contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
+contract SynthetixState is Owned, State, ISynthetixState {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -38,12 +37,7 @@ contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     // Global debt pool tracking
     uint[] public debtLedger;
 
-    constructor(address _owner, address _associatedContract)
-        public
-        Owned(_owner)
-        State(_associatedContract)
-        LimitedSetup(1 weeks)
-    {}
+    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 
     /* ========== SETTERS ========== */
 
