@@ -30,7 +30,7 @@ const {
 
 const DEFAULTS = {
 	gasPrice: '15',
-	gasLimit: 2e5, // 200,000
+	gasLimit: 2e6, // 2,000,000
 };
 
 const owner = async ({
@@ -86,7 +86,7 @@ const owner = async ({
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
 	const code = await web3.eth.getCode(newOwner);
-	const isContract = code !== '0x';
+	const isContract = !useOvm && code !== '0x';
 	if (!isContract && !yes) {
 		try {
 			await confirmAction(
