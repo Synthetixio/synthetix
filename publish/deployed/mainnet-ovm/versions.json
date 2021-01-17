@@ -64,8 +64,9 @@
 			},
 			"SynthetixState": {
 				"address": "0x71D838995f8A97f636CbfdCd8dE94b30d2Bd4760",
-				"status": "current",
-				"keccak256": "0xe55944d38fb7a248fe0e1e4b40991de57fcc88895f12c6505a42bb48523cee69"
+				"status": "replaced",
+				"keccak256": "0xe55944d38fb7a248fe0e1e4b40991de57fcc88895f12c6505a42bb48523cee69",
+				"replaced_in": "v2.37.0"
 			},
 			"ProxyFeePool": {
 				"address": "0x4a16A42407AA491564643E1dfc1fd50af29794eF",
@@ -99,13 +100,15 @@
 			},
 			"FeePool": {
 				"address": "0x608457BC647e6f8f76eAD8b99d343D367e0f4D62",
-				"status": "current",
-				"keccak256": "0xf90645ee31653436f05b2ddec17be15e1fa5e66d926e33966d80b1440c8aed89"
+				"status": "replaced",
+				"keccak256": "0xf90645ee31653436f05b2ddec17be15e1fa5e66d926e33966d80b1440c8aed89",
+				"replaced_in": "v2.37.0"
 			},
 			"FeePoolState": {
 				"address": "0xd12A749E2FF15E66e095D0BfD3CE680756F36379",
-				"status": "current",
-				"keccak256": "0x7c479caa07a2d059cf7fd0c44c6179ccf36828e575289181ba98e502fcc958a8"
+				"status": "replaced",
+				"keccak256": "0x7c479caa07a2d059cf7fd0c44c6179ccf36828e575289181ba98e502fcc958a8",
+				"replaced_in": "v2.37.0"
 			},
 			"RewardsDistribution": {
 				"address": "0x5d9187630E99dBce4BcAB8733B76757f7F44aA2e",
@@ -211,6 +214,31 @@
 				"address": "0x54581A23F62D147AC76d454f0b3eF77F9D766058",
 				"status": "current",
 				"keccak256": "0x6af8351e5f36ac8b77fb2ed83792f985fabea076beaa38e2d5056c29c0682308"
+			}
+		}
+	},
+	"v2.37.0": {
+		"tag": "v2.37.0",
+		"fulltag": "v2.37.0",
+		"release": "Gacrux",
+		"network": "mainnet",
+		"date": "2021-01-17T14:59:00+11:00",
+		"commit": "a3d63fae8aad15ebef3adb52a4310320ba6d3d78",
+		"contracts": {
+			"SynthetixState": {
+				"address": "0x9770239D49Db97E77fc5Adcb5413654C9e45A510",
+				"status": "current",
+				"keccak256": "0x6895d7d0e0afa9c993a12c37739c4d34cafb44bb860c17377651ea2404b81573"
+			},
+			"FeePool": {
+				"address": "0xF950a48E9463a13b13D75F452200E711c1c426b6",
+				"status": "current",
+				"keccak256": "0x4238309eac3f3ead676bd4a3347ee1359a2ebade2660cc1de0de4076d46e32f1"
+			},
+			"FeePoolState": {
+				"address": "0x6e0d26cffc3a63d763F1546f749bf62ebC7d72D8",
+				"status": "current",
+				"keccak256": "0x7c479caa07a2d059cf7fd0c44c6179ccf36828e575289181ba98e502fcc958a8"
 			}
 		}
 	}

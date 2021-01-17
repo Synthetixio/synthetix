@@ -547,6 +547,7 @@ const deploy = async ({
 
 	const synthetixState = await deployer.deployContract({
 		name: 'SynthetixState',
+		source: useOvm ? 'SynthetixStateWithLimitedSetup' : 'SynthetixState',
 		args: [account, account],
 	});
 
@@ -820,6 +821,18 @@ const deploy = async ({
 			expected: input => input === issuerAddress,
 			write: 'setAssociatedContract',
 			writeArg: issuerAddress,
+		});
+	}
+
+	if (useOvm && synthetixState && feePool) {
+		// The SynthetixStateLimitedSetup) contract has FeePool to appendAccountIssuanceRecord
+		await runStep({
+			contract: 'SynthetixState',
+			target: synthetixState,
+			read: 'feePool',
+			expected: input => input === addressOf(feePool),
+			write: 'setFeePool',
+			writeArg: addressOf(feePool),
 		});
 	}
 
