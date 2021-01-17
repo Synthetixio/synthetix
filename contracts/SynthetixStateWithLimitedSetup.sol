@@ -1,20 +1,13 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./Owned.sol";
-import "./State.sol";
 import "./LimitedSetup.sol";
 import "./SynthetixState.sol";
-
-// Libraries
-import "./SafeDecimalMath.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetixstate
 contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
-    using SafeMath for uint;
-    using SafeDecimalMath for uint;
-
+    // Import state
     uint public importedDebtAmount;
 
     constructor(address _owner, address _associatedContract)
