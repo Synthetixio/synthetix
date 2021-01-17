@@ -4,9 +4,14 @@ pragma solidity ^0.5.16;
 import "./LimitedSetup.sol";
 import "./SynthetixState.sol";
 
+// Internal References
+import "./interfaces/IFeePool.sol";
+
 
 // https://docs.synthetix.io/contracts/source/contracts/synthetixstate
 contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
+    IFeePool public feePool;
+
     // Import state
     uint public importedDebtAmount;
 
@@ -17,6 +22,15 @@ contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
     {}
 
     /* ========== SETTERS ========== */
+
+    /**
+     * @notice set the FeePool contract as it is the only authority to be able to call
+     * appendVestingEntry with the onlyFeePool modifer
+     */
+    function setFeePool(IFeePool _feePool) external onlyOwner {
+        feePool = _feePool;
+        emit FeePoolUpdated(address(_feePool));
+    }
 
     // /**
     //  * @notice Import issuer data
@@ -71,5 +85,16 @@ contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
         } else {
             debtLedger.push(SafeDecimalMath.preciseUnit());
         }
+
+        // append issuanceData to FeePoolState
+        feePool.appendAccountIssuanceRecord(
+            account,
+            issuanceData[account].initialDebtOwnership,
+            issuanceData[account].debtEntryIndex
+        );
     }
+
+    /* ========== EVENTS ========== */
+
+    event FeePoolUpdated(address newFeePool);
 }

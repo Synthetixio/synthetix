@@ -824,6 +824,18 @@ const deploy = async ({
 		});
 	}
 
+	if (useOvm && synthetixState && feePool) {
+		// The SynthetixStateLimitedSetup) contract has FeePool to appendAccountIssuanceRecord
+		await runStep({
+			contract: 'SynthetixState',
+			target: synthetixState,
+			read: 'feePool',
+			expected: input => input === addressOf(feePool),
+			write: 'setFeePool',
+			writeArg: addressOf(feePool),
+		});
+	}
+
 	if (synthetixEscrow) {
 		await deployer.deployContract({
 			name: 'EscrowChecker',

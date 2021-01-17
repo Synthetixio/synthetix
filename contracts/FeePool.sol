@@ -211,7 +211,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         address account,
         uint debtRatio,
         uint debtEntryIndex
-    ) external onlyIssuer {
+    ) external onlyIssuerAndSynthetixState {
         feePoolState().appendAccountIssuanceRecord(
             account,
             debtRatio,
@@ -728,8 +728,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         _;
     }
 
-    modifier onlyIssuer {
-        require(msg.sender == address(issuer()), "FeePool: Only Issuer Authorised");
+    modifier onlyIssuerAndSynthetixState {
+        bool isIssuer = msg.sender == address(issuer());
+        bool isSynthetixState = msg.sender == address(synthetixState());
+        require(isIssuer || isSynthetixState, "Only Issuer, SynthetixState contracts allowed");
         _;
     }
 
