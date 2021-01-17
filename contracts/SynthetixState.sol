@@ -35,6 +35,8 @@ contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     // The total count of people that have outstanding issued synths in any flavour
     uint public totalIssuerCount;
 
+    uint public importedDebtAmount;
+
     // Global debt pool tracking
     uint[] public debtLedger;
 
@@ -96,24 +98,56 @@ contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     //  * @notice Import issuer data from the old Synthetix contract before multicurrency
     //  * @dev Only callable by the contract owner, and only for 1 week after deployment.
     //  */
-    // function importIssuerData(address[] accounts, uint[] sUSDAmounts) external onlyOwner onlyDuringSetup {
-    //     require(accounts.length == sUSDAmounts.length, "Length mismatch");
+    function importIssuerData(address[] calldata accounts, uint[] calldata sUSDAmounts) external onlyOwner onlyDuringSetup {
+        require(accounts.length == sUSDAmounts.length, "Length mismatch");
 
-    //     for (uint8 i = 0; i < accounts.length; i++) {
-    //         _addToDebtRegister(accounts[i], sUSDAmounts[i]);
-    //     }
-    // }
+        for (uint8 i = 0; i < accounts.length; i++) {
+            _addToDebtRegister(accounts[i], sUSDAmounts[i]);
+        }
+    }
 
     // /**
     //  * @notice Import issuer data from the old Synthetix contract before multicurrency
     //  * @dev Only used from importIssuerData above, meant to be disposable
     //  */
-    // function _addToDebtRegister(address account, uint amount) internal {
-    //     // Note: this function's implementation has been removed from the current Synthetix codebase
-    //     // as it could only habe been invoked during setup (see importIssuerData) which has since expired.
-    //     // There have been changes to the functions it requires, so to ensure compiles, the below has been removed.
-    //     // For the previous implementation, see Synthetix._addToDebtRegister()
-    // }
+    function _addToDebtRegister(address account, uint amount) internal {
+        // What is the value that we've previously imported?
+        uint totalDebtIssued = importedDebtAmount;
+
+        // What will the new total be including the new value?
+        uint newTotalDebtIssued = amount.add(totalDebtIssued);
+
+        // Save that for the next import.
+        importedDebtAmount = newTotalDebtIssued;
+
+        // What is their percentage (as a high precision int) of the total debt?
+        uint debtPercentage = amount.divideDecimalRoundPrecise(newTotalDebtIssued);
+
+        // And what effect does this percentage change have on the global debt holding of other issuers?
+        // The delta specifically needs to not take into account any existing debt as it's already
+        // accounted for in the delta from when they issued previously.
+        // The delta is a high precision integer.
+        uint delta = SafeDecimalMath.preciseUnit().sub(debtPercentage);
+
+        // We ignore any existingDebt as this is being imported in as amount
+
+        // Are they a new issuer? If so, record them. (same as incrementTotalIssuerCount)
+        if (issuanceData[account].initialDebtOwnership == 0) {
+            totalIssuerCount = totalIssuerCount.add(1);
+        }
+
+        // Save the debt entry parameters (same as setCurrentIssuanceData)
+        issuanceData[account].initialDebtOwnership = debtPercentage;
+        issuanceData[account].debtEntryIndex = debtLedger.length;
+
+        // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
+        // the change for the rest of the debt holders. The debt ledger holds high precision integers.
+        if (debtLedger.length > 0) {
+            debtLedger.push(debtLedger[debtLedger.length - 1].multiplyDecimalRoundPrecise(delta));
+        } else {
+            debtLedger.push(SafeDecimalMath.preciseUnit());
+        }
+    }
 
     /* ========== VIEWS ========== */
 
