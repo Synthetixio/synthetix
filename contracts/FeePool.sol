@@ -731,7 +731,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     modifier onlyIssuerAndSynthetixState {
         bool isIssuer = msg.sender == address(issuer());
         bool isSynthetixState = msg.sender == address(synthetixState());
-        require(isIssuer || isSynthetixState, "Only Issuer, SynthetixState contracts allowed");
+        require(isIssuer || isSynthetixState, "Issuer and SynthetixState only");
         _;
     }
 
