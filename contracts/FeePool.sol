@@ -21,7 +21,7 @@ import "./FeePoolEternalStorage.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixState.sol";
-import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
@@ -69,7 +69,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
@@ -100,7 +100,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[4] = CONTRACT_EXCHANGER;
         newAddresses[5] = CONTRACT_ISSUER;
         newAddresses[6] = CONTRACT_SYNTHETIXSTATE;
-        newAddresses[7] = CONTRACT_REWARDESCROW;
+        newAddresses[7] = CONTRACT_REWARDESCROW_V2;
         newAddresses[8] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
         newAddresses[10] = CONTRACT_REWARDSDISTRIBUTION;
@@ -144,8 +144,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
     }
 
-    function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW));
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
@@ -211,7 +211,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         address account,
         uint debtRatio,
         uint debtEntryIndex
-    ) external onlyIssuer {
+    ) external onlyIssuerAndSynthetixState {
         feePoolState().appendAccountIssuanceRecord(
             account,
             debtRatio,
@@ -373,19 +373,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /**
-     * @notice Owner can escrow SNX. Owner to send the tokens to the RewardEscrow
-     * @param account Address to escrow tokens for
-     * @param quantity Amount of tokens to escrow
-     */
-    function appendVestingEntry(address account, uint quantity) public optionalProxy_onlyOwner {
-        // Transfer SNX from messageSender to the Reward Escrow
-        IERC20(address(synthetix())).transferFrom(messageSender, address(rewardEscrow()), quantity);
-
-        // Create Vesting Entry
-        rewardEscrow().appendVestingEntry(account, quantity);
-    }
-
-    /**
      * @notice Record the fee payment in our recentFeePeriods.
      * @param sUSDAmount The amount of fees priced in sUSD.
      */
@@ -489,9 +476,12 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
      * @param snxAmount The amount of SNX.
      */
     function _payRewards(address account, uint snxAmount) internal notFeeAddress(account) {
+        /* Escrow the tokens for 1 year. */
+        uint escrowDuration = 52 weeks;
+
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
-        rewardEscrow().appendVestingEntry(account, snxAmount);
+        rewardEscrowV2().appendVestingEntry(account, snxAmount, escrowDuration);
     }
 
     /**
@@ -738,8 +728,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         _;
     }
 
-    modifier onlyIssuer {
-        require(msg.sender == address(issuer()), "FeePool: Only Issuer Authorised");
+    modifier onlyIssuerAndSynthetixState {
+        bool isIssuer = msg.sender == address(issuer());
+        bool isSynthetixState = msg.sender == address(synthetixState());
+        require(isIssuer || isSynthetixState, "Issuer and SynthetixState only");
         _;
     }
 

@@ -502,5 +502,11 @@
 	},
 	"TradingRewards": {
 		"deploy": false
+	},
+	"RewardEscrowV2": {
+		"deploy": false
+	},
+	"SynthetixBridgeToOptimism": {
+		"deploy": false
 	}
 }

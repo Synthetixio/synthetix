@@ -62,9 +62,6 @@
 	"Liquidations": {
 		"deploy": false
 	},
-	"SupplySchedule": {
-		"deploy": false
-	},
 	"Synthetix": {
 		"deploy": false
 	},

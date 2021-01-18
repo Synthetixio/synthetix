@@ -16,10 +16,10 @@ const DEFAULTS = {
 
 const { stringify } = require('../util');
 
-const prepareDeploy = async ({ network = DEFAULTS.network }) => {
+const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 	ensureNetwork(network);
 
-	const deploymentPath = getDeploymentPathForNetwork({ network });
+	const deploymentPath = getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	// Get config.js
@@ -58,6 +58,7 @@ module.exports = {
 			.description(
 				'Reads releases.json and switches all entries to true in config.json for the target network.'
 			)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.option(
 				'-n, --network <value>',
 				'The network to run off.',

@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -34,7 +34,7 @@ const {
 } = require('../..');
 
 contract('FeePool', async accounts => {
-	const [deployerAccount, owner, oracle, account1, account2, account3] = accounts;
+	const [deployerAccount, owner, oracle, account1, account2] = accounts;
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
@@ -76,7 +76,6 @@ contract('FeePool', async accounts => {
 		exchangeRates,
 		feePoolState,
 		delegateApprovals,
-		rewardEscrow,
 		sUSDContract,
 		addressResolver,
 		synths;
@@ -91,7 +90,6 @@ contract('FeePool', async accounts => {
 			FeePoolState: feePoolState,
 			DebtCache: debtCache,
 			ProxyFeePool: feePoolProxy,
-			RewardEscrow: rewardEscrow,
 			Synthetix: synthetix,
 			SystemSettings: systemSettings,
 			SynthsUSD: sUSDContract,
@@ -111,7 +109,7 @@ contract('FeePool', async accounts => {
 				'SynthetixState',
 				'SystemSettings',
 				'SystemStatus',
-				'RewardEscrow',
+				'RewardEscrowV2',
 				'DelegateApprovals',
 				'CollateralManager',
 			],
@@ -149,7 +147,6 @@ contract('FeePool', async accounts => {
 				'claimFees',
 				'claimOnBehalf',
 				'importFeePeriod',
-				'appendVestingEntry',
 			],
 		});
 	});
@@ -205,7 +202,7 @@ contract('FeePool', async accounts => {
 				fnc: feePool.appendAccountIssuanceRecord,
 				accounts,
 				args: [account1, toUnit('0.001'), '0'],
-				reason: 'FeePool: Only Issuer Authorised',
+				reason: 'Issuer and SynthetixState only',
 			});
 		});
 	});
@@ -1434,42 +1431,6 @@ contract('FeePool', async accounts => {
 					await sUSDContract.balanceOf(account1),
 					oldSynthBalance.add(feesAvailable[0])
 				);
-			});
-		});
-
-		describe('Escrowing Tokens', async () => {
-			const escrowAmount = toUnit('100000');
-
-			it('should revert if non owner calls', async () => {
-				await synthetix.approve(feePool.address, escrowAmount, {
-					from: owner,
-				});
-				await onlyGivenAddressCanInvoke({
-					fnc: feePool.appendVestingEntry,
-					args: [account3, escrowAmount],
-					accounts,
-					address: owner,
-					reason: 'Owner only function',
-				});
-			});
-
-			it('should revert if no tokens', async () => {
-				await assert.revert(
-					feePool.appendVestingEntry(account3, escrowAmount, { from: owner }),
-					// Legacy safe math had no revert reasons
-					!legacy ? 'SafeMath: subtraction overflow' : undefined
-				);
-			});
-
-			it('should escrow tokens on an address when called by owner', async () => {
-				// Approve FeePool to spend my fund to escrow
-				await synthetix.approve(feePool.address, escrowAmount, {
-					from: owner,
-				});
-				await feePool.appendVestingEntry(account3, escrowAmount, { from: owner });
-
-				const vestingScheduleEntry = await rewardEscrow.getVestingScheduleEntry(account3, 0);
-				assert.bnEqual(vestingScheduleEntry[1], escrowAmount);
 			});
 		});
 	});
