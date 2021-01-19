@@ -1,10 +1,10 @@
 [
 	{
 		"name": "sETH",
-		"rewardsToken": "Synthetix"
+		"rewardsToken": "ProxyERC20"
 	},
 	{
 		"name": "sBTC",
-		"rewardsToken": "Synthetix"
+		"rewardsToken": "ProxyERC20"
 	}
 ]
