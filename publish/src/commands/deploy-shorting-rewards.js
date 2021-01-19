@@ -5,6 +5,7 @@ const { gray, green, yellow } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
+const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 
 const {
@@ -15,6 +16,7 @@ const {
 	loadConnections,
 	confirmAction,
 	parameterNotice,
+	performTransactionalStep,
 } = require('../util');
 
 const {
@@ -37,6 +39,8 @@ const DEFAULTS = {
 	rewardsToDeploy: [],
 };
 
+const addressOf = c => (c ? c.options.address : '');
+
 const deployShortingRewards = async ({
 	rewardsToDeploy = DEFAULTS.rewardsToDeploy,
 	gasPrice = DEFAULTS.gasPrice,
@@ -52,6 +56,11 @@ const deployShortingRewards = async ({
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
+
+	const { ownerActions, ownerActionsFile } = loadAndCheckRequiredSources({
+		deploymentPath,
+		network,
+	});
 
 	const { shortingRewards, deployment, deploymentFile } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -169,7 +178,6 @@ const deployShortingRewards = async ({
 	console.log(gray(`Starting deployment to ${network.toUpperCase()}...`));
 
 	// Contract dependencies
-	const rewardsDistributionAddress = deployment.targets['RewardsDistribution'].address;
 	const resolverAddress = deployment.targets['ReadProxyAddressResolver'].address;
 
 	// ----------------
@@ -225,18 +233,36 @@ const deployShortingRewards = async ({
 			}
 		}
 
-		// Deploy contract
-		await deployer.deployContract({
+		// Deploy contract with deployer as RewardsDistribution.
+		const rewardsContract = await deployer.deployContract({
 			name: shortingRewardNameFixed,
 			deps: [rewardsToken].filter(x => !w3utils.isAddress(x)),
 			source: 'ShortingRewards',
-			args: [
-				account,
-				resolverAddress,
-				rewardsDistributionAddress,
-				rewardsTokenAddress,
-				toBytes32(name),
-			],
+			args: [account, resolverAddress, account, rewardsTokenAddress, toBytes32(name)],
+		});
+
+		const nonceManager = new NonceManager({});
+		const manageNonces = deployer.manageNonces;
+
+		const runStep = async opts =>
+			performTransactionalStep({
+				gasLimit: methodCallGasLimit, // allow overriding of gasLimit
+				...opts,
+				deployer,
+				gasPrice,
+				etherscanLinkPrefix,
+				ownerActions,
+				ownerActionsFile,
+				nonceManager: manageNonces ? nonceManager : undefined,
+			});
+
+		// Link it to the Collateral Short contract
+		await runStep({
+			gasLimit: 6e6,
+			contract: 'CollateralShort',
+			target: deployer.getExistingContract({ contract: 'CollateralShort' }),
+			write: 'addRewardsContracts',
+			writeArg: [addressOf(rewardsContract), toBytes32(name)],
 		});
 	}
 
