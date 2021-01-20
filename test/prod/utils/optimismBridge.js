@@ -30,7 +30,7 @@ async function mockOptimismBridge({ network, deploymentPath }) {
 		return;
 	}
 
-	console.log(gray('  > Mocking Optimism bridge...'));
+	console.log(gray('    > Mocking Optimism bridge...'));
 
 	const AddressResolver = await connectContract({
 		network,

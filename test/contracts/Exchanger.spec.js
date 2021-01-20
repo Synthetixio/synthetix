@@ -106,6 +106,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				'SystemSettings',
 				'DelegateApprovals',
 				'FlexibleStorage',
+				'CollateralManager',
 			],
 		}));
 

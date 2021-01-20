@@ -85,17 +85,58 @@
 			"AddressResolver",
 			"BinaryOptionMarketFactory",
 			"BinaryOptionMarketManager",
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralManager",
+			"CollateralManagerState",
+			"CollateralStateErc20",
+			"CollateralStateEth",
+			"CollateralStateShort",
+			"CollateralShort",
 			"DebtCache",
 			"ExchangeRates",
 			"Exchanger",
 			"FeePool",
 			"Issuer",
 			"Liquidations",
+			"RewardEscrowV2",
 			"SystemSettings",
 			"Synthetix",
 			"TradingRewards",
 			"Synth(s|i).+"
 		],
-		"sips": []
+		"sips": [97, 100, 103]
+	},
+	{
+		"name": "Castor",
+		"version": {
+			"major": 2,
+			"minor": 36
+		},
+		"sources": [
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralStateErc20",
+			"CollateralStateEth",
+			"CollateralStateShort",
+			"CollateralShort",
+			"FeePool",
+			"Issuer",
+			"RewardEscrowV2",
+			"Synthetix",
+			"SynthetixBridgeToOptimism",
+			"SystemSettings"
+		],
+		"sips": [60, 102, 105]
+	},
+	{
+		"name": "Gacrux",
+		"version": {
+			"major": 2,
+			"minor": 37
+		},
+		"ovm": true,
+		"sources": ["FeePool", "FeePoolState", "SynthetixState"],
+		"sips": [106]
 	}
 ]

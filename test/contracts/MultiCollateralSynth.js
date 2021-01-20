@@ -6,32 +6,156 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const TokenState = artifacts.require('TokenState');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
+const CollateralState = artifacts.require('CollateralState');
+const CollateralManagerState = artifacts.require('CollateralManagerState');
+const CollateralManager = artifacts.require('CollateralManager');
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { toUnit } = require('../utils')();
+const { toUnit, currentTime, fastForward } = require('../utils')();
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const { setupAllContracts } = require('./setup');
+const { setupAllContracts, setupContract } = require('./setup');
 
-contract('MultiCollateralSynth', accounts => {
-	const [deployerAccount, owner, , , account1] = accounts;
+contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
+	const [deployerAccount, owner, oracle, , account1] = accounts;
 
-	let issuer, resolver;
+	const sETH = toBytes32('sETH');
+
+	let issuer,
+		resolver,
+		manager,
+		ceth,
+		exchangeRates,
+		managerState,
+		debtCache,
+		sUSDSynth,
+		feePool,
+		synths;
+
+	const getid = async tx => {
+		const event = tx.logs.find(log => log.event === 'LoanCreated');
+		return event.args.id;
+	};
+
+	const deployCollateral = async ({
+		state,
+		owner,
+		manager,
+		resolver,
+		collatKey,
+		minColat,
+		minSize,
+	}) => {
+		return setupContract({
+			accounts,
+			contract: 'CollateralEth',
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
+		});
+	};
+
+	const issuesUSDToAccount = async (issueAmount, receiver) => {
+		// Set up the depositor with an amount of synths to deposit.
+		await sUSDSynth.issue(receiver, issueAmount, {
+			from: owner,
+		});
+	};
+
+	const updateRatesWithDefaults = async () => {
+		const timestamp = await currentTime();
+
+		await exchangeRates.updateRates([sETH], ['100'].map(toUnit), timestamp, {
+			from: oracle,
+		});
+
+		const sBTC = toBytes32('sBTC');
+
+		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
+			from: oracle,
+		});
+	};
 
 	before(async () => {
-		({ AddressResolver: resolver, Issuer: issuer } = await setupAllContracts({
+		synths = ['sUSD'];
+		({
+			AddressResolver: resolver,
+			Issuer: issuer,
+			SynthsUSD: sUSDSynth,
+			ExchangeRates: exchangeRates,
+			DebtCache: debtCache,
+			FeePool: feePool,
+		} = await setupAllContracts({
 			accounts,
-			mocks: { FeePool: true },
-			contracts: ['AddressResolver', 'Synthetix', 'Issuer'],
+			synths,
+			contracts: [
+				'AddressResolver',
+				'Synthetix',
+				'Issuer',
+				'ExchangeRates',
+				'SystemStatus',
+				'Exchanger',
+				'FeePool',
+				'CollateralManager',
+			],
 		}));
+
+		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+
+		manager = await CollateralManager.new(
+			managerState.address,
+			owner,
+			resolver.address,
+			toUnit(10000),
+			0,
+			0,
+			{
+				from: deployerAccount,
+			}
+		);
+
+		await managerState.setAssociatedContract(manager.address, { from: owner });
+
+		const state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+
+		ceth = await deployCollateral({
+			state: state.address,
+			owner: owner,
+			manager: manager.address,
+			resolver: resolver.address,
+			collatKey: toBytes32('sETH'),
+			minColat: toUnit(1.5),
+			minSize: toUnit(1),
+		});
+
+		await state.setAssociatedContract(ceth.address, { from: owner });
+
+		await resolver.importAddresses(
+			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
+			[ceth.address, manager.address],
+			{
+				from: owner,
+			}
+		);
+
+		await manager.rebuildCache();
+		await feePool.rebuildCache();
+		await debtCache.rebuildCache();
+
+		await manager.addCollaterals([ceth.address], { from: owner });
+
+		await updateRatesWithDefaults();
+
+		await issuesUSDToAccount(toUnit(1000), owner);
+		await debtCache.takeDebtSnapshot();
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	const deploySynth = async ({ currencyKey, proxy, tokenState, multiCollateralKey }) => {
+	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
+		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
+		const TokenState = artifacts.require('TokenState');
 		const Proxy = artifacts.require('Proxy');
 
 		tokenState =
@@ -45,29 +169,36 @@ contract('MultiCollateralSynth', accounts => {
 		const synth = await MultiCollateralSynth.new(
 			proxy.address,
 			tokenState.address,
-			`Synth ${currencyKey}`,
+			`Synth${currencyKey}`,
 			currencyKey,
 			owner,
 			toBytes32(currencyKey),
 			web3.utils.toWei('0'),
 			resolver.address,
-			toBytes32(multiCollateralKey),
 			{
 				from: deployerAccount,
 			}
 		);
+
+		await resolver.importAddresses([toBytes32(`Synth${currencyKey}`)], [synth.address], {
+			from: owner,
+		});
+
 		await synth.rebuildCache();
+		await manager.rebuildCache();
+		await debtCache.rebuildCache();
+
+		await ceth.addSynths([toBytes32(`Synth${currencyKey}`)], [toBytes32(currencyKey)], {
+			from: owner,
+		});
 
 		return { synth, tokenState, proxy };
 	};
 
 	describe('when a MultiCollateral synth is added and connected to Synthetix', () => {
-		const collateralKey = 'EtherCollateral';
-
 		beforeEach(async () => {
 			const { synth, tokenState, proxy } = await deploySynth({
-				currencyKey: 'sCollateral',
-				multiCollateralKey: collateralKey,
+				currencyKey: 'sXYZ',
 			});
 			await tokenState.setAssociatedContract(synth.address, { from: owner });
 			await proxy.setTarget(synth.address, { from: owner });
@@ -87,7 +218,7 @@ contract('MultiCollateralSynth', accounts => {
 			const actual = await this.synth.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'EtherCollateral'].map(toBytes32)
+				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'CollateralManager'].map(toBytes32)
 			);
 		});
 
@@ -114,10 +245,11 @@ contract('MultiCollateralSynth', accounts => {
 
 		describe('when multiCollateral is set to the owner', () => {
 			beforeEach(async () => {
-				// have the owner simulate being MultiCollateral so we can invoke issue and burn
-				await resolver.importAddresses([toBytes32(collateralKey)], [owner], { from: owner });
-				// now have the synth resync its cache
-				await this.synth.rebuildCache();
+				const timestamp = await currentTime();
+
+				await exchangeRates.updateRates([toBytes32('sXYZ')], [toUnit(5)], timestamp, {
+					from: oracle,
+				});
 			});
 			describe('when multiCollateral tries to issue', () => {
 				it('then it can issue new synths', async () => {
@@ -126,7 +258,7 @@ contract('MultiCollateralSynth', accounts => {
 					const totalSupplyBefore = await this.synth.totalSupply();
 					const balanceOfBefore = await this.synth.balanceOf(accountToIssue);
 
-					await this.synth.issue(accountToIssue, issueAmount, { from: owner });
+					await ceth.open(issueAmount, toBytes32('sXYZ'), { value: toUnit(2), from: account1 });
 
 					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(issueAmount));
 					assert.bnEqual(
@@ -139,19 +271,27 @@ contract('MultiCollateralSynth', accounts => {
 				it('then it can burn synths', async () => {
 					const totalSupplyBefore = await this.synth.totalSupply();
 					const balanceOfBefore = await this.synth.balanceOf(account1);
-					const amount = toUnit('1');
+					const amount = toUnit('5');
 
-					await this.synth.issue(account1, amount, { from: owner });
+					const tx = await ceth.open(amount, toBytes32('sXYZ'), {
+						value: toUnit(2),
+						from: account1,
+					});
+
+					const id = await getid(tx);
+
+					await fastForward(300);
 
 					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(amount));
 					assert.bnEqual(await this.synth.balanceOf(account1), balanceOfBefore.add(amount));
 
-					await this.synth.burn(account1, amount, { from: owner });
+					await ceth.repay(account1, id, toUnit(3), { from: account1 });
 
-					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore);
-					assert.bnEqual(await this.synth.balanceOf(account1), balanceOfBefore);
+					assert.bnEqual(await this.synth.totalSupply(), toUnit(2));
+					assert.bnEqual(await this.synth.balanceOf(account1), toUnit(2));
 				});
 			});
+
 			describe('when synthetix set to account1', () => {
 				beforeEach(async () => {
 					// have account1 simulate being Issuer so we can invoke issue and burn

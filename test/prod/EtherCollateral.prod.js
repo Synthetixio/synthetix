@@ -7,8 +7,13 @@ const {
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	skipWaitingPeriod,
-	setup,
+	simulateExchangeRates,
+	takeDebtSnapshot,
+	mockOptimismBridge,
+	avoidStaleRates,
+	resumeSystem,
 } = require('./utils');
+const { yellow } = require('chalk');
 
 contract('EtherCollateral (prod tests)', accounts => {
 	const [, user1] = accounts;
@@ -25,8 +30,14 @@ contract('EtherCollateral (prod tests)', accounts => {
 			return this.skip();
 		}
 
-		network = config.targetNetwork;
-		({ owner, deploymentPath } = await setup({ network }));
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
+
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
+		}
 
 		({
 			EtherCollateral,
@@ -67,10 +78,6 @@ contract('EtherCollateral (prod tests)', accounts => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await EtherCollateral.resolver(), ReadProxyAddressResolver.address);
 		});
-
-		it('has the expected owner set', async () => {
-			assert.equal(await EtherCollateral.owner(), owner);
-		});
 	});
 
 	describe('opening a loan', () => {
@@ -80,7 +87,16 @@ contract('EtherCollateral (prod tests)', accounts => {
 		let tx;
 		let loanID;
 
-		before(async () => {
+		before('open loan', async function() {
+			const totalIssuedSynths = await EtherCollateral.totalIssuedSynths();
+			const issueLimit = await EtherCollateral.issueLimit();
+			const liquidity = totalIssuedSynths.add(amount);
+			if (liquidity.gte(issueLimit)) {
+				console.log(yellow(`Not enough liquidity to open loan. Liquidity: ${liquidity}`));
+
+				this.skip();
+			}
+
 			ethBalance = await web3.eth.getBalance(user1);
 			sEthBalance = await SynthsETH.balanceOf(user1);
 

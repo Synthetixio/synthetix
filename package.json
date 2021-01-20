@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.35.0-ovm",
+	"version": "2.37.0",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -25,7 +25,7 @@
 		"test:prod:ovm": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism --timeout 900000\"",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",
-		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 90000\""
+		"test:publish": "concurrently --kill-others --success first \"npx buidler node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 120000\""
 	},
 	"husky": {
 		"hooks": {
@@ -54,9 +54,11 @@
 		"contracts/**/*.sol",
 		"publish/*.json",
 		"publish/deployed/kovan/*",
+		"publish/deployed/kovan-ovm/*",
 		"publish/deployed/rinkeby/*",
 		"publish/deployed/ropsten/*",
 		"publish/deployed/mainnet/*",
+		"publish/deployed/mainnet-ovm/*",
 		"publish/deployed/goerli/*",
 		"publish/deployed/goerli-ovm/*"
 	],
@@ -83,7 +85,7 @@
 		"@pinata/sdk": "1.1.11",
 		"@uniswap/token-lists": "^1.0.0-beta.11",
 		"ajv": "^6.12.4",
-		"axios": "0.19.2",
+		"axios": "0.21.1",
 		"bn.js": "4.11.8",
 		"buidler-ast-doc": "0.0.14-rc",
 		"chai": "4.2.0",
@@ -95,6 +97,7 @@
 		"eslint-config-standard": "^12.0.0",
 		"eslint-plugin-havven": "^1.0.0",
 		"eslint-plugin-import": "2.22.0",
+		"eslint-plugin-no-only-tests": "^2.4.0",
 		"eslint-plugin-node": "11.1.0",
 		"eslint-plugin-prettier": "^2.6.2",
 		"eslint-plugin-promise": "^4.0.1",
@@ -105,6 +108,7 @@
 		"hardhat": "^2.0.6",
 		"hardhat-gas-reporter": "1.0.1",
 		"husky": "^4.3.0",
+		"lodash.uniq": "^4.5.0",
 		"lodash.clonedeep": "^4.5.0",
 		"mocha": "8.1.3",
 		"mustache": "^4.0.1",

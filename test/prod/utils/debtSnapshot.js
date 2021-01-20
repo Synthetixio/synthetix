@@ -14,7 +14,7 @@ async function takeDebtSnapshot({ network, deploymentPath }) {
 		return;
 	}
 
-	console.log(gray('  > Taking debt snapshot...'));
+	console.log(gray('    > Taking debt snapshot...'));
 
 	await DebtCache.takeDebtSnapshot();
 }

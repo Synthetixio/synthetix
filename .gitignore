@@ -37,3 +37,6 @@ process.yml
 
 # Temp files
 .tmp/
+
+# CSV files
+*.csv

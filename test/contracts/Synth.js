@@ -66,6 +66,8 @@ contract('Synth', async accounts => {
 				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
 				'SystemSettings',
 				'FlexibleStorage',
+				'CollateralManager',
+				'RewardEscrowV2', // required for issuer._collateral() to read collateral
 			],
 		}));
 

@@ -83,6 +83,15 @@
 	"SynthUtil": {
 		"deploy": false
 	},
+	"StakingRewardsiBTC": {
+		"deploy": false
+	},
+	"StakingRewardsiETH": {
+		"deploy": false
+	},
+	"StakingRewardssEURCurve": {
+		"deploy": false
+	},
 	"DappMaintenance": {
 		"deploy": false
 	},
@@ -513,6 +522,36 @@
 		"deploy": false
 	},
 	"SynthiOIL": {
+		"deploy": false
+	},
+	"CollateralErc20": {
+		"deploy": false
+	},
+	"CollateralEth": {
+		"deploy": false
+	},
+	"CollateralManager": {
+		"deploy": false
+	},
+	"CollateralManagerState": {
+		"deploy": false
+	},
+	"CollateralStateErc20": {
+		"deploy": false
+	},
+	"CollateralStateEth": {
+		"deploy": false
+	},
+	"CollateralStateShort": {
+		"deploy": false
+	},
+	"CollateralShort": {
+		"deploy": false
+	},
+	"RewardEscrowV2": {
+		"deploy": false
+	},
+	"SynthetixBridgeToOptimism": {
 		"deploy": false
 	}
 }

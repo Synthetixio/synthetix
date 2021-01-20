@@ -7,7 +7,12 @@ const {
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
-	setup,
+	simulateExchangeRates,
+	takeDebtSnapshot,
+	mockOptimismBridge,
+	writeSetting,
+	avoidStaleRates,
+	resumeSystem,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -26,8 +31,14 @@ contract('TradingRewards (prod tests)', accounts => {
 			return this.skip();
 		}
 
-		network = config.targetNetwork;
-		({ owner, deploymentPath } = await setup({ network }));
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
+
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
+		}
 
 		({ TradingRewards, ReadProxyAddressResolver, SystemSettings } = await connectContracts({
 			network,
@@ -61,10 +72,6 @@ contract('TradingRewards (prod tests)', accounts => {
 		assert.equal(await TradingRewards.resolver(), ReadProxyAddressResolver.address);
 	});
 
-	it('has the expected owner set', async () => {
-		assert.equal(await TradingRewards.owner(), owner);
-	});
-
 	it('has the expected setting for tradingRewardsEnabled (disabled)', async () => {
 		assert.isFalse(await SystemSettings.tradingRewardsEnabled());
 	});
@@ -77,7 +84,12 @@ contract('TradingRewards (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await SystemSettings.setTradingRewardsEnabled(false, { from: owner });
+			await writeSetting({
+				setting: 'setTradingRewardsEnabled',
+				value: false,
+				network,
+				deploymentPath,
+			});
 		});
 
 		it('shows trading rewards disabled', async () => {
@@ -112,7 +124,12 @@ contract('TradingRewards (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await SystemSettings.setTradingRewardsEnabled(true, { from: owner });
+			await writeSetting({
+				setting: 'setTradingRewardsEnabled',
+				value: true,
+				network,
+				deploymentPath,
+			});
 		});
 
 		it('shows trading rewards enabled', async () => {
