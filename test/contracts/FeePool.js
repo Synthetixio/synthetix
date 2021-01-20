@@ -202,7 +202,7 @@ contract('FeePool', async accounts => {
 				fnc: feePool.appendAccountIssuanceRecord,
 				accounts,
 				args: [account1, toUnit('0.001'), '0'],
-				reason: 'FeePool: Only Issuer Authorised',
+				reason: 'Issuer and SynthetixState only',
 			});
 		});
 	});

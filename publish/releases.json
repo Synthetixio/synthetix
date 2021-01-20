@@ -128,5 +128,15 @@
 			"SystemSettings"
 		],
 		"sips": [60, 102, 105]
+	},
+	{
+		"name": "Gacrux",
+		"version": {
+			"major": 2,
+			"minor": 37
+		},
+		"ovm": true,
+		"sources": ["FeePool", "FeePoolState", "SynthetixState"],
+		"sips": [106]
 	}
 ]
