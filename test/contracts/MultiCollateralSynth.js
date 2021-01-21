@@ -4,7 +4,6 @@ const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const TokenState = artifacts.require('TokenState');
 const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
 const CollateralState = artifacts.require('CollateralState');
 const CollateralManagerState = artifacts.require('CollateralManagerState');

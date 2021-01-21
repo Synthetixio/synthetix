@@ -1,12 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const { contract, config, artifacts } = require('@nomiclabs/buidler');
+const { contract, config, artifacts } = require('hardhat');
 const { wrap, knownAccounts } = require('../..');
 const { assert } = require('../contracts/common');
 const { toUnit, multiplyDecimalRound, fastForward } = require('../utils')();
 const Web3 = require('web3');
 const {
-	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
@@ -46,11 +45,9 @@ contract('MultiCollateral (prod tests)', accounts => {
 		SynthsUSD;
 
 	before('prepare', async function() {
-		network = await detectNetworkName();
+		network = config.targetNetwork;
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
 		owner = getUsers({ network, user: 'owner' }).address;
-
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
 		if (config.useOvm) {

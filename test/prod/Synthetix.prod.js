@@ -1,10 +1,11 @@
+const fs = require('fs');
+const path = require('path');
 const { grey, red } = require('chalk');
 const { web3, contract, artifacts, config } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit, fromUnit } = require('../utils')();
 const { knownAccounts, wrap, toBytes32 } = require('../..');
 const {
-	detectNetworkName,
 	connectContracts,
 	connectContract,
 	ensureAccountHasEther,
@@ -35,11 +36,9 @@ contract('Synthetix (prod tests)', accounts => {
 	let SynthsUSD, SynthsETH;
 
 	before('prepare', async () => {
-		network = await detectNetworkName();
+		network = config.targetNetwork;
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
-
 		owner = getUsers({ network, user: 'owner' }).address;
 
 		await avoidStaleRates({ network, deploymentPath });

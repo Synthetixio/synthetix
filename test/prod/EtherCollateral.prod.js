@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+const { wrap } = require('../..');
 const { contract, config } = require('hardhat');
 const { web3 } = require('hardhat');
 const { assert } = require('../contracts/common');
@@ -26,6 +29,11 @@ contract('EtherCollateral (prod tests)', accounts => {
 	let SynthsETH, SynthsUSD;
 
 	before('prepare', async function() {
+		network = config.targetNetwork;
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		owner = getUsers({ network, user: 'owner' }).address;
+
 		if (config.useOvm) {
 			return this.skip();
 		}

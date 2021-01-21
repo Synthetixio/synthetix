@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+const { wrap } = require('../..');
 const { contract, config } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
@@ -27,6 +30,11 @@ contract('TradingRewards (prod tests)', accounts => {
 	let exchangeLogs;
 
 	before('prepare', async function() {
+		network = config.targetNetwork;
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		owner = getUsers({ network, user: 'owner' }).address;
+
 		if (config.useOvm) {
 			return this.skip();
 		}
