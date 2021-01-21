@@ -57,7 +57,9 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				address: smockedMessenger,
 			});
 
-			rewardEscrow = await smockit(artifacts.require('IRewardEscrowV2').abi);
+			rewardEscrow = await smockit(
+				artifacts.require('contracts/interfaces/IRewardEscrowV2.sol:IRewardEscrowV2').abi
+			);
 
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);

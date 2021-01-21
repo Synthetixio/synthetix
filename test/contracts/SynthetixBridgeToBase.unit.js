@@ -40,7 +40,9 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				address: smockedMessenger,
 			});
 
-			rewardEscrow = await smockit(artifacts.require('IRewardEscrowV2').abi);
+			rewardEscrow = await smockit(
+				artifacts.require('contracts/interfaces/IRewardEscrowV2.sol:IRewardEscrowV2').abi
+			);
 
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
