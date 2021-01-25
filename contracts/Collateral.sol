@@ -81,8 +81,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _owner,
         address _state,
+        address _owner,
         address _manager,
         address _resolver,
         bytes32 _collateralKey,
