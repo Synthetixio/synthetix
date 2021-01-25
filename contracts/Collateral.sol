@@ -82,7 +82,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     constructor(
         address _owner,
-        CollateralState _state,
+        address _state,
         address _manager,
         address _resolver,
         bytes32 _collateralKey,
@@ -90,7 +90,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint _minCollateral
     ) public Owned(_owner) MixinSystemSettings(_resolver) {
         manager = _manager;
-        state = _state;
+        state = CollateralState(_state);
         collateralKey = _collateralKey;
         minCratio = _minCratio;
         minCollateral = _minCollateral;

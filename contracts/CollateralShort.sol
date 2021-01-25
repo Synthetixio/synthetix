@@ -11,7 +11,7 @@ import "./CollateralState.sol";
 
 contract CollateralShort is Collateral {
     constructor(
-        CollateralState _state,
+        address _state,
         address _owner,
         address _manager,
         address _resolver,
