@@ -12,6 +12,10 @@ interface IRewardEscrow {
 
     function totalVestedAccountBalance(address account) external view returns (uint);
 
+    function getVestingScheduleEntry(address account, uint index) external view returns (uint[2] memory);
+
+    function getNextVestingIndex(address account) external view returns (uint);
+
     // Mutative functions
     function appendVestingEntry(address account, uint quantity) external;
 

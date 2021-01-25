@@ -81,6 +81,8 @@ contract('DebtCache', async accounts => {
 				'Exchanger', // necessary for burnSynths to check settlement of sUSD
 				'DelegateApprovals', // necessary for *OnBehalf functions
 				'FlexibleStorage',
+				'CollateralManager',
+				'RewardEscrowV2', // necessary for issuer._collateral()
 			],
 		}));
 	});

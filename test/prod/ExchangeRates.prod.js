@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+const { wrap } = require('../..');
 const { contract, config } = require('hardhat');
 const { assert } = require('../contracts/common');
 const { toUnit, fastForward } = require('../utils')();
@@ -7,7 +10,11 @@ const {
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
-	setup,
+	simulateExchangeRates,
+	takeDebtSnapshot,
+	mockOptimismBridge,
+	avoidStaleRates,
+	resumeSystem,
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
@@ -22,7 +29,18 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 	before('prepare', async () => {
 		network = config.targetNetwork;
-		({ owner, deploymentPath } = await setup({ network }));
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+		owner = getUsers({ network, user: 'owner' }).address;
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
+
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
+		}
 
 		({
 			ExchangeRates,
@@ -61,10 +79,6 @@ contract('ExchangeRates (prod tests)', accounts => {
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await ExchangeRates.resolver(), ReadProxyAddressResolver.address);
-		});
-
-		it('has the expected owner set', async () => {
-			assert.equal(await ExchangeRates.owner(), owner);
 		});
 	});
 

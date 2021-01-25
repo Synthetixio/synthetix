@@ -1,8 +1,10 @@
+const fs = require('fs');
+const path = require('path');
 const { grey, red } = require('chalk');
 const { web3, contract, artifacts, config } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit, fromUnit } = require('../utils')();
-const { knownAccounts, toBytes32 } = require('../..');
+const { knownAccounts, wrap, toBytes32 } = require('../..');
 const {
 	connectContracts,
 	connectContract,
@@ -12,8 +14,12 @@ const {
 	skipWaitingPeriod,
 	skipStakeTime,
 	writeSetting,
+	avoidStaleRates,
+	simulateExchangeRates,
+	takeDebtSnapshot,
+	mockOptimismBridge,
 	implementsVirtualSynths,
-	setup,
+	resumeSystem,
 } = require('./utils');
 
 const gasFromReceipt = ({ receipt }) =>
@@ -31,7 +37,18 @@ contract('Synthetix (prod tests)', accounts => {
 
 	before('prepare', async () => {
 		network = config.targetNetwork;
-		({ owner, deploymentPath } = await setup({ network }));
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		owner = getUsers({ network, user: 'owner' }).address;
+
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
+
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
+		}
 
 		({
 			Synthetix,
@@ -80,10 +97,6 @@ contract('Synthetix (prod tests)', accounts => {
 				assert.equal(await Synthetix.resolver(), ReadProxyAddressResolver.address);
 			});
 
-			it('has the expected owner set', async () => {
-				assert.equal(await Synthetix.owner(), owner);
-			});
-
 			it('does not report any rate to be stale or invalid', async () => {
 				assert.isFalse(await Synthetix.anySynthOrSNXRateIsInvalid());
 			});
@@ -126,7 +139,6 @@ contract('Synthetix (prod tests)', accounts => {
 				await writeSetting({
 					setting: 'setMinimumStakeTime',
 					value: '60',
-					owner,
 					network,
 					deploymentPath,
 				});
@@ -345,7 +357,7 @@ contract('Synthetix (prod tests)', accounts => {
 		});
 
 		describe('with virtual tokens and a custom swap contract', () => {
-			const usdcHolder = knownAccounts.mainnet.find(a => a.name === 'binance').address;
+			const usdcHolder = knownAccounts['mainnet'].find(a => a.name === 'binance').address;
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 

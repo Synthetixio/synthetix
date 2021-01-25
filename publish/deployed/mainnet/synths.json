@@ -38,7 +38,8 @@
 	},
 	{
 		"name": "sBTC",
-		"asset": "BTC"
+		"asset": "BTC",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sETH",
@@ -218,9 +219,9 @@
 		"asset": "BTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 15699,
-			"upperLimit": 27473.25,
-			"lowerLimit": 3924.75
+			"entryPoint": 40378,
+			"upperLimit": 60567,
+			"lowerLimit": 20189
 		}
 	},
 	{
@@ -228,9 +229,9 @@
 		"asset": "ETH",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 578.01,
-			"upperLimit": 867.02,
-			"lowerLimit": 289.01
+			"entryPoint": 970,
+			"upperLimit": 1455,
+			"lowerLimit": 485
 		}
 	},
 	{

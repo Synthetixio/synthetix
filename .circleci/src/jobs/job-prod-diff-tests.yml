@@ -14,7 +14,7 @@ steps:
   # Prepare deploy
   - run: node publish prepare-deploy --network mainnet
   # Deploy
-  - run: node publish deploy --add-new-synths --use-fork --yes --network mainnet
+  - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
   # Run production tests
   - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && npx codechecks codechecks.prod.yml
   - store_artifacts:

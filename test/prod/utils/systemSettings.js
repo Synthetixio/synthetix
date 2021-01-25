@@ -10,7 +10,7 @@ async function readSetting({ network, setting, deploymentPath }) {
 	return SystemSettings[setting]();
 }
 
-async function writeSetting({ network, deploymentPath, setting, value, owner }) {
+async function writeSetting({ network, deploymentPath, setting, value }) {
 	const SystemSettings = await connectContract({
 		network,
 		deploymentPath,
@@ -18,7 +18,7 @@ async function writeSetting({ network, deploymentPath, setting, value, owner }) 
 	});
 
 	await SystemSettings[setting](value, {
-		from: owner,
+		from: await SystemSettings.owner(),
 	});
 }
 

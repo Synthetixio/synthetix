@@ -7,6 +7,8 @@ const { toBytes32 } = require('../..');
 const { itCanPerformDeposits } = require('./deposits.test');
 const { itCanPerformRewardDeposits } = require('./rewards.test');
 const { itCanPerformWithdrawals } = require('./withdrawals.test');
+const { itCanPerformEscrowMigration } = require('./migrateEscrow.test');
+const { itCanPerformDepositAndEscrowMigration } = require('./depositAndMigrateEscrow.test');
 
 /*
  * ===== L2 GOTCHAS =====
@@ -82,11 +84,13 @@ describe('Layer 2 production tests', () => {
 			async function simulateExchangeRates({ provider, owner, useOvm }) {
 				const Issuer = connectContract({
 					contract: 'Issuer',
+					source: useOvm ? 'IssuerWithoutLiquidations' : 'Issuer',
 					provider,
 					useOvm,
 				});
 				let ExchangeRates = connectContract({
 					contract: 'ExchangeRates',
+					source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
 					provider,
 					useOvm,
 				});
@@ -164,5 +168,7 @@ describe('Layer 2 production tests', () => {
 		itCanPerformDeposits({ ctx: this });
 		itCanPerformWithdrawals({ ctx: this });
 		itCanPerformRewardDeposits({ ctx: this });
+		itCanPerformEscrowMigration({ ctx: this });
+		itCanPerformDepositAndEscrowMigration({ ctx: this });
 	});
 });

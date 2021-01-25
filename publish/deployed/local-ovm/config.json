@@ -74,6 +74,9 @@
 	"RewardEscrow": {
 		"deploy": true
 	},
+	"RewardEscrowV2": {
+		"deploy": true
+	},
 	"RewardsDistribution": {
 		"deploy": true
 	},
@@ -129,6 +132,9 @@
 		"deploy": true
 	},
 	"SynthetixBridgeToBase": {
+		"deploy": true
+	},
+	"CollateralManager": {
 		"deploy": true
 	}
 }

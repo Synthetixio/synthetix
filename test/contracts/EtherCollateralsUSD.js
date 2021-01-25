@@ -41,7 +41,6 @@ contract('EtherCollateralsUSD', async accounts => {
 	const [, owner, oracle, address1, address2, address3] = accounts;
 
 	let etherCollateral,
-		synthetix,
 		feePool,
 		exchangeRates,
 		addressResolver,
@@ -127,8 +126,7 @@ contract('EtherCollateralsUSD', async accounts => {
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
 		// Mock SNX, sUSD
-		[{ token: synthetix }, { token: sUSDSynth }] = await Promise.all([
-			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
+		[{ token: sUSDSynth }] = await Promise.all([
 			mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
 		]);
 
@@ -142,7 +140,6 @@ contract('EtherCollateralsUSD', async accounts => {
 			accounts,
 			mocks: {
 				SynthsUSD: sUSDSynth,
-				Synthetix: synthetix,
 			},
 			contracts: [
 				'FeePool',
@@ -150,6 +147,8 @@ contract('EtherCollateralsUSD', async accounts => {
 				'ExchangeRates',
 				'SystemStatus',
 				'EtherCollateralsUSD',
+				'CollateralManager',
+				'Synthetix',
 			],
 		}));
 

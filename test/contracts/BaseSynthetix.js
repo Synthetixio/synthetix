@@ -55,6 +55,8 @@ contract('BaseSynthetix', async accounts => {
 				'Issuer',
 				'Exchanger',
 				'RewardsDistribution',
+				'CollateralManager',
+				'RewardEscrowV2', // required for collateral check in issuer
 			],
 		}));
 

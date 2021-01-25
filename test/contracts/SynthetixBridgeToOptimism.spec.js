@@ -2,6 +2,14 @@ const { contract, web3 } = require('hardhat');
 const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const { toBN } = web3.utils;
+const {
+	defaults: {
+		CROSS_DOMAIN_DEPOSIT_GAS_LIMIT,
+		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
+		CROSS_DOMAIN_REWARD_GAS_LIMIT,
+		CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
+	},
+} = require('../../');
 
 contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 	const [, owner, newBridge] = accounts;
@@ -16,18 +24,62 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['Synthetix', 'Issuer', 'RewardEscrow', 'SynthetixBridgeToOptimism'],
+				contracts: ['Synthetix', 'Issuer', 'SynthetixBridgeToOptimism'],
 			}));
 		});
 
-		it('shows the expected cross domain message gas limit', async () => {
-			assert.bnEqual(await systemSettings.crossDomainMessageGasLimit(), 3e6);
+		it('returns the expected cross domain message gas limit', async () => {
+			assert.bnEqual(
+				await systemSettings.crossDomainMessageGasLimit(0),
+				CROSS_DOMAIN_DEPOSIT_GAS_LIMIT
+			);
+			assert.bnEqual(
+				await systemSettings.crossDomainMessageGasLimit(1),
+				CROSS_DOMAIN_ESCROW_GAS_LIMIT
+			);
+			assert.bnEqual(
+				await systemSettings.crossDomainMessageGasLimit(2),
+				CROSS_DOMAIN_REWARD_GAS_LIMIT
+			);
+			assert.bnEqual(
+				await systemSettings.crossDomainMessageGasLimit(3),
+				CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT
+			);
 		});
 
-		describe('deposit', () => {
-			describe('when a user has provided allowance to the bridge contract', () => {
-				const amountToDeposit = 1;
+		describe('initiateEscrowMigration', () => {
+			it('reverts when an entriesId subarray contains an empty array', async () => {
+				const entryIdsEmpty = [[1, 2, 3], []];
+				await assert.revert(
+					synthetixBridgeToOptimism.initiateEscrowMigration(entryIdsEmpty),
+					'Entry IDs required'
+				);
+			});
+		});
 
+		describe('initiateEscrowMigration', () => {
+			it('reverts when an entriesId subarray contains an empty array', async () => {
+				const entryIdsEmpty = [[], [1, 2, 3]];
+				await assert.revert(
+					synthetixBridgeToOptimism.depositAndMigrateEscrow(1, entryIdsEmpty),
+					'Entry IDs required'
+				);
+			});
+		});
+
+		describe('initiateDeposit', () => {
+			const amountToDeposit = 1;
+
+			describe('when a user has not provided allowance to the bridge contract', () => {
+				it('the deposit should fail', async () => {
+					await assert.revert(
+						synthetixBridgeToOptimism.initiateDeposit(amountToDeposit, { from: owner }),
+						'SafeMath: subtraction overflow'
+					);
+				});
+			});
+
+			describe('when a user has provided allowance to the bridge contract', () => {
 				before('approve SynthetixBridgeToOptimism', async () => {
 					await synthetix.approve(synthetixBridgeToOptimism.address, amountToDeposit, {
 						from: owner,
