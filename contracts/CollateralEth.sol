@@ -16,7 +16,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
     mapping(address => uint) public pendingWithdrawals;
 
     constructor(
-        address _state,
+        CollateralState _state,
         address _owner,
         address _manager,
         address _resolver,

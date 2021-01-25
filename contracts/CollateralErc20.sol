@@ -19,7 +19,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     uint public underlyingContractDecimals;
 
     constructor(
-        address _state,
+        CollateralState _state,
         address _owner,
         address _manager,
         address _resolver,
