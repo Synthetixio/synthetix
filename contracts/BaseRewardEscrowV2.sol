@@ -83,8 +83,6 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         revert("Cannot be run on this layer");
     }
 
-    /* ========== VIEW FUNCTIONS ========== */
-
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](3);
@@ -386,12 +384,37 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         _notImplemented();
     }
 
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
     function importVestingEntries(
-        address,
-        uint256,
-        VestingEntries.VestingEntry[] calldata
-    ) external {
-        _notImplemented();
+        address account,
+        uint256 escrowedAmount,
+        VestingEntries.VestingEntry[] calldata vestingEntries
+    ) external onlySynthetixBridge {
+        // There must be enough balance in the contract to provide for the escrowed balance.
+        totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
+        require(
+            totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
+            "Insufficient balance in the contract to provide for escrowed balance"
+        );
+
+        /* Add escrowedAmount to account's escrowed balance */
+        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
+
+        for (uint i = 0; i < vestingEntries.length; i++) {
+            _xDomainImportVestingEntry(account, vestingEntries[i]);
+        }
+    }
+
+    function _xDomainImportVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
+        uint entryID = nextEntryId;
+        vestingSchedules[account][entryID] = entry;
+
+        /* append entryID to list of entries for account */
+        accountVestingEntryIDs[account].push(entryID);
+
+        /* Increment the next entry id. */
+        nextEntryId = nextEntryId.add(1);
     }
 
     /* ========== INTERNALS ========== */
@@ -430,9 +453,22 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         emit VestingEntryCreated(account, block.timestamp, quantity, duration, entryID);
     }
 
+    function _onlySynthetixBridge() internal view {
+        _notImplemented();
+    }
+
+    function _onlyFeePool() internal view {
+        require(msg.sender == address(feePool()), "Only the FeePool can perform this action");
+    }
+
     /* ========== MODIFIERS ========== */
     modifier onlyFeePool() {
-        require(msg.sender == address(feePool()), "Only the FeePool can perform this action");
+        _onlyFeePool();
+        _;
+    }
+
+    modifier onlySynthetixBridge() {
+        _onlySynthetixBridge();
         _;
     }
 

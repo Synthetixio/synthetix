@@ -27,41 +27,7 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
         return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_BASE);
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
-    function importVestingEntries(
-        address account,
-        uint256 escrowedAmount,
-        VestingEntries.VestingEntry[] calldata vestingEntries
-    ) external onlySynthetixBridge {
-        // There must be enough balance in the contract to provide for the escrowed balance.
-        totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
-        require(
-            totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
-            "Insufficient balance in the contract to provide for escrowed balance"
-        );
-
-        /* Add escrowedAmount to account's escrowed balance */
-        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
-
-        for (uint i = 0; i < vestingEntries.length; i++) {
-            _importVestingEntry(account, vestingEntries[i]);
-        }
-    }
-
-    function _importVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
-        uint entryID = nextEntryId;
-        vestingSchedules[account][entryID] = entry;
-
-        /* append entryID to list of entries for account */
-        accountVestingEntryIDs[account].push(entryID);
-
-        /* Increment the next entry id. */
-        nextEntryId = nextEntryId.add(1);
-    }
-
-    modifier onlySynthetixBridge() {
+    function _onlySynthetixBridge() internal view {
         require(msg.sender == synthetixBridgeToBase(), "Can only be invoked by SynthetixBridgeToBase contract");
-        _;
     }
 }

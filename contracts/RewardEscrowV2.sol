@@ -225,12 +225,11 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         return (escrowedAccountBalance, vestingEntries);
     }
 
-    /* ========== MODIFIERS ========== */
-
-    modifier onlySynthetixBridge() {
+    function _onlySynthetixBridge() internal view {
         require(msg.sender == synthetixBridgeToOptimism(), "Can only be invoked by SynthetixBridgeToOptimism contract");
-        _;
     }
+
+    /* ========== MODIFIERS ========== */
 
     modifier systemActive() {
         systemStatus().requireSystemActive();
