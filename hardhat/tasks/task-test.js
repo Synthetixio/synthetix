@@ -13,7 +13,9 @@ task('test')
 		const { gas, grep, useOvm, native, gasOutputFile } = taskArguments;
 
 		if (useOvm) {
-			hre.ovm = true;
+			if (!hre.config.prod) {
+				hre.ovm = true;
+			}
 
 			console.log(gray('Running tests in the OVM...'));
 			require('@eth-optimism/plugins/hardhat/web3');

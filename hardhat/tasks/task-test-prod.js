@@ -23,6 +23,7 @@ task('test:prod', 'run production tests against a running fork')
 		hre.config.deploymentPath = taskArguments.deploymentPath;
 		hre.config.patchFreshDeployment = taskArguments.patchFreshDeployment;
 		hre.config.useOvm = taskArguments.useOvm;
+		hre.config.prod = true;
 
 		// Configure hre
 		hre.config.paths.tests = './test/prod/';
