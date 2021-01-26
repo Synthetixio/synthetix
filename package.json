@@ -19,7 +19,7 @@
 		"fork": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node --target-network mainnet",
 		"test": "hardhat test",
 		"test:gas": "hardhat test --gas --optimizer || cat test-gas-used.log",
-		"test:ovm": "hardhat test --ovm --optimizer",
+		"test:ovm": "hardhat test --use-ovm --optimizer",
 		"test:prod": "hardhat test:prod --network localhost --optimizer",
 		"test:prod:gas": "hardhat test:prod --gas --network localhost --optimizer --gas-output-file test-gas-used-prod.log",
 		"test:prod:ovm": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism --timeout 900000\"",

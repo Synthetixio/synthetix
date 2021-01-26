@@ -1,4 +1,3 @@
-const path = require('path');
 const { task } = require('hardhat/config');
 const { gray, yellow } = require('chalk');
 const optimizeIfRequired = require('../util/optimizeIfRequired');
@@ -6,21 +5,19 @@ const optimizeIfRequired = require('../util/optimizeIfRequired');
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
-	.addFlag('ovm', 'Run tests on the OVM using a custom OVM provider')
+	.addFlag('useOvm', 'Run tests on the OVM using a custom OVM provider')
 	.addFlag('native', 'Compile with the native solc compiler')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, hre, runSuper) => {
-		const { gas, grep, ovm, native, gasOutputFile } = taskArguments;
+		const { gas, grep, useOvm, native, gasOutputFile } = taskArguments;
 
-		if (ovm) {
+		if (useOvm) {
 			hre.ovm = true;
 
-			console.log(gray('Compiling and running tests in the OVM...'));
-			hre.config.solc = {
-				path: path.resolve(__dirname, 'node_modules', '@eth-optimism', 'solc'),
-			};
-			await hre.config.startOvmNode();
+			console.log(gray('Running tests in the OVM...'));
+			require('@eth-optimism/plugins/hardhat/web3');
+
 			if (!grep) {
 				console.log(gray(`Ignoring test specs containing`, yellow('@ovm-skip')));
 				hre.config.mocha.grep = '@ovm-skip';
