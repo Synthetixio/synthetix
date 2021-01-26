@@ -18,6 +18,7 @@ task('test')
 			}
 
 			console.log(gray('Running tests in the OVM...'));
+			require('@eth-optimism/plugins/hardhat/compiler/0.5.16');
 			require('@eth-optimism/plugins/hardhat/web3');
 
 			if (!grep) {
