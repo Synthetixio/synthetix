@@ -50,11 +50,8 @@ class Deployer {
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
-		if (useFork) {
+		if (useFork || (!privateKey && network === 'local')) {
 			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
-		} else if (!privateKey && network === 'local') {
-			// Deterministic account #0 when using `npx hardhat node`
-			this.web3.eth.defaultAccount = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
 		} else {
 			this.web3.eth.accounts.wallet.add(privateKey);
 			this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
