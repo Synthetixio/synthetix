@@ -1,7 +1,4 @@
 pragma solidity >=0.4.24;
-pragma experimental ABIEncoderV2;
-
-import "./IRewardEscrowV2.sol";
 
 
 interface ISynthetixBridgeToBase {
@@ -10,13 +7,6 @@ interface ISynthetixBridgeToBase {
 
     //  // The following functions can only be invoked by the xDomain messenger on L2
     function completeDeposit(address account, uint depositAmount) external;
-
-    // invoked by the xDomain messenger on L2
-    function completeEscrowMigration(
-        address account,
-        uint256 escrowedAmount,
-        VestingEntries.VestingEntry[] calldata vestingEntries
-    ) external;
 
     // invoked by the xDomain messenger on L2
     function completeRewardDeposit(uint amount) external;

@@ -6,40 +6,28 @@ import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
+import "./BaseSynthetixBridge.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
-import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
 
-contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeToBase {
+contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
-    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public BaseSynthetixBridge(_owner, _resolver) {}
 
-    //
     // ========== INTERNALS ============
 
-    function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
-        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
-    }
-
-    function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
-
-    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
+    function synthetixBridge() internal view returns (address) {
+        return synthetixBridgeToOptimism();
     }
 
     function synthetixBridgeToOptimism() internal view returns (address) {
@@ -61,16 +49,18 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     // ========== VIEWS ==========
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
-        newAddresses[0] = CONTRACT_EXT_MESSENGER;
-        newAddresses[1] = CONTRACT_SYNTHETIX;
-        newAddresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
-        newAddresses[3] = CONTRACT_REWARDESCROW;
+        bytes32[] memory existingAddresses = BaseSynthetixBridge.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     // ========== PUBLIC FUNCTIONS =========
+
+    function initiateEscrowMigration(uint256[][] memory entryIDs) public requireActive {
+        // TODO: implement a more flexible mechanism for checking the outstandin debt
+        _initiateEscrowMigration(entryIDs);
+    }
 
     // invoked by user on L2
     function initiateWithdrawal(uint amount) external {

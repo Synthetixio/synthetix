@@ -6,51 +6,29 @@ import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
+import "./BaseSynthetixBridge.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
 
-contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism {
+contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOptimism {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
-    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_OVM_SYNTHETIXBRIDGETOBASE = "ovm:SynthetixBridgeToBase";
-
-    uint8 private constant MAX_ENTRIES_MIGRATED_PER_MESSAGE = 26;
-
-    bool public activated;
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
-        activated = true;
-    }
+    constructor(address _owner, address _resolver) public BaseSynthetixBridge(_owner, _resolver) {}
 
-    //
     // ========== INTERNALS ============
-
-    function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
-        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
-    }
-
-    function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
-
-    function synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
@@ -60,46 +38,35 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         return requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION);
     }
 
-    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
+    // override the parent's
+    function synthetixBridge() internal view returns (address) {
+        return synthetixBridgeToBase();
     }
 
     function synthetixBridgeToBase() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_OVM_SYNTHETIXBRIDGETOBASE);
     }
 
-    function isActive() internal view {
-        require(activated, "Function deactivated");
-    }
-
-    function hasZeroDebt() internal view {
-        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
-    }
-
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
-        newAddresses[0] = CONTRACT_EXT_MESSENGER;
-        newAddresses[1] = CONTRACT_SYNTHETIX;
-        newAddresses[2] = CONTRACT_ISSUER;
-        newAddresses[3] = CONTRACT_REWARDSDISTRIBUTION;
-        newAddresses[4] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
-        newAddresses[5] = CONTRACT_REWARDESCROW;
+        bytes32[] memory existingAddresses = BaseSynthetixBridge.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](3);
+        newAddresses[0] = CONTRACT_ISSUER;
+        newAddresses[1] = CONTRACT_REWARDSDISTRIBUTION;
+        newAddresses[2] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     // ========== MODIFIERS ============
 
-    modifier requireActive() {
-        isActive();
+    modifier requireZeroDebt() {
+        _hasZeroDebt();
         _;
     }
 
-    modifier requireZeroDebt() {
-        hasZeroDebt();
-        _;
+    function _hasZeroDebt() internal view {
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
     }
 
     // ========== PUBLIC FUNCTIONS =========
@@ -204,46 +171,10 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         emit Deposit(msg.sender, _depositAmount);
     }
 
-    function _initiateEscrowMigration(uint256[][] memory _entryIDs) private {
-        // loop through the entryID array
-        for (uint256 i = 0; i < _entryIDs.length; i++) {
-            // Cannot send more than MAX_ENTRIES_MIGRATED_PER_MESSAGE entries due to ovm gas restrictions
-            require(_entryIDs[i].length <= MAX_ENTRIES_MIGRATED_PER_MESSAGE, "Exceeds max entries per migration");
-            // Burn their reward escrow first
-            // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
-            uint256 escrowedAccountBalance;
-            VestingEntries.VestingEntry[] memory vestingEntries;
-            (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, _entryIDs[i]);
-            // if there is an escrow amount to be migrated
-            if (escrowedAccountBalance > 0) {
-                // create message payload for L2
-                ISynthetixBridgeToBase bridgeToBase;
-                bytes memory messageData = abi.encodeWithSelector(
-                    bridgeToBase.completeEscrowMigration.selector,
-                    msg.sender,
-                    escrowedAccountBalance,
-                    vestingEntries
-                );
-                // relay the message to this contract on L2 via L1 Messenger
-                messenger().sendMessage(
-                    synthetixBridgeToBase(),
-                    messageData,
-                    uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Escrow))
-                );
-                emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
-            }
-        }
-    }
-
     // ========== EVENTS ==========
 
     event BridgeMigrated(address oldBridge, address newBridge, uint256 amount);
     event Deposit(address indexed account, uint256 amount);
-    event ExportedVestingEntries(
-        address indexed account,
-        uint256 escrowedAccountBalance,
-        VestingEntries.VestingEntry[] vestingEntries
-    );
     event RewardDeposit(address indexed account, uint256 amount);
     event WithdrawalCompleted(address indexed account, uint256 amount);
 }
