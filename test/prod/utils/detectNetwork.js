@@ -1,5 +1,5 @@
 const { networkToChainId } = require('../../..');
-const { web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('hardhat');
 
 async function detectNetworkName() {
 	const networkId = await web3.eth.net.getId();

@@ -1,4 +1,4 @@
-const { web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('hardhat');
 const { assert } = require('./common');
 const { toBN } = web3.utils;
 const helper = require('./TradingRewards.helper');

@@ -1,6 +1,6 @@
 const testUtils = require('../../utils/index');
 const { toBytes32 } = require('../../..');
-const { web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('hardhat');
 const { toWei } = require('web3-utils');
 const { connectContract } = require('./connectContract');
 const { ensureAccountHasEther } = require('./ensureAccountHasBalance');

@@ -1,4 +1,4 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
@@ -42,7 +42,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			args
 		);
 
-	describe('when all the deps are mocked @cov-skip', () => {
+	describe('when all the deps are mocked', () => {
 		let messenger;
 		let synthetix;
 		let issuer;
@@ -57,7 +57,9 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				address: smockedMessenger,
 			});
 
-			rewardEscrow = await smockit(artifacts.require('IRewardEscrowV2').abi);
+			rewardEscrow = await smockit(
+				artifacts.require('contracts/interfaces/IRewardEscrowV2.sol:IRewardEscrowV2').abi
+			);
 
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);

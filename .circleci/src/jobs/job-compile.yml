@@ -4,5 +4,5 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npx buidler compile --optimizer --fail-oversize
-  - run: npx buidler compile --use-ovm --optimizer --fail-oversize
+  - run: npx hardhat compile --optimizer --fail-oversize
+  - run: npx hardhat compile --use-ovm --optimizer --fail-oversize

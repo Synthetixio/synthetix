@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -10,13 +10,11 @@ const {
 } = require('../..');
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
+const AddressResolver = artifacts.require('AddressResolver');
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
 contract('FlexibleStorage', accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
-
-	// include definition inside "contract" fnc to ensure is replaced with legacy when required
-	const AddressResolver = artifacts.require('AddressResolver');
 
 	let storage;
 	let resolver;

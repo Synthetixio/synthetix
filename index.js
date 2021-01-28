@@ -17,6 +17,7 @@ const data = {
 
 const assets = require('./publish/assets.json');
 const ovmIgnored = require('./publish/ovm-ignore.json');
+const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
@@ -421,8 +422,8 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		goerli: Object.assign({}, base),
 		'goerli-ovm': Object.assign({}, base),
 		local: Object.assign({}, base, {
-			// Deterministic account #0 when using `npx buidler node`
-			owner: '0xc783df8a850f42e7F7e57013759C285caa701eB6',
+			// Deterministic account #0 when using `npx hardhat node`
+			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 		}),
 	};
 
@@ -573,6 +574,7 @@ module.exports = {
 	toBytes32,
 	wrap,
 	ovmIgnored,
+	nonUpgradeable,
 	releases,
 	knownAccounts,
 };
