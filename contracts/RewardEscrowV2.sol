@@ -36,6 +36,10 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
         return combineArrays(existingAddresses, newAddresses);
     }
 
+    function synthetixBridge() internal view returns (address) {
+        return synthetixBridgeToOptimism();
+    }
+
     function synthetixBridgeToOptimism() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_OPTIMISM);
     }
@@ -187,44 +191,6 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     }
 
     /* ========== L2 MIGRATION ========== */
-
-    function burnForMigration(address account, uint[] calldata entryIDs)
-        external
-        onlySynthetixBridge
-        returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries)
-    {
-        require(entryIDs.length > 0, "Entry IDs required");
-
-        vestingEntries = new VestingEntries.VestingEntry[](entryIDs.length);
-
-        for (uint i = 0; i < entryIDs.length; i++) {
-            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
-
-            if (entry.escrowAmount > 0) {
-                vestingEntries[i] = entry;
-
-                /* add the escrow amount to escrowedAccountBalance */
-                escrowedAccountBalance = escrowedAccountBalance.add(entry.escrowAmount);
-
-                /* Delete the vesting entry being migrated */
-                delete vestingSchedules[account][entryIDs[i]];
-            }
-        }
-
-        /**
-         *  update account total escrow balances for migration
-         *  transfer the escrowed SNX being migrated to the L2 deposit contract
-         */
-        if (escrowedAccountBalance > 0) {
-            _reduceAccountEscrowBalances(account, escrowedAccountBalance);
-            IERC20(address(synthetix())).transfer(synthetixBridgeToOptimism(), escrowedAccountBalance);
-        }
-
-        emit BurnedForMigrationToL2(account, entryIDs, escrowedAccountBalance, block.timestamp);
-
-        return (escrowedAccountBalance, vestingEntries);
-    }
-
     function _onlySynthetixBridge() internal view {
         require(msg.sender == synthetixBridgeToOptimism(), "Can only be invoked by SynthetixBridgeToOptimism contract");
     }
@@ -239,7 +205,6 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
     /* ========== EVENTS ========== */
     event MigratedAccountEscrow(address indexed account, uint escrowedAmount, uint vestedAmount, uint time);
     event ImportedVestingSchedule(address indexed account, uint time, uint escrowAmount);
-    event BurnedForMigrationToL2(address indexed account, uint[] entryIDs, uint escrowedAmountMigrated, uint time);
     event ImportedVestingEntry(address indexed account, uint entryID, uint escrowAmount, uint endTime);
     event MigrateEntriesThresholdAmountUpdated(uint newAmount);
 }

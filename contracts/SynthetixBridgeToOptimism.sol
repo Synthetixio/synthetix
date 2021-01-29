@@ -38,7 +38,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         return requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION);
     }
 
-    // override the parent's
+    // override parent function
     function synthetixBridge() internal view returns (address) {
         return synthetixBridgeToBase();
     }
@@ -100,6 +100,22 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
         // no escrow actions - escrow remains on L2
         emit WithdrawalCompleted(account, amount);
+    }
+
+    function completeEscrowMigration(
+        address account,
+        uint256 escrowedAmount,
+        VestingEntries.VestingEntry[] calldata vestingEntries
+    ) external {
+        // ensure function only callable from L2 Bridge via messenger (aka relayer)
+        require(msg.sender == address(messenger()), "Only the relayer can call this");
+        require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
+
+        IRewardEscrowV2 rewardEscrow = rewardEscrowV2();
+        // First, transfer the SXN back to the escrow
+        synthetixERC20().transfer(address(rewardEscrow), escrowedAmount);
+        rewardEscrow.importVestingEntries(account, escrowedAmount, vestingEntries);
+        emit ImportedVestingEntries(account, escrowedAmount, vestingEntries);
     }
 
     // invoked by the owner for migrating the contract to the new version that will allow for withdrawals

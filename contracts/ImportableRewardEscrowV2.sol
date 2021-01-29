@@ -23,6 +23,10 @@ contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
         return combineArrays(existingAddresses, newAddresses);
     }
 
+    function synthetixBridge() internal view returns (address) {
+        return synthetixBridgeToBase();
+    }
+
     function synthetixBridgeToBase() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE_BASE);
     }
