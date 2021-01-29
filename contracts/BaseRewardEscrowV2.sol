@@ -79,11 +79,14 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
+    function synthetixBridge() internal view returns (address) {
+        _notImplemented();
+        return address(0);
+    }
+
     function _notImplemented() internal pure {
         revert("Cannot be run on this layer");
     }
-
-    /* ========== VIEW FUNCTIONS ========== */
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -380,18 +383,74 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         _notImplemented();
     }
 
-    /* ========== L2 MIGRATION ========== */
-
-    function burnForMigration(address, uint[] calldata) external returns (uint256, VestingEntries.VestingEntry[] memory) {
-        _notImplemented();
-    }
+    /* ========== MUTATIVE FUNCTIONS ========== */
 
     function importVestingEntries(
-        address,
-        uint256,
-        VestingEntries.VestingEntry[] calldata
-    ) external {
-        _notImplemented();
+        address account,
+        uint256 escrowedAmount,
+        VestingEntries.VestingEntry[] calldata vestingEntries
+    ) external onlySynthetixBridge {
+        // There must be enough balance in the contract to provide for the escrowed balance.
+        totalEscrowedBalance = totalEscrowedBalance.add(escrowedAmount);
+        require(
+            totalEscrowedBalance <= IERC20(address(synthetix())).balanceOf(address(this)),
+            "Insufficient balance in the contract to provide for escrowed balance"
+        );
+
+        /* Add escrowedAmount to account's escrowed balance */
+        totalEscrowedAccountBalance[account] = totalEscrowedAccountBalance[account].add(escrowedAmount);
+
+        for (uint i = 0; i < vestingEntries.length; i++) {
+            _xDomainImportVestingEntry(account, vestingEntries[i]);
+        }
+    }
+
+    function burnForMigration(address account, uint[] calldata entryIDs)
+        external
+        onlySynthetixBridge
+        returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries)
+    {
+        require(entryIDs.length > 0, "Entry IDs required");
+
+        vestingEntries = new VestingEntries.VestingEntry[](entryIDs.length);
+
+        for (uint i = 0; i < entryIDs.length; i++) {
+            VestingEntries.VestingEntry storage entry = vestingSchedules[account][entryIDs[i]];
+
+            if (entry.escrowAmount > 0) {
+                vestingEntries[i] = entry;
+
+                /* add the escrow amount to escrowedAccountBalance */
+                escrowedAccountBalance = escrowedAccountBalance.add(entry.escrowAmount);
+
+                /* Delete the vesting entry being migrated */
+                delete vestingSchedules[account][entryIDs[i]];
+            }
+        }
+
+        /**
+         *  update account total escrow balances for migration
+         *  transfer the escrowed SNX being migrated to the L2 deposit contract
+         */
+        if (escrowedAccountBalance > 0) {
+            _reduceAccountEscrowBalances(account, escrowedAccountBalance);
+            IERC20(address(synthetix())).transfer(synthetixBridge(), escrowedAccountBalance);
+        }
+
+        emit BurnedForMigrationToL2(account, entryIDs, escrowedAccountBalance, block.timestamp);
+
+        return (escrowedAccountBalance, vestingEntries);
+    }
+
+    function _xDomainImportVestingEntry(address account, VestingEntries.VestingEntry memory entry) internal {
+        uint entryID = nextEntryId;
+        vestingSchedules[account][entryID] = entry;
+
+        /* append entryID to list of entries for account */
+        accountVestingEntryIDs[account].push(entryID);
+
+        /* Increment the next entry id. */
+        nextEntryId = nextEntryId.add(1);
     }
 
     /* ========== INTERNALS ========== */
@@ -432,7 +491,16 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
     /* ========== MODIFIERS ========== */
     modifier onlyFeePool() {
+        _onlyFeePool();
+        _;
+    }
+
+    function _onlyFeePool() internal view {
         require(msg.sender == address(feePool()), "Only the FeePool can perform this action");
+    }
+
+    modifier onlySynthetixBridge() {
+        _notImplemented();
         _;
     }
 
@@ -451,4 +519,5 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         uint time
     );
     event NominateAccountToMerge(address indexed account, address destination);
+    event BurnedForMigrationToL2(address indexed account, uint[] entryIDs, uint escrowedAmountMigrated, uint time);
 }
