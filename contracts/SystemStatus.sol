@@ -196,16 +196,23 @@ contract SystemStatus is Owned, ISystemStatus {
     }
 
     function suspendSynth(bytes32 currencyKey, uint256 reason) external {
-        _requireAccessToSuspend(SECTION_SYNTH);
-        synthSuspension[currencyKey].suspended = true;
-        synthSuspension[currencyKey].reason = uint248(reason);
-        emit SynthSuspended(currencyKey, reason);
+        bytes32[] memory currencyKeys = new bytes32[](1);
+        currencyKeys[0] = currencyKey;
+        _internalSuspendSynths(currencyKeys, reason);
+    }
+
+    function suspendSynths(bytes32[] calldata currencyKeys, uint256 reason) external {
+        _internalSuspendSynths(currencyKeys, reason);
     }
 
     function resumeSynth(bytes32 currencyKey) external {
-        _requireAccessToResume(SECTION_SYNTH);
-        emit SynthResumed(currencyKey, uint256(synthSuspension[currencyKey].reason));
-        delete synthSuspension[currencyKey];
+        bytes32[] memory currencyKeys = new bytes32[](1);
+        currencyKeys[0] = currencyKey;
+        _internalResumeSynths(currencyKeys);
+    }
+
+    function resumeSynths(bytes32[] calldata currencyKeys) external {
+        _internalResumeSynths(currencyKeys);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -243,12 +250,22 @@ contract SystemStatus is Owned, ISystemStatus {
         require(!synthSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
     }
 
-    function _internalResumeSynthsExchange(bytes32[] memory currencyKeys) internal {
-        _requireAccessToResume(SECTION_SYNTH_EXCHANGE);
+    function _internalSuspendSynths(bytes32[] memory currencyKeys, uint256 reason) internal {
+        _requireAccessToSuspend(SECTION_SYNTH);
         for (uint i = 0; i < currencyKeys.length; i++) {
             bytes32 currencyKey = currencyKeys[i];
-            emit SynthExchangeResumed(currencyKey, uint256(synthExchangeSuspension[currencyKey].reason));
-            delete synthExchangeSuspension[currencyKey];
+            synthSuspension[currencyKey].suspended = true;
+            synthSuspension[currencyKey].reason = uint248(reason);
+            emit SynthSuspended(currencyKey, reason);
+        }
+    }
+
+    function _internalResumeSynths(bytes32[] memory currencyKeys) internal {
+        _requireAccessToResume(SECTION_SYNTH);
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            bytes32 currencyKey = currencyKeys[i];
+            emit SynthResumed(currencyKey, uint256(synthSuspension[currencyKey].reason));
+            delete synthSuspension[currencyKey];
         }
     }
 
@@ -259,6 +276,15 @@ contract SystemStatus is Owned, ISystemStatus {
             synthExchangeSuspension[currencyKey].suspended = true;
             synthExchangeSuspension[currencyKey].reason = uint248(reason);
             emit SynthExchangeSuspended(currencyKey, reason);
+        }
+    }
+
+    function _internalResumeSynthsExchange(bytes32[] memory currencyKeys) internal {
+        _requireAccessToResume(SECTION_SYNTH_EXCHANGE);
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            bytes32 currencyKey = currencyKeys[i];
+            emit SynthExchangeResumed(currencyKey, uint256(synthExchangeSuspension[currencyKey].reason));
+            delete synthExchangeSuspension[currencyKey];
         }
     }
 

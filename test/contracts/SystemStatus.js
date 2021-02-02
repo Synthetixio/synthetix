@@ -37,12 +37,14 @@ contract('SystemStatus', async accounts => {
 				'resumeExchange',
 				'resumeIssuance',
 				'resumeSynth',
+				'resumeSynths',
 				'resumeSynthExchange',
 				'resumeSynthsExchange',
 				'resumeSystem',
 				'suspendExchange',
 				'suspendIssuance',
 				'suspendSynth',
+				'suspendSynths',
 				'suspendSynthExchange',
 				'suspendSynthsExchange',
 				'suspendSystem',
@@ -1027,6 +1029,47 @@ contract('SystemStatus', async accounts => {
 		});
 	});
 
+	describe('suspendSynths()', () => {
+		let txn;
+		const [sBTC, sETH] = ['sBTC', 'sETH'].map(toBytes32);
+
+		it('can only be invoked by the owner initially', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.suspendSynths,
+				accounts,
+				address: owner,
+				args: [[sBTC, sETH], '0'],
+				reason: 'Restricted to access control list',
+			});
+		});
+
+		describe('when the owner suspends', () => {
+			const givenReason = '150';
+			beforeEach(async () => {
+				txn = await systemStatus.suspendSynths([sBTC, sETH], givenReason, { from: owner });
+			});
+			it('it succeeds for sBTC', async () => {
+				const { suspended, reason } = await systemStatus.synthSuspension(sBTC);
+				assert.equal(suspended, true);
+				assert.equal(reason, givenReason);
+				assert.eventEqual(txn.logs[0], 'SynthSuspended', [sBTC, reason]);
+			});
+			it('and for sETH', async () => {
+				const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+				assert.equal(suspended, true);
+				assert.equal(reason, givenReason);
+				assert.eventEqual(txn.logs[1], 'SynthSuspended', [sETH, reason]);
+			});
+			it('getSynthSuspensions(sETH, sBTC, iBTC) returns values for both', async () => {
+				const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
+					['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+				);
+				assert.deepEqual(suspensions, [true, true, false]);
+				assert.deepEqual(reasons, [givenReason, givenReason, '0']);
+			});
+		});
+	});
+
 	describe('resumeSynth()', () => {
 		const sBTC = toBytes32('sBTC');
 
@@ -1095,6 +1138,67 @@ contract('SystemStatus', async accounts => {
 						await assert.revert(systemStatus.resumeSystem({ from: account3 }));
 						await assert.revert(systemStatus.suspendIssuance('0', { from: account3 }));
 						await assert.revert(systemStatus.resumeIssuance({ from: account3 }));
+					});
+
+					it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
+						const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
+							['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+						);
+						assert.deepEqual(suspensions, [false, false, false]);
+						assert.deepEqual(reasons, ['0', '0', '0']);
+					});
+				});
+			});
+		});
+	});
+
+	describe('resumeSynths()', () => {
+		const [sBTC, sETH] = ['sBTC', 'sETH'].map(toBytes32);
+
+		let txn;
+		it('can only be invoked by the owner initially', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.resumeSynths,
+				accounts,
+				address: owner,
+				args: [[sBTC, sETH]],
+				reason: 'Restricted to access control list',
+			});
+		});
+
+		describe('when the owner suspends', () => {
+			const givenReason = '55';
+			beforeEach(async () => {
+				await systemStatus.suspendSynths([sBTC, sETH], givenReason, { from: owner });
+			});
+
+			describe('when the owner adds an address to resume only', () => {
+				beforeEach(async () => {
+					await systemStatus.updateAccessControl(SYNTH, account3, false, true, { from: owner });
+				});
+
+				it('other addresses still cannot resume', async () => {
+					await assert.revert(systemStatus.resumeSynths([sBTC], { from: account1 }));
+					await assert.revert(systemStatus.resumeSynths([sBTC], { from: account2 }));
+				});
+
+				describe('and that address invokes resume', () => {
+					beforeEach(async () => {
+						txn = await systemStatus.resumeSynths([sBTC, sETH], { from: account3 });
+					});
+
+					it('it succeeds for sBTC', async () => {
+						const { suspended, reason } = await systemStatus.synthSuspension(sBTC);
+						assert.equal(suspended, false);
+						assert.equal(reason, '0');
+						assert.eventEqual(txn.logs[0], 'SynthResumed', [sBTC, givenReason]);
+					});
+
+					it('and for sETH', async () => {
+						const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+						assert.equal(suspended, false);
+						assert.equal(reason, '0');
+						assert.eventEqual(txn.logs[1], 'SynthResumed', [sETH, givenReason]);
 					});
 
 					it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
