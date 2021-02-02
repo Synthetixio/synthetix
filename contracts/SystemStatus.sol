@@ -215,7 +215,7 @@ contract SystemStatus is Owned, ISystemStatus {
     }
 
     function _internalRequireSynthExchangeActive(bytes32 currencyKey) internal view {
-        require(!synthExchangeSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
+        require(!synthExchangeSuspension[currencyKey].suspended, "Synth exchange suspended. Operation prohibited");
     }
 
     function _internalRequireSynthActive(bytes32 currencyKey) internal view {
