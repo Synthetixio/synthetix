@@ -26,9 +26,10 @@ task('test')
 				hre.config.mocha.grep = '@ovm-skip';
 				hre.config.mocha.invert = true;
 			}
-			hre.config.mocha.timeout = 10000e3;
+			hre.config.mocha.timeout = 3600e3; // 1hr timeout for ovm
 		} else {
-			hre.config.mocha.timeout = 90e3;
+			// apply a 90s timeout unless already set (for coverage say)
+			hre.config.mocha.timeout = hre.config.mocha.timeout || 90e3;
 		}
 
 		if (native) {
