@@ -145,7 +145,7 @@
 			"major": 2,
 			"minor": 38
 		},
-		"sources": ["SystemStatus", "Exchanger", "Synthetix"],
+		"sources": ["Synthetix", "SystemStatus"],
 		"sips": [109]
 	}
 ]
