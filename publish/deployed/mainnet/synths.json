@@ -371,9 +371,9 @@
 		"index": "sDEFI",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2714.42,
-			"upperLimit": 4071.63,
-			"lowerLimit": 1357.21
+			"entryPoint": 10048.068,
+			"upperLimit": 15072.102,
+			"lowerLimit": 5024.034
 		}
 	},
 	{
