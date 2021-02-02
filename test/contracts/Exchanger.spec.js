@@ -636,6 +636,20 @@ contract('Exchanger (spec tests)', async accounts => {
 					await synthetix.settle(sAUD, { from: account2 });
 				});
 			});
+			describe('when Synth(sBTC) is suspended for exchanging', () => {
+				beforeEach(async () => {
+					await setStatus({
+						owner,
+						systemStatus,
+						section: 'SynthExchange',
+						suspend: true,
+						synth: sBTC,
+					});
+				});
+				it('then settling it still works', async () => {
+					await synthetix.settle(sBTC, { from: account1 });
+				});
+			});
 		});
 		describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
 			beforeEach(async () => {
@@ -1588,7 +1602,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 		describe('suspension conditions on Synthetix.exchange()', () => {
 			const synth = sETH;
-			['System', 'Exchange', 'Synth'].forEach(section => {
+			['System', 'Exchange', 'SynthExchange', 'Synth'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
 						await setStatus({ owner, systemStatus, section, suspend: true, synth });
@@ -1834,7 +1848,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 						describe('suspension conditions on Synthetix.exchangeOnBehalf()', () => {
 							const synth = sAUD;
-							['System', 'Exchange', 'Synth'].forEach(section => {
+							['System', 'Exchange', 'SynthExchange', 'Synth'].forEach(section => {
 								describe(`when ${section} is suspended`, () => {
 									beforeEach(async () => {
 										await setStatus({ owner, systemStatus, section, suspend: true, synth });
@@ -1946,7 +1960,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 						describe('suspension conditions on Synthetix.exchangeOnBehalfWithTracking()', () => {
 							const synth = sAUD;
-							['System', 'Exchange', 'Synth'].forEach(section => {
+							['System', 'Exchange', 'SynthExchange', 'Synth'].forEach(section => {
 								describe(`when ${section} is suspended`, () => {
 									beforeEach(async () => {
 										await setStatus({ owner, systemStatus, section, suspend: true, synth });
