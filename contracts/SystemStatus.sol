@@ -43,12 +43,16 @@ contract SystemStatus is Owned, ISystemStatus {
     function requireIssuanceActive() external view {
         // Issuance requires the system be active
         _internalRequireSystemActive();
-        require(!issuanceSuspension.suspended, "Issuance is suspended. Operation prohibited");
+
+        // and issuance itself of course
+        _internalRequireIssuanceActive();
     }
 
     function requireExchangeActive() external view {
-        // Issuance requires the system be active
+        // Exchanging requires the system be active
         _internalRequireSystemActive();
+
+        // and exchanging itself of course
         _internalRequireExchangeActive();
     }
 
@@ -200,6 +204,10 @@ contract SystemStatus is Owned, ISystemStatus {
                 ? "Synthetix is suspended, upgrade in progress... please stand by"
                 : "Synthetix is suspended. Operation prohibited"
         );
+    }
+
+    function _internalRequireIssuanceActive() internal view {
+        require(!issuanceSuspension.suspended, "Issuance is suspended. Operation prohibited");
     }
 
     function _internalRequireExchangeActive() internal view {
