@@ -30,6 +30,8 @@ interface ISystemStatus {
 
     function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
 
+    function synthExchangeSuspension(bytes32 currencyKey) external view returns (bool suspended, uint248 reason);
+
     function synthSuspension(bytes32 currencyKey) external view returns (bool suspended, uint248 reason);
 
     // Restricted functions

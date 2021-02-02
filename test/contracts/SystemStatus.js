@@ -11,9 +11,13 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 const { toBytes32 } = require('../..');
 
 contract('SystemStatus', async accounts => {
-	const [SYSTEM, ISSUANCE, EXCHANGE, SYNTH] = ['System', 'Issuance', 'Exchange', 'Synth'].map(
-		toBytes32
-	);
+	const [SYSTEM, ISSUANCE, EXCHANGE, SYNTH_EXCHANGE, SYNTH] = [
+		'System',
+		'Issuance',
+		'Exchange',
+		'SynthExchange',
+		'Synth',
+	].map(toBytes32);
 
 	const [, owner, account1, account2, account3] = accounts;
 
@@ -30,14 +34,16 @@ contract('SystemStatus', async accounts => {
 			abi: systemStatus.abi,
 			ignoreParents: ['Owned'],
 			expected: [
-				'suspendSystem',
-				'resumeSystem',
-				'suspendIssuance',
-				'resumeIssuance',
-				'suspendExchange',
 				'resumeExchange',
-				'suspendSynth',
+				'resumeIssuance',
 				'resumeSynth',
+				'resumeSynthExchange',
+				'resumeSystem',
+				'suspendExchange',
+				'suspendIssuance',
+				'suspendSynth',
+				'suspendSynthExchange',
+				'suspendSystem',
 				'updateAccessControl',
 			],
 		});
@@ -584,6 +590,223 @@ contract('SystemStatus', async accounts => {
 						);
 						await assert.revert(systemStatus.resumeSynth(toBytes32('sETH'), { from: account2 }));
 					});
+				});
+			});
+		});
+	});
+
+	describe('suspendSynthExchange()', () => {
+		let txn;
+		const sBTC = toBytes32('sBTC');
+
+		it('is not suspended initially', async () => {
+			const { suspended, reason } = await systemStatus.synthExchangeSuspension(sBTC);
+			assert.equal(suspended, false);
+			assert.equal(reason, '0');
+		});
+
+		it('can only be invoked by the owner initially', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.suspendSynthExchange,
+				accounts,
+				address: owner,
+				args: [sBTC, '0'],
+				reason: 'Restricted to access control list',
+			});
+		});
+
+		// it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
+		// 	const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
+		// 		['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+		// 	);
+		// 	assert.deepEqual(suspensions, [false, false, false]);
+		// 	assert.deepEqual(reasons, ['0', '0', '0']);
+		// });
+
+		describe('when the owner suspends', () => {
+			const givenReason = '150';
+			beforeEach(async () => {
+				txn = await systemStatus.suspendSynthExchange(sBTC, givenReason, { from: owner });
+			});
+			it('it succeeds', async () => {
+				const { suspended, reason } = await systemStatus.synthExchangeSuspension(sBTC);
+				assert.equal(suspended, true);
+				assert.equal(reason, givenReason);
+				assert.eventEqual(txn, 'SynthExchangeSuspended', [sBTC, reason]);
+			});
+			// it('getSynthSuspensions(sETH, sBTC, iBTC) returns values for sBTC', async () => {
+			// 	const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
+			// 		['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+			// 	);
+			// 	assert.deepEqual(suspensions, [false, true, false]);
+			// 	assert.deepEqual(reasons, ['0', givenReason, '0']);
+			// });
+		});
+
+		describe('when the owner adds an address to suspend only', () => {
+			beforeEach(async () => {
+				await systemStatus.updateAccessControl(SYNTH_EXCHANGE, account3, true, false, {
+					from: owner,
+				});
+			});
+
+			it('other addresses still cannot suspend', async () => {
+				await assert.revert(
+					systemStatus.suspendSynthExchange(sBTC, '4', { from: account1 }),
+					'Restricted to access control list'
+				);
+				await assert.revert(
+					systemStatus.suspendSynthExchange(sBTC, '0', { from: account2 }),
+					'Restricted to access control list'
+				);
+			});
+
+			describe('and that address invokes suspend', () => {
+				beforeEach(async () => {
+					txn = await systemStatus.suspendSynthExchange(sBTC, '3', { from: account3 });
+				});
+				it('it succeeds', async () => {
+					const { suspended, reason } = await systemStatus.synthExchangeSuspension(sBTC);
+					assert.equal(suspended, true);
+					assert.equal(reason, '3');
+				});
+				it('and emits the expected event', async () => {
+					assert.eventEqual(txn, 'SynthExchangeSuspended', [sBTC, '3']);
+				});
+				it('and the synth require check reverts as expected', async () => {
+					await assert.revert(
+						systemStatus.requireSynthExchangeActive(sBTC),
+						'Synth is suspended. Operation prohibited'
+					);
+				});
+				it('but not the others', async () => {
+					await systemStatus.requireSystemActive();
+					await systemStatus.requireIssuanceActive();
+					await systemStatus.requireSynthActive(sBTC);
+					await systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC);
+				});
+				it('and requireExchangeBetweenSynthsAllowed() reverts if one is the given synth', async () => {
+					const reason = 'Synth is suspended. Operation prohibited';
+					await assert.revert(
+						systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('sETH'), sBTC),
+						reason
+					);
+					await assert.revert(
+						systemStatus.requireExchangeBetweenSynthsAllowed(sBTC, toBytes32('sTRX')),
+						reason
+					);
+					await systemStatus.requireExchangeBetweenSynthsAllowed(
+						toBytes32('sETH'),
+						toBytes32('sUSD')
+					); // no issues
+					await systemStatus.requireExchangeBetweenSynthsAllowed(
+						toBytes32('iTRX'),
+						toBytes32('iBTC')
+					); // no issues
+				});
+				it('and requireExchangeBetweenSynthsAllowed() reverts if one is the given synth', async () => {
+					const reason = 'Synth is suspended. Operation prohibited';
+					await assert.revert(
+						systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('sETH'), sBTC),
+						reason
+					);
+					await assert.revert(
+						systemStatus.requireExchangeBetweenSynthsAllowed(sBTC, toBytes32('sTRX')),
+						reason
+					);
+					await systemStatus.requireExchangeBetweenSynthsAllowed(
+						toBytes32('sETH'),
+						toBytes32('sUSD')
+					); // no issues
+					await systemStatus.requireExchangeBetweenSynthsAllowed(
+						toBytes32('iTRX'),
+						toBytes32('iBTC')
+					); // no issues
+				});
+				it('yet that address cannot resume', async () => {
+					await assert.revert(
+						systemStatus.resumeSynthExchange(sBTC, { from: account2 }),
+						'Restricted to access control list'
+					);
+				});
+
+				it('yet the owner can still resume', async () => {
+					await systemStatus.resumeSynthExchange(sBTC, { from: owner });
+				});
+			});
+		});
+	});
+
+	describe('resumeSynthExchange()', () => {
+		const sBTC = toBytes32('sBTC');
+
+		let txn;
+		it('can only be invoked by the owner initially', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.resumeSynthExchange,
+				accounts,
+				address: owner,
+				args: [sBTC],
+				reason: 'Restricted to access control list',
+			});
+		});
+
+		describe('when the owner suspends', () => {
+			const givenReason = '55';
+			beforeEach(async () => {
+				await systemStatus.suspendSynthExchange(sBTC, givenReason, { from: owner });
+			});
+
+			describe('when the owner adds an address to resume only', () => {
+				beforeEach(async () => {
+					await systemStatus.updateAccessControl(SYNTH_EXCHANGE, account3, false, true, {
+						from: owner,
+					});
+				});
+
+				it('other addresses still cannot resume', async () => {
+					await assert.revert(systemStatus.resumeSynthExchange(sBTC, { from: account1 }));
+					await assert.revert(systemStatus.resumeSynthExchange(sBTC, { from: account2 }));
+				});
+
+				describe('and that address invokes resume', () => {
+					beforeEach(async () => {
+						txn = await systemStatus.resumeSynthExchange(sBTC, { from: account3 });
+					});
+
+					it('it succeeds', async () => {
+						const { suspended, reason } = await systemStatus.synthExchangeSuspension(sBTC);
+						assert.equal(suspended, false);
+						assert.equal(reason, '0');
+					});
+
+					it('and emits the expected event', async () => {
+						assert.eventEqual(txn, 'SynthExchangeResumed', [sBTC, givenReason]);
+					});
+
+					it('and all the require checks succeed', async () => {
+						await systemStatus.requireSystemActive();
+						await systemStatus.requireIssuanceActive();
+						await systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('sETH'), sBTC);
+						await systemStatus.requireSynthActive(sBTC);
+						await systemStatus.requireSynthsActive(sBTC, toBytes32('sETH'));
+						await systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC);
+					});
+
+					it('yet that address cannot suspend', async () => {
+						await assert.revert(
+							systemStatus.suspendSynthExchange(sBTC, givenReason, { from: account2 }),
+							'Restricted to access control list'
+						);
+					});
+
+					// it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
+					// 	const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
+					// 		['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+					// 	);
+					// 	assert.deepEqual(suspensions, [false, false, false]);
+					// 	assert.deepEqual(reasons, ['0', '0', '0']);
+					// });
 				});
 			});
 		});

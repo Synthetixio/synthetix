@@ -23,6 +23,8 @@ contract SystemStatus is Owned, ISystemStatus {
 
     Suspension public exchangeSuspension;
 
+    mapping(bytes32 => Suspension) public synthExchangeSuspension;
+
     mapping(bytes32 => Suspension) public synthSuspension;
 
     constructor(address _owner) public Owned(_owner) {
@@ -50,6 +52,12 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalRequireExchangeActive();
     }
 
+    function requireSynthExchangeActive(bytes32 currencyKey) external view {
+        // Synth exchange and transfer requires the system be active
+        _internalRequireSystemActive();
+        _internalRequireSynthExchangeActive(currencyKey);
+    }
+
     function requireSynthActive(bytes32 currencyKey) external view {
         // Synth exchange and transfer requires the system be active
         _internalRequireSystemActive();
@@ -71,7 +79,8 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalRequireExchangeActive();
 
         // and the synth exchanging between the synths must be active
-        // TODO
+        _internalRequireSynthExchangeActive(sourceCurrencyKey);
+        _internalRequireSynthExchangeActive(destinationCurrencyKey);
 
         // and finally, the synths cannot be suspended
         _internalRequireSynthActive(sourceCurrencyKey);
@@ -148,6 +157,19 @@ contract SystemStatus is Owned, ISystemStatus {
         exchangeSuspension.reason = 0;
     }
 
+    function suspendSynthExchange(bytes32 currencyKey, uint256 reason) external {
+        _requireAccessToSuspend(SECTION_SYNTH_EXCHANGE);
+        synthExchangeSuspension[currencyKey].suspended = true;
+        synthExchangeSuspension[currencyKey].reason = uint248(reason);
+        emit SynthExchangeSuspended(currencyKey, reason);
+    }
+
+    function resumeSynthExchange(bytes32 currencyKey) external {
+        _requireAccessToResume(SECTION_SYNTH_EXCHANGE);
+        emit SynthExchangeResumed(currencyKey, uint256(synthExchangeSuspension[currencyKey].reason));
+        delete synthExchangeSuspension[currencyKey];
+    }
+
     function suspendSynth(bytes32 currencyKey, uint256 reason) external {
         _requireAccessToSuspend(SECTION_SYNTH);
         synthSuspension[currencyKey].suspended = true;
@@ -184,6 +206,10 @@ contract SystemStatus is Owned, ISystemStatus {
         require(!exchangeSuspension.suspended, "Exchange is suspended. Operation prohibited");
     }
 
+    function _internalRequireSynthExchangeActive(bytes32 currencyKey) internal view {
+        require(!synthExchangeSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
+    }
+
     function _internalRequireSynthActive(bytes32 currencyKey) internal view {
         require(!synthSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
     }
@@ -217,6 +243,9 @@ contract SystemStatus is Owned, ISystemStatus {
 
     event ExchangeSuspended(uint256 reason);
     event ExchangeResumed(uint256 reason);
+
+    event SynthExchangeSuspended(bytes32 currencyKey, uint256 reason);
+    event SynthExchangeResumed(bytes32 currencyKey, uint256 reason);
 
     event SynthSuspended(bytes32 currencyKey, uint256 reason);
     event SynthResumed(bytes32 currencyKey, uint256 reason);
