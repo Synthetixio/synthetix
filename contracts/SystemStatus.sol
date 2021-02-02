@@ -14,6 +14,7 @@ contract SystemStatus is Owned, ISystemStatus {
     bytes32 public constant SECTION_SYSTEM = "System";
     bytes32 public constant SECTION_ISSUANCE = "Issuance";
     bytes32 public constant SECTION_EXCHANGE = "Exchange";
+    bytes32 public constant SECTION_SYNTH_EXCHANGE = "SynthExchange";
     bytes32 public constant SECTION_SYNTH = "Synth";
 
     Suspension public systemSuspension;
@@ -28,6 +29,7 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalUpdateAccessControl(SECTION_SYSTEM, _owner, true, true);
         _internalUpdateAccessControl(SECTION_ISSUANCE, _owner, true, true);
         _internalUpdateAccessControl(SECTION_EXCHANGE, _owner, true, true);
+        _internalUpdateAccessControl(SECTION_SYNTH_EXCHANGE, _owner, true, true);
         _internalUpdateAccessControl(SECTION_SYNTH, _owner, true, true);
     }
 
@@ -45,23 +47,35 @@ contract SystemStatus is Owned, ISystemStatus {
     function requireExchangeActive() external view {
         // Issuance requires the system be active
         _internalRequireSystemActive();
-        require(!exchangeSuspension.suspended, "Exchange is suspended. Operation prohibited");
+        _internalRequireExchangeActive();
     }
 
     function requireSynthActive(bytes32 currencyKey) external view {
         // Synth exchange and transfer requires the system be active
         _internalRequireSystemActive();
-        require(!synthSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
+        _internalRequireSynthActive(currencyKey);
     }
 
     function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
         // Synth exchange and transfer requires the system be active
         _internalRequireSystemActive();
+        _internalRequireSynthActive(sourceCurrencyKey);
+        _internalRequireSynthActive(destinationCurrencyKey);
+    }
 
-        require(
-            !synthSuspension[sourceCurrencyKey].suspended && !synthSuspension[destinationCurrencyKey].suspended,
-            "One or more synths are suspended. Operation prohibited"
-        );
+    function requireExchangeBetweenSynthsAllowed(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
+        // Synth exchange and transfer requires the system be active
+        _internalRequireSystemActive();
+
+        // and exchanging must be active
+        _internalRequireExchangeActive();
+
+        // and the synth exchanging between the synths must be active
+        // TODO
+
+        // and finally, the synths cannot be suspended
+        _internalRequireSynthActive(sourceCurrencyKey);
+        _internalRequireSynthActive(destinationCurrencyKey);
     }
 
     function isSystemUpgrading() external view returns (bool) {
@@ -166,6 +180,14 @@ contract SystemStatus is Owned, ISystemStatus {
         );
     }
 
+    function _internalRequireExchangeActive() internal view {
+        require(!exchangeSuspension.suspended, "Exchange is suspended. Operation prohibited");
+    }
+
+    function _internalRequireSynthActive(bytes32 currencyKey) internal view {
+        require(!synthSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
+    }
+
     function _internalUpdateAccessControl(
         bytes32 section,
         address account,
@@ -176,6 +198,7 @@ contract SystemStatus is Owned, ISystemStatus {
             section == SECTION_SYSTEM ||
                 section == SECTION_ISSUANCE ||
                 section == SECTION_EXCHANGE ||
+                section == SECTION_SYNTH_EXCHANGE ||
                 section == SECTION_SYNTH,
             "Invalid section supplied"
         );

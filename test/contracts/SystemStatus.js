@@ -476,10 +476,17 @@ contract('SystemStatus', async accounts => {
 						'Exchange is suspended. Operation prohibited'
 					);
 				});
+				it('and requireExchangeBetweenSynthsAllowed reverts as expected', async () => {
+					await assert.revert(
+						systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('sETH'), toBytes32('sBTC')),
+						'Exchange is suspended. Operation prohibited'
+					);
+				});
 				it('but not the others', async () => {
 					await systemStatus.requireSystemActive();
 					await systemStatus.requireSynthActive(toBytes32('sETH'));
 				});
+
 				it('yet that address cannot resume', async () => {
 					await assert.revert(
 						systemStatus.resumeExchange({ from: account2 }),
@@ -552,6 +559,10 @@ contract('SystemStatus', async accounts => {
 					it('and all the require checks succeed', async () => {
 						await systemStatus.requireSystemActive();
 						await systemStatus.requireExchangeActive();
+						await systemStatus.requireExchangeBetweenSynthsAllowed(
+							toBytes32('sETH'),
+							toBytes32('sBTC')
+						);
 						await systemStatus.requireSynthActive(toBytes32('sETH'));
 					});
 
@@ -665,11 +676,30 @@ contract('SystemStatus', async accounts => {
 					await systemStatus.requireIssuanceActive();
 				});
 				it('and requireSynthsActive() reverts if one is the given synth', async () => {
-					const reason = 'One or more synths are suspended. Operation prohibited';
+					const reason = 'Synth is suspended. Operation prohibited';
 					await assert.revert(systemStatus.requireSynthsActive(toBytes32('sETH'), sBTC), reason);
 					await assert.revert(systemStatus.requireSynthsActive(sBTC, toBytes32('sTRX')), reason);
 					await systemStatus.requireSynthsActive(toBytes32('sETH'), toBytes32('sUSD')); // no issues
 					await systemStatus.requireSynthsActive(toBytes32('iTRX'), toBytes32('iBTC')); // no issues
+				});
+				it('and requireExchangeBetweenSynthsAllowed() reverts if one is the given synth', async () => {
+					const reason = 'Synth is suspended. Operation prohibited';
+					await assert.revert(
+						systemStatus.requireExchangeBetweenSynthsAllowed(toBytes32('sETH'), sBTC),
+						reason
+					);
+					await assert.revert(
+						systemStatus.requireExchangeBetweenSynthsAllowed(sBTC, toBytes32('sTRX')),
+						reason
+					);
+					await systemStatus.requireExchangeBetweenSynthsAllowed(
+						toBytes32('sETH'),
+						toBytes32('sUSD')
+					); // no issues
+					await systemStatus.requireExchangeBetweenSynthsAllowed(
+						toBytes32('iTRX'),
+						toBytes32('iBTC')
+					); // no issues
 				});
 				it('yet that address cannot resume', async () => {
 					await assert.revert(
