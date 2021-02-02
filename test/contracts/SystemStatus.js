@@ -615,13 +615,13 @@ contract('SystemStatus', async accounts => {
 			});
 		});
 
-		// it('getSynthSuspensions(sETH, sBTC, iBTC) is empty', async () => {
-		// 	const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
-		// 		['sETH', 'sBTC', 'iBTC'].map(toBytes32)
-		// 	);
-		// 	assert.deepEqual(suspensions, [false, false, false]);
-		// 	assert.deepEqual(reasons, ['0', '0', '0']);
-		// });
+		it('getSynthExchangeSuspensions(sETH, sBTC, iBTC) is empty', async () => {
+			const { exchangeSuspensions, reasons } = await systemStatus.getSynthExchangeSuspensions(
+				['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+			);
+			assert.deepEqual(exchangeSuspensions, [false, false, false]);
+			assert.deepEqual(reasons, ['0', '0', '0']);
+		});
 
 		describe('when the owner suspends', () => {
 			const givenReason = '150';
@@ -634,13 +634,13 @@ contract('SystemStatus', async accounts => {
 				assert.equal(reason, givenReason);
 				assert.eventEqual(txn, 'SynthExchangeSuspended', [sBTC, reason]);
 			});
-			// it('getSynthSuspensions(sETH, sBTC, iBTC) returns values for sBTC', async () => {
-			// 	const { suspensions, reasons } = await systemStatus.getSynthSuspensions(
-			// 		['sETH', 'sBTC', 'iBTC'].map(toBytes32)
-			// 	);
-			// 	assert.deepEqual(suspensions, [false, true, false]);
-			// 	assert.deepEqual(reasons, ['0', givenReason, '0']);
-			// });
+			it('getSynthExchangeSuspensions(sETH, sBTC, iBTC) returns values for sBTC', async () => {
+				const { exchangeSuspensions, reasons } = await systemStatus.getSynthExchangeSuspensions(
+					['sETH', 'sBTC', 'iBTC'].map(toBytes32)
+				);
+				assert.deepEqual(exchangeSuspensions, [false, true, false]);
+				assert.deepEqual(reasons, ['0', givenReason, '0']);
+			});
 		});
 
 		describe('when the owner adds an address to suspend only', () => {

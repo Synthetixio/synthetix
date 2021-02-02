@@ -95,6 +95,20 @@ contract SystemStatus is Owned, ISystemStatus {
         return systemSuspension.suspended && systemSuspension.reason == SUSPENSION_REASON_UPGRADE;
     }
 
+    function getSynthExchangeSuspensions(bytes32[] calldata synths)
+        external
+        view
+        returns (bool[] memory exchangeSuspensions, uint256[] memory reasons)
+    {
+        exchangeSuspensions = new bool[](synths.length);
+        reasons = new uint256[](synths.length);
+
+        for (uint i = 0; i < synths.length; i++) {
+            exchangeSuspensions[i] = synthExchangeSuspension[synths[i]].suspended;
+            reasons[i] = synthExchangeSuspension[synths[i]].reason;
+        }
+    }
+
     function getSynthSuspensions(bytes32[] calldata synths)
         external
         view
