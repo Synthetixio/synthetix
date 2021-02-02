@@ -11,11 +11,7 @@ const { gray, yellow, red } = require('chalk');
 const { ovmIgnored } = require('../..');
 
 const optimizeIfRequired = require('../util/optimizeIfRequired');
-// const {
-// 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
-// } = require('.');
-
-// const { SOLC_OUTPUT_FILENAME } = require('hardhat/internal/constants');
+const collectAstData = require('../util/collectAstData');
 
 const { collectContractBytesCodes } = require('../util/collectContractBytecodes');
 const { logContractSizes } = require('../../publish/src/contract-size');
@@ -39,6 +35,7 @@ task('compile')
 		}
 
 		optimizeIfRequired({ hre, taskArguments });
+		await collectAstData({ hre, taskArguments });
 
 		await runSuper(taskArguments);
 
