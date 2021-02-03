@@ -62,8 +62,8 @@ const knownAccounts = {
 			address: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
 		},
 		{
-			name: 'renBTCWallet', // Curve: REN Swap
-			address: '0x93054188d876f558f4a66b2ef1d97d16edf0895b',
+			name: 'renBTCWallet', // KeeperDAO wallet (has renBTC and ETH)
+			address: '0x35ffd6e268610e764ff6944d07760d0efe5e40e5',
 		},
 		{
 			name: 'loansAccount',
