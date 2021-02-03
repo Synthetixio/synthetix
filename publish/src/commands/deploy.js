@@ -1451,9 +1451,12 @@ const deploy = async ({
 		);
 
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
-		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
+		// And on local filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
 		.filter(([contract]) => {
-			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
+			if (
+				network === 'local' &&
+				/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)
+			) {
 				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
 				console.log(
 					redBright(
