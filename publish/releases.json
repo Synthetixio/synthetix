@@ -138,5 +138,14 @@
 		"ovm": true,
 		"sources": ["FeePool", "FeePoolState", "SynthetixState"],
 		"sips": [106]
+	},
+	{
+		"name": "Bellatrix",
+		"version": {
+			"major": 2,
+			"minor": 38
+		},
+		"sources": ["Synthetix", "SystemStatus"],
+		"sips": [109]
 	}
 ]
