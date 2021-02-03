@@ -62,8 +62,8 @@ const knownAccounts = {
 			address: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
 		},
 		{
-			name: 'renBTCWallet',
-			address: '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E',
+			name: 'renBTCWallet', // Curve: REN Swap
+			address: '0x93054188d876f558f4a66b2ef1d97d16edf0895b',
 		},
 		{
 			name: 'loansAccount',
