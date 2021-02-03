@@ -215,14 +215,7 @@ contract('ShortingRewards', accounts => {
 		shortingRewards = await setupContract({
 			accounts,
 			contract: 'ShortingRewards',
-			args: [
-				owner,
-				addressResolver.address,
-				rewardsDistribution.address,
-				rewardsToken.address,
-				short.address,
-				toBytes32('SynthsBTC'),
-			],
+			args: [owner, addressResolver.address, rewardsDistribution.address, rewardsToken.address],
 		});
 
 		await shortingRewards.rebuildCache();
@@ -264,7 +257,6 @@ contract('ShortingRewards', accounts => {
 			expected: [
 				'enrol',
 				'withdraw',
-				'exit',
 				'getReward',
 				'notifyRewardAmount',
 				'setPaused',
@@ -277,10 +269,6 @@ contract('ShortingRewards', accounts => {
 	describe('Constructor & Settings', () => {
 		it('should set rewards token on constructor', async () => {
 			assert.equal(await shortingRewards.rewardsToken(), rewardsToken.address);
-		});
-
-		it('should staking token on constructor', async () => {
-			assert.equal(await shortingRewards.synth(), toBytes32('SynthsBTC'));
 		});
 
 		it('should set owner on constructor', async () => {
@@ -402,8 +390,31 @@ contract('ShortingRewards', accounts => {
 		});
 	});
 
+	describe('onlyShort modifier', async () => {
+		it('enrol() can only be called by the short contract', async () => {
+			await assert.revert(
+				shortingRewards.enrol(account1, toUnit(1), { from: account1 }),
+				'Only Short Contract'
+			);
+		});
+
+		it('withdraw() can only be called by the short contract', async () => {
+			await assert.revert(
+				shortingRewards.withdraw(account1, toUnit(1), { from: account1 }),
+				'Only Short Contract'
+			);
+		});
+
+		it('getReward() can only be called by the short contract', async () => {
+			await assert.revert(
+				shortingRewards.getReward(account1, { from: account1 }),
+				'Only Short Contract'
+			);
+		});
+	});
+
 	describe('enrol()', () => {
-		it('enroling increases staking balance', async () => {
+		it('opening a short increases staking balance', async () => {
 			const initialStakeBal = await shortingRewards.balanceOf(account1);
 
 			await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
@@ -412,10 +423,30 @@ contract('ShortingRewards', accounts => {
 
 			assert.bnGt(postStakeBal, initialStakeBal);
 		});
+
+		it('drawing on a short increases the staking balance', async () => {
+			const initialStakeBal = await shortingRewards.balanceOf(account1);
+
+			tx = await short.open(toUnit(20000), toUnit(1), sBTC, { from: account1 });
+			id = await getid(tx);
+
+			const postOpenBal = await shortingRewards.balanceOf(account1);
+
+			assert.bnGt(postOpenBal, initialStakeBal);
+			assert.bnEqual(postOpenBal, toUnit(1));
+
+			await fastForward(DAY);
+			await short.draw(id, toUnit(0.1), { from: account1 });
+
+			const postDrawBal = await shortingRewards.balanceOf(account1);
+
+			assert.bnGt(postDrawBal, postOpenBal);
+			assert.bnEqual(postDrawBal, toUnit(1.1));
+		});
 	});
 
-	describe('If a position is closed by liquidation, they are withdrawn.', () => {
-		it('closing reduces the balance', async () => {
+	describe('When positions are liquidated, they are withdraw from the rewards', () => {
+		it('closing reduces the balance to 0', async () => {
 			const initialStakeBal = await shortingRewards.balanceOf(account1);
 
 			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
@@ -437,6 +468,28 @@ contract('ShortingRewards', accounts => {
 
 			// Should be back to 0
 			assert.bnEqual(postStakeBal, initialStakeBal);
+		});
+
+		it('partial liquidation reduces the balannce', async () => {
+			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			id = await getid(tx);
+
+			await fastForward(DAY);
+
+			// Make the short so underwater it must get closed.
+			const timestamp = await currentTime();
+			await exchangeRates.updateRates([sBTC], ['20000'].map(toUnit), timestamp, {
+				from: oracle,
+			});
+
+			// close the loan via liquidation
+			await issuesBTCtoAccount(toUnit(1), account2);
+			await short.liquidate(account1, id, toUnit(0.1), { from: account2 });
+
+			const postStakeBal = await shortingRewards.balanceOf(account1);
+
+			// Should be at 0.9 now
+			assert.bnEqual(postStakeBal, toUnit(0.9));
 		});
 	});
 
@@ -697,14 +750,7 @@ contract('ShortingRewards', accounts => {
 			localshortingRewards = await setupContract({
 				accounts,
 				contract: 'ShortingRewards',
-				args: [
-					owner,
-					addressResolver.address,
-					rewardsDistribution.address,
-					rewardsToken.address,
-					short.address,
-					toBytes32('SynthsBTC'),
-				],
+				args: [owner, addressResolver.address, rewardsDistribution.address, rewardsToken.address],
 			});
 
 			await localshortingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
