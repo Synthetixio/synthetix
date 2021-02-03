@@ -2896,7 +2896,8 @@
 		"contracts": {
 			"StakingRewardsiETH": {
 				"address": "0x6d4F135aF7DFCd4BDF6dCb9D7911F5d243872a52",
-				"status": "current"
+				"status": "replaced",
+				"replaced_in": "v2.37.2"
 			}
 		}
 	},
@@ -2997,6 +2998,21 @@
 				"address": "0x045e507925d2e05D114534D0810a1abD94aca8d6",
 				"status": "current",
 				"keccak256": "0x072ba93f033853347432cd3d6f47d4a4d54cd106185de9382cde9977636a00a7"
+			}
+		}
+	},
+	"v2.37.2": {
+		"tag": "v2.37.2",
+		"fulltag": "v2.37.2",
+		"release": "Gacrux",
+		"network": "mainnet",
+		"date": "2021-02-03T20:51:49+11:00",
+		"commit": "2dbefe270db60cfce32c7be5042f6b21210b59ec",
+		"contracts": {
+			"StakingRewardsiETH": {
+				"address": "0x3f27c540ADaE3a9E8c875C61e3B970b559d7F65d",
+				"status": "current",
+				"keccak256": "0x3e6a3472be447625ea5b31cfbf61920dd3f68d77a9cb29c9c996f3d14923e4e9"
 			}
 		}
 	}
