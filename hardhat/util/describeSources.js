@@ -32,15 +32,22 @@ async function _collectSourcesAndAsts({ hre }) {
 
 		// Build the contract key to find the associated ast from the path
 		// i.e. 'contracts/Synthetix'
-		const pathComponents = dbgPath.split(path.sep);
-		const lastIdx = pathComponents.length - 1;
-		const contractKey = `${pathComponents[lastIdx - 2]}/${pathComponents[lastIdx - 1]}`;
+		const reducedPath = dbgPath.replace(`${hre.config.paths.artifacts}/`, '');
+		const pathComponents = reducedPath.split('/');
 
 		// Only include the ones under 'contracts/'
-		if (contractKey.includes('contracts/')) {
-			asts.push(buildInfo.output.sources[contractKey].ast);
-			sources.push(buildInfo.input.sources[contractKey].content);
+		if (pathComponents[0] !== 'contracts') {
+			continue;
 		}
+
+		// Exclude test-helpers
+		if (pathComponents.some(component => component === 'test-helpers')) {
+			continue;
+		}
+
+		const contractKey = pathComponents.slice(0, pathComponents.length - 1).join('/');
+		asts.push(buildInfo.output.sources[contractKey].ast);
+		sources.push(buildInfo.input.sources[contractKey].content);
 	}
 
 	return { sources, asts };
