@@ -1350,7 +1350,15 @@ contract('SystemStatus', async accounts => {
 					'Restricted to access control list'
 				);
 				await assert.revert(
+					systemStatus.resumeSystem({ from: account2 }),
+					'Restricted to access control list'
+				);
+				await assert.revert(
 					systemStatus.suspendSynthExchange(synth, '9', { from: account1 }),
+					'Restricted to access control list'
+				);
+				await assert.revert(
+					systemStatus.suspendSynthExchange(synth, '9', { from: account2 }),
 					'Restricted to access control list'
 				);
 			});
