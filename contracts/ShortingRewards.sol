@@ -25,7 +25,6 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
     /* ========== STATE VARIABLES ========== */
 
     IERC20 public rewardsToken;
-    bytes32 public synth;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public rewardsDuration = 7 days;
@@ -48,12 +47,10 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
         address _owner,
         address _resolver,
         address _rewardsDistribution,
-        address _rewardsToken,
-        bytes32 _synth
+        address _rewardsToken
     ) public Owned(_owner) MixinResolver(_resolver) {
         rewardsToken = IERC20(_rewardsToken);
         rewardsDistribution = _rewardsDistribution;
-        synth = _synth;
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -182,5 +179,4 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
     event RewardsDurationUpdated(uint256 newDuration);
-    event Recovered(address token, uint256 amount);
 }
