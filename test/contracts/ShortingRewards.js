@@ -215,13 +215,7 @@ contract('ShortingRewards', accounts => {
 		shortingRewards = await setupContract({
 			accounts,
 			contract: 'ShortingRewards',
-			args: [
-				owner,
-				addressResolver.address,
-				rewardsDistribution.address,
-				rewardsToken.address,
-				toBytes32('sBTC'),
-			],
+			args: [owner, addressResolver.address, rewardsDistribution.address, rewardsToken.address],
 		});
 
 		await shortingRewards.rebuildCache();
@@ -275,10 +269,6 @@ contract('ShortingRewards', accounts => {
 	describe('Constructor & Settings', () => {
 		it('should set rewards token on constructor', async () => {
 			assert.equal(await shortingRewards.rewardsToken(), rewardsToken.address);
-		});
-
-		it('should staking token on constructor', async () => {
-			assert.equal(await shortingRewards.synth(), toBytes32('sBTC'));
 		});
 
 		it('should set owner on constructor', async () => {
@@ -760,13 +750,7 @@ contract('ShortingRewards', accounts => {
 			localshortingRewards = await setupContract({
 				accounts,
 				contract: 'ShortingRewards',
-				args: [
-					owner,
-					addressResolver.address,
-					rewardsDistribution.address,
-					rewardsToken.address,
-					toBytes32('sBTC'),
-				],
+				args: [owner, addressResolver.address, rewardsDistribution.address, rewardsToken.address],
 			});
 
 			await localshortingRewards.setRewardsDistribution(mockRewardsDistributionAddress, {
