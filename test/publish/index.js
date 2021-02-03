@@ -608,11 +608,6 @@ describe('publish scripts', () => {
 						const shortingRewardsName = `ShortingRewards${name}`;
 						const shortingRewardsContract = getContract({ target: shortingRewardsName });
 
-						assert.strictEqual(
-							await shortingRewardsContract.methods.synth().call(),
-							toBytes32(name)
-						);
-
 						const tokenAddress = await shortingRewardsContract.methods.rewardsToken().call();
 
 						if (isAddress(rewardsToken)) {
@@ -624,13 +619,14 @@ describe('publish scripts', () => {
 							);
 						}
 
-						// Test rewards distribution address
+						// Test rewards distribution address should be the deployer, since we are
+						// funding by the sDAO for the trial.
 						const rewardsDistributionAddress = await shortingRewardsContract.methods
 							.rewardsDistribution()
 							.call();
 						assert.strictEqual(
 							rewardsDistributionAddress.toLowerCase(),
-							targets['RewardsDistribution'].address.toLowerCase()
+							accounts.deployer.public.toLowerCase()
 						);
 					}
 				});
