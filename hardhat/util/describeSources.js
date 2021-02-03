@@ -87,9 +87,13 @@ function _processFiles({ asts, sources }) {
 }
 
 function _processFile({ source, ast }) {
+	const { contracts, libraries, interfaces } = _processContracts({ source, ast });
+
 	return {
 		imports: _processImports({ ast }),
-		contracts: _processContracts({ source, ast }),
+		contracts,
+		libraries,
+		interfaces,
 	};
 }
 
@@ -107,10 +111,19 @@ function _processImports({ ast }) {
 
 function _processContracts({ source, ast }) {
 	const contracts = {};
+	const libraries = {};
+	const interfaces = {};
 
 	for (const node of ast.nodes) {
 		if (node.nodeType === 'ContractDefinition') {
-			contracts[node.name] = {
+			let target = contracts;
+			if (node.contractKind === 'library') {
+				target = libraries;
+			} else if (node.contractKind === 'interface') {
+				target = interfaces;
+			}
+
+			target[node.name] = {
 				functions: _processFunctions({
 					source,
 					nodes: _filterNodes({ node, type: 'FunctionDefinition' }),
@@ -133,7 +146,7 @@ function _processContracts({ source, ast }) {
 		}
 	}
 
-	return contracts;
+	return { contracts, libraries, interfaces };
 }
 
 function _processStructs({ source, nodes }) {
@@ -229,10 +242,12 @@ function _processModifiers({ source, nodes }) {
 	const modifiers = [];
 
 	for (const node of nodes) {
+		const parameters = _processParameterList({ parameters: node.parameters.parameters });
 		modifiers.push({
 			name: node.name,
-			signature: `${node.name}${_processParameterList({ parameters: node.parameters.parameters })}`,
+			signature: `${node.name}${parameters}`,
 			visibility: node.visibility,
+			parameters,
 			lineNumber: _getLineNumber({ source, node }),
 		});
 	}
