@@ -18,6 +18,7 @@
 		"prepublishOnly": "npm run generate-asts && npm run pack",
 		"fork": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node --target-network mainnet",
 		"test": "hardhat test",
+		"describe": "hardhat describe",
 		"test:gas": "hardhat test --gas --optimizer || cat test-gas-used.log",
 		"test:ovm": "hardhat test --use-ovm --optimizer",
 		"test:prod": "hardhat test:prod --network localhost --optimizer",
