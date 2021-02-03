@@ -469,6 +469,17 @@ const setupContract = async ({
 			]);
 		},
 
+		async SystemStatus() {
+			// ensure the owner has suspend/resume control over everything
+			await instance.updateAccessControls(
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
+				[owner, owner, owner, owner, owner],
+				[true, true, true, true, true],
+				[true, true, true, true, true],
+				{ from: owner }
+			);
+		},
+
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });

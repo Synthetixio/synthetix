@@ -534,6 +534,24 @@ const deploy = async ({
 		args: [account],
 	});
 
+	if (network !== 'mainnet' && systemStatus) {
+		// On testnet, give the deployer the rights to update status
+		await runStep({
+			contract: 'SystemStatus',
+			target: systemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('System'), account],
+			expected: ({ canSuspend } = {}) => canSuspend,
+			write: 'updateAccessControls',
+			writeArg: [
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
+				[account, account, account, account, account],
+				[true, true, true, true, true],
+				[true, true, true, true, true],
+			],
+		});
+	}
+
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
 		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
