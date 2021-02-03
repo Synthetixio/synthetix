@@ -27,13 +27,7 @@ contract SystemStatus is Owned, ISystemStatus {
 
     mapping(bytes32 => Suspension) public synthSuspension;
 
-    constructor(address _owner) public Owned(_owner) {
-        _internalUpdateAccessControl(SECTION_SYSTEM, _owner, true, true);
-        _internalUpdateAccessControl(SECTION_ISSUANCE, _owner, true, true);
-        _internalUpdateAccessControl(SECTION_EXCHANGE, _owner, true, true);
-        _internalUpdateAccessControl(SECTION_SYNTH_EXCHANGE, _owner, true, true);
-        _internalUpdateAccessControl(SECTION_SYNTH, _owner, true, true);
-    }
+    constructor(address _owner) public Owned(_owner) {}
 
     /* ========== VIEWS ========== */
     function requireSystemActive() external view {
