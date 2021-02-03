@@ -3,9 +3,11 @@ const path = require('path');
 
 async function describeSources({ hre }) {
 	const asts = await _collectAsts({ hre });
-  const descriptions = _processAsts({ asts });
+	// const ast = asts.find(ast => ast.absolutePath === 'contracts/Depot.sol');
+  // console.log(JSON.stringify(ast, null, 2));
 
-  const description = descriptions['contracts/AddressResolver.sol'];
+  const descriptions = _processAsts({ asts });
+  const description = descriptions['contracts/Depot.sol'];
   console.log(JSON.stringify(description, null, 2));
 }
 
@@ -28,10 +30,10 @@ function _processParameterList({ parameters }) {
   return str;
 }
 
-function _processFunctions({ node }) {
+function _processFunctions({ nodes }) {
   const functions = [];
 
-  for (node of node.nodes) {
+  for (let node of nodes) {
     if (node.nodeType === 'FunctionDefinition') {
       const isConstructor = node.name.length === 0;
       const name = isConstructor ? 'constructor' : node.name;
@@ -50,14 +52,25 @@ function _processFunctions({ node }) {
   return functions;
 }
 
-function _processEvents({ node }) {
+function _processEvents({ nodes }) {
+  const events = [];
 
+  for (let node of nodes) {
+    if (node.nodeType === 'EventDefinition') {
+      events.push({
+        name: node.name,
+        parameters: _processParameterList({ parameters: node.parameters.parameters }),
+      });
+    }
+  }
+
+  return events;
 }
 
-function _processVariables({ node }) {
+function _processVariables({ nodes }) {
   const variables = [];
 
-  for (node of node.nodes) {
+  for (let node of nodes) {
     if (node.nodeType === 'VariableDeclaration') {
       variables.push({
         name: node.name,
@@ -70,16 +83,40 @@ function _processVariables({ node }) {
   return variables;
 }
 
-function _processModifiers({ node }) {
+function _processModifiers({ nodes }) {
+  const modifiers = [];
 
+  for (let node of nodes) {
+    if (node.nodeType === 'ModifierDefinition') {
+      modifiers.push({
+        name: node.name,
+        signature: `${node.name}${_processParameterList({ parameters: node.parameters.parameters })}`,
+        visibility: node.visibility,
+      });
+    }
+  }
+
+  return modifiers;
 }
 
-function _processStructs({ node }) {
+function _processStructs({ nodes }) {
+  const structs = [];
 
-}
+  for (let node of nodes) {
+    if (node.nodeType === 'StructDefinition') {
+      structs.push({
+        name: node.name,
+        members: node.members.map(member => {
+          return {
+            name: member.name,
+            type: member.typeDescriptions.typeString,
+          }
+        }),
+      });
+    }
+  }
 
-function _processInheritance({ node }) {
-
+  return structs;
 }
 
 function _processContracts({ ast }) {
@@ -88,12 +125,12 @@ function _processContracts({ ast }) {
   for (let node of ast.nodes) {
     if (node.nodeType === 'ContractDefinition') {
       contracts[node.name] = {
-        functions: _processFunctions({ node }),
-        events: _processEvents({ node }),
-        variables: _processVariables({ node }),
-        modifiers: _processModifiers({ node }),
-        structs: _processStructs({ node }),
-        inherits: _processInheritance({ node }),
+        functions: _processFunctions({ nodes: node.nodes }),
+        events: _processEvents({ nodes: node.nodes }),
+        variables: _processVariables({ nodes: node.nodes }),
+        modifiers: _processModifiers({ nodes: node.nodes }),
+        structs: _processStructs({ nodes: node.nodes }),
+        inherits: node.baseContracts.map(contract => contract.baseName.name),
       }
     }
   }
