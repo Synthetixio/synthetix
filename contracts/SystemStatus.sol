@@ -133,6 +133,23 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalUpdateAccessControl(section, account, canSuspend, canResume);
     }
 
+    function updateAccessControls(
+        bytes32[] calldata sections,
+        address[] calldata accounts,
+        bool[] calldata canSuspends,
+        bool[] calldata canResumes
+    ) external onlyOwner {
+        require(
+            sections.length == accounts.length &&
+                accounts.length == canSuspends.length &&
+                canSuspends.length == canResumes.length,
+            "Input array lengths must match"
+        );
+        for (uint i = 0; i < sections.length; i++) {
+            _internalUpdateAccessControl(sections[i], accounts[i], canSuspends[i], canResumes[i]);
+        }
+    }
+
     function suspendSystem(uint256 reason) external {
         _requireAccessToSuspend(SECTION_SYSTEM);
         systemSuspension.suspended = true;

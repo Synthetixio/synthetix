@@ -49,6 +49,7 @@ contract('SystemStatus', async accounts => {
 				'suspendSynthsExchange',
 				'suspendSystem',
 				'updateAccessControl',
+				'updateAccessControls',
 			],
 		});
 	});
@@ -1214,14 +1215,25 @@ contract('SystemStatus', async accounts => {
 	});
 
 	describe('updateAccessControl()', () => {
+		const synth = toBytes32('sETH');
+
 		it('can only be invoked by the owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemStatus.updateAccessControl,
 				accounts,
 				address: owner,
-				args: [SYSTEM, account1, true, true],
+				args: [SYSTEM, account1, true, false],
 				reason: 'Only the contract owner may perform this action',
 			});
+		});
+
+		it('when invoked with an invalid section, it reverts', async () => {
+			await assert.revert(
+				systemStatus.updateAccessControl(toBytes32('test'), account1, false, true, {
+					from: owner,
+				}),
+				'Invalid section supplied'
+			);
 		});
 
 		describe('when invoked by the owner', () => {
@@ -1235,7 +1247,14 @@ contract('SystemStatus', async accounts => {
 			});
 
 			it('and the user can perform the action', async () => {
-				await systemStatus.suspendSynth(toBytes32('sETH'), '1', { from: account3 }); // succeeds without revert
+				await systemStatus.suspendSynth(synth, '1', { from: account3 }); // succeeds without revert
+			});
+
+			it('but not the other', async () => {
+				await assert.revert(
+					systemStatus.resumeSynth(synth, { from: account3 }),
+					'Restricted to access control list'
+				);
 			});
 
 			describe('when overridden for the same user', () => {
@@ -1251,10 +1270,89 @@ contract('SystemStatus', async accounts => {
 
 				it('and the user cannot perform the action', async () => {
 					await assert.revert(
-						systemStatus.suspendSynth(toBytes32('sETH'), '1', { from: account3 }),
+						systemStatus.suspendSynth(synth, '1', { from: account3 }),
 						'Restricted to access control list'
 					);
 				});
+			});
+		});
+	});
+
+	describe('updateAccessControls()', () => {
+		it('can only be invoked by the owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemStatus.updateAccessControls,
+				accounts,
+				address: owner,
+				args: [[SYSTEM], [account1], [true], [true]],
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('when invoked with an invalid section, it reverts', async () => {
+			await assert.revert(
+				systemStatus.updateAccessControls(
+					[SYNTH, toBytes32('test')],
+					[account1, account2],
+					[true, true],
+					[false, true],
+					{
+						from: owner,
+					}
+				),
+				'Invalid section supplied'
+			);
+		});
+
+		it('when invoked with invalid lengths, it reverts', async () => {
+			await assert.revert(
+				systemStatus.updateAccessControls([SYNTH], [account1, account2], [true], [false, true], {
+					from: owner,
+				}),
+				'Input array lengths must match'
+			);
+		});
+
+		describe('when invoked by the owner', () => {
+			let txn;
+			const synth = toBytes32('sETH');
+			beforeEach(async () => {
+				txn = await systemStatus.updateAccessControls(
+					[SYSTEM, SYNTH_EXCHANGE, SYNTH],
+					[account1, account2, account3],
+					[true, false, true],
+					[false, true, true],
+					{ from: owner }
+				);
+			});
+
+			it('then it emits the expected events', () => {
+				assert.eventEqual(txn.logs[0], 'AccessControlUpdated', [SYSTEM, account1, true, false]);
+				assert.eventEqual(txn.logs[1], 'AccessControlUpdated', [
+					SYNTH_EXCHANGE,
+					account2,
+					false,
+					true,
+				]);
+				assert.eventEqual(txn.logs[2], 'AccessControlUpdated', [SYNTH, account3, true, true]);
+			});
+
+			it('and the users can perform the actions given', async () => {
+				await systemStatus.suspendSystem('3', { from: account1 }); // succeeds without revert
+				await systemStatus.resumeSynthExchange(synth, { from: account2 }); // succeeds without revert
+				await systemStatus.suspendSynth(synth, '100', { from: account3 }); // succeeds without revert
+				await systemStatus.resumeSynth(synth, { from: account3 }); // succeeds without revert
+			});
+
+			it('but not the others', async () => {
+				await assert.revert(
+					systemStatus.resumeSystem({ from: account1 }),
+					'Restricted to access control list'
+				);
+				await assert.revert(
+					systemStatus.suspendSynthExchange(synth, '9', { from: account1 }),
+					'Restricted to access control list'
+				);
 			});
 		});
 	});
