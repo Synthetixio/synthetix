@@ -27,13 +27,7 @@ contract SystemStatus is Owned, ISystemStatus {
 
     mapping(bytes32 => Suspension) public synthSuspension;
 
-    constructor(address _owner) public Owned(_owner) {
-        _internalUpdateAccessControl(SECTION_SYSTEM, _owner, true, true);
-        _internalUpdateAccessControl(SECTION_ISSUANCE, _owner, true, true);
-        _internalUpdateAccessControl(SECTION_EXCHANGE, _owner, true, true);
-        _internalUpdateAccessControl(SECTION_SYNTH_EXCHANGE, _owner, true, true);
-        _internalUpdateAccessControl(SECTION_SYNTH, _owner, true, true);
-    }
+    constructor(address _owner) public Owned(_owner) {}
 
     /* ========== VIEWS ========== */
     function requireSystemActive() external view {
@@ -131,6 +125,23 @@ contract SystemStatus is Owned, ISystemStatus {
         bool canResume
     ) external onlyOwner {
         _internalUpdateAccessControl(section, account, canSuspend, canResume);
+    }
+
+    function updateAccessControls(
+        bytes32[] calldata sections,
+        address[] calldata accounts,
+        bool[] calldata canSuspends,
+        bool[] calldata canResumes
+    ) external onlyOwner {
+        require(
+            sections.length == accounts.length &&
+                accounts.length == canSuspends.length &&
+                canSuspends.length == canResumes.length,
+            "Input array lengths must match"
+        );
+        for (uint i = 0; i < sections.length; i++) {
+            _internalUpdateAccessControl(sections[i], accounts[i], canSuspends[i], canResumes[i]);
+        }
     }
 
     function suspendSystem(uint256 reason) external {
