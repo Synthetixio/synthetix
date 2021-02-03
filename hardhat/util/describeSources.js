@@ -166,10 +166,27 @@ function _processFunctions({ source, nodes }) {
 			visibility: node.visibility,
 			lineNumber: _getLineNumber({ source, node }),
 			requires: _processRequires({ source, body: node.body }),
+			events: _processEmits({ body: node.body }),
 		});
 	}
 
 	return functions;
+}
+
+function _processEmits({ body }) {
+	const emits = [];
+
+	if (!body) {
+		return emits;
+	}
+
+	for (const node of body.statements) {
+		if (node.nodeType === 'EmitStatement') {
+			emits.push(`${node.eventCall.expression.name}`);
+		}
+	}
+
+	return emits;
 }
 
 function _processEvents({ source, nodes }) {
