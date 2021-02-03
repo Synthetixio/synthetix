@@ -165,6 +165,7 @@ function _processFunctions({ source, nodes }) {
 			modifiers: isConstructor ? [] : node.modifiers.map(modifier => modifier.modifierName.name),
 			visibility: node.visibility,
 			lineNumber: _getLineNumber({ source, node }),
+			requires: _processRequires({ source, body: node.body }),
 		});
 	}
 
@@ -215,18 +216,6 @@ function _processModifiers({ source, nodes }) {
 	return modifiers;
 }
 
-// ----------
-// Utilities
-// ----------
-
-function _getLineNumber({ source, node }) {
-	const charOffset = +node.src.split(':')[0];
-	const firstHalf = source.substring(0, charOffset);
-	const breaks = firstHalf.match(/\n/g) || [];
-
-	return 1 + breaks.length;
-}
-
 function _processParameterList({ parameters }) {
 	let str = '(';
 
@@ -244,6 +233,53 @@ function _processParameterList({ parameters }) {
 	str += ')';
 
 	return str;
+}
+
+function _processRequires({ source, body }) {
+	const requires = [];
+
+	if (!body) {
+		return requires;
+	}
+
+	for (const node of body.statements) {
+		if (node.nodeType === 'ExpressionStatement' || node.nodeType === 'FunctionCall') {
+			const expression = node.expression.expression;
+
+			if (expression && expression.name && expression.name.toLowerCase().includes('require')) {
+				let name = expression.name;
+
+				if (expression.name === 'require') {
+					const lastArgument = expression.argumentTypes.pop();
+					const revertReason = lastArgument.typeString
+						.replace('literal_string ', '')
+						.replace(/\\/g, '')
+						.replace(/"/g, '');
+
+					name = `require(..., "${revertReason}")`;
+				}
+
+				requires.push({
+					name,
+					lineNumber: _getLineNumber({ source, node }),
+				});
+			}
+		}
+	}
+
+	return requires;
+}
+
+// ----------
+// Utilities
+// ----------
+
+function _getLineNumber({ source, node }) {
+	const charOffset = +node.src.split(':')[0];
+	const firstHalf = source.substring(0, charOffset);
+	const breaks = firstHalf.match(/\n/g) || [];
+
+	return 1 + breaks.length;
 }
 
 function _filterNodes({ node, type }) {
