@@ -11,7 +11,6 @@ const { gray, yellow, red } = require('chalk');
 const { ovmIgnored } = require('../..');
 
 const optimizeIfRequired = require('../util/optimizeIfRequired');
-const describeSources = require('../util/describeSources');
 
 const { collectContractBytesCodes } = require('../util/collectContractBytecodes');
 const { logContractSizes } = require('../../publish/src/contract-size');
@@ -35,7 +34,6 @@ task('compile')
 		}
 
 		optimizeIfRequired({ hre, taskArguments });
-		await describeSources({ hre });
 
 		await runSuper(taskArguments);
 

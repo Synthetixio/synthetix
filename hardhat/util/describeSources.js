@@ -4,16 +4,11 @@ const path = require('path');
 async function describeSources({ hre }) {
 	const { asts, sources } = await _collectSourcesAndAsts({ hre });
 
-  const descriptions = {};
-  for (let i = 0; i < sources.length; i++) {
-    const source = sources[i];
-    const ast = asts[i];
+	const descriptions = _processFiles({ asts, sources });
 
-    descriptions[ast.absolutePath] = _processFile({ source, ast });
-  }
+	await _writeOutput({ hre, descriptions });
 
-  const description = descriptions['contracts/Depot.sol'];
-  console.log(JSON.stringify(description, null, 2));
+	return descriptions;
 }
 
 // ------------------------------
@@ -21,159 +16,203 @@ async function describeSources({ hre }) {
 // ------------------------------
 
 async function _collectSourcesAndAsts({ hre }) {
-  // Get a list of all output .dbg.json file paths
-  const artifactPaths = await hre.artifacts.getArtifactPaths();
-  const dbgPaths = artifactPaths.map(artifactPath => artifactPath.replace('json', 'dbg.json'));
+	// Get a list of all output .dbg.json file paths
+	const artifactPaths = await hre.artifacts.getArtifactPaths();
+	const dbgPaths = artifactPaths.map(artifactPath => artifactPath.replace('json', 'dbg.json'));
 
-  // Sweep .dbg.json files and collect all asts
-  const asts = [];
-  const sources = [];
-  for (dbgPath of dbgPaths) {
-    // Locate the associated build info file, which contains the ast
-    const dbg = JSON.parse(fs.readFileSync(dbgPath, 'utf8'));
-    const buildInfoFileName = path.basename(dbg.buildInfo);
-    const buildInfoPath = path.resolve(hre.config.paths.artifacts, 'build-info', buildInfoFileName);
-    const buildInfo = JSON.parse(fs.readFileSync(buildInfoPath, 'utf8'));
+	// Sweep .dbg.json files and collect all asts
+	const asts = [];
+	const sources = [];
+	for (const dbgPath of dbgPaths) {
+		// Locate the associated build info file, which contains the ast
+		const dbg = JSON.parse(fs.readFileSync(dbgPath, 'utf8'));
+		const buildInfoFileName = path.basename(dbg.buildInfo);
+		const buildInfoPath = path.resolve(hre.config.paths.artifacts, 'build-info', buildInfoFileName);
+		const buildInfo = JSON.parse(fs.readFileSync(buildInfoPath, 'utf8'));
 
-    // Build the contract key to find the associated ast from the path
-    // i.e. 'contracts/Synthetix'
-    const pathComponents = dbgPath.split(path.sep);
-    const lastIdx = pathComponents.length - 1;
-    const contractKey = `${pathComponents[lastIdx - 2]}/${pathComponents[lastIdx -1]}`
+		// Build the contract key to find the associated ast from the path
+		// i.e. 'contracts/Synthetix'
+		const pathComponents = dbgPath.split(path.sep);
+		const lastIdx = pathComponents.length - 1;
+		const contractKey = `${pathComponents[lastIdx - 2]}/${pathComponents[lastIdx - 1]}`;
 
-    // Only include the ones under 'contracts/'
-    if (contractKey.includes('contracts/')) {
-      asts.push(buildInfo.output.sources[contractKey].ast);
-      sources.push(buildInfo.input.sources[contractKey].content);
-    }
-  }
+		// Only include the ones under 'contracts/'
+		if (contractKey.includes('contracts/')) {
+			asts.push(buildInfo.output.sources[contractKey].ast);
+			sources.push(buildInfo.input.sources[contractKey].content);
+		}
+	}
 
-  return { sources, asts };
+	return { sources, asts };
+}
+
+// ----------------
+// Writting output
+// ----------------
+
+async function _writeOutput({ hre, descriptions }) {
+	const artifactPaths = await hre.config.paths.artifacts;
+
+	const outputFolderPath = path.resolve(artifactPaths, '../', 'ast');
+	if (!fs.existsSync(outputFolderPath)) {
+		fs.mkdirSync(outputFolderPath);
+	}
+
+	const outputFilePath = path.resolve(outputFolderPath, 'asts.json');
+	const content = JSON.stringify(descriptions, null, 2);
+	fs.writeFileSync(outputFilePath, content);
 }
 
 // --------------------
 // AST node processing
 // --------------------
 
+function _processFiles({ asts, sources }) {
+	const descriptions = {};
+	for (let i = 0; i < sources.length; i++) {
+		const source = sources[i];
+		const ast = asts[i];
+
+		descriptions[ast.absolutePath] = _processFile({ source, ast });
+	}
+
+	return descriptions;
+}
+
 function _processFile({ source, ast }) {
-  return {
-    imports: _processImports({ ast }),
-    contracts: _processContracts({ source, ast })
-  };
+	return {
+		imports: _processImports({ ast }),
+		contracts: _processContracts({ source, ast }),
+	};
 }
 
 function _processImports({ ast }) {
-  const imports = [];
+	const imports = [];
 
-  for (let node of ast.nodes) {
-    if (node.nodeType === 'ImportDirective') {
-      imports.push(node.file);
-    }
-  }
+	for (const node of ast.nodes) {
+		if (node.nodeType === 'ImportDirective') {
+			imports.push(node.file);
+		}
+	}
 
-  return imports;
+	return imports;
 }
 
 function _processContracts({ source, ast }) {
-  const contracts = {};
+	const contracts = {};
 
-  for (let node of ast.nodes) {
-    if (node.nodeType === 'ContractDefinition') {
-      contracts[node.name] = {
-        functions: _processFunctions({ source, nodes: _filterNodes({ node, type: 'FunctionDefinition' }) }),
-        events: _processEvents({ source, nodes: _filterNodes({ node, type: 'EventDefinition' }) }),
-        variables: _processVariables({ source, nodes: _filterNodes({ node, type: 'VariableDeclaration' }) }),
-        modifiers: _processModifiers({ source, nodes: _filterNodes({ node, type: 'ModifierDefinition' }) }),
-        structs: _processStructs({ source, nodes: _filterNodes({ node, type: 'StructDefinition' }) }),
-        inherits: node.baseContracts.map(contract => contract.baseName.name),
-      }
-    }
-  }
+	for (const node of ast.nodes) {
+		if (node.nodeType === 'ContractDefinition') {
+			contracts[node.name] = {
+				functions: _processFunctions({
+					source,
+					nodes: _filterNodes({ node, type: 'FunctionDefinition' }),
+				}),
+				events: _processEvents({ source, nodes: _filterNodes({ node, type: 'EventDefinition' }) }),
+				variables: _processVariables({
+					source,
+					nodes: _filterNodes({ node, type: 'VariableDeclaration' }),
+				}),
+				modifiers: _processModifiers({
+					source,
+					nodes: _filterNodes({ node, type: 'ModifierDefinition' }),
+				}),
+				structs: _processStructs({
+					source,
+					nodes: _filterNodes({ node, type: 'StructDefinition' }),
+				}),
+				inherits: node.baseContracts.map(contract => contract.baseName.name),
+			};
+		}
+	}
 
-  return contracts;
+	return contracts;
 }
 
 function _processStructs({ source, nodes }) {
-  const structs = [];
+	const structs = [];
 
-  for (let node of nodes) {
-    structs.push({
-      name: node.name,
-      members: node.members.map(member => {
-        return {
-          name: member.name,
-          type: member.typeDescriptions.typeString,
-        }
-      }),
-      lineNumber: _getLineNumber({ source, node }),
-    });
-  }
+	for (const node of nodes) {
+		structs.push({
+			name: node.name,
+			members: node.members.map(member => {
+				return {
+					name: member.name,
+					type: member.typeDescriptions.typeString,
+				};
+			}),
+			lineNumber: _getLineNumber({ source, node }),
+		});
+	}
 
-  return structs;
+	return structs;
 }
 
 function _processFunctions({ source, nodes }) {
-  const functions = [];
+	const functions = [];
 
-  for (let node of nodes) {
-    const isConstructor = node.name.length === 0;
-    const name = isConstructor ? 'constructor' : node.name;
-    const mutability = node.stateMutability === 'nonpayable' ? '' : ` ${node.stateMutability}`;
+	for (const node of nodes) {
+		const isConstructor = node.name.length === 0;
+		const name = isConstructor ? 'constructor' : node.name;
+		const mutability = node.stateMutability === 'nonpayable' ? '' : ` ${node.stateMutability}`;
 
-    functions.push({
-      name,
-      signature: `${name}${_processParameterList({ parameters: node.parameters.parameters })}${mutability}`,
-      returns: _processParameterList({ parameters: node.returnParameters.parameters }),
-      modifiers: isConstructor ? [] : node.modifiers.map(modifier => modifier.modifierName.name),
-      visibility: node.visibility,
-      lineNumber: _getLineNumber({ source, node }),
-    }); }
+		functions.push({
+			name,
+			signature: `${name}${_processParameterList({
+				parameters: node.parameters.parameters,
+			})}${mutability}`,
+			returns: _processParameterList({ parameters: node.returnParameters.parameters }),
+			modifiers: isConstructor ? [] : node.modifiers.map(modifier => modifier.modifierName.name),
+			visibility: node.visibility,
+			lineNumber: _getLineNumber({ source, node }),
+		});
+	}
 
-  return functions;
+	return functions;
 }
 
 function _processEvents({ source, nodes }) {
-  const events = [];
+	const events = [];
 
-  for (let node of nodes) {
-    events.push({
-      name: node.name,
-      parameters: _processParameterList({ parameters: node.parameters.parameters }),
-      lineNumber: _getLineNumber({ source, node }),
-    });
-  }
+	for (const node of nodes) {
+		events.push({
+			name: node.name,
+			parameters: _processParameterList({ parameters: node.parameters.parameters }),
+			lineNumber: _getLineNumber({ source, node }),
+		});
+	}
 
-  return events;
+	return events;
 }
 
 function _processVariables({ source, nodes }) {
-  const variables = [];
+	const variables = [];
 
-  for (let node of nodes) {
-    variables.push({
-      name: node.name,
-      type: node.typeDescriptions.typeString,
-      visibility: node.visibility,
-      lineNumber: _getLineNumber({ source, node }),
-    });
-  }
+	for (const node of nodes) {
+		variables.push({
+			name: node.name,
+			type: node.typeDescriptions.typeString,
+			visibility: node.visibility,
+			lineNumber: _getLineNumber({ source, node }),
+		});
+	}
 
-  return variables;
+	return variables;
 }
 
 function _processModifiers({ source, nodes }) {
-  const modifiers = [];
+	const modifiers = [];
 
-  for (let node of nodes) {
-    modifiers.push({
-      name: node.name,
-      signature: `${node.name}${_processParameterList({ parameters: node.parameters.parameters })}`,
-      visibility: node.visibility,
-      lineNumber: _getLineNumber({ source, node }),
-    });
-  }
+	for (const node of nodes) {
+		modifiers.push({
+			name: node.name,
+			signature: `${node.name}${_processParameterList({ parameters: node.parameters.parameters })}`,
+			visibility: node.visibility,
+			lineNumber: _getLineNumber({ source, node }),
+		});
+	}
 
-  return modifiers;
+	return modifiers;
 }
 
 // ----------
@@ -181,34 +220,34 @@ function _processModifiers({ source, nodes }) {
 // ----------
 
 function _getLineNumber({ source, node }) {
-  const charOffset = +node.src.split(':')[0];
-  const firstHalf = source.substring(0, charOffset);
-  const breaks = firstHalf.match(/\n/g) || [];
+	const charOffset = +node.src.split(':')[0];
+	const firstHalf = source.substring(0, charOffset);
+	const breaks = firstHalf.match(/\n/g) || [];
 
-  return 1 + breaks.length;
+	return 1 + breaks.length;
 }
 
 function _processParameterList({ parameters }) {
-  let str = '(';
+	let str = '(';
 
-  const processed = [];
-  for (let parameter of parameters) {
-    if (parameter.name.length > 0) {
-      processed.push(`${parameter.typeDescriptions.typeString} ${parameter.name}`);
-    } else {
-      processed.push(parameter.typeDescriptions.typeString);
-    }
-  }
+	const processed = [];
+	for (const parameter of parameters) {
+		if (parameter.name.length > 0) {
+			processed.push(`${parameter.typeDescriptions.typeString} ${parameter.name}`);
+		} else {
+			processed.push(parameter.typeDescriptions.typeString);
+		}
+	}
 
-  str += processed.join(', ');
+	str += processed.join(', ');
 
-  str += ')';
+	str += ')';
 
-  return str;
+	return str;
 }
 
 function _filterNodes({ node, type }) {
-  return node.nodes.filter(node => node.nodeType === type);
+	return node.nodes.filter(node => node.nodeType === type);
 }
 
 module.exports = describeSources;
