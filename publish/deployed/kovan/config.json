@@ -508,5 +508,11 @@
 	},
 	"SynthetixBridgeToOptimism": {
 		"deploy": false
+	},
+	"ShortingRewardssETH": {
+		"deploy": false
+	},
+	"ShortingRewardssBTC": {
+		"deploy": false
 	}
 }
