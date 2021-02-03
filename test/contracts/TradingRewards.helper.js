@@ -1,6 +1,6 @@
 const cloneDeep = require('lodash.clonedeep');
 const { assert } = require('./common');
-const { web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('hardhat');
 const { toBN, isHex } = web3.utils;
 const {
 	toUnit,

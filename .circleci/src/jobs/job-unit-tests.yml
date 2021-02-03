@@ -5,7 +5,7 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npx buidler compile --showsize --optimizer
+  - run: npx hardhat compile --showsize --optimizer
   - run:
       name: Test and output gas used
       command: |

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { connectContract } = require('./connectContract');
-const { web3 } = require('@nomiclabs/buidler');
+const { web3 } = require('hardhat');
 const { toBN } = web3.utils;
 const { knownAccounts, wrap, toBytes32 } = require('../../..');
 const { gray } = require('chalk');

@@ -1,4 +1,4 @@
-const { contract } = require('@nomiclabs/buidler');
+const { contract } = require('hardhat');
 const { toBN } = require('web3-utils');
 
 const { toBytes32 } = require('../..');

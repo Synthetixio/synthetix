@@ -1,11 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const { contract, config } = require('@nomiclabs/buidler');
-const { wrap } = require('../../index.js');
+const { wrap } = require('../..');
+const { contract, config } = require('hardhat');
 const { assert } = require('../contracts/common');
 const { toUnit, fastForward } = require('../utils')();
 const {
-	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
@@ -29,11 +28,9 @@ contract('ExchangeRates (prod tests)', accounts => {
 	let ExchangeRates, ReadProxyAddressResolver, SystemSettings, Exchanger;
 
 	before('prepare', async () => {
-		network = await detectNetworkName();
+		network = config.targetNetwork;
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
 		owner = getUsers({ network, user: 'owner' }).address;
-
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
 		await avoidStaleRates({ network, deploymentPath });

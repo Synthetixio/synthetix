@@ -1,4 +1,4 @@
-const { artifacts, web3 } = require('@nomiclabs/buidler');
+const { artifacts, web3 } = require('hardhat');
 
 const abiDecoder = require('abi-decoder');
 const { smockit } = require('@eth-optimism/smock');
@@ -174,10 +174,7 @@ module.exports = {
 		};
 
 		const combinedParentsABI = ignoreParents
-			.reduce(
-				(memo, parent) => memo.concat(artifacts.require(parent, { ignoreLegacy: true }).abi),
-				[]
-			)
+			.reduce((memo, parent) => memo.concat(artifacts.require(parent).abi), [])
 			.map(removeExcessParams);
 
 		const fncs = abi

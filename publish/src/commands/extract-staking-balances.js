@@ -106,9 +106,9 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	);
 
 	// The exchange fee incurred when users are purged into sUSD
-	const exchangeFee = await SystemSettings.methods.exchangeFeeRate(toBytes32(synth)).call();
+	const exchangeFee = await SystemSettings.methods.exchangeFeeRate(toBytes32('sUSD')).call();
 
-	console.log(gray(`Exchange fee of ${synth} is`), yellow(web3.utils.fromWei(exchangeFee)));
+	console.log(gray(`Exchange fee of sUSD is`), yellow(web3.utils.fromWei(exchangeFee)));
 
 	/** *********** --------------------- *********** **/
 

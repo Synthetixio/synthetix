@@ -18,16 +18,12 @@ jobs:
   # Production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-prod-tests:
-      name: job-prod-tests-mainnet
-      network: mainnet
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Differential local production tests
+  # Local production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-diff-prod-tests-local:
-      name: job-diff-prod-tests-local
+  - job-prod-diff-tests-local:
       {{> require-prepare.yml}}
-  - job-diff-prod-tests-local-ovm:
-      name: job-diff-prod-tests-local-ovm
+  - job-prod-diff-tests-local-ovm:
       {{> require-prepare.yml}}

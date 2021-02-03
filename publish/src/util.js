@@ -268,7 +268,10 @@ const performTransactionalStep = async ({
 		);
 
 		return { mined: true, hash };
+	} else {
+		console.log(gray(`  > Account ${account} is not owner ${owner}`));
 	}
+
 	let data;
 	if (ownerActions && ownerActionsFile) {
 		// append to owner actions if supplied

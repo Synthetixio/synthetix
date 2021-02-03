@@ -1,4 +1,4 @@
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 const { toBN } = require('web3-utils');
 
 const {

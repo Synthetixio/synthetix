@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert } = require('./common');
 
@@ -28,7 +28,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 		});
 	});
 
-	describe('with common setup @cov-skip', () => {
+	describe('with common setup', () => {
 		// ensure all of the behaviors are bound to "this" for sharing test state
 		const behaviors = require('./VirtualSynth.behaviors').call(this, { accounts });
 

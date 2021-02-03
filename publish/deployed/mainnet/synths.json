@@ -239,9 +239,9 @@
 		"asset": "BNB",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 30.195,
-			"upperLimit": 45.2925,
-			"lowerLimit": 15.0975
+			"entryPoint": 50.958,
+			"upperLimit": 76.437,
+			"lowerLimit": 25.479
 		}
 	},
 	{
@@ -249,9 +249,9 @@
 		"asset": "TRX",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.0267,
-			"upperLimit": 0.04,
-			"lowerLimit": 0.0133
+			"entryPoint": 0.0331,
+			"upperLimit": 0.0497,
+			"lowerLimit": 0.0166
 		}
 	},
 	{
@@ -269,9 +269,9 @@
 		"asset": "XRP",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.6201,
-			"upperLimit": 0.9302,
-			"lowerLimit": 0.3101
+			"entryPoint": 0.3757,
+			"upperLimit": 0.5636,
+			"lowerLimit": 0.1879
 		}
 	},
 	{
@@ -279,9 +279,9 @@
 		"asset": "LINK",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 12.73,
-			"upperLimit": 19.095,
-			"lowerLimit": 6.365
+			"entryPoint": 22.6,
+			"upperLimit": 33.9,
+			"lowerLimit": 11.3
 		}
 	},
 	{
@@ -289,9 +289,9 @@
 		"asset": "LTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 87.88,
-			"upperLimit": 131.82,
-			"lowerLimit": 43.94
+			"entryPoint": 131.812,
+			"upperLimit": 197.718,
+			"lowerLimit": 65.906
 		}
 	},
 	{
@@ -319,9 +319,9 @@
 		"asset": "ETC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 6.16,
-			"upperLimit": 9.24,
-			"lowerLimit": 3.08
+			"entryPoint": 7.46,
+			"upperLimit": 11.19,
+			"lowerLimit": 3.73
 		}
 	},
 	{
@@ -349,9 +349,9 @@
 		"asset": "ADA",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.133,
-			"upperLimit": 0.1995,
-			"lowerLimit": 0.0665
+			"entryPoint": 0.388,
+			"upperLimit": 0.582,
+			"lowerLimit": 0.194
 		}
 	},
 	{
@@ -371,9 +371,9 @@
 		"index": "sDEFI",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 2714.42,
-			"upperLimit": 4071.63,
-			"lowerLimit": 1357.21
+			"entryPoint": 10048.068,
+			"upperLimit": 15072.102,
+			"lowerLimit": 5024.034
 		}
 	},
 	{
