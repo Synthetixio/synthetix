@@ -57,12 +57,13 @@ const deployShortingRewards = async ({
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
-	const { ownerActions, ownerActionsFile } = loadAndCheckRequiredSources({
-		deploymentPath,
-		network,
-	});
-
-	const { shortingRewards, deployment, deploymentFile } = loadAndCheckRequiredSources({
+	const {
+		ownerActions,
+		ownerActionsFile,
+		shortingRewards,
+		deployment,
+		deploymentFile,
+	} = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
@@ -238,7 +239,7 @@ const deployShortingRewards = async ({
 			name: shortingRewardNameFixed,
 			deps: [rewardsToken].filter(x => !w3utils.isAddress(x)),
 			source: 'ShortingRewards',
-			args: [account, resolverAddress, account, rewardsTokenAddress, toBytes32(name)],
+			args: [account, resolverAddress, account, rewardsTokenAddress],
 		});
 
 		const nonceManager = new NonceManager({});
@@ -255,6 +256,14 @@ const deployShortingRewards = async ({
 				ownerActionsFile,
 				nonceManager: manageNonces ? nonceManager : undefined,
 			});
+
+		// Rebuild the cache so it knows about CollateralShort
+		await runStep({
+			gasLimit: 6e6,
+			contract: shortingRewardNameFixed,
+			target: deployer.getExistingContract({ contract: shortingRewardNameFixed }),
+			write: 'rebuildCache',
+		});
 
 		// Link it to the Collateral Short contract
 		await runStep({
