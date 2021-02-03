@@ -12,7 +12,7 @@ const { setExchangeFeeRateForSynths } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
 
-contract('Rewards Integration Tests', async accounts => {
+contract('Rewards Integration Tests', accounts => {
 	// These functions are for manual debugging:
 
 	// const logFeePeriods = async () => {
@@ -147,7 +147,10 @@ contract('Rewards Integration Tests', async accounts => {
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
-	before(async () => {
+	before(async function() {
+		// set a very long timeout for these (requires a non-fat-arrow above)
+		this.timeout(180e3);
+
 		({
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,

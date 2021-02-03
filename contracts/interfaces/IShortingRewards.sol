@@ -23,6 +23,4 @@ interface IShortingRewards {
     function withdraw(address account, uint256 amount) external;
 
     function getReward(address account) external;
-
-    function exit(address account) external;
 }

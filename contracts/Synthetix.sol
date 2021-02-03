@@ -316,7 +316,6 @@ contract Synthetix is BaseSynthetix {
     }
 
     function _exchangeActive(bytes32 src, bytes32 dest) private {
-        systemStatus().requireExchangeActive();
-        systemStatus().requireSynthsActive(src, dest);
+        systemStatus().requireExchangeBetweenSynthsAllowed(src, dest);
     }
 }
