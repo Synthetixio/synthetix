@@ -169,6 +169,15 @@ contract('StakingRewards', accounts => {
 				accounts,
 			});
 		});
+
+		it('only owner can call updatePeriodFinish', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: stakingRewards.updatePeriodFinish,
+				args: [0],
+				address: owner,
+				accounts,
+			});
+		});
 	});
 
 	describe('Pausable', async () => {
