@@ -409,5 +409,65 @@
 			"upperLimit": 67.63,
 			"lowerLimit": 22.543
 		}
+	},
+	{
+		"name": "iAAVE",
+		"asset": "AAVE",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 406.0,
+			"upperLimit": 609.0,
+			"lowerLimit": 203.0
+		}
+	},
+	{
+		"name": "iUNI",
+		"asset": "UNI",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 21.0,
+			"upperLimit": 31.5,
+			"lowerLimit": 10.5
+		}
+	},
+	{
+		"name": "iYFI",
+		"asset": "YFI",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 33300.0,
+			"upperLimit": 49950.0,
+			"lowerLimit": 16650.0
+		}
+	},
+	{
+		"name": "iDOT",
+		"asset": "DOT",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 20.6,
+			"upperLimit": 30.9,
+			"lowerLimit": 10.3
+		}
+	},
+	{
+		"name": "iREN",
+		"asset": "REN",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0.7,
+			"upperLimit": 1.05,
+			"lowerLimit": 0.35
+		}
+	},
+	{
+		"name": "iCOMP",
+		"asset": "COMP",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 393.0,
+			"upperLimit": 589.5,
+			"lowerLimit": 196.5
+		}
 	}
 ]
