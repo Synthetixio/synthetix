@@ -401,15 +401,6 @@
 	"SynthsEOS": {
 		"deploy": false
 	},
-	"TokenStatesBCH": {
-		"deploy": false
-	},
-	"ProxysBCH": {
-		"deploy": false
-	},
-	"SynthsBCH": {
-		"deploy": false
-	},
 	"TokenStatesETC": {
 		"deploy": false
 	},
@@ -453,15 +444,6 @@
 		"deploy": false
 	},
 	"SynthiEOS": {
-		"deploy": false
-	},
-	"TokenStateiBCH": {
-		"deploy": false
-	},
-	"ProxyiBCH": {
-		"deploy": false
-	},
-	"SynthiBCH": {
 		"deploy": false
 	},
 	"TokenStateiETC": {
