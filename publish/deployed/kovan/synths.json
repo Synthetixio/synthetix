@@ -74,10 +74,6 @@
 		"asset": "EOS"
 	},
 	{
-		"name": "sBCH",
-		"asset": "BCH"
-	},
-	{
 		"name": "sETC",
 		"asset": "ETC"
 	},
@@ -147,7 +143,7 @@
 			{
 				"asset": "MKR",
 				"units": 0.8,
-				"weight": 15.0
+				"weight": 15
 			},
 			{
 				"asset": "ZRX",
@@ -177,7 +173,7 @@
 			{
 				"asset": "REN",
 				"units": 814.38,
-				"weight": 5.0
+				"weight": 5
 			},
 			{
 				"asset": "LRC",
@@ -290,16 +286,6 @@
 			"entryPoint": 2.22,
 			"upperLimit": 3.33,
 			"lowerLimit": 1.11
-		}
-	},
-	{
-		"name": "iBCH",
-		"asset": "BCH",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 229.54,
-			"upperLimit": 344.31,
-			"lowerLimit": 114.77
 		}
 	},
 	{

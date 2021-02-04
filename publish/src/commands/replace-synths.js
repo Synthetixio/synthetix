@@ -216,7 +216,7 @@ const replaceSynths = async ({
 	const Issuer = new web3.eth.Contract(issuerABI, issuerAddress);
 
 	const resolverAddress = await Issuer.methods.resolver().call();
-	const updatedSynths = JSON.parse(JSON.stringify(synths));
+	const updatedSynths = JSON.parse(fs.readFileSync(synthsFile));
 
 	const runStep = async opts =>
 		performTransactionalStep({
