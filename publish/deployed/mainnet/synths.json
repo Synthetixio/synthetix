@@ -98,6 +98,30 @@
 		"asset": "ADA"
 	},
 	{
+		"name": "sAAVE",
+		"asset": "AAVE"
+	},
+	{
+		"name": "sUNI",
+		"asset": "UNI"
+	},
+	{
+		"name": "sYFI",
+		"asset": "YFI"
+	},
+	{
+		"name": "sDOT",
+		"asset": "DOT"
+	},
+	{
+		"name": "sREN",
+		"asset": "REN"
+	},
+	{
+		"name": "sCOMP",
+		"asset": "COMP"
+	},
+	{
 		"name": "sFTSE",
 		"asset": "FTSE100"
 	},
