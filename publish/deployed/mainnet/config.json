@@ -541,5 +541,113 @@
 	},
 	"ShortingRewardssETH": {
 		"deploy": false
+	},
+	"TokenStatesAAVE": {
+		"deploy": false
+	},
+	"ProxysAAVE": {
+		"deploy": false
+	},
+	"SynthsAAVE": {
+		"deploy": false
+	},
+	"TokenStatesUNI": {
+		"deploy": false
+	},
+	"ProxysUNI": {
+		"deploy": false
+	},
+	"SynthsUNI": {
+		"deploy": false
+	},
+	"TokenStatesYFI": {
+		"deploy": false
+	},
+	"ProxysYFI": {
+		"deploy": false
+	},
+	"SynthsYFI": {
+		"deploy": false
+	},
+	"TokenStatesDOT": {
+		"deploy": false
+	},
+	"ProxysDOT": {
+		"deploy": false
+	},
+	"SynthsDOT": {
+		"deploy": false
+	},
+	"TokenStatesREN": {
+		"deploy": false
+	},
+	"ProxysREN": {
+		"deploy": false
+	},
+	"SynthsREN": {
+		"deploy": false
+	},
+	"TokenStatesCOMP": {
+		"deploy": false
+	},
+	"ProxysCOMP": {
+		"deploy": false
+	},
+	"SynthsCOMP": {
+		"deploy": false
+	},
+	"TokenStateiAAVE": {
+		"deploy": false
+	},
+	"ProxyiAAVE": {
+		"deploy": false
+	},
+	"SynthiAAVE": {
+		"deploy": false
+	},
+	"TokenStateiUNI": {
+		"deploy": false
+	},
+	"ProxyiUNI": {
+		"deploy": false
+	},
+	"SynthiUNI": {
+		"deploy": false
+	},
+	"TokenStateiYFI": {
+		"deploy": false
+	},
+	"ProxyiYFI": {
+		"deploy": false
+	},
+	"SynthiYFI": {
+		"deploy": false
+	},
+	"TokenStateiDOT": {
+		"deploy": false
+	},
+	"ProxyiDOT": {
+		"deploy": false
+	},
+	"SynthiDOT": {
+		"deploy": false
+	},
+	"TokenStateiREN": {
+		"deploy": false
+	},
+	"ProxyiREN": {
+		"deploy": false
+	},
+	"SynthiREN": {
+		"deploy": false
+	},
+	"TokenStateiCOMP": {
+		"deploy": false
+	},
+	"ProxyiCOMP": {
+		"deploy": false
+	},
+	"SynthiCOMP": {
+		"deploy": false
 	}
 }
