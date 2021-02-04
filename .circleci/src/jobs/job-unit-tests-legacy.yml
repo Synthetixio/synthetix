@@ -1,9 +1,0 @@
-# Runs unit tests against legacy contracts
-{{> job-header.yml}}
-resource_class: large
-steps:
-  - checkout
-  - attach_workspace:
-      at: .
-  - run: npm run compile:legacy
-  - run: npx buidler test:legacy

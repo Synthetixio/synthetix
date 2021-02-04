@@ -401,15 +401,6 @@
 	"SynthsEOS": {
 		"deploy": false
 	},
-	"TokenStatesBCH": {
-		"deploy": false
-	},
-	"ProxysBCH": {
-		"deploy": false
-	},
-	"SynthsBCH": {
-		"deploy": false
-	},
 	"TokenStatesETC": {
 		"deploy": false
 	},
@@ -455,15 +446,6 @@
 	"SynthiEOS": {
 		"deploy": false
 	},
-	"TokenStateiBCH": {
-		"deploy": false
-	},
-	"ProxyiBCH": {
-		"deploy": false
-	},
-	"SynthiBCH": {
-		"deploy": false
-	},
 	"TokenStateiETC": {
 		"deploy": false
 	},
@@ -507,6 +489,12 @@
 		"deploy": false
 	},
 	"SynthetixBridgeToOptimism": {
+		"deploy": false
+	},
+	"ShortingRewardssETH": {
+		"deploy": false
+	},
+	"ShortingRewardssBTC": {
 		"deploy": false
 	}
 }

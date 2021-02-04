@@ -4,13 +4,10 @@ jobs:
   - job-unit-tests:
       {{> filter-develop.yml}}
       {{> require-prepare.yml}}
-  # - job-unit-tests-coverage:
-  #     {{> filter-develop.yml}}
-  #     {{> require-prepare.yml}}
-  - job-unit-tests-gas-report:
+  - job-unit-tests-coverage:
       {{> filter-develop.yml}}
       {{> require-prepare.yml}}
-  - job-unit-tests-legacy:
+  - job-unit-tests-gas-report:
       {{> filter-develop.yml}}
       {{> require-prepare.yml}}
   - job-test-deploy-script:

@@ -167,6 +167,12 @@
 		"sign": "",
 		"description": "yearn.finance"
 	},
+	"DOT": {
+		"asset": "DOT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Polkadot"
+	},
 	"LRC": {
 		"asset": "LRC",
 		"category": "crypto",

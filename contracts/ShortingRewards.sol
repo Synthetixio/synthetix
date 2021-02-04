@@ -25,8 +25,6 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
     /* ========== STATE VARIABLES ========== */
 
     IERC20 public rewardsToken;
-    ICollateralErc20 public short;
-    bytes32 public synth;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public rewardsDuration = 7 days;
@@ -49,14 +47,10 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
         address _owner,
         address _resolver,
         address _rewardsDistribution,
-        address _rewardsToken,
-        address _short,
-        bytes32 _synth
+        address _rewardsToken
     ) public Owned(_owner) MixinResolver(_resolver) {
         rewardsToken = IERC20(_rewardsToken);
-        short = ICollateralErc20(_short);
         rewardsDistribution = _rewardsDistribution;
-        synth = _synth;
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -102,7 +96,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // the shorting contract calls stake when a short is opened.
+    // the shorting contract calls enrol when a short is opened or increased.
     function enrol(address account, uint256 amount) external onlyShortContract nonReentrant notPaused updateReward(account) {
         require(amount > 0, "Cannot stake 0");
         _totalSupply = _totalSupply.add(amount);
@@ -110,25 +104,22 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
         emit Enrol(account, amount);
     }
 
-    function withdraw(address account, uint256 amount) public onlyShortContract nonReentrant updateReward(account) {
+    // the shorting contract calls withdraw when a short is closed, liquidated or repaid.
+    function withdraw(address account, uint256 amount) external onlyShortContract nonReentrant updateReward(account) {
         require(amount > 0, "Cannot withdraw 0");
         _totalSupply = _totalSupply.sub(amount);
         _balances[account] = _balances[account].sub(amount);
         emit Withdrawn(account, amount);
     }
 
-    function getReward(address account) public nonReentrant updateReward(account) {
+    // this can be called by anyone on the short contract to claim the rewards.
+    function getReward(address account) external onlyShortContract nonReentrant updateReward(account) {
         uint256 reward = rewards[account];
         if (reward > 0) {
             rewards[account] = 0;
             rewardsToken.safeTransfer(account, reward);
             emit RewardPaid(account, reward);
         }
-    }
-
-    function exit(address account) external onlyShortContract {
-        withdraw(account, _balances[account]);
-        getReward(account);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
@@ -177,6 +168,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
 
     modifier onlyShortContract {
         bool isShort = msg.sender == address(_short());
+        require(isShort, "Only Short Contract");
         _;
     }
 
@@ -187,5 +179,4 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
     event RewardsDurationUpdated(uint256 newDuration);
-    event Recovered(address token, uint256 amount);
 }

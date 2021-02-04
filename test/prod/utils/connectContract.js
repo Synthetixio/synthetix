@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { artifacts } = require('@nomiclabs/buidler');
+const { artifacts } = require('hardhat');
 const { wrap } = require('../../..');
 
 async function connectContract({ network, deploymentPath, contractName, abiName }) {

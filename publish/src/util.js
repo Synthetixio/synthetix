@@ -15,13 +15,21 @@ const {
 		OWNER_ACTIONS_FILENAME,
 		SYNTHS_FILENAME,
 		STAKING_REWARDS_FILENAME,
+		SHORTING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 		FEEDS_FILENAME,
 	},
 	wrap,
 } = require('../..');
 
-const { getPathToNetwork, getSynths, getStakingRewards, getVersions, getFeeds } = wrap({
+const {
+	getPathToNetwork,
+	getSynths,
+	getStakingRewards,
+	getVersions,
+	getFeeds,
+	getShortingRewards,
+} = wrap({
 	path,
 	fs,
 });
@@ -59,6 +67,12 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of staking rewards to deploy on ${network.toUpperCase()}...`));
 	const stakingRewardsFile = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
 	const stakingRewards = getStakingRewards({ network, deploymentPath });
+
+	console.log(
+		gray(`Loading the list of shorting rewards to deploy on ${network.toUpperCase()}...`)
+	);
+	const shortingRewardsFile = path.join(deploymentPath, SHORTING_REWARDS_FILENAME);
+	const shortingRewards = getShortingRewards({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
@@ -105,6 +119,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		versionsFile,
 		feeds,
 		feedsFile,
+		shortingRewards,
+		shortingRewardsFile,
 	};
 };
 
@@ -252,7 +268,10 @@ const performTransactionalStep = async ({
 		);
 
 		return { mined: true, hash };
+	} else {
+		console.log(gray(`  > Account ${account} is not owner ${owner}`));
 	}
+
 	let data;
 	if (ownerActions && ownerActionsFile) {
 		// append to owner actions if supplied

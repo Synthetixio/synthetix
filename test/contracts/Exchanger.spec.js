@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -634,6 +634,20 @@ contract('Exchanger (spec tests)', async accounts => {
 				it('then settling other synths still works', async () => {
 					await synthetix.settle(sETH, { from: account1 });
 					await synthetix.settle(sAUD, { from: account2 });
+				});
+			});
+			describe('when Synth(sBTC) is suspended for exchanging', () => {
+				beforeEach(async () => {
+					await setStatus({
+						owner,
+						systemStatus,
+						section: 'SynthExchange',
+						suspend: true,
+						synth: sBTC,
+					});
+				});
+				it('then settling it still works', async () => {
+					await synthetix.settle(sBTC, { from: account1 });
 				});
 			});
 		});
@@ -1588,7 +1602,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 		describe('suspension conditions on Synthetix.exchange()', () => {
 			const synth = sETH;
-			['System', 'Exchange', 'Synth'].forEach(section => {
+			['System', 'Exchange', 'SynthExchange', 'Synth'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
 					beforeEach(async () => {
 						await setStatus({ owner, systemStatus, section, suspend: true, synth });
@@ -1716,8 +1730,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						synthetix.exchange(sAUD, toUnit('1'), sUSD, {
 							from: account1,
 						}),
-						// Legacy safe math had no revert reasons
-						!legacy ? 'SafeMath: subtraction overflow' : undefined
+						'SafeMath: subtraction overflow'
 					);
 				});
 
@@ -1726,8 +1739,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						synthetix.exchange(sUSD, toUnit('1001'), sAUD, {
 							from: account1,
 						}),
-						// Legacy safe math had no revert reasons
-						!legacy ? 'SafeMath: subtraction overflow' : undefined
+						'SafeMath: subtraction overflow'
 					);
 				});
 
@@ -1836,7 +1848,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 						describe('suspension conditions on Synthetix.exchangeOnBehalf()', () => {
 							const synth = sAUD;
-							['System', 'Exchange', 'Synth'].forEach(section => {
+							['System', 'Exchange', 'SynthExchange', 'Synth'].forEach(section => {
 								describe(`when ${section} is suspended`, () => {
 									beforeEach(async () => {
 										await setStatus({ owner, systemStatus, section, suspend: true, synth });
@@ -1948,7 +1960,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 						describe('suspension conditions on Synthetix.exchangeOnBehalfWithTracking()', () => {
 							const synth = sAUD;
-							['System', 'Exchange', 'Synth'].forEach(section => {
+							['System', 'Exchange', 'SynthExchange', 'Synth'].forEach(section => {
 								describe(`when ${section} is suspended`, () => {
 									beforeEach(async () => {
 										await setStatus({ owner, systemStatus, section, suspend: true, synth });

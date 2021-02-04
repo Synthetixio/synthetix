@@ -1,4 +1,4 @@
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('hardhat');
 const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const { toBN } = web3.utils;

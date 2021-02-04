@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, web3, log, linkWithLegacySupport } = require('@nomiclabs/buidler');
+const { artifacts, web3, log } = require('hardhat');
 
 const { toWei } = web3.utils;
 const { toUnit } = require('../utils')();
@@ -112,14 +112,13 @@ const setupContract = async ({
 		return artifact.new(
 			...constructorArgs.concat({
 				from: deployerAccount,
-				gas: 9e15,
-				gasPrice: toWei('0.000001', 'gwei'),
 			})
 		);
 	};
 
-	if (artifacts.contractNeedsLinking(artifact)) {
-		await linkWithLegacySupport(artifact, 'SafeDecimalMath');
+	// if it needs library linking
+	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
+		await artifact.link(await artifacts.require('SafeDecimalMath').new());
 	}
 
 	const tryGetAddressOf = name => (cache[name] ? cache[name].address : ZERO_ADDRESS);
@@ -309,14 +308,6 @@ const setupContract = async ({
 						}) || []
 					)
 					.concat(
-						// If there's an escrow that's the legacy version
-						tryInvocationIfNotMocked({
-							name: 'SynthetixEscrow',
-							fncName: 'setHavven',
-							args: [instance.address],
-						}) || []
-					)
-					.concat(
 						// If there's a reward escrow that's not a mock
 						tryInvocationIfNotMocked({
 							name: 'RewardEscrow',
@@ -476,6 +467,17 @@ const setupContract = async ({
 					{ from: owner }
 				),
 			]);
+		},
+
+		async SystemStatus() {
+			// ensure the owner has suspend/resume control over everything
+			await instance.updateAccessControls(
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
+				[owner, owner, owner, owner, owner],
+				[true, true, true, true, true],
+				[true, true, true, true, true],
+				{ from: owner }
+			);
 		},
 
 		async GenericMock() {

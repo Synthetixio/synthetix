@@ -288,45 +288,42 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint amount,
         bytes32 currency,
         bool short
-    ) internal returns (uint id) {
+    ) internal rateIsValid returns (uint id) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
         require(canOpenLoans, "Opening is disabled");
 
-        // 1. Make sure the collateral rate is valid.
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
-
-        // 2. We can only issue certain synths.
+        // 1. We can only issue certain synths.
         require(synthsByKey[currency] > 0, "Not allowed to issue this synth");
 
-        // 3. Make sure the synth rate is not invalid.
+        // 2. Make sure the synth rate is not invalid.
         require(!_exchangeRates().rateIsInvalid(currency), "Currency rate is invalid");
 
-        // 4. Collateral >= minimum collateral size.
+        // 3. Collateral >= minimum collateral size.
         require(collateral >= minCollateral, "Not enough collateral to open");
 
-        // 5. Cap the number of loans so that the array doesn't get too big.
+        // 4. Cap the number of loans so that the array doesn't get too big.
         require(state.getNumLoans(msg.sender) < maxLoansPerAccount, "Max loans exceeded");
 
-        // 6. Check we haven't hit the debt cap for non snx collateral.
+        // 5. Check we haven't hit the debt cap for non snx collateral.
         (bool canIssue, bool anyRateIsInvalid) = _manager().exceedsDebtLimit(amount, currency);
 
         require(canIssue && !anyRateIsInvalid, "Debt limit or invalid rate");
 
-        // 7. Require requested loan < max loan
+        // 6. Require requested loan < max loan
         require(amount <= maxLoan(collateral, currency), "Exceeds max borrowing power");
 
-        // 8. This fee is denominated in the currency of the loan
+        // 7. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
 
-        // 9. Calculate the minting fee and subtract it from the loan amount
+        // 8. Calculate the minting fee and subtract it from the loan amount
         uint loanAmountMinusFee = amount.sub(issueFee);
 
-        // 10. Get a Loan ID
+        // 9. Get a Loan ID
         id = _manager().getNewLoanId();
 
-        // 11. Create the loan struct.
+        // 10. Create the loan struct.
         Loan memory loan = Loan({
             id: id,
             account: msg.sender,
@@ -339,16 +336,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             lastInteraction: block.timestamp
         });
 
-        // 12. Accrue interest on the loan.
+        // 11. Accrue interest on the loan.
         loan = accrueInterest(loan);
 
-        // 13. Save the loan to storage
+        // 12. Save the loan to storage
         state.createLoan(loan);
 
-        // 14. Pay the minting fees to the fee pool
+        // 13. Pay the minting fees to the fee pool
         _payFees(issueFee, currency);
 
-        // 15. If its short, convert back to sUSD, otherwise issue the loan.
+        // 14. If its short, convert back to sUSD, otherwise issue the loan.
         if (short) {
             _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(currency, loanAmountMinusFee, sUSD));
             _manager().incrementShorts(currency, amount);
@@ -361,40 +358,37 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             _manager().incrementLongs(currency, amount);
         }
 
-        // 16. Emit event
+        // 15. Emit event
         emit LoanCreated(msg.sender, id, amount, collateral, currency, issueFee);
     }
 
-    function closeInternal(address borrower, uint id) internal returns (uint collateral) {
+    function closeInternal(address borrower, uint id) internal rateIsValid returns (uint collateral) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
-        // 1. Make sure the collateral rate is valid
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
-
-        // 2. Get the loan.
+        // 1. Get the loan.
         Loan memory loan = state.getLoan(borrower, id);
 
-        // 3. Check loan is open and the last interaction time.
+        // 2. Check loan is open and the last interaction time.
         _checkLoanAvailable(loan);
 
-        // 4. Accrue interest on the loan.
+        // 3. Accrue interest on the loan.
         loan = accrueInterest(loan);
 
-        // 5. Work out the total amount owing on the loan.
+        // 4. Work out the total amount owing on the loan.
         uint total = loan.amount.add(loan.accruedInterest);
 
-        // 6. Check they have enough balance to close the loan.
+        // 5. Check they have enough balance to close the loan.
         _checkSynthBalance(loan.account, loan.currency, total);
 
-        // 7. Burn the synths
+        // 6. Burn the synths
         require(
             !_exchanger().hasWaitingPeriodOrSettlementOwing(borrower, loan.currency),
             "Waiting secs or settlement owing"
         );
         _synth(synthsByKey[loan.currency]).burn(borrower, total);
 
-        // 8. Tell the manager.
+        // 7. Tell the manager.
         if (loan.short) {
             _manager().decrementShorts(loan.currency, loan.amount);
 
@@ -405,13 +399,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             _manager().decrementLongs(loan.currency, loan.amount);
         }
 
-        // 9. Assign the collateral to be returned.
+        // 8. Assign the collateral to be returned.
         collateral = loan.collateral;
 
-        // 10. Pay fees
+        // 9. Pay fees
         _payFees(loan.accruedInterest, loan.currency);
 
-        // 11. Record loan as closed
+        // 10. Record loan as closed
         loan.amount = 0;
         loan.collateral = 0;
         loan.accruedInterest = 0;
@@ -419,7 +413,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loan.lastInteraction = block.timestamp;
         state.updateLoan(loan);
 
-        // 12. Emit the event
+        // 11. Emit the event
         emit LoanClosed(borrower, id);
     }
 
@@ -471,70 +465,64 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address account,
         uint id,
         uint amount
-    ) internal {
+    ) internal rateIsValid {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
-        // 1. Make sure the collateral rate is valid.
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
-
-        // 2. They sent some value > 0
+        // 1. They sent some value > 0
         require(amount > 0, "Deposit must be greater than 0");
 
-        // 3. Get the loan
+        // 2. Get the loan
         Loan memory loan = state.getLoan(account, id);
-
-        // 4. Check loan is open and last interaction time.
-        _checkLoanAvailable(loan);
-
-        // 5. Accrue interest
-        loan = accrueInterest(loan);
-
-        // 6. Add the collateral
-        loan.collateral = loan.collateral.add(amount);
-
-        // 7. Update the last interaction time.
-        loan.lastInteraction = block.timestamp;
-
-        // 8. Store the loan
-        state.updateLoan(loan);
-
-        // 9. Emit the event
-        emit CollateralDeposited(account, id, amount, loan.collateral);
-    }
-
-    function withdrawInternal(uint id, uint amount) internal returns (uint withdraw) {
-        // 0. Check the system is active.
-        _systemStatus().requireIssuanceActive();
-
-        // 1. Make sure the collateral rate is valid.
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
-
-        // 2. Get the loan.
-        Loan memory loan = state.getLoan(msg.sender, id);
 
         // 3. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
 
-        // 4. Accrue interest.
+        // 4. Accrue interest
         loan = accrueInterest(loan);
 
-        // 5. Subtract the collateral.
-        loan.collateral = loan.collateral.sub(amount);
+        // 5. Add the collateral
+        loan.collateral = loan.collateral.add(amount);
 
         // 6. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 7. Check that the new amount does not put them under the minimum c ratio.
-        require(collateralRatio(loan) > minCratio, "Cratio too low");
-
-        // 8. Store the loan.
+        // 7. Store the loan
         state.updateLoan(loan);
 
-        // 9. Assign the return variable.
+        // 8. Emit the event
+        emit CollateralDeposited(account, id, amount, loan.collateral);
+    }
+
+    function withdrawInternal(uint id, uint amount) internal rateIsValid returns (uint withdraw) {
+        // 0. Check the system is active.
+        _systemStatus().requireIssuanceActive();
+
+        // 1. Get the loan.
+        Loan memory loan = state.getLoan(msg.sender, id);
+
+        // 2. Check loan is open and last interaction time.
+        _checkLoanAvailable(loan);
+
+        // 3. Accrue interest.
+        loan = accrueInterest(loan);
+
+        // 4. Subtract the collateral.
+        loan.collateral = loan.collateral.sub(amount);
+
+        // 5. Update the last interaction time.
+        loan.lastInteraction = block.timestamp;
+
+        // 6. Check that the new amount does not put them under the minimum c ratio.
+        require(collateralRatio(loan) > minCratio, "Cratio too low");
+
+        // 7. Store the loan.
+        state.updateLoan(loan);
+
+        // 8. Assign the return variable.
         withdraw = amount;
 
-        // 10. Emit the event.
+        // 9. Emit the event.
         emit CollateralWithdrawn(msg.sender, id, amount, loan.collateral);
     }
 
@@ -542,63 +530,60 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address borrower,
         uint id,
         uint payment
-    ) internal returns (uint collateralLiquidated) {
+    ) internal rateIsValid returns (uint collateralLiquidated) {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
-        // 1. Make sure the collateral rate is valid.
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
-
-        // 2. Check the payment amount.
+        // 1. Check the payment amount.
         require(payment > 0, "Payment must be greater than 0");
 
-        // 3. Get the loan.
+        // 2. Get the loan.
         Loan memory loan = state.getLoan(borrower, id);
 
-        // 4. Check loan is open and last interaction time.
+        // 3. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
 
-        // 5. Accrue interest.
+        // 4. Accrue interest.
         loan = accrueInterest(loan);
 
-        // 6. Check they have enough balance to make the payment.
+        // 5. Check they have enough balance to make the payment.
         _checkSynthBalance(msg.sender, loan.currency, payment);
 
-        // 7. Check they are eligible for liquidation.
+        // 6. Check they are eligible for liquidation.
         require(collateralRatio(loan) < minCratio, "Cratio above liquidation ratio");
 
-        // 8. Determine how much needs to be liquidated to fix their c ratio.
+        // 7. Determine how much needs to be liquidated to fix their c ratio.
         uint liqAmount = liquidationAmount(loan);
 
-        // 9. Only allow them to liquidate enough to fix the c ratio.
+        // 8. Only allow them to liquidate enough to fix the c ratio.
         uint amountToLiquidate = liqAmount < payment ? liqAmount : payment;
 
-        // 10. Work out the total amount owing on the loan.
+        // 9. Work out the total amount owing on the loan.
         uint amountOwing = loan.amount.add(loan.accruedInterest);
 
-        // 11. If its greater than the amount owing, we need to close the loan.
+        // 10. If its greater than the amount owing, we need to close the loan.
         if (amountToLiquidate >= amountOwing) {
             return closeByLiquidationInternal(borrower, msg.sender, loan);
         }
 
-        // 12. Process the payment to workout interest/principal split.
+        // 11. Process the payment to workout interest/principal split.
         loan = _processPayment(loan, amountToLiquidate);
 
-        // 13. Work out how much collateral to redeem.
+        // 12. Work out how much collateral to redeem.
         collateralLiquidated = collateralRedeemed(loan.currency, amountToLiquidate);
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
-        // 14. Update the last interaction time.
+        // 13. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 15. Burn the synths from the liquidator.
+        // 14. Burn the synths from the liquidator.
         require(!_exchanger().hasWaitingPeriodOrSettlementOwing(msg.sender, loan.currency), "Waiting or settlement owing");
         _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
 
-        // 16. Store the loan.
+        // 15. Store the loan.
         state.updateLoan(loan);
 
-        // 17. Emit the event
+        // 16. Emit the event
         emit LoanPartiallyLiquidated(borrower, id, msg.sender, amountToLiquidate, collateralLiquidated);
     }
 
@@ -607,54 +592,15 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address repayer,
         uint id,
         uint payment
-    ) internal {
+    ) internal rateIsValid {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
-        // 1. Make sure the collateral rate is valid.
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
-
-        // 2. Check the payment amount.
+        // 1. Check the payment amount.
         require(payment > 0, "Payment must be greater than 0");
 
-        // 3. Get loan
+        // 2. Get loan
         Loan memory loan = state.getLoan(borrower, id);
-
-        // 4. Check loan is open and last interaction time.
-        _checkLoanAvailable(loan);
-
-        // 5. Accrue interest.
-        loan = accrueInterest(loan);
-
-        // 6. Check the spender has enough synths to make the repayment
-        _checkSynthBalance(repayer, loan.currency, payment);
-
-        // 7. Process the payment.
-        loan = _processPayment(loan, payment);
-
-        // 8. Update the last interaction time.
-        loan.lastInteraction = block.timestamp;
-
-        // 9. Burn synths from the payer
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or settlement owing");
-        _synth(synthsByKey[loan.currency]).burn(repayer, payment);
-
-        // 10. Store the loan
-        state.updateLoan(loan);
-
-        // 11. Emit the event.
-        emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
-    }
-
-    function drawInternal(uint id, uint amount) internal {
-        // 0. Check the system is active.
-        _systemStatus().requireIssuanceActive();
-
-        // 1. Make sure the collateral rate is valid.
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
-
-        // 2. Get loan.
-        Loan memory loan = state.getLoan(msg.sender, id);
 
         // 3. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
@@ -662,19 +608,52 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 4. Accrue interest.
         loan = accrueInterest(loan);
 
-        // 5. Add the requested amount.
+        // 5. Check the spender has enough synths to make the repayment
+        _checkSynthBalance(repayer, loan.currency, payment);
+
+        // 6. Process the payment.
+        loan = _processPayment(loan, payment);
+
+        // 7. Update the last interaction time.
+        loan.lastInteraction = block.timestamp;
+
+        // 8. Burn synths from the payer
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or settlement owing");
+        _synth(synthsByKey[loan.currency]).burn(repayer, payment);
+
+        // 9. Store the loan
+        state.updateLoan(loan);
+
+        // 10. Emit the event.
+        emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
+    }
+
+    function drawInternal(uint id, uint amount) internal rateIsValid {
+        // 0. Check the system is active.
+        _systemStatus().requireIssuanceActive();
+
+        // 1. Get loan.
+        Loan memory loan = state.getLoan(msg.sender, id);
+
+        // 2. Check loan is open and last interaction time.
+        _checkLoanAvailable(loan);
+
+        // 3. Accrue interest.
+        loan = accrueInterest(loan);
+
+        // 4. Add the requested amount.
         loan.amount = loan.amount.add(amount);
 
-        // 6. If it is below the minimum, don't allow this draw.
+        // 5. If it is below the minimum, don't allow this draw.
         require(collateralRatio(loan) > minCratio, "Cannot draw this much");
 
-        // 7. This fee is denominated in the currency of the loan
+        // 6. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
 
-        // 8. Calculate the minting fee and subtract it from the draw amount
+        // 7. Calculate the minting fee and subtract it from the draw amount
         uint amountMinusFee = amount.sub(issueFee);
 
-        // 9. If its short, let the child handle it, otherwise issue the synths.
+        // 8. If its short, let the child handle it, otherwise issue the synths.
         if (loan.short) {
             _manager().incrementShorts(loan.currency, amount);
             _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
@@ -687,16 +666,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             _synth(synthsByKey[loan.currency]).issue(msg.sender, amountMinusFee);
         }
 
-        // 10. Pay the minting fees to the fee pool
+        // 9. Pay the minting fees to the fee pool
         _payFees(issueFee, loan.currency);
 
-        // 11. Update the last interaction time.
+        // 10. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 12. Store the loan
+        // 11. Store the loan
         state.updateLoan(loan);
 
-        // 13. Emit the event.
+        // 12. Emit the event.
         emit LoanDrawnDown(msg.sender, id, amount);
     }
 
@@ -774,6 +753,17 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             _synthsUSD().issue(_feePool().FEE_ADDRESS(), amount);
             _feePool().recordFeePaid(amount);
         }
+    }
+
+    // ========== MODIFIERS ==========
+
+    modifier rateIsValid() {
+        _requireRateIsValid();
+        _;
+    }
+
+    function _requireRateIsValid() private {
+        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
     }
 
     // ========== EVENTS ==========

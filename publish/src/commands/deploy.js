@@ -33,6 +33,7 @@ const {
 		inflationStartTimestampInSecs,
 	},
 	defaults,
+	nonUpgradeable,
 } = require('../../../.');
 
 const DEFAULTS = {
@@ -43,18 +44,6 @@ const DEFAULTS = {
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
-
-function splitArrayIntoChunks(array, chunkSize) {
-	const chunks = [];
-	for (let i = 0; i < array.length; i += chunkSize) {
-		const chunk = array.slice(i, i + chunkSize);
-		if (chunk.length > 0) {
-			chunks.push(chunk);
-		}
-	}
-
-	return chunks;
-}
 
 const deploy = async ({
 	addNewSynths,
@@ -105,6 +94,29 @@ const deploy = async ({
 		// Using Goerli without manageNonces?
 		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
 			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+		}
+
+		// Cannot re-deploy legacy contracts
+		if (!freshDeploy) {
+			// Get list of contracts to be deployed
+			const contractsToDeploy = [];
+			Object.keys(config).map(contractName => {
+				if (config[contractName].deploy) {
+					contractsToDeploy.push(contractName);
+				}
+			});
+
+			// Check that no non-deployable is marked for deployment.
+			// Note: if nonDeployable = 'TokenState', this will match 'TokenStatesUSD'
+			nonUpgradeable.map(nonUpgradeableContract => {
+				contractsToDeploy.map(contractName => {
+					if (contractName.match(new RegExp(`^${nonUpgradeableContract}`, 'g'))) {
+						throw new Error(
+							`You are attempting to deploy a contract marked as non-upgradeable: ${contractName}. This action could result in loss of state. Please verify and use --ignore-safety-checks if you really know what you're doing.`
+						);
+					}
+				});
+			});
 		}
 
 		// Every transaction in Optimism needs to be below 9m gas, to ensure
@@ -521,6 +533,24 @@ const deploy = async ({
 		name: 'SystemStatus',
 		args: [account],
 	});
+
+	if (network !== 'mainnet' && systemStatus) {
+		// On testnet, give the deployer the rights to update status
+		await runStep({
+			contract: 'SystemStatus',
+			target: systemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('System'), account],
+			expected: ({ canSuspend } = {}) => canSuspend,
+			write: 'updateAccessControls',
+			writeArg: [
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
+				[account, account, account, account, account],
+				[true, true, true, true, true],
+				[true, true, true, true, true],
+			],
+		});
+	}
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
@@ -1439,9 +1469,12 @@ const deploy = async ({
 		);
 
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
-		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
+		// And on local filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
 		.filter(([contract]) => {
-			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
+			if (
+				network === 'local' &&
+				/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)
+			) {
 				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
 				console.log(
 					redBright(
@@ -1462,29 +1495,16 @@ const deploy = async ({
 		}
 	}
 
-	if (useOvm) {
-		// NOTE: If using OVM, split the array of addresses to cache,
-		// since things spend signifficantly more gas in OVM
-		const chunks = splitArrayIntoChunks(contractsToRebuildCache, 4);
-		for (let i = 0; i < chunks.length; i++) {
-			const chunk = chunks[i];
-			await runStep({
-				gasLimit: 7e6, // higher gas required
-				contract: `AddressResolver`,
-				target: addressResolver,
-				publiclyCallable: true, // does not require owner
-				write: 'rebuildCaches',
-				writeArg: [chunk],
-			});
-		}
-	} else if (contractsToRebuildCache.length) {
+	const addressesChunkSize = useOvm ? 12 : 20;
+	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
+		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
 		await runStep({
-			gasLimit: 9e6, // higher gas required
+			gasLimit: useOvm ? 9e6 : 7e6,
 			contract: `AddressResolver`,
 			target: addressResolver,
 			publiclyCallable: true, // does not require owner
 			write: 'rebuildCaches',
-			writeArg: [contractsToRebuildCache],
+			writeArg: [chunk],
 		});
 	}
 
@@ -1730,7 +1750,7 @@ const deploy = async ({
 		// override individual currencyKey / synths exchange rates
 		const synthExchangeRateOverride = {
 			sETH: w3utils.toWei('0.003'),
-			iETH: w3utils.toWei('0.007'),
+			iETH: w3utils.toWei('0.004'),
 			sBTC: w3utils.toWei('0.003'),
 			iBTC: w3utils.toWei('0.003'),
 			iBNB: w3utils.toWei('0.021'),

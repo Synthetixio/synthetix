@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -953,12 +953,13 @@ contract('CollateralEth @ovm-skip', async accounts => {
 				assert.equal(loan.amount.substring(0, 5), expectedString);
 			});
 
-			xit('should emit the event properly', async () => {
+			it('should emit the event properly', async () => {
 				assert.eventEqual(tx, 'LoanRepaymentMade', {
 					account: account1,
 					repayer: account2,
 					id: id,
 					amountRepaid: tensUSD,
+					amountAfter: loan.amount,
 				});
 			});
 		});
@@ -994,12 +995,13 @@ contract('CollateralEth @ovm-skip', async accounts => {
 				assert.equal(loan.amount.substring(0, 5), expectedString);
 			});
 
-			xit('should emit the event properly', async () => {
+			it('should emit the event properly', async () => {
 				assert.eventEqual(tx, 'LoanRepaymentMade', {
 					account: account1,
 					repayer: account2,
 					id: id,
 					amountRepaid: oneETH,
+					amountAfter: loan.amount,
 				});
 			});
 		});
