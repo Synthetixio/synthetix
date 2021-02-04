@@ -4,12 +4,9 @@ require('dotenv').config();
 const path = require('path');
 
 require('./hardhat');
-require('@nomiclabs/hardhat-truffle5'); // uses and exposes web3 via hardhat-web3 plugin
-// require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-compiler'); // enable custom solc compiler
-// require('@eth-optimism/ovm-toolchain/build/src/buidler-plugins/buidler-ovm-node'); // add ability to start an OVM node
+require('@nomiclabs/hardhat-truffle5');
 require('solidity-coverage');
 require('hardhat-gas-reporter');
-// usePlugin('buidler-ast-doc'); // compile ASTs for use with synthetix-docs
 
 const {
 	constants: { inflationStartTimestampInSecs, AST_FILENAME, AST_FOLDER, BUILD_FOLDER },
