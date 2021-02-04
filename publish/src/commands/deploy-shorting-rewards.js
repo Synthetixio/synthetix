@@ -259,14 +259,17 @@ const deployShortingRewards = async ({
 
 		// Rebuild the cache so it knows about CollateralShort
 		await runStep({
+			account,
 			gasLimit: 6e6,
 			contract: shortingRewardNameFixed,
-			target: deployer.getExistingContract({ contract: shortingRewardNameFixed }),
+			target: rewardsContract,
 			write: 'rebuildCache',
+			publiclyCallable: true,
 		});
 
 		// Link it to the Collateral Short contract
 		await runStep({
+			account,
 			gasLimit: 6e6,
 			contract: 'CollateralShort',
 			target: deployer.getExistingContract({ contract: 'CollateralShort' }),

@@ -78,10 +78,6 @@
 		"asset": "EOS"
 	},
 	{
-		"name": "sBCH",
-		"asset": "BCH"
-	},
-	{
 		"name": "sETC",
 		"asset": "ETC"
 	},
@@ -96,6 +92,30 @@
 	{
 		"name": "sADA",
 		"asset": "ADA"
+	},
+	{
+		"name": "sAAVE",
+		"asset": "AAVE"
+	},
+	{
+		"name": "sUNI",
+		"asset": "UNI"
+	},
+	{
+		"name": "sYFI",
+		"asset": "YFI"
+	},
+	{
+		"name": "sDOT",
+		"asset": "DOT"
+	},
+	{
+		"name": "sREN",
+		"asset": "REN"
+	},
+	{
+		"name": "sCOMP",
+		"asset": "COMP"
 	},
 	{
 		"name": "sFTSE",
@@ -164,52 +184,52 @@
 			{
 				"asset": "AAVE",
 				"units": 8.41,
-				"weight": 15.0
+				"weight": 15
 			},
 			{
 				"asset": "UMA",
 				"units": 19.47,
-				"weight": 5.0
+				"weight": 5
 			},
 			{
 				"asset": "SNX",
 				"units": 109.93,
-				"weight": 15.0
+				"weight": 15
 			},
 			{
 				"asset": "REN",
 				"units": 598.03,
-				"weight": 5.0
+				"weight": 5
 			},
 			{
 				"asset": "UNI",
 				"units": 92.09,
-				"weight": 10.0
+				"weight": 10
 			},
 			{
 				"asset": "KNC",
 				"units": 159.13,
-				"weight": 5.0
+				"weight": 5
 			},
 			{
 				"asset": "CRV",
 				"units": 253.8,
-				"weight": 5.0
+				"weight": 5
 			},
 			{
 				"asset": "WNXM",
 				"units": 4.53,
-				"weight": 5.0
+				"weight": 5
 			},
 			{
 				"asset": "YFI",
 				"units": 0.023,
-				"weight": 15.0
+				"weight": 15
 			},
 			{
 				"asset": "BAL",
 				"units": 9.05,
-				"weight": 5.0
+				"weight": 5
 			}
 		],
 		"subclass": "PurgeableSynth"
@@ -305,16 +325,6 @@
 		}
 	},
 	{
-		"name": "iBCH",
-		"asset": "BCH",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 229.54,
-			"upperLimit": 344.31,
-			"lowerLimit": 114.77
-		}
-	},
-	{
 		"name": "iETC",
 		"asset": "ETC",
 		"subclass": "PurgeableSynth",
@@ -384,6 +394,66 @@
 			"entryPoint": 45.087,
 			"upperLimit": 67.63,
 			"lowerLimit": 22.543
+		}
+	},
+	{
+		"name": "iAAVE",
+		"asset": "AAVE",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 406.0,
+			"upperLimit": 609.0,
+			"lowerLimit": 203.0
+		}
+	},
+	{
+		"name": "iUNI",
+		"asset": "UNI",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 21.0,
+			"upperLimit": 31.5,
+			"lowerLimit": 10.5
+		}
+	},
+	{
+		"name": "iYFI",
+		"asset": "YFI",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 33300.0,
+			"upperLimit": 49950.0,
+			"lowerLimit": 16650.0
+		}
+	},
+	{
+		"name": "iDOT",
+		"asset": "DOT",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 20.6,
+			"upperLimit": 30.9,
+			"lowerLimit": 10.3
+		}
+	},
+	{
+		"name": "iREN",
+		"asset": "REN",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0.7,
+			"upperLimit": 1.05,
+			"lowerLimit": 0.35
+		}
+	},
+	{
+		"name": "iCOMP",
+		"asset": "COMP",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 393.0,
+			"upperLimit": 589.5,
+			"lowerLimit": 196.5
 		}
 	}
 ]

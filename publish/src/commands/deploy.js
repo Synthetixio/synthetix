@@ -2175,6 +2175,7 @@ const deploy = async ({
 				target: debtCache,
 				write: 'takeDebtSnapshot',
 				writeArg: [],
+				publiclyCallable: true, // does not require owner
 			});
 		} else if (!validityChanged) {
 			console.log(
