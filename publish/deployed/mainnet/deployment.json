@@ -1993,6 +1993,15 @@
 			"timestamp": "2021-02-10T13:18:29.808Z",
 			"txn": "",
 			"network": "mainnet"
+		},
+		"SynthsTSLA": {
+			"name": "SynthsTSLA",
+			"address": "0x0d1c4e5C07B071aa4E6A14A604D4F6478cAAC7B4",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x0d1c4e5C07B071aa4E6A14A604D4F6478cAAC7B4",
+			"timestamp": "2021-02-10T13:53:57.403Z",
+			"txn": "",
+			"network": "mainnet"
 		}
 	},
 	"sources": {
