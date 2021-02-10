@@ -31,5 +31,9 @@
 	"GBP": {"asset": "GBP", "feed": "0x28b0061f44E6A9780224AA61BEc8C3Fcb0d37de9"},
 	"CHF": {"asset": "CHF", "feed": "0xed0616BeF04D374969f302a34AE4A63882490A8C"},
 	"XAU": {"asset": "XAU", "feed": "0xc8fb5684f2707C82f28595dEaC017Bfdf44EE9c5"},
-	"XAG": {"asset": "XAG", "feed": "0x4594051c018Ac096222b5077C3351d523F93a963"}
+	"XAG": {"asset": "XAG", "feed": "0x4594051c018Ac096222b5077C3351d523F93a963"},
+	"TSLA": {
+		"asset": "TSLA",
+		"feed": "0xb31357d152638fd1ae0853d24b9Ea81dF29E3EF2"
+	}
 }
