@@ -1975,6 +1975,24 @@
 			"timestamp": "2021-02-04T05:18:22.049Z",
 			"txn": "",
 			"network": "mainnet"
+		},
+		"TokenStatesTSLA": {
+			"name": "TokenStatesTSLA",
+			"address": "0x259F2584E8A672DA3773F91D66567a3229Dee93d",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x259F2584E8A672DA3773F91D66567a3229Dee93d",
+			"timestamp": "2021-02-10T13:16:42.178Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysTSLA": {
+			"name": "ProxysTSLA",
+			"address": "0x918dA91Ccbc32B7a6A0cc4eCd5987bbab6E31e6D",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x918dA91Ccbc32B7a6A0cc4eCd5987bbab6E31e6D",
+			"timestamp": "2021-02-10T13:18:29.808Z",
+			"txn": "",
+			"network": "mainnet"
 		}
 	},
 	"sources": {

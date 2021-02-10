@@ -651,10 +651,10 @@
 		"deploy": false
 	},
 	"TokenStatesTSLA": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysTSLA": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsTSLA": {
 		"deploy": true
