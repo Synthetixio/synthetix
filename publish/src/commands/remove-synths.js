@@ -37,7 +37,7 @@ const removeSynths = async ({
 	privateKey,
 }) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	const {
@@ -117,7 +117,7 @@ const removeSynths = async ({
 	// deep clone these configurations so we can mutate and persist them
 	const updatedConfig = JSON.parse(JSON.stringify(config));
 	const updatedDeployment = JSON.parse(JSON.stringify(deployment));
-	let updatedSynths = JSON.parse(JSON.stringify(synths));
+	let updatedSynths = JSON.parse(fs.readFileSync(synthsFile));
 
 	for (const currencyKey of synthsToRemove) {
 		const { address: synthAddress, source: synthSource } = deployment.targets[
@@ -195,7 +195,7 @@ module.exports = {
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', 1)
-			.option('-l, --gas-limit <value>', 'Gas limit', 15e4)
+			.option('-l, --gas-limit <value>', 'Gas limit', 1e6)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-s, --synths-to-remove <value>',

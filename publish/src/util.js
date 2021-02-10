@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
+const { table } = require('table');
 const w3utils = require('web3-utils');
 
 const {
@@ -14,13 +15,21 @@ const {
 		OWNER_ACTIONS_FILENAME,
 		SYNTHS_FILENAME,
 		STAKING_REWARDS_FILENAME,
+		SHORTING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 		FEEDS_FILENAME,
 	},
 	wrap,
 } = require('../..');
 
-const { getPathToNetwork, getSynths, getStakingRewards, getVersions, getFeeds } = wrap({
+const {
+	getPathToNetwork,
+	getSynths,
+	getStakingRewards,
+	getVersions,
+	getFeeds,
+	getShortingRewards,
+} = wrap({
 	path,
 	fs,
 });
@@ -36,9 +45,9 @@ const ensureNetwork = network => {
 	}
 };
 
-const getDeploymentPathForNetwork = network => {
+const getDeploymentPathForNetwork = ({ network, useOvm }) => {
 	console.log(gray('Loading default deployment for network'));
-	return getPathToNetwork({ network });
+	return getPathToNetwork({ network, useOvm });
 };
 
 const ensureDeploymentPath = deploymentPath => {
@@ -58,6 +67,12 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of staking rewards to deploy on ${network.toUpperCase()}...`));
 	const stakingRewardsFile = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
 	const stakingRewards = getStakingRewards({ network, deploymentPath });
+
+	console.log(
+		gray(`Loading the list of shorting rewards to deploy on ${network.toUpperCase()}...`)
+	);
+	const shortingRewardsFile = path.join(deploymentPath, SHORTING_REWARDS_FILENAME);
+	const shortingRewards = getShortingRewards({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
@@ -104,23 +119,27 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		versionsFile,
 		feeds,
 		feedsFile,
+		shortingRewards,
+		shortingRewardsFile,
 	};
 };
 
-const loadConnections = ({ network, useFork, specifiedProviderUrl }) => {
-	if (!specifiedProviderUrl && network !== 'local' && !process.env.PROVIDER_URL) {
-		throw Error('Missing .env key of PROVIDER_URL. Please add and retry.');
-	}
+const getEtherscanLinkPrefix = network => {
+	return `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+};
 
+const loadConnections = ({ network, useFork }) => {
 	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
 	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	let providerUrl;
-	if (specifiedProviderUrl) {
-		providerUrl = specifiedProviderUrl;
-	} else if (network === 'local' || useFork) {
+	if (network === 'local' || useFork) {
 		providerUrl = 'http://127.0.0.1:8545';
 	} else {
-		providerUrl = process.env.PROVIDER_URL.replace('network', network);
+		if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
+			providerUrl = process.env.PROVIDER_URL_MAINNET;
+		} else {
+			providerUrl = process.env.PROVIDER_URL.replace('network', network);
+		}
 	}
 
 	const privateKey =
@@ -131,7 +150,8 @@ const loadConnections = ({ network, useFork, specifiedProviderUrl }) => {
 			? 'https://api.etherscan.io/api'
 			: `https://api-${network}.etherscan.io/api`;
 
-	const etherscanLinkPrefix = `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+	const etherscanLinkPrefix = getEtherscanLinkPrefix(network);
+
 	return { providerUrl, privateKey, etherscanUrl, etherscanLinkPrefix };
 };
 
@@ -186,6 +206,8 @@ const performTransactionalStep = async ({
 	ownerActionsFile,
 	dryRun,
 	encodeABI,
+	nonceManager,
+	publiclyCallable,
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
@@ -202,32 +224,54 @@ const performTransactionalStep = async ({
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
-			return;
+			return { noop: true };
 		}
 	}
-	// otherwuse check the owner
+	// otherwise check the owner
 	const owner = await target.methods.owner().call();
-	if (owner === account) {
+	if (owner === account || publiclyCallable) {
 		// perform action
 		let hash;
+		let gasUsed = 0;
 		if (dryRun) {
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
-			const txn = await target.methods[write](...argumentsForWriteFunction).send({
+			const params = {
 				from: account,
 				gas: Number(gasLimit),
 				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			});
+			};
+
+			if (nonceManager) {
+				params.nonce = await nonceManager.getNonce();
+			}
+
+			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
+
 			hash = txn.transactionHash;
+			gasUsed = txn.gasUsed;
+
+			if (nonceManager) {
+				nonceManager.incrementNonce();
+			}
 		}
 
 		console.log(
-			green(`${dryRun ? '[DRY RUN] ' : ''}Successfully completed ${action} in hash: ${hash}`)
+			green(
+				`${
+					dryRun ? '[DRY RUN] ' : ''
+				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
+					2
+				)}m `
+			)
 		);
 
-		return hash;
+		return { mined: true, hash };
+	} else {
+		console.log(gray(`  > Account ${account} is not owner ${owner}`));
 	}
+
 	let data;
 	if (ownerActions && ownerActionsFile) {
 		// append to owner actions if supplied
@@ -253,14 +297,14 @@ const performTransactionalStep = async ({
 		} else {
 			appendOwnerAction(ownerAction);
 		}
-		return true;
+		return { pending: true };
 	} else {
 		// otherwise wait for owner in real time
 		try {
 			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
 			if (encodeABI) {
 				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
-				return true;
+				return { pending: true };
 			}
 
 			await confirmAction(
@@ -271,9 +315,10 @@ const performTransactionalStep = async ({
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
 			);
 
-			return true;
+			return { pending: true };
 		} catch (err) {
 			console.log(gray('Cancelled'));
+			return {};
 		}
 	}
 };
@@ -290,15 +335,36 @@ const parameterNotice = props => {
 	console.log(gray('-'.repeat(50)));
 };
 
+function reportDeployedContracts({ deployer }) {
+	console.log(
+		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
+	);
+
+	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
+		name,
+		address,
+		deployer.deployment.targets[name].link,
+	]);
+	console.log();
+	if (tableData.length) {
+		console.log(gray(`All contracts deployed on "${deployer.network}" network:`));
+		console.log(table(tableData));
+	} else {
+		console.log(gray('Note: No new contracts deployed.'));
+	}
+}
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
+	getEtherscanLinkPrefix,
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,
 	performTransactionalStep,
 	parameterNotice,
+	reportDeployedContracts,
 };

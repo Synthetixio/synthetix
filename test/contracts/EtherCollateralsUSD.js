@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -41,7 +41,6 @@ contract('EtherCollateralsUSD', async accounts => {
 	const [, owner, oracle, address1, address2, address3] = accounts;
 
 	let etherCollateral,
-		synthetix,
 		feePool,
 		exchangeRates,
 		addressResolver,
@@ -127,8 +126,7 @@ contract('EtherCollateralsUSD', async accounts => {
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
 		// Mock SNX, sUSD
-		[{ token: synthetix }, { token: sUSDSynth }] = await Promise.all([
-			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
+		[{ token: sUSDSynth }] = await Promise.all([
 			mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
 		]);
 
@@ -142,7 +140,6 @@ contract('EtherCollateralsUSD', async accounts => {
 			accounts,
 			mocks: {
 				SynthsUSD: sUSDSynth,
-				Synthetix: synthetix,
 			},
 			contracts: [
 				'FeePool',
@@ -150,6 +147,8 @@ contract('EtherCollateralsUSD', async accounts => {
 				'ExchangeRates',
 				'SystemStatus',
 				'EtherCollateralsUSD',
+				'CollateralManager',
+				'Synthetix',
 			],
 		}));
 
@@ -174,7 +173,7 @@ contract('EtherCollateralsUSD', async accounts => {
 		});
 
 		// Sync feePool with imported mockIssuer
-		await feePool.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await feePool.rebuildCache();
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -1608,8 +1607,9 @@ contract('EtherCollateralsUSD', async accounts => {
 		});
 
 		it('should revert if the loan does not exist', async () => {
+			const loanId = 2e10; // assign a big number as the loan id
 			await assert.revert(
-				etherCollateral.depositCollateral(alice, -1, { from: alice, value: oneETH }),
+				etherCollateral.depositCollateral(alice, loanId, { from: alice, value: oneETH }),
 				'Loan does not exist'
 			);
 		});
@@ -1669,8 +1669,9 @@ contract('EtherCollateralsUSD', async accounts => {
 		});
 
 		it('should revert if the loan does not exist', async () => {
+			const loanId = 2e10; // assign a big number as the loan id
 			await assert.revert(
-				etherCollateral.withdrawCollateral(-1, withdrawAmount, { from: alice }),
+				etherCollateral.withdrawCollateral(loanId, withdrawAmount, { from: alice }),
 				'Loan does not exist'
 			);
 		});

@@ -19,7 +19,7 @@ import "./interfaces/IExchangeRates.sol";
 
 
 // ETH Collateral v0.3 (sUSD)
-// https://docs.synthetix.io/contracts/EtherCollateralsUSD
+// https://docs.synthetix.io/contracts/source/contracts/ethercollateralsusd
 contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateralsUSD {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;
@@ -120,15 +120,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_FEEPOOL];
-
     // ========== CONSTRUCTOR ==========
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        Pausable()
-        MixinResolver(_resolver, addressesToCache)
-    {
+    constructor(address _owner, address _resolver) public Owned(_owner) Pausable() MixinResolver(_resolver) {
         liquidationDeadline = block.timestamp + 92 days; // Time before loans can be open for liquidation to end the trial contract
     }
 
@@ -183,6 +176,13 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     // ========== PUBLIC VIEWS ==========
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](4);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_SYNTHSUSD;
+        addresses[2] = CONTRACT_EXRATES;
+        addresses[3] = CONTRACT_FEEPOOL;
+    }
 
     function getContractInfo()
         external
@@ -828,19 +828,19 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     /* ========== INTERNAL VIEWS ========== */
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function synthsUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     /* ========== MODIFIERS ========== */

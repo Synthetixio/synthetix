@@ -18,13 +18,22 @@ const {
 	confirmAction,
 } = require('../util');
 
-const nominate = async ({ network, newOwner, contracts, deploymentPath, gasPrice, gasLimit }) => {
+const nominate = async ({
+	network,
+	newOwner,
+	contracts,
+	deploymentPath,
+	gasPrice,
+	gasLimit,
+	useOvm,
+	providerUrl,
+}) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	if (!newOwner) {
-		newOwner = getUsers({ network, user: 'owner' }).address;
+		newOwner = getUsers({ network, useOvm, user: 'owner' }).address;
 	}
 
 	if (!newOwner || !w3utils.isAddress(newOwner)) {
@@ -46,10 +55,19 @@ const nominate = async ({ network, newOwner, contracts, deploymentPath, gasPrice
 		}
 	});
 	if (!contracts.length) {
-		contracts = Object.keys(config);
+		// if contracts not supplied, use all contracts except the DappMaintenance (UI control)
+		contracts = Object.keys(config).filter(contract => contract !== 'DappMaintenance');
 	}
 
-	const { providerUrl, privateKey } = loadConnections({ network });
+	const { providerUrl: envProviderUrl, privateKey } = loadConnections({ network });
+	if (!providerUrl) {
+		if (!envProviderUrl) {
+			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
+		}
+
+		providerUrl = envProviderUrl;
+	}
+
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 	web3.eth.accounts.wallet.add(privateKey);
 	const account = web3.eth.accounts.wallet[0].address;
@@ -119,6 +137,11 @@ module.exports = {
 			.option(
 				'-o, --new-owner <value>',
 				'The address of the new owner (please include the 0x prefix)'
+			)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+			.option(
+				'-p, --provider-url <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
 			.option(
 				'-c, --contracts [value]',

@@ -8,7 +8,7 @@ interface ISynthetixEscrow {
 }
 
 
-// https://docs.synthetix.io/contracts/EscrowChecker
+// https://docs.synthetix.io/contracts/source/contracts/escrowchecker
 contract EscrowChecker {
     ISynthetixEscrow public synthetix_escrow;
 

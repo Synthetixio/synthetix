@@ -28,7 +28,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 	const solc = require('solc');
 
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	const { config, deployment, deploymentFile } = loadAndCheckRequiredSources({
@@ -84,6 +84,18 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 					apikey: process.env.ETHERSCAN_KEY,
 				},
 			});
+
+			if (!+result.data.status) {
+				console.log(
+					red(` - Unable to verify ${name} - Etherscan returned "${result.data.result}"`)
+				);
+				tableData.push([
+					name,
+					address,
+					`Unable to verify, Etherscan returned "${result.data.result}`,
+				]);
+				continue;
+			}
 
 			// Get the bytecode that was in that transaction.
 			const deployedBytecode = result.data.result[0].input;

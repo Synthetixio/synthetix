@@ -1,0 +1,9 @@
+# Compiles for ovm and runs unit tests in a local ovm chain
+{{> job-header.yml}}
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - run:
+      command: |
+        npx hardhat compile --use-ovm --optimizer

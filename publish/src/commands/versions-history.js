@@ -13,7 +13,7 @@ const {
 
 const versionsHistory = async ({ network, deploymentPath }) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	// replace console.log so all output is simply the CSV contents

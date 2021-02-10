@@ -7,6 +7,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
     constructor(
         address _owner,
         address _creator,
+        address _resolver,
         uint[2] memory _creatorLimits,
         bytes32 _oracleKey,
         uint256 _strikePrice,
@@ -16,7 +17,18 @@ contract TestableBinaryOptionMarket is BinaryOptionMarket {
         uint[3] memory _fees
     )
         public
-        BinaryOptionMarket(_owner, _creator, _creatorLimits, _oracleKey, _strikePrice, _refundsEnabled, _times, _bids, _fees)
+        BinaryOptionMarket(
+            _owner,
+            _creator,
+            _resolver,
+            _creatorLimits,
+            _oracleKey,
+            _strikePrice,
+            _refundsEnabled,
+            _times,
+            _bids,
+            _fees
+        )
     {}
 
     function updatePrices(

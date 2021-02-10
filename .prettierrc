@@ -14,7 +14,6 @@
     {
       "files": ["*.js", "*.md"],
       "options": {
-        "useTabs": true,
         "printWidth": 100,
         "semi": true,
         "singleQuote": true,
@@ -23,9 +22,15 @@
       }
     },
     {
-      "files": "*.json",
+      "files": ["*.js", "*.json"],
       "options": {
         "useTabs": true
+      }
+    },
+    {
+      "files": "*.md",
+      "options": {
+        "useTabs": false
       }
     }
   ]

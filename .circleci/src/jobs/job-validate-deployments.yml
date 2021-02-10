@@ -1,0 +1,7 @@
+# Validates deployment json data against on-chain data
+{{> job-header.yml}}
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - run: npm run test:deployments

@@ -8,6 +8,9 @@
 	"ReadProxyAddressResolver": {
 		"deploy": true
 	},
+	"DebtCache": {
+		"deploy": true
+	},
 	"Depot": {
 		"deploy": true
 	},
@@ -27,6 +30,9 @@
 		"deploy": true
 	},
 	"EtherCollateral": {
+		"deploy": true
+	},
+	"EtherCollateralsUSD": {
 		"deploy": true
 	},
 	"FeePool": {
@@ -66,6 +72,9 @@
 		"deploy": true
 	},
 	"RewardEscrow": {
+		"deploy": true
+	},
+	"RewardEscrowV2": {
 		"deploy": true
 	},
 	"RewardsDistribution": {
@@ -120,6 +129,12 @@
 		"deploy": true
 	},
 	"SynthsETH": {
+		"deploy": true
+	},
+	"SynthetixBridgeToBase": {
+		"deploy": true
+	},
+	"CollateralManager": {
 		"deploy": true
 	}
 }

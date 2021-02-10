@@ -22,7 +22,7 @@ const { stringify } = require('../util');
 const prepareDeployDetectDiff = async ({ network = DEFAULTS.network }) => {
 	ensureNetwork(network);
 
-	const deploymentPath = getDeploymentPathForNetwork(network);
+	const deploymentPath = getDeploymentPathForNetwork({ network });
 	ensureDeploymentPath(deploymentPath);
 
 	const { config, configFile, deployment } = loadAndCheckRequiredSources({

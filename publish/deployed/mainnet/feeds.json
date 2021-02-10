@@ -15,13 +15,25 @@
 		"asset": "KNC",
 		"feed": "0xf8fF43E991A81e6eC886a3D281A2C6cC19aE70Fc"
 	},
-	"LEND": {
-		"asset": "LEND",
-		"feed": "0x4aB81192BB75474Cf203B56c36D6a13623270A67"
-	},
 	"REN": {
 		"asset": "REN",
 		"feed": "0x0f59666EDE214281e956cb3b2D0d69415AfF4A01"
+	},
+	"AAVE": {
+		"asset": "AAVE",
+		"feed": "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9"
+	},
+	"UNI": {
+		"asset": "UNI",
+		"feed": "0x553303d460EE0afB37EdFf9bE42922D8FF63220e"
+	},
+	"YFI": {
+		"asset": "YFI",
+		"feed": "0xA027702dbb89fbd58938e4324ac03B58d812b0E1"
+	},
+	"DOT": {
+		"asset": "DOT",
+		"feed": "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734"
 	},
 	"BTC": {"asset": "BTC", "feed": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c"},
 	"BNB": {"asset": "BNB", "feed": "0x14e613AC84a31f709eadbdF89C6CC390fDc9540A"},
@@ -34,7 +46,6 @@
 		"feed": "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c"
 	},
 	"EOS": {"asset": "EOS", "feed": "0x10a43289895eAff840E8d45995BBa89f9115ECEe"},
-	"BCH": {"asset": "BCH", "feed": "0x9F0F69428F923D6c95B781F89E165C9b2df9789D"},
 	"ETC": {"asset": "ETC", "feed": "0xaEA2808407B7319A31A383B6F8B60f04BCa23cE2"},
 	"DASH": {
 		"asset": "DASH",
@@ -61,5 +72,6 @@
 		"asset": "NIKKEI225",
 		"feed": "0x5c4939a2ab3A2a9f93A518d81d4f8D0Bc6a68980"
 	},
-	"XAG": {"asset": "XAG", "feed": "0x379589227b15F1a12195D3f2d90bBc9F31f95235"}
+	"XAG": {"asset": "XAG", "feed": "0x379589227b15F1a12195D3f2d90bBc9F31f95235"},
+	"OIL": {"asset": "OIL", "feed": "0xf3584F4dd3b467e73C2339EfD008665a70A4185c"}
 }

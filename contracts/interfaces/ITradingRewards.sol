@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/itradingrewards
 interface ITradingRewards {
     /* ========== VIEWS ========== */
 
@@ -44,8 +45,6 @@ interface ITradingRewards {
     function recordExchangeFeeForAccount(uint usdFeeAmount, address account) external;
 
     function closeCurrentPeriodWithRewards(uint rewards) external;
-
-    function recoverEther(address payable recoverAddress) external;
 
     function recoverTokens(address tokenAddress, address recoverAddress) external;
 

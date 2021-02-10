@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -21,7 +21,7 @@ const {
 
 const { mockToken, setupAllContracts } = require('./setup');
 
-const { GAS_PRICE } = require('../../buidler.config');
+const { GAS_PRICE } = require('../../hardhat.config');
 
 const { toBytes32 } = require('../..');
 
@@ -98,7 +98,7 @@ contract('Depot @ovm-skip', async accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: depot.abi,
 				hasFallback: true,
-				ignoreParents: ['SelfDestructible', 'Pausable', 'ReentrancyGuard', 'MixinResolver'],
+				ignoreParents: ['Pausable', 'ReentrancyGuard', 'MixinResolver'],
 				expected: [
 					'depositSynths',
 					'exchangeEtherForSNX',

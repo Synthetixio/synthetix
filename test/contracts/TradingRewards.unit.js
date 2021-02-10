@@ -1,4 +1,4 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { mockToken } = require('./setup');
@@ -56,7 +56,6 @@ contract('TradingRewards (unit tests)', accounts => {
 				'recoverTokens',
 				'recoverUnassignedRewardTokens',
 				'recoverAssignedRewardTokensAndDestroyPeriod',
-				'recoverEther',
 			],
 		});
 	});
@@ -71,7 +70,7 @@ contract('TradingRewards (unit tests)', accounts => {
 		it('reverts when trying to record a fee', async () => {
 			await assert.revert(
 				this.rewards.recordExchangeFeeForAccount('1', mockAddress),
-				'Missing Exchanger address'
+				'Missing address: Exchanger'
 			);
 		});
 	});
@@ -760,65 +759,6 @@ contract('TradingRewards (unit tests)', accounts => {
 									recoverAddress: account7,
 									amount: toUnit(supply),
 								});
-							});
-						});
-					});
-				});
-
-				describe('when sending ether to the contract via selfdestruct', () => {
-					const value = toUnit('42');
-
-					before('send ETH to the contract (via mock backdoor)', async () => {
-						await this.rewards.ethBackdoor({ value });
-					});
-
-					it('has a positive ETH balance', async () => {
-						assert.bnEqual(await web3.eth.getBalance(this.rewards.address), value);
-					});
-
-					it('reverts when any address tries to withdraw the ether', async () => {
-						await assert.revert(
-							this.rewards.recoverEther(account1),
-							'Only the contract owner may perform this action'
-						);
-					});
-
-					it('reverts when the withdrawal address is invalid', async () => {
-						await assert.revert(
-							this.rewards.recoverEther(zeroAddress, { from: owner }),
-							'Invalid recover address'
-						);
-						await assert.revert(
-							this.rewards.recoverEther(this.rewards.address, { from: owner }),
-							'Invalid recover address'
-						);
-					});
-
-					describe('when the owner recovers the ether', () => {
-						let balanceBefore;
-
-						let recoverTx;
-
-						before(async () => {
-							balanceBefore = await web3.eth.getBalance(account7);
-
-							recoverTx = await this.rewards.recoverEther(account7, { from: owner });
-						});
-
-						it('credited the ether to the target account', async () => {
-							const balanceAfter = await web3.eth.getBalance(account7);
-
-							assert.bnEqual(toBN(balanceAfter).sub(toBN(balanceBefore)), value);
-						});
-
-						it('left the contract with no ether', async () => {
-							assert.bnEqual(await web3.eth.getBalance(this.rewards.address), toBN(0));
-						});
-
-						it('emitted an EtherRecovered event', async () => {
-							assert.eventEqual(recoverTx, 'EtherRecovered', {
-								recoverAddress: account7,
-								amount: value,
 							});
 						});
 					});

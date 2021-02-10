@@ -9,7 +9,6 @@
 	},
 	"COMP": {"asset": "COMP"},
 	"KNC": {"asset": "KNC"},
-	"LEND": {"asset": "LEND"},
 	"REN": {"asset": "REN"},
 	"BTC": {"asset": "BTC", "feed": "0xECe365B379E1dD183B20fc5f022230C044d51404"},
 	"BNB": {"asset": "BNB", "feed": "0xcf0f51ca2cDAecb464eeE4227f5295F2384F84ED"},

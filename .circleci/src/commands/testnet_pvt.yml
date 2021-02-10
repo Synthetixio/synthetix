@@ -1,6 +1,0 @@
-description: Run testnet PVT
-parameters:
-  network:
-    type: string
-steps:
-  - run: npm run test:testnet --  --yes --network << parameters.network >>

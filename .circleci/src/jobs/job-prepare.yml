@@ -1,0 +1,16 @@
+# Bootstraps dependencies
+{{> job-header.yml}}
+steps:
+  - checkout
+  - restore_cache:
+      keys:
+        - 'v2-dependencies-{{ checksum "package-lock.json" }}'
+  - run: npm ci
+  - save_cache:
+      key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
+      paths:
+        - node_modules
+  - persist_to_workspace:
+      root: .
+      paths:
+        - node_modules

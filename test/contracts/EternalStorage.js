@@ -1,6 +1,6 @@
 'use strict';
 const w3utils = require('web3-utils');
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupContract } = require('./setup');
 const { toUnit } = require('../utils')();

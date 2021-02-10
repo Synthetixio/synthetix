@@ -167,6 +167,12 @@
 		"sign": "",
 		"description": "yearn.finance"
 	},
+	"DOT": {
+		"asset": "DOT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Polkadot"
+	},
 	"LRC": {
 		"asset": "LRC",
 		"category": "crypto",
@@ -274,6 +280,12 @@
 		"category": "commodity",
 		"sign": "oz",
 		"description": "Silver Ounce"
+	},
+	"OIL": {
+		"asset": "OIL",
+		"category": "commodity",
+		"sign": "$",
+		"description": "Perpetual Oil Futures"
 	},
 	"FTSE100": {
 		"asset": "FTSE100",

@@ -3,15 +3,14 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./State.sol";
-import "./LimitedSetup.sol";
 import "./interfaces/ISynthetixState.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
 
 
-// https://docs.synthetix.io/contracts/SynthetixState
-contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
+// https://docs.synthetix.io/contracts/source/contracts/synthetixstate
+contract SynthetixState is Owned, State, ISynthetixState {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -38,12 +37,7 @@ contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     // Global debt pool tracking
     uint[] public debtLedger;
 
-    constructor(address _owner, address _associatedContract)
-        public
-        Owned(_owner)
-        State(_associatedContract)
-        LimitedSetup(1 weeks)
-    {}
+    constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
 
     /* ========== SETTERS ========== */
 
@@ -91,29 +85,6 @@ contract SynthetixState is Owned, State, LimitedSetup, ISynthetixState {
     function appendDebtLedgerValue(uint value) external onlyAssociatedContract {
         debtLedger.push(value);
     }
-
-    // /**
-    //  * @notice Import issuer data from the old Synthetix contract before multicurrency
-    //  * @dev Only callable by the contract owner, and only for 1 week after deployment.
-    //  */
-    // function importIssuerData(address[] accounts, uint[] sUSDAmounts) external onlyOwner onlyDuringSetup {
-    //     require(accounts.length == sUSDAmounts.length, "Length mismatch");
-
-    //     for (uint8 i = 0; i < accounts.length; i++) {
-    //         _addToDebtRegister(accounts[i], sUSDAmounts[i]);
-    //     }
-    // }
-
-    // /**
-    //  * @notice Import issuer data from the old Synthetix contract before multicurrency
-    //  * @dev Only used from importIssuerData above, meant to be disposable
-    //  */
-    // function _addToDebtRegister(address account, uint amount) internal {
-    //     // Note: this function's implementation has been removed from the current Synthetix codebase
-    //     // as it could only habe been invoked during setup (see importIssuerData) which has since expired.
-    //     // There have been changes to the functions it requires, so to ensure compiles, the below has been removed.
-    //     // For the previous implementation, see Synthetix._addToDebtRegister()
-    // }
 
     /* ========== VIEWS ========== */
 

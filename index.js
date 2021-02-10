@@ -11,9 +11,14 @@ const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
+	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
+	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
 };
 
 const assets = require('./publish/assets.json');
+const ovmIgnored = require('./publish/ovm-ignore.json');
+const nonUpgradeable = require('./publish/non-upgradeable.json');
+const releases = require('./publish/releases.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
@@ -36,6 +41,7 @@ const constants = {
 	PARAMS_FILENAME: 'params.json',
 	SYNTHS_FILENAME: 'synths.json',
 	STAKING_REWARDS_FILENAME: 'rewards.json',
+	SHORTING_REWARDS_FILENAME: 'shorting-rewards.json',
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
@@ -45,7 +51,28 @@ const constants = {
 
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 
+	OVM_MAX_GAS_LIMIT: '8999999',
+
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
+};
+
+const knownAccounts = {
+	mainnet: [
+		{
+			name: 'binance', // Binance 8 Wallet
+			address: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
+		},
+		{
+			name: 'renBTCWallet', // KeeperDAO wallet (has renBTC and ETH)
+			address: '0x35ffd6e268610e764ff6944d07760d0efe5e40e5',
+		},
+		{
+			name: 'loansAccount',
+			address: '0x62f7A1F94aba23eD2dD108F8D23Aa3e7d452565B',
+		},
+	],
+	rinkeby: [],
+	kovan: [],
 };
 
 // The solidity defaults are managed here in the same format they will be stored, hence all
@@ -70,15 +97,54 @@ const defaults = {
 		commodity: w3utils.toWei('0.003'),
 		equities: w3utils.toWei('0.003'),
 		crypto: w3utils.toWei('0.01'),
-		index: w3utils.toWei('0.003'),
+		index: w3utils.toWei('0.01'),
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
-	DEBT_SNAPSHOT_STALE_TIME: (3600).toString(), // 1 hour
+	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
 	AGGREGATOR_WARNING_FLAGS: {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
+	RENBTC_ERC20_ADDRESSES: {
+		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
+		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		rinkeby: '0xEDC0C23864B041607D624E2d9a67916B6cf40F7a',
+	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
+	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
+	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
+
+	COLLATERAL_MANAGER: {
+		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
+		SHORTS: [
+			{ long: 'sBTC', short: 'iBTC' },
+			{ long: 'sETH', short: 'iETH' },
+		],
+		MAX_DEBT: w3utils.toWei('20000000'), // 20 million sUSD
+		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
+		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
+	},
+	COLLATERAL_ETH: {
+		SYNTHS: ['sUSD', 'sETH'],
+		MIN_CRATIO: w3utils.toWei('1.3'),
+		MIN_COLLATERAL: w3utils.toWei('2'),
+		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
+	},
+	COLLATERAL_RENBTC: {
+		SYNTHS: ['sUSD', 'sBTC'],
+		MIN_CRATIO: w3utils.toWei('1.3'),
+		MIN_COLLATERAL: w3utils.toWei('0.05'),
+		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
+	},
+	COLLATERAL_SHORT: {
+		SYNTHS: ['sBTC', 'sETH'],
+		MIN_CRATIO: w3utils.toWei('1.2'),
+		MIN_COLLATERAL: w3utils.toWei('1000'),
+		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
+		INTERACTION_DELAY: '3600', // 1 hour in secs
+	},
 };
 
 /**
@@ -105,6 +171,7 @@ const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = false 
 	const pathToDeployment = deploymentPath
 		? path.join(deploymentPath, constants.DEPLOYMENT_FILENAME)
 		: getPathToNetwork({ network, useOvm, path, file: constants.DEPLOYMENT_FILENAME });
+
 	if (!fs.existsSync(pathToDeployment)) {
 		throw Error(`Cannot find deployment for network: ${network}.`);
 	}
@@ -326,6 +393,34 @@ const getStakingRewards = ({
 };
 
 /**
+ * Retrieve the list of shorting rewards for the network - returning the names and rewardTokens
+ */
+const getShortingRewards = ({
+	network = 'mainnet',
+	useOvm = false,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+		return data[getFolderNameForNetwork({ network, useOvm })]['shorting-rewards'];
+	}
+
+	const pathToShortingRewardsList = deploymentPath
+		? path.join(deploymentPath, constants.SHORTING_REWARDS_FILENAME)
+		: getPathToNetwork({
+				network,
+				path,
+				useOvm,
+				file: constants.SHORTING_REWARDS_FILENAME,
+		  });
+	if (!fs.existsSync(pathToShortingRewardsList)) {
+		return [];
+	}
+	return JSON.parse(fs.readFileSync(pathToShortingRewardsList));
+};
+
+/**
  * Retrieve the list of system user addresses
  */
 const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
@@ -347,10 +442,18 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			oracle: '0xaC1ED4Fabbd5204E02950D68b6FC8c446AC95362',
 		}),
 		kovan: Object.assign({}, base),
+		'kovan-ovm': Object.assign({}, base),
+		'mainnet-ovm': Object.assign({}, base, {
+			owner: '0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe',
+		}),
 		rinkeby: Object.assign({}, base),
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),
 		'goerli-ovm': Object.assign({}, base),
+		local: Object.assign({}, base, {
+			// Deterministic account #0 when using `npx hardhat node`
+			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		}),
 	};
 
 	const users = Object.entries(
@@ -384,13 +487,16 @@ const getVersions = ({
 
 	if (byContract) {
 		// compile from the contract perspective
-		return Object.values(versions).reduce((memo, entry) => {
-			for (const [contract, contractEntry] of Object.entries(entry.contracts)) {
-				memo[contract] = memo[contract] || [];
-				memo[contract].push(contractEntry);
-			}
-			return memo;
-		}, {});
+		return Object.values(versions).reduce(
+			(memo, { tag, release, date, commit, block, contracts }) => {
+				for (const [contract, contractEntry] of Object.entries(contracts)) {
+					memo[contract] = memo[contract] || [];
+					memo[contract].push(Object.assign({ tag, release, date, commit, block }, contractEntry));
+				}
+				return memo;
+			},
+			{}
+		);
 	}
 	return versions;
 };
@@ -399,6 +505,7 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 	const suspensionReasonMap = {
 		1: 'System Upgrade',
 		2: 'Market Closure',
+		4: 'iSynth Reprice',
 		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
 		99999: 'Emergency',
@@ -433,7 +540,8 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: synth.name,
 				asset: synth.asset,
 				name: synth.description,
-				address: targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`].address,
+				address: (targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`] || {})
+					.address,
 				index: synth.index,
 				inverted: synth.inverted,
 				decimals: 18,
@@ -458,13 +566,14 @@ const decode = ({ network = 'mainnet', fs, path, data, target, useOvm = false } 
 	return { method: abiDecoder.decodeMethod(data), contract };
 };
 
-const wrap = ({ network, fs, path, useOvm = false }) =>
+const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 	[
 		'decode',
 		'getAST',
 		'getPathToNetwork',
 		'getSource',
 		'getStakingRewards',
+		'getShortingRewards',
 		'getFeeds',
 		'getSynths',
 		'getTarget',
@@ -473,7 +582,7 @@ const wrap = ({ network, fs, path, useOvm = false }) =>
 		'getVersions',
 	].reduce((memo, fnc) => {
 		memo[fnc] = (prop = {}) =>
-			module.exports[fnc](Object.assign({ network, useOvm, fs, path }, prop));
+			module.exports[fnc](Object.assign({ network, deploymentPath, fs, path, useOvm }, prop));
 		return memo;
 	}, {});
 
@@ -485,6 +594,7 @@ module.exports = {
 	getPathToNetwork,
 	getSource,
 	getStakingRewards,
+	getShortingRewards,
 	getSuspensionReasons,
 	getFeeds,
 	getSynths,
@@ -496,4 +606,8 @@ module.exports = {
 	networkToChainId,
 	toBytes32,
 	wrap,
+	ovmIgnored,
+	nonUpgradeable,
+	releases,
+	knownAccounts,
 };

@@ -1,4 +1,4 @@
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 
 const { assert } = require('./common');
 
@@ -58,7 +58,7 @@ contract('ExternStateToken', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: instance.abi,
-			ignoreParents: ['SelfDestructible', 'Proxyable'],
+			ignoreParents: ['Proxyable'],
 			expected: ['setTokenState', 'approve'],
 		});
 	});

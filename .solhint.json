@@ -2,6 +2,7 @@
 	"extends": ["solhint:recommended"],
 	"plugins": [],
 	"rules": {
+		"avoid-call-value": "off",
 		"bracket-align": "off",
 		"compiler-version": ["error", "^0.5.0"],
 		"const-name-snakecase": "off",
@@ -32,6 +33,7 @@
 		"func-name-mixedcase": "warn",
 		"contract-name-camelcase": "warn",
 		"multiple-sends": "warn",
-		"reentrancy": "warn"
+		"reentrancy": "warn",
+		"max-states-count": ["warn", 17]
 	}
 }

@@ -15,10 +15,7 @@ contract FakeTradingRewards is TradingRewards {
         address periodController,
         address resolver,
         address mockSynthetixToken
-    )
-        public
-        TradingRewards(owner, periodController, resolver)
-    {
+    ) public TradingRewards(owner, periodController, resolver) {
         _mockSynthetixToken = IERC20(mockSynthetixToken);
     }
 
@@ -31,7 +28,4 @@ contract FakeTradingRewards is TradingRewards {
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(msg.sender);
     }
-
-    // Easy way to send ETH to the contract. Alternative is to use selfdestruct, but this is easier.
-    function ethBackdoor() external payable {}
 }

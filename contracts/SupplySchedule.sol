@@ -14,7 +14,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 
 
-// https://docs.synthetix.io/contracts/SupplySchedule
+// https://docs.synthetix.io/contracts/source/contracts/supplyschedule
 contract SupplySchedule is Owned, ISupplySchedule {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

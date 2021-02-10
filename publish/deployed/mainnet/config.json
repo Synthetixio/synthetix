@@ -14,6 +14,9 @@
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
+	"DebtCache": {
+		"deploy": false
+	},
 	"DelegateApprovals": {
 		"deploy": false
 	},
@@ -78,6 +81,15 @@
 		"deploy": false
 	},
 	"SynthUtil": {
+		"deploy": false
+	},
+	"StakingRewardsiBTC": {
+		"deploy": false
+	},
+	"StakingRewardsiETH": {
+		"deploy": false
+	},
+	"StakingRewardssEURCurve": {
 		"deploy": false
 	},
 	"DappMaintenance": {
@@ -365,15 +377,6 @@
 	"SynthsEOS": {
 		"deploy": false
 	},
-	"TokenStatesBCH": {
-		"deploy": false
-	},
-	"ProxysBCH": {
-		"deploy": false
-	},
-	"SynthsBCH": {
-		"deploy": false
-	},
 	"TokenStatesETC": {
 		"deploy": false
 	},
@@ -437,15 +440,6 @@
 	"SynthiEOS": {
 		"deploy": false
 	},
-	"TokenStateiBCH": {
-		"deploy": false
-	},
-	"ProxyiBCH": {
-		"deploy": false
-	},
-	"SynthiBCH": {
-		"deploy": false
-	},
 	"TokenStateiETC": {
 		"deploy": false
 	},
@@ -492,6 +486,168 @@
 		"deploy": false
 	},
 	"EtherCollateralsUSD": {
+		"deploy": false
+	},
+	"TokenStatesOIL": {
+		"deploy": false
+	},
+	"ProxysOIL": {
+		"deploy": false
+	},
+	"SynthsOIL": {
+		"deploy": false
+	},
+	"TokenStateiOIL": {
+		"deploy": false
+	},
+	"ProxyiOIL": {
+		"deploy": false
+	},
+	"SynthiOIL": {
+		"deploy": false
+	},
+	"CollateralErc20": {
+		"deploy": false
+	},
+	"CollateralEth": {
+		"deploy": false
+	},
+	"CollateralManager": {
+		"deploy": false
+	},
+	"CollateralManagerState": {
+		"deploy": false
+	},
+	"CollateralStateErc20": {
+		"deploy": false
+	},
+	"CollateralStateEth": {
+		"deploy": false
+	},
+	"CollateralStateShort": {
+		"deploy": false
+	},
+	"CollateralShort": {
+		"deploy": false
+	},
+	"RewardEscrowV2": {
+		"deploy": false
+	},
+	"SynthetixBridgeToOptimism": {
+		"deploy": false
+	},
+	"ShortingRewardssBTC": {
+		"deploy": false
+	},
+	"ShortingRewardssETH": {
+		"deploy": false
+	},
+	"TokenStatesAAVE": {
+		"deploy": false
+	},
+	"ProxysAAVE": {
+		"deploy": false
+	},
+	"SynthsAAVE": {
+		"deploy": false
+	},
+	"TokenStatesUNI": {
+		"deploy": false
+	},
+	"ProxysUNI": {
+		"deploy": false
+	},
+	"SynthsUNI": {
+		"deploy": false
+	},
+	"TokenStatesYFI": {
+		"deploy": false
+	},
+	"ProxysYFI": {
+		"deploy": false
+	},
+	"SynthsYFI": {
+		"deploy": false
+	},
+	"TokenStatesDOT": {
+		"deploy": false
+	},
+	"ProxysDOT": {
+		"deploy": false
+	},
+	"SynthsDOT": {
+		"deploy": false
+	},
+	"TokenStatesREN": {
+		"deploy": false
+	},
+	"ProxysREN": {
+		"deploy": false
+	},
+	"SynthsREN": {
+		"deploy": false
+	},
+	"TokenStatesCOMP": {
+		"deploy": false
+	},
+	"ProxysCOMP": {
+		"deploy": false
+	},
+	"SynthsCOMP": {
+		"deploy": false
+	},
+	"TokenStateiAAVE": {
+		"deploy": false
+	},
+	"ProxyiAAVE": {
+		"deploy": false
+	},
+	"SynthiAAVE": {
+		"deploy": false
+	},
+	"TokenStateiUNI": {
+		"deploy": false
+	},
+	"ProxyiUNI": {
+		"deploy": false
+	},
+	"SynthiUNI": {
+		"deploy": false
+	},
+	"TokenStateiYFI": {
+		"deploy": false
+	},
+	"ProxyiYFI": {
+		"deploy": false
+	},
+	"SynthiYFI": {
+		"deploy": false
+	},
+	"TokenStateiDOT": {
+		"deploy": false
+	},
+	"ProxyiDOT": {
+		"deploy": false
+	},
+	"SynthiDOT": {
+		"deploy": false
+	},
+	"TokenStateiREN": {
+		"deploy": false
+	},
+	"ProxyiREN": {
+		"deploy": false
+	},
+	"SynthiREN": {
+		"deploy": false
+	},
+	"TokenStateiCOMP": {
+		"deploy": false
+	},
+	"ProxyiCOMP": {
+		"deploy": false
+	},
+	"SynthiCOMP": {
 		"deploy": false
 	}
 }

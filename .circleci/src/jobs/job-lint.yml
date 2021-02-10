@@ -1,0 +1,7 @@
+# Runs all linters
+{{> job-header.yml}}
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - run: npm run lint

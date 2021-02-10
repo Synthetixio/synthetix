@@ -41,5 +41,111 @@
 		},
 		"sources": ["Exchanger", "ExchangeRates", "Issuer", "SystemSettings"],
 		"sips": [83, 84, 88]
+	},
+	{
+		"name": "Mimosa",
+		"version": {
+			"major": 2,
+			"minor": 31
+		},
+		"sources": [
+			"DebtCache",
+			"Exchanger",
+			"ExchangeRates",
+			"Issuer",
+			"Synthetix"
+		],
+		"sips": [89, 91, 92]
+	},
+	{
+		"name": "Regulus",
+		"version": {
+			"major": 2,
+			"minor": 32
+		},
+		"sources": ["Exchanger", "Synthetix"],
+		"sips": [94]
+	},
+	{
+		"name": "Adhara",
+		"version": {
+			"major": 2,
+			"minor": 34
+		},
+		"sources": ["Exchanger"],
+		"sips": [98, 99]
+	},
+	{
+		"name": "Shaula",
+		"version": {
+			"major": 2,
+			"minor": 35
+		},
+		"sources": [
+			"AddressResolver",
+			"BinaryOptionMarketFactory",
+			"BinaryOptionMarketManager",
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralManager",
+			"CollateralManagerState",
+			"CollateralStateErc20",
+			"CollateralStateEth",
+			"CollateralStateShort",
+			"CollateralShort",
+			"DebtCache",
+			"ExchangeRates",
+			"Exchanger",
+			"FeePool",
+			"Issuer",
+			"Liquidations",
+			"RewardEscrowV2",
+			"SystemSettings",
+			"Synthetix",
+			"TradingRewards",
+			"Synth(s|i).+"
+		],
+		"sips": [97, 100, 103]
+	},
+	{
+		"name": "Castor",
+		"version": {
+			"major": 2,
+			"minor": 36
+		},
+		"sources": [
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralStateErc20",
+			"CollateralStateEth",
+			"CollateralStateShort",
+			"CollateralShort",
+			"FeePool",
+			"Issuer",
+			"RewardEscrowV2",
+			"Synthetix",
+			"SynthetixBridgeToOptimism",
+			"SystemSettings"
+		],
+		"sips": [60, 102, 105]
+	},
+	{
+		"name": "Gacrux",
+		"version": {
+			"major": 2,
+			"minor": 37
+		},
+		"ovm": true,
+		"sources": ["FeePool", "FeePoolState", "SynthetixState"],
+		"sips": [106]
+	},
+	{
+		"name": "Bellatrix",
+		"version": {
+			"major": 2,
+			"minor": 38
+		},
+		"sources": ["Synthetix", "SystemStatus"],
+		"sips": [109]
 	}
 ]

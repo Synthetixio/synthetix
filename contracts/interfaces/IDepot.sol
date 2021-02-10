@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/idepot
 interface IDepot {
     // Views
     function fundsWallet() external view returns (address payable);

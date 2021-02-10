@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./SelfDestructible.sol";
 import "./Proxyable.sol";
 
 // Libraries
@@ -12,8 +11,8 @@ import "./SafeDecimalMath.sol";
 import "./TokenState.sol";
 
 
-// https://docs.synthetix.io/contracts/ExternStateToken
-contract ExternStateToken is Owned, SelfDestructible, Proxyable {
+// https://docs.synthetix.io/contracts/source/contracts/externstatetoken
+contract ExternStateToken is Owned, Proxyable {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -36,7 +35,7 @@ contract ExternStateToken is Owned, SelfDestructible, Proxyable {
         uint _totalSupply,
         uint8 _decimals,
         address _owner
-    ) public Owned(_owner) SelfDestructible() Proxyable(_proxy) {
+    ) public Owned(_owner) Proxyable(_proxy) {
         tokenState = _tokenState;
 
         name = _name;

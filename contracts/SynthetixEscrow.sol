@@ -13,7 +13,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ISynthetix.sol";
 
 
-// https://docs.synthetix.io/contracts/SynthetixEscrow
+// https://docs.synthetix.io/contracts/source/contracts/synthetixescrow
 contract SynthetixEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
     using SafeMath for uint;
 

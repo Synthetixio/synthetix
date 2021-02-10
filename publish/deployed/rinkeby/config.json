@@ -11,6 +11,30 @@
 	"BinaryOptionMarketData": {
 		"deploy": false
 	},
+	"CollateralManager": {
+		"deploy": false
+	},
+	"CollateralManagerState": {
+		"deploy": false
+	},
+	"CollateralEth": {
+		"deploy": false
+	},
+	"CollateralErc20": {
+		"deploy": false
+	},
+	"CollateralShort": {
+		"deploy": false
+	},
+	"CollateralStateErc20": {
+		"deploy": false
+	},
+	"CollateralStateEth": {
+		"deploy": false
+	},
+	"CollateralStateShort": {
+		"deploy": false
+	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
@@ -18,6 +42,9 @@
 		"deploy": false
 	},
 	"DelegateApprovalsEternalStorage": {
+		"deploy": false
+	},
+	"DebtCache": {
 		"deploy": false
 	},
 	"Depot": {
@@ -50,6 +77,9 @@
 	"FeePoolEternalStorage": {
 		"deploy": false
 	},
+	"FlexibleStorage": {
+		"deploy": false
+	},
 	"Issuer": {
 		"deploy": false
 	},
@@ -75,6 +105,9 @@
 		"deploy": false
 	},
 	"SynthetixState": {
+		"deploy": false
+	},
+	"SystemSettings": {
 		"deploy": false
 	},
 	"SystemStatus": {
@@ -465,12 +498,6 @@
 		"deploy": false
 	},
 	"SynthiADA": {
-		"deploy": false
-	},
-	"FlexibleStorage": {
-		"deploy": false
-	},
-	"SystemSettings": {
 		"deploy": false
 	},
 	"TradingRewards": {

@@ -5,7 +5,7 @@ import "./Owned.sol";
 import "./State.sol";
 
 
-// https://docs.synthetix.io/contracts/TokenState
+// https://docs.synthetix.io/contracts/source/contracts/tokenstate
 contract TokenState is Owned, State {
     /* ERC20 fields. */
     mapping(address => uint) public balanceOf;

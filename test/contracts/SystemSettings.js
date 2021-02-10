@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('hardhat');
 
 const { assert } = require('./common');
 
@@ -14,6 +14,7 @@ const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../../');
+const BN = require('bn.js');
 
 contract('SystemSettings', async accounts => {
 	const [, owner] = accounts;
@@ -31,7 +32,7 @@ contract('SystemSettings', async accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: systemSettings.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'setWaitingPeriodSecs',
 				'setPriceDeviationThresholdFactor',
@@ -47,7 +48,80 @@ contract('SystemSettings', async accounts => {
 				'setAggregatorWarningFlags',
 				'setTradingRewardsEnabled',
 				'setDebtSnapshotStaleTime',
+				'setCrossDomainMessageGasLimit',
 			],
+		});
+	});
+
+	describe('setCrossDomainMessageGasLimit()', () => {
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setCrossDomainMessageGasLimit,
+				args: [0, 4e6],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+		it('cannot esxceed the maximum ovm gas limit', async () => {
+			const newLimit = 8.000001e6;
+			const gasLimitType = 0;
+			await assert.revert(
+				systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
+					from: owner,
+				}),
+				'Out of range xDomain gasLimit'
+			);
+		});
+		it('cannot be set below the minimum ovm gas limit', async () => {
+			const newLimit = 2e6;
+			const gasLimitType = 1;
+			await assert.revert(
+				systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
+					from: owner,
+				}),
+				'Out of range xDomain gasLimit'
+			);
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const newLimit = 4e6;
+			const gasLimitType = 0;
+			const txn = await systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
+				from: owner,
+			});
+			const actual = await systemSettings.crossDomainMessageGasLimit(gasLimitType);
+			assert.equal(actual, newLimit, 'Configured cross domain gas limit is set correctly');
+			assert.eventEqual(txn, 'CrossDomainMessageGasLimitChanged', [gasLimitType, newLimit]);
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const newLimit = 4e6;
+			const gasLimitType = 1;
+			const txn = await systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
+				from: owner,
+			});
+			const actual = await systemSettings.crossDomainMessageGasLimit(gasLimitType);
+			assert.equal(actual, newLimit, 'Configured cross domain gas limit is set correctly');
+			assert.eventEqual(txn, 'CrossDomainMessageGasLimitChanged', [gasLimitType, newLimit]);
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const newLimit = 4e6;
+			const gasLimitType = 2;
+			const txn = await systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
+				from: owner,
+			});
+			const actual = await systemSettings.crossDomainMessageGasLimit(gasLimitType);
+			assert.equal(actual, newLimit, 'Configured cross domain gas limit is set correctly');
+			assert.eventEqual(txn, 'CrossDomainMessageGasLimitChanged', [gasLimitType, newLimit]);
+		});
+		it('the owner can invoke and replace with emitted event', async () => {
+			const newLimit = 4e6;
+			const gasLimitType = 3;
+			const txn = await systemSettings.setCrossDomainMessageGasLimit(gasLimitType, newLimit, {
+				from: owner,
+			});
+			const actual = await systemSettings.crossDomainMessageGasLimit(gasLimitType);
+			assert.equal(actual, newLimit, 'Configured cross domain gas limit is set correctly');
+			assert.eventEqual(txn, 'CrossDomainMessageGasLimitChanged', [gasLimitType, newLimit]);
 		});
 	});
 
@@ -261,15 +335,8 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
-		it('reverts when owner set the Target threshold to negative', async () => {
-			const thresholdPercent = -1;
-			await assert.revert(
-				systemSettings.setTargetThreshold(thresholdPercent, { from: owner }),
-				'Threshold too high'
-			);
-		});
-		it('reverts when owner set the Target threshold to above 50%', async () => {
-			const thresholdPercent = 51;
+		it('reverts when owner sets the Target threshold above the max allowed value', async () => {
+			const thresholdPercent = (await systemSettings.MAX_TARGET_THRESHOLD()).add(new BN(1));
 			await assert.revert(
 				systemSettings.setTargetThreshold(thresholdPercent, { from: owner }),
 				'Threshold too high'

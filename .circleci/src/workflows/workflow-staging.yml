@@ -1,0 +1,44 @@
+jobs:
+  - job-prepare:
+      {{> filter-staging.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Packaging
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-pack-browser:
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Deployment validation
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-validate-deployments:
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Production tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-prod-tests:
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Local production tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-prod-diff-tests-local:
+      name: job-prod-diff-tests-local
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
+  - job-prod-diff-tests-local-ovm:
+      name: job-prod-diff-tests-local-ovm
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Differential production tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-prod-diff-tests:
+      name: job-prod-diff-tests-mainnet
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}

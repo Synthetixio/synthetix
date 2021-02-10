@@ -1,14 +1,21 @@
-const { contract } = require('@nomiclabs/buidler');
-const { getUsers } = require('../../index.js');
+const fs = require('fs');
+const path = require('path');
+const { wrap } = require('../..');
+const { contract, config } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
-	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
 	exchangeSynths,
 	skipWaitingPeriod,
+	simulateExchangeRates,
+	takeDebtSnapshot,
+	mockOptimismBridge,
+	writeSetting,
+	avoidStaleRates,
+	resumeSystem,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -16,20 +23,36 @@ contract('TradingRewards (prod tests)', accounts => {
 
 	let owner;
 
-	let network;
+	let network, deploymentPath;
 
-	let TradingRewards, AddressResolver, SystemSettings;
+	let TradingRewards, ReadProxyAddressResolver, SystemSettings;
 
 	let exchangeLogs;
 
-	before('prepare', async () => {
-		network = await detectNetworkName();
+	before('prepare', async function() {
+		network = config.targetNetwork;
+		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
+		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		owner = getUsers({ network, user: 'owner' }).address;
 
-		({ TradingRewards, AddressResolver, SystemSettings } = await connectContracts({
+		if (config.useOvm) {
+			return this.skip();
+		}
+
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
+
+		if (config.patchFreshDeployment) {
+			await simulateExchangeRates({ network, deploymentPath });
+			await mockOptimismBridge({ network, deploymentPath });
+		}
+
+		({ TradingRewards, ReadProxyAddressResolver, SystemSettings } = await connectContracts({
 			network,
 			requests: [
 				{ contractName: 'TradingRewards' },
-				{ contractName: 'AddressResolver' },
+				{ contractName: 'ReadProxyAddressResolver' },
 				{ contractName: 'SystemSettings' },
 				{ contractName: 'ProxyERC20', abiName: 'Synthetix' },
 			],
@@ -37,28 +60,24 @@ contract('TradingRewards (prod tests)', accounts => {
 
 		await skipWaitingPeriod({ network });
 
-		[owner] = getUsers({ network }).map(user => user.address);
-
 		await ensureAccountHasEther({
-			amount: toUnit('10'),
+			amount: toUnit('1'),
 			account: owner,
 			fromAccount: accounts[7],
 			network,
+			deploymentPath,
 		});
 		await ensureAccountHassUSD({
-			amount: toUnit('1000'),
+			amount: toUnit('100'),
 			account: user,
 			fromAccount: owner,
 			network,
+			deploymentPath,
 		});
 	});
 
 	it('has the expected resolver set', async () => {
-		assert.equal(await TradingRewards.resolver(), AddressResolver.address);
-	});
-
-	it('has the expected owner set', async () => {
-		assert.equal(await TradingRewards.owner(), owner);
+		assert.equal(await TradingRewards.resolver(), ReadProxyAddressResolver.address);
 	});
 
 	it('has the expected setting for tradingRewardsEnabled (disabled)', async () => {
@@ -73,7 +92,12 @@ contract('TradingRewards (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await SystemSettings.setTradingRewardsEnabled(false, { from: owner });
+			await writeSetting({
+				setting: 'setTradingRewardsEnabled',
+				value: false,
+				network,
+				deploymentPath,
+			});
 		});
 
 		it('shows trading rewards disabled', async () => {
@@ -87,7 +111,7 @@ contract('TradingRewards (prod tests)', accounts => {
 					account: user,
 					fromCurrency: 'sUSD',
 					toCurrency: 'sETH',
-					amount: toUnit('10'),
+					amount: toUnit('1'),
 				}));
 			});
 
@@ -108,7 +132,12 @@ contract('TradingRewards (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await SystemSettings.setTradingRewardsEnabled(true, { from: owner });
+			await writeSetting({
+				setting: 'setTradingRewardsEnabled',
+				value: true,
+				network,
+				deploymentPath,
+			});
 		});
 
 		it('shows trading rewards enabled', async () => {
@@ -119,10 +148,11 @@ contract('TradingRewards (prod tests)', accounts => {
 			before(async () => {
 				({ exchangeLogs } = await exchangeSynths({
 					network,
+					withTradingRewards: true,
 					account: user,
 					fromCurrency: 'sUSD',
 					toCurrency: 'sETH',
-					amount: toUnit('10'),
+					amount: toUnit('1'),
 				}));
 			});
 

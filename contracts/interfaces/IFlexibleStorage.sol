@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/iflexiblestorage
 interface IFlexibleStorage {
     // Views
     function getUIntValue(bytes32 contractName, bytes32 record) external view returns (uint);

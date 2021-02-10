@@ -7,9 +7,8 @@ const { red, gray, yellow } = require('chalk');
 
 const {
 	constants: { CONFIG_FILENAME },
+	releases,
 } = require('../../../.');
-
-const releases = require('../../releases.json');
 
 const DEFAULTS = {
 	network: 'kovan',
@@ -17,10 +16,10 @@ const DEFAULTS = {
 
 const { stringify } = require('../util');
 
-const prepareDeploy = async ({ network = DEFAULTS.network }) => {
+const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 	ensureNetwork(network);
 
-	const deploymentPath = getDeploymentPathForNetwork(network);
+	const deploymentPath = getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	// Get config.js
@@ -35,7 +34,15 @@ const prepareDeploy = async ({ network = DEFAULTS.network }) => {
 	// (1) make sure they have an entry in config.json and,
 	// (2) its deploy value is set to true.
 	release.sources.map(source => {
-		config[source] = { deploy: true };
+		// If any non alpha characters in the name, assume regex and match existing names
+		if (/[^\w]/.test(source)) {
+			Object.keys(config)
+				.filter(contract => new RegExp(`^${source}$`).test(contract))
+				.forEach(contract => (config[contract] = { deploy: true }));
+		} else {
+			// otherwise upsert this entry into the config file
+			config[source] = { deploy: true };
+		}
 	});
 
 	// Update config file
@@ -51,6 +58,7 @@ module.exports = {
 			.description(
 				'Reads releases.json and switches all entries to true in config.json for the target network.'
 			)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.option(
 				'-n, --network <value>',
 				'The network to run off.',

@@ -3,12 +3,11 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
-import "./SelfDestructible.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IBinaryOptionMarketManager.sol";
 
 // Libraries
-import "./AddressListLib.sol";
+import "./AddressSetLib.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
@@ -20,11 +19,12 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
 
-contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinResolver, IBinaryOptionMarketManager {
+// https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarketmanager
+contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOptionMarketManager {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
-    using AddressListLib for AddressListLib.AddressList;
+    using AddressSetLib for AddressSetLib.AddressSet;
 
     /* ========== TYPES ========== */
 
@@ -54,8 +54,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     bool public marketCreationEnabled = true;
     uint public totalDeposited;
 
-    AddressListLib.AddressList internal _activeMarkets;
-    AddressListLib.AddressList internal _maturedMarkets;
+    AddressSetLib.AddressSet internal _activeMarkets;
+    AddressSetLib.AddressSet internal _maturedMarkets;
 
     BinaryOptionMarketManager internal _migratingManager;
 
@@ -65,13 +65,6 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_BINARYOPTIONMARKETFACTORY = "BinaryOptionMarketFactory";
-
-    bytes32[24] internal addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHSUSD,
-        CONTRACT_EXRATES,
-        CONTRACT_BINARYOPTIONMARKETFACTORY
-    ];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -86,7 +79,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         uint _poolFee,
         uint _creatorFee,
         uint _refundFee
-    ) public Owned(_owner) Pausable() SelfDestructible() MixinResolver(_resolver, addressesToCache) {
+    ) public Owned(_owner) Pausable() MixinResolver(_resolver) {
         // Temporarily change the owner so that the setters don't revert.
         owner = msg.sender;
         setExpiryDuration(_expiryDuration);
@@ -102,25 +95,30 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ========== VIEWS ========== */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](4);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_SYNTHSUSD;
+        addresses[2] = CONTRACT_EXRATES;
+        addresses[3] = CONTRACT_BINARYOPTIONMARKETFACTORY;
+    }
+
     /* ---------- Related Contracts ---------- */
 
     function _systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function _sUSD() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function _factory() internal view returns (BinaryOptionMarketFactory) {
-        return
-            BinaryOptionMarketFactory(
-                requireAndGetAddress(CONTRACT_BINARYOPTIONMARKETFACTORY, "Missing BinaryOptionMarketFactory address")
-            );
+        return BinaryOptionMarketFactory(requireAndGetAddress(CONTRACT_BINARYOPTIONMARKETFACTORY));
     }
 
     /* ---------- Market Information ---------- */
@@ -274,8 +272,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             bids,
             [fees.poolFee, fees.creatorFee, fees.refundFee]
         );
-        market.setResolverAndSyncCache(resolver);
-        _activeMarkets.push(address(market));
+        market.rebuildCache();
+        _activeMarkets.add(address(market));
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,
         // the manager doesn't know its address in order to grant it permission.
@@ -290,7 +288,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         require(_activeMarkets.contains(market), "Not an active market");
         BinaryOptionMarket(market).resolve();
         _activeMarkets.remove(market);
-        _maturedMarkets.push(market);
+        _maturedMarkets.add(market);
     }
 
     function cancelMarket(address market) external notPaused {
@@ -317,12 +315,25 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
 
     /* ---------- Upgrade and Administration ---------- */
 
-    function setResolverAndSyncCacheOnMarkets(AddressResolver _resolver, BinaryOptionMarket[] calldata marketsToSync)
-        external
-        onlyOwner
-    {
+    function rebuildMarketCaches(BinaryOptionMarket[] calldata marketsToSync) external {
         for (uint i = 0; i < marketsToSync.length; i++) {
-            marketsToSync[i].setResolverAndSyncCache(_resolver);
+            address market = address(marketsToSync[i]);
+
+            // solhint-disable avoid-low-level-calls
+            bytes memory payload = abi.encodeWithSignature("rebuildCache()");
+            (bool success, ) = market.call(payload);
+
+            if (!success) {
+                // handle legacy markets that used an old cache rebuilding logic
+                bytes memory payloadForLegacyCache = abi.encodeWithSignature(
+                    "setResolverAndSyncCache(address)",
+                    address(resolver)
+                );
+
+                // solhint-disable avoid-low-level-calls
+                (bool legacySuccess, ) = market.call(payloadForLegacyCache);
+                require(legacySuccess, "Cannot rebuild cache for market");
+            }
         }
     }
 
@@ -346,7 +357,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         if (_numMarkets == 0) {
             return;
         }
-        AddressListLib.AddressList storage markets = active ? _activeMarkets : _maturedMarkets;
+        AddressSetLib.AddressSet storage markets = active ? _activeMarkets : _maturedMarkets;
 
         uint runningDepositTotal;
         for (uint i; i < _numMarkets; i++) {
@@ -375,7 +386,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
         if (_numMarkets == 0) {
             return;
         }
-        AddressListLib.AddressList storage markets = active ? _activeMarkets : _maturedMarkets;
+        AddressSetLib.AddressSet storage markets = active ? _activeMarkets : _maturedMarkets;
 
         uint runningDepositTotal;
         for (uint i; i < _numMarkets; i++) {
@@ -383,7 +394,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, SelfDestructible, MixinRe
             require(!_isKnownMarket(address(market)), "Market already known.");
 
             market.acceptOwnership();
-            markets.push(address(market));
+            markets.add(address(market));
             // Update the market with the new manager address,
             runningDepositTotal = runningDepositTotal.add(market.deposited());
         }

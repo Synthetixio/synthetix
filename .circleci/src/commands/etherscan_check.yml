@@ -1,6 +1,0 @@
-description: Run etherscan ABI check
-parameters:
-  network:
-    type: string
-steps:
-  - run: npm run test:etherscan --  --network << parameters.network >>

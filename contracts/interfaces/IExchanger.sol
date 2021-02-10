@@ -1,6 +1,9 @@
 pragma solidity >=0.4.24;
 
+import "./IVirtualSynth.sol";
 
+
+// https://docs.synthetix.io/contracts/source/interfaces/iexchanger
 interface IExchanger {
     // Views
     function calculateAmountAfterSettlement(
@@ -83,6 +86,15 @@ interface IExchanger {
         address originator,
         bytes32 trackingCode
     ) external returns (uint amountReceived);
+
+    function exchangeWithVirtual(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived, IVirtualSynth vSynth);
 
     function settle(address from, bytes32 currencyKey)
         external

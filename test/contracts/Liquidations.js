@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -37,6 +37,7 @@ contract('Liquidations', accounts => {
 		systemSettings,
 		systemStatus,
 		feePoolState,
+		debtCache,
 		issuer,
 		timestamp;
 
@@ -53,6 +54,7 @@ contract('Liquidations', accounts => {
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
 			FeePoolState: feePoolState,
+			DebtCache: debtCache,
 			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
@@ -63,12 +65,15 @@ contract('Liquidations', accounts => {
 				'Exchanger', // required for Synthetix to check if exchanger().hasWaitingPeriodOrSettlementOwing
 				'FeePool',
 				'FeePoolState', // required for checking issuance data appended
+				'DebtCache',
 				'Issuer',
 				'Liquidations',
 				'SystemStatus', // test system status controls
 				'SystemSettings',
 				'Synthetix',
 				'SynthetixState',
+				'CollateralManager',
+				'RewardEscrowV2', // required for Issuer._collateral() to load balances
 			],
 		}));
 	});
@@ -91,13 +96,13 @@ contract('Liquidations', accounts => {
 		await exchangeRates.updateRates([SNX], [rate].map(toUnit), timestamp, {
 			from: oracle,
 		});
-		await issuer.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 	};
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: liquidations.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'flagAccountForLiquidation',
 				'removeAccountInLiquidation',
@@ -202,8 +207,8 @@ contract('Liquidations', accounts => {
 						}
 					);
 
-					await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
-					await systemSettings.setResolverAndSyncCache(addressResolver.address, { from: owner });
+					await liquidations.rebuildCache();
+					await systemSettings.rebuildCache();
 				});
 				it('when flagAccountForLiquidation() is invoked, it reverts with liquidation ratio not set', async () => {
 					await assert.revert(
@@ -234,7 +239,7 @@ contract('Liquidations', accounts => {
 					});
 
 					// now have Liquidations resync its cache
-					await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
+					await liquidations.rebuildCache();
 				});
 				it('removeAccountInLiquidation() can only be invoked by issuer', async () => {
 					await onlyGivenAddressCanInvoke({
@@ -322,10 +327,7 @@ contract('Liquidations', accounts => {
 					await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger.address], {
 						from: owner,
 					});
-					await Promise.all([
-						synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner }),
-						issuer.setResolverAndSyncCache(addressResolver.address, { from: owner }),
-					]);
+					await Promise.all([synthetix.rebuildCache(), issuer.rebuildCache()]);
 				});
 
 				it('when a liquidator has SettlementOwing from hasWaitingPeriodOrSettlementOwing then revert', async () => {
@@ -532,7 +534,7 @@ contract('Liquidations', accounts => {
 								await sUSDContract.issue(bob, sUSD100, {
 									from: owner,
 								});
-								await issuer.cacheSNXIssuedDebt();
+								await debtCache.takeDebtSnapshot();
 
 								// Bob Liquidates Alice
 								await assert.revert(

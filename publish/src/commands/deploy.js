@@ -2,9 +2,9 @@
 
 const path = require('path');
 const { gray, green, yellow, redBright, red } = require('chalk');
-const { table } = require('table');
 const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
+const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
 
@@ -17,6 +17,7 @@ const {
 	confirmAction,
 	performTransactionalStep,
 	parameterNotice,
+	reportDeployedContracts,
 } = require('../util');
 
 const {
@@ -28,15 +29,18 @@ const {
 		SYNTHS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		ZERO_ADDRESS,
+		OVM_MAX_GAS_LIMIT,
 		inflationStartTimestampInSecs,
 	},
 	defaults,
+	nonUpgradeable,
 } = require('../../../.');
 
 const DEFAULTS = {
 	gasPrice: '1',
 	methodCallGasLimit: 250e3, // 250k
-	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
+	contractDeploymentGasLimit: 6.9e6, // TODO split out into separate limits for different contracts, Proxys, Synths, Synthetix
+	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
@@ -55,25 +59,20 @@ const deploy = async ({
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
 	useFork,
-	providerUrl: specifiedProviderUrl,
+	providerUrl,
 	useOvm,
 	freshDeploy,
+	manageNonces,
+	ignoreSafetyChecks,
+	ignoreCustomParameters,
 } = {}) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork(network);
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
 		gasPrice = w3utils.toBN('0');
-	}
-
-	// OVM targets must end with '-ovm'.
-	if (useOvm) {
-		const lastPathElement = path.basename(deploymentPath);
-		if (!lastPathElement.includes('ovm')) {
-			deploymentPath += '-ovm';
-		}
 	}
 
 	const {
@@ -91,17 +90,80 @@ const deploy = async ({
 		network,
 	});
 
-	// Fresh deploy and deployment.json not empty?
-	if (freshDeploy && Object.keys(deployment.targets).length > 0) {
-		throw new Error(
-			`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
-		);
+	if (!ignoreSafetyChecks) {
+		// Using Goerli without manageNonces?
+		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
+			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
+		}
+
+		// Cannot re-deploy legacy contracts
+		if (!freshDeploy) {
+			// Get list of contracts to be deployed
+			const contractsToDeploy = [];
+			Object.keys(config).map(contractName => {
+				if (config[contractName].deploy) {
+					contractsToDeploy.push(contractName);
+				}
+			});
+
+			// Check that no non-deployable is marked for deployment.
+			// Note: if nonDeployable = 'TokenState', this will match 'TokenStatesUSD'
+			nonUpgradeable.map(nonUpgradeableContract => {
+				contractsToDeploy.map(contractName => {
+					if (contractName.match(new RegExp(`^${nonUpgradeableContract}`, 'g'))) {
+						throw new Error(
+							`You are attempting to deploy a contract marked as non-upgradeable: ${contractName}. This action could result in loss of state. Please verify and use --ignore-safety-checks if you really know what you're doing.`
+						);
+					}
+				});
+			});
+		}
+
+		// Every transaction in Optimism needs to be below 9m gas, to ensure
+		// there are no deployment out of gas errors during fraud proofs.
+		if (useOvm) {
+			const maxOptimismGasLimit = OVM_MAX_GAS_LIMIT;
+			if (
+				contractDeploymentGasLimit > maxOptimismGasLimit ||
+				methodCallGasLimit > maxOptimismGasLimit
+			) {
+				throw new Error(
+					`Maximum transaction gas limit for OVM is ${maxOptimismGasLimit} gas, and specified contractDeploymentGasLimit and/or methodCallGasLimit are over such limit. Please make sure that these values are below the maximum gas limit to guarantee that fraud proofs can be done in L1.`
+				);
+			}
+		}
+
+		// Deploying on OVM and not using an OVM deployment path?
+		const isOvmPath = deploymentPath.includes('ovm');
+		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
+		if (deploymentPathMismatch) {
+			if (useOvm) {
+				throw new Error(
+					`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`
+				);
+			} else {
+				throw new Error(
+					`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`
+				);
+			}
+		}
+
+		// Fresh deploy and deployment.json not empty?
+		if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
+			throw new Error(
+				`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
+			);
+		}
 	}
 
 	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
 
 	const getDeployParameter = async name => {
 		const defaultParam = defaults[name];
+		if (ignoreCustomParameters) {
+			return defaultParam;
+		}
+
 		let effectiveValue = defaultParam;
 
 		const param = (params || []).find(p => p.name === name);
@@ -159,16 +221,29 @@ const deploy = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const {
+		providerUrl: envProviderUrl,
+		privateKey: envPrivateKey,
+		etherscanLinkPrefix,
+	} = loadConnections({
 		network,
 		useFork,
-		specifiedProviderUrl,
 	});
 
-	// allow local deployments to use the private key passed as a CLI option
-	if (network !== 'local' || !privateKey) {
+	if (!providerUrl) {
+		if (!envProviderUrl) {
+			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
+		}
+
+		providerUrl = envProviderUrl;
+	}
+
+	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
+	if (network !== 'local' && !privateKey) {
 		privateKey = envPrivateKey;
 	}
+
+	const nonceManager = new NonceManager({});
 
 	const deployer = new Deployer({
 		compiled,
@@ -183,23 +258,18 @@ const deploy = async ({
 		privateKey,
 		providerUrl,
 		dryRun,
+		useOvm,
 		useFork,
+		ignoreSafetyChecks,
+		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
 	const { account } = deployer;
 
-	const getExistingContract = ({ contract }) => {
-		const { address, source } = deployment.targets[contract];
-		const { abi } = deployment.sources[source];
-
-		return deployer.getContract({
-			address,
-			abi,
-		});
-	};
+	nonceManager.web3 = deployer.web3;
+	nonceManager.account = account;
 
 	let currentSynthetixSupply;
-	let currentSynthetixPrice;
 	let oldExrates;
 	let currentLastMintEvent;
 	let currentWeekOfInflation;
@@ -207,7 +277,7 @@ const deploy = async ({
 	let systemSuspendedReason;
 
 	try {
-		const oldSynthetix = getExistingContract({ contract: 'Synthetix' });
+		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
 		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 
 		// inflationSupplyToDate = total supply - 100m
@@ -231,7 +301,7 @@ const deploy = async ({
 		currentLastMintEvent =
 			inflationStartDate + currentWeekOfInflation * secondsInWeek + mintingBuffer;
 	} catch (err) {
-		if (freshDeploy || network === 'local') {
+		if (freshDeploy) {
 			currentSynthetixSupply = await getDeployParameter('INITIAL_ISSUANCE');
 			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
@@ -247,14 +317,12 @@ const deploy = async ({
 	}
 
 	try {
-		oldExrates = getExistingContract({ contract: 'ExchangeRates' });
-		currentSynthetixPrice = await oldExrates.methods.rateForCurrency(toBytes32('SNX')).call();
+		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
 		if (!oracleExrates) {
 			oracleExrates = await oldExrates.methods.oracle().call();
 		}
 	} catch (err) {
-		if (freshDeploy || network === 'local') {
-			currentSynthetixPrice = w3utils.toWei('0.2');
+		if (freshDeploy) {
 			oracleExrates = oracleExrates || account;
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
 		} else {
@@ -269,14 +337,14 @@ const deploy = async ({
 	}
 
 	try {
-		const oldSystemStatus = getExistingContract({ contract: 'SystemStatus' });
+		const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
 
 		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
 
 		systemSuspended = systemSuspensionStatus.suspended;
 		systemSuspendedReason = systemSuspensionStatus.reason;
 	} catch (err) {
-		if (!freshDeploy && network !== 'local') {
+		if (!freshDeploy) {
 			console.error(
 				red(
 					'Cannot connect to existing SystemStatus contract. Please double check the deploymentPath is correct for the network allocated'
@@ -332,14 +400,29 @@ const deploy = async ({
 		);
 	}
 
+	let ovmDeploymentPathWarning = false;
+	// OVM targets must end with '-ovm'.
+	if (useOvm) {
+		const lastPathElement = path.basename(deploymentPath);
+		ovmDeploymentPathWarning = !lastPathElement.includes('ovm');
+	}
+
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		'Using a fork': useFork ? green('true') : yellow('⚠ NO'),
 		Network: network,
+		'OVM?': useOvm
+			? ovmDeploymentPathWarning
+				? red('⚠ No -ovm folder suffix!')
+				: green('true')
+			: 'false',
 		'Gas price to use': `${gasPrice} GWEI`,
+		'Method call gas limit': `${methodCallGasLimit} gas`,
+		'Contract deployment gas limit': `${contractDeploymentGasLimit} gas`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
 			: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') + deploymentPath,
+		Provider: providerUrl,
 		'Local build last modified': `${new Date(earliestCompiledTimestamp)} ${yellow(
 			((new Date().getTime() - earliestCompiledTimestamp) / 60000).toFixed(2) + ' mins ago'
 		)}`,
@@ -396,6 +479,7 @@ const deploy = async ({
 			ownerActions,
 			ownerActionsFile,
 			dryRun,
+			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
 	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
@@ -423,16 +507,14 @@ const deploy = async ({
 		args: [account],
 	});
 
-	const resolverAddress = addressOf(addressResolver);
-
 	if (addressResolver && readProxyForResolver) {
 		await runStep({
 			contract: 'ReadProxyAddressResolver',
 			target: readProxyForResolver,
 			read: 'target',
-			expected: input => input === resolverAddress,
+			expected: input => input === addressOf(addressResolver),
 			write: 'setTarget',
-			writeArg: resolverAddress,
+			writeArg: addressOf(addressResolver),
 		});
 	}
 
@@ -444,7 +526,7 @@ const deploy = async ({
 
 	const systemSettings = await deployer.deployContract({
 		name: 'SystemSettings',
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const systemStatus = await deployer.deployContract({
@@ -452,14 +534,40 @@ const deploy = async ({
 		args: [account],
 	});
 
+	if (network !== 'mainnet' && systemStatus) {
+		// On testnet, give the deployer the rights to update status
+		await runStep({
+			contract: 'SystemStatus',
+			target: systemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('System'), account],
+			expected: ({ canSuspend } = {}) => canSuspend,
+			write: 'updateAccessControls',
+			writeArg: [
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
+				[account, account, account, account, account],
+				[true, true, true, true, true],
+				[true, true, true, true, true],
+			],
+		});
+	}
+
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		args: [account, oracleExrates, resolverAddress, [toBytes32('SNX')], [currentSynthetixPrice]],
+		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
+		args: [account, oracleExrates, addressOf(readProxyForResolver), [], []],
 	});
 
 	const rewardEscrow = await deployer.deployContract({
 		name: 'RewardEscrow',
 		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
+	});
+
+	const rewardEscrowV2 = await deployer.deployContract({
+		name: 'RewardEscrowV2',
+		source: useOvm ? 'ImportableRewardEscrowV2' : 'RewardEscrowV2',
+		args: [account, addressOf(readProxyForResolver)],
+		deps: ['AddressResolver'],
 	});
 
 	const synthetixEscrow = await deployer.deployContract({
@@ -469,6 +577,7 @@ const deploy = async ({
 
 	const synthetixState = await deployer.deployContract({
 		name: 'SynthetixState',
+		source: useOvm ? 'SynthetixStateWithLimitedSetup' : 'SynthetixState',
 		args: [account, account],
 	});
 
@@ -502,7 +611,7 @@ const deploy = async ({
 
 	const liquidations = await deployer.deployContract({
 		name: 'Liquidations',
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const eternalStorageLiquidations = await deployer.deployContract({
@@ -530,7 +639,7 @@ const deploy = async ({
 	const feePool = await deployer.deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
-		args: [addressOf(proxyFeePool), account, resolverAddress],
+		args: [addressOf(proxyFeePool), account, addressOf(readProxyForResolver)],
 	});
 
 	if (proxyFeePool && feePool) {
@@ -575,12 +684,12 @@ const deploy = async ({
 
 	const rewardsDistribution = await deployer.deployContract({
 		name: 'RewardsDistribution',
-		deps: ['RewardEscrow', 'ProxyFeePool'],
+		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrowV2', 'ProxyFeePool'],
 		args: [
 			account, // owner
 			ZERO_ADDRESS, // authority (synthetix)
 			ZERO_ADDRESS, // Synthetix Proxy
-			addressOf(rewardEscrow),
+			addressOf(rewardEscrowV2),
 			addressOf(proxyFeePool),
 		],
 	});
@@ -599,13 +708,14 @@ const deploy = async ({
 
 	const synthetix = await deployer.deployContract({
 		name: 'Synthetix',
+		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
 		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
 		args: [
 			addressOf(proxyERC20Synthetix),
 			addressOf(tokenStateSynthetix),
 			account,
 			currentSynthetixSupply,
-			resolverAddress,
+			addressOf(readProxyForResolver),
 		],
 	});
 
@@ -647,10 +757,18 @@ const deploy = async ({
 		});
 	}
 
+	const debtCache = await deployer.deployContract({
+		name: 'DebtCache',
+		source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
+		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
 		deps: ['AddressResolver'],
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const exchangeState = await deployer.deployContract({
@@ -711,8 +829,9 @@ const deploy = async ({
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
+		source: useOvm ? 'IssuerWithoutLiquidations' : 'Issuer',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(addressResolver)],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	const issuerAddress = addressOf(issuer);
@@ -720,7 +839,7 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'TradingRewards',
 		deps: ['AddressResolver', 'Exchanger'],
-		args: [account, account, resolverAddress],
+		args: [account, account, addressOf(readProxyForResolver)],
 	});
 
 	if (synthetixState && issuer) {
@@ -732,6 +851,18 @@ const deploy = async ({
 			expected: input => input === issuerAddress,
 			write: 'setAssociatedContract',
 			writeArg: issuerAddress,
+		});
+	}
+
+	if (useOvm && synthetixState && feePool) {
+		// The SynthetixStateLimitedSetup) contract has FeePool to appendAccountIssuanceRecord
+		await runStep({
+			contract: 'SynthetixState',
+			target: synthetixState,
+			read: 'feePool',
+			expected: input => input === addressOf(feePool),
+			write: 'setFeePool',
+			writeArg: addressOf(feePool),
 		});
 	}
 
@@ -765,33 +896,7 @@ const deploy = async ({
 		});
 	}
 
-	if (useOvm) {
-		// these values are for the OVM testnet
-		const inflationStartDate = (Math.round(new Date().getTime() / 1000) - 3600 * 24 * 7).toString(); // 1 week ago
-		const fixedPeriodicSupply = w3utils.toWei('50000');
-		const mintPeriod = (3600 * 24 * 7).toString(); // 1 week
-		const mintBuffer = '600'; // 10 minutes
-		const minterReward = w3utils.toWei('100');
-		const supplyEnd = '5'; // allow 4 mints in total
-
-		await deployer.deployContract({
-			// name is supply schedule as it behaves as supply schedule in the address resolver
-			name: 'SupplySchedule',
-			source: 'FixedSupplySchedule',
-			args: [
-				account,
-				resolverAddress,
-				inflationStartDate,
-				'0',
-				'0',
-				mintPeriod,
-				mintBuffer,
-				fixedPeriodicSupply,
-				supplyEnd,
-				minterReward,
-			],
-		});
-	} else {
+	if (!useOvm) {
 		const supplySchedule = await deployer.deployContract({
 			name: 'SupplySchedule',
 			args: [account, currentLastMintEvent, currentWeekOfInflation],
@@ -828,6 +933,18 @@ const deploy = async ({
 		});
 	}
 
+	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
+	if (rewardEscrowV2 && rewardsDistribution) {
+		await runStep({
+			contract: 'RewardsDistribution',
+			target: rewardsDistribution,
+			read: 'rewardEscrow',
+			expected: input => input === addressOf(rewardEscrowV2),
+			write: 'setRewardEscrow',
+			writeArg: addressOf(rewardEscrowV2),
+		});
+	}
+
 	// ----------------
 	// Setting proxyERC20 Synthetix for synthetixEscrow
 	// ----------------
@@ -836,7 +953,7 @@ const deploy = async ({
 	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
 		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
 		// it is "havven" and the ABI we have here is not sufficient
-		if (network === 'mainnet') {
+		if (network === 'mainnet' && !useOvm) {
 			await runStep({
 				contract: 'SynthetixEscrow',
 				target: synthetixEscrow,
@@ -907,24 +1024,16 @@ const deploy = async ({
 		let originalTotalSupply = 0;
 		if (synthConfig.deploy) {
 			try {
-				const oldSynth = getExistingContract({ contract: `Synth${currencyKey}` });
+				const oldSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
 				originalTotalSupply = await oldSynth.methods.totalSupply().call();
 			} catch (err) {
-				if (network !== 'local' && !freshDeploy) {
+				if (!freshDeploy) {
 					// only throw if not local - allows local environments to handle both new
 					// and updating configurations
 					throw err;
 				}
 			}
 		}
-
-		// MultiCollateral needs additionalConstructorArgs to be ordered
-		const additionalConstructorArgsMap = {
-			MultiCollateralSynthsETH: [toBytes32('EtherCollateral')],
-			MultiCollateralSynthsUSD: [toBytes32('EtherCollateralsUSD')],
-			// future subclasses...
-			// future specific synths args...
-		};
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
 		if (synthConfig.deploy && !yes && originalTotalSupply > 0) {
@@ -956,8 +1065,8 @@ const deploy = async ({
 				account,
 				currencyKeyInBytes,
 				originalTotalSupply,
-				resolverAddress,
-			].concat(additionalConstructorArgsMap[sourceContract + currencyKey] || []),
+				addressOf(readProxyForResolver),
+			],
 			force: addNewSynths,
 		});
 
@@ -1035,8 +1144,10 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
-		args: [account, account, resolverAddress],
+		args: [account, account, addressOf(readProxyForResolver)],
 	});
+
+	// let manager, collateralEth, collateralErc20, collateralShort;
 
 	if (useOvm) {
 		await deployer.deployContract({
@@ -1050,16 +1161,31 @@ const deploy = async ({
 			source: 'EmptyEtherCollateral',
 			args: [],
 		});
+		await deployer.deployContract({
+			name: 'SynthetixBridgeToBase',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+		await deployer.deployContract({
+			name: 'CollateralManager',
+			source: 'EmptyCollateralManager',
+			args: [],
+		});
 	} else {
 		await deployer.deployContract({
 			name: 'EtherCollateral',
 			deps: ['AddressResolver'],
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 		await deployer.deployContract({
 			name: 'EtherCollateralsUSD',
 			deps: ['AddressResolver'],
-			args: [account, resolverAddress],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+		await deployer.deployContract({
+			name: 'SynthetixBridgeToOptimism',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	}
 
@@ -1071,7 +1197,7 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'BinaryOptionMarketFactory',
-		args: [account, resolverAddress],
+		args: [account, addressOf(readProxyForResolver)],
 		deps: ['AddressResolver'],
 	});
 
@@ -1088,7 +1214,7 @@ const deploy = async ({
 		name: 'BinaryOptionMarketManager',
 		args: [
 			account,
-			resolverAddress,
+			addressOf(readProxyForResolver),
 			maxOraclePriceAge,
 			expiryDuration,
 			maxTimeToMaturity,
@@ -1136,127 +1262,337 @@ const deploy = async ({
 		}
 	}
 
-	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
+	// ----------------
+	// Multi Collateral System
+	// ----------------
+	let collateralManager, collateralEth, collateralErc20, collateralShort;
 
-	if (addressResolver) {
-		// collect all required addresses on-chain
-		const allRequiredAddressesInContracts = await Promise.all(
-			Object.entries(deployer.deployedContracts)
-				.filter(([, target]) =>
-					target.options.jsonInterface.find(({ name }) => name === 'getResolverAddressesRequired')
-				)
-				.map(([, target]) =>
-					// Note: if running a dryRun then the output here will only be an estimate, as
-					// the correct list of addresses require the contracts be deployed so these entries can then be read.
-					(
-						target.methods.getResolverAddressesRequired().call() ||
-						// if dryRun and the contract is new then there's nothing to read on-chain, so resolve []
-						Promise.resolve([])
-					).then(names => names.map(w3utils.hexToUtf8))
-				)
-		);
+	const collateralManagerDefaults = await getDeployParameter('COLLATERAL_MANAGER');
 
-		const allRequiredAddresses = Array.from(
-			// create set to remove dupes
-			new Set(
-				// flatten into one array and remove blanks
-				allRequiredAddressesInContracts
-					.reduce((memo, entry) => memo.concat(entry), [])
-					.filter(entry => entry)
-					// SystemSettings isn't required anywhere but necessary for us to be able to
-					// write to FlexibleStorage below via "setExchangeFeeRates()"
-					.concat(['SystemSettings'])
-			)
-		).sort();
+	if (!useOvm) {
+		console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
 
-		// now map these into a list of names and addreses
-		const expectedAddressesInResolver = allRequiredAddresses.map(name => {
-			const contract = deployer.deployedContracts[name];
-			// quick sanity check of names in expected list
-			if (!contract) {
-				throw Error(
-					`Error setting up AddressResolver: cannot find one of the contracts listed as required in a contract: ${name} in the list of deployment targets`
-				);
-			}
-			return {
-				name,
-				address: addressOf(contract),
-			};
+		const managerState = await deployer.deployContract({
+			name: 'CollateralManagerState',
+			args: [account, account],
 		});
 
-		// Count how many addresses are not yet in the resolver
-		const addressesNotInResolver = (
-			await Promise.all(
-				expectedAddressesInResolver.map(({ name, address }) => {
-					// when a dryRun redeploys a new AddressResolver, this will return undefined, so instead resolve with
-					// empty promise
-					const promise =
-						addressResolver.methods.getAddress(toBytes32(name)).call() || Promise.resolve();
+		collateralManager = await deployer.deployContract({
+			name: 'CollateralManager',
+			args: [
+				addressOf(managerState),
+				account,
+				addressOf(readProxyForResolver),
+				collateralManagerDefaults['MAX_DEBT'],
+				collateralManagerDefaults['BASE_BORROW_RATE'],
+				collateralManagerDefaults['BASE_SHORT_RATE'],
+			],
+		});
 
-					return promise.then(foundAddress => ({ name, address, found: address === foundAddress }));
-				})
-			)
-		).filter(entry => !entry.found);
-
-		// and add everything if any not found (will overwrite any conflicts)
-		if (addressesNotInResolver.length > 0) {
-			console.log(
-				gray(
-					`Detected ${addressesNotInResolver.length} / ${expectedAddressesInResolver.length} missing or incorrect in the AddressResolver.\n\t` +
-						addressesNotInResolver.map(({ name, address }) => `${name} ${address}`).join('\n\t') +
-						`\nAdding all addresses in one transaction.`
-				)
-			);
+		if (managerState && collateralManager) {
 			await runStep({
-				gasLimit: methodCallGasLimit * 3, // higher gas required
-				contract: `AddressResolver`,
-				target: addressResolver,
-				write: 'importAddresses',
-				writeArg: [
-					addressesNotInResolver.map(({ name }) => toBytes32(name)),
-					addressesNotInResolver.map(({ address }) => address),
-				],
+				contract: 'CollateralManagerState',
+				target: managerState,
+				read: 'associatedContract',
+				expected: input => input === addressOf(collateralManager),
+				write: 'setAssociatedContract',
+				writeArg: addressOf(collateralManager),
 			});
 		}
 
-		// Now for all targets that have a setResolverAndSyncCache, we need to ensure the resolver is set
-		for (const [contract, target] of Object.entries(deployer.deployedContracts)) {
-			// old "setResolver" for Depot, from prior to SIP-48
-			const setResolverFncEntry = target.options.jsonInterface.find(
-				({ name }) => name === 'setResolverAndSyncCache' || name === 'setResolver'
-			);
+		const collateralStateEth = await deployer.deployContract({
+			name: 'CollateralStateEth',
+			source: 'CollateralState',
+			args: [account, account],
+		});
 
-			if (setResolverFncEntry) {
-				// prior to SIP-46, contracts used setResolver and had no check
-				const isPreSIP46 = setResolverFncEntry.name === 'setResolver';
-				await runStep({
-					gasLimit: methodCallGasLimit * 3, // higher gas required
-					contract,
-					target,
-					read: isPreSIP46 ? 'resolver' : 'isResolverCached',
-					readArg: isPreSIP46 ? undefined : resolverAddress,
-					expected: input => (isPreSIP46 ? input === resolverAddress : input),
-					write: isPreSIP46 ? 'setResolver' : 'setResolverAndSyncCache',
-					writeArg: resolverAddress,
-				});
+		collateralEth = await deployer.deployContract({
+			name: 'CollateralEth',
+			args: [
+				addressOf(collateralStateEth),
+				account,
+				addressOf(collateralManager),
+				addressOf(readProxyForResolver),
+				toBytes32('sETH'),
+				(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
+			],
+		});
+
+		if (collateralStateEth && collateralEth) {
+			await runStep({
+				contract: 'CollateralStateEth',
+				target: collateralStateEth,
+				read: 'associatedContract',
+				expected: input => input === addressOf(collateralEth),
+				write: 'setAssociatedContract',
+				writeArg: addressOf(collateralEth),
+			});
+		}
+
+		const collateralStateErc20 = await deployer.deployContract({
+			name: 'CollateralStateErc20',
+			source: 'CollateralState',
+			args: [account, account],
+		});
+
+		let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
+		if (!RENBTC_ADDRESS) {
+			if (network !== 'local') {
+				throw new Error('renBTC address is not known');
 			}
+
+			// On local, deploy a mock renBTC token to use as the underlying in CollateralErc20
+			const renBTC = await deployer.deployContract({
+				name: 'MockToken',
+				args: ['renBTC', 'renBTC', 8],
+			});
+
+			RENBTC_ADDRESS = renBTC.options.address;
+		}
+
+		collateralErc20 = await deployer.deployContract({
+			name: 'CollateralErc20',
+			source: 'CollateralErc20',
+			args: [
+				addressOf(collateralStateErc20),
+				account,
+				addressOf(collateralManager),
+				addressOf(readProxyForResolver),
+				toBytes32('sBTC'),
+				(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_COLLATERAL'],
+				RENBTC_ADDRESS,
+				8,
+			],
+		});
+
+		if (collateralStateErc20 && collateralErc20) {
+			await runStep({
+				contract: 'CollateralStateErc20',
+				target: collateralStateErc20,
+				read: 'associatedContract',
+				expected: input => input === addressOf(collateralErc20),
+				write: 'setAssociatedContract',
+				writeArg: addressOf(collateralErc20),
+			});
+		}
+
+		const collateralStateShort = await deployer.deployContract({
+			name: 'CollateralStateShort',
+			source: 'CollateralState',
+			args: [account, account],
+		});
+
+		collateralShort = await deployer.deployContract({
+			name: 'CollateralShort',
+			args: [
+				addressOf(collateralStateShort),
+				account,
+				addressOf(collateralManager),
+				addressOf(readProxyForResolver),
+				toBytes32('sUSD'),
+				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
+			],
+		});
+
+		if (collateralStateShort && collateralShort) {
+			await runStep({
+				contract: 'CollateralStateShort',
+				target: collateralStateShort,
+				read: 'associatedContract',
+				expected: input => input === collateralShort.options.address,
+				write: 'setAssociatedContract',
+				writeArg: collateralShort.options.address,
+			});
 		}
 	}
+
+	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
+
+	let addressesAreImported = false;
+
+	if (addressResolver) {
+		// Now we add everything into the AddressResolver
+		const addressArgs = [
+			Object.entries(deployer.deployedContracts).map(([contract]) => toBytes32(contract)),
+			Object.entries(deployer.deployedContracts).map(
+				([
+					,
+					{
+						options: { address },
+					},
+				]) => address
+			),
+		];
+
+		const { pending } = await runStep({
+			gasLimit: 6e6, // higher gas required
+			contract: `AddressResolver`,
+			target: addressResolver,
+			read: 'areAddressesImported',
+			readArg: addressArgs,
+			expected: input => input,
+			write: 'importAddresses',
+			writeArg: addressArgs,
+		});
+
+		addressesAreImported = !pending;
+	}
+
+	// Whewn addresses
+	// This relies on the fact that runStep returns undefined if nothing needed to be done, a tx hash if the
+	// transaction could be mined, and true in other cases, including appending to the owner actions file.
+	// Note that this will also end the script in the case of manual transaction mining.
+	if (!addressesAreImported) {
+		console.log(gray(`\n------ DEPLOY PARTIALLY COMPLETED ------\n`));
+
+		console.log(
+			yellow(
+				'⚠⚠⚠ WARNING: Addresses have not been imported into the resolver, owner actions must be performed before re-running the script.'
+			)
+		);
+
+		if (deployer.newContractsDeployed.length > 0) {
+			reportDeployedContracts({ deployer });
+		}
+
+		process.exit(1);
+	}
+
+	console.log(gray('Addresses are correctly set up, continuing...'));
+
+	const filterTargetsWith = ({ prop }) =>
+		Object.entries(deployer.deployedContracts).filter(([, target]) =>
+			target.options.jsonInterface.find(({ name }) => name === prop)
+		);
+
+	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
+		// And on local filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
+		.filter(([contract]) => {
+			if (
+				network === 'local' &&
+				/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)
+			) {
+				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
+				console.log(
+					redBright(
+						`WARNING: Not invoking ${contract}.rebuildCache(). Run node publish connect-bridge after deployment.`
+					)
+				);
+				return false;
+			}
+			return true;
+		});
+
+	// now ensure all caches are rebuilt for those in need
+	const contractsToRebuildCache = [];
+	for (const [, target] of contractsWithRebuildableCache) {
+		const isCached = await target.methods.isResolverCached().call();
+		if (!isCached) {
+			contractsToRebuildCache.push(target.options.address);
+		}
+	}
+
+	const addressesChunkSize = useOvm ? 12 : 20;
+	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
+		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
+		await runStep({
+			gasLimit: useOvm ? 9e6 : 7e6,
+			contract: `AddressResolver`,
+			target: addressResolver,
+			publiclyCallable: true, // does not require owner
+			write: 'rebuildCaches',
+			writeArg: [chunk],
+		});
+	}
+
+	console.log(gray('Double check all contracts with rebuildCache() are rebuilt...'));
+	for (const [contract, target] of contractsWithRebuildableCache) {
+		await runStep({
+			gasLimit: 500e3, // higher gas required
+			contract,
+			target,
+			read: 'isResolverCached',
+			expected: input => input,
+			publiclyCallable: true, // does not require owner
+			write: 'rebuildCache',
+		});
+	}
+
+	// Now perform a sync of legacy contracts that have not been replaced in Shaula (v2.35.x)
+	// EtherCollateral, EtherCollateralsUSD
+	console.log(gray('Checking all legacy contracts with setResolverAndSyncCache() are rebuilt...'));
+	const contractsWithLegacyResolverCaching = filterTargetsWith({
+		prop: 'setResolverAndSyncCache',
+	});
+	for (const [contract, target] of contractsWithLegacyResolverCaching) {
+		await runStep({
+			gasLimit: 500e3, // higher gas required
+			contract,
+			target,
+			read: 'isResolverCached',
+			readArg: addressOf(readProxyForResolver),
+			expected: input => input,
+			write: 'setResolverAndSyncCache',
+			writeArg: addressOf(readProxyForResolver),
+		});
+	}
+
+	// Finally set resolver on contracts even older than legacy (Depot)
+	console.log(gray('Checking all legacy contracts with setResolver() are rebuilt...'));
+	const contractsWithLegacyResolverNoCache = filterTargetsWith({
+		prop: 'setResolver',
+	});
+	for (const [contract, target] of contractsWithLegacyResolverNoCache) {
+		await runStep({
+			gasLimit: 500e3, // higher gas required
+			contract,
+			target,
+			read: 'resolver',
+			expected: input => addressOf(readProxyForResolver),
+			write: 'setResolver',
+			writeArg: addressOf(readProxyForResolver),
+		});
+	}
+
+	console.log(gray('All caches are rebuilt. Continuing.'));
 
 	// now after resolvers have been set
 
 	console.log(gray(`\n------ ADD SYNTHS TO ISSUER ------\n`));
 
 	// Set up the connection to the Issuer for each Synth (requires FlexibleStorage to have been configured)
+
+	// First filter out all those synths which are already properly imported
+	console.log(gray('Filtering synths to add to the issuer.'));
+	const filteredSynths = [];
 	for (const synth of synthsToAdd) {
+		const issuerSynthAddress = await issuer.methods.synths(synth.currencyKeyInBytes).call();
+		const currentSynthAddress = addressOf(synth.synth);
+		if (issuerSynthAddress === currentSynthAddress) {
+			console.log(gray(`${currentSynthAddress} requires no action`));
+		} else {
+			console.log(gray(`${currentSynthAddress} will be added to the issuer.`));
+			filteredSynths.push(synth);
+		}
+	}
+
+	const synthChunkSize = 15;
+	for (let i = 0; i < filteredSynths.length; i += synthChunkSize) {
+		const chunk = filteredSynths.slice(i, i + synthChunkSize);
 		await runStep({
 			contract: 'Issuer',
 			target: issuer,
-			read: 'synths',
-			readArg: synth.currencyKeyInBytes,
-			expected: input => input === addressOf(synth.synth),
-			write: 'addSynth',
-			writeArg: addressOf(synth.synth),
+			read: 'getSynths',
+			readArg: [chunk.map(synth => synth.currencyKeyInBytes)],
+			expected: input =>
+				input.length === chunk.length &&
+				input.every((cur, idx) => cur === addressOf(chunk[idx].synth)),
+			write: 'addSynths',
+			writeArg: [chunk.map(synth => addressOf(synth.synth))],
+			gasLimit: 1e5 * synthChunkSize,
 		});
 	}
 
@@ -1286,13 +1622,17 @@ const deploy = async ({
 			// for this environment (true for all environments except the initial deploy in 'local' during those tests)
 			if (oldExrates) {
 				// get inverse synth's params from the old exrates, if any exist
+				const oldInversePricing = await oldExrates.methods
+					.inversePricing(toBytes32(currencyKey))
+					.call();
+
 				const {
 					entryPoint: oldEntryPoint,
 					upperLimit: oldUpperLimit,
 					lowerLimit: oldLowerLimit,
 					frozenAtUpperLimit: currentRateIsFrozenUpper,
 					frozenAtLowerLimit: currentRateIsFrozenLower,
-				} = await oldExrates.methods.inversePricing(toBytes32(currencyKey)).call();
+				} = oldInversePricing;
 
 				const currentRateIsFrozen = currentRateIsFrozenUpper || currentRateIsFrozenLower;
 				// and the last rate if any exists
@@ -1305,8 +1645,27 @@ const deploy = async ({
 				const totalSynthSupply = await synth.methods.totalSupply().call();
 				console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
 
-				// When there's an inverted synth with matching parameters
+				const inversePricingOnCurrentExRates = await exchangeRates.methods
+					.inversePricing(toBytes32(currencyKey))
+					.call();
+
+				// ensure that if it's a newer exchange rates deployed, then skip reinserting the inverse pricing if
+				// already done
 				if (
+					oldExrates.options.address !== exchangeRates.options.address &&
+					JSON.stringify(inversePricingOnCurrentExRates) === JSON.stringify(oldInversePricing) &&
+					+w3utils.fromWei(inversePricingOnCurrentExRates.entryPoint) === entryPoint &&
+					+w3utils.fromWei(inversePricingOnCurrentExRates.upperLimit) === upperLimit &&
+					+w3utils.fromWei(inversePricingOnCurrentExRates.lowerLimit) === lowerLimit
+				) {
+					console.log(
+						gray(
+							`Current ExchangeRates.inversePricing(${currencyKey}) is the same as the previous. Nothing to do.`
+						)
+					);
+				}
+				// When there's an inverted synth with matching parameters
+				else if (
 					entryPoint === +w3utils.fromWei(oldEntryPoint) &&
 					upperLimit === +w3utils.fromWei(oldUpperLimit) &&
 					lowerLimit === +w3utils.fromWei(oldLowerLimit)
@@ -1390,8 +1749,11 @@ const deploy = async ({
 
 		// override individual currencyKey / synths exchange rates
 		const synthExchangeRateOverride = {
-			sETH: w3utils.toWei('0.005'),
-			iETH: w3utils.toWei('0.005'),
+			sETH: w3utils.toWei('0.003'),
+			iETH: w3utils.toWei('0.004'),
+			sBTC: w3utils.toWei('0.003'),
+			iBTC: w3utils.toWei('0.003'),
+			iBNB: w3utils.toWei('0.021'),
 		};
 
 		const synthsRatesToUpdate = synths
@@ -1450,7 +1812,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'priceDeviationThresholdFactor',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setPriceDeviationThresholdFactor',
 			writeArg: await getDeployParameter('PRICE_DEVIATION_THRESHOLD_FACTOR'),
 		});
@@ -1469,7 +1831,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'issuanceRatio',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setIssuanceRatio',
 			writeArg: await getDeployParameter('ISSUANCE_RATIO'),
 		});
@@ -1478,7 +1840,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'feePeriodDuration',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setFeePeriodDuration',
 			writeArg: await getDeployParameter('FEE_PERIOD_DURATION'),
 		});
@@ -1487,7 +1849,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'targetThreshold',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setTargetThreshold',
 			writeArg: await getDeployParameter('TARGET_THRESHOLD'),
 		});
@@ -1496,7 +1858,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'liquidationDelay',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setLiquidationDelay',
 			writeArg: await getDeployParameter('LIQUIDATION_DELAY'),
 		});
@@ -1505,7 +1867,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'liquidationRatio',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setLiquidationRatio',
 			writeArg: await getDeployParameter('LIQUIDATION_RATIO'),
 		});
@@ -1514,7 +1876,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'liquidationPenalty',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setLiquidationPenalty',
 			writeArg: await getDeployParameter('LIQUIDATION_PENALTY'),
 		});
@@ -1523,7 +1885,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'rateStalePeriod',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setRateStalePeriod',
 			writeArg: await getDeployParameter('RATE_STALE_PERIOD'),
 		});
@@ -1532,7 +1894,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'minimumStakeTime',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setMinimumStakeTime',
 			writeArg: await getDeployParameter('MINIMUM_STAKE_TIME'),
 		});
@@ -1541,42 +1903,355 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'debtSnapshotStaleTime',
-			expected: input => input !== '0', // only change if non-zero
+			expected: input => input !== '0', // only change if zero
 			write: 'setDebtSnapshotStaleTime',
 			writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
 		});
 
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 0,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [0, await getDeployParameter('CROSS_DOMAIN_DEPOSIT_GAS_LIMIT')],
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 1,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [1, await getDeployParameter('CROSS_DOMAIN_ESCROW_GAS_LIMIT')],
+		});
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 2,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [2, await getDeployParameter('CROSS_DOMAIN_REWARD_GAS_LIMIT')],
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'crossDomainMessageGasLimit',
+			readArg: 3,
+			expected: input => input !== '0', // only change if zero
+			write: 'setCrossDomainMessageGasLimit',
+			writeArg: [3, await getDeployParameter('CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT')],
+		});
+
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];
-		if (aggregatorWarningFlags) {
+		// If deploying to OVM avoid ivoking setAggregatorWarningFlags for now.
+		if (aggregatorWarningFlags && !useOvm) {
 			await runStep({
 				contract: 'SystemSettings',
 				target: systemSettings,
 				read: 'aggregatorWarningFlags',
-				expected: input => input !== ZERO_ADDRESS, // only change if non-zero
+				expected: input => input !== ZERO_ADDRESS, // only change if zero
 				write: 'setAggregatorWarningFlags',
 				writeArg: aggregatorWarningFlags,
 			});
 		}
 	}
 
+	if (!useOvm) {
+		console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
+		const collateralsArg = [collateralEth, collateralErc20, collateralShort].map(addressOf);
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'hasAllCollaterals',
+			readArg: [collateralsArg],
+			expected: input => input,
+			write: 'addCollaterals',
+			writeArg: [collateralsArg],
+		});
+
+		await runStep({
+			contract: 'CollateralEth',
+			target: collateralEth,
+			read: 'manager',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setManager',
+			writeArg: addressOf(collateralManager),
+		});
+
+		const collateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
+		await runStep({
+			contract: 'CollateralEth',
+			gasLimit: 1e6,
+			target: collateralEth,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralEthSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralEthSynths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralEthSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralEthSynths.map(toBytes32),
+			],
+		});
+
+		await runStep({
+			contract: 'CollateralErc20',
+			target: collateralErc20,
+			read: 'manager',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setManager',
+			writeArg: addressOf(collateralManager),
+		});
+
+		const collateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
+		await runStep({
+			contract: 'CollateralErc20',
+			gasLimit: 1e6,
+			target: collateralErc20,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
+				collateralErc20Synths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
+				collateralErc20Synths.map(toBytes32),
+			],
+		});
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'manager',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setManager',
+			writeArg: addressOf(collateralManager),
+		});
+
+		const collateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
+		await runStep({
+			contract: 'CollateralShort',
+			gasLimit: 1e6,
+			target: collateralShort,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralShortSynths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralShortSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralShortSynths.map(toBytes32),
+			],
+		});
+
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'maxDebt',
+			expected: input => input === collateralManagerDefaults['MAX_DEBT'],
+			write: 'setMaxDebt',
+			writeArg: [collateralManagerDefaults['MAX_DEBT']],
+		});
+
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'baseBorrowRate',
+			expected: input => input === collateralManagerDefaults['BASE_BORROW_RATE'],
+			write: 'setBaseBorrowRate',
+			writeArg: [collateralManagerDefaults['BASE_BORROW_RATE']],
+		});
+
+		await runStep({
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'baseShortRate',
+			expected: input => input === collateralManagerDefaults['BASE_SHORT_RATE'],
+			write: 'setBaseShortRate',
+			writeArg: [collateralManagerDefaults['BASE_SHORT_RATE']],
+		});
+
+		// add to the manager.
+		const collateralManagerSynths = collateralManagerDefaults['SYNTHS'];
+		await runStep({
+			gasLimit: 1e6,
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'areSynthsAndCurrenciesSet',
+			readArg: [
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
+			],
+			expected: input => input,
+			write: 'addSynths',
+			writeArg: [
+				collateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+				collateralManagerSynths.map(toBytes32),
+			],
+		});
+
+		const collateralManagerShorts = collateralManagerDefaults['SHORTS'];
+		await runStep({
+			gasLimit: 1e6,
+			contract: 'CollateralManager',
+			target: collateralManager,
+			read: 'areShortableSynthsSet',
+			readArg: [
+				collateralManagerShorts.map(({ long }) => toBytes32(`Synth${long}`)),
+				collateralManagerShorts.map(({ long }) => toBytes32(long)),
+			],
+			expected: input => input,
+			write: 'addShortableSynths',
+			writeArg: [
+				collateralManagerShorts.map(({ long, short }) =>
+					[`Synth${long}`, `Synth${short}`].map(toBytes32)
+				),
+				collateralManagerShorts.map(({ long }) => toBytes32(long)),
+			],
+		});
+
+		const collateralShortInteractionDelay = (await getDeployParameter('COLLATERAL_SHORT'))[
+			'INTERACTION_DELAY'
+		];
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'interactionDelay',
+			expected: input => input === collateralShortInteractionDelay,
+			write: 'setInteractionDelay',
+			writeArg: collateralShortInteractionDelay,
+		});
+
+		await runStep({
+			contract: 'CollateralEth',
+			target: collateralEth,
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
+		});
+
+		await runStep({
+			contract: 'CollateralErc20',
+			target: collateralErc20,
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
+		});
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
+		});
+	}
+
+	console.log(gray(`\n------ CHECKING DEBT CACHE ------\n`));
+
+	const refreshSnapshotIfPossible = async (wasInvalid, isInvalid, force = false) => {
+		const validityChanged = wasInvalid !== isInvalid;
+
+		if (force || validityChanged) {
+			console.log(yellow(`Refreshing debt snapshot...`));
+			await runStep({
+				gasLimit: useOvm ? 3.5e6 : 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths on L1
+				contract: 'DebtCache',
+				target: debtCache,
+				write: 'takeDebtSnapshot',
+				writeArg: [],
+				publiclyCallable: true, // does not require owner
+			});
+		} else if (!validityChanged) {
+			console.log(
+				red('⚠⚠⚠ WARNING: Deployer attempted to refresh the debt cache, but it cannot be.')
+			);
+		}
+	};
+
+	const checkSnapshot = async () => {
+		const [cacheInfo, currentDebt] = await Promise.all([
+			debtCache.methods.cacheInfo().call(),
+			debtCache.methods.currentDebt().call(),
+		]);
+
+		// Check if the snapshot is stale and can be fixed.
+		if (cacheInfo.isStale && !currentDebt.anyRateIsInvalid) {
+			console.log(yellow('Debt snapshot is stale, and can be refreshed.'));
+			await refreshSnapshotIfPossible(
+				cacheInfo.isInvalid,
+				currentDebt.anyRateIsInvalid,
+				cacheInfo.isStale
+			);
+			return true;
+		}
+
+		// Otherwise, if the rates are currently valid,
+		// we might still need to take a snapshot due to invalidity or deviation.
+		if (!currentDebt.anyRateIsInvalid) {
+			if (cacheInfo.isInvalid) {
+				console.log(yellow('Debt snapshot is invalid, and can be refreshed.'));
+				await refreshSnapshotIfPossible(
+					cacheInfo.isInvalid,
+					currentDebt.anyRateIsInvalid,
+					cacheInfo.isStale
+				);
+				return true;
+			} else {
+				const cachedDebtEther = w3utils.fromWei(cacheInfo.debt);
+				const currentDebtEther = w3utils.fromWei(currentDebt.debt);
+				const deviation =
+					(Number(currentDebtEther) - Number(cachedDebtEther)) / Number(cachedDebtEther);
+				const maxDeviation = DEFAULTS.debtSnapshotMaxDeviation;
+
+				if (maxDeviation <= Math.abs(deviation)) {
+					console.log(
+						yellow(
+							`Debt cache deviation is ${deviation * 100}% >= ${maxDeviation *
+								100}%; refreshing it...`
+						)
+					);
+					await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, true);
+					return true;
+				}
+			}
+		}
+
+		// Finally, if the debt cache is currently valid, but needs to be invalidated, we will also perform a snapshot.
+		if (!cacheInfo.isInvalid && currentDebt.anyRateIsInvalid) {
+			console.log(yellow('Debt snapshot needs to be invalidated.'));
+			await refreshSnapshotIfPossible(cacheInfo.isInvalid, currentDebt.anyRateIsInvalid, false);
+			return true;
+		}
+		return false;
+	};
+
+	const performedSnapshot = await checkSnapshot();
+
+	if (performedSnapshot) {
+		console.log(gray('Snapshot complete.'));
+	} else {
+		console.log(gray('No snapshot required.'));
+	}
+
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
-	console.log(
-		green(`\nSuccessfully deployed ${deployer.newContractsDeployed.length} contracts!\n`)
-	);
-
-	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
-		name,
-		address,
-		`${etherscanLinkPrefix}/address/${address}`,
-	]);
-	console.log();
-	if (tableData.length) {
-		console.log(gray(`All contracts deployed on "${network}" network:`));
-		console.log(table(tableData));
-	} else {
-		console.log(gray('Note: No new contracts deployed.'));
-	}
+	reportDeployedContracts({ deployer });
 };
 
 module.exports = {
@@ -1615,6 +2290,16 @@ module.exports = {
 				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
 			)
 			.option(
+				'-i, --ignore-safety-checks',
+				'Ignores some validations regarding paths, compiler versions, etc.',
+				false
+			)
+			.option(
+				'--ignore-custom-parameters',
+				'Ignores deployment parameters specified in params.json',
+				false
+			)
+			.option(
 				'-k, --use-fork',
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
 				false
@@ -1638,6 +2323,11 @@ module.exports = {
 			.option(
 				'-o, --oracle-exrates <value>',
 				'The address of the oracle for this network (default is use existing)'
+			)
+			.option(
+				'-q, --manage-nonces',
+				'The command makes sure that no repeated nonces are sent (which may be the case when reorgs are common, i.e. in Goerli. Not to be confused with --manage-nonsense.)',
+				false
 			)
 			.option(
 				'-p, --provider-url <value>',

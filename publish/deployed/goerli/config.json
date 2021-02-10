@@ -1,125 +1,134 @@
 {
 	"SystemSettings": {
-		"deploy": true
+		"deploy": false
+	},
+	"SynthetixBridgeToOptimism": {
+		"deploy": false
 	},
 	"AddressResolver": {
-		"deploy": true
+		"deploy": false
 	},
 	"ReadProxyAddressResolver": {
-		"deploy": true
+		"deploy": false
+	},
+	"DebtCache": {
+		"deploy": false
 	},
 	"Depot": {
-		"deploy": true
+		"deploy": false
 	},
 	"TradingRewards": {
-		"deploy": true
+		"deploy": false
 	},
 	"EscrowChecker": {
-		"deploy": true
+		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": true
+		"deploy": false
 	},
 	"Exchanger": {
-		"deploy": true
+		"deploy": false
 	},
 	"ExchangeState": {
-		"deploy": true
+		"deploy": false
 	},
 	"EtherCollateral": {
-		"deploy": true
+		"deploy": false
+	},
+	"EtherCollateralsUSD": {
+		"deploy": false
 	},
 	"FeePool": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePoolState": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePoolEternalStorage": {
-		"deploy": true
+		"deploy": false
 	},
 	"FlexibleStorage": {
-		"deploy": true
+		"deploy": false
 	},
 	"DelegateApprovals": {
-		"deploy": true
+		"deploy": false
 	},
 	"DelegateApprovalsEternalStorage": {
-		"deploy": true
+		"deploy": false
 	},
 	"Issuer": {
-		"deploy": true
+		"deploy": false
 	},
 	"EternalStorageLiquidations": {
-		"deploy": true
+		"deploy": false
 	},
 	"Liquidations": {
-		"deploy": true
+		"deploy": false
 	},
 	"SupplySchedule": {
-		"deploy": true
+		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixEscrow": {
-		"deploy": true
+		"deploy": false
 	},
 	"RewardEscrow": {
-		"deploy": true
+		"deploy": false
 	},
 	"RewardsDistribution": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixState": {
-		"deploy": true
+		"deploy": false
 	},
 	"SystemStatus": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthUtil": {
-		"deploy": true
+		"deploy": false
 	},
 	"DappMaintenance": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyERC20": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyERC20sUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxyFeePool": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxySynthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"SafeDecimalMath": {
-		"deploy": true
+		"deploy": false
 	},
 	"Math": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStateSynthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"ProxysETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": true
+		"deploy": false
 	}
 }

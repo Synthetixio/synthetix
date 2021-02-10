@@ -16,6 +16,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 
 
+// https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarket
 contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     /* ========== LIBRARIES ========== */
 
@@ -71,13 +72,12 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] internal addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_EXRATES, CONTRACT_SYNTHSUSD, CONTRACT_FEEPOOL];
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address _owner,
         address _creator,
+        address _resolver,
         uint[2] memory _creatorLimits, // [capitalRequirement, skewLimit]
         bytes32 _oracleKey,
         uint _strikePrice,
@@ -85,11 +85,7 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         uint[3] memory _times, // [biddingEnd, maturity, expiry]
         uint[2] memory _bids, // [longBid, shortBid]
         uint[3] memory _fees // [poolFee, creatorFee, refundFee]
-    )
-        public
-        Owned(_owner)
-        MixinResolver(_owner, addressesToCache) // The resolver is initially set to the owner, but it will be set correctly when the cache is synchronised
-    {
+    ) public Owned(_owner) MixinResolver(_resolver) {
         creator = _creator;
         creatorLimits = BinaryOptionMarketManager.CreatorLimits(_creatorLimits[0], _creatorLimits[1]);
 
@@ -123,22 +119,30 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     /* ========== VIEWS ========== */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](4);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_EXRATES;
+        addresses[2] = CONTRACT_SYNTHSUSD;
+        addresses[3] = CONTRACT_FEEPOOL;
+    }
+
     /* ---------- External Contracts ---------- */
 
     function _systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function _sUSD() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function _feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function _manager() internal view returns (BinaryOptionMarketManager) {

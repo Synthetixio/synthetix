@@ -1,430 +1,403 @@
-commands:
-    etherscan_check:
-        description: Run etherscan ABI check
-        parameters:
-            network:
-                type: string
-        steps:
-            - run: npm run test:etherscan --  --network << parameters.network >>
-    fork_deploy:
-        description: Performs a deployment using a fork
-        parameters:
-            network:
-                type: string
-        steps:
-            - fork_start:
-                network: << parameters.network >>
-                reset: true
-            - run: node publish deploy --use-fork --yes --network << parameters.network >>
-            - persist_to_workspace:
-                paths:
-                    - publish/deployed
-                    - .db
-                root: .
-    fork_prepare_deploy:
-        description: Prepares contract artifacts and deployed/<network>/config.json for a deployment using a fork based on releases.json
-        parameters:
-            network:
-                type: string
-        steps:
-            - run: node publish build
-            - run: node publish prepare-deploy --network << parameters.network >>
-            - persist_to_workspace:
-                paths:
-                    - build
-                    - publish/deployed
-                root: .
-    fork_start:
-        description: Starts a local ganache fork on the specified network
-        parameters:
-            network:
-                type: string
-            reset:
-                default: false
-                type: boolean
-        steps:
-            - run:
-                background: true
-                command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
-            - wait_for_rpc
-    fork_test_prod:
-        description: Runs prod tests on a fork
-        parameters:
-            network:
-                type: string
-        steps:
-            - fork_start:
-                network: << parameters.network >>
-                reset: true
-            - run: npm run test:prod:gas
-    testnet_pvt:
-        description: Run testnet PVT
-        parameters:
-            network:
-                type: string
-        steps:
-            - run: npm run test:testnet --  --yes --network << parameters.network >>
-    wait_for_rpc:
-        description: Wait until a connection is established with http://localhost:8545
-        steps:
-            - run: sleep 5
-            - run:
-                command: |
-                    wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
-                    :
-                shell: /bin/sh
-jobs:
-    coverage-report:
-        docker:
-            - image: circleci/node:12.18
-        resource_class: xlarge
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
-            - run: bash <(curl -s https://codecov.io/bash)
-        working_directory: ~/repo
-    fork-deploy:
-        docker:
-            - image: circleci/node:12.18
-        parameters:
-            network:
-                type: string
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - fork_deploy:
-                network: << parameters.network >>
-        working_directory: ~/repo
-    fork-prepare-deploy:
-        docker:
-            - image: circleci/node:12.18
-        parameters:
-            network:
-                type: string
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - fork_prepare_deploy:
-                network: << parameters.network >>
-        working_directory: ~/repo
-    fork-test-prod:
-        docker:
-            - image: circleci/node:12.18
-        parameters:
-            network:
-                type: string
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - fork_test_prod:
-                network: << parameters.network >>
-        working_directory: ~/repo
-    gas-report:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run test:gas && npx codechecks
-        working_directory: ~/repo
-    lint:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run lint
-        working_directory: ~/repo
-    pack:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run pack
-            - store_artifacts:
-                path: browser.js
-        working_directory: ~/repo
-    prepare:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - restore_cache:
-                keys:
-                    - v2-dependencies-{{ checksum "package-lock.json" }}
-            - run: npm ci
-            - save_cache:
-                key: v2-dependencies-{{ checksum "package-lock.json" }}
-                paths:
-                    - node_modules
-            - persist_to_workspace:
-                paths:
-                    - node_modules
-                root: .
-        working_directory: ~/repo
-    slither:
-        docker:
-            - image: trailofbits/eth-security-toolbox
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run:
-                command: |
-                    set +e
-                    slither .
-                    exit 0
-                name: Show Slither output
-    test-contracts:
-        docker:
-            - image: circleci/node:12.18
-        resource_class: large
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npx buidler compile --showsize --optimizer
-            - run:
-                command: |
-                    set +e
-                    npm test
-                    EXIT_CODE=$?
-                    cat test-gas-used.log
-                    printf "\\n"
-                    exit $EXIT_CODE
-                name: Test and output gas used
-        working_directory: ~/repo
-    test-contracts-legacy:
-        docker:
-            - image: circleci/node:12.18
-        resource_class: large
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run compile:legacy
-            - run: npx buidler test:legacy
-        working_directory: ~/repo
-    test-deployments:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run test:deployments
-        working_directory: ~/repo
-    test-kovan:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - testnet_pvt:
-                network: kovan
-            - etherscan_check:
-                network: kovan
-        working_directory: ~/repo
-    test-local:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run: npm run test:local
-        working_directory: ~/repo
-    test-mainnet:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - etherscan_check:
-                network: mainnet
-        working_directory: ~/repo
-    test-ovm:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run:
-                command: |
-                    npx buidler compile --ovm --optimizer
-                name: Compile in OVM, enforcing size limit
-        working_directory: ~/repo
-    test-publish:
-        docker:
-            - image: circleci/node:12.18
-        resource_class: large
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - run:
-                command: |
-                    set +e
-                    npm run test:publish
-                    EXIT_CODE=$?
-                    if [ $EXIT_CODE -gt 0 ]; then
-                      tail -n 2000 test/publish/test.log; # show tail of logs here if test failed
-                    fi
-                    npx ansi-to-html --newline --bg black test/publish/test.log > test/publish/test-log.html
-                    exit $EXIT_CODE
-                name: Test and output logs
-            - store_artifacts:
-                destination: test-log.html
-                path: test/publish/test-log.html
-        working_directory: ~/repo
-    test-rinkeby:
-        docker:
-            - image: circleci/node:12.18
-        steps:
-            - checkout
-            - attach_workspace:
-                at: .
-            - testnet_pvt:
-                network: rinkeby
-            - etherscan_check:
-                network: rinkeby
-        working_directory: ~/repo
 version: 2.1
+commands:
+  cmd-wait-for-rpc:
+    steps:
+      - run: sleep 5
+      - run:
+          shell: /bin/sh
+          command: |
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            :
+jobs:
+  job-compile:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npx hardhat compile --optimizer --fail-oversize
+      - run: rm -rf build # force a clean build
+      - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
+  job-lint:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run lint
+  job-pack-browser:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run pack
+      - store_artifacts:
+          path: browser.js
+  job-prepare:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - "v2-dependencies-"
+      - run: npm install
+      - save_cache:
+          key: "v2-dependencies-"
+          paths:
+            - node_modules
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+  job-prod-diff-tests-local-ovm:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build --test-helpers
+      - run:
+          command: npx hardhat node
+          background: true
+      - cmd-wait-for-rpc
+      - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
+      - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
+  job-prod-diff-tests-local:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build --test-helpers
+      - run:
+          command: npx hardhat node
+          background: true
+      - cmd-wait-for-rpc
+      - run: node publish deploy --network local --fresh-deploy --yes
+      - run: npm run test:prod -- --patch-fresh-deployment
+  job-prod-diff-tests:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - run:
+          command: npx hardhat node --target-network mainnet
+          background: true
+      - cmd-wait-for-rpc
+      - run: node publish prepare-deploy --network mainnet
+      - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
+      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && npx codechecks codechecks.prod.yml
+      - store_artifacts:
+          path: test-gas-used-prod.log
+  job-prod-tests:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npx hardhat node --target-network mainnet
+          background: true
+      - cmd-wait-for-rpc
+      - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
+      - store_artifacts:
+          path: test-gas-used-prod.log
+  job-static-analysis:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Show Slither output
+          command: |
+            set +e
+            slither .
+            exit 0
+  job-test-deploy-script:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Test and output logs
+          command: |
+            set +e
+            npm run test:publish
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -gt 0 ]; then
+              tail -n 2000 test/publish/test.log; # show tail of logs here if test failed
+            fi
+            npx ansi-to-html --newline --bg black test/publish/test.log > test/publish/test-log.html
+            exit $EXIT_CODE
+      - store_artifacts:
+          path: test/publish/test-log.html
+          destination: test-log.html
+  job-unit-tests-coverage:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
+      - run: bash <(curl -s https://codecov.io/bash)
+  job-unit-tests-gas-report:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:gas && npx codechecks codechecks.unit.yml
+      - store_artifacts:
+          path: test-gas-used.log
+  job-unit-tests-ovm:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: |
+            npx hardhat compile --use-ovm --optimizer
+  job-unit-tests:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npx hardhat compile --showsize --optimizer
+      - run:
+          name: Test and output gas used
+          command: |
+            set +e
+            npm test
+            EXIT_CODE=$?
+            cat test-gas-used.log
+            printf "\\n"
+            exit $EXIT_CODE
+  job-validate-deployments:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:deployments
+  job-validate-etherscan:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/node:12.18
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    parameters:
+      network:
+        type: string
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: npm run test:etherscan --  --network << parameters.network >>
 workflows:
-    dev:
-        jobs:
-            - prepare
-            - lint:
-                requires:
-                    - prepare
-            - test-contracts:
-                requires:
-                    - prepare
-            - test-contracts-legacy:
-                requires:
-                    - prepare
-            - test-ovm:
-                requires:
-                    - prepare
-            - test-publish:
-                requires:
-                    - prepare
-            - test-deployments:
-                requires:
-                    - prepare
-            - test-local:
-                requires:
-                    - prepare
-            - pack:
-                requires:
-                    - prepare
-            - coverage-report:
-                requires:
-                    - prepare
-            - gas-report:
-                requires:
-                    - prepare
-            - slither:
-                requires:
-                    - prepare
-            - test-kovan:
-                filters:
-                    branches:
-                        only: staging
-                requires:
-                    - prepare
-            - test-rinkeby:
-                filters:
-                    branches:
-                        only: staging
-                requires:
-                    - prepare
-            - test-mainnet:
-                filters:
-                    branches:
-                        only: master
-                requires:
-                    - prepare
-    forkprod-tests:
-        jobs:
-            - prepare:
-                filters:
-                    branches:
-                        only: develop
-            - fork-prepare-deploy:
-                name: fork-prepare-deploy-mainnet
-                network: mainnet
-                requires:
-                    - prepare
-            - fork-deploy:
-                name: fork-deploy-mainnet
-                network: mainnet
-                requires:
-                    - fork-prepare-deploy-mainnet
-            - fork-test-prod:
-                name: fork-test-prod-mainnet
-                network: mainnet
-                requires:
-                    - fork-deploy-mainnet
-            - fork-prepare-deploy:
-                filters:
-                    branches:
-                        only: develop
-                name: fork-prepare-deploy-rinkeby
-                network: rinkeby
-                requires:
-                    - prepare
-            - fork-deploy:
-                filters:
-                    branches:
-                        only: develop
-                name: fork-deploy-rinkeby
-                network: rinkeby
-                requires:
-                    - fork-prepare-deploy-rinkeby
-            - fork-test-prod:
-                filters:
-                    branches:
-                        only: develop
-                name: fork-test-prod-rinkeby
-                network: rinkeby
-                requires:
-                    - fork-deploy-rinkeby
-            - fork-prepare-deploy:
-                filters:
-                    branches:
-                        only: develop
-                name: fork-prepare-deploy-kovan
-                network: rinkeby
-                requires:
-                    - prepare
-            - fork-deploy:
-                filters:
-                    branches:
-                        only: develop
-                name: fork-deploy-kovan
-                network: rinkeby
-                requires:
-                    - fork-prepare-deploy-kovan
-            - fork-test-prod:
-                filters:
-                    branches:
-                        only: develop
-                name: fork-test-prod-kovan
-                network: rinkeby
-                requires:
-                    - fork-deploy-kovan
-    version: 2
-
+  workflow-any:
+    jobs:
+      - job-prepare
+      - job-lint:
+          requires:
+            - job-prepare
+      - job-compile:
+          requires:
+            - job-prepare
+      - job-static-analysis:
+          requires:
+            - job-prepare
+  workflow-develop:
+    jobs:
+      - job-prepare:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+      - job-unit-tests:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-coverage:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-gas-report:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-test-deploy-script:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-ovm:
+          filters:
+            branches:
+              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+  workflow-master:
+    jobs:
+      - job-prepare:
+          filters:
+            branches:
+              only: /.*(master).*/
+  workflow-scheduled:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - job-prepare
+      - job-validate-deployments:
+          requires:
+            - job-prepare
+      - job-prod-tests:
+          requires:
+            - job-prepare
+      - job-prod-diff-tests-local:
+          requires:
+            - job-prepare
+      - job-prod-diff-tests-local-ovm:
+          requires:
+            - job-prepare
+  workflow-staging:
+    jobs:
+      - job-prepare:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+      - job-pack-browser:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-validate-deployments:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-prod-tests:
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-prod-diff-tests-local:
+          name: job-prod-diff-tests-local
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-prod-diff-tests-local-ovm:
+          name: job-prod-diff-tests-local-ovm
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-prod-diff-tests:
+          name: job-prod-diff-tests-mainnet
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare

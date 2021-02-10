@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -19,6 +19,7 @@ const {
 	onlyGivenAddressCanInvoke,
 	getDecodedLogs,
 	decodedEventEqual,
+	getEventByName,
 } = require('./helpers');
 
 const MockBinaryOptionMarketManager = artifacts.require('MockBinaryOptionMarketManager');
@@ -88,6 +89,7 @@ contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
 	};
 
 	const deployMarket = async ({
+		resolver,
 		endOfBidding,
 		maturity,
 		expiry,
@@ -107,6 +109,7 @@ contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
 			args: [
 				accounts[0],
 				creator,
+				resolver,
 				[capitalRequirement, skewLimit],
 				oracleKey,
 				strikePrice,
@@ -162,7 +165,7 @@ contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
 			{ from: initialBidder }
 		);
 
-		market = await BinaryOptionMarket.at(tx.logs[1].args.market);
+		market = await BinaryOptionMarket.at(getEventByName({ tx, name: 'MarketCreated' }).args.market);
 		const options = await market.options();
 		long = await BinaryOption.at(options.long);
 		short = await BinaryOption.at(options.short);
@@ -1313,7 +1316,9 @@ contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
 				[initialLongBid, initialShortBid],
 				{ from: initialBidder }
 			);
-			const localMarket = await BinaryOptionMarket.at(tx.logs[1].args.market);
+			const localMarket = await BinaryOptionMarket.at(
+				getEventByName({ tx, name: 'MarketCreated' }).args.market
+			);
 			assert.isFalse(await localMarket.refundsEnabled());
 
 			await sUSDSynth.approve(localMarket.address, initialLongBid.mul(toBN(10)), {

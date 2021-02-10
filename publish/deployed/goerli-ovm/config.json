@@ -2,6 +2,9 @@
 	"SystemSettings": {
 		"deploy": false
 	},
+	"SynthetixBridgeToBase": {
+		"deploy": false
+	},
 	"AddressResolver": {
 		"deploy": false
 	},
@@ -9,6 +12,9 @@
 		"deploy": false
 	},
 	"TradingRewards": {
+		"deploy": false
+	},
+	"DebtCache": {
 		"deploy": false
 	},
 	"EscrowChecker": {
@@ -54,9 +60,6 @@
 		"deploy": false
 	},
 	"Liquidations": {
-		"deploy": false
-	},
-	"SupplySchedule": {
 		"deploy": false
 	},
 	"Synthetix": {

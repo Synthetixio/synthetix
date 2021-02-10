@@ -1,9 +1,11 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
+const TokenState = artifacts.require('TokenState');
+const Proxy = artifacts.require('Proxy');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 
 const { currentTime, fastForward, toUnit } = require('../utils')();
@@ -27,9 +29,6 @@ contract('PurgeableSynth', accounts => {
 	const synthKeys = [sUSD, sAUD, iETH];
 	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
-	let TokenState;
-	let Proxy;
-
 	let exchangeRates,
 		exchanger,
 		systemSettings,
@@ -39,13 +38,10 @@ contract('PurgeableSynth', accounts => {
 		systemStatus,
 		timestamp,
 		addressResolver,
+		debtCache,
 		issuer;
 
 	before(async () => {
-		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
-		TokenState = artifacts.require('TokenState');
-		Proxy = artifacts.require('Proxy');
-
 		PurgeableSynth.link(await artifacts.require('SafeDecimalMath').new());
 
 		({
@@ -56,6 +52,7 @@ contract('PurgeableSynth', accounts => {
 			SynthsAUD: sAUDContract,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
+			DebtCache: debtCache,
 			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
@@ -63,12 +60,14 @@ contract('PurgeableSynth', accounts => {
 			contracts: [
 				'ExchangeRates',
 				'Exchanger',
+				'DebtCache',
 				'Issuer',
 				'FeePool',
 				'FeePoolEternalStorage',
 				'Synthetix',
 				'SystemStatus',
 				'SystemSettings',
+				'CollateralManager',
 			],
 		}));
 
@@ -136,12 +135,10 @@ contract('PurgeableSynth', accounts => {
 		});
 
 		it('ensure the list of resolver addresses are as expected', async () => {
-			const actual = await iETHContract.getResolverAddressesRequired();
+			const actual = await iETHContract.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'ExchangeRates']
-					.concat(new Array(18).fill(''))
-					.map(toBytes32)
+				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'ExchangeRates'].map(toBytes32)
 			);
 		});
 
@@ -166,7 +163,7 @@ contract('PurgeableSynth', accounts => {
 						from: oracle,
 					}
 				);
-				await issuer.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 			});
 
 			describe('and a user holds 100K USD worth of purgeable synth iETH', () => {
@@ -213,7 +210,7 @@ contract('PurgeableSynth', accounts => {
 							await exchangeRates.updateRates([iETH], ['170'].map(toUnit), await currentTime(), {
 								from: oracle,
 							});
-							await issuer.cacheSNXIssuedDebt();
+							await debtCache.takeDebtSnapshot();
 						});
 						it('then purge() still works as expected', async () => {
 							await iETHContract.purge([account1], { from: owner });
@@ -337,7 +334,7 @@ contract('PurgeableSynth', accounts => {
 							await exchangeRates.updateRates([iETH], ['160'].map(toUnit), timestamp, {
 								from: oracle,
 							});
-							await issuer.cacheSNXIssuedDebt();
+							await debtCache.takeDebtSnapshot();
 						});
 						describe('when purge is invoked with just one account', () => {
 							let txn;
@@ -408,7 +405,7 @@ contract('PurgeableSynth', accounts => {
 				await exchangeRates.updateRates([sAUD], ['0.776845993'].map(toUnit), timestamp, {
 					from: oracle,
 				});
-				await issuer.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 			});
 			describe('when a user holds some sAUD', () => {
 				let userBalanceOfOldSynth;
@@ -452,9 +449,7 @@ contract('PurgeableSynth', accounts => {
 							describe('and it is added to Synthetix', () => {
 								beforeEach(async () => {
 									await issuer.addSynth(this.replacement.address, { from: owner });
-									await this.replacement.setResolverAndSyncCache(addressResolver.address, {
-										from: owner,
-									});
+									await this.replacement.rebuildCache();
 								});
 
 								describe('and the old sAUD TokenState and Proxy is connected to the replacement synth', () => {

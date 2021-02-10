@@ -10,16 +10,21 @@ const { stringify, loadAndCheckRequiredSources } = require('../util');
 
 const { networks, getPathToNetwork } = require('../../..');
 
-const versionsUpdate = async ({ versionTag, release }) => {
+const versionsUpdate = async ({ versionTag, release, useOvm }) => {
 	console.log(gray('Checking deployments for version:', versionTag));
 
 	// prefix a "v" to the tag
 	versionTag = /^v/.test(versionTag) ? versionTag : 'v' + versionTag;
 
 	for (const network of networks.filter(n => n !== 'local')) {
+		const deploymentPath = getPathToNetwork({ network, path, useOvm });
+		if (!fs.existsSync(deploymentPath)) {
+			continue;
+		}
+
 		const { deployment, deploymentFile, versions, versionsFile } = loadAndCheckRequiredSources({
 			network,
-			deploymentPath: getPathToNetwork({ network, path }),
+			deploymentPath,
 		});
 
 		for (const tag of Object.keys(versions)) {
@@ -128,5 +133,6 @@ module.exports = {
 			.description('Update all version.json files for each deployment')
 			.option('-v, --version-tag <value>', `The current version being updated`)
 			.option('-r, --release <value>', `The name of the release`)
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.action(versionsUpdate),
 };

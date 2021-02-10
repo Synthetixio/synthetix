@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/isynth
 interface ISynth {
     // Views
     function currencyKey() external view returns (bytes32);

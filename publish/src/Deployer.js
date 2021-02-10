@@ -2,15 +2,12 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
+const RLP = require('rlp');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
-const { getUsers } = require('../../index.js');
+const { stringify, getEtherscanLinkPrefix } = require('./util');
+const { getVersions, getUsers } = require('../..');
 
-const { stringify } = require('./util');
-
-/**
- *
- */
 class Deployer {
 	/**
 	 *
@@ -32,6 +29,9 @@ class Deployer {
 		providerUrl,
 		privateKey,
 		useFork,
+		useOvm,
+		ignoreSafetyChecks,
+		nonceManager,
 	}) {
 		this.compiled = compiled;
 		this.config = config;
@@ -43,11 +43,14 @@ class Deployer {
 		this.methodCallGasLimit = methodCallGasLimit;
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
+		this.nonceManager = nonceManager;
+		this.useOvm = useOvm;
+		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
-		if (useFork) {
+		if (useFork || (!privateKey && network === 'local')) {
 			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		} else {
 			this.web3.eth.accounts.wallet.add(privateKey);
@@ -64,12 +67,75 @@ class Deployer {
 		this.newContractsDeployed = [];
 	}
 
-	sendParameters(type = 'method-call') {
-		return {
+	async evaluateNextDeployedContractAddress() {
+		const nonce = await this.web3.eth.getTransactionCount(this.account);
+		const rlpEncoded = RLP.encode([this.account, nonce]);
+		const hashed = this.web3.utils.sha3(rlpEncoded);
+
+		return `0x${hashed.slice(12).substring(14)}`;
+	}
+
+	checkBytesAreSafeForOVM(bytes) {
+		for (let i = 0; i < bytes.length; i += 2) {
+			const curByte = bytes.substr(i, 2);
+			const opNum = parseInt(curByte, 16);
+
+			// opNum is >=0x60 and <0x80
+			if (opNum >= 96 && opNum < 128) {
+				i += 2 * (opNum - 95); // For PUSH##, OpNum - 0x5f = ##
+				continue;
+			}
+
+			if (curByte === '5b') {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	getEncodedDeploymentParameters({ abi, params }) {
+		const constructorABI = abi.find(item => item.type === 'constructor');
+		if (!constructorABI) {
+			return '0x';
+		}
+
+		const inputs = constructorABI.inputs;
+		if (!inputs || inputs.length === 0) {
+			return '0x';
+		}
+
+		const types = inputs.map(input => input.type);
+		return this.web3.eth.abi.encodeParameters(types, params);
+	}
+
+	async sendDummyTx() {
+		await this.web3.eth.sendTransaction({
+			from: this.account,
+			to: '0x0000000000000000000000000000000000000001',
+			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
+			value: 0,
+			gas: 1000000,
+			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
+		});
+
+		if (this.nonceManager) {
+			this.nonceManager.incrementNonce();
+		}
+	}
+
+	async sendParameters(type = 'method-call') {
+		const params = {
 			from: this.account,
 			gas: type === 'method-call' ? this.methodCallGasLimit : this.contractDeploymentGasLimit,
 			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
 		};
+
+		if (this.nonceManager) {
+			params.nonce = await this.nonceManager.getNonce();
+		}
+
+		return params;
 	}
 
 	async _deploy({ name, source, args = [], deps = [], force = false, dryRun = this.dryRun }) {
@@ -87,17 +153,36 @@ class Deployer {
 		if (this.config[name]) {
 			deploy = this.config[name].deploy;
 		}
+
 		const compiled = this.compiled[source];
-		const existingAddress = this.deployment.targets[name]
-			? this.deployment.targets[name].address
-			: '';
-		const existingABI = this.deployment.sources[source] ? this.deployment.sources[source].abi : '';
 
 		if (!compiled) {
 			throw new Error(
 				`No compiled source for: ${name}. The source file is set to ${source}.sol - is that correct?`
 			);
 		}
+
+		if (!this.ignoreSafetyChecks) {
+			const compilerVersion = compiled.metadata.compiler.version;
+			const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
+			const compilerMismatch = (this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
+			if (compilerMismatch) {
+				if (this.useOvm) {
+					throw new Error(
+						`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				} else {
+					throw new Error(
+						`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+					);
+				}
+			}
+		}
+
+		const existingAddress = this.deployment.targets[name]
+			? this.deployment.targets[name].address
+			: '';
+		const existingABI = this.deployment.sources[source] ? this.deployment.sources[source].abi : '';
 
 		// Any contract after SafeDecimalMath can automatically get linked.
 		// Doing this with bytecode that doesn't require the library is a no-op.
@@ -117,12 +202,14 @@ class Deployer {
 		let deployedContract;
 
 		if (deploy) {
-			console.log(gray(` - Attempting to deploy ${name}`));
+			console.log(
+				gray(` - Attempting to deploy ${name}${name !== source ? ` (with source ${source})` : ''}`)
+			);
 			let gasUsed;
 			if (dryRun) {
 				this._dryRunCounter++;
 				// use the existing version of a contract in a dry run
-				deployedContract = this.getContract({ abi: compiled.abi, address: existingAddress });
+				deployedContract = this.makeContract({ abi: compiled.abi, address: existingAddress });
 				const { account } = this;
 				// but stub out all method calls except owner because it is needed to
 				// determine which actions can be performed directly or need to be added to ownerActions
@@ -133,16 +220,69 @@ class Deployer {
 				});
 				deployedContract.options.address = '0x' + this._dryRunCounter.toString().padStart(40, '0');
 			} else {
+				// If the contract creation will result in an address that's unsafe for OVM,
+				// increment the tx nonce until its not.
+				// Quite commonly, deployed contract addresses will be used as constructor arguments of
+				// other contracts.
+				if (this.useOvm) {
+					let addressIsSafe = false;
+
+					while (!addressIsSafe) {
+						const calculatedAddress = await this.evaluateNextDeployedContractAddress();
+						addressIsSafe = this.checkBytesAreSafeForOVM(calculatedAddress);
+
+						if (!addressIsSafe) {
+							console.log(
+								yellow(
+									`⚠ WARNING: Deploying this contract would result in the unsafe ${calculatedAddress} address for OVM. Sending a dummy transaction to increase the nonce...`
+								)
+							);
+
+							await this.sendDummyTx();
+						}
+					}
+				}
+
+				// Check if the deployment parameters are safe in OVM
+				// (No need to check the metadata hash since its stripped with the OVM compiler)
+				if (this.useOvm) {
+					const encodedParameters = this.getEncodedDeploymentParameters({
+						abi: compiled.abi,
+						params: args,
+					});
+					if (!this.checkBytesAreSafeForOVM(encodedParameters)) {
+						throw new Error(
+							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. ${encodedParameters}`
+						);
+					}
+				}
+
 				const newContract = new this.web3.eth.Contract(compiled.abi);
 				deployedContract = await newContract
 					.deploy({
 						data: '0x' + bytecode,
 						arguments: args,
 					})
-					.send(this.sendParameters('contract-deployment'))
+					.send(await this.sendParameters('contract-deployment'))
 					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
+
+				if (this.nonceManager) {
+					this.nonceManager.incrementNonce();
+				}
 			}
 			deployedContract.options.deployed = true; // indicate a fresh deployment occurred
+
+			// Deployment in OVM could result in empty bytecode if
+			// the contract's constructor parameters are unsafe.
+			// This check is probably redundant given the previous check, but just in case...
+			if (this.useOvm) {
+				const code = await this.web3.eth.getCode(deployedContract.options.address);
+
+				if (code.length === 2) {
+					throw new Error(`Contract deployment resulted in a contract with no bytecode: ${code}`);
+				}
+			}
+
 			console.log(
 				green(
 					`${dryRun ? '[DRY RUN] - Simulated deployment of' : '- Deployed'} ${name} to ${
@@ -152,7 +292,7 @@ class Deployer {
 			);
 		} else if (existingAddress && existingABI) {
 			// get ABI from the deployment (not the compiled ABI which may be newer)
-			deployedContract = this.getContract({ abi: existingABI, address: existingAddress });
+			deployedContract = this.makeContract({ abi: existingABI, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
 		} else {
 			throw new Error(
@@ -179,7 +319,7 @@ class Deployer {
 			name,
 			address,
 			source,
-			link: `https://${this.network !== 'mainnet' ? this.network + '.' : ''}etherscan.io/address/${
+			link: `${getEtherscanLinkPrefix(this.network)}/address/${
 				this.deployedContracts[name].options.address
 			}`,
 			timestamp,
@@ -223,6 +363,20 @@ class Deployer {
 		force = false,
 		dryRun = this.dryRun,
 	}) {
+		const forbiddenAddress = (this.deployedContracts['AddressResolver'] || { options: {} }).options
+			.address;
+		for (const arg of args) {
+			if (
+				forbiddenAddress &&
+				typeof arg === 'string' &&
+				arg.toLowerCase() === forbiddenAddress.toLowerCase()
+			) {
+				throw Error(
+					`new ${name}(): Cannot use the AddressResolver as a constructor arg. Use ReadProxyForResolver instead.`
+				);
+			}
+		}
+
 		// Deploys contract according to configuration
 		const deployedContract = await this._deploy({ name, source, args, deps, force, dryRun });
 
@@ -242,8 +396,27 @@ class Deployer {
 		return deployedContract;
 	}
 
-	getContract({ abi, address }) {
+	makeContract({ abi, address }) {
 		return new this.web3.eth.Contract(abi, address);
+	}
+
+	getExistingContract({ contract }) {
+		let address;
+		if (this.network === 'local') {
+			address = this.deployment.targets[contract].address;
+		} else {
+			const contractVersion = getVersions({
+				network: this.network,
+				useOvm: this.useOvm,
+				byContract: true,
+			})[contract];
+			const lastEntry = contractVersion.slice(-1)[0];
+			address = lastEntry.address;
+		}
+
+		const { source } = this.deployment.targets[contract];
+		const { abi } = this.deployment.sources[source];
+		return this.makeContract({ abi, address });
 	}
 }
 

@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./SelfDestructible.sol";
 import "./Pausable.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./MixinResolver.sol";
@@ -16,8 +15,8 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
 
-// https://docs.synthetix.io/contracts/Depot
-contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResolver, IDepot {
+// https://docs.synthetix.io/contracts/source/contracts/depot
+contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -78,15 +77,13 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_SYNTHETIX];
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
         address _owner,
         address payable _fundsWallet,
         address _resolver
-    ) public Owned(_owner) SelfDestructible() Pausable() MixinResolver(_resolver, addressesToCache) {
+    ) public Owned(_owner) Pausable() MixinResolver(_resolver) {
         fundsWallet = _fundsWallet;
     }
 
@@ -466,6 +463,13 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
 
     /* ========== VIEWS ========== */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](3);
+        addresses[0] = CONTRACT_SYNTHSUSD;
+        addresses[1] = CONTRACT_EXRATES;
+        addresses[2] = CONTRACT_SYNTHETIX;
+    }
+
     /**
      * @notice Calculate how many SNX you will receive if you transfer
      *         an amount of synths.
@@ -502,15 +506,15 @@ contract Depot is Owned, SelfDestructible, Pausable, ReentrancyGuard, MixinResol
     /* ========== INTERNAL VIEWS ========== */
 
     function synthsUSD() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function synthetix() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     // ========== MODIFIERS ==========

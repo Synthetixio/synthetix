@@ -12,6 +12,7 @@ import "./RewardsDistributionRecipient.sol";
 import "./Pausable.sol";
 
 
+// https://docs.synthetix.io/contracts/source/contracts/stakingrewards
 contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -132,21 +133,21 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         emit RewardAdded(reward);
     }
 
+    // End rewards emission earlier
+    function updatePeriodFinish(uint timestamp) external onlyOwner updateReward(address(0)) {
+        periodFinish = timestamp;
+    }
+
     // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
     function recoverERC20(address tokenAddress, uint256 tokenAmount) external onlyOwner {
-        // If it's SNX we have to query the token symbol to ensure its not a proxy or underlying
-        bool isSNX = (keccak256(bytes("SNX")) == keccak256(bytes(ERC20Detailed(tokenAddress).symbol())));
-        // Cannot recover the staking token or the rewards token
-        require(
-            tokenAddress != address(stakingToken) && tokenAddress != address(rewardsToken) && !isSNX,
-            "Cannot withdraw the staking or rewards tokens"
-        );
+        require(tokenAddress != address(stakingToken), "Cannot withdraw the staking token");
         IERC20(tokenAddress).safeTransfer(owner, tokenAmount);
         emit Recovered(tokenAddress, tokenAmount);
     }
 
     function setRewardsDuration(uint256 _rewardsDuration) external onlyOwner {
-        require(block.timestamp > periodFinish,
+        require(
+            block.timestamp > periodFinish,
             "Previous rewards period must be complete before changing the duration for the new period"
         );
         rewardsDuration = _rewardsDuration;

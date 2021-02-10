@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -36,6 +36,7 @@ contract('Synth', async accounts => {
 		systemStatus,
 		systemSettings,
 		exchanger,
+		debtCache,
 		issuer;
 
 	before(async () => {
@@ -47,6 +48,7 @@ contract('Synth', async accounts => {
 			SystemStatus: systemStatus,
 			Synth: sUSDContract,
 			Exchanger: exchanger,
+			DebtCache: debtCache,
 			Issuer: issuer,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
@@ -59,10 +61,13 @@ contract('Synth', async accounts => {
 				'Synthetix',
 				'SystemStatus',
 				'AddressResolver',
+				'DebtCache',
 				'Issuer', // required to issue via Synthetix
 				'Exchanger', // required to exchange into sUSD when transferring to the FeePool
 				'SystemSettings',
 				'FlexibleStorage',
+				'CollateralManager',
+				'RewardEscrowV2', // required for issuer._collateral() to read collateral
 			],
 		}));
 
@@ -78,7 +83,7 @@ contract('Synth', async accounts => {
 		await exchangeRates.updateRates([SNX], ['0.1'].map(toUnit), timestamp, {
 			from: oracle,
 		});
-		await issuer.cacheSNXIssuedDebt();
+		await debtCache.takeDebtSnapshot();
 
 		// set default issuanceRatio to 0.2
 		await systemSettings.setIssuanceRatio(toUnit('0.2'), { from: owner });
@@ -211,6 +216,22 @@ contract('Synth', async accounts => {
 					from: account1,
 				});
 			});
+			describe('when sUSD is suspended for exchanging', () => {
+				const synth = toBytes32('sUSD');
+				beforeEach(async () => {
+					await setStatus({ owner, systemStatus, section: 'SynthExchange', synth, suspend: true });
+				});
+				it('when transfer() is invoked for sUSD, it works as expected', async () => {
+					await sUSDContract.transfer(account1, amount, {
+						from: owner,
+					});
+				});
+				it('when transferFrom() is invoked for sETH, it works as expected', async () => {
+					await sUSDContract.transferFrom(owner, account1, amount, {
+						from: account1,
+					});
+				});
+			});
 		});
 	});
 
@@ -320,7 +341,7 @@ contract('Synth', async accounts => {
 			// Overwrite Synthetix address to the owner to allow us to invoke issue on the Synth
 			await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], { from: owner });
 			// now have the synth resync its cache
-			await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+			await sUSDContract.rebuildCache();
 		});
 		it('should issue successfully when called by Issuer', async () => {
 			const transaction = await sUSDContract.issue(account1, toUnit('10000'), {
@@ -476,8 +497,8 @@ contract('Synth', async accounts => {
 					from: owner,
 				});
 				// now have synthetix resync its cache
-				await synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
-				await sUSDContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+				await synthetix.rebuildCache();
+				await sUSDContract.rebuildCache();
 			});
 			it('then transferableSynths should be the total amount', async () => {
 				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('1000'));
@@ -704,6 +725,7 @@ contract('Synth', async accounts => {
 						AddressResolver: addressResolver,
 						SystemStatus: systemStatus,
 						Issuer: issuer,
+						DebtCache: debtCache,
 						Exchanger: exchanger,
 						FeePool: feePool,
 						Synthetix: synthetix,
@@ -717,7 +739,7 @@ contract('Synth', async accounts => {
 				await exchangeRates.updateRates([sEUR], ['1'].map(toUnit), timestamp, {
 					from: oracle,
 				});
-				await issuer.cacheSNXIssuedDebt();
+				await debtCache.takeDebtSnapshot();
 			});
 
 			it('when transferring it to FEE_ADDRESS it should exchange into sUSD first before sending', async () => {

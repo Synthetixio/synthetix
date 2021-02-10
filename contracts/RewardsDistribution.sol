@@ -13,7 +13,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IRewardsDistribution.sol";
 
 
-// https://docs.synthetix.io/contracts/RewardsDistribution
+// https://docs.synthetix.io/contracts/source/contracts/rewardsdistribution
 contract RewardsDistribution is Owned, IRewardsDistribution {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

@@ -1,0 +1,20 @@
+# Validates that the deploy command is working as expected
+{{> job-header.yml}}
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  - run:
+      name: Test and output logs
+      command: |
+        set +e
+        npm run test:publish
+        EXIT_CODE=$?
+        if [ $EXIT_CODE -gt 0 ]; then
+          tail -n 2000 test/publish/test.log; # show tail of logs here if test failed
+        fi
+        npx ansi-to-html --newline --bg black test/publish/test.log > test/publish/test-log.html
+        exit $EXIT_CODE
+  - store_artifacts:
+      path: test/publish/test-log.html
+      destination: test-log.html

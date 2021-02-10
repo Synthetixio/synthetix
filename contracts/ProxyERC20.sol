@@ -5,7 +5,7 @@ import "./Proxy.sol";
 import "./interfaces/IERC20.sol";
 
 
-// https://docs.synthetix.io/contracts/ProxyERC20
+// https://docs.synthetix.io/contracts/source/contracts/proxyerc20
 contract ProxyERC20 is Proxy, IERC20 {
     constructor(address _owner) public Proxy(_owner) {}
 

@@ -24,13 +24,19 @@ test-gas-used.log
 test-gas-used-prod.log
 
 # vscode
-.vscode
+.vscode/
 
 .DS_Store
 coverage.json
 coverage
 browser.js
-.coverage*
+.coverage_*
 
-# Ganache local chain data
-.db
+# CircleCI local artifacts
+process.yml
+
+# Temp files
+.tmp/
+
+# CSV files
+*.csv

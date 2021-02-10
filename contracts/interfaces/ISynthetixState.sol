@@ -1,6 +1,7 @@
 pragma solidity >=0.4.24;
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/isynthetixstate
 interface ISynthetixState {
     // Views
     function debtLedger(uint index) external view returns (uint);

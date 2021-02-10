@@ -4,6 +4,7 @@ import "../interfaces/IBinaryOptionMarketManager.sol";
 import "../interfaces/IBinaryOption.sol";
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/ibinaryoptionmarket
 interface IBinaryOptionMarket {
     /* ========== TYPES ========== */
 

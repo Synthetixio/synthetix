@@ -4,6 +4,7 @@ import "../interfaces/IBinaryOptionMarket.sol";
 import "../interfaces/IERC20.sol";
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/ibinaryoption
 interface IBinaryOption {
     /* ========== VIEWS / VARIABLES ========== */
 
