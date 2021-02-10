@@ -173,63 +173,73 @@
 		"index": [
 			{
 				"asset": "COMP",
-				"units": 1.88,
-				"weight": 7.5
+				"units": 1.37,
+				"weight": 5
 			},
 			{
 				"asset": "MKR",
-				"units": 0.39,
-				"weight": 7.5
+				"units": 0.66,
+				"weight": 10
 			},
 			{
 				"asset": "AAVE",
-				"units": 8.41,
+				"units": 4.93,
 				"weight": 15
 			},
 			{
 				"asset": "UMA",
-				"units": 19.47,
+				"units": 44.53,
 				"weight": 5
 			},
 			{
 				"asset": "SNX",
-				"units": 109.93,
+				"units": 84.93,
 				"weight": 15
 			},
 			{
 				"asset": "REN",
-				"units": 598.03,
+				"units": 802.67,
 				"weight": 5
 			},
 			{
 				"asset": "UNI",
-				"units": 92.09,
-				"weight": 10
+				"units": 82.21,
+				"weight": 15
 			},
 			{
 				"asset": "KNC",
-				"units": 159.13,
+				"units": 375.43,
 				"weight": 5
 			},
 			{
 				"asset": "CRV",
-				"units": 253.8,
+				"units": 203.36,
 				"weight": 5
 			},
 			{
-				"asset": "WNXM",
-				"units": 4.53,
+				"asset": "SUSHI",
+				"units": 49.249,
 				"weight": 5
 			},
 			{
 				"asset": "YFI",
-				"units": 0.023,
-				"weight": 15
+				"units": 0.0161,
+				"weight": 5
 			},
 			{
 				"asset": "BAL",
-				"units": 9.05,
+				"units": 18.4,
 				"weight": 5
+			},
+			{
+				"asset": "BNT",
+				"units": 129.802,
+				"weight": 2.5
+			},
+			{
+				"asset": "1INCH",
+				"units": 53.281,
+				"weight": 2.5
 			}
 		],
 		"subclass": "PurgeableSynth"
