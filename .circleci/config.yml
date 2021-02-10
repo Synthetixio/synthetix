@@ -61,7 +61,7 @@ jobs:
       - restore_cache:
           keys:
             - "v2-dependencies-"
-      - run: npm ci
+      - run: npm install
       - save_cache:
           key: "v2-dependencies-"
           paths:
