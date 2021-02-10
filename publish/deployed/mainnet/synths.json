@@ -126,6 +126,10 @@
 		"asset": "NIKKEI225"
 	},
 	{
+		"name": "sTSLA",
+		"asset": "TSLA"
+	},
+	{
 		"name": "sCEX",
 		"asset": "CEX",
 		"index": [
