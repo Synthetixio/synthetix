@@ -92,6 +92,9 @@
 	"StakingRewardssEURCurve": {
 		"deploy": false
 	},
+	"StakingRewardssTSLABalancer": {
+		"deploy": false
+	},
 	"DappMaintenance": {
 		"deploy": false
 	},
