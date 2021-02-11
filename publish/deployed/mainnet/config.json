@@ -649,5 +649,14 @@
 	},
 	"SynthiCOMP": {
 		"deploy": false
+	},
+	"TokenStatesTSLA": {
+		"deploy": false
+	},
+	"ProxysTSLA": {
+		"deploy": false
+	},
+	"SynthsTSLA": {
+		"deploy": false
 	}
 }
