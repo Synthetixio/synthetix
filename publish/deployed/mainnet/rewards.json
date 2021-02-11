@@ -38,5 +38,10 @@
 		"name": "SNXBalancer",
 		"stakingToken": "0x815f8ef4863451f4faf34fbc860034812e7377d9",
 		"rewardsToken": "ProxyERC20"
+	},
+	{
+		"name": "sTSLABalancer",
+		"stakingToken": "0x055dB9AFF4311788264798356bbF3a733AE181c6",
+		"rewardsToken": "ProxyERC20"
 	}
 ]
