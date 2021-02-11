@@ -300,5 +300,12 @@
 		"sign": "",
 		"exchange": "TSE",
 		"description": "Nikkei 225 Index"
+	},
+	"TSLA": {
+		"asset": "TSLA",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Tesla"
 	}
 }
