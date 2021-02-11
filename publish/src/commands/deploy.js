@@ -1474,11 +1474,11 @@ const deploy = async ({
 		}
 	}
 
-	const addressesChunkSize = useOvm ? 12 : 20;
+	const addressesChunkSize = useOvm ? 6 : 20;
 	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
 		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
 		await runStep({
-			gasLimit: useOvm ? 9e6 : 7e6,
+			gasLimit: useOvm ? 8999999 : 7e6,
 			contract: `AddressResolver`,
 			target: addressResolver,
 			publiclyCallable: true, // does not require owner

@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./interfaces/IERC20.sol";
 import "./ExternStateToken.sol";
 import "./MixinResolver.sol";
-import "./interfaces/ISynthetix.sol";
+import "./interfaces/IBaseSynthetix.sol";
 
 // Internal references
 import "./interfaces/ISynth.sol";
@@ -17,7 +17,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IVirtualSynth.sol";
 
 
-contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
+contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, IBaseSynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
@@ -163,6 +163,26 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // ========== MUTATIVE FUNCTIONS ==========
 
+    function exchange(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
+        return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
+    }
+
+    function settle(bytes32 currencyKey)
+        external
+        optionalProxy
+        returns (
+            uint reclaimed,
+            uint refunded,
+            uint numEntriesSettled
+        )
+    {
+        return exchanger().settle(messageSender, currencyKey);
+    }
+
     function transfer(address to, uint value) external optionalProxy systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(messageSender, value);
@@ -218,14 +238,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
-    function exchange(
-        bytes32,
-        uint,
-        bytes32
-    ) external returns (uint) {
-        _notImplemented();
-    }
-
     function exchangeOnBehalf(
         address,
         bytes32,
@@ -265,17 +277,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _notImplemented();
     }
 
-    function settle(bytes32)
-        external
-        returns (
-            uint,
-            uint,
-            uint
-        )
-    {
-        _notImplemented();
-    }
-
     function mint() external returns (bool) {
         _notImplemented();
     }
@@ -307,7 +308,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _systemActive() private {
+    function _systemActive() private view {
         systemStatus().requireSystemActive();
     }
 
@@ -316,7 +317,17 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _issuanceActive() private {
+    function _issuanceActive() private view {
         systemStatus().requireIssuanceActive();
+    }
+
+    modifier exchangeActive(bytes32 src, bytes32 dest) {
+        _exchangeActive(src, dest);
+        _;
+    }
+
+    function _exchangeActive(bytes32 src, bytes32 dest) private view {
+        systemStatus().requireExchangeActive();
+        systemStatus().requireSynthsActive(src, dest);
     }
 }

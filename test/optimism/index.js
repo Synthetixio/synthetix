@@ -9,6 +9,7 @@ const { itCanPerformRewardDeposits } = require('./rewards.test');
 const { itCanPerformWithdrawals } = require('./withdrawals.test');
 const { itCanPerformEscrowMigration } = require('./migrateEscrow.test');
 const { itCanPerformDepositAndEscrowMigration } = require('./depositAndMigrateEscrow.test');
+const { itCanPerformSynthExchange } = require('./synthExchange.test');
 
 /*
  * ===== L2 GOTCHAS =====
@@ -64,10 +65,10 @@ describe('Layer 2 production tests', () => {
 		});
 	});
 
-	after('exit', async () => {
-		// TODO: Optimism watchers leave the process open, so we explicitely kill it
-		process.exit(0);
-	});
+	// after('exit', async () => {
+	// 	// TODO: Optimism watchers leave the process open, so we explicitely kill it
+	// 	process.exit(0);
+	// });
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
 		before('connect to contracts', async () => {
@@ -107,13 +108,15 @@ describe('Layer 2 production tests', () => {
 				currencyKeys.push(...additionalKeys);
 
 				const { timestamp } = await provider.getBlock();
-
+				let rates;
+				if (useOvm) {
+					console.log(currencyKeys);
+					rates = ['1700', '25', '1700'].map(ethers.utils.parseEther);
+				} else {
+					rates = currencyKeys.map(() => ethers.utils.parseEther('1'));
+				}
 				ExchangeRates = ExchangeRates.connect(owner);
-				let tx = await ExchangeRates.updateRates(
-					currencyKeys,
-					currencyKeys.map(() => ethers.utils.parseEther('1')),
-					timestamp
-				);
+				let tx = await ExchangeRates.updateRates(currencyKeys, rates, timestamp);
 				await tx.wait();
 
 				DebtCache = DebtCache.connect(owner);
@@ -170,5 +173,6 @@ describe('Layer 2 production tests', () => {
 		itCanPerformRewardDeposits({ ctx: this });
 		itCanPerformEscrowMigration({ ctx: this });
 		itCanPerformDepositAndEscrowMigration({ ctx: this });
+		itCanPerformSynthExchange({ ctx: this });
 	});
 });

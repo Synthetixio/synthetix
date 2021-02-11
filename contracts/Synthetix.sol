@@ -51,14 +51,6 @@ contract Synthetix is BaseSynthetix {
 
     // ========== OVERRIDDEN FUNCTIONS ==========
 
-    function exchange(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
-    }
-
     function exchangeOnBehalf(
         address exchangeForAddress,
         bytes32 sourceCurrencyKey,
@@ -306,17 +298,7 @@ contract Synthetix is BaseSynthetix {
         _;
     }
 
-    function _onlyExchanger() private {
+    function _onlyExchanger() private view {
         require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
-    }
-
-    modifier exchangeActive(bytes32 src, bytes32 dest) {
-        _exchangeActive(src, dest);
-        _;
-    }
-
-    function _exchangeActive(bytes32 src, bytes32 dest) private {
-        systemStatus().requireExchangeActive();
-        systemStatus().requireSynthsActive(src, dest);
     }
 }
