@@ -330,4 +330,44 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, IBaseSyntheti
         systemStatus().requireExchangeActive();
         systemStatus().requireSynthsActive(src, dest);
     }
+
+    modifier onlyExchanger() {
+        _onlyExchanger();
+        _;
+    }
+
+    function _onlyExchanger() private view {
+        require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
+    }
+
+    // ========== EVENTS ==========
+    event SynthExchange(
+        address indexed account,
+        bytes32 fromCurrencyKey,
+        uint256 fromAmount,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        address toAddress
+    );
+    bytes32 internal constant SYNTHEXCHANGE_SIG = keccak256(
+        "SynthExchange(address,bytes32,uint256,bytes32,uint256,address)"
+    );
+
+    function emitSynthExchange(
+        address account,
+        bytes32 fromCurrencyKey,
+        uint256 fromAmount,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        address toAddress
+    ) external onlyExchanger {
+        proxy._emit(
+            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
+            2,
+            SYNTHEXCHANGE_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
 }

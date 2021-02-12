@@ -2,6 +2,7 @@ const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { toBytes32 } = require('../..');
+const { assertRevertOptimism } = require('./utils/revertOptimism');
 
 const itCanPerformSynthExchange = ({ ctx }) => {
 	describe.only('[SYNTEXCHANGE] when exchanging synths on L2', () => {
@@ -177,28 +178,26 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 									await tx.wait();
 								});
 
-								it('shows that the user L2 sUSD balance has increased', async () => {
+								it('shows that the user L2 sUSD balance has increased (while not having any synth balance)', async () => {
 									assert.bnEqual(
 										await SynthsUSDL2.balanceOf(user1L2.address),
 										ethers.utils.parseEther('10')
 									);
+									assert.bnEqual(await SynthsETHL2.balanceOf(user1L2.address), '0');
 								});
 
 								describe('when the exchanges sUSD for sETH', () => {
 									before('sETH exchange', async () => {
 										const tx = await SynthetixL2.exchange(
 											toBytes32('sUSD'),
-											ethers.utils.parseEther('1'),
+											ethers.utils.parseEther('10'),
 											toBytes32('sETH')
 										);
 										await tx.wait();
 									});
 
 									it('shows that the user L2 sETH balance has increased', async () => {
-										assert.bnEqual(
-											await SynthsETHL2.balanceOf(user1L2.address),
-											ethers.utils.parseEther('1')
-										);
+										assert.bnGte(await SynthsETHL2.balanceOf(user1L2.address), '0');
 									});
 								});
 							});

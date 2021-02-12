@@ -209,36 +209,6 @@ contract Synthetix is BaseSynthetix {
     }
 
     // ========== EVENTS ==========
-    event SynthExchange(
-        address indexed account,
-        bytes32 fromCurrencyKey,
-        uint256 fromAmount,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress
-    );
-    bytes32 internal constant SYNTHEXCHANGE_SIG = keccak256(
-        "SynthExchange(address,bytes32,uint256,bytes32,uint256,address)"
-    );
-
-    function emitSynthExchange(
-        address account,
-        bytes32 fromCurrencyKey,
-        uint256 fromAmount,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        address toAddress
-    ) external onlyExchanger {
-        proxy._emit(
-            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
-            2,
-            SYNTHEXCHANGE_SIG,
-            addressToBytes32(account),
-            0,
-            0
-        );
-    }
-
     event ExchangeTracking(bytes32 indexed trackingCode, bytes32 toCurrencyKey, uint256 toAmount);
     bytes32 internal constant EXCHANGE_TRACKING_SIG = keccak256("ExchangeTracking(bytes32,bytes32,uint256)");
 
@@ -289,16 +259,5 @@ contract Synthetix is BaseSynthetix {
             0,
             0
         );
-    }
-
-    // ========== MODIFIERS ==========
-
-    modifier onlyExchanger() {
-        _onlyExchanger();
-        _;
-    }
-
-    function _onlyExchanger() private view {
-        require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
     }
 }

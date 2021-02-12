@@ -110,7 +110,6 @@ describe('Layer 2 production tests', () => {
 				const { timestamp } = await provider.getBlock();
 				let rates;
 				if (useOvm) {
-					console.log(currencyKeys);
 					rates = ['1700', '25', '1700'].map(ethers.utils.parseEther);
 				} else {
 					rates = currencyKeys.map(() => ethers.utils.parseEther('1'));
