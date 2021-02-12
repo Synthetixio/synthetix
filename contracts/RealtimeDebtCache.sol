@@ -65,11 +65,7 @@ contract RealtimeDebtCache is DebtCache {
 
     function takeDebtSnapshot() external {}
 
-    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external {}
-
     function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external {}
-
-    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external {}
 
     function updateDebtCacheValidity(bool currentlyInvalid) external {}
 }
