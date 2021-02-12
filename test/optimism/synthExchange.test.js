@@ -200,6 +200,27 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 										assert.bnGte(await SynthsETHL2.balanceOf(user1L2.address), '0');
 									});
 								});
+
+								describe('when settling the exchange', () => {
+									it('reverts when trying to settle immediately after the exchange', async () => {
+										const tx = await SynthetixL2.settle(toBytes32('sETH'));
+
+										await assertRevertOptimism({
+											tx,
+											reason: 'Cannot settle during waiting period',
+											provider: ctx.providerL2,
+										});
+									});
+
+									// before('settle', async () => {
+									// 	const tx = await SynthetixL2.settle(toBytes32('sUSD'));
+									// 	await tx.wait();
+									// });
+
+									// it('shows that the user L2 sETH balance has increased', async () => {
+									// 	assert.bnGte(await SynthsETHL2.balanceOf(user1L2.address), '0');
+									// });
+								});
 							});
 						});
 					});
