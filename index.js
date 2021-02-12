@@ -41,6 +41,7 @@ const constants = {
 	PARAMS_FILENAME: 'params.json',
 	SYNTHS_FILENAME: 'synths.json',
 	STAKING_REWARDS_FILENAME: 'rewards.json',
+	SHORTING_REWARDS_FILENAME: 'shorting-rewards.json',
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
@@ -62,8 +63,8 @@ const knownAccounts = {
 			address: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
 		},
 		{
-			name: 'renBTCWallet',
-			address: '0x53463cd0b074E5FDafc55DcE7B1C82ADF1a43B2E',
+			name: 'renBTCWallet', // KeeperDAO wallet (has renBTC and ETH)
+			address: '0x35ffd6e268610e764ff6944d07760d0efe5e40e5',
 		},
 		{
 			name: 'loansAccount',
@@ -392,6 +393,34 @@ const getStakingRewards = ({
 };
 
 /**
+ * Retrieve the list of shorting rewards for the network - returning the names and rewardTokens
+ */
+const getShortingRewards = ({
+	network = 'mainnet',
+	useOvm = false,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+		return data[getFolderNameForNetwork({ network, useOvm })]['shorting-rewards'];
+	}
+
+	const pathToShortingRewardsList = deploymentPath
+		? path.join(deploymentPath, constants.SHORTING_REWARDS_FILENAME)
+		: getPathToNetwork({
+				network,
+				path,
+				useOvm,
+				file: constants.SHORTING_REWARDS_FILENAME,
+		  });
+	if (!fs.existsSync(pathToShortingRewardsList)) {
+		return [];
+	}
+	return JSON.parse(fs.readFileSync(pathToShortingRewardsList));
+};
+
+/**
  * Retrieve the list of system user addresses
  */
 const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
@@ -476,6 +505,7 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 	const suspensionReasonMap = {
 		1: 'System Upgrade',
 		2: 'Market Closure',
+		4: 'iSynth Reprice',
 		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
 		99999: 'Emergency',
@@ -510,7 +540,8 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 				symbol: synth.name,
 				asset: synth.asset,
 				name: synth.description,
-				address: targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`].address,
+				address: (targets[`Proxy${synth.name === 'sUSD' ? 'ERC20sUSD' : synth.name}`] || {})
+					.address,
 				index: synth.index,
 				inverted: synth.inverted,
 				decimals: 18,
@@ -542,6 +573,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getPathToNetwork',
 		'getSource',
 		'getStakingRewards',
+		'getShortingRewards',
 		'getFeeds',
 		'getSynths',
 		'getTarget',
@@ -562,6 +594,7 @@ module.exports = {
 	getPathToNetwork,
 	getSource,
 	getStakingRewards,
+	getShortingRewards,
 	getSuspensionReasons,
 	getFeeds,
 	getSynths,

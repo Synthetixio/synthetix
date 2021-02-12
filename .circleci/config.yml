@@ -1,18 +1,5 @@
 version: 2.1
 commands:
-  cmd-fork-start:
-    description: Starts a local ganache fork on the specified network
-    parameters:
-      network:
-        type: string
-      reset:
-        type: boolean
-        default: false
-    steps:
-      - run:
-          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
-          background: true
-      - cmd-wait-for-rpc
   cmd-wait-for-rpc:
     steps:
       - run: sleep 5
@@ -34,6 +21,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npx hardhat compile --optimizer --fail-oversize
+      - run: rm -rf build # force a clean build
       - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
   job-lint:
     working_directory: ~/repo

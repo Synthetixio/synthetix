@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.37.0",
+	"version": "2.39.1",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -8,16 +8,16 @@
 		"clean-install": "rm -rf build && rm ./package-lock.json && rm -rf node_modules/* && npm install",
 		"compile": "hardhat compile",
 		"coverage": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat coverage",
-		"generate-asts": "hardhat compile",
 		"format": "prettier --write \"contracts/**/*.sol\" \"**/*.js\" \"**/*.md\" \"**/*.yml\"",
 		"lint": "solhint \"contracts/*.sol\" && solhint \"contracts/test-helpers/*.sol\" && solhint --config contracts/interfaces/.solhint.json \"contracts/interfaces/*.sol\" && eslint \"**/*.js\"",
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"build:ci": "node .circleci/pack.js",
 		"slither": "pip3 install --user slither-analyzer && slither .",
 		"pack": "webpack --mode production",
-		"prepublishOnly": "npm run generate-asts && npm run pack",
+		"prepublishOnly": "npm run describe && npm run pack",
 		"fork": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node --target-network mainnet",
 		"test": "hardhat test",
+		"describe": "hardhat describe",
 		"test:gas": "hardhat test --gas --optimizer || cat test-gas-used.log",
 		"test:ovm": "hardhat test --use-ovm --optimizer",
 		"test:prod": "hardhat test:prod --network localhost --optimizer",
@@ -25,7 +25,7 @@
 		"test:prod:ovm": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism --timeout 900000\"",
 		"test:deployments": "mocha test/deployments -- --timeout 15000",
 		"test:etherscan": "node test/etherscan",
-		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 120000\""
+		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 240000\""
 	},
 	"husky": {
 		"hooks": {
@@ -87,7 +87,6 @@
 		"ajv": "^6.12.4",
 		"axios": "0.21.1",
 		"bn.js": "4.11.8",
-		"buidler-ast-doc": "0.0.14-rc",
 		"chai": "4.2.0",
 		"chalk": "^2.4.2",
 		"concurrently": "5.2.0",

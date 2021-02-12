@@ -232,6 +232,12 @@ module.exports = {
 			} else {
 				await systemStatus.resumeExchange({ from: owner });
 			}
+		} else if (section === 'SynthExchange') {
+			if (suspend) {
+				await systemStatus.suspendSynthExchange(synth, reason, { from: owner });
+			} else {
+				await systemStatus.resumeSynthExchange(synth, { from: owner });
+			}
 		} else if (section === 'Synth') {
 			if (suspend) {
 				await systemStatus.suspendSynth(synth, reason, { from: owner });

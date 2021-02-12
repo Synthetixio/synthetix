@@ -5230,11 +5230,11 @@
 			},
 			"TokenStatesBCH": {
 				"address": "0x78e7395Df87D890199d147AFb347351004aD5956",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxysBCH": {
 				"address": "0x76c04f5025aae63cDf8b40c4296122d61572c353",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthsBCH": {
 				"address": "0x62f43AA89b3050bBf080BbCA4b0ef798bf3cE0d5",
@@ -5308,11 +5308,11 @@
 			},
 			"TokenStateiBCH": {
 				"address": "0xD0aFb54012C0D80753Fa2315bbdfab22404c4F2C",
-				"status": "current"
+				"status": "deleted"
 			},
 			"ProxyiBCH": {
 				"address": "0xe8d362f82433af8C550436ABc767e3FeBa2C1297",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthiBCH": {
 				"address": "0xE486e4d5A4b5942ACb4D5F040813E833574e0533",
@@ -5772,8 +5772,9 @@
 			},
 			"SystemStatus": {
 				"address": "0x5EFe8c7C561dEAb6ceC2DB9C40F5d0c7d4b4029E",
-				"status": "current",
-				"keccak256": "0x1f8c08501b9ab30111c180b9099b56550459fc7a5179c4c6e2afae2dbf7b4f56"
+				"status": "replaced",
+				"keccak256": "0x1f8c08501b9ab30111c180b9099b56550459fc7a5179c4c6e2afae2dbf7b4f56",
+				"replaced_in": "v2.38.0-alpha"
 			},
 			"EtherCollateralsUSD": {
 				"address": "0x62B66e664d68a0dd2494aE148C6c556d27af885F",
@@ -6114,7 +6115,7 @@
 			},
 			"SynthsBCH": {
 				"address": "0xFc7E3fb8e54e11798a16403aeF0152651708B902",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x9afb6e2a0d5f2579a2445f381c82c673c722edd212334b17eec51a4f67a5597e"
 			},
 			"SynthsETC": {
@@ -6144,7 +6145,7 @@
 			},
 			"SynthiBCH": {
 				"address": "0x4fC83F43AFd8194c3fb08042bbF7fEdbB52a05A1",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0xd393375ca8061218fa620907c348c95ffbf60e2838e25bc027f8d6fea9c9d983"
 			},
 			"SynthiETC": {
@@ -6347,8 +6348,9 @@
 			},
 			"Synthetix": {
 				"address": "0x74A729c5EDc84b68c52A9198DDa9293Ca11B241B",
-				"status": "current",
-				"keccak256": "0x9f159ef4bee179bf0d8ae712ee58594846f1ad76aaaf295624b90a91f5f64106"
+				"status": "replaced",
+				"keccak256": "0x9f159ef4bee179bf0d8ae712ee58594846f1ad76aaaf295624b90a91f5f64106",
+				"replaced_in": "v2.38.0-alpha"
 			},
 			"Issuer": {
 				"address": "0x2709b3568a79D7E00d6729E96b84a1996CDB89ef",
@@ -6399,6 +6401,61 @@
 				"address": "0xE8Bf8fe5ce9e15D30F478E1647A57CB6B0271228",
 				"status": "current",
 				"keccak256": "0x072ba93f033853347432cd3d6f47d4a4d54cd106185de9382cde9977636a00a7"
+			}
+		}
+	},
+	"v2.38.0-alpha": {
+		"tag": "v2.38.0-alpha",
+		"fulltag": "v2.38.0-alpha",
+		"release": "Bellatrix",
+		"network": "kovan",
+		"date": "2021-02-03T19:25:27-05:00",
+		"commit": "1c3ec852c96240e4304ce7a0ef0189387c71ee4d",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x07aCC2B253218535c21a3E57BcB81eB13345a34A",
+				"status": "current",
+				"keccak256": "0x33cdbd8578a578cf81ba42b1a47fc9af81a7287b9dde01b81115b84851e4c2fe"
+			},
+			"SystemStatus": {
+				"address": "0xcf8B3d452A56Dab495dF84905655047BC1Dc41Bc",
+				"status": "current",
+				"keccak256": "0xb210589c91f85a692d9e05830f09655739b48d942f32d07c54688b2f7211bc1c"
+			},
+			"ShortingRewardssETH": {
+				"address": "0x945d2dfFEE2d478D3D32E0f42b9649D1cbAe5528",
+				"status": "current",
+				"keccak256": "0x1dabc74a1d766a3b9d4e4d4621a810e226a306dc2a7d9de9a7f0879e4a197456"
+			},
+			"ShortingRewardssBTC": {
+				"address": "0xCEECB8D9c19Abe84E13a2B6De3F5aD6e2991FE6d",
+				"status": "current",
+				"keccak256": "0x1dabc74a1d766a3b9d4e4d4621a810e226a306dc2a7d9de9a7f0879e4a197456"
+			}
+		}
+	},
+	"v2.39.0-alpha": {
+		"tag": "v2.39.0-alpha",
+		"fulltag": "v2.39.0-alpha",
+		"release": "Elnath",
+		"network": "kovan",
+		"date": "2021-02-11T12:10:36+11:00",
+		"commit": "89453847d76da1572d1c66b1a838b9360b25f3e5",
+		"contracts": {
+			"TokenStatesTSLA": {
+				"address": "0xaf4FE67f2e9f9faBf26691D55D0DB6A694f2f107",
+				"status": "current",
+				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
+			},
+			"ProxysTSLA": {
+				"address": "0x53A14CdBCE36F870461Ffc2cB0C9D63b0f4a297a",
+				"status": "current",
+				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
+			},
+			"SynthsTSLA": {
+				"address": "0xbf075BF30c5Fc4929785f0E50eC42078B92DF869",
+				"status": "current",
+				"keccak256": "0x46ea3a53d11e9a3e1dcbb57dc0c282dcd37f3dea3d25fc83d2849d9da9055074"
 			}
 		}
 	}

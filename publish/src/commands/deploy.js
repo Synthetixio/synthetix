@@ -534,6 +534,24 @@ const deploy = async ({
 		args: [account],
 	});
 
+	if (network !== 'mainnet' && systemStatus) {
+		// On testnet, give the deployer the rights to update status
+		await runStep({
+			contract: 'SystemStatus',
+			target: systemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('System'), account],
+			expected: ({ canSuspend } = {}) => canSuspend,
+			write: 'updateAccessControls',
+			writeArg: [
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
+				[account, account, account, account, account],
+				[true, true, true, true, true],
+				[true, true, true, true, true],
+			],
+		});
+	}
+
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
 		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
@@ -1451,9 +1469,12 @@ const deploy = async ({
 		);
 
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
-		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
+		// And on local filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
 		.filter(([contract]) => {
-			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
+			if (
+				network === 'local' &&
+				/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)
+			) {
 				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
 				console.log(
 					redBright(
@@ -1729,7 +1750,7 @@ const deploy = async ({
 		// override individual currencyKey / synths exchange rates
 		const synthExchangeRateOverride = {
 			sETH: w3utils.toWei('0.003'),
-			iETH: w3utils.toWei('0.007'),
+			iETH: w3utils.toWei('0.004'),
 			sBTC: w3utils.toWei('0.003'),
 			iBTC: w3utils.toWei('0.003'),
 			iBNB: w3utils.toWei('0.021'),
@@ -2154,6 +2175,7 @@ const deploy = async ({
 				target: debtCache,
 				write: 'takeDebtSnapshot',
 				writeArg: [],
+				publiclyCallable: true, // does not require owner
 			});
 		} else if (!validityChanged) {
 			console.log(
