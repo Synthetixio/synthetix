@@ -3227,5 +3227,45 @@
 				"keccak256": "0xd55f1ee36f3d25266ddda32beb676cde402f8b98862dc07077b8c3028a13a855"
 			}
 		}
+	},
+	"v2.39.0-alpha": {
+		"tag": "v2.39.0-alpha",
+		"fulltag": "v2.39.0-alpha",
+		"release": "Elnath",
+		"network": "mainnet",
+		"date": "2021-02-11T12:10:36+11:00",
+		"commit": "89453847d76da1572d1c66b1a838b9360b25f3e5",
+		"contracts": {
+			"TokenStatesTSLA": {
+				"address": "0x259F2584E8A672DA3773F91D66567a3229Dee93d",
+				"status": "current",
+				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
+			},
+			"ProxysTSLA": {
+				"address": "0x918dA91Ccbc32B7a6A0cc4eCd5987bbab6E31e6D",
+				"status": "current",
+				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
+			},
+			"SynthsTSLA": {
+				"address": "0x0d1c4e5C07B071aa4E6A14A604D4F6478cAAC7B4",
+				"status": "current",
+				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
+			}
+		}
+	},
+	"v2.39.1": {
+		"tag": "v2.39.1",
+		"fulltag": "v2.39.1",
+		"release": "Elnath",
+		"network": "mainnet",
+		"date": "2021-02-11T15:27:40-05:00",
+		"commit": "f8043e4f25f6b806b47c713bd7ef8e7abb0256ce",
+		"contracts": {
+			"StakingRewardssTSLABalancer": {
+				"address": "0xF0de877F2F9E7A60767f9BA662F10751566AD01c",
+				"status": "current",
+				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
+			}
+		}
 	}
 }

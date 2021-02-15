@@ -137,6 +137,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('2'),
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
+			amountToRepay: toUnit('0.25'),
 			oldAddress: oldEthAddress,
 		});
 
@@ -146,6 +147,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: Web3.utils.toBN('1000000000'), // 10 renBTC (renBTC uses 8 decimals)
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
+			amountToRepay: toUnit('0.25'),
 			oldAddress: oldRenAddress,
 		});
 
@@ -155,6 +157,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('1000'),
 			borrowCurrency: 'sETH',
 			amountToBorrow: toUnit('0.01'),
+			amountToRepay: toUnit('0.005'),
 			oldAddress: oldShortAddress,
 		});
 	});
@@ -165,6 +168,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		amountToDeposit,
 		borrowCurrency,
 		amountToBorrow,
+		amountToRepay,
 		oldAddress,
 	}) {
 		let CollateralContract, CollateralStateContract;
@@ -401,8 +405,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 						await fastForward(period.toString());
 					});
 
-					before('repay all debt', async () => {
-						tx = await CollateralContract.repay(user1, loanId, amountToBorrow, {
+					before('repay some debt', async () => {
+						tx = await CollateralContract.repay(user1, loanId, amountToRepay, {
 							from: user1,
 						});
 					});

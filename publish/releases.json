@@ -147,5 +147,14 @@
 		},
 		"sources": ["Synthetix", "SystemStatus"],
 		"sips": [109]
+	},
+	{
+		"name": "Elnath",
+		"version": {
+			"major": 2,
+			"minor": 39
+		},
+		"sources": [],
+		"sips": [110]
 	}
 ]
