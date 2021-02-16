@@ -10,7 +10,7 @@ require('./common'); // import common test scaffolding
 
 const { setupContract, setupAllContracts } = require('./setup');
 
-const { currentTime, fastForward, fastForwardTo, toUnit, fromUnit } = require('../utils')();
+const { fastForwardTo, toUnit, fromUnit } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
@@ -25,14 +25,13 @@ const {
 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sUSD, sAUD, sEUR, sETH] = ['sUSD', 'sAUD', 'sEUR', 'sETH'].map(toBytes32);
+	const [sAUD, sEUR] = ['sAUD', 'sEUR'].map(toBytes32);
 
 	const [, owner, account1, account2] = accounts;
 
 	let synthetix,
 		exchangeRates,
 		debtCache,
-		systemSettings,
 		supplySchedule,
 		rewardEscrow,
 		rewardEscrowV2,
@@ -47,7 +46,6 @@ contract('Synthetix', async accounts => {
 			ExchangeRates: exchangeRates,
 			DebtCache: debtCache,
 			SystemStatus: systemStatus,
-			SystemSettings: systemSettings,
 			RewardEscrow: rewardEscrow,
 			RewardEscrowV2: rewardEscrowV2,
 			SupplySchedule: supplySchedule,
@@ -58,7 +56,6 @@ contract('Synthetix', async accounts => {
 				'Synthetix',
 				'SynthetixState',
 				'SupplySchedule',
-				'SystemSettings',
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
@@ -85,7 +82,6 @@ contract('Synthetix', async accounts => {
 			expected: [
 				'emitExchangeRebate',
 				'emitExchangeReclaim',
-				'emitSynthExchange',
 				'emitExchangeTracking',
 				'migrateEscrowBalanceToRewardEscrowV2',
 			],
@@ -299,192 +295,6 @@ contract('Synthetix', async accounts => {
 			});
 			assert.equal(smockExchanger.smocked.settle.calls[0][0], msgSender);
 			assert.equal(smockExchanger.smocked.settle.calls[0][1].toString(), currencyKey1);
-		});
-	});
-	describe('isWaitingPeriod()', () => {
-		it('returns false by default', async () => {
-			assert.isFalse(await synthetix.isWaitingPeriod(sETH));
-		});
-		describe('when a user has exchanged into sETH', () => {
-			beforeEach(async () => {
-				await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
-
-				await synthetix.issueSynths(toUnit('100'), { from: owner });
-				await synthetix.exchange(sUSD, toUnit('10'), sETH, { from: owner });
-			});
-			it('then waiting period is true', async () => {
-				assert.isTrue(await synthetix.isWaitingPeriod(sETH));
-			});
-			describe('when the waiting period expires', () => {
-				beforeEach(async () => {
-					await fastForward(await systemSettings.waitingPeriodSecs());
-				});
-				it('returns false by default', async () => {
-					assert.isFalse(await synthetix.isWaitingPeriod(sETH));
-				});
-			});
-		});
-	});
-
-	describe('transfer()', () => {
-		beforeEach(async () => {
-			// Ensure all synths have rates to allow issuance
-			await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
-		});
-
-		describe('when the user has issued some sUSD and exchanged for other synths', () => {
-			beforeEach(async () => {
-				await synthetix.issueSynths(toUnit('100'), { from: owner });
-				await synthetix.exchange(sUSD, toUnit('10'), sETH, { from: owner });
-				await synthetix.exchange(sUSD, toUnit('10'), sAUD, { from: owner });
-				await synthetix.exchange(sUSD, toUnit('10'), sEUR, { from: owner });
-			});
-			it('should transfer using the ERC20 transfer function @gasprofile', async () => {
-				await synthetix.transfer(account1, toUnit('10'), { from: owner });
-
-				assert.bnEqual(await synthetix.balanceOf(account1), toUnit('10'));
-			});
-
-			it('should transfer using the ERC20 transferFrom function @gasprofile', async () => {
-				const previousOwnerBalance = await synthetix.balanceOf(owner);
-
-				// Approve account1 to act on our behalf for 10 SNX.
-				await synthetix.approve(account1, toUnit('10'), { from: owner });
-
-				// Assert that transferFrom works.
-				await synthetix.transferFrom(owner, account2, toUnit('10'), {
-					from: account1,
-				});
-
-				// Assert that account2 has 10 SNX and owner has 10 less SNX
-				assert.bnEqual(await synthetix.balanceOf(account2), toUnit('10'));
-				assert.bnEqual(await synthetix.balanceOf(owner), previousOwnerBalance.sub(toUnit('10')));
-
-				// Assert that we can't transfer more even though there's a balance for owner.
-				await assert.revert(
-					synthetix.transferFrom(owner, account2, '1', {
-						from: account1,
-					})
-				);
-			});
-		});
-
-		it("should lock newly received synthetix if the user's collaterisation is too high", async () => {
-			// Set sEUR for purposes of this test
-			const timestamp1 = await currentTime();
-			await exchangeRates.updateRates([sEUR], [toUnit('0.75')], timestamp1, { from: oracle });
-			await debtCache.takeDebtSnapshot();
-
-			const issuedSynthetixs = web3.utils.toBN('200000');
-			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-				from: owner,
-			});
-			await synthetix.transfer(account2, toUnit(issuedSynthetixs), {
-				from: owner,
-			});
-
-			const maxIssuableSynths = await synthetix.maxIssuableSynths(account1);
-
-			// Issue
-			await synthetix.issueSynths(maxIssuableSynths, { from: account1 });
-
-			// Exchange into sEUR
-			await synthetix.exchange(sUSD, maxIssuableSynths, sEUR, { from: account1 });
-
-			// Ensure that we can transfer in and out of the account successfully
-			await synthetix.transfer(account1, toUnit('10000'), {
-				from: account2,
-			});
-			await synthetix.transfer(account2, toUnit('10000'), {
-				from: account1,
-			});
-
-			// Increase the value of sEUR relative to synthetix
-			const timestamp2 = await currentTime();
-			await exchangeRates.updateRates([sEUR], [toUnit('2.10')], timestamp2, { from: oracle });
-			await debtCache.takeDebtSnapshot();
-
-			// Ensure that the new synthetix account1 receives cannot be transferred out.
-			await synthetix.transfer(account1, toUnit('10000'), {
-				from: account2,
-			});
-			await assert.revert(synthetix.transfer(account2, toUnit('10000'), { from: account1 }));
-		});
-
-		it('should unlock synthetix when collaterisation ratio changes', async () => {
-			// prevent circuit breaker from firing by upping the threshold to factor 5
-			await systemSettings.setPriceDeviationThresholdFactor(toUnit('5'), { from: owner });
-
-			// Set sAUD for purposes of this test
-			const timestamp1 = await currentTime();
-			const aud2usdrate = toUnit('2');
-
-			await exchangeRates.updateRates([sAUD], [aud2usdrate], timestamp1, { from: oracle });
-			await debtCache.takeDebtSnapshot();
-
-			const issuedSynthetixs = web3.utils.toBN('200000');
-			await synthetix.transfer(account1, toUnit(issuedSynthetixs), {
-				from: owner,
-			});
-
-			// Issue
-			const issuedSynths = await synthetix.maxIssuableSynths(account1);
-			await synthetix.issueSynths(issuedSynths, { from: account1 });
-			const remainingIssuable = (await synthetix.remainingIssuableSynths(account1))[0];
-
-			assert.bnClose(remainingIssuable, '0');
-
-			const transferable1 = await synthetix.transferableSynthetix(account1);
-			assert.bnEqual(transferable1, '0');
-
-			// Exchange into sAUD
-			await synthetix.exchange(sUSD, issuedSynths, sAUD, { from: account1 });
-
-			// Increase the value of sAUD relative to synthetix
-			const timestamp2 = await currentTime();
-			const newAUDExchangeRate = toUnit('1');
-			await exchangeRates.updateRates([sAUD], [newAUDExchangeRate], timestamp2, { from: oracle });
-			await debtCache.takeDebtSnapshot();
-
-			const transferable2 = await synthetix.transferableSynthetix(account1);
-			assert.equal(transferable2.gt(toUnit('1000')), true);
-		});
-
-		describe('when the user has issued some sUSD and exchanged for other synths', () => {
-			beforeEach(async () => {
-				await synthetix.issueSynths(toUnit('100'), { from: owner });
-				await synthetix.exchange(sUSD, toUnit('10'), sETH, { from: owner });
-				await synthetix.exchange(sUSD, toUnit('10'), sAUD, { from: owner });
-				await synthetix.exchange(sUSD, toUnit('10'), sEUR, { from: owner });
-			});
-			it('should transfer using the ERC20 transfer function @gasprofile', async () => {
-				await synthetix.transfer(account1, toUnit('10'), { from: owner });
-
-				assert.bnEqual(await synthetix.balanceOf(account1), toUnit('10'));
-			});
-
-			it('should transfer using the ERC20 transferFrom function @gasprofile', async () => {
-				const previousOwnerBalance = await synthetix.balanceOf(owner);
-
-				// Approve account1 to act on our behalf for 10 SNX.
-				await synthetix.approve(account1, toUnit('10'), { from: owner });
-
-				// Assert that transferFrom works.
-				await synthetix.transferFrom(owner, account2, toUnit('10'), {
-					from: account1,
-				});
-
-				// Assert that account2 has 10 SNX and owner has 10 less SNX
-				assert.bnEqual(await synthetix.balanceOf(account2), toUnit('10'));
-				assert.bnEqual(await synthetix.balanceOf(owner), previousOwnerBalance.sub(toUnit('10')));
-
-				// Assert that we can't transfer more even though there's a balance for owner.
-				await assert.revert(
-					synthetix.transferFrom(owner, account2, '1', {
-						from: account1,
-					})
-				);
-			});
 		});
 	});
 
