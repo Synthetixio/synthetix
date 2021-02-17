@@ -207,7 +207,6 @@ contract('Synthetix', async accounts => {
 		let smockExchanger;
 		beforeEach(async () => {
 			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
-			smockExchanger.smocked.exchangeOnBehalf.will.return.with(() => '1');
 			smockExchanger.smocked.exchangeWithTracking.will.return.with(() => '1');
 			smockExchanger.smocked.exchangeOnBehalfWithTracking.will.return.with(() => '1');
 			smockExchanger.smocked.exchangeWithVirtual.will.return.with(() => ['1', account1]);
@@ -225,17 +224,6 @@ contract('Synthetix', async accounts => {
 		const currencyKey2 = sEUR;
 		const trackingCode = toBytes32('1inch');
 		const msgSender = owner;
-
-		it('exchangeOnBehalf is called with the right arguments ', async () => {
-			await synthetix.exchangeOnBehalf(account1, currencyKey1, amount1, currencyKey2, {
-				from: owner,
-			});
-			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][0], account1);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][1], msgSender);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][2], currencyKey1);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][3].toString(), amount1);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][4], currencyKey2);
-		});
 
 		it('exchangeWithTracking is called with the right arguments ', async () => {
 			await synthetix.exchangeWithTracking(

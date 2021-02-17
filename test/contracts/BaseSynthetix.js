@@ -139,14 +139,6 @@ contract('BaseSynthetix', async accounts => {
 
 	describe('non-basic functions always revert', () => {
 		const amount = 100;
-		it('ExchangeOnBehalf should revert no matter who the caller is', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: baseSynthetix.exchangeOnBehalf,
-				accounts,
-				args: [account1, sUSD, amount, sETH],
-				reason: 'Cannot be run on this layer',
-			});
-		});
 		it('ExchangeWithTracking should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.exchangeWithTracking,
@@ -267,6 +259,7 @@ contract('BaseSynthetix', async accounts => {
 		let smockExchanger;
 		beforeEach(async () => {
 			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
+			smockExchanger.smocked.exchangeOnBehalf.will.return.with(() => '1');
 			smockExchanger.smocked.settle.will.return.with(() => ['1', '2', '3']);
 			await addressResolver.importAddresses(
 				['Exchanger'].map(toBytes32),
@@ -276,8 +269,21 @@ contract('BaseSynthetix', async accounts => {
 			await baseSynthetix.rebuildCache();
 		});
 
+		const amount1 = '10';
 		const currencyKey1 = sAUD;
+		const currencyKey2 = sEUR;
 		const msgSender = owner;
+
+		it('exchangeOnBehalf is called with the right arguments ', async () => {
+			await baseSynthetix.exchangeOnBehalf(account1, currencyKey1, amount1, currencyKey2, {
+				from: owner,
+			});
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][0], account1);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][1], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][2], currencyKey1);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][3].toString(), amount1);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][4], currencyKey2);
+		});
 
 		it('settle is called with the right arguments ', async () => {
 			await baseSynthetix.settle(currencyKey1, {

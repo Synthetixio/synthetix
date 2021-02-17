@@ -51,22 +51,6 @@ contract Synthetix is BaseSynthetix {
 
     // ========== OVERRIDDEN FUNCTIONS ==========
 
-    function exchangeOnBehalf(
-        address exchangeForAddress,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeOnBehalf(
-                exchangeForAddress,
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey
-            );
-    }
-
     function exchangeWithTracking(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
