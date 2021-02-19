@@ -1,18 +1,12 @@
 jobs:
-  - job-prepare:
-      {{> filter-develop.yml}}
+  - job-prepare
   - job-unit-tests:
-      {{> filter-develop.yml}}
       {{> require-prepare.yml}}
   - job-unit-tests-coverage:
-      {{> filter-develop.yml}}
       {{> require-prepare.yml}}
   - job-unit-tests-gas-report:
-      {{> filter-develop.yml}}
       {{> require-prepare.yml}}
   - job-test-deploy-script:
-      {{> filter-develop.yml}}
       {{> require-prepare.yml}}
   - job-unit-tests-ovm:
-      {{> filter-develop.yml}}
       {{> require-prepare.yml}}
