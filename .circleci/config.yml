@@ -337,53 +337,35 @@ workflows:
       - job-prepare:
           filters:
             branches:
-              only:
-                - develop
-                - staging
-                - master
+              only: /.*(develop|staging|master).*/
       - job-unit-tests:
           filters:
             branches:
-              only:
-                - develop
-                - staging
-                - master
+              only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
       - job-unit-tests-coverage:
           filters:
             branches:
-              only:
-                - develop
-                - staging
-                - master
+              only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
       - job-unit-tests-gas-report:
           filters:
             branches:
-              only:
-                - develop
-                - staging
-                - master
+              only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
       - job-test-deploy-script:
           filters:
             branches:
-              only:
-                - develop
-                - staging
-                - master
+              only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
       - job-unit-tests-ovm:
           filters:
             branches:
-              only:
-                - develop
-                - staging
-                - master
+              only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
   workflow-master:
