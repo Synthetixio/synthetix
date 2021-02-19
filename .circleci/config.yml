@@ -8,6 +8,14 @@ commands:
           command: |
             wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
             :
+  cmd-wait-for-hardhat:
+    steps:
+      - run: sleep 5
+      - run:
+          shell: /bin/sh
+          command: |
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:9545
+            :
 jobs:
   job-compile:
     working_directory: ~/repo
