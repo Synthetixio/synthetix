@@ -420,6 +420,13 @@ workflows:
               only: /.*(staging|master).*/
           requires:
             - job-prepare
+      - job-prod-tests-ovm:
+          name: job-prod-tests-ovm
+          filters:
+            branches:
+              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
       - job-prod-diff-tests-local:
           name: job-prod-diff-tests-local
           filters:
