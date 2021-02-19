@@ -307,5 +307,17 @@
 		"sign": "",
 		"exchange": "NASDAQ",
 		"description": "Tesla"
+	},
+	"SUSHI": {
+		"asset": "SUSHI",
+		"category": "crypto",
+		"sign": "",
+		"description": "SushiSwap"
+	},
+	"1INCH": {
+		"asset": "1INCH",
+		"category": "crypto",
+		"sign": "",
+		"description": "1inch"
 	}
 }
