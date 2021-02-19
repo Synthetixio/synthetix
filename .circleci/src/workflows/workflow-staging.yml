@@ -23,6 +23,11 @@ jobs:
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
 
+  - job-prod-tests-ovm:
+      name: job-prod-tests-ovm
+      {{> filter-staging.yml}}
+      {{> require-prepare.yml}}
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Local production tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,6 +35,7 @@ jobs:
       name: job-prod-diff-tests-local
       {{> filter-staging.yml}}
       {{> require-prepare.yml}}
+
   - job-prod-diff-tests-local-ovm:
       name: job-prod-diff-tests-local-ovm
       {{> filter-staging.yml}}
