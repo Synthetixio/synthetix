@@ -1,3 +1,6 @@
 filters:
   branches:
-    only: /.*(develop|staging|master).*/
+    only:
+      - develop
+      - staging
+      - master
