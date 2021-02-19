@@ -40,3 +40,5 @@ process.yml
 
 # CSV files
 *.csv
+
+.db
