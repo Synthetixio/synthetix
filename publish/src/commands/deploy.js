@@ -1468,11 +1468,13 @@ const deploy = async ({
 			target.options.jsonInterface.find(({ name }) => name === prop)
 		);
 
+	const isExtMessengerKnown =
+		(await addressResolver.methods.getAddress(toBytes32('ext:Messenger')).call()) !== ZERO_ADDRESS;
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
 		// And on local filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
 		.filter(([contract]) => {
 			if (
-				network === 'local' &&
+				!isExtMessengerKnown &&
 				/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)
 			) {
 				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
