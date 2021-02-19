@@ -171,6 +171,22 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, IBaseSyntheti
         return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
     }
 
+    function exchangeOnBehalf(
+        address exchangeForAddress,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
+        return
+            exchanger().exchangeOnBehalf(
+                exchangeForAddress,
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey
+            );
+    }
+
     function settle(bytes32 currencyKey)
         external
         optionalProxy
@@ -236,22 +252,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, IBaseSyntheti
 
     function burnSynthsToTargetOnBehalf(address burnForAddress) external issuanceActive optionalProxy {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
-    }
-
-    function exchangeOnBehalf(
-        address exchangeForAddress,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeOnBehalf(
-                exchangeForAddress,
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey
-            );
     }
 
     function exchangeWithTracking(
@@ -334,8 +334,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, IBaseSyntheti
     }
 
     function _exchangeActive(bytes32 src, bytes32 dest) private view {
-        systemStatus().requireExchangeActive();
-        systemStatus().requireSynthsActive(src, dest);
+        systemStatus().requireExchangeBetweenSynthsAllowed(src, dest);
     }
 
     modifier onlyExchanger() {
