@@ -1,13 +1,5 @@
 version: 2.1
 commands:
-  cmd-wait-for-rpc:
-    steps:
-      - run: sleep 5
-      - run:
-          shell: /bin/sh
-          command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
-            :
   cmd-wait-for-hardhat:
     steps:
       - run: sleep 5
@@ -15,6 +7,14 @@ commands:
           shell: /bin/sh
           command: |
             wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:9545
+            :
+  cmd-wait-for-rpc:
+    steps:
+      - run: sleep 5
+      - run:
+          shell: /bin/sh
+          command: |
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
             :
 jobs:
   job-compile:
