@@ -1,12 +1,12 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./DebtCache.sol";
+import "./BaseDebtCache.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/realtimedebtcache
-contract RealtimeDebtCache is DebtCache {
-    constructor(address _owner, address _resolver) public DebtCache(_owner, _resolver) {}
+contract RealtimeDebtCache is BaseDebtCache {
+    constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
     // Report the current debt values from all cached debt functions, including public variables
 
@@ -57,19 +57,4 @@ contract RealtimeDebtCache is DebtCache {
         (uint currentDebt, bool invalid) = _currentDebt();
         return (currentDebt, block.timestamp, invalid, false);
     }
-
-    // Stub out all mutative functions as no-ops;
-    // since they do nothing, their access restrictions have been dropped
-
-    function purgeCachedSynthDebt(bytes32 currencyKey) external {}
-
-    function takeDebtSnapshot() external {}
-
-    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external {}
-
-    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external {}
-
-    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external {}
-
-    function updateDebtCacheValidity(bool currentlyInvalid) external {}
 }
