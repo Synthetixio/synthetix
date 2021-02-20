@@ -11,7 +11,7 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 		let user1L1, user1L2;
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1;
-		let SynthetixL2, SynthetixBridgeToBaseL2, SynthsUSDL2, SynthsETHL2;
+		let SynthetixL2, SynthetixBridgeToBaseL2, SynthsUSDL2, SynthsETHL2, ExchangeStateL2;
 
 		// --------------------------
 		// Setup
@@ -53,6 +53,11 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 			SynthsETHL2 = connectContract({
 				contract: 'ProxysETH',
 				source: 'Synth',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
+			ExchangeStateL2 = connectContract({
+				contract: 'ExchangeState',
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
@@ -199,28 +204,35 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 									it('shows that the user L2 sETH balance has increased', async () => {
 										assert.bnGte(await SynthsETHL2.balanceOf(user1L2.address), '0');
 									});
-								});
 
-								describe('when settling the exchange', () => {
-									it('reverts when trying to settle immediately after the exchange', async () => {
-										const tx = await SynthetixL2.settle(toBytes32('sETH'));
-
-										await assertRevertOptimism({
-											tx,
-											reason: 'Cannot settle during waiting period',
-											provider: ctx.providerL2,
-										});
+									it('should not create any exchange state entries', async () => {
+										assert.bnEqual(
+											await ExchangeStateL2.getLengthOfEntries(user1L2.address, toBytes32('sETH')),
+											'0'
+										);
 									});
-
-									// before('settle', async () => {
-									// 	const tx = await SynthetixL2.settle(toBytes32('sUSD'));
-									// 	await tx.wait();
-									// });
-
-									// it('shows that the user L2 sETH balance has increased', async () => {
-									// 	assert.bnGte(await SynthsETHL2.balanceOf(user1L2.address), '0');
-									// });
 								});
+
+								// describe('when settling the exchange', () => {
+								// 	it('reverts when trying to settle immediately after the exchange', async () => {
+								// 		const tx = await SynthetixL2.settle(toBytes32('sETH'));
+
+								// 		await assertRevertOptimism({
+								// 			tx,
+								// 			reason: 'Cannot settle during waiting period',
+								// 			provider: ctx.providerL2,
+								// 		});
+								// 	});
+
+								// before('settle', async () => {
+								// 	const tx = await SynthetixL2.settle(toBytes32('sUSD'));
+								// 	await tx.wait();
+								// });
+
+								// it('shows that the user L2 sETH balance has increased', async () => {
+								// 	assert.bnGte(await SynthsETHL2.balanceOf(user1L2.address), '0');
+								// });
+								// });
 							});
 						});
 					});

@@ -334,7 +334,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             false
         );
 
-        // _processTradingRewards(fee, destinationAddress);
+        _processTradingRewards(fee, destinationAddress);
     }
 
     function exchangeOnBehalf(
@@ -587,15 +587,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             destinationAddress
         );
 
-        // persist the exchange information for the dest key
-        appendExchange(
-            destinationAddress,
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            amountReceived,
-            exchangeFeeRate
-        );
+        // persist the exchange information for the dest key iff the waiting period is gt 0
+        if (getWaitingPeriodSecs() > 0) {
+            appendExchange(
+                destinationAddress,
+                sourceCurrencyKey,
+                sourceAmountAfterSettlement,
+                destinationCurrencyKey,
+                amountReceived,
+                exchangeFeeRate
+            );
+        }
     }
 
     function _convert(

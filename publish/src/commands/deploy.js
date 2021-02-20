@@ -1814,7 +1814,7 @@ const deploy = async ({
 			read: 'waitingPeriodSecs',
 			expected: input => input !== '0',
 			write: 'setWaitingPeriodSecs',
-			writeArg: await getDeployParameter('WAITING_PERIOD_SECS'),
+			writeArg: useOvm ? '0' : await getDeployParameter('WAITING_PERIOD_SECS'),
 		});
 
 		await runStep({
