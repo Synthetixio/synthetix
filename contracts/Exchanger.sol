@@ -18,7 +18,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
-import "./interfaces/IDebtCache.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./Proxyable.sol";
 

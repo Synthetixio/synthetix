@@ -228,6 +228,23 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IBaseDebtCache {
         return (_cachedDebt, time, _cacheInvalid, _cacheStale(time));
     }
 
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    // Stub out all mutative functions as no-ops;
+    // since they do nothing, there are no restrictions
+
+    function purgeCachedSynthDebt(bytes32 currencyKey) external {}
+
+    function takeDebtSnapshot() external {}
+
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external {}
+
+    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external {}
+
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external {}
+
+    function updateDebtCacheValidity(bool currentlyInvalid) external {}
+
     /* ========== MODIFIERS ========== */
 
     function _requireSystemActiveIfNotOwner() internal view {
