@@ -296,7 +296,6 @@ contract('RealtimeDebtCache', async accounts => {
 				const noOpGasLimit = 23500;
 
 				const txs = await Promise.all([
-					realtimeDebtCache.purgeCachedSynthDebt(sEUR),
 					realtimeDebtCache.takeDebtSnapshot(),
 					realtimeDebtCache.updateCachedSynthDebts([sEUR]),
 					realtimeDebtCache.updateCachedSynthDebtWithRate(sEUR, toUnit('1')),

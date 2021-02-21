@@ -233,8 +233,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IBaseDebtCache {
     // Stub out all mutative functions as no-ops;
     // since they do nothing, there are no restrictions
 
-    function purgeCachedSynthDebt(bytes32 currencyKey) external {}
-
     function takeDebtSnapshot() external {}
 
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external {}
