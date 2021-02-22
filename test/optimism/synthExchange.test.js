@@ -11,7 +11,12 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 		let user1L1, user1L2;
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1;
-		let SynthetixL2, SynthetixBridgeToBaseL2, SynthsUSDL2, SynthsETHL2, ExchangeStateL2;
+		let SynthetixL2,
+			SynthetixBridgeToBaseL2,
+			SynthsUSDL2,
+			SynthsETHL2,
+			ExchangerL2,
+			ExchangeStateL2;
 
 		// --------------------------
 		// Setup
@@ -56,6 +61,11 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
+			ExchangerL2 = connectContract({
+				contract: 'Exchanger',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
 			ExchangeStateL2 = connectContract({
 				contract: 'ExchangeState',
 				useOvm: true,
@@ -66,6 +76,12 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 		// --------------------------
 		// Get SNX
 		// --------------------------
+
+		describe('Initial values ', () => {
+			it('the waiting period is 0 on L2', async () => {
+				assert.bnEqual(await ExchangerL2.waitingPeriodSecs(), '0');
+			});
+		});
 
 		describe('when a user has the expected amount of SNX in L1', () => {
 			let user1BalanceL1;

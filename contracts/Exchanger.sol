@@ -512,7 +512,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
-        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+        // initialize sourceAmountAfterSettlement with the nominal amount
+        uint sourceAmountAfterSettlement = sourceAmount;
+
+        if (getWaitingPeriodSecs() > 0) {
+            sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+        }
 
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
@@ -572,11 +577,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Note: As of this point, `fee` is denominated in sUSD.
 
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
-        // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
-        // in these currencies
-        _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
-
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
             from,
@@ -587,8 +587,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             destinationAddress
         );
 
-        // persist the exchange information for the dest key iff the waiting period is gt 0
+        // iff the waiting period is gt 0
         if (getWaitingPeriodSecs() > 0) {
+            // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+            // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
+            // in these currencies
+            _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
+
+            // persist the exchange information for the dest key
             appendExchange(
                 destinationAddress,
                 sourceCurrencyKey,
