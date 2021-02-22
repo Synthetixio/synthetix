@@ -151,6 +151,7 @@ const defaults = {
  * Converts a string into a hex representation of bytes32, with right padding
  */
 const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
+const fromBytes32 = key => w3utils.hexToAscii(key);
 
 const getFolderNameForNetwork = ({ network, useOvm = false }) => {
 	if (network.includes('ovm')) {
@@ -605,6 +606,7 @@ module.exports = {
 	networks,
 	networkToChainId,
 	toBytes32,
+	fromBytes32,
 	wrap,
 	ovmIgnored,
 	nonUpgradeable,

@@ -22,6 +22,7 @@ const {
 
 const {
 	toBytes32,
+	fromBytes32,
 	constants: {
 		BUILD_FOLDER,
 		CONFIG_FILENAME,
@@ -1468,32 +1469,59 @@ const deploy = async ({
 			target.options.jsonInterface.find(({ name }) => name === prop)
 		);
 
-	const isExtMessengerKnown =
-		(await addressResolver.methods.getAddress(toBytes32('ext:Messenger')).call()) !== ZERO_ADDRESS;
-	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
-		// And on local filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
-		.filter(([contract]) => {
-			if (
-				!isExtMessengerKnown &&
-				/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)
-			) {
-				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
-				console.log(
-					redBright(
-						`WARNING: Not invoking ${contract}.rebuildCache(). Run node publish connect-bridge after deployment.`
-					)
-				);
-				return false;
-			}
-			return true;
-		});
+	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
+
+	// collect all resolver addresses required
+	const resolverAddressesRequired = (
+		await Promise.all(
+			contractsWithRebuildableCache.map(([, contract]) => {
+				return contract.methods.resolverAddressesRequired().call();
+			})
+		)
+	).reduce((allAddresses, contractAddresses) => {
+		return allAddresses.concat(
+			contractAddresses.filter(contractAddress => !allAddresses.includes(contractAddress))
+		);
+	}, []);
+
+	// check which resolver addresses are imported
+	const resolvedAddresses = await Promise.all(
+		resolverAddressesRequired.map(id => {
+			return addressResolver.methods.getAddress(id).call();
+		})
+	);
+	const isResolverAddressImported = {};
+	for (let i = 0; i < resolverAddressesRequired.length; i++) {
+		isResolverAddressImported[resolverAddressesRequired[i]] = resolvedAddresses[i] !== ZERO_ADDRESS;
+	}
+
+	// print out resolver addresses
+	console.log(gray('Imported resolver addresses:'));
+	for (const id of Object.keys(isResolverAddressImported)) {
+		const isImported = isResolverAddressImported[id];
+		const chalkFn = isImported ? gray : red;
+		console.log(chalkFn(`  > ${fromBytes32(id)}: ${isImported}`));
+	}
 
 	// now ensure all caches are rebuilt for those in need
 	const contractsToRebuildCache = [];
-	for (const [, target] of contractsWithRebuildableCache) {
+	for (const [name, target] of contractsWithRebuildableCache) {
 		const isCached = await target.methods.isResolverCached().call();
 		if (!isCached) {
-			contractsToRebuildCache.push(target.options.address);
+			const requiredAddresses = await target.methods.resolverAddressesRequired().call();
+
+			const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
+			if (unknownAddress) {
+				console.log(
+					redBright(
+						`WARINING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
+							unknownAddress
+						)} is unknown. This contract requires: ${requiredAddresses.map(id => fromBytes32(id))}`
+					)
+				);
+			} else {
+				contractsToRebuildCache.push(target.options.address);
+			}
 		}
 	}
 
@@ -1512,15 +1540,17 @@ const deploy = async ({
 
 	console.log(gray('Double check all contracts with rebuildCache() are rebuilt...'));
 	for (const [contract, target] of contractsWithRebuildableCache) {
-		await runStep({
-			gasLimit: 500e3, // higher gas required
-			contract,
-			target,
-			read: 'isResolverCached',
-			expected: input => input,
-			publiclyCallable: true, // does not require owner
-			write: 'rebuildCache',
-		});
+		if (contractsToRebuildCache.includes(target.options.address)) {
+			await runStep({
+				gasLimit: 500e3, // higher gas required
+				contract,
+				target,
+				read: 'isResolverCached',
+				expected: input => input,
+				publiclyCallable: true, // does not require owner
+				write: 'rebuildCache',
+			});
+		}
 	}
 
 	// Now perform a sync of legacy contracts that have not been replaced in Shaula (v2.35.x)
