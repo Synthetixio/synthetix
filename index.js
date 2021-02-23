@@ -122,7 +122,7 @@ const defaults = {
 			{ long: 'sBTC', short: 'iBTC' },
 			{ long: 'sETH', short: 'iETH' },
 		],
-		MAX_DEBT: w3utils.toWei('20000000'), // 20 million sUSD
+		MAX_DEBT: w3utils.toWei('30000000'), // 30 million sUSD
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
@@ -151,6 +151,7 @@ const defaults = {
  * Converts a string into a hex representation of bytes32, with right padding
  */
 const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
+const fromBytes32 = key => w3utils.hexToAscii(key);
 
 const getFolderNameForNetwork = ({ network, useOvm = false }) => {
 	if (network.includes('ovm')) {
@@ -605,6 +606,7 @@ module.exports = {
 	networks,
 	networkToChainId,
 	toBytes32,
+	fromBytes32,
 	wrap,
 	ovmIgnored,
 	nonUpgradeable,
