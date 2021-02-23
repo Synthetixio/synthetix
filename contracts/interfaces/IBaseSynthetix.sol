@@ -4,6 +4,7 @@ import "./ISynth.sol";
 import "./IVirtualSynth.sol";
 
 
+// https://docs.synthetix.io/contracts/source/interfaces/isynthetix
 interface IBaseSynthetix {
     // Views
     function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);
