@@ -14,7 +14,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToBase.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['completeDeposit', 'completeEscrowMigration', 'completeRewardDeposit', 'withdraw'],
+			expected: ['finalizeDeposit', 'completeEscrowMigration', 'completeRewardDeposit', 'withdraw'],
 		});
 	});
 
@@ -180,11 +180,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 			});
 
-			describe('completeDeposit', async () => {
+			describe('finalizeDeposit', async () => {
 				describe('failure modes', () => {
-					it('should only allow the relayer (aka messenger) to call completeDeposit()', async () => {
+					it('should only allow the relayer (aka messenger) to call finalizeDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: instance.completeDeposit,
+							fnc: instance.finalizeDeposit,
 							args: [user1, 100],
 							accounts,
 							address: smockedMessenger,
@@ -192,11 +192,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						});
 					});
 
-					it('should only allow the L1 bridge to invoke completeDeposit() via the messenger', async () => {
+					it('should only allow the L1 bridge to invoke finalizeDeposit() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.completeDeposit(user1, 100, {
+							instance.finalizeDeposit(user1, 100, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -205,18 +205,18 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 
 				describe('when invoked by the messenger (aka relayer)', async () => {
-					let completeDepositTx;
-					const completeDepositAmount = 100;
-					beforeEach('completeDeposit is called', async () => {
-						completeDepositTx = await instance.completeDeposit(user1, completeDepositAmount, {
+					let finalizeDepositTx;
+					const finalizeDepositAmount = 100;
+					beforeEach('finalizeDeposit is called', async () => {
+						finalizeDepositTx = await instance.finalizeDeposit(user1, finalizeDepositAmount, {
 							from: smockedMessenger,
 						});
 					});
 
 					it('should emit a MintedSecondary event', async () => {
-						assert.eventEqual(completeDepositTx, 'MintedSecondary', {
+						assert.eventEqual(finalizeDepositTx, 'MintedSecondary', {
 							account: user1,
-							amount: completeDepositAmount,
+							amount: finalizeDepositAmount,
 						});
 					});
 
@@ -225,7 +225,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[0][0], user1);
 						assert.equal(
 							mintableSynthetix.smocked.mintSecondary.calls[0][1].toString(),
-							completeDepositAmount
+							finalizeDepositAmount
 						);
 					});
 				});

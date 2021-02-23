@@ -193,7 +193,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         synthetixERC20().transferFrom(msg.sender, address(this), _depositAmount);
         // create message payload for L2
         ISynthetixBridgeToBase bridgeToBase;
-        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.completeDeposit.selector, msg.sender, _depositAmount);
+        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeDeposit.selector, msg.sender, _depositAmount);
 
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(

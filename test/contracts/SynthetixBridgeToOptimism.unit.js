@@ -143,7 +143,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 						const expectedData = getDataOfEncodedFncCall({
 							contract: 'SynthetixBridgeToBase',
-							fnc: 'completeDeposit',
+							fnc: 'finalizeDeposit',
 							args: [user1, amount],
 						});
 						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
@@ -229,7 +229,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							assert.bnEqual(rewardEscrow.smocked.burnForMigration.calls[1][1], entryIds[1]);
 						});
 
-						it('three messages are relayed from L1 to L2: completeEscrowMigration & completeDeposit', async () => {
+						it('three messages are relayed from L1 to L2: completeEscrowMigration & finalizeDeposit', async () => {
 							assert.equal(messenger.smocked.sendMessage.calls.length, 3);
 
 							assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
@@ -253,7 +253,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							assert.equal(messenger.smocked.sendMessage.calls[2][0], snxBridgeToBase);
 							expectedData = getDataOfEncodedFncCall({
 								contract: 'SynthetixBridgeToBase',
-								fnc: 'completeDeposit',
+								fnc: 'finalizeDeposit',
 								args: [user1, amount],
 							});
 
@@ -288,12 +288,12 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							txn = await instance.depositAndMigrateEscrow(amount, [], { from: user1 });
 						});
 
-						it('one message is relayed: completeDeposit', async () => {
+						it('one message is relayed: finalizeDeposit', async () => {
 							assert.equal(messenger.smocked.sendMessage.calls.length, 1);
 							assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 							const expectedData = getDataOfEncodedFncCall({
 								contract: 'SynthetixBridgeToBase',
-								fnc: 'completeDeposit',
+								fnc: 'finalizeDeposit',
 								args: [user1, amount],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);

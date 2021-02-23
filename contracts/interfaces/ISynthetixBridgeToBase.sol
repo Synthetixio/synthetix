@@ -9,7 +9,7 @@ interface ISynthetixBridgeToBase {
     function withdraw(uint amount) external;
 
     //  // The following functions can only be invoked by the xDomain messenger on L2
-    function completeDeposit(address account, uint depositAmount) external;
+    function finalizeDeposit(address account, uint depositAmount) external;
 
     // invoked by the xDomain messenger on L2
     function completeEscrowMigration(
