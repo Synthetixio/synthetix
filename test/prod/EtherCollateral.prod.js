@@ -18,7 +18,7 @@ const {
 } = require('./utils');
 const { yellow } = require('chalk');
 
-contract('EtherCollateral (prod tests)', accounts => {
+contract('EtherCollateral (prod tests)', (accounts) => {
 	const [, user1] = accounts;
 
 	let owner;
@@ -28,7 +28,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 	let EtherCollateral, ReadProxyAddressResolver, Depot;
 	let SynthsETH, SynthsUSD;
 
-	before('prepare', async function() {
+	before('prepare', async function () {
 		network = config.targetNetwork;
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
@@ -82,6 +82,10 @@ contract('EtherCollateral (prod tests)', accounts => {
 		});
 	});
 
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
+	});
+
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await EtherCollateral.resolver(), ReadProxyAddressResolver.address);
@@ -95,7 +99,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 		let tx;
 		let loanID;
 
-		before('open loan', async function() {
+		before('open loan', async function () {
 			const totalIssuedSynths = await EtherCollateral.totalIssuedSynths();
 			const issueLimit = await EtherCollateral.issueLimit();
 			const liquidity = totalIssuedSynths.add(amount);
@@ -115,7 +119,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 		});
 
 		it('produces a valid loan id', async () => {
-			({ loanID } = tx.receipt.logs.find(log => log.event === 'LoanCreated').args);
+			({ loanID } = tx.receipt.logs.find((log) => log.event === 'LoanCreated').args);
 
 			assert.notEqual(loanID.toString(), '0');
 		});

@@ -18,7 +18,7 @@ const {
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
-contract('ExchangeRates (prod tests)', accounts => {
+contract('ExchangeRates (prod tests)', (accounts) => {
 	const [, user] = accounts;
 
 	let owner;
@@ -76,6 +76,10 @@ contract('ExchangeRates (prod tests)', accounts => {
 		});
 	});
 
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
+	});
+
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await ExchangeRates.resolver(), ReadProxyAddressResolver.address);
@@ -84,7 +88,7 @@ contract('ExchangeRates (prod tests)', accounts => {
 
 	describe('when an exchange is made', () => {
 		let waitingPeriod;
-		before(async function() {
+		before(async function () {
 			if (config.useOvm) {
 				this.skip();
 			}
