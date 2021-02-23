@@ -213,8 +213,10 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 										depositAndMigrateReceipt = await tx.wait();
 									});
 
-									it('emitted a Deposit event', async () => {
-										const event = depositAndMigrateReceipt.events.find(e => e.event === 'Deposit');
+									it('emitted a DepositInitiated event', async () => {
+										const event = depositAndMigrateReceipt.events.find(
+											e => e.event === 'DepositInitiated'
+										);
 										assert.exists(event);
 										assert.bnEqual(event.args.amount, depositAmount);
 										assert.equal(event.args.account, user1L1.address);

@@ -134,8 +134,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						txn = await instance.deposit(amount, { from: user1 });
 					});
 
-					it('only one event is emitted (Deposit)', async () => {
-						assert.eventEqual(txn, 'Deposit', [user1, amount]);
+					it('only one event is emitted (DepositInitiated)', async () => {
+						assert.eventEqual(txn, 'DepositInitiated', [user1, amount]);
 					});
 
 					it('only one message is sent', async () => {
@@ -278,7 +278,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 								escrowAmount,
 								emptyArray,
 							]);
-							assert.eventEqual(txn.logs[2], 'Deposit', [user1, amount]);
+							assert.eventEqual(txn.logs[2], 'DepositInitiated', [user1, amount]);
 						});
 					});
 
@@ -300,9 +300,9 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 						});
 
-						it('and one event is emitted (Deposit)', async () => {
+						it('and one event is emitted (DepositInitiated)', async () => {
 							assert.equal(txn.logs.length, 1);
-							assert.eventEqual(txn.logs[0], 'Deposit', [user1, amount]);
+							assert.eventEqual(txn.logs[0], 'DepositInitiated', [user1, amount]);
 						});
 					});
 

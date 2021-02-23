@@ -215,8 +215,8 @@ const itCanPerformDeposits = ({ ctx }) => {
 							depositReceipt = await tx.wait();
 						});
 
-						it('emitted a Deposit event', async () => {
-							const event = depositReceipt.events.find(e => e.event === 'Deposit');
+						it('emitted a DepositInitiated event', async () => {
+							const event = depositReceipt.events.find(e => e.event === 'DepositInitiated');
 							assert.exists(event);
 
 							assert.bnEqual(event.args.amount, amountToDeposit);
