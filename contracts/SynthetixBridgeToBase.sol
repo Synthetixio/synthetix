@@ -104,6 +104,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         // First, mint the escrowed SNX that are being migrated
         synthetix().mintSecondary(address(rewardEscrow), escrowedAmount);
         rewardEscrow.importVestingEntries(account, escrowedAmount, vestingEntries);
+
         emit ImportedVestingEntries(account, escrowedAmount, vestingEntries);
     }
 
@@ -111,13 +112,15 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     function finalizeDeposit(address account, uint256 depositAmount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
         synthetix().mintSecondary(account, depositAmount);
-        emit MintedSecondary(account, depositAmount);
+
+        emit DepositFinalized(account, depositAmount);
     }
 
     // invoked by Messenger on L2
     function completeRewardDeposit(uint256 amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
+
         emit MintedSecondaryRewards(amount);
     }
 
@@ -127,7 +130,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] vestingEntries
     );
-    event MintedSecondary(address indexed account, uint256 amount);
+    event DepositFinalized(address indexed account, uint256 amount);
     event MintedSecondaryRewards(uint256 amount);
     event WithdrawalInitiated(address indexed account, uint256 amount);
 }

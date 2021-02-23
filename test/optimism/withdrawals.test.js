@@ -132,13 +132,13 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					let withdrawalCompletedEvent;
 
 					const eventListener = (from, value, event) => {
-						if (event && event.event === 'WithdrawalCompleted') {
+						if (event && event.event === 'WithdrawalFinalized') {
 							withdrawalCompletedEvent = event;
 						}
 					};
 
 					before('listen to events on l1', async () => {
-						SynthetixBridgeToOptimismL1.on('WithdrawalCompleted', eventListener);
+						SynthetixBridgeToOptimismL1.on('WithdrawalFinalized', eventListener);
 					});
 
 					before('record current values', async () => {
@@ -177,10 +177,10 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 						});
 
 						before('stop listening to events on L1', async () => {
-							SynthetixBridgeToOptimismL1.off('WithdrawalCompleted', eventListener);
+							SynthetixBridgeToOptimismL1.off('WithdrawalFinalized', eventListener);
 						});
 
-						it('emitted a WithdrawalCompleted event', async () => {
+						it('emitted a WithdrawalFinalized event', async () => {
 							assert.exists(withdrawalCompletedEvent);
 							assert.bnEqual(withdrawalCompletedEvent.args.amount, amountToWithdraw);
 							assert.equal(withdrawalCompletedEvent.args.account, user1L2.address);

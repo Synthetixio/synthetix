@@ -554,8 +554,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						);
 					});
 
-					it('should emit a WithdrawalCompleted event', async () => {
-						assert.eventEqual(finalizeWithdrawalTx, 'WithdrawalCompleted', {
+					it('should emit a WithdrawalFinalized event', async () => {
+						assert.eventEqual(finalizeWithdrawalTx, 'WithdrawalFinalized', {
 							account: user1,
 							amount: finalizeWithdrawalAmount,
 						});

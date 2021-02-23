@@ -178,7 +178,7 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 						SynthetixBridgeToBaseL2.off('MintedSecondaryRewards', eventListener);
 					});
 
-					it('emitted a MintedSecondary event', async () => {
+					it('emitted a DepositFinalized event', async () => {
 						assert.exists(mintedSecondaryEvent);
 						assert.bnEqual(mintedSecondaryEvent.args.amount, amountToDeposit);
 					});

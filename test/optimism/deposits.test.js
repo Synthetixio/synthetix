@@ -199,13 +199,13 @@ const itCanPerformDeposits = ({ ctx }) => {
 						// --------------------------
 
 						const eventListener = (from, value, event) => {
-							if (event && event.event === 'MintedSecondary') {
+							if (event && event.event === 'DepositFinalized') {
 								mintedSecondaryEvent = event;
 							}
 						};
 
 						before('listen to events on l2', async () => {
-							SynthetixBridgeToBaseL2.on('MintedSecondary', eventListener);
+							SynthetixBridgeToBaseL2.on('DepositFinalized', eventListener);
 						});
 
 						before('deposit', async () => {
@@ -250,10 +250,10 @@ const itCanPerformDeposits = ({ ctx }) => {
 							});
 
 							before('stop listening to events on L2', async () => {
-								SynthetixBridgeToBaseL2.off('MintedSecondary', eventListener);
+								SynthetixBridgeToBaseL2.off('DepositFinalized', eventListener);
 							});
 
-							it('emitted a MintedSecondary event', async () => {
+							it('emitted a DepositFinalized event', async () => {
 								assert.exists(mintedSecondaryEvent);
 								assert.bnEqual(mintedSecondaryEvent.args.amount, amountToDeposit);
 								assert.equal(mintedSecondaryEvent.args.account, user1L1.address);

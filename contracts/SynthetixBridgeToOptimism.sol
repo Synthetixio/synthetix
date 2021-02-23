@@ -132,7 +132,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         synthetixERC20().transfer(account, amount);
 
         // no escrow actions - escrow remains on L2
-        emit WithdrawalCompleted(account, amount);
+        emit WithdrawalFinalized(account, amount);
     }
 
     // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
@@ -201,6 +201,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
             messageData,
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Deposit))
         );
+
         emit DepositInitiated(msg.sender, _depositAmount);
     }
 
@@ -230,6 +231,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
                     messageData,
                     uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Escrow))
                 );
+
                 emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
             }
         }
@@ -245,5 +247,5 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         VestingEntries.VestingEntry[] vestingEntries
     );
     event RewardDeposit(address indexed account, uint256 amount);
-    event WithdrawalCompleted(address indexed account, uint256 amount);
+    event WithdrawalFinalized(address indexed account, uint256 amount);
 }
