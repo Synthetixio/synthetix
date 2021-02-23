@@ -7,7 +7,7 @@ interface ISynthetixBridgeToOptimism {
     function completeWithdrawal(address account, uint amount) external;
 
     // The following functions can be invoked by users on L1
-    function initiateDeposit(uint amount) external;
+    function deposit(uint amount) external;
 
     function initiateEscrowMigration(uint256[][] calldata entryIDs) external;
 

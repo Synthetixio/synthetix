@@ -104,7 +104,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
 
     // ========== PUBLIC FUNCTIONS =========
 
-    function initiateDeposit(uint256 depositAmount) external requireActive requireZeroDebt {
+    function deposit(uint256 depositAmount) external requireActive requireZeroDebt {
         _initiateDeposit(depositAmount);
     }
 

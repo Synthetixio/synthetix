@@ -27,7 +27,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			expected: [
 				'completeWithdrawal',
 				'depositAndMigrateEscrow',
-				'initiateDeposit',
+				'deposit',
 				'initiateEscrowMigration',
 				'initiateRewardDeposit',
 				'migrateBridge',
@@ -113,20 +113,17 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				await instance.rebuildCache();
 			});
 
-			describe('initiateDeposit', () => {
+			describe('deposit', () => {
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
 						await instance.migrateBridge(randomAddress, { from: owner });
 
-						await assert.revert(instance.initiateDeposit('1'), 'Function deactivated');
+						await assert.revert(instance.deposit('1'), 'Function deactivated');
 					});
 
 					it('does not work when user has any debt', async () => {
 						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
-						await assert.revert(
-							instance.initiateDeposit('1'),
-							'Cannot deposit or migrate with debt'
-						);
+						await assert.revert(instance.deposit('1'), 'Cannot deposit or migrate with debt');
 					});
 				});
 
@@ -134,7 +131,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					let txn;
 					const amount = 100;
 					beforeEach(async () => {
-						txn = await instance.initiateDeposit(amount, { from: user1 });
+						txn = await instance.deposit(amount, { from: user1 });
 					});
 
 					it('only one event is emitted (Deposit)', async () => {

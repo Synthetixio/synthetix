@@ -57,7 +57,7 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 				SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
 
 				await assert.revert(
-					SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit),
+					SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
 					'subtraction overflow'
 				);
 			});

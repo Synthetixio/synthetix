@@ -67,13 +67,13 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 			});
 		});
 
-		describe('initiateDeposit', () => {
+		describe('deposit', () => {
 			const amountToDeposit = 1;
 
 			describe('when a user has not provided allowance to the bridge contract', () => {
 				it('the deposit should fail', async () => {
 					await assert.revert(
-						synthetixBridgeToOptimism.initiateDeposit(amountToDeposit, { from: owner }),
+						synthetixBridgeToOptimism.deposit(amountToDeposit, { from: owner }),
 						'SafeMath: subtraction overflow'
 					);
 				});
@@ -94,7 +94,7 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 					});
 
 					before('perform a deposit', async () => {
-						await synthetixBridgeToOptimism.initiateDeposit(amountToDeposit, {
+						await synthetixBridgeToOptimism.deposit(amountToDeposit, {
 							from: owner,
 						});
 					});
