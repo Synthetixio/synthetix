@@ -1,7 +1,5 @@
 pragma solidity >=0.4.24;
 
-import "../interfaces/ISynth.sol";
-
 
 interface IBaseDebtCache {
     // Views
