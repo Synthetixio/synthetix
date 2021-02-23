@@ -25,7 +25,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			abi: SynthetixBridgeToOptimism.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
-				'completeWithdrawal',
+				'finalizeWithdrawal',
 				'depositAndMigrateEscrow',
 				'deposit',
 				'initiateEscrowMigration',
@@ -506,22 +506,22 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 			});
 
-			describe('completeWithdrawal', async () => {
+			describe('finalizeWithdrawal', async () => {
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
 						await instance.migrateBridge(randomAddress, { from: owner });
 
 						await assert.revert(
-							instance.completeWithdrawal(user1, 100, {
+							instance.finalizeWithdrawal(user1, 100, {
 								from: smockedMessenger,
 							}),
 							'Function deactivated'
 						);
 					});
 
-					it('should only allow the relayer (aka messenger) to call completeWithdrawal()', async () => {
+					it('should only allow the relayer (aka messenger) to call finalizeWithdrawal()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: instance.completeWithdrawal,
+							fnc: instance.finalizeWithdrawal,
 							args: [user1, 100],
 							accounts,
 							address: smockedMessenger,
@@ -529,11 +529,11 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						});
 					});
 
-					it('should only allow the L2 bridge to invoke completeWithdrawal() via the messenger', async () => {
+					it('should only allow the L2 bridge to invoke finalizeWithdrawal() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.completeWithdrawal(user1, 100, {
+							instance.finalizeWithdrawal(user1, 100, {
 								from: smockedMessenger,
 							}),
 							'Only the L2 bridge can invoke'
@@ -542,12 +542,12 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 
 				describe('when invoked by the messenger (aka relayer)', async () => {
-					let completeWithdrawalTx;
-					const completeWithdrawalAmount = 100;
-					beforeEach('completeWithdrawal is called', async () => {
-						completeWithdrawalTx = await instance.completeWithdrawal(
+					let finalizeWithdrawalTx;
+					const finalizeWithdrawalAmount = 100;
+					beforeEach('finalizeWithdrawal is called', async () => {
+						finalizeWithdrawalTx = await instance.finalizeWithdrawal(
 							user1,
-							completeWithdrawalAmount,
+							finalizeWithdrawalAmount,
 							{
 								from: smockedMessenger,
 							}
@@ -555,18 +555,18 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 
 					it('should emit a WithdrawalCompleted event', async () => {
-						assert.eventEqual(completeWithdrawalTx, 'WithdrawalCompleted', {
+						assert.eventEqual(finalizeWithdrawalTx, 'WithdrawalCompleted', {
 							account: user1,
-							amount: completeWithdrawalAmount,
+							amount: finalizeWithdrawalAmount,
 						});
 					});
 
-					it('then SNX is minted via MintableSynthetix.completeWithdrawal', async () => {
+					it('then SNX is minted via MintableSynthetix.finalizeWithdrawal', async () => {
 						assert.equal(synthetix.smocked.transfer.calls.length, 1);
 						assert.equal(synthetix.smocked.transfer.calls[0][0], user1);
 						assert.equal(
 							synthetix.smocked.transfer.calls[0][1].toString(),
-							completeWithdrawalAmount
+							finalizeWithdrawalAmount
 						);
 					});
 				});

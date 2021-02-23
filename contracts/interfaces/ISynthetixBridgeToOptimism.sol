@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 interface ISynthetixBridgeToOptimism {
     // Invoked by the relayer on L1
-    function completeWithdrawal(address account, uint amount) external;
+    function finalizeWithdrawal(address account, uint amount) external;
 
     // The following functions can be invoked by users on L1
     function deposit(uint amount) external;

@@ -163,7 +163,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
 						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToOptimism);
 						const expectedData = getDataOfEncodedFncCall({
-							fnc: 'completeWithdrawal',
+							fnc: 'finalizeWithdrawal',
 							args: [user1, amount],
 						});
 
