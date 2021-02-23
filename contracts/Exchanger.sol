@@ -576,6 +576,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
 
         // Note: As of this point, `fee` is denominated in sUSD.
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+        // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
+        // in these currencies
+        _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
@@ -589,11 +593,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // iff the waiting period is gt 0
         if (getWaitingPeriodSecs() > 0) {
-            // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
-            // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
-            // in these currencies
-            _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
-
             // persist the exchange information for the dest key
             appendExchange(
                 destinationAddress,
