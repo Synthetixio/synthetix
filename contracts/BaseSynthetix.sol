@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./interfaces/IERC20.sol";
 import "./ExternStateToken.sol";
 import "./MixinResolver.sol";
-import "./interfaces/IBaseSynthetix.sol";
+import "./interfaces/ISynthetix.sol";
 
 // Internal references
 import "./interfaces/ISynth.sol";
@@ -17,7 +17,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IVirtualSynth.sol";
 
 
-contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, IBaseSynthetix {
+contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
     // Available Synths which can be used with the system
