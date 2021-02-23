@@ -1,3 +1,0 @@
-filters:
-  branches:
-    only: /.*(master).*/
