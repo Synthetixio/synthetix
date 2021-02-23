@@ -14,12 +14,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToBase.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: [
-				'completeDeposit',
-				'completeEscrowMigration',
-				'completeRewardDeposit',
-				'initiateWithdrawal',
-			],
+			expected: ['completeDeposit', 'completeEscrowMigration', 'completeRewardDeposit', 'withdraw'],
 		});
 	});
 
@@ -142,11 +137,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 			});
 
-			describe('initiateWithdrawal', () => {
+			describe('withdraw', () => {
 				describe('failure modes', () => {
 					it('does not work when user has less trasferable snx than the withdrawal amount', async () => {
 						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
-						await assert.revert(instance.initiateWithdrawal('1'), 'Not enough transferable SNX');
+						await assert.revert(instance.withdraw('1'), 'Not enough transferable SNX');
 					});
 				});
 
@@ -155,7 +150,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					const amount = 100;
 					const gasLimit = 3e6;
 					beforeEach('user tries to withdraw 100 tokens', async () => {
-						withdrawalTx = await instance.initiateWithdrawal(amount, { from: user1 });
+						withdrawalTx = await instance.withdraw(amount, { from: user1 });
 					});
 
 					it('then SNX is burned via mintableSyntetix.burnSecondary', async () => {

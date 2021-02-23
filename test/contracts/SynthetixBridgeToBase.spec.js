@@ -31,7 +31,7 @@ contract('SynthetixBridgeToBase (spec tests)', accounts => {
 		describe('when a user does not have the required balance', () => {
 			it('the withdrawal should fail', async () => {
 				await assert.revert(
-					synthetixBridgeToBase.initiateWithdrawal('1', { from: user }),
+					synthetixBridgeToBase.withdraw('1', { from: user }),
 					'Not enough transferable SNX'
 				);
 			});
@@ -69,7 +69,7 @@ contract('SynthetixBridgeToBase (spec tests)', accounts => {
 				});
 
 				before('inititate a withdrawal', async () => {
-					await synthetixBridgeToBase.initiateWithdrawal(amountToWithdraw, {
+					await synthetixBridgeToBase.withdraw(amountToWithdraw, {
 						from: owner,
 					});
 				});

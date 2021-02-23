@@ -6,7 +6,7 @@ import "./IRewardEscrowV2.sol";
 
 interface ISynthetixBridgeToBase {
     // invoked by users on L2
-    function initiateWithdrawal(uint amount) external;
+    function withdraw(uint amount) external;
 
     //  // The following functions can only be invoked by the xDomain messenger on L2
     function completeDeposit(address account, uint depositAmount) external;

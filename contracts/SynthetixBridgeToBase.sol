@@ -73,7 +73,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L2
-    function initiateWithdrawal(uint amount) external {
+    function withdraw(uint amount) external {
         require(synthetix().transferableSynthetix(msg.sender) >= amount, "Not enough transferable SNX");
 
         // instruct L2 Synthetix to burn this supply

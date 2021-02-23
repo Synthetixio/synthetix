@@ -93,7 +93,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 					SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 					await assert.revert(
-						SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit),
+						SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
 						'subtraction overflow'
 					);
 				});
@@ -138,7 +138,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 						SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 						await assert.revert(
-							SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit),
+							SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
 							'Cannot deposit or migrate with debt'
 						);
 					});
@@ -172,7 +172,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 							await assert.revert(
-								SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit),
+								SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
 								'Synthetix is suspended'
 							);
 						});
@@ -211,7 +211,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 						before('deposit', async () => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
-							const tx = await SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit);
+							const tx = await SynthetixBridgeToOptimismL1.deposit(amountToDeposit);
 							depositReceipt = await tx.wait();
 						});
 

@@ -59,7 +59,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			);
 
 			SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
-			await SynthetixBridgeToOptimismL1.initiateDeposit(amountToWithdraw);
+			await SynthetixBridgeToOptimismL1.deposit(amountToWithdraw);
 		});
 
 		// --------------------------
@@ -112,7 +112,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					it('reverts when the user attempts to initiate a withdrawal', async () => {
 						SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
-						const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(1);
+						const tx = await SynthetixBridgeToBaseL2.withdraw(1);
 
 						await assertRevertOptimism({
 							tx,
@@ -149,7 +149,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					before('initiate withdrawal', async () => {
 						SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
-						const tx = await SynthetixBridgeToBaseL2.initiateWithdrawal(amountToWithdraw);
+						const tx = await SynthetixBridgeToBaseL2.withdraw(amountToWithdraw);
 						withdrawalReceipt = await tx.wait();
 					});
 
