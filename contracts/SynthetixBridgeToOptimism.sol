@@ -206,7 +206,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Deposit))
         );
 
-        emit DepositInitiated(msg.sender, _depositAmount);
+        emit DepositInitiated(msg.sender, _to, _depositAmount);
     }
 
     function _initiateEscrowMigration(uint256[][] memory _entryIDs) private {
@@ -244,7 +244,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     // ========== EVENTS ==========
 
     event BridgeMigrated(address oldBridge, address newBridge, uint256 amount);
-    event DepositInitiated(address indexed account, uint256 amount);
+    event DepositInitiated(address indexed account, address to, uint256 amount);
     event ExportedVestingEntries(
         address indexed account,
         uint256 escrowedAccountBalance,
