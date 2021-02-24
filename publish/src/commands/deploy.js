@@ -7,6 +7,9 @@ const Deployer = require('../Deployer');
 const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
+const pLimit = require('p-limit');
+
+const limitPromise = pLimit(5);
 
 const {
 	ensureNetwork,
@@ -1475,7 +1478,7 @@ const deploy = async ({
 	const resolverAddressesRequired = (
 		await Promise.all(
 			contractsWithRebuildableCache.map(([, contract]) => {
-				return contract.methods.resolverAddressesRequired().call();
+				return limitPromise(() => contract.methods.resolverAddressesRequired().call());
 			})
 		)
 	).reduce((allAddresses, contractAddresses) => {
@@ -1487,7 +1490,7 @@ const deploy = async ({
 	// check which resolver addresses are imported
 	const resolvedAddresses = await Promise.all(
 		resolverAddressesRequired.map(id => {
-			return addressResolver.methods.getAddress(id).call();
+			return limitPromise(() => addressResolver.methods.getAddress(id).call());
 		})
 	);
 	const isResolverAddressImported = {};
