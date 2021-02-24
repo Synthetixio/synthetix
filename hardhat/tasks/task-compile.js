@@ -25,7 +25,7 @@ task('compile')
 		if (taskArguments.useOvm) {
 			console.log(gray('Compiling with OVM Solidity compiler...'));
 
-			require('@eth-optimism/plugins/hardhat/compiler/0.5.16');
+			require('@eth-optimism/plugins/hardhat/compiler');
 			hre.config.ignoreNonOvmContracts = true;
 		}
 
