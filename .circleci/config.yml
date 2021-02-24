@@ -12,7 +12,7 @@ jobs:
   job-compile:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -26,7 +26,7 @@ jobs:
   job-lint:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -38,7 +38,7 @@ jobs:
   job-pack-browser:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -52,7 +52,7 @@ jobs:
   job-prepare:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -73,7 +73,7 @@ jobs:
   job-prod-diff-tests-local-ovm:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -91,7 +91,7 @@ jobs:
   job-prod-diff-tests-local:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -109,7 +109,7 @@ jobs:
   job-prod-diff-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -130,7 +130,7 @@ jobs:
   job-prod-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -148,7 +148,7 @@ jobs:
   job-static-analysis:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -165,7 +165,7 @@ jobs:
   job-test-deploy-script:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -190,7 +190,7 @@ jobs:
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -204,7 +204,7 @@ jobs:
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -219,7 +219,7 @@ jobs:
   job-unit-tests-ovm:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -233,7 +233,7 @@ jobs:
   job-unit-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -255,7 +255,7 @@ jobs:
   job-validate-deployments:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -267,7 +267,7 @@ jobs:
   job-validate-etherscan:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.19-focal
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
