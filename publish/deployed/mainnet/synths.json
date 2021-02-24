@@ -335,7 +335,7 @@
 		"inverted": {
 			"entryPoint": 4.06,
 			"upperLimit": 6.09,
-			"lowerLimit": 6.09
+			"lowerLimit": 2.03
 		}
 	},
 	{
@@ -384,9 +384,9 @@
 		"index": "sCEX",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 4946.0,
-			"upperLimit": 7419.0,
-			"lowerLimit": 2473.0
+			"entryPoint": 4946,
+			"upperLimit": 7419,
+			"lowerLimit": 2437
 		}
 	},
 	{
@@ -395,9 +395,9 @@
 		"index": "sDEFI",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 13382.0,
-			"upperLimit": 20073.0,
-			"lowerLimit": 6691.0
+			"entryPoint": 13382,
+			"upperLimit": 20073,
+			"lowerLimit": 6691
 		}
 	},
 	{
