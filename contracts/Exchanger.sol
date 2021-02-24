@@ -587,16 +587,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
 
         // persist the exchange information for the dest key iff the waiting period is gt 0
-        if (getWaitingPeriodSecs() > 0) {
-            appendExchange(
-                destinationAddress,
-                sourceCurrencyKey,
-                sourceAmountAfterSettlement,
-                destinationCurrencyKey,
-                amountReceived,
-                exchangeFeeRate
-            );
-        }
+        appendExchange(
+            destinationAddress,
+            sourceCurrencyKey,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey,
+            amountReceived,
+            exchangeFeeRate
+        );
     }
 
     function _convert(
