@@ -273,9 +273,9 @@
 		"asset": "BNB",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 226.779,
-			"upperLimit": 340.169,
-			"lowerLimit": 113.39
+			"entryPoint": 253,
+			"upperLimit": 379.50,
+			"lowerLimit": 126.50
 		}
 	},
 	{
@@ -293,9 +293,9 @@
 		"asset": "XTZ",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 3.401,
-			"upperLimit": 5.101,
-			"lowerLimit": 1.7
+			"entryPoint": 3.73,
+			"upperLimit": 5.595,
+			"lowerLimit": 1.865
 		}
 	},
 	{
@@ -313,9 +313,9 @@
 		"asset": "LINK",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 26.07,
-			"upperLimit": 39.105,
-			"lowerLimit": 13.035
+			"entryPoint": 28.15,
+			"upperLimit": 42.225,
+			"lowerLimit": 14.075
 		}
 	},
 	{
@@ -333,9 +333,9 @@
 		"asset": "EOS",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 3.883,
-			"upperLimit": 5.824,
-			"lowerLimit": 1.941
+			"entryPoint": 4.06,
+			"upperLimit": 6.09,
+			"lowerLimit": 2.03
 		}
 	},
 	{
@@ -353,9 +353,9 @@
 		"asset": "DASH",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 236.125,
-			"upperLimit": 354.188,
-			"lowerLimit": 118.063
+			"entryPoint": 241.50,
+			"upperLimit": 362.25,
+			"lowerLimit": 120.75
 		}
 	},
 	{
@@ -384,9 +384,9 @@
 		"index": "sCEX",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 4507.454,
-			"upperLimit": 6761.181,
-			"lowerLimit": 2253.727
+			"entryPoint": 4946,
+			"upperLimit": 7419,
+			"lowerLimit": 2437
 		}
 	},
 	{
@@ -395,9 +395,9 @@
 		"index": "sDEFI",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 12548.09,
-			"upperLimit": 18822.142,
-			"lowerLimit": 6274.047
+			"entryPoint": 13382,
+			"upperLimit": 20073,
+			"lowerLimit": 6691
 		}
 	},
 	{
@@ -435,9 +435,9 @@
 		"asset": "YFI",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 33796.017,
-			"upperLimit": 50694.026,
-			"lowerLimit": 16898.009
+			"entryPoint": 35368.00,
+			"upperLimit": 53052.00,
+			"lowerLimit": 17684.00
 		}
 	},
 	{
@@ -455,9 +455,9 @@
 		"asset": "REN",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 1.154,
-			"upperLimit": 1.73,
-			"lowerLimit": 0.577
+			"entryPoint": 1.26,
+			"upperLimit": 1.89,
+			"lowerLimit": 0.63
 		}
 	},
 	{
