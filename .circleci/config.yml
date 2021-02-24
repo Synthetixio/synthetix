@@ -60,10 +60,10 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - "v2-dependencies--"
+            - "v3-dependencies-"
       - run: npm install
       - save_cache:
-          key: "v2-dependencies--"
+          key: "v3-dependencies-"
           paths:
             - node_modules
       - persist_to_workspace:
