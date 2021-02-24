@@ -105,7 +105,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     // ========== PUBLIC FUNCTIONS =========
 
     function deposit(uint256 depositAmount) external requireActive requireZeroDebt {
-        _initiateDeposit(depositAmount);
+        _initiateDeposit(msg.sender, depositAmount);
+    }
+
+    function depositTo(address to, uint amount) external {
+        _initiateDeposit(to, amount);
     }
 
     function initiateEscrowMigration(uint256[][] memory entryIDs) public requireActive requireZeroDebt {
@@ -166,7 +170,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         }
 
         if (depositAmount > 0) {
-            _initiateDeposit(depositAmount);
+            _initiateDeposit(msg.sender, depositAmount);
         }
     }
 
@@ -187,13 +191,13 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         emit RewardDeposit(msg.sender, _amount);
     }
 
-    function _initiateDeposit(uint256 _depositAmount) private {
+    function _initiateDeposit(address _to, uint256 _depositAmount) private {
         // Transfer SNX to L2
         // First, move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), _depositAmount);
         // create message payload for L2
         ISynthetixBridgeToBase bridgeToBase;
-        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeDeposit.selector, msg.sender, _depositAmount);
+        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeDeposit.selector, _to, _depositAmount);
 
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(

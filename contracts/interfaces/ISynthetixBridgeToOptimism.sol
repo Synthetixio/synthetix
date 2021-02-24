@@ -9,6 +9,8 @@ interface ISynthetixBridgeToOptimism {
     // The following functions can be invoked by users on L1
     function deposit(uint amount) external;
 
+    function depositTo(address to, uint amount) external;
+
     function initiateEscrowMigration(uint256[][] calldata entryIDs) external;
 
     function initiateRewardDeposit(uint amount) external;
