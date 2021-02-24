@@ -18,7 +18,7 @@ const {
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
-contract('ExchangeRates (prod tests)', (accounts) => {
+contract('ExchangeRates (prod tests)', accounts => {
 	const [, user] = accounts;
 
 	let owner;
@@ -88,7 +88,7 @@ contract('ExchangeRates (prod tests)', (accounts) => {
 
 	describe('when an exchange is made', () => {
 		let waitingPeriod;
-		before(async function () {
+		before(async function() {
 			if (config.useOvm) {
 				this.skip();
 			}

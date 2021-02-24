@@ -18,7 +18,7 @@ const {
 	resumeSystem,
 } = require('./utils');
 
-contract('TradingRewards (prod tests)', (accounts) => {
+contract('TradingRewards (prod tests)', accounts => {
 	const [, user] = accounts;
 
 	let owner;
@@ -29,7 +29,7 @@ contract('TradingRewards (prod tests)', (accounts) => {
 
 	let exchangeLogs;
 
-	before('prepare', async function () {
+	before('prepare', async function() {
 		network = config.targetNetwork;
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
@@ -120,7 +120,7 @@ contract('TradingRewards (prod tests)', (accounts) => {
 			});
 
 			it('did not emit an ExchangeFeeRecorded event', async () => {
-				assert.isFalse(exchangeLogs.some((log) => log.name === 'ExchangeFeeRecorded'));
+				assert.isFalse(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
 			});
 
 			it('did not record a fee in TradingRewards', async () => {
@@ -161,7 +161,7 @@ contract('TradingRewards (prod tests)', (accounts) => {
 			});
 
 			it('emitted an ExchangeFeeRecorded event', async () => {
-				assert.isTrue(exchangeLogs.some((log) => log.name === 'ExchangeFeeRecorded'));
+				assert.isTrue(exchangeLogs.some(log => log.name === 'ExchangeFeeRecorded'));
 			});
 
 			it('recorded a fee in TradingRewards', async () => {

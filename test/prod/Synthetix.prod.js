@@ -25,7 +25,7 @@ const {
 const gasFromReceipt = ({ receipt }) =>
 	receipt.gasUsed > 1e6 ? receipt.gasUsed / 1e6 + 'm' : receipt.gasUsed / 1e3 + 'k';
 
-contract('Synthetix (prod tests)', (accounts) => {
+contract('Synthetix (prod tests)', accounts => {
 	const [, user1, user2] = accounts;
 
 	let owner;
@@ -182,7 +182,7 @@ contract('Synthetix (prod tests)', (accounts) => {
 		});
 
 		describe('exchanging', () => {
-			before('skip if there is no exchanging implementation', async function () {
+			before('skip if there is no exchanging implementation', async function() {
 				if (config.useOvm) {
 					this.skip();
 				}
@@ -237,14 +237,14 @@ contract('Synthetix (prod tests)', (accounts) => {
 		let Exchanger;
 		let vSynth;
 
-		const vSynthCreationEvent = (txn) => {
+		const vSynthCreationEvent = txn => {
 			const vscEntry = Exchanger.abi.find(({ name }) => name === 'VirtualSynthCreated');
 			const log = txn.receipt.rawLogs.find(({ topics }) => topics[0] === vscEntry.signature);
 
 			return web3.eth.abi.decodeLog(vscEntry.inputs, log.data, log.topics.slice(1));
 		};
 
-		before(async function () {
+		before(async function() {
 			const virtualSynths = await implementsVirtualSynths({ network, deploymentPath });
 			if (config.useOvm || !virtualSynths) {
 				this.skip();
@@ -291,7 +291,7 @@ contract('Synthetix (prod tests)', (accounts) => {
 
 				vSynth = await artifacts.require('VirtualSynth').at(decoded.vSynth);
 
-				const trimUtf8EscapeChars = (input) => web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
+				const trimUtf8EscapeChars = input => web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
 
 				assert.equal(trimUtf8EscapeChars(await vSynth.name()), 'Virtual Synth sETH');
 				assert.equal(trimUtf8EscapeChars(await vSynth.symbol()), 'vsETH');
@@ -361,11 +361,11 @@ contract('Synthetix (prod tests)', (accounts) => {
 		});
 
 		describe('with virtual tokens and a custom swap contract', () => {
-			const usdcHolder = knownAccounts['mainnet'].find((a) => a.name === 'binance').address;
+			const usdcHolder = knownAccounts['mainnet'].find(a => a.name === 'binance').address;
 			const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 			const wbtc = '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599';
 
-			before('skip if not on mainnet', async function () {
+			before('skip if not on mainnet', async function() {
 				if (network !== 'mainnet') {
 					this.skip();
 				}

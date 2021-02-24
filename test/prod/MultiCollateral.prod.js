@@ -21,7 +21,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
-contract('MultiCollateral (prod tests)', (accounts) => {
+contract('MultiCollateral (prod tests)', accounts => {
 	const [, user1] = accounts;
 
 	let owner;
@@ -44,7 +44,7 @@ contract('MultiCollateral (prod tests)', (accounts) => {
 		ReadProxyAddressResolver,
 		SynthsUSD;
 
-	before('prepare', async function () {
+	before('prepare', async function() {
 		network = config.targetNetwork;
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
 		owner = getUsers({ network, user: 'owner' }).address;
@@ -113,7 +113,7 @@ contract('MultiCollateral (prod tests)', (accounts) => {
 		});
 
 		if (network === 'mainnet') {
-			loansAccount = knownAccounts[network].find((a) => a.name === 'loansAccount').address;
+			loansAccount = knownAccounts[network].find(a => a.name === 'loansAccount').address;
 
 			await ensureAccountHassUSD({
 				amount: toUnit('1000'),
@@ -182,7 +182,7 @@ contract('MultiCollateral (prod tests)', (accounts) => {
 		describe(`when using ${type} to deposit ${amountToDeposit.toString()} ${collateralCurrency} and borrow ${amountToBorrow.toString()} ${borrowCurrency}`, () => {
 			let tx;
 
-			before('retrieve the collateral/state contract pair', async function () {
+			before('retrieve the collateral/state contract pair', async function() {
 				switch (type) {
 					case 'CollateralEth':
 						CollateralContract = CollateralEth;
@@ -234,7 +234,7 @@ contract('MultiCollateral (prod tests)', (accounts) => {
 
 						let altHolder;
 						if (network !== 'local') {
-							const account = knownAccounts[network].find((a) => a.name === 'renBTCWallet');
+							const account = knownAccounts[network].find(a => a.name === 'renBTCWallet');
 							if (account) {
 								altHolder = account.address;
 							}
@@ -282,14 +282,14 @@ contract('MultiCollateral (prod tests)', (accounts) => {
 						});
 					}
 
-					const event = tx.receipt.logs.find((l) => l.event === 'LoanCreated');
+					const event = tx.receipt.logs.find(l => l.event === 'LoanCreated');
 					loanId = event.args.id;
 
 					loan = await CollateralStateContract.getLoan(user1, loanId);
 				});
 
 				it('emits a LoanCreated event with the expected parameters', async () => {
-					const event = tx.receipt.logs.find((l) => l.event === 'LoanCreated');
+					const event = tx.receipt.logs.find(l => l.event === 'LoanCreated');
 
 					assert.equal(event.args.account, user1);
 					assert.bnEqual(event.args.id, totalLoansBefore.add(Web3.utils.toBN(1)));
@@ -465,7 +465,7 @@ contract('MultiCollateral (prod tests)', (accounts) => {
 					from: loansAccount,
 				});
 
-				let event = tx.receipt.logs.find((l) => l.event === 'LoanRepaymentMade');
+				let event = tx.receipt.logs.find(l => l.event === 'LoanRepaymentMade');
 
 				assert.equal(event.args.account, loansAccount);
 				assert.equal(event.args.repayer, loansAccount);
@@ -481,7 +481,7 @@ contract('MultiCollateral (prod tests)', (accounts) => {
 					from: loansAccount,
 				});
 
-				event = tx.receipt.logs.find((l) => l.event === 'CollateralWithdrawn');
+				event = tx.receipt.logs.find(l => l.event === 'CollateralWithdrawn');
 
 				assert.equal(event.args.account, loansAccount);
 				assert.bnEqual(event.args.amountWithdrawn, withdrawAmount);
@@ -493,7 +493,7 @@ contract('MultiCollateral (prod tests)', (accounts) => {
 					from: loansAccount,
 				});
 
-				event = tx.receipt.logs.find((l) => l.event === 'LoanClosed');
+				event = tx.receipt.logs.find(l => l.event === 'LoanClosed');
 
 				assert.equal(event.args.account, loansAccount);
 				assert.equal(event.args.id, id);
