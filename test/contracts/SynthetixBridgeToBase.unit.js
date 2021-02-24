@@ -14,7 +14,13 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToBase.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['finalizeDeposit', 'completeEscrowMigration', 'completeRewardDeposit', 'withdraw'],
+			expected: [
+				'finalizeDeposit',
+				'completeEscrowMigration',
+				'completeRewardDeposit',
+				'withdraw',
+				'withdrawTo',
+			],
 		});
 	});
 

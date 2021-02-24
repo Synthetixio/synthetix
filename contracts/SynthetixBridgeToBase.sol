@@ -74,6 +74,14 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
 
     // invoked by user on L2
     function withdraw(uint amount) external {
+        _initiateWithdraw(msg.sender, amount);
+    }
+
+    function withdrawTo(address to, uint amount) external {
+        _initiateWithdraw(to, amount);
+    }
+
+    function _initiateWithdraw(address to, uint amount) private {
         require(synthetix().transferableSynthetix(msg.sender) >= amount, "Not enough transferable SNX");
 
         // instruct L2 Synthetix to burn this supply
@@ -81,7 +89,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
 
         // create message payload for L1
         ISynthetixBridgeToOptimism bridgeToOptimism;
-        bytes memory messageData = abi.encodeWithSelector(bridgeToOptimism.finalizeWithdrawal.selector, msg.sender, amount);
+        bytes memory messageData = abi.encodeWithSelector(bridgeToOptimism.finalizeWithdrawal.selector, to, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
         messenger().sendMessage(
