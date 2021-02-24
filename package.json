@@ -113,7 +113,7 @@
 		"mustache": "^4.0.1",
 		"prettier": "^1.14.2",
 		"prettier-plugin-solidity": "1.0.0-alpha.51",
-		"pretty-quick": "2.0.2",
+		"pretty-quick": "^2.0.2",
 		"rlp": "^2.2.6",
 		"semver": "7.3.2",
 		"solc": "0.5.16",
