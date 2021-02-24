@@ -4,10 +4,10 @@ steps:
   - checkout
   - restore_cache:
       keys:
-        - 'v3-dependencies-{{ checksum "package-lock.json" }}'
+        - 'v4-dependencies-{{ checksum "package-lock.json" }}'
   - run: npm install
   - save_cache:
-      key: 'v3-dependencies-{{ checksum "package-lock.json" }}'
+      key: 'v4-dependencies-{{ checksum "package-lock.json" }}'
       paths:
         - node_modules
   - persist_to_workspace:
