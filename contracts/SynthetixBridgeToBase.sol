@@ -98,7 +98,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
-        emit WithdrawalInitiated(msg.sender, amount);
+        emit WithdrawalInitiated(msg.sender, to, amount);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
@@ -140,5 +140,5 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     );
     event DepositFinalized(address indexed account, uint256 amount);
     event MintedSecondaryRewards(uint256 amount);
-    event WithdrawalInitiated(address indexed account, uint256 amount);
+    event WithdrawalInitiated(address indexed account, address to, uint256 amount);
 }

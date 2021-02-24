@@ -180,6 +180,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					it('and a WithdrawalInitiated event is emitted', async () => {
 						assert.eventEqual(withdrawalTx, 'WithdrawalInitiated', {
 							account: user1,
+							to: user1,
 							amount: amount,
 						});
 					});
