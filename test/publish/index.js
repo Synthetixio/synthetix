@@ -53,7 +53,7 @@ const {
 	wrap,
 } = snx;
 
-const limitPromise = pLimit(3);
+const limitPromise = pLimit(1);
 
 describe('publish scripts', () => {
 	const network = 'local';

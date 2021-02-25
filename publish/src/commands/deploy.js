@@ -9,7 +9,7 @@ const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
 const pLimit = require('p-limit');
 
-const limitPromise = pLimit(3);
+const limitPromise = pLimit(1);
 
 const {
 	ensureNetwork,
