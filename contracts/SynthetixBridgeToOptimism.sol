@@ -108,7 +108,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         _initiateDeposit(msg.sender, depositAmount);
     }
 
-    function depositTo(address to, uint amount) external {
+    function depositTo(address to, uint amount) external requireActive requireZeroDebt {
         _initiateDeposit(to, amount);
     }
 

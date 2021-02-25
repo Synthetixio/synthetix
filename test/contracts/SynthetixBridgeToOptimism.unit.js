@@ -153,6 +153,48 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 			});
 
+			describe('depositTo', () => {
+				describe('failure modes', () => {
+					it('does not work when the contract has been deactivated', async () => {
+						await instance.migrateBridge(randomAddress, { from: owner });
+
+						await assert.revert(instance.depositTo(randomAddress, '1'), 'Function deactivated');
+					});
+
+					it('does not work when user has any debt', async () => {
+						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
+						await assert.revert(
+							instance.depositTo(randomAddress, '1'),
+							'Cannot deposit or migrate with debt'
+						);
+					});
+				});
+
+				describe('when invoked by a user', () => {
+					let txn;
+					const amount = 100;
+					beforeEach(async () => {
+						txn = await instance.depositTo(randomAddress, amount, { from: user1 });
+					});
+
+					it('only one event is emitted (DepositInitiated)', async () => {
+						assert.eventEqual(txn, 'DepositInitiated', [user1, randomAddress, amount]);
+					});
+
+					it('only one message is sent', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
+						const expectedData = getDataOfEncodedFncCall({
+							contract: 'SynthetixBridgeToBase',
+							fnc: 'finalizeDeposit',
+							args: [randomAddress, amount],
+						});
+						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
+					});
+				});
+			});
+
 			describe('initiateEscrowMigration', () => {
 				const entryIds = [
 					[1, 2, 3],
