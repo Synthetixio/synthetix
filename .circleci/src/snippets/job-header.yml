@@ -1,6 +1,0 @@
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
-    auth:
-      username: $DOCKERHUB_USERNAME
-      password: $DOCKERHUB_TOKEN

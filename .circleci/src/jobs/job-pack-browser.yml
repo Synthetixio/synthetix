@@ -1,9 +1,0 @@
-# Packs js code for browser usage
-{{> job-header.yml}}
-steps:
-  - checkout
-  - attach_workspace:
-      at: .
-  - run: npm run pack
-  - store_artifacts:
-      path: browser.js
