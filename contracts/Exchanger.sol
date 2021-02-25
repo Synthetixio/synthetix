@@ -512,12 +512,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
-        bool needsSettlement = getWaitingPeriodSecs() > 0 ? true : false;
-
-        // If settlement is needed then update the source amount
-        if (needsSettlement) {
-            sourceAmount = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
-        }
+        sourceAmount = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
@@ -584,7 +579,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
 
         // iff the waiting period is gt 0
-        if (needsSettlement) {
+        if (getWaitingPeriodSecs() > 0) {
             // persist the exchange information for the dest key
             appendExchange(
                 destinationAddress,
