@@ -3,8 +3,8 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
-const itCanPerformDeposit = ({ ctx }) => {
-	describe('[DEPOSIT] when migrating SNX from L1 to L2', () => {
+const itCanPerformDepositTo = ({ ctx }) => {
+	describe('[DEPOSIT TO] when migrating SNX from L1 to a separate address on L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		let user1L1;
@@ -13,6 +13,8 @@ const itCanPerformDeposit = ({ ctx }) => {
 		let SynthetixL2, SynthetixBridgeToBaseL2;
 
 		let snapshotId;
+
+		const randomAddress = ethers.Wallet.createRandom().address;
 
 		// --------------------------
 		// Setup
@@ -93,7 +95,7 @@ const itCanPerformDeposit = ({ ctx }) => {
 					SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 					await assert.revert(
-						SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
+						SynthetixBridgeToOptimismL1.depositTo(randomAddress, amountToDeposit),
 						'subtraction overflow'
 					);
 				});
@@ -138,7 +140,7 @@ const itCanPerformDeposit = ({ ctx }) => {
 						SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 						await assert.revert(
-							SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
+							SynthetixBridgeToOptimismL1.depositTo(randomAddress, amountToDeposit),
 							'Cannot deposit or migrate with debt'
 						);
 					});
@@ -168,11 +170,11 @@ const itCanPerformDeposit = ({ ctx }) => {
 							await SystemStatusL1.resumeSystem();
 						});
 
-						it('reverts when the user attempts to initiate a deposit', async () => {
+						it('reverts when the user attempts to deposit to a an different account', async () => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 							await assert.revert(
-								SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
+								SynthetixBridgeToOptimismL1.depositTo(randomAddress, amountToDeposit),
 								'Synthetix is suspended'
 							);
 						});
@@ -186,12 +188,14 @@ const itCanPerformDeposit = ({ ctx }) => {
 						let user1BalanceL2;
 						let bridgeBalanceL1;
 						let mintedSecondaryEvent;
+						let randomAddressBalanceL2;
 
 						before('record current values', async () => {
 							bridgeBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address);
 
 							user1BalanceL1 = await SynthetixL1.balanceOf(user1L1.address);
 							user1BalanceL2 = await SynthetixL2.balanceOf(user1L1.address);
+							randomAddressBalanceL2 = await SynthetixL2.balanceOf(randomAddress);
 						});
 
 						// --------------------------
@@ -208,10 +212,13 @@ const itCanPerformDeposit = ({ ctx }) => {
 							SynthetixBridgeToBaseL2.on('DepositFinalized', eventListener);
 						});
 
-						before('deposit', async () => {
+						before('depositTo', async () => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
-							const tx = await SynthetixBridgeToOptimismL1.deposit(amountToDeposit);
+							const tx = await SynthetixBridgeToOptimismL1.depositTo(
+								randomAddress,
+								amountToDeposit
+							);
 							depositReceipt = await tx.wait();
 						});
 
@@ -219,8 +226,9 @@ const itCanPerformDeposit = ({ ctx }) => {
 							const event = depositReceipt.events.find(e => e.event === 'DepositInitiated');
 							assert.exists(event);
 
-							assert.bnEqual(event.args.amount, amountToDeposit);
 							assert.equal(event.args.account, user1L1.address);
+							assert.equal(event.args.to, randomAddress);
+							assert.bnEqual(event.args.amount, amountToDeposit);
 						});
 
 						it('shows that the users new balance L1 is reduced', async () => {
@@ -256,13 +264,14 @@ const itCanPerformDeposit = ({ ctx }) => {
 							it('emitted a DepositFinalized event', async () => {
 								assert.exists(mintedSecondaryEvent);
 								assert.bnEqual(mintedSecondaryEvent.args.amount, amountToDeposit);
-								assert.equal(mintedSecondaryEvent.args.account, user1L1.address);
+								assert.equal(mintedSecondaryEvent.args.account, randomAddress);
 							});
 
-							it('shows that the users L2 balance increased', async () => {
+							it('shows that the L2 balances are updated', async () => {
+								assert.bnEqual(await SynthetixL2.balanceOf(user1L1.address), user1BalanceL2);
 								assert.bnEqual(
-									await SynthetixL2.balanceOf(user1L1.address),
-									user1BalanceL2.add(amountToDeposit)
+									await SynthetixL2.balanceOf(randomAddress),
+									randomAddressBalanceL2.add(amountToDeposit)
 								);
 							});
 						});
@@ -274,5 +283,5 @@ const itCanPerformDeposit = ({ ctx }) => {
 };
 
 module.exports = {
-	itCanPerformDeposit,
+	itCanPerformDepositTo,
 };

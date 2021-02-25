@@ -5,8 +5,9 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { toBytes32 } = require('../..');
 const { itCanPerformDeposits } = require('./deposits.test');
+const { itCanPerformDepositsTo } = require('./depositsTo.test');
 const { itCanPerformRewardDeposits } = require('./rewards.test');
-const { itCanPerformWithdrawals } = require('./withdrawals.test');
+const { itCanPerformWithdrawals } = require('./withdraw.test');
 const { itCanPerformEscrowMigration } = require('./migrateEscrow.test');
 const { itCanPerformDepositAndEscrowMigration } = require('./depositAndMigrateEscrow.test');
 
@@ -166,6 +167,7 @@ describe('Layer 2 production tests', () => {
 		// --------------------------
 
 		itCanPerformDeposits({ ctx: this });
+		itCanPerformDepositsTo({ ctx: this });
 		itCanPerformWithdrawals({ ctx: this });
 		itCanPerformRewardDeposits({ ctx: this });
 		itCanPerformEscrowMigration({ ctx: this });
