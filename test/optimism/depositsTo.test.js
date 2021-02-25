@@ -3,7 +3,7 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
-const itCanPerformDepositTo = ({ ctx }) => {
+const itCanPerformDepositsTo = ({ ctx }) => {
 	describe('[DEPOSIT TO] when migrating SNX from L1 to a separate address on L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
@@ -283,5 +283,5 @@ const itCanPerformDepositTo = ({ ctx }) => {
 };
 
 module.exports = {
-	itCanPerformDepositTo,
+	itCanPerformDepositsTo,
 };
