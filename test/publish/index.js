@@ -3,8 +3,6 @@ const path = require('path');
 const assert = require('assert');
 const pLimit = require('p-limit');
 
-const limitPromise = pLimit(5);
-
 const { isAddress } = require('web3-utils');
 const Web3 = require('web3');
 
@@ -54,6 +52,8 @@ const {
 	},
 	wrap,
 } = snx;
+
+const limitPromise = pLimit(3);
 
 describe('publish scripts', () => {
 	const network = 'local';
