@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const pLimit = require('p-limit');
+
+const limitPromise = pLimit(5);
 
 const { isAddress } = require('web3-utils');
 const Web3 = require('web3');
@@ -113,7 +116,7 @@ describe('publish scripts', () => {
 			response = await method.call();
 		}
 
-		return response;
+		return limitPromise(() => response);
 	};
 
 	before(() => {
