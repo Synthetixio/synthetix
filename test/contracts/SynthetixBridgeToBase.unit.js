@@ -145,7 +145,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 			describe('withdraw', () => {
 				describe('failure modes', () => {
-					it('does not work when user has less trasferable snx than the withdrawal amount', async () => {
+					it('does not work when the user has less trasferable snx than the withdrawal amount', async () => {
 						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
 						await assert.revert(instance.withdraw('1'), 'Not enough transferable SNX');
 					});
@@ -181,6 +181,53 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.eventEqual(withdrawalTx, 'WithdrawalInitiated', {
 							account: user1,
 							to: user1,
+							amount: amount,
+						});
+					});
+				});
+			});
+
+			describe('withdrawTo', () => {
+				describe('failure modes', () => {
+					it('does not work when the user has less trasferable snx than the withdrawal amount', async () => {
+						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
+						await assert.revert(
+							instance.withdrawTo(randomAddress, '1'),
+							'Not enough transferable SNX'
+						);
+					});
+				});
+
+				describe('when invoked by a user', () => {
+					let withdrawalTx;
+					const amount = 100;
+					const gasLimit = 3e6;
+					beforeEach('user tries to withdraw 100 tokens to a different address', async () => {
+						withdrawalTx = await instance.withdrawTo(randomAddress, amount, { from: user1 });
+					});
+
+					it('then SNX is burned via mintableSyntetix.burnSecondary to the specified address', async () => {
+						assert.equal(mintableSynthetix.smocked.burnSecondary.calls.length, 1);
+						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][0], user1);
+						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][1].toString(), amount);
+					});
+
+					it('the message is relayed', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToOptimism);
+						const expectedData = getDataOfEncodedFncCall({
+							fnc: 'finalizeWithdrawal',
+							args: [randomAddress, amount],
+						});
+
+						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[0][2], gasLimit.toString());
+					});
+
+					it('and a WithdrawalInitiated event is emitted', async () => {
+						assert.eventEqual(withdrawalTx, 'WithdrawalInitiated', {
+							account: user1,
+							to: randomAddress,
 							amount: amount,
 						});
 					});

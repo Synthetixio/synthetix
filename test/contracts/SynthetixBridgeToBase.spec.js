@@ -12,7 +12,7 @@ const {
 } = require('../../');
 
 contract('SynthetixBridgeToBase (spec tests)', accounts => {
-	const [, owner, user] = accounts;
+	const [, owner, user, randomAddress] = accounts;
 
 	let mintableSynthetix, synthetixBridgeToBase, systemSettings;
 
@@ -29,9 +29,16 @@ contract('SynthetixBridgeToBase (spec tests)', accounts => {
 		});
 
 		describe('when a user does not have the required balance', () => {
-			it('the withdrawal should fail', async () => {
+			it('withdraw() should fail', async () => {
 				await assert.revert(
 					synthetixBridgeToBase.withdraw('1', { from: user }),
+					'Not enough transferable SNX'
+				);
+			});
+
+			it('withdrawTo() should fail', async () => {
+				await assert.revert(
+					synthetixBridgeToBase.withdrawTo(randomAddress, '1', { from: user }),
 					'Not enough transferable SNX'
 				);
 			});
@@ -58,18 +65,40 @@ contract('SynthetixBridgeToBase (spec tests)', accounts => {
 
 		describe('when a user has the required balance', () => {
 			const amountToWithdraw = 1;
+			let userBalanceBefore;
+			let initialSupply;
 
 			describe('when requesting a withdrawal', () => {
-				let userBalanceBefore;
-				let initialSupply;
-
 				before('record user balance and initial total supply', async () => {
 					userBalanceBefore = await mintableSynthetix.balanceOf(owner);
 					initialSupply = await mintableSynthetix.totalSupply();
 				});
 
-				before('inititate a withdrawal', async () => {
+				before('initiate a withdrawal', async () => {
 					await synthetixBridgeToBase.withdraw(amountToWithdraw, {
+						from: owner,
+					});
+				});
+
+				it('reduces the user balance', async () => {
+					const userBalanceAfter = await mintableSynthetix.balanceOf(owner);
+					assert.bnEqual(userBalanceBefore.sub(toBN(amountToWithdraw)), userBalanceAfter);
+				});
+
+				it('reduces the total supply', async () => {
+					const supplyAfter = await mintableSynthetix.totalSupply();
+					assert.bnEqual(initialSupply.sub(toBN(amountToWithdraw)), supplyAfter);
+				});
+			});
+
+			describe('when requesting a withdrawal to a different address', () => {
+				before('record user balance and initial total supply', async () => {
+					userBalanceBefore = await mintableSynthetix.balanceOf(owner);
+					initialSupply = await mintableSynthetix.totalSupply();
+				});
+
+				before('initiate a withdrawal', async () => {
+					await synthetixBridgeToBase.withdrawTo(randomAddress, amountToWithdraw, {
 						from: owner,
 					});
 				});
