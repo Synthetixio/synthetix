@@ -334,7 +334,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             false
         );
 
-        // _processTradingRewards(fee, destinationAddress);
+        _processTradingRewards(fee, destinationAddress);
     }
 
     function exchangeOnBehalf(

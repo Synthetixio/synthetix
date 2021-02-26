@@ -5,7 +5,7 @@ const { toBytes32 } = require('../..');
 const { assertRevertOptimism } = require('./utils/revertOptimism');
 
 const itCanPerformSynthExchange = ({ ctx }) => {
-	describe.only('[SYNTEXCHANGE] when exchanging synths on L2', () => {
+	describe('[SYNTEXCHANGE] when exchanging synths on L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		let user1L1, user1L2;
