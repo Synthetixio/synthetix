@@ -2326,7 +2326,11 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-e, --concurrency', 'Number of parallel calls that can be made to a provider', 10)
+			.option(
+				'-e, --concurrency <value>',
+				'Number of parallel calls that can be made to a provider',
+				10
+			)
 			.option(
 				'-f, --fee-auth <value>',
 				'The address of the fee authority for this network (default is to use existing)'
