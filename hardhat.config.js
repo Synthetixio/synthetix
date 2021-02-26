@@ -6,6 +6,7 @@ const path = require('path');
 require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
 require('solidity-coverage');
+require('hardhat-contract-sizer');
 require('hardhat-gas-reporter');
 
 const {
