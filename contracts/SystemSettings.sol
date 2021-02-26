@@ -129,6 +129,30 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getCrossDomainMessageGasLimit(gasLimitType);
     }
 
+    // SIP-115 Atomic exchanges
+    // max allowed volume per block for atomic exchanges
+    function atomicMaxVolumePerBlock() external view returns (uint) {
+        return getAtomicMaxVolumePerBlock();
+    }
+
+    // SIP-115 Atomic exchanges
+    // price dampener for chainlink prices when considered for atomic exchanges
+    function atomicPriceBuffer() external view returns (uint) {
+        return getAtomicPriceBuffer();
+    }
+
+    // SIP-115 Atomic exchanges
+    // time window (in 30min periods) for TWAP prices when considered for atomic exchanges
+    function atomicTwapPriceWindow() external view returns (uint) {
+        return getAtomicTwapPriceWindow();
+    }
+
+    // SIP-115 Atomic exchanges
+    // equivalent asset to use for a synth when considering external prices for atomic exchanges
+    function atomicEquivalentForSynth() external view returns (address) {
+        return getAtomicEquivalentForSynth();
+    }
+
     // ========== RESTRICTED ==========
 
     function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)

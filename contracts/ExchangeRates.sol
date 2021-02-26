@@ -343,6 +343,33 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return _effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
     }
 
+    function effectiveAtomicValueAndRates(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint sourceRate,
+            uint destinationRate
+        )
+    {
+        // TODO:
+        //   1. convert into equivalent assets via system settings
+        //   2. call Keep3rV1OracleUSD.assetToAsset()
+        //   3. get internal rates via _effectiveValueAndRates()
+        //   4. get P_CLBUF
+        //   5. compare values from 2. and 4.
+        //   6. obtain rates?
+        //   7. return
+        //
+        //   - do we need to output rates (more painful to calculate when sUSD is not in the pair)?
+        //     if we avoid the circuit breaker with atomic exchanges, in theory we could sanity
+        //     check with trade output rather than rates directly
+    }
+
     function rateForCurrency(bytes32 currencyKey) external view returns (uint) {
         return _getRateAndUpdatedTime(currencyKey).rate;
     }

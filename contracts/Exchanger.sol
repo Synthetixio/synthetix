@@ -81,6 +81,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint timestamp;
     }
 
+    struct ExchangeVolumeAtPeriod {
+        uint64 startTime;
+        uint192 volume;
+    }
+
     bytes32 private constant sUSD = "sUSD";
 
     // SIP-65: Decentralized circuit breaker
@@ -88,6 +93,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     // SIP-115: should this be updated with the executed or chainlink price?
     mapping(bytes32 => uint) public lastExchangeRate;
+
+    ExchangeVolumeAtPeriod public lastAtomicVolume;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -438,6 +445,27 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
     }
 
+    function exchangeAtomically(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        // TODO: this destinationAddress variable doesn't seem to be needed since it's always the same as from
+        address destinationAddress
+        // TODO: include tracking?
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
+        uint fee;
+        (amountReceived, fee) = _exchangeAtomically(
+            from,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            destinationAddress
+        );
+
+        _processTradingRewards(fee, destinationAddress);
+    }
+
     function _emitTrackingEvent(
         bytes32 trackingCode,
         bytes32 toCurrencyKey,
@@ -604,6 +632,36 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             amountReceived,
             exchangeFeeRate
         );
+    }
+
+    function _exchangeAtomically(
+        address from,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address destinationAddress,
+    )
+        internal
+        returns (
+            uint amountReceived,
+            uint fee
+        )
+    {
+        // TODO:
+        //   1. ensure can exchange (also checks if any chainlink flags are up)
+        //     - check here if synths are allowed to be atomically exchanged or leave that up to ExchangeRates?
+        //   2. settle any previous exchanges
+        //   3. convert source synth into sUSD and update volume counter
+        //   4. get amounts and rates (_getAmountsForAtomicExchangeMinusFees())
+        //   5. check _isSynthRateInvalid()
+        //     - if we also have the chainlink price at this stage, we can check the circuit breaker with it
+        //   6. burn/issue via _convert()
+        //   7. remit sUSD fee via chainlink price
+        //
+        //   - avoid persisting exchange via appendExchange() to avoid fee reclamation state
+        //   - do we need to update the debt cache (_updateSNXIssuedDebtOnExchange())? If so, we
+        //     should use the chainlink rates?
+        //   - emitSynthExchange() is ok or should another event be used?
     }
 
     function _convert(
@@ -875,6 +933,53 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     {
         uint destinationAmount;
         (destinationAmount, sourceRate, destinationRate) = exchangeRates().effectiveValueAndRates(
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey
+        );
+        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
+        fee = destinationAmount.sub(amountReceived);
+    }
+
+    function getAmountsForAtomicExchange(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        )
+    {
+        (amountReceived, fee, exchangeFeeRate, , ) = _getAmountsForAtomicExchangeMinusFees(
+            sourceAmount,
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
+    }
+
+    function _getAmountsForAtomicExchangeMinusFees(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    )
+        internal
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate,
+            uint sourceRate,
+            uint destinationRate
+        )
+    {
+        uint destinationAmount;
+        // TODO: differentiate chainlink vs execution rates
+        (destinationAmount, sourceRate, destinationRate) = exchangeRates().effectiveAtomicValueAndRates(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey
