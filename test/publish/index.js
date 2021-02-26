@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
-const pLimit = require('p-limit');
-
 const { isAddress } = require('web3-utils');
 const Web3 = require('web3');
 
@@ -52,8 +50,6 @@ const {
 	},
 	wrap,
 } = snx;
-
-const limitPromise = pLimit(1);
 
 describe('publish scripts', () => {
 	const network = 'local';
@@ -116,7 +112,7 @@ describe('publish scripts', () => {
 			response = await method.call();
 		}
 
-		return limitPromise(() => response);
+		return response;
 	};
 
 	before(() => {
@@ -126,6 +122,10 @@ describe('publish scripts', () => {
 
 	beforeEach(async () => {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
+
+		process.on('uncaughtException', err => {
+			console.log(err);
+		});
 
 		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
 
