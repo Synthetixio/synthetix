@@ -80,6 +80,7 @@
 		"@eth-optimism/plugins": "^0.0.4",
 		"@eth-optimism/smock": "0.2.1-alpha.0",
 		"@eth-optimism/solc": "0.5.16-alpha.7",
+		"@microsoft/eslint-formatter-sarif": "2.1.5",
 		"@nomiclabs/hardhat-truffle5": "2.0.0",
 		"@nomiclabs/hardhat-web3": "2.0.0",
 		"@pinata/sdk": "1.1.11",
