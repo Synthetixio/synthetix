@@ -1,7 +1,7 @@
 name: Synthetix CI
 
 on:
-  ? push
+  push:
   pull_request:
     branches: [master, develop]
 
@@ -18,14 +18,14 @@ jobs:
         password: ${{ secrets.GH_PACKAGES_READ_ONLY }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # pin@v2
+    - name: Checkout
+      uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # pin@v2
 
-      - name: Audit dependencies
-        run: audit-ci --critical --report-type important
+    - name: Audit dependencies
+      run: audit-ci --critical --report-type important
 
-      - name: Lockfile lint
-        run: lockfile-lint -p package-lock.json --type npm --allowed-hosts npm github.com --allowed-schemes "https:" "git+https:" "github:"
+    - name: Lockfile lint
+      run: lockfile-lint -p package-lock.json --type npm --allowed-hosts npm github.com --allowed-schemes "https:" "git+https:" "github:"
 
   build:
     needs: audit
@@ -40,48 +40,48 @@ jobs:
         password: ${{ secrets.GH_PACKAGES_READ_ONLY }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # pin@v2
+    - name: Checkout
+      uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # pin@v2
 
-      - name: Cache node modules
-        uses: actions/cache@26968a09c0ea4f3e233fdddbafd1166051a095f6 # pin@v2
-        with:
-          path: |
-            .npm
-            node_modules
-          key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-
-        continue-on-error: true
+    - name: Cache node modules
+      uses: actions/cache@26968a09c0ea4f3e233fdddbafd1166051a095f6 # pin@v2
+      with:
+        path: |
+          .npm
+          node_modules
+        key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+      continue-on-error: true
 
-      - name: Install dependencies
-        run: npm install --no-audit
+    - name: Install dependencies
+      run: npm install --no-audit
 
-      - name: Lint:solhint
-        # run only on master/develop branch and pull requests
-        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
-        run: npm run lint:solhint
+    - name: Lint:solhint
+      # run only on master/develop branch and pull requests
+      if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
+      run: npm run lint:solhint
 
-      - name: Lint:eslint
-        # run only on master/develop branch and pull requests
-        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
-        run: npm run ci:lint:eslint
+    - name: Lint:eslint
+      # run only on master/develop branch and pull requests
+      if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
+      run: npm run ci:lint:eslint
 
-      - name: Upload lint:eslint results
-        # run if lint failed and only on master/develop branch and pull requests
-        if: always() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request')
-        uses: github/codeql-action/upload-sarif@a3a8231e64d3db0e7da0f3b56b9521dcccdfe412 # pin@codeql-bundle-20210127
-        with:
-          sarif_file: lint-results.sarif
-        continue-on-error: true
+    - name: Upload lint:eslint results
+      # run if lint failed and only on master/develop branch and pull requests
+      if: always() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request')
+      uses: github/codeql-action/upload-sarif@a3a8231e64d3db0e7da0f3b56b9521dcccdfe412 # pin@codeql-bundle-20210127
+      with:
+        sarif_file: lint-results.sarif
+      continue-on-error: true
 
-      - name: Compile:evm
-        run: |
-          npm run compile:evm
-          rm -rf build
+    - name: Compile:evm
+      run: |
+        npm run compile:evm
+        rm -rf build
 
-      - name: Compile:ovm
-        run: npm run compile:ovm
+    - name: Compile:ovm
+      run: npm run compile:ovm
 
-      - name: Compile:ovm
-        run: npm run compile:ovm
+    - name: Compile:ovm
+      run: npm run compile:ovm
