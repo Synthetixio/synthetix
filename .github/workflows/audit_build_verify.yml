@@ -8,7 +8,7 @@ on:
 jobs:
   audit:
     # run only on master/develop branch and pull requests
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
+    if: always()
     runs-on: ubuntu-latest
 
     container:
