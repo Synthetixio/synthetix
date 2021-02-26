@@ -18,6 +18,9 @@ import "./interfaces/IExchanger.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
+// SIP-115:
+//   - Can we remove the internal rates?
+//   - Allow twap oracle to be onlyowner configurable?
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

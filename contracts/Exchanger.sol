@@ -86,6 +86,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
 
+    // SIP-115: should this be updated with the executed or chainlink price?
     mapping(bytes32 => uint) public lastExchangeRate;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -183,6 +184,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         (reclaimAmount, rebateAmount, numEntries, ) = _settlementOwing(account, currencyKey);
     }
 
+    // TODO: this comment below about emitting events isn't true, is it?
     // Internal function to emit events for each individual rebate and reclaim entry
     function _settlementOwing(address account, bytes32 currencyKey)
         internal
@@ -359,6 +361,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         _processTradingRewards(fee, exchangeForAddress);
     }
 
+    // SIP-115: Should tracking be included?
     function exchangeWithTracking(
         address from,
         bytes32 sourceCurrencyKey,
@@ -378,6 +381,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             false
         );
 
+        // TODO: why is there originator vs. destinationAddress?
         _processTradingRewards(fee, originator);
 
         _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
@@ -448,6 +452,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
     }
 
+    // SIP-115: maybe atomic exchanges shouldn't check the circuit breaker?
+    //          DEX spot can be easily manipulated to suspend a synth, so we would still want to use
+    //          the chainlink rate here
     function _suspendIfRateInvalid(bytes32 currencyKey, uint rate) internal returns (bool circuitBroken) {
         if (_isSynthRateInvalid(currencyKey, rate)) {
             systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
@@ -489,6 +496,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         sourceAmountAfterSettlement = sourceAmount;
 
         // when settlement was required
+        // TODO: are refunds immediately added to the current exchange?
         if (numEntriesSettled > 0) {
             // ensure the sourceAmount takes this into account
             sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);
@@ -943,6 +951,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     // ========== MODIFIERS ==========
 
+    // TODO: seems a bit overkill to always include synths when only the exchange() function needs it
     modifier onlySynthetixorSynth() {
         ISynthetix _synthetix = synthetix();
         require(
