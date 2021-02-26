@@ -58,7 +58,7 @@ const deployInstance = async ({ useOvm, privateKey, l1ProviderUrl, l2ProviderUrl
 		methodCallGasLimit: '3500000',
 		contractDeploymentGasLimit: useOvm ? OVM_MAX_GAS_LIMIT : '9500000',
 		privateKey,
-		ignoreCustomParameters: true,
+		ignoreCustomParameters: false,
 	});
 };
 
