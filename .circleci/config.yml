@@ -12,7 +12,7 @@ jobs:
   job-compile:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -26,7 +26,7 @@ jobs:
   job-lint:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -38,7 +38,7 @@ jobs:
   job-pack-browser:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -52,7 +52,7 @@ jobs:
   job-prepare:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -60,10 +60,10 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - "v2-dependencies-"
+            - "v4-dependencies-"
       - run: npm install
       - save_cache:
-          key: "v2-dependencies-"
+          key: "v4-dependencies-"
           paths:
             - node_modules
       - persist_to_workspace:
@@ -73,7 +73,7 @@ jobs:
   job-prod-diff-tests-local-ovm:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -91,7 +91,7 @@ jobs:
   job-prod-diff-tests-local:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -109,7 +109,7 @@ jobs:
   job-prod-diff-tests:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -130,7 +130,7 @@ jobs:
   job-prod-tests:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -148,7 +148,7 @@ jobs:
   job-static-analysis:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -165,10 +165,11 @@ jobs:
   job-test-deploy-script:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -190,7 +191,7 @@ jobs:
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -204,7 +205,7 @@ jobs:
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -219,7 +220,7 @@ jobs:
   job-unit-tests-ovm:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -233,7 +234,7 @@ jobs:
   job-unit-tests:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -255,7 +256,7 @@ jobs:
   job-validate-deployments:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -267,7 +268,7 @@ jobs:
   job-validate-etherscan:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:12.21-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -280,7 +281,7 @@ jobs:
           at: .
       - run: npm run test:etherscan --  --network << parameters.network >>
 workflows:
-  workflow-any:
+  workflow-all:
     jobs:
       - job-prepare
       - job-lint:
@@ -292,112 +293,39 @@ workflows:
       - job-static-analysis:
           requires:
             - job-prepare
-  workflow-develop:
-    jobs:
-      - job-prepare:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
       - job-unit-tests:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
-          requires:
-            - job-prepare
-      - job-unit-tests-coverage:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
-          requires:
-            - job-prepare
-      - job-unit-tests-gas-report:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
-          requires:
-            - job-prepare
-      - job-test-deploy-script:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
       - job-unit-tests-ovm:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
-  workflow-master:
-    jobs:
-      - job-prepare:
-          filters:
-            branches:
-              only: /.*(master).*/
-  workflow-scheduled:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - job-prepare
-      - job-validate-deployments:
+      - job-unit-tests-coverage:
+          requires:
+            - job-prepare
+      - job-unit-tests-gas-report:
+          requires:
+            - job-prepare
+      - job-test-deploy-script:
           requires:
             - job-prepare
       - job-prod-tests:
-          requires:
-            - job-prepare
-      - job-prod-diff-tests-local:
-          requires:
-            - job-prepare
-      - job-prod-diff-tests-local-ovm:
-          requires:
-            - job-prepare
-  workflow-staging:
-    jobs:
-      - job-prepare:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-      - job-pack-browser:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-validate-deployments:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-prod-tests:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
           requires:
             - job-prepare
       - job-prod-diff-tests-local:
           name: job-prod-diff-tests-local
-          filters:
-            branches:
-              only: /.*(staging|master).*/
           requires:
             - job-prepare
       - job-prod-diff-tests-local-ovm:
           name: job-prod-diff-tests-local-ovm
-          filters:
-            branches:
-              only: /.*(staging|master).*/
           requires:
             - job-prepare
       - job-prod-diff-tests:
           name: job-prod-diff-tests-mainnet
-          filters:
-            branches:
-              only: /.*(staging|master).*/
+          requires:
+            - job-prepare
+      - job-pack-browser:
+          requires:
+            - job-prepare
+      - job-validate-deployments:
           requires:
             - job-prepare
