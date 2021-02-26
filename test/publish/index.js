@@ -90,6 +90,22 @@ describe('publish scripts', () => {
 	let web3;
 	let fastForward;
 
+	const performDeploy = async ({ freshDeploy = false, addNewSynths = false }) => {
+		try {
+			await commands.deploy({
+				network,
+				yes: true,
+				privateKey: accounts.deployer.private,
+				freshDeploy,
+				addNewSynths,
+			});
+		} catch (err) {
+			console.log(err);
+
+			throw new Error('Deployment failed');
+		}
+	};
+
 	const resetConfigAndSynthFiles = () => {
 		// restore the synths and config files for this env (cause removal updated it)
 		fs.writeFileSync(synthsJSONPath, synthsJSON);
@@ -122,10 +138,6 @@ describe('publish scripts', () => {
 
 	beforeEach(async () => {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
-
-		process.on('uncaughtException', err => {
-			console.log(err);
-		});
 
 		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
 
@@ -239,12 +251,7 @@ describe('publish scripts', () => {
 				}
 				fs.writeFileSync(feedsJSONPath, JSON.stringify(feeds));
 
-				await commands.deploy({
-					network,
-					freshDeploy: true,
-					yes: true,
-					privateKey: accounts.deployer.private,
-				});
+				await performDeploy({ freshDeploy: true });
 
 				sources = getSource();
 				targets = getTarget();
@@ -430,11 +437,7 @@ describe('publish scripts', () => {
 
 							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-							await commands.deploy({
-								network,
-								yes: true,
-								privateKey: accounts.deployer.private,
-							});
+							await performDeploy({});
 						});
 						it('then the defaults remain unchanged', async () => {
 							assert.strictEqual(
@@ -513,12 +516,8 @@ describe('publish scripts', () => {
 
 							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-							await commands.deploy({
-								addNewSynths: true,
-								network,
-								yes: true,
-								privateKey: accounts.deployer.private,
-							});
+							await performDeploy({ addNewSynths: true });
+
 							targets = getTarget();
 							Issuer = getContract({ target: 'Issuer' });
 						});
@@ -657,11 +656,7 @@ describe('publish scripts', () => {
 
 					fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-					await commands.deploy({
-						network,
-						yes: true,
-						privateKey: accounts.deployer.private,
-					});
+					await performDeploy({});
 				};
 
 				describe('when import script is called with the same source fee pool as the currently deployed one', () => {
@@ -1145,12 +1140,8 @@ describe('publish scripts', () => {
 
 												fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-												await commands.deploy({
-													addNewSynths: true,
-													network,
-													yes: true,
-													privateKey: accounts.deployer.private,
-												});
+												await performDeploy({ addNewSynths: true });
+
 												targets = getTarget();
 												ExchangeRates = getContract({ target: 'ExchangeRates' });
 											});
@@ -1388,11 +1379,8 @@ describe('publish scripts', () => {
 
 							fs.writeFileSync(configJSONPath, JSON.stringify(configForExrates));
 
-							await commands.deploy({
-								network,
-								yes: true,
-								privateKey: accounts.deployer.private,
-							});
+							await performDeploy({});
+
 							targets = getTarget();
 
 							ExchangeRates = getContract({ target: 'ExchangeRates' });
@@ -1474,11 +1462,8 @@ describe('publish scripts', () => {
 					describe('when re-deployed', () => {
 						let AddressResolver;
 						beforeEach(async () => {
-							await commands.deploy({
-								network,
-								yes: true,
-								privateKey: accounts.deployer.private,
-							});
+							await performDeploy({});
+
 							targets = getTarget();
 
 							AddressResolver = getContract({ target: 'AddressResolver' });
@@ -1549,11 +1534,7 @@ describe('publish scripts', () => {
 
 							assert.strictEqual(existingExchanger, targets['Exchanger'].address);
 
-							await commands.deploy({
-								network,
-								yes: true,
-								privateKey: accounts.deployer.private,
-							});
+							await performDeploy({});
 						});
 						it('then the address resolver has the new Exchanger added to it', async () => {
 							const targets = getTarget();
