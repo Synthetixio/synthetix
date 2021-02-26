@@ -218,7 +218,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             );
 
             // and deduct the fee from this amount using the exchangeFeeRate from storage
-            uint amountShouldHaveReceived = _getAmountReceivedForExchange(destinationAmount, exchangeEntry.exchangeFeeRate);
+            uint amountShouldHaveReceived = _deductFeesFromAmount(destinationAmount, exchangeEntry.exchangeFeeRate);
 
             // SIP-65 settlements where the amount at end of waiting period is beyond the threshold, then
             // settle with no reclaim or rebate
@@ -872,11 +872,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             destinationCurrencyKey
         );
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
-        amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
+        amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }
 
-    function _getAmountReceivedForExchange(uint destinationAmount, uint exchangeFeeRate)
+    function _deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate)
         internal
         pure
         returns (uint amountReceived)
