@@ -9,8 +9,6 @@ const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
 const pLimit = require('p-limit');
 
-const limitPromise = pLimit(1);
-
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -69,6 +67,7 @@ const deploy = async ({
 	manageNonces,
 	ignoreSafetyChecks,
 	ignoreCustomParameters,
+	concurrency,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -78,6 +77,8 @@ const deploy = async ({
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
 		gasPrice = w3utils.toBN('0');
 	}
+
+	const limitPromise = pLimit(concurrency);
 
 	const {
 		config,
@@ -414,6 +415,7 @@ const deploy = async ({
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		'Using a fork': useFork ? green('true') : yellow('⚠ NO'),
+		Concurrency: `${concurrency} max parallel calls`,
 		Network: network,
 		'OVM?': useOvm
 			? ovmDeploymentPathWarning
@@ -2324,6 +2326,7 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
+			.option('-e, --concurrency', 'Number of parallel calls that can be made to a provider', 10)
 			.option(
 				'-f, --fee-auth <value>',
 				'The address of the fee authority for this network (default is to use existing)'
