@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
-import "./interfaces/IBaseDebtCache.sol";
+import "./interfaces/IDebtCache.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -21,7 +21,7 @@ import "./interfaces/ICollateralManager.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
-contract BaseDebtCache is Owned, MixinSystemSettings, IBaseDebtCache {
+contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -240,6 +240,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IBaseDebtCache {
     function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external {}
 
     function updateDebtCacheValidity(bool currentlyInvalid) external {}
+
+    function purgeCachedSynthDebt(bytes32 currencyKey) external {}
+
+    function takeDebtSnapshot() external {}
 
     /* ========== MODIFIERS ========== */
 
