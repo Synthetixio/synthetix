@@ -18,6 +18,7 @@
 		"lint:fix": "eslint --fix \"**/*.js\"",
 		"build:ci": "node .circleci/pack.js",
 		"slither": "pip3 install --user slither-analyzer && slither .",
+		"ci:slither": "slither .",
 		"pack": "webpack --mode production",
 		"prepublishOnly": "npm run describe && npm run pack",
 		"fork": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node --target-network mainnet",
