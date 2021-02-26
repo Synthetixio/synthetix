@@ -3,3 +3,4 @@ build
 coverage
 .circleci/src
 .circleci/config.template.yml
+.github
