@@ -512,11 +512,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
-        sourceAmount = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
-        if (sourceAmount == 0) {
+        if (sourceAmountAfterSettlement == 0) {
             return (0, 0, IVirtualSynth(0));
         }
 
@@ -526,7 +526,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Note: `fee` is denominated in the destinationCurrencyKey.
         (amountReceived, fee, exchangeFeeRate, sourceRate, destinationRate) = _getAmountsForExchangeMinusFees(
-            sourceAmount,
+            sourceAmountAfterSettlement,
             sourceCurrencyKey,
             destinationCurrencyKey
         );
@@ -545,7 +545,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         vSynth = _convert(
             sourceCurrencyKey,
             from,
-            sourceAmount,
+            sourceAmountAfterSettlement,
             destinationCurrencyKey,
             amountReceived,
             destinationAddress,
@@ -559,7 +559,15 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Remit the fee if required
         if (fee > 0) {
-            fee = _remitFee(destinationCurrencyKey, fee);
+            // Normalize fee to sUSD
+            // Note: `fee` is being reused to avoid stack too deep errors.
+            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+
+            // Remit the fee in sUSDs
+            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
+
+            // Tell the fee pool about this
+            feePool().recordFeePaid(fee);
         }
 
         // Note: As of this point, `fee` is denominated in sUSD.
@@ -572,7 +580,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
             from,
             sourceCurrencyKey,
-            sourceAmount,
+            sourceAmountAfterSettlement,
             destinationCurrencyKey,
             amountReceived,
             destinationAddress
@@ -584,26 +592,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             appendExchange(
                 destinationAddress,
                 sourceCurrencyKey,
-                sourceAmount,
+                sourceAmountAfterSettlement,
                 destinationCurrencyKey,
                 amountReceived,
                 exchangeFeeRate
             );
         }
-    }
-
-    function _remitFee(bytes32 _destinationCurrencyKey, uint _fee) internal returns (uint) {
-        // Normalize fee to sUSD
-        // Note: `fee` is being reused to avoid stack too deep errors.
-        uint normalizedFee = exchangeRates().effectiveValue(_destinationCurrencyKey, _fee, sUSD);
-
-        // Remit the fee in sUSDs
-        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), normalizedFee);
-
-        // Tell the fee pool about this
-        feePool().recordFeePaid(normalizedFee);
-
-        return normalizedFee;
     }
 
     function _convert(
