@@ -128,7 +128,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     }
 
     // invoked by Messenger on L2
-    function completeRewardDeposit(uint256 amount) external onlyOptimismBridge {
+    function finalizeRewardDeposit(uint256 amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 

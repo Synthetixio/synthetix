@@ -428,7 +428,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 						const expectedData = getDataOfEncodedFncCall({
 							contract: 'SynthetixBridgeToBase',
-							fnc: 'completeRewardDeposit',
+							fnc: 'finalizeRewardDeposit',
 							args: [amount],
 						});
 						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
@@ -474,7 +474,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 						const expectedData = getDataOfEncodedFncCall({
 							contract: 'SynthetixBridgeToBase',
-							fnc: 'completeRewardDeposit',
+							fnc: 'finalizeRewardDeposit',
 							args: [amount],
 						});
 

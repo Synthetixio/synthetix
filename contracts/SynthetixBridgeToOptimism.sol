@@ -183,7 +183,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     function _depositReward(uint256 _amount) internal {
         // create message payload for L2
         ISynthetixBridgeToBase bridgeToBase;
-        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.completeRewardDeposit.selector, _amount);
+        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeRewardDeposit.selector, _amount);
 
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(
