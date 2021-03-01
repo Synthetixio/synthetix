@@ -1,0 +1,33 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [master, develop]
+    paths-ignore:
+    - node_modules
+  pull_request:
+    branches: [master, develop]
+    paths-ignore:
+    - node_modules
+  schedule:
+    - cron: '0 1 * * 3'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # pin@v2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          queries: security-and-quality
+          languages: javascript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1

@@ -1,6 +1,0 @@
-working_directory: ~/repo
-docker:
-  - image: synthetixio/docker-node:12.21-focal
-    auth:
-      username: $DOCKERHUB_USERNAME
-      password: $DOCKERHUB_TOKEN

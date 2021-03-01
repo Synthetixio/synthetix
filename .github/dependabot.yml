@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 5
+    target-branch: "develop"
+    allow:
+      - dependency-name: "@eth-optimism/*"
+        dependency-type: "production"
+      - dependency-name: "@chainlink/*"
+        dependency-type: "production"
+    labels:
+      - "dependencies"
+    pull-request-branch-name:
+      separator: "-"

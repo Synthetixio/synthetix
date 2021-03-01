@@ -42,3 +42,5 @@ process.yml
 *.csv
 
 .db
+
+lint-results.sarif
