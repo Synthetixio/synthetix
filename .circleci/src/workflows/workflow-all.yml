@@ -1,0 +1,76 @@
+jobs:
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Basic
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-prepare
+  - job-lint:
+      {{> require-prepare.yml}}
+  - job-compile:
+      {{> require-prepare.yml}}
+  - job-static-analysis:
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Unit tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-unit-tests:
+      {{> require-prepare.yml}}
+  - job-unit-tests-ovm:
+      {{> require-prepare.yml}}
+  - job-unit-tests-coverage:
+      {{> require-prepare.yml}}
+  - job-unit-tests-gas-report:
+      {{> require-prepare.yml}}
+  - job-test-deploy-script:
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Prod tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-prod-tests:
+      {{> require-prepare.yml}}
+  - job-prod-diff-tests-local:
+      name: job-prod-diff-tests-local
+      {{> require-prepare.yml}}
+  - job-prod-diff-tests-local-ovm:
+      name: job-prod-diff-tests-local-ovm
+      {{> require-prepare.yml}}
+  - job-prod-diff-tests:
+      name: job-prod-diff-tests-mainnet
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Packaging
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-pack-browser:
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Deployment validation
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-validate-deployments:
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Etherscan validations
+  # NOTE: Currently disabled because our Etherscan test
+  # needs to be smarter. It needs to be able to handle multiple
+  # versioned ABIs per contract.
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-mainnet
+  #     network: mainnet
+  #     {{> require-prepare.yml}}
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-rinkeby
+  #     network: rinkeby
+  #     {{> require-prepare.yml}}
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-kovan
+  #     network: kovan
+  #     {{> require-prepare.yml}}
+  # - job-validate-etherscan:
+  #     name: job-validate-etherscan-ropsten
+  #     network: ropsten
+  #     {{> require-prepare.yml}}
+
