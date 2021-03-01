@@ -199,22 +199,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return exchanger().settle(messageSender, currencyKey);
     }
 
-    function exchangeOnBehalf(
-        address exchangeForAddress,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeOnBehalf(
-                exchangeForAddress,
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey
-            );
-    }
-
     function exchangeWithTracking(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
