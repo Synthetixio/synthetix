@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 
 interface ISynthetixBridgeToOptimism {
-    function initiateEscrowMigration(uint256[][] calldata entryIDs) external;
+    function migrateEscrow(uint256[][] calldata entryIDs) external;
 
     function initiateRewardDeposit(uint amount) external;
 

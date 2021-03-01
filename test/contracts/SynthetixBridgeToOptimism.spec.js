@@ -47,17 +47,17 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 			);
 		});
 
-		describe('initiateEscrowMigration', () => {
+		describe('migrateEscrow', () => {
 			it('reverts when an entriesId subarray contains an empty array', async () => {
 				const entryIdsEmpty = [[1, 2, 3], []];
 				await assert.revert(
-					synthetixBridgeToOptimism.initiateEscrowMigration(entryIdsEmpty),
+					synthetixBridgeToOptimism.migrateEscrow(entryIdsEmpty),
 					'Entry IDs required'
 				);
 			});
 		});
 
-		describe('initiateEscrowMigration', () => {
+		describe('migrateEscrow', () => {
 			it('reverts when an entriesId subarray contains an empty array', async () => {
 				const entryIdsEmpty = [[], [1, 2, 3]];
 				await assert.revert(

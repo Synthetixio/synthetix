@@ -116,8 +116,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         _initiateDeposit(to, amount);
     }
 
-    function initiateEscrowMigration(uint256[][] memory entryIDs) public requireActive requireZeroDebt {
-        _initiateEscrowMigration(entryIDs);
+    function migrateEscrow(uint256[][] memory entryIDs) public requireActive requireZeroDebt {
+        _migrateEscrow(entryIDs);
     }
 
     // invoked by a generous user on L1
@@ -170,7 +170,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         requireZeroDebt
     {
         if (entryIDs.length > 0) {
-            _initiateEscrowMigration(entryIDs);
+            _migrateEscrow(entryIDs);
         }
 
         if (depositAmount > 0) {
@@ -213,7 +213,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         emit DepositInitiated(msg.sender, _to, _depositAmount);
     }
 
-    function _initiateEscrowMigration(uint256[][] memory _entryIDs) private {
+    function _migrateEscrow(uint256[][] memory _entryIDs) private {
         // loop through the entryID array
         for (uint256 i = 0; i < _entryIDs.length; i++) {
             // Cannot send more than MAX_ENTRIES_MIGRATED_PER_MESSAGE entries due to ovm gas restrictions

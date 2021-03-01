@@ -29,7 +29,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				'depositAndMigrateEscrow',
 				'deposit',
 				'depositTo',
-				'initiateEscrowMigration',
+				'migrateEscrow',
 				'initiateRewardDeposit',
 				'migrateBridge',
 				'notifyRewardAmount',
@@ -195,7 +195,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 			});
 
-			describe('initiateEscrowMigration', () => {
+			describe('migrateEscrow', () => {
 				const entryIds = [
 					[1, 2, 3],
 					[4, 5, 6],
@@ -204,13 +204,13 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					it('does not work when the contract has been deactivated', async () => {
 						await instance.migrateBridge(randomAddress, { from: owner });
 
-						await assert.revert(instance.initiateEscrowMigration(entryIds), 'Function deactivated');
+						await assert.revert(instance.migrateEscrow(entryIds), 'Function deactivated');
 					});
 
 					it('does not work when user has any debt', async () => {
 						issuer.smocked.debtBalanceOf.will.return.with(() => '1');
 						await assert.revert(
-							instance.initiateEscrowMigration(entryIds),
+							instance.migrateEscrow(entryIds),
 							'Cannot deposit or migrate with debt'
 						);
 					});
@@ -222,7 +222,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						}
 						const entryIds27Entries = [[1, 2, 3], subArray];
 						await assert.revert(
-							instance.initiateEscrowMigration(entryIds27Entries),
+							instance.migrateEscrow(entryIds27Entries),
 							'Exceeds max entries per migration'
 						);
 					});
