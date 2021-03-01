@@ -1,3 +1,4 @@
 build
 .coverage_*
 coverage
+.github
