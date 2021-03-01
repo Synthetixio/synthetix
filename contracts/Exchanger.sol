@@ -586,7 +586,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             destinationAddress
         );
 
-        // persist the exchange information for the dest key iff the waiting period is gt 0
+        // persist the exchange information for the dest key
         appendExchange(
             destinationAddress,
             sourceCurrencyKey,
