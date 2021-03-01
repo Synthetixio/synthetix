@@ -37,7 +37,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let rewardEscrow;
 		let flexibleStorage;
 		beforeEach(async () => {
-			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
+			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
 			});
 

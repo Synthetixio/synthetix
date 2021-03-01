@@ -10,13 +10,16 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 // Internal references
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
-import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
 // solhint-disable indent
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/messenging/iAbs_BaseCrossDomainMessenger.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L1ERC20Gateway.sol";
+// TODO: There's a solidity version problem with this, using hardcoded interface for now.
+// import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L2DepositedERC20.sol";
+import "./interfaces/iOVM_L2DepositedERC20.sol";
 
 
-contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeToBase {
+contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeToBase, iOVM_L2DepositedERC20 {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -30,8 +33,8 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     //
     // ========== INTERNALS ============
 
-    function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
-        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
+    function messenger() internal view returns (iAbs_BaseCrossDomainMessenger) {
+        return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -48,7 +51,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
 
     function onlyAllowFromOptimism() internal view {
         // ensure function only callable from the L2 bridge via messenger (aka relayer)
-        iOVM_BaseCrossDomainMessenger _messenger = messenger();
+        iAbs_BaseCrossDomainMessenger _messenger = messenger();
         require(msg.sender == address(_messenger), "Only the relayer can call this");
         require(_messenger.xDomainMessageSender() == synthetixBridgeToOptimism(), "Only the L1 bridge can invoke");
     }
@@ -88,7 +91,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         synthetix().burnSecondary(msg.sender, amount);
 
         // create message payload for L1
-        ISynthetixBridgeToOptimism bridgeToOptimism;
+        iOVM_L1ERC20Gateway bridgeToOptimism;
         bytes memory messageData = abi.encodeWithSelector(bridgeToOptimism.finalizeWithdrawal.selector, to, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger

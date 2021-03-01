@@ -15,10 +15,14 @@ import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // solhint-disable indent
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/messenging/iAbs_BaseCrossDomainMessenger.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L1ERC20Gateway.sol";
+// TODO: There's a solidity version problem with this, using hardcoded interface for now.
+// import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L2DepositedERC20.sol";
+import "./interfaces/iOVM_L2DepositedERC20.sol";
 
 
-contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism {
+contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism, iOVM_L1ERC20Gateway {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -40,8 +44,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     //
     // ========== INTERNALS ============
 
-    function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
-        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
+    function messenger() internal view returns (iAbs_BaseCrossDomainMessenger) {
+        return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
     function synthetix() internal view returns (ISynthetix) {
@@ -196,7 +200,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         // First, move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), _depositAmount);
         // create message payload for L2
-        ISynthetixBridgeToBase bridgeToBase;
+        iOVM_L2DepositedERC20 bridgeToBase;
         bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeDeposit.selector, _to, _depositAmount);
 
         // relay the message to this contract on L2 via L1 Messenger
