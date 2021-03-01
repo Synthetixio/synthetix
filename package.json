@@ -126,7 +126,6 @@
 		"semver": "7.3.2",
 		"solc": "0.5.16",
 		"solhint": "^2.3.0",
-		"solidifier": "github:synthetixio/solidifier#2.2.0",
 		"solidity-coverage": "^0.7.13",
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
@@ -143,6 +142,7 @@
 		"commander": "5.1.0",
 		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
 		"pretty-error": "^2.1.1",
+		"solidifier": "github:Synthetixio/solidifier#2.2.0",
 		"solidity-parser-antlr": "^0.4.11",
 		"web3-utils": "1.2.2"
 	}
