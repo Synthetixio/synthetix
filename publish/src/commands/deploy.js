@@ -7,6 +7,7 @@ const Deployer = require('../Deployer');
 const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
+const pLimit = require('p-limit');
 
 const {
 	ensureNetwork,
@@ -66,6 +67,7 @@ const deploy = async ({
 	manageNonces,
 	ignoreSafetyChecks,
 	ignoreCustomParameters,
+	concurrency,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -75,6 +77,8 @@ const deploy = async ({
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
 		gasPrice = w3utils.toBN('0');
 	}
+
+	const limitPromise = pLimit(concurrency);
 
 	const {
 		config,
@@ -411,6 +415,7 @@ const deploy = async ({
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		'Using a fork': useFork ? green('true') : yellow('⚠ NO'),
+		Concurrency: `${concurrency} max parallel calls`,
 		Network: network,
 		'OVM?': useOvm
 			? ovmDeploymentPathWarning
@@ -1475,7 +1480,7 @@ const deploy = async ({
 	const resolverAddressesRequired = (
 		await Promise.all(
 			contractsWithRebuildableCache.map(([, contract]) => {
-				return contract.methods.resolverAddressesRequired().call();
+				return limitPromise(() => contract.methods.resolverAddressesRequired().call());
 			})
 		)
 	).reduce((allAddresses, contractAddresses) => {
@@ -1487,7 +1492,7 @@ const deploy = async ({
 	// check which resolver addresses are imported
 	const resolvedAddresses = await Promise.all(
 		resolverAddressesRequired.map(id => {
-			return addressResolver.methods.getAddress(id).call();
+			return limitPromise(() => addressResolver.methods.getAddress(id).call());
 		})
 	);
 	const isResolverAddressImported = {};
@@ -2320,6 +2325,11 @@ module.exports = {
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+			)
+			.option(
+				'-e, --concurrency <value>',
+				'Number of parallel calls that can be made to a provider',
+				10
 			)
 			.option(
 				'-f, --fee-auth <value>',
