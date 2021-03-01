@@ -272,13 +272,13 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							assert.bnEqual(rewardEscrow.smocked.burnForMigration.calls[1][1], entryIds[1]);
 						});
 
-						it('three messages are relayed from L1 to L2: completeEscrowMigration & finalizeDeposit', async () => {
+						it('three messages are relayed from L1 to L2: finalizeEscrowMigration & finalizeDeposit', async () => {
 							assert.equal(messenger.smocked.sendMessage.calls.length, 3);
 
 							assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 							let expectedData = getDataOfEncodedFncCall({
 								contract: 'ISynthetixBridgeToBase',
-								fnc: 'completeEscrowMigration',
+								fnc: 'finalizeEscrowMigration',
 								args: [user1, escrowAmount, emptyArray],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
@@ -287,7 +287,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							assert.equal(messenger.smocked.sendMessage.calls[1][0], snxBridgeToBase);
 							expectedData = getDataOfEncodedFncCall({
 								contract: 'ISynthetixBridgeToBase',
-								fnc: 'completeEscrowMigration',
+								fnc: 'finalizeEscrowMigration',
 								args: [user1, escrowAmount, emptyArray],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[1][1], expectedData);
@@ -362,12 +362,12 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							assert.bnEqual(rewardEscrow.smocked.burnForMigration.calls[1][1], entryIds[1]);
 						});
 
-						it('two messages are relayed: completeEscrowMigration', async () => {
+						it('two messages are relayed: finalizeEscrowMigration', async () => {
 							assert.equal(messenger.smocked.sendMessage.calls.length, 2);
 							assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
 							let expectedData = getDataOfEncodedFncCall({
 								contract: 'ISynthetixBridgeToBase',
-								fnc: 'completeEscrowMigration',
+								fnc: 'finalizeEscrowMigration',
 								args: [user1, escrowAmount, []],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
@@ -376,7 +376,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							assert.equal(messenger.smocked.sendMessage.calls[1][0], snxBridgeToBase);
 							expectedData = getDataOfEncodedFncCall({
 								contract: 'ISynthetixBridgeToBase',
-								fnc: 'completeEscrowMigration',
+								fnc: 'finalizeEscrowMigration',
 								args: [user1, escrowAmount, []],
 							});
 							assert.equal(messenger.smocked.sendMessage.calls[1][1], expectedData);

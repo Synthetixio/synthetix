@@ -16,7 +16,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'finalizeDeposit',
-				'completeEscrowMigration',
+				'finalizeEscrowMigration',
 				'completeRewardDeposit',
 				'withdraw',
 				'withdrawTo',
@@ -94,7 +94,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				describe('failure modes', () => {
 					it('should only allow the relayer (aka messenger) to call importVestingEntries()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: instance.completeEscrowMigration,
+							fnc: instance.finalizeEscrowMigration,
 							args: [user1, escrowedAmount, emptyArray],
 							accounts,
 							address: smockedMessenger,
@@ -106,7 +106,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.completeEscrowMigration(user1, escrowedAmount, emptyArray, {
+							instance.finalizeEscrowMigration(user1, escrowedAmount, emptyArray, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -117,7 +117,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				describe('when invoked by the messenger (aka relayer)', async () => {
 					let importVestingEntriesTx;
 					beforeEach('importVestingEntries is called', async () => {
-						importVestingEntriesTx = await instance.completeEscrowMigration(
+						importVestingEntriesTx = await instance.finalizeEscrowMigration(
 							user1,
 							escrowedAmount,
 							emptyArray,

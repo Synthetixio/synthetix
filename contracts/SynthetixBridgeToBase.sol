@@ -106,7 +106,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    function completeEscrowMigration(
+    function finalizeEscrowMigration(
         address account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries

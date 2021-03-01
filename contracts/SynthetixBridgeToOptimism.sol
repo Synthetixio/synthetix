@@ -228,7 +228,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
                 // create message payload for L2
                 ISynthetixBridgeToBase bridgeToBase;
                 bytes memory messageData = abi.encodeWithSelector(
-                    bridgeToBase.completeEscrowMigration.selector,
+                    bridgeToBase.finalizeEscrowMigration.selector,
                     msg.sender,
                     escrowedAccountBalance,
                     vestingEntries

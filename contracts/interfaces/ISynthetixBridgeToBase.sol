@@ -6,7 +6,7 @@ import "./IRewardEscrowV2.sol";
 
 interface ISynthetixBridgeToBase {
     // invoked by the xDomain messenger on L2
-    function completeEscrowMigration(
+    function finalizeEscrowMigration(
         address account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries
