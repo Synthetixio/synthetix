@@ -76,6 +76,10 @@ contract('ExchangeRates (prod tests)', accounts => {
 		});
 	});
 
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
+	});
+
 	describe('misc state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await ExchangeRates.resolver(), ReadProxyAddressResolver.address);
