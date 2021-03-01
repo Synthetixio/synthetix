@@ -79,7 +79,7 @@
 		"@eth-optimism/ovm-toolchain": "0.0.2-alpha.2",
 		"@eth-optimism/plugins": "0.0.16",
 		"@eth-optimism/smock": "0.2.1-alpha.0",
-		"@eth-optimism/solc": "0.7.6-alpha.1",
+		"@eth-optimism/solc": "0.5.16-alpha.7",
 		"@nomiclabs/hardhat-truffle5": "2.0.0",
 		"@nomiclabs/hardhat-web3": "2.0.0",
 		"@pinata/sdk": "1.1.11",
