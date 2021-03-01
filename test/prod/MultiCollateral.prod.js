@@ -124,6 +124,10 @@ contract('MultiCollateral (prod tests)', accounts => {
 		}
 	});
 
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
+	});
+
 	describe('general multicollateral state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await CollateralManager.resolver(), ReadProxyAddressResolver.address);

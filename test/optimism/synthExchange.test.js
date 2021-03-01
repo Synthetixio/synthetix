@@ -1,18 +1,27 @@
 const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
-const { toBytes32 } = require('../..');
-// const { assertRevertOptimism } = require('./utils/revertOptimism');
+const { toBytes32, getUsers } = require('../..');
+const { assertRevertOptimism } = require('./utils/revertOptimism');
 
 const itCanPerformSynthExchange = ({ ctx }) => {
 	describe('[SYNTEXCHANGE] when exchanging synths on L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
+		const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 		let user1L1, user1L2;
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1;
-		let SynthetixL2, SynthetixBridgeToBaseL2, SynthsUSDL2, SynthsETHL2, ExchangeStateL2;
+		let SynthetixL2,
+			SynthetixBridgeToBaseL2,
+			SynthsUSDL2,
+			SynthsETHL2,
+			ExchangerL2,
+			ExchangeRatesL2,
+			ExchangeStateL2,
+			FeePoolL2;
 
+		let user1sETHBalanceL2, user1sUSDBalanceL2;
 		// --------------------------
 		// Setup
 		// --------------------------
@@ -56,8 +65,24 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
+			ExchangerL2 = connectContract({
+				contract: 'Exchanger',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
+			ExchangeRatesL2 = connectContract({
+				contract: 'ExchangeRates',
+				source: 'ExchangeRatesWithoutInvPricing',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
 			ExchangeStateL2 = connectContract({
 				contract: 'ExchangeState',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
+			FeePoolL2 = connectContract({
+				contract: 'FeePool',
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
@@ -66,6 +91,20 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 		// --------------------------
 		// Get SNX
 		// --------------------------
+
+		describe('Initial values', () => {
+			before('record current values', async () => {
+				user1sETHBalanceL2 = await SynthsETHL2.balanceOf(user1L2.address);
+				user1sUSDBalanceL2 = await SynthsETHL2.balanceOf(user1L2.address);
+			});
+
+			it('the waiting period is 360 on L2', async () => {
+				assert.bnEqual(await ExchangerL2.waitingPeriodSecs(), '300');
+			});
+			it('the initial sETH balance is 0', async () => {
+				assert.bnEqual(await SynthsETHL2.balanceOf(user1L2.address), '0');
+			});
+		});
 
 		describe('when a user has the expected amount of SNX in L1', () => {
 			let user1BalanceL1;
@@ -168,7 +207,7 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 								SynthetixBridgeToBaseL2.off('MintedSecondary', eventListener);
 							});
 
-							it('shows that the users L2 balance increased', async () => {
+							it('shows that the users L2 SNX balance increased', async () => {
 								assert.bnEqual(
 									await SynthetixL2.balanceOf(user1L1.address),
 									user1BalanceL2.add(amountToDeposit)
@@ -176,63 +215,79 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 							});
 
 							describe('when the user issues sUSD', () => {
+								const sUSDIssued = ethers.utils.parseEther('10');
 								before('issue sUSD', async () => {
 									SynthetixL2 = SynthetixL2.connect(user1L2);
 
-									const tx = await SynthetixL2.issueSynths(ethers.utils.parseEther('10'));
+									const tx = await SynthetixL2.issueSynths(sUSDIssued);
 									await tx.wait();
 								});
 
-								it('shows that the user L2 sUSD balance has increased (while not having any synth balance)', async () => {
+								it('shows that the user L2 sUSD balance has increased (while all other synth balacnes remain the same)', async () => {
 									assert.bnEqual(
 										await SynthsUSDL2.balanceOf(user1L2.address),
-										ethers.utils.parseEther('10')
+										user1sUSDBalanceL2.add(sUSDIssued)
 									);
-									assert.bnEqual(await SynthsETHL2.balanceOf(user1L2.address), '0');
+									assert.bnEqual(await SynthsETHL2.balanceOf(user1L2.address), user1sETHBalanceL2);
 								});
 
 								describe('when the exchanges sUSD for sETH', () => {
+									let received;
+									let normalizedFee;
 									before('sETH exchange', async () => {
-										const tx = await SynthetixL2.exchange(
-											toBytes32('sUSD'),
-											ethers.utils.parseEther('10'),
-											toBytes32('sETH')
-										);
+										const tx = await SynthetixL2.exchange(sUSD, sUSDIssued, sETH);
 										await tx.wait();
-									});
-
-									it('shows that the user L2 sETH balance has increased', async () => {
-										assert.bnGte(await SynthsETHL2.balanceOf(user1L2.address), '0');
-									});
-
-									it('should not create any exchange state entries', async () => {
-										assert.bnEqual(
-											await ExchangeStateL2.getLengthOfEntries(user1L2.address, toBytes32('sETH')),
-											'0'
+										const { amountReceived, fee } = await ExchangerL2.getAmountsForExchange(
+											sUSDIssued,
+											sUSD,
+											sETH
 										);
+										received = amountReceived;
+										normalizedFee = await ExchangeRatesL2.effectiveValue(sETH, fee, sUSD);
+									});
+
+									it('shows that the user L2 sUSD balance has decreased', async () => {
+										assert.bnEqual(
+											await SynthsUSDL2.balanceOf(user1L2.address),
+											user1sUSDBalanceL2
+										);
+									});
+									it('shows that the user L2 sETH balance has increased', async () => {
+										assert.bnEqual(
+											await SynthsETHL2.balanceOf(user1L2.address),
+											user1sETHBalanceL2.add(received)
+										);
+									});
+									it('shows that the user fees have been recorded correctly', async () => {
+										const firstPeriod = await FeePoolL2.recentFeePeriods(0);
+
+										assert.bnEqual(firstPeriod.feePeriodId, '1');
+										assert.bnEqual(firstPeriod.feesToDistribute, normalizedFee);
+										assert.bnEqual(firstPeriod.feesClaimed, '0');
+									});
+									it('shows that the fees are initially remitted to the right address(0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF)', async () => {
+										// fee remittance
+										const feeAddress = getUsers({ network: 'mainnet', user: 'fee' }).address;
+										assert.bnEqual(await SynthsUSDL2.balanceOf(feeAddress), normalizedFee);
+									});
+									it('should create an exchange state entry', async () => {
+										assert.bnEqual(
+											await ExchangeStateL2.getLengthOfEntries(user1L2.address, sETH),
+											'1'
+										);
+									});
+									describe('when settling the exchange', () => {
+										it('reverts when trying to settle without waiting', async () => {
+											const tx = await SynthetixL2.settle(toBytes32('sETH'));
+
+											await assertRevertOptimism({
+												tx,
+												reason: 'Cannot settle during waiting',
+												provider: ctx.providerL2,
+											});
+										});
 									});
 								});
-
-								// describe('when settling the exchange', () => {
-								// 	it('reverts when trying to settle immediately after the exchange', async () => {
-								// 		const tx = await SynthetixL2.settle(toBytes32('sETH'));
-
-								// 		await assertRevertOptimism({
-								// 			tx,
-								// 			reason: 'Cannot settle during waiting period',
-								// 			provider: ctx.providerL2,
-								// 		});
-								// 	});
-
-								// before('settle', async () => {
-								// 	const tx = await SynthetixL2.settle(toBytes32('sUSD'));
-								// 	await tx.wait();
-								// });
-
-								// it('shows that the user L2 sETH balance has increased', async () => {
-								// 	assert.bnGte(await SynthsETHL2.balanceOf(user1L2.address), '0');
-								// });
-								// });
 							});
 						});
 					});

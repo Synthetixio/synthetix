@@ -1,5 +1,6 @@
 # Simulates a deployment in a fork, and runs production tests against it
 {{> job-header.yml}}
+resource_class: large
 steps:
   - checkout
   - attach_workspace:

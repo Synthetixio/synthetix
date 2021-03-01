@@ -14,7 +14,6 @@ const { fastForwardTo, toUnit, fromUnit } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
-	onlyGivenAddressCanInvoke,
 	updateRatesWithDefaults,
 	setStatus,
 } = require('./helpers');
@@ -79,12 +78,7 @@ contract('Synthetix', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: synthetix.abi,
 			ignoreParents: ['BaseSynthetix'],
-			expected: [
-				'emitExchangeRebate',
-				'emitExchangeReclaim',
-				'emitExchangeTracking',
-				'migrateEscrowBalanceToRewardEscrowV2',
-			],
+			expected: ['migrateEscrowBalanceToRewardEscrowV2'],
 		});
 	});
 
@@ -106,111 +100,11 @@ contract('Synthetix', async accounts => {
 		});
 	});
 
-	describe('only Exchanger can call emit event functions', () => {
-		const amount1 = 10;
-		const amount2 = 100;
-		const currencyKey1 = sAUD;
-		const currencyKey2 = sEUR;
-		const trackingCode = toBytes32('1inch');
-		it('emitExchangeTracking() cannot be invoked directly by any account', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: synthetix.emitExchangeTracking,
-				accounts,
-				args: [trackingCode, currencyKey1, account1],
-				reason: 'Only Exchanger can invoke this',
-			});
-		});
-		it('emitExchangeRebate() cannot be invoked directly by any account', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: synthetix.emitExchangeRebate,
-				accounts,
-				args: [account1, currencyKey1, amount1],
-				reason: 'Only Exchanger can invoke this',
-			});
-		});
-		it('emitExchangeReclaim() cannot be invoked directly by any account', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: synthetix.emitExchangeReclaim,
-				accounts,
-				args: [account1, currencyKey1, amount1],
-				reason: 'Only Exchanger can invoke this',
-			});
-		});
-		it('emitSynthExchange() cannot be invoked directly by any account', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: synthetix.emitSynthExchange,
-				accounts,
-				args: [account1, currencyKey1, amount1, currencyKey2, amount2, account2],
-				reason: 'Only Exchanger can invoke this',
-			});
-		});
-
-		describe('Exchanger calls emit', () => {
-			const exchanger = account1;
-			let tx1, tx2, tx3, tx4;
-			beforeEach('pawn Exchanger and sync cache', async () => {
-				await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger], {
-					from: owner,
-				});
-				await synthetix.rebuildCache();
-			});
-			beforeEach('call event emission functions', async () => {
-				tx1 = await synthetix.emitExchangeRebate(account1, currencyKey1, amount1, {
-					from: exchanger,
-				});
-				tx2 = await synthetix.emitExchangeReclaim(account1, currencyKey1, amount1, {
-					from: exchanger,
-				});
-				tx3 = await synthetix.emitSynthExchange(
-					account1,
-					currencyKey1,
-					amount1,
-					currencyKey2,
-					amount2,
-					account2,
-					{ from: exchanger }
-				);
-				tx4 = await synthetix.emitExchangeTracking(trackingCode, currencyKey1, amount1, {
-					from: exchanger,
-				});
-			});
-
-			it('the corresponding events are emitted', async () => {
-				assert.eventEqual(tx1, 'ExchangeRebate', {
-					account: account1,
-					currencyKey: currencyKey1,
-					amount: amount1,
-				});
-				assert.eventEqual(tx2, 'ExchangeReclaim', {
-					account: account1,
-					currencyKey: currencyKey1,
-					amount: amount1,
-				});
-				assert.eventEqual(tx3, 'SynthExchange', {
-					account: account1,
-					fromCurrencyKey: currencyKey1,
-					fromAmount: amount1,
-					toCurrencyKey: currencyKey2,
-					toAmount: amount2,
-					toAddress: account2,
-				});
-				assert.eventEqual(tx4, 'ExchangeTracking', {
-					trackingCode: trackingCode,
-					toCurrencyKey: currencyKey1,
-					toAmount: amount1,
-				});
-			});
-		});
-	});
-
 	describe('Exchanger calls', () => {
 		let smockExchanger;
 		beforeEach(async () => {
 			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
-			smockExchanger.smocked.exchangeWithTracking.will.return.with(() => '1');
-			smockExchanger.smocked.exchangeOnBehalfWithTracking.will.return.with(() => '1');
 			smockExchanger.smocked.exchangeWithVirtual.will.return.with(() => ['1', account1]);
-			smockExchanger.smocked.settle.will.return.with(() => ['1', '2', '3']);
 			await addressResolver.importAddresses(
 				['Exchanger'].map(toBytes32),
 				[smockExchanger.address],
@@ -225,46 +119,6 @@ contract('Synthetix', async accounts => {
 		const trackingCode = toBytes32('1inch');
 		const msgSender = owner;
 
-		it('exchangeWithTracking is called with the right arguments ', async () => {
-			await synthetix.exchangeWithTracking(
-				currencyKey1,
-				amount1,
-				currencyKey2,
-				account2,
-				trackingCode,
-				{ from: owner }
-			);
-			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][0], msgSender);
-			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][1], currencyKey1);
-			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][2].toString(), amount1);
-			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][3], currencyKey2);
-			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][4], msgSender);
-			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][5], account2);
-			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][6], trackingCode);
-		});
-
-		it('exchangeOnBehalfWithTracking is called with the right arguments ', async () => {
-			await synthetix.exchangeOnBehalfWithTracking(
-				account1,
-				currencyKey1,
-				amount1,
-				currencyKey2,
-				account2,
-				trackingCode,
-				{ from: owner }
-			);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][0], account1);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][1], msgSender);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][2], currencyKey1);
-			assert.equal(
-				smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][3].toString(),
-				amount1
-			);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][4], currencyKey2);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][5], account2);
-			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][6], trackingCode);
-		});
-
 		it('exchangeWithVirtual is called with the right arguments ', async () => {
 			await synthetix.exchangeWithVirtual(currencyKey1, amount1, currencyKey2, trackingCode, {
 				from: owner,
@@ -275,14 +129,6 @@ contract('Synthetix', async accounts => {
 			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][3], currencyKey2);
 			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][4], msgSender);
 			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][5], trackingCode);
-		});
-
-		it('settle is called with the right arguments ', async () => {
-			await synthetix.settle(currencyKey1, {
-				from: owner,
-			});
-			assert.equal(smockExchanger.smocked.settle.calls[0][0], msgSender);
-			assert.equal(smockExchanger.smocked.settle.calls[0][1].toString(), currencyKey1);
 		});
 	});
 

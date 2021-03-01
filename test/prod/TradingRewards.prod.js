@@ -76,6 +76,10 @@ contract('TradingRewards (prod tests)', accounts => {
 		});
 	});
 
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
+	});
+
 	it('has the expected resolver set', async () => {
 		assert.equal(await TradingRewards.resolver(), ReadProxyAddressResolver.address);
 	});

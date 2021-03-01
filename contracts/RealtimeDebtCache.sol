@@ -57,4 +57,19 @@ contract RealtimeDebtCache is BaseDebtCache {
         (uint currentDebt, bool invalid) = _currentDebt();
         return (currentDebt, block.timestamp, invalid, false);
     }
+
+    // Stub out all mutative functions as no-ops;
+    // since they do nothing, their access restrictions have been dropped
+
+    function purgeCachedSynthDebt(bytes32 currencyKey) external {}
+
+    function takeDebtSnapshot() external {}
+
+    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external {}
+
+    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external {}
+
+    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external {}
+
+    function updateDebtCacheValidity(bool currentlyInvalid) external {}
 }

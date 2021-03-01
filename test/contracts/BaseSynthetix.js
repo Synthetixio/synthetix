@@ -83,6 +83,9 @@ contract('BaseSynthetix', async accounts => {
 				'burnSynthsToTarget',
 				'burnSynthsToTargetOnBehalf',
 				'emitSynthExchange',
+				'emitExchangeRebate',
+				'emitExchangeReclaim',
+				'emitExchangeTracking',
 				'exchange',
 				'exchangeOnBehalf',
 				'exchangeOnBehalfWithTracking',
@@ -139,22 +142,6 @@ contract('BaseSynthetix', async accounts => {
 
 	describe('non-basic functions always revert', () => {
 		const amount = 100;
-		it('ExchangeWithTracking should revert no matter who the caller is', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: baseSynthetix.exchangeWithTracking,
-				accounts,
-				args: [sUSD, amount, sAUD, account1, toBytes32('1INCH')],
-				reason: 'Cannot be run on this layer',
-			});
-		});
-		it('ExchangeOnBehalfWithTracking should revert no matter who the caller is', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: baseSynthetix.exchangeOnBehalfWithTracking,
-				accounts,
-				args: [account1, sUSD, amount, sAUD, account2, toBytes32('1INCH')],
-				reason: 'Cannot be run on this layer',
-			});
-		});
 		it('ExchangeWithVirtual should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.exchangeWithVirtual,
@@ -211,7 +198,32 @@ contract('BaseSynthetix', async accounts => {
 		const amount2 = 100;
 		const currencyKey1 = sAUD;
 		const currencyKey2 = sEUR;
+		const trackingCode = toBytes32('1inch');
 
+		it('emitExchangeTracking() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: baseSynthetix.emitExchangeTracking,
+				accounts,
+				args: [trackingCode, currencyKey1, account1],
+				reason: 'Only Exchanger can invoke this',
+			});
+		});
+		it('emitExchangeRebate() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: baseSynthetix.emitExchangeRebate,
+				accounts,
+				args: [account1, currencyKey1, amount1],
+				reason: 'Only Exchanger can invoke this',
+			});
+		});
+		it('emitExchangeReclaim() cannot be invoked directly by any account', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: baseSynthetix.emitExchangeReclaim,
+				accounts,
+				args: [account1, currencyKey1, amount1],
+				reason: 'Only Exchanger can invoke this',
+			});
+		});
 		it('emitSynthExchange() cannot be invoked directly by any account', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.emitSynthExchange,
@@ -223,7 +235,7 @@ contract('BaseSynthetix', async accounts => {
 
 		describe('Exchanger calls emit', () => {
 			const exchanger = account1;
-			let tx3;
+			let tx1, tx2, tx3, tx4;
 			beforeEach('pawn Exchanger and sync cache', async () => {
 				await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger], {
 					from: owner,
@@ -231,6 +243,12 @@ contract('BaseSynthetix', async accounts => {
 				await baseSynthetix.rebuildCache();
 			});
 			beforeEach('call event emission functions', async () => {
+				tx1 = await baseSynthetix.emitExchangeRebate(account1, currencyKey1, amount1, {
+					from: exchanger,
+				});
+				tx2 = await baseSynthetix.emitExchangeReclaim(account1, currencyKey1, amount1, {
+					from: exchanger,
+				});
 				tx3 = await baseSynthetix.emitSynthExchange(
 					account1,
 					currencyKey1,
@@ -240,16 +258,36 @@ contract('BaseSynthetix', async accounts => {
 					account2,
 					{ from: exchanger }
 				);
+				tx4 = await baseSynthetix.emitExchangeTracking(trackingCode, currencyKey1, amount1, {
+					from: exchanger,
+				});
 			});
 
 			it('the corresponding events are emitted', async () => {
-				assert.eventEqual(tx3, 'SynthExchange', {
-					account: account1,
-					fromCurrencyKey: currencyKey1,
-					fromAmount: amount1,
-					toCurrencyKey: currencyKey2,
-					toAmount: amount2,
-					toAddress: account2,
+				it('the corresponding events are emitted', async () => {
+					assert.eventEqual(tx1, 'ExchangeRebate', {
+						account: account1,
+						currencyKey: currencyKey1,
+						amount: amount1,
+					});
+					assert.eventEqual(tx2, 'ExchangeReclaim', {
+						account: account1,
+						currencyKey: currencyKey1,
+						amount: amount1,
+					});
+					assert.eventEqual(tx3, 'SynthExchange', {
+						account: account1,
+						fromCurrencyKey: currencyKey1,
+						fromAmount: amount1,
+						toCurrencyKey: currencyKey2,
+						toAmount: amount2,
+						toAddress: account2,
+					});
+					assert.eventEqual(tx4, 'ExchangeTracking', {
+						trackingCode: trackingCode,
+						toCurrencyKey: currencyKey1,
+						toAmount: amount1,
+					});
 				});
 			});
 		});
@@ -260,6 +298,8 @@ contract('BaseSynthetix', async accounts => {
 		beforeEach(async () => {
 			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
 			smockExchanger.smocked.exchangeOnBehalf.will.return.with(() => '1');
+			smockExchanger.smocked.exchangeWithTracking.will.return.with(() => '1');
+			smockExchanger.smocked.exchangeOnBehalfWithTracking.will.return.with(() => '1');
 			smockExchanger.smocked.settle.will.return.with(() => ['1', '2', '3']);
 			await addressResolver.importAddresses(
 				['Exchanger'].map(toBytes32),
@@ -273,6 +313,7 @@ contract('BaseSynthetix', async accounts => {
 		const currencyKey1 = sAUD;
 		const currencyKey2 = sEUR;
 		const msgSender = owner;
+		const trackingCode = toBytes32('1inch');
 
 		it('exchangeOnBehalf is called with the right arguments ', async () => {
 			await baseSynthetix.exchangeOnBehalf(account1, currencyKey1, amount1, currencyKey2, {
@@ -283,6 +324,46 @@ contract('BaseSynthetix', async accounts => {
 			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][2], currencyKey1);
 			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][3].toString(), amount1);
 			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][4], currencyKey2);
+		});
+
+		it('exchangeWithTracking is called with the right arguments ', async () => {
+			await baseSynthetix.exchangeWithTracking(
+				currencyKey1,
+				amount1,
+				currencyKey2,
+				account2,
+				trackingCode,
+				{ from: owner }
+			);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][0], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][1], currencyKey1);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][2].toString(), amount1);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][3], currencyKey2);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][4], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][5], account2);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][6], trackingCode);
+		});
+
+		it('exchangeOnBehalfWithTracking is called with the right arguments ', async () => {
+			await baseSynthetix.exchangeOnBehalfWithTracking(
+				account1,
+				currencyKey1,
+				amount1,
+				currencyKey2,
+				account2,
+				trackingCode,
+				{ from: owner }
+			);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][0], account1);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][1], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][2], currencyKey1);
+			assert.equal(
+				smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][3].toString(),
+				amount1
+			);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][4], currencyKey2);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][5], account2);
+			assert.equal(smockExchanger.smocked.exchangeOnBehalfWithTracking.calls[0][6], trackingCode);
 		});
 
 		it('settle is called with the right arguments ', async () => {
