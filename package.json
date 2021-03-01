@@ -34,7 +34,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/Synthetixio/synthetix.git"
+		"url": "https://github.com/Synthetixio/synthetix.git"
 	},
 	"keywords": [
 		"Synthetix",
