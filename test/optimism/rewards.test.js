@@ -99,7 +99,7 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 					SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
 
 					await assert.revert(
-						SynthetixBridgeToOptimismL1.initiateRewardDeposit(amountToDeposit),
+						SynthetixBridgeToOptimismL1.depositReward(amountToDeposit),
 						'Synthetix is suspended'
 					);
 				});
@@ -136,7 +136,7 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 				before('deposit rewards', async () => {
 					SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
 
-					const tx = await SynthetixBridgeToOptimismL1.initiateRewardDeposit(amountToDeposit);
+					const tx = await SynthetixBridgeToOptimismL1.depositReward(amountToDeposit);
 					rewardDepositReceipt = await tx.wait();
 				});
 

@@ -30,7 +30,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				'deposit',
 				'depositTo',
 				'migrateEscrow',
-				'initiateRewardDeposit',
+				'depositReward',
 				'migrateBridge',
 				'notifyRewardAmount',
 			],
@@ -400,12 +400,12 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				});
 			});
 
-			describe('initiateRewardDeposit', () => {
+			describe('depositReward', () => {
 				describe('failure modes', () => {
 					it('does not work when the contract has been deactivated', async () => {
 						await instance.migrateBridge(randomAddress, { from: owner });
 
-						await assert.revert(instance.initiateRewardDeposit('1'), 'Function deactivated');
+						await assert.revert(instance.depositReward('1'), 'Function deactivated');
 					});
 				});
 
@@ -414,7 +414,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					let amount;
 					beforeEach(async () => {
 						amount = '100';
-						txn = await instance.initiateRewardDeposit(amount, { from: user1 });
+						txn = await instance.depositReward(amount, { from: user1 });
 					});
 
 					it('then SNX is transferred from the account to the user', async () => {

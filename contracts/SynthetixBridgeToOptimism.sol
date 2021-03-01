@@ -121,11 +121,11 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     }
 
     // invoked by a generous user on L1
-    function initiateRewardDeposit(uint amount) external requireActive {
+    function depositReward(uint amount) external requireActive {
         // move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), amount);
 
-        _initiateRewardDeposit(amount);
+        _depositReward(amount);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
@@ -161,7 +161,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         require(msg.sender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
         // to be here means I've been given an amount of SNX to distribute onto L2
-        _initiateRewardDeposit(amount);
+        _depositReward(amount);
     }
 
     function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] memory entryIDs)
@@ -180,7 +180,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
 
     // ========== PRIVATE/INTERNAL FUNCTIONS =========
 
-    function _initiateRewardDeposit(uint256 _amount) internal {
+    function _depositReward(uint256 _amount) internal {
         // create message payload for L2
         ISynthetixBridgeToBase bridgeToBase;
         bytes memory messageData = abi.encodeWithSelector(bridgeToBase.completeRewardDeposit.selector, _amount);
