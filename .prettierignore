@@ -1,5 +1,3 @@
 build
 .coverage_*
 coverage
-.circleci/src
-.circleci/config.template.yml
