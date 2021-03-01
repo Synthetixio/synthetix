@@ -17,6 +17,9 @@ const CACHE_FOLDER = 'cache';
 
 module.exports = {
 	GAS_PRICE,
+	ovm: {
+		solcVersion: '0.5.16',
+	},
 	solidity: {
 		compilers: [
 			{

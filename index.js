@@ -122,7 +122,7 @@ const defaults = {
 			{ long: 'sBTC', short: 'iBTC' },
 			{ long: 'sETH', short: 'iETH' },
 		],
-		MAX_DEBT: w3utils.toWei('20000000'), // 20 million sUSD
+		MAX_DEBT: w3utils.toWei('30000000'), // 30 million sUSD
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
