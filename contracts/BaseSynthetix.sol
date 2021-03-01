@@ -183,6 +183,22 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return exchanger().settle(messageSender, currencyKey);
     }
 
+    function exchangeOnBehalf(
+        address exchangeForAddress,
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
+        return
+            exchanger().exchangeOnBehalf(
+                exchangeForAddress,
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey
+            );
+    }
+
     function transfer(address to, uint value) external optionalProxy systemActive returns (bool) {
         // Ensure they're not trying to exceed their locked amount -- only if they have debt.
         _canTransfer(messageSender, value);
@@ -236,22 +252,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function burnSynthsToTargetOnBehalf(address burnForAddress) external issuanceActive optionalProxy {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
-    }
-
-    function exchangeOnBehalf(
-        address exchangeForAddress,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeOnBehalf(
-                exchangeForAddress,
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey
-            );
     }
 
     function exchangeWithTracking(
@@ -315,7 +315,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _systemActive() private view {
+    function _systemActive() private {
         systemStatus().requireSystemActive();
     }
 
@@ -324,7 +324,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _issuanceActive() private view {
+    function _issuanceActive() private {
         systemStatus().requireIssuanceActive();
     }
 
@@ -333,9 +333,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _exchangeActive(bytes32 src, bytes32 dest) private view {
-        systemStatus().requireExchangeActive();
-        systemStatus().requireSynthsActive(src, dest);
+    function _exchangeActive(bytes32 src, bytes32 dest) private {
+        systemStatus().requireExchangeBetweenSynthsAllowed(src, dest);
     }
 
     modifier onlyExchanger() {
@@ -343,7 +342,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _onlyExchanger() private view {
+    function _onlyExchanger() private {
         require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
     }
 
