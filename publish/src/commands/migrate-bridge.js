@@ -131,7 +131,7 @@ const migrateBridge = async ({
 		getSource,
 		web3,
 	});
-	const newBalance = web3.utils.fromWei(
+	let newBalance = web3.utils.fromWei(
 		await snx.methods.balanceOf(newBridgeAddress).call(),
 		'ether'
 	);
@@ -140,7 +140,7 @@ const migrateBridge = async ({
 			chalk.red(`❌ New bridge already has a positive SNX balance of ${newBalance.toString()} SNX`)
 		);
 	}
-	const oldBalance = web3.utils.fromWei(
+	let oldBalance = web3.utils.fromWei(
 		await snx.methods.balanceOf(oldBridgeAddress).call(),
 		'ether'
 	);
@@ -207,11 +207,11 @@ const migrateBridge = async ({
 	console.log(chalk.gray(`  > Sender account: ${account}`));
 
 	// Confirmation
-	console.log(chalk.yellow(`⚠⚠⚠ WARNING: Youre about to perform the SNX migration!!!`));
+	console.log(chalk.red.bold(`⚠⚠⚠ WARNING: Youre about to perform the SNX migration!!!`));
 	const msg = `SynthetixBridgeToOptimism<${oldBridge.options.address}>.migrateBridge(${newBridge.options.address})`;
 	console.log(chalk.yellow(`Will call ${msg}`));
 	try {
-		await confirmAction(chalk.yellow.bold('Continue?'));
+		await confirmAction(chalk.yellow.inverse('Continue?'));
 	} catch (err) {}
 
 	// -----------------------------------
@@ -225,20 +225,11 @@ const migrateBridge = async ({
 	console.log(chalk.green(`Tx executed ${tx.hash}`));
 	console.log(chalk.gray(JSON.stringify(tx, null, 2)));
 
-	console.log(
-		chalk.yellow.inverse(
-			`  > Old bridge: ${oldBridgeAddress} - ${await snx.methods
-				.balanceOf(oldBridgeAddress)
-				.call()} SNX`
-		)
-	);
-	console.log(
-		chalk.yellow.inverse(
-			`  > New bridge: ${newBridgeAddress} - ${await snx.methods
-				.balanceOf(newBridgeAddress)
-				.call()} SNX`
-		)
-	);
+	oldBalance = web3.utils.fromWei(await snx.methods.balanceOf(oldBridgeAddress).call(), 'ether');
+	newBalance = web3.utils.fromWei(await snx.methods.balanceOf(newBridgeAddress).call(), 'ether');
+
+	console.log(chalk.yellow.inverse(`  > Old bridge: ${oldBridgeAddress} - ${oldBalance} SNX`));
+	console.log(chalk.yellow.inverse(`  > New bridge: ${newBridgeAddress} - ${newBalance} SNX`));
 };
 
 const bootstrapConnection = ({ network, deploymentPath, privateKey, useFork }) => {
