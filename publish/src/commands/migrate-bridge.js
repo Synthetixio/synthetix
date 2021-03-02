@@ -137,8 +137,41 @@ const migrateBridge = async ({
 		'ether'
 	);
 	if (oldBalance === 0) {
-		throw new Error(red("❌ Old bridge's balance is zero"));
+		throw new Error(red('❌ Old bridge balance is zero'));
 	}
+	console.log(gray(`  ✅ Old bridge has a positive balance: ${oldBalance}`));
+	console.log(gray(`  ✅ New bridge has zero balance: ${newBalance}`));
+
+	// New bridge should be activated
+	const activated = newBridge.methods.activated().call();
+	if (!activated) {
+		throw new Error(red('❌ New bridge is not activated'));
+	}
+	console.log(gray(`  ✅ New bridge is activated`));
+
+	// Resolver addresses
+	const newAddresses = newBridge.methods.resolverAddressesRequired().call();
+	const oldAddresses = oldBridge.methods.resolverAddressesRequired().call();
+	if (newAddresses.toString() !== oldAddresses.toString()) {
+		throw new Error(red('❌ Bridge resolver addresses do not match'));
+	}
+	console.log(gray(`  ✅ Bridge resolver addresses look good`));
+
+	// Signature checks
+	const newCode = await web3.eth.getCode(newBridgeAddress);
+	function hasFunction(signature) {
+		const selector = web3.eth.encodeFunctionSignature(signature);
+		const has = newCode.indexOf(selector.slice(2, selector.length)) > 0;
+		if (!has) {
+			throw new Error(red(`❌ New bridge lacks ${signature} signature`));
+		}
+	}
+	hasFunction('migrateBridge(address)');
+	hasFunction('finalizeWithdrawal(address,unit256)');
+	hasFunction('depositReward(unit256)');
+	hasFunction('deposit(unit256)');
+	hasFunction('depositTo(address,unit256)');
+	hasFunction('notifyRewardAmount(unit256)');
 
 	// -----------------------------------
 	// Confirmation
@@ -165,7 +198,7 @@ const migrateBridge = async ({
 	// Confirmation
 	try {
 		await confirmAction(
-			yellow("⚠⚠⚠ WARNING: You're about to perform the SNX migration. Are you sure?")
+			yellow('⚠⚠⚠ WARNING: Youre about to perform the SNX migration. Are you sure?')
 		);
 	} catch (err) {}
 
