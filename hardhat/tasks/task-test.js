@@ -13,6 +13,8 @@ task('test')
 		const { gas, grep, useOvm, native, gasOutputFile } = taskArguments;
 
 		if (useOvm) {
+			await hre.run('compile', { useOvm });
+
 			if (!hre.config.prod) {
 				hre.ovm = true;
 			}
