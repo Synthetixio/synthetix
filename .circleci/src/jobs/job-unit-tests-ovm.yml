@@ -4,12 +4,12 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npx hardhat compile --use-ovm --optimizer
+  - run: npx hardhat compile --use-ovm --optimizer --force
   - run:
       name: Test and output gas used
       command: |
         set +e
-        npm run test:ovm
+        npm run test:ovm -- --no-compile
         EXIT_CODE=$?
         cat test-gas-used.log
         printf "\\n"
