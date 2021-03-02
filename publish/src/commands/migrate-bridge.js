@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const Web3 = require('web3');
-const { gray, red, yellow } = require('chalk');
+const chalk = require('chalk');
 const { wrap } = require('../../..');
 const {
 	ensureNetwork,
@@ -28,9 +28,9 @@ const migrateBridge = async ({
 		useFork,
 	}));
 
-	console.log(yellow('Configuration...'));
-	console.log(gray(`  > Nework: ${deploymentPath}`));
-	console.log(gray(`  > Deployment path: ${deploymentPath}`));
+	console.log(chalk.yellow('Configuration...'));
+	console.log(chalk.gray(`  > Network: ${network}`));
+	console.log(chalk.gray(`  > Deployment path: ${deploymentPath}`));
 
 	// -----------------------------------
 	// Get the old bridge address from versions.js
@@ -40,10 +40,10 @@ const migrateBridge = async ({
 
 	const bridgeVersions = getVersions({ network, deploymentPath, byContract: true })
 		.SynthetixBridgeToOptimism;
-	if (bridgeVersions.length < 2) {
+	if (bridgeVersions.length < 1) {
 		throw new Error(
-			red(
-				'❌ At least two bridge versions are needed for a migration. Please make sure to deploy new versions before migrating, and that they are registered versions'
+			chalk.red(
+				'❌ Unable to find old bridge version. Old version needs to exist in versions.json.'
 			)
 		);
 	}
@@ -54,26 +54,34 @@ const migrateBridge = async ({
 	// Get the new bridge address from deployment.js
 	// -----------------------------------
 
-	const newBridgeAddress = getTarget({ deploymentPath, contract: 'SynthetixBridgeToOptimism' });
+	const newBridgeData = getTarget({ deploymentPath, contract: 'SynthetixBridgeToOptimism' });
+	if (!newBridgeData) {
+		throw new Error(
+			chalk.red(
+				'❌ Unable to find new bridge version. New version needs to exist in deployments.json.'
+			)
+		);
+	}
+	const newBridgeAddress = newBridgeData.address;
 
 	// -----------------------------------
 	// Ultra-paranoid validation
 	// -----------------------------------
 
-	console.log(yellow('Validations...'));
+	console.log(chalk.yellow('Validations...'));
 
 	// Valid address
 	if (!web3.utils.isAddress(newBridgeAddress.toLowerCase())) {
-		throw new Error(red(`New bridge address ${newBridgeAddress} is invalid`));
+		throw new Error(chalk.red(`New bridge address ${newBridgeAddress} is invalid`));
 	}
-	console.log(gray(`  ✅ New bridge address is a valid address`));
+	console.log(chalk.gray(`  ✅ New bridge address is a valid address`));
 
 	// Is contract
 	const code = await web3.eth.getCode(newBridgeAddress);
 	if (code === '0x') {
-		throw new Error(red(`❌ New bridge address ${newBridgeAddress} is not a contract`));
+		throw new Error(chalk.red(`❌ New bridge address ${newBridgeAddress} is not a contract`));
 	}
-	console.log(gray(`  ✅ New bridge address is a contract`));
+	console.log(chalk.gray(`  ✅ New bridge address is a contract`));
 
 	// Not same address
 	const oldBridge = getContract({
@@ -93,22 +101,22 @@ const migrateBridge = async ({
 		web3,
 	});
 	if (newBridge.options.address === oldBridge.options.address) {
-		throw new Error(red(`❌ New bridge address is the same as the old bridge address`));
+		throw new Error(chalk.red(`❌ New bridge address is the same as the old bridge address`));
 	}
-	console.log(gray(`  ✅ New bridge address is different than the old bridge address`));
+	console.log(chalk.gray(`  ✅ New bridge address is different than the old bridge address`));
 
 	// Same owner
 	const oldOwner = await oldBridge.methods.owner().call();
 	const newOwner = await newBridge.methods.owner().call();
 	if (newOwner !== oldOwner) {
-		throw new Error(red(`❌ New bridge does not have the same owner as the old bridge`));
+		throw new Error(chalk.red(`❌ New bridge does not have the same owner as the old bridge`));
 	}
-	console.log(gray(`  ✅ New bridge address owner is the same owner: ${newOwner}`));
+	console.log(chalk.gray(`  ✅ New bridge address owner is the same owner: ${newOwner}`));
 
 	// Correct contract address
 	if (newBridgeAddress !== newBridge.options.address) {
 		throw new Error(
-			red(
+			chalk.red(
 				`❌ Something is wrong, newBridgeAddress is ${newBridgeAddress}, and newBridge.options.address is ${newBridge.options.address}`
 			)
 		);
@@ -129,7 +137,7 @@ const migrateBridge = async ({
 	);
 	if (newBalance > 0) {
 		throw new Error(
-			red(`❌ New bridge already has a positive SNX balance of ${newBalance.toString()} SNX`)
+			chalk.red(`❌ New bridge already has a positive SNX balance of ${newBalance.toString()} SNX`)
 		);
 	}
 	const oldBalance = web3.utils.fromWei(
@@ -137,51 +145,54 @@ const migrateBridge = async ({
 		'ether'
 	);
 	if (oldBalance === 0) {
-		throw new Error(red('❌ Old bridge balance is zero'));
+		throw new Error(chalk.red('❌ Old bridge balance is zero'));
 	}
-	console.log(gray(`  ✅ Old bridge has a positive balance: ${oldBalance}`));
-	console.log(gray(`  ✅ New bridge has zero balance: ${newBalance}`));
+	console.log(chalk.gray(`  ✅ Old bridge has a positive balance: ${oldBalance}`));
+	console.log(chalk.gray(`  ✅ New bridge has zero balance: ${newBalance}`));
 
 	// New bridge should be activated
 	const activated = newBridge.methods.activated().call();
 	if (!activated) {
-		throw new Error(red('❌ New bridge is not activated'));
+		throw new Error(chalk.red('❌ New bridge is not activated'));
 	}
-	console.log(gray(`  ✅ New bridge is activated`));
+	console.log(chalk.gray(`  ✅ New bridge is activated`));
 
 	// Resolver addresses
 	const newAddresses = newBridge.methods.resolverAddressesRequired().call();
 	const oldAddresses = oldBridge.methods.resolverAddressesRequired().call();
 	if (newAddresses.toString() !== oldAddresses.toString()) {
-		throw new Error(red('❌ Bridge resolver addresses do not match'));
+		throw new Error(chalk.red('❌ Bridge resolver addresses do not match'));
 	}
-	console.log(gray(`  ✅ Bridge resolver addresses look good`));
+	console.log(chalk.gray(`  ✅ Bridge resolver addresses match old bridge resolver addresses`));
 
 	// Signature checks
 	const newCode = await web3.eth.getCode(newBridgeAddress);
 	function hasFunction(signature) {
-		const selector = web3.eth.encodeFunctionSignature(signature);
+		const selector = web3.eth.abi.encodeFunctionSignature(signature);
 		const has = newCode.indexOf(selector.slice(2, selector.length)) > 0;
+
 		if (!has) {
-			throw new Error(red(`❌ New bridge lacks ${signature} signature`));
+			throw new Error(chalk.red(`❌ New bridge lacks function ${signature}`));
 		}
+
+		console.log(chalk.gray(`  ✅ New bridge has function ${signature}`));
 	}
 	hasFunction('migrateBridge(address)');
-	hasFunction('finalizeWithdrawal(address,unit256)');
-	hasFunction('depositReward(unit256)');
-	hasFunction('deposit(unit256)');
-	hasFunction('depositTo(address,unit256)');
-	hasFunction('notifyRewardAmount(unit256)');
+	hasFunction('finalizeWithdrawal(address,uint256)');
+	hasFunction('depositReward(uint256)');
+	hasFunction('deposit(uint256)');
+	hasFunction('depositTo(address,uint256)');
+	hasFunction('notifyRewardAmount(uint256)');
 
 	// -----------------------------------
 	// Confirmation
 	// -----------------------------------
 
-	console.log(yellow('Tx params...'));
+	console.log(chalk.yellow('Tx params...'));
 
 	// Bridge addresses
-	console.log(yellow(`  > New bridge: ${newBridgeAddress}`));
-	console.log(yellow(`  > Old bridge: ${oldBridgeAddress}`));
+	console.log(chalk.yellow.inverse(`  > Old bridge: ${oldBridgeAddress} - ${oldBalance} SNX`));
+	console.log(chalk.yellow.inverse(`  > New bridge: ${newBridgeAddress} - ${newBalance} SNX`));
 
 	// Tx params
 	const params = {
@@ -189,25 +200,45 @@ const migrateBridge = async ({
 		gas: gasLimit,
 		from: account,
 	};
-	console.log(gray(`  > Gas price to use: ${gasPrice} gwei (${params.gasPrice} wei)`));
-	console.log(gray(`  > Gas limit to use: ${gasLimit} wei`));
+	console.log(chalk.gray(`  > Gas price to use: ${gasPrice} gwei (${params.gasPrice} wei)`));
+	console.log(chalk.gray(`  > Gas limit to use: ${gasLimit} wei`));
 
 	// Account
-	console.log(gray(`  > Sender account: ${account}`));
+	console.log(chalk.gray(`  > Sender account: ${account}`));
 
 	// Confirmation
+	console.log(chalk.yellow(`⚠⚠⚠ WARNING: Youre about to perform the SNX migration!!!`));
+	const msg = `SynthetixBridgeToOptimism<${oldBridge.options.address}>.migrateBridge(${newBridge.options.address})`;
+	console.log(chalk.yellow(`Will call ${msg}`));
 	try {
-		await confirmAction(
-			yellow('⚠⚠⚠ WARNING: Youre about to perform the SNX migration. Are you sure?')
-		);
+		await confirmAction(chalk.yellow.bold('Continue?'));
 	} catch (err) {}
 
 	// -----------------------------------
 	// Ok, let's migrate...
 	// -----------------------------------
 
+	console.log(chalk.yellow(`Calling ${msg}`));
+
 	const tx = await oldBridge.methods.migrateBridge(newBridge.options.address).send(params);
-	console.log(tx);
+
+	console.log(chalk.green(`Tx executed ${tx.hash}`));
+	console.log(chalk.gray(JSON.stringify(tx, null, 2)));
+
+	console.log(
+		chalk.yellow.inverse(
+			`  > Old bridge: ${oldBridgeAddress} - ${await snx.methods
+				.balanceOf(oldBridgeAddress)
+				.call()} SNX`
+		)
+	);
+	console.log(
+		chalk.yellow.inverse(
+			`  > New bridge: ${newBridgeAddress} - ${await snx.methods
+				.balanceOf(newBridgeAddress)
+				.call()} SNX`
+		)
+	);
 };
 
 const bootstrapConnection = ({ network, deploymentPath, privateKey, useFork }) => {
