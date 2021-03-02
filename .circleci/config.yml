@@ -136,8 +136,6 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
     steps:
-      - run: |
-          whoami
       - checkout
       - attach_workspace:
           at: .
@@ -145,7 +143,7 @@ jobs:
           command: npx hardhat node --target-network mainnet
           background: true
       - cmd-wait-for-rpc
-      - run: npm run test:prod:gas -- --target-network mainnet && npm run codechecks codechecks.prod.yml
+      - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
   job-static-analysis:

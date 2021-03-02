@@ -1,8 +1,6 @@
 # Restarts a forked chain, and runs production tests with gas reports against it
 {{> job-header.yml}}
 steps:
-  - run: |
-      whoami
   - checkout
   - attach_workspace:
       at: .
@@ -10,6 +8,6 @@ steps:
       command: npx hardhat node --target-network mainnet
       background: true
   - cmd-wait-for-rpc
-  - run: npm run test:prod:gas -- --target-network mainnet && npm run codechecks codechecks.prod.yml
+  - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log
