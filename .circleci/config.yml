@@ -82,6 +82,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: node publish build --test-helpers
+      - run: npx hardhat compile --force
       - run:
           command: npx hardhat node
           background: true

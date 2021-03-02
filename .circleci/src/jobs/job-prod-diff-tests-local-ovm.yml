@@ -4,8 +4,11 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  # Compile
+  # Note: Both compilations below target the evm intentionally
+  # Compile - required for deploy
   - run: node publish build --test-helpers
+  # Compile again - required for tests
+  - run: npx hardhat compile --force
   # Start local chain
   - run:
       command: npx hardhat node
