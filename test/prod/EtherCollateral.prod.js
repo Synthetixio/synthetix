@@ -18,7 +18,7 @@ const {
 } = require('./utils');
 const { yellow } = require('chalk');
 
-contract('EtherCollateral (prod tests)', accounts => {
+contract('EtherCollateral (prod tests) @ovm-skip', accounts => {
 	const [, user1] = accounts;
 
 	let owner;

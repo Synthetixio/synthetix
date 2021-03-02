@@ -25,7 +25,7 @@ const {
 const gasFromReceipt = ({ receipt }) =>
 	receipt.gasUsed > 1e6 ? receipt.gasUsed / 1e6 + 'm' : receipt.gasUsed / 1e3 + 'k';
 
-contract('Synthetix (prod tests)', accounts => {
+contract('Synthetix (prod tests) @ovm-skip', accounts => {
 	const [, user1, user2] = accounts;
 
 	let owner;

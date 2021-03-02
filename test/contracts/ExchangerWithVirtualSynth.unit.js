@@ -8,10 +8,14 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const { toBytes32 } = require('../..');
 
-const ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+let ExchangerWithVirtualSynth;
 
 contract('ExchangerWithVirtualSynth (unit tests) @ovm-skip', async accounts => {
 	const [, owner] = accounts;
+
+	before(async () => {
+		ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+	});
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({

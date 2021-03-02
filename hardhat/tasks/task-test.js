@@ -10,10 +10,12 @@ task('test')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, hre, runSuper) => {
-		const { gas, grep, useOvm, native, gasOutputFile } = taskArguments;
+		const { gas, grep, useOvm, native, gasOutputFile, noCompile } = taskArguments;
 
 		if (useOvm) {
-			await hre.run('compile', { useOvm });
+			if (!noCompile) {
+				await hre.run('compile', { useOvm });
+			}
 
 			if (!hre.config.prod) {
 				hre.ovm = true;
