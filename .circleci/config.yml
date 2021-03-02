@@ -155,7 +155,7 @@ jobs:
           echo "------"
           cat ~/.ssh/known_hosts
           echo "------"
-          npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
+          npm run test:prod:gas -- --target-network mainnet && npm run codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
   job-static-analysis:
