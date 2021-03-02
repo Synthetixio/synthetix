@@ -9,7 +9,7 @@ steps:
       name: Test and output gas used
       command: |
         set +e
-        npm test:ovm
+        npm run test:ovm
         EXIT_CODE=$?
         cat test-gas-used.log
         printf "\\n"
