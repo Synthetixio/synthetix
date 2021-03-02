@@ -3,7 +3,6 @@
 steps:
   - run: |
       whoami
-      cat ~/.ssh/known_hosts
   - checkout
   - attach_workspace:
       at: .
