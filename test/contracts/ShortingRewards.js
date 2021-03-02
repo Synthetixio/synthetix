@@ -14,7 +14,7 @@ const CollateralManager = artifacts.require(`CollateralManager`);
 const CollateralState = artifacts.require(`CollateralState`);
 const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-contract('ShortingRewards', accounts => {
+contract('ShortingRewards @ovm-skip', accounts => {
 	const [
 		deployerAccount,
 		owner,

@@ -10,7 +10,7 @@ const { toBytes32 } = require('../..');
 
 const ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
 
-contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
+contract('ExchangerWithVirtualSynth (unit tests) @ovm-skip', async accounts => {
 	const [, owner] = accounts;
 
 	it('ensure only known functions are mutative', () => {

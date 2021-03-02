@@ -24,7 +24,7 @@ const {
 	defaults: { DEBT_SNAPSHOT_STALE_TIME },
 } = require('../..');
 
-contract('DebtCache', async accounts => {
+contract('DebtCache @ovm-skip', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH'].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 

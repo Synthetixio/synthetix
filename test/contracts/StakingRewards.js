@@ -7,7 +7,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { mockToken, setupAllContracts, setupContract } = require('./setup');
 const { currentTime, toUnit, fastForward } = require('../utils')();
 
-contract('StakingRewards', accounts => {
+contract('StakingRewards @ovm-skip', accounts => {
 	const [
 		,
 		owner,

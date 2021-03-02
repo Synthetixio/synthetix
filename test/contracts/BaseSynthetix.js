@@ -19,7 +19,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
-contract('BaseSynthetix', async accounts => {
+contract('BaseSynthetix @ovm-skip', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH'].map(toBytes32);
 
 	const [, owner, account1, account2, account3] = accounts;

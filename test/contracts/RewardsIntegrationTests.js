@@ -12,7 +12,7 @@ const { setExchangeFeeRateForSynths } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
 
-contract('Rewards Integration Tests', accounts => {
+contract('Rewards Integration Tests @ovm-skip', accounts => {
 	// These functions are for manual debugging:
 
 	// const logFeePeriods = async () => {

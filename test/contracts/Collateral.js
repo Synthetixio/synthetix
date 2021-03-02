@@ -6,7 +6,7 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const Collateral = artifacts.require(`Collateral`);
 
-contract('Collateral', async accounts => {
+contract('Collateral @ovm-skip', async accounts => {
 	it('should ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: Collateral.abi,
