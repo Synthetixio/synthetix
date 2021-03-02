@@ -22,13 +22,6 @@ const {
 	getEventByName,
 } = require('./helpers');
 
-const MockBinaryOptionMarketManager = artifacts.require('MockBinaryOptionMarketManager');
-const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
-const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
-const BinaryOption = artifacts.require('BinaryOption');
-const SafeDecimalMath = artifacts.require('SafeDecimalMath');
-const Synth = artifacts.require('Synth');
-
 // All inputs should be BNs.
 const computePrices = (longs, shorts, debt, fee) => {
 	const totalOptions = multiplyDecimalRound(debt, toUnit(1).sub(fee));
@@ -39,6 +32,13 @@ const computePrices = (longs, shorts, debt, fee) => {
 };
 
 contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
+	const MockBinaryOptionMarketManager = artifacts.require('MockBinaryOptionMarketManager');
+	const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
+	const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+	const BinaryOption = artifacts.require('BinaryOption');
+	const SafeDecimalMath = artifacts.require('SafeDecimalMath');
+	const Synth = artifacts.require('Synth');
+
 	const [initialBidder, newBidder, pauper] = accounts;
 
 	const ZERO_ADDRESS = '0x' + '0'.repeat(40);
