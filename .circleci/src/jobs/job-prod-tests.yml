@@ -10,16 +10,6 @@ steps:
       command: npx hardhat node --target-network mainnet
       background: true
   - cmd-wait-for-rpc
-  - run: |
-      echo "------"
-      whoami
-      echo "------"
-      cat ~/.ssh/known_hosts
-      echo "------"
-      ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
-      echo "------"
-      cat ~/.ssh/known_hosts
-      echo "------"
-      npm run test:prod:gas -- --target-network mainnet && npm run codechecks codechecks.prod.yml
+  - run: npm run test:prod:gas -- --target-network mainnet && npm run codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log
