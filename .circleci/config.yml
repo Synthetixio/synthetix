@@ -82,12 +82,13 @@ jobs:
       - attach_workspace:
           at: .
       - run: node publish build --test-helpers
+      - run: npx hardhat compile --force
       - run:
           command: npx hardhat node
           background: true
       - cmd-wait-for-rpc
       - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
-      - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
+      - run: npm run test:prod -- --no-compile --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
   job-prod-diff-tests-local:
     working_directory: ~/repo
     docker:
