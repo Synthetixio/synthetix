@@ -220,7 +220,7 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 					});
 				});
 
-				it('transfers the whoel balacne to the new bridge', async () => {
+				it('transfers the whole balance to the new bridge', async () => {
 					assert.bnEqual(await synthetix.balanceOf(synthetixBridgeToOptimism.address), 0);
 					assert.bnEqual(await synthetix.balanceOf(newBridge), bridgeBalance);
 				});

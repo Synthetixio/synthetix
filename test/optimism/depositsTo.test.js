@@ -226,7 +226,7 @@ const itCanPerformDepositsTo = ({ ctx }) => {
 							const event = depositReceipt.events.find(e => e.event === 'DepositInitiated');
 							assert.exists(event);
 
-							assert.equal(event.args.account, user1L1.address);
+							assert.equal(event.args.from, user1L1.address);
 							assert.equal(event.args.to, randomAddress);
 							assert.bnEqual(event.args.amount, amountToDeposit);
 						});
@@ -264,7 +264,7 @@ const itCanPerformDepositsTo = ({ ctx }) => {
 							it('emitted a DepositFinalized event', async () => {
 								assert.exists(mintedSecondaryEvent);
 								assert.bnEqual(mintedSecondaryEvent.args.amount, amountToDeposit);
-								assert.equal(mintedSecondaryEvent.args.account, randomAddress);
+								assert.equal(mintedSecondaryEvent.args.to, randomAddress);
 							});
 
 							it('shows that the L2 balances are updated', async () => {

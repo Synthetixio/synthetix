@@ -179,7 +179,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 					it('and a WithdrawalInitiated event is emitted', async () => {
 						assert.eventEqual(withdrawalTx, 'WithdrawalInitiated', {
-							account: user1,
+							from: user1,
 							to: user1,
 							amount: amount,
 						});
@@ -226,7 +226,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 					it('and a WithdrawalInitiated event is emitted', async () => {
 						assert.eventEqual(withdrawalTx, 'WithdrawalInitiated', {
-							account: user1,
+							from: user1,
 							to: randomAddress,
 							amount: amount,
 						});
@@ -269,7 +269,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 					it('should emit a DepositFinalized event', async () => {
 						assert.eventEqual(finalizeDepositTx, 'DepositFinalized', {
-							account: user1,
+							to: user1,
 							amount: finalizeDepositAmount,
 						});
 					});

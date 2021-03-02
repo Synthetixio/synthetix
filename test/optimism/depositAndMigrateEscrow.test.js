@@ -219,7 +219,7 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 										);
 										assert.exists(event);
 										assert.bnEqual(event.args.amount, depositAmount);
-										assert.equal(event.args.account, user1L1.address);
+										assert.equal(event.args.from, user1L1.address);
 									});
 
 									it('emitted two ExportedVestingEntries events', async () => {
@@ -288,7 +288,7 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 
 										it('emitted one DepositFinalized event', async () => {
 											assert.equal(mintedSecondaryEvents.length, 1);
-											assert.equal(mintedSecondaryEvents[0].args.account, user1L1.address);
+											assert.equal(mintedSecondaryEvents[0].args.to, user1L1.address);
 											assert.bnEqual(mintedSecondaryEvents[0].args.amount, depositAmount);
 										});
 

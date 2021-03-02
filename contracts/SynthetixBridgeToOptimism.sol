@@ -108,8 +108,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
 
     // ========== PUBLIC FUNCTIONS =========
 
-    function deposit(uint256 depositAmount) external requireActive requireZeroDebt {
-        _initiateDeposit(msg.sender, depositAmount);
+    function deposit(uint256 amount) external requireActive requireZeroDebt {
+        _initiateDeposit(msg.sender, amount);
     }
 
     function depositTo(address to, uint amount) external requireActive requireZeroDebt {
@@ -131,16 +131,16 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger on L1 after L2 waiting period elapses
-    function finalizeWithdrawal(address account, uint256 amount) external requireActive {
+    function finalizeWithdrawal(address to, uint256 amount) external requireActive {
         // ensure function only callable from L2 Bridge via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
         require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
 
         // transfer amount back to user
-        synthetixERC20().transfer(account, amount);
+        synthetixERC20().transfer(to, amount);
 
         // no escrow actions - escrow remains on L2
-        emit WithdrawalFinalized(account, amount);
+        emit WithdrawalFinalized(to, amount);
     }
 
     // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
@@ -248,12 +248,12 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     // ========== EVENTS ==========
 
     event BridgeMigrated(address oldBridge, address newBridge, uint256 amount);
-    event DepositInitiated(address indexed account, address to, uint256 amount);
+    event DepositInitiated(address indexed from, address to, uint256 amount);
     event ExportedVestingEntries(
         address indexed account,
         uint256 escrowedAccountBalance,
         VestingEntries.VestingEntry[] vestingEntries
     );
     event RewardDeposit(address indexed account, uint256 amount);
-    event WithdrawalFinalized(address indexed account, uint256 amount);
+    event WithdrawalFinalized(address indexed to, uint256 amount);
 }

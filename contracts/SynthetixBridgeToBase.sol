@@ -120,11 +120,11 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     }
 
     // invoked by Messenger on L2
-    function finalizeDeposit(address account, uint256 depositAmount) external onlyOptimismBridge {
-        // now tell Synthetix to mint these tokens, deposited in L1, into the same account for L2
-        synthetix().mintSecondary(account, depositAmount);
+    function finalizeDeposit(address to, uint256 amount) external onlyOptimismBridge {
+        // now tell Synthetix to mint these tokens, deposited in L1, into the specified account for L2
+        synthetix().mintSecondary(to, amount);
 
-        emit DepositFinalized(account, depositAmount);
+        emit DepositFinalized(to, amount);
     }
 
     // invoked by Messenger on L2
@@ -141,7 +141,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] vestingEntries
     );
-    event DepositFinalized(address indexed account, uint256 amount);
+    event DepositFinalized(address indexed to, uint256 amount);
     event MintedSecondaryRewards(uint256 amount);
-    event WithdrawalInitiated(address indexed account, address to, uint256 amount);
+    event WithdrawalInitiated(address indexed from, address to, uint256 amount);
 }

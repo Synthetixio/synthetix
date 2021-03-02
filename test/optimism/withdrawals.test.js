@@ -158,7 +158,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 						assert.exists(event);
 
 						assert.bnEqual(event.args.amount, amountToWithdraw);
-						assert.equal(event.args.account, user1L2.address);
+						assert.equal(event.args.from, user1L2.address);
 					});
 
 					it('reduces the users balance', async () => {
@@ -183,7 +183,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 						it('emitted a WithdrawalFinalized event', async () => {
 							assert.exists(withdrawalCompletedEvent);
 							assert.bnEqual(withdrawalCompletedEvent.args.amount, amountToWithdraw);
-							assert.equal(withdrawalCompletedEvent.args.account, user1L2.address);
+							assert.equal(withdrawalCompletedEvent.args.to, user1L2.address);
 						});
 
 						it('shows that the users L1 balance increased', async () => {
