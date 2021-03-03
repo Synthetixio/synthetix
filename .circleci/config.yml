@@ -60,10 +60,10 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - "v4-dependencies-"
+            - v4-dependencies-{{ checksum "package-lock.json" }}
       - run: npm install
       - save_cache:
-          key: "v4-dependencies-"
+          key: v4-dependencies-{{ checksum "package-lock.json" }}
           paths:
             - node_modules
       - persist_to_workspace:
