@@ -230,9 +230,16 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run: npx hardhat compile --showsize --optimizer --force --use-ovm
       - run:
+          name: Test and output gas used
           command: |
-            npx hardhat compile --use-ovm --optimizer
+            set +e
+            npm run test:ovm -- --no-compile
+            EXIT_CODE=$?
+            cat test-gas-used.log
+            printf "\\n"
+            exit $EXIT_CODE
   job-unit-tests:
     working_directory: ~/repo
     docker:
