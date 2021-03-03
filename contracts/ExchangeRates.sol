@@ -1,12 +1,15 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
 // Libraries
+import "openzeppelin-solidity-2.3.0/contracts/math/Math.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
@@ -17,10 +20,24 @@ import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
 import "./interfaces/IExchanger.sol";
 
 
+// TODO: where best to put this?
+interface IDexTwapAggregator {
+    struct QuoteParams {
+        uint quoteOut;   // Aggregated output
+        uint amountOut;  // Aggregated TWAP output
+        uint currentOut; // Aggregated spot output
+        uint sTWAP;
+        uint uTWAP;
+        uint sCUR;
+        uint uCUR;
+        uint cl;
+    }
+
+    function assetToAsset(address tokenIn, uint amountIn, address tokenOut, uint granularity) external view returns (QuoteParams memory q);
+}
+
+
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
-// SIP-115:
-//   - Can we remove the internal rates?
-//   - Allow twap oracle to be onlyowner configurable?
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -50,12 +67,16 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     mapping(bytes32 => uint) public roundFrozen;
 
+    // The address of the external TWAP aggregator oracle for SIP-120
+    IDexTwapAggregator public dexTwapAggregator;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
 
     //
     // ========== CONSTRUCTOR ==========
 
+    // TODO: should this include the twap oracle?
     constructor(
         address _owner,
         address _oracle,
@@ -78,6 +99,11 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function setOracle(address _oracle) external onlyOwner {
         oracle = _oracle;
         emit OracleUpdated(oracle);
+    }
+
+    function setDexTwapAggregator(IDexTwapAggregator _dexTwapAggregator) external onlyOwner {
+        dexTwapAggregator = _dexTwapAggregator;
+        emit DexTwapAggregatorUpdated(address(_dexTwapAggregator));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -343,6 +369,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return _effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
     }
 
+    // SIP-120 Atomic exchanges
+    // Note that the returned systemValue, systemSourceRate, and systemDestinationRate are based on
+    // the current Chainlink rate, which may not the real rate of value / sourceAmount.
     function effectiveAtomicValueAndRates(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
@@ -352,22 +381,36 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         view
         returns (
             uint value,
-            uint sourceRate,
-            uint destinationRate
+            uint systemValue,
+            uint systemSourceRate,
+            uint systemDestinationRate
         )
     {
-        // TODO:
-        //   1. convert into equivalent assets via system settings
-        //   2. call Keep3rV1OracleUSD.assetToAsset()
-        //   3. get internal rates via _effectiveValueAndRates()
-        //   4. get P_CLBUF
-        //   5. compare values from 2. and 4.
-        //   6. obtain rates?
-        //   7. return
-        //
-        //   - do we need to output rates (more painful to calculate when sUSD is not in the pair)?
-        //     if we avoid the circuit breaker with atomic exchanges, in theory we could sanity
-        //     check with trade output rather than rates directly
+        IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForSynth(sourceCurrencyKey));
+        require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
+
+        IERC20 destEquivalent = IERC20(getAtomicEquivalentForSynth(destinationCurrencyKey));
+        require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
+
+        (systemValue, systemSourceRate, systemDestinationRate) =
+            _effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+        uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(getAtomicPriceBuffer()));
+
+        // Normalize decimals in case equivalent asset uses different decimals from internal unit
+        // TODO: prefer SafeDecimalMath.multiplyDecimal() and SafeDecimalMath.divideDecimal() instead?
+        uint sourceAmountInEquivalent = sourceAmount * 10 ** uint(sourceEquivalent.decimals()) / SafeDecimalMath.unit();
+        // TODO: add sanity check here to make sure the price window isn't 0?
+        IDexTwapAggregator.QuoteParams memory dexTwapQuote = dexTwapAggregator.assetToAsset(
+            address(sourceEquivalent),
+            sourceAmountInEquivalent,
+            address(destEquivalent),
+            getAtomicTwapPriceWindow()
+        );
+        // Similar to source amount, normalize decimals back to internal unit for output amount
+        uint pAggValue = dexTwapQuote.quoteOut * SafeDecimalMath.unit() / 10 ** uint(destEquivalent.decimals());
+
+        // Final value is minimum of P_CLBUF and P_AGG
+        value = Math.min(pClbufValue, pAggValue);
     }
 
     function rateForCurrency(bytes32 currencyKey) external view returns (uint) {
@@ -762,4 +805,5 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     event InversePriceFrozen(bytes32 currencyKey, uint rate, uint roundId, address initiator);
     event AggregatorAdded(bytes32 currencyKey, address aggregator);
     event AggregatorRemoved(bytes32 currencyKey, address aggregator);
+    event DexTwapAggregatorUpdated(address newDexTwapAggregator);
 }

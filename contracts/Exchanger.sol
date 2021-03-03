@@ -82,7 +82,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     struct ExchangeVolumeAtPeriod {
-        uint64 startTime;
+        uint64 time;
         uint192 volume;
     }
 
@@ -91,7 +91,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
 
-    // SIP-115: should this be updated with the executed or chainlink price?
     mapping(bytes32 => uint) public lastExchangeRate;
 
     ExchangeVolumeAtPeriod public lastAtomicVolume;
@@ -191,8 +190,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         (reclaimAmount, rebateAmount, numEntries, ) = _settlementOwing(account, currencyKey);
     }
 
-    // TODO: this comment below about emitting events isn't true, is it?
-    // Internal function to emit events for each individual rebate and reclaim entry
+    // Internal function to aggregate each individual rebate and reclaim entry for a synth
     function _settlementOwing(address account, bytes32 currencyKey)
         internal
         view
@@ -368,7 +366,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         _processTradingRewards(fee, exchangeForAddress);
     }
 
-    // SIP-115: Should tracking be included?
     function exchangeWithTracking(
         address from,
         bytes32 sourceCurrencyKey,
@@ -451,8 +448,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         // TODO: this destinationAddress variable doesn't seem to be needed since it's always the same as from
-        address destinationAddress
-        // TODO: include tracking?
+        address destinationAddress,
+        bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee) = _exchangeAtomically(
@@ -464,6 +461,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
 
         _processTradingRewards(fee, destinationAddress);
+
+        if (trackingCode != bytes32(0)) {
+            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+        }
     }
 
     function _emitTrackingEvent(
@@ -480,9 +481,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
     }
 
-    // SIP-115: maybe atomic exchanges shouldn't check the circuit breaker?
-    //          DEX spot can be easily manipulated to suspend a synth, so we would still want to use
-    //          the chainlink rate here
     function _suspendIfRateInvalid(bytes32 currencyKey, uint rate) internal returns (bool circuitBroken) {
         if (_isSynthRateInvalid(currencyKey, rate)) {
             systemStatus().suspendSynth(currencyKey, CIRCUIT_BREAKER_SUSPENSION_REASON);
@@ -639,7 +637,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address destinationAddress,
+        address destinationAddress
     )
         internal
         returns (
@@ -647,21 +645,112 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint fee
         )
     {
-        // TODO:
-        //   1. ensure can exchange (also checks if any chainlink flags are up)
-        //     - check here if synths are allowed to be atomically exchanged or leave that up to ExchangeRates?
-        //   2. settle any previous exchanges
-        //   3. convert source synth into sUSD and update volume counter
-        //   4. get amounts and rates (_getAmountsForAtomicExchangeMinusFees())
-        //   5. check _isSynthRateInvalid()
-        //     - if we also have the chainlink price at this stage, we can check the circuit breaker with it
-        //   6. burn/issue via _convert()
-        //   7. remit sUSD fee via chainlink price
-        //
-        //   - avoid persisting exchange via appendExchange() to avoid fee reclamation state
-        //   - do we need to update the debt cache (_updateSNXIssuedDebtOnExchange())? If so, we
-        //     should use the chainlink rates?
-        //   - emitSynthExchange() is ok or should another event be used?
+        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+
+        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
+
+        // If, after settlement the user has no balance left (highly unlikely), then return to prevent
+        // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
+        if (sourceAmountAfterSettlement == 0) {
+            return (0, 0);
+        }
+
+        uint exchangeFeeRate;
+        uint systemAmountReceived;
+        uint systemSourceRate;
+        uint systemDestinationRate;
+
+        // Note: `fee` is denominated in the destinationCurrencyKey.
+        // Note: also ensures the given synths are allowed to be atomically exchanged
+        (amountReceived, fee, exchangeFeeRate, systemAmountReceived, systemSourceRate, systemDestinationRate) = _getAmountsForAtomicExchangeMinusFees(
+            sourceAmountAfterSettlement,
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
+
+        // SIP-65: Decentralized Circuit Breaker
+        if (
+            _suspendIfRateInvalid(sourceCurrencyKey, systemSourceRate) ||
+            _suspendIfRateInvalid(destinationCurrencyKey, systemDestinationRate)
+        ) {
+            return (0, 0);
+        }
+
+        // Sanity check observed output amount against current system value
+        // TODO: maybe this shouldn't revert?  Is the (0, 0) return enough to let a trader know
+        // their exchange inputs were incorrect?
+        require(!_isDeviationAboveThreshold(systemAmountReceived, amountReceived), "Atomic rate too low");
+
+        // Check src/dest synth is sUSD
+        uint sourceSusdValue;
+        if (sourceCurrencyKey == sUSD) {
+            sourceSusdValue = sourceAmount;
+        } else if (destinationCurrencyKey == sUSD) {
+            // In this case the systemAmountReceived would be the fee-free sUSD value of the source synth
+            sourceSusdValue = systemAmountReceived;
+        } else {
+            revert("Src/dest synth must be sUSD");
+        }
+
+        // Update and check against per-block volume limit
+        uint lastTime = uint(lastAtomicVolume.time);
+        uint lastVolume = uint(lastAtomicVolume.volume);
+        uint currentVolume;
+        if (lastTime == block.timestamp) {
+            currentVolume = lastVolume.add(sourceSusdValue);
+            lastAtomicVolume.volume = uint192(currentVolume);
+        } else {
+            currentVolume = sourceSusdValue;
+            lastAtomicVolume.time = uint64(block.timestamp);
+            lastAtomicVolume.volume = uint192(currentVolume);
+        }
+        // Note that this check also protects the uint192 casts above from overflowing
+        require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed per-block atomic exchange volume limit");
+
+        // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
+        // the subtraction to not overflow, which would happen if their balance is not sufficient.
+
+        _convert(
+            sourceCurrencyKey,
+            from,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey,
+            amountReceived,
+            destinationAddress,
+            false // no vsynths
+        );
+
+        // Remit the fee if required
+        if (fee > 0) {
+            // Normalize fee to sUSD
+            // Note: `fee` is being reused to avoid stack too deep errors.
+            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
+
+            // Remit the fee in sUSDs
+            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
+
+            // Tell the fee pool about this
+            feePool().recordFeePaid(fee);
+        }
+
+        // Note: As of this point, `fee` is denominated in sUSD.
+
+        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
+        // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
+        // in these currencies
+        _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [systemSourceRate, systemDestinationRate]);
+
+        // Let the DApps know there was a Synth exchange
+        ISynthetixInternal(address(synthetix())).emitSynthExchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey,
+            amountReceived,
+            destinationAddress
+        );
+
+        // No need to persist any exchange information, as no settlement is required for atomic exchanges
     }
 
     function _convert(
@@ -955,7 +1044,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
-        (amountReceived, fee, exchangeFeeRate, , ) = _getAmountsForAtomicExchangeMinusFees(
+        (amountReceived, fee, exchangeFeeRate, , , ) = _getAmountsForAtomicExchangeMinusFees(
             sourceAmount,
             sourceCurrencyKey,
             destinationCurrencyKey
@@ -973,17 +1062,18 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint amountReceived,
             uint fee,
             uint exchangeFeeRate,
-            uint sourceRate,
-            uint destinationRate
+            uint systemAmountReceived,
+            uint systemSourceRate,
+            uint systemDestinationRate
         )
     {
         uint destinationAmount;
-        // TODO: differentiate chainlink vs execution rates
-        (destinationAmount, sourceRate, destinationRate) = exchangeRates().effectiveAtomicValueAndRates(
+        (destinationAmount, systemAmountReceived, systemSourceRate, systemDestinationRate) = exchangeRates().effectiveAtomicValueAndRates(
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey
         );
+
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);

@@ -49,6 +49,20 @@ interface IExchangeRates {
             uint destinationRate
         );
 
+    function effectiveAtomicValueAndRates(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint value,
+            uint systemValue,
+            uint systemSourceRate,
+            uint systemDestinationRate
+        );
+
     function effectiveValueAtRound(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,

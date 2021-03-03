@@ -28,6 +28,10 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT = "crossDomainEscrowGasLimit";
     bytes32 internal constant SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT = "crossDomainRewardGasLimit";
     bytes32 internal constant SETTING_CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT = "crossDomainWithdrawalGasLimit";
+    bytes32 internal constant SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK = "atomicMaxVolumePerBlock";
+    bytes32 internal constant SETTING_ATOMIC_PRICE_BUFFER = "atomicPriceBuffer";
+    bytes32 internal constant SETTING_ATOMIC_TWAP_PRICE_WINDOW = "atomicTwapPriceWindow";
+    bytes32 internal constant SETTING_ATOMIC_EQUIVALENT_FOR_SYNTH = "atomicEquivalentForSynth";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -123,5 +127,25 @@ contract MixinSystemSettings is MixinResolver {
 
     function getDebtSnapshotStaleTime() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME);
+    }
+
+    function getAtomicMaxVolumePerBlock() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK);
+    }
+
+    function getAtomicPriceBuffer() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_PRICE_BUFFER);
+    }
+
+    function getAtomicTwapPriceWindow() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_TWAP_PRICE_WINDOW);
+    }
+
+    function getAtomicEquivalentForSynth(bytes32 currencyKey) internal view returns (address) {
+        return
+            flexibleStorage().getAddressValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_SYNTH, currencyKey))
+            );
     }
 }

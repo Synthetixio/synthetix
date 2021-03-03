@@ -269,6 +269,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32,
         uint,
         bytes32,
+        bytes32
     ) external returns (uint) {
         _notImplemented();
     }

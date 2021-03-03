@@ -42,6 +42,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     uint public constant MAX_CROSS_DOMAIN_GAS_LIMIT = 8e6;
     uint public constant MIN_CROSS_DOMAIN_GAS_LIMIT = 3e6;
 
+    // Atomic block volume limit is encoded as uint192.
+    uint public constant MAX_ATOMIC_VOLUME_PER_BLOCK = uint192(-1);
+
+    // TWAP window must be more than 30min and not exceed 1 day.
+    uint public constant MIN_ATOMIC_TWAP_PRICE_WINDOW = 1;
+    uint public constant MAX_ATOMIC_TWAP_PRICE_WINDOW = 48;
+
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
@@ -149,8 +156,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP-120 Atomic exchanges
     // equivalent asset to use for a synth when considering external prices for atomic exchanges
-    function atomicEquivalentForSynth() external view returns (address) {
-        return getAtomicEquivalentForSynth();
+    function atomicEquivalentForSynth(bytes32 currencyKey) external view returns (address) {
+        return getAtomicEquivalentForSynth(currencyKey);
     }
 
     // ========== RESTRICTED ==========
@@ -290,6 +297,34 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
+    function setAtomicMaxVolumePerBlock(uint _maxVolume) external onlyOwner {
+        require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "atomic max volume exceed maximum uint192");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK, _maxVolume);
+        emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
+    }
+
+    function setAtomicPriceBuffer(uint _buffer) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_PRICE_BUFFER, _buffer);
+        emit AtomicPriceBufferUpdated(_buffer);
+    }
+
+    function setAtomicTwapPriceWindow(uint _window) external onlyOwner {
+        require(_window >= MIN_ATOMIC_TWAP_PRICE_WINDOW, "atomic twap window under minimum 30 min");
+        require(_window <= MAX_ATOMIC_TWAP_PRICE_WINDOW, "atomic twap window exceed maximum 1 day");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_TWAP_PRICE_WINDOW, _window);
+        emit AtomicTwapPriceWindowUpdated(_window);
+    }
+
+    function setAtomicEquivalentForSynth(bytes32 _currencyKey, address _equivalent) external onlyOwner {
+        // TODO: sanity check with the Keep3r oracle for compatibility?
+        flexibleStorage().setAddressValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_SYNTH, _currencyKey)),
+            _equivalent
+        );
+        emit AtomicEquivalentForSynthUpdated(_currencyKey, _equivalent);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
@@ -306,4 +341,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
+    event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
+    event AtomicPriceBufferUpdated(uint newBuffer);
+    event AtomicTwapPriceWindowUpdated(uint newWindow);
+    event AtomicEquivalentForSynthUpdated(bytes32 synthKey, address equivalent);
 }
