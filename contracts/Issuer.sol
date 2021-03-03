@@ -23,7 +23,6 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 import "./interfaces/ICollateralManager.sol";
-import "./interfaces/IDebtCache.sol";
 
 
 interface IRewardEscrowV2 {

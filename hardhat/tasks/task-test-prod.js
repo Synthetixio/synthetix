@@ -5,6 +5,7 @@ task('test:prod', 'run production tests against a running fork')
 	.addFlag('gas', 'Compile gas usage')
 	.addFlag('patchFreshDeployment', 'Patches up some things in production tests for new deployments')
 	.addFlag('useOvm', 'Uses an Optimism configuration')
+	.addFlag('noCompile', 'Avoid auto compilation')
 	.addOptionalParam(
 		'targetNetwork',
 		'The deployement network to run the tests against (E.g. mainnet, local, etc...)',
