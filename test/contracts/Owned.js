@@ -10,7 +10,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-contract('Owned', accounts => {
+contract('Owned @ovm-skip', accounts => {
 	const [deployerAccount, account1, account2, account3, account4] = accounts;
 
 	it('should revert when owner parameter is passed the zero address', async () => {

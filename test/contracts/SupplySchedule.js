@@ -22,7 +22,7 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const BN = require('bn.js');
 
-contract('SupplySchedule', async accounts => {
+contract('SupplySchedule @ovm-skip', async accounts => {
 	const initialWeeklySupply = divideDecimal(75000000, 52); // 75,000,000 / 52 weeks
 	const inflationStartDate = inflationStartTimestampInSecs;
 

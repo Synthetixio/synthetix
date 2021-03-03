@@ -16,7 +16,7 @@ const {
 	proxyThruTo,
 } = require('./helpers');
 
-contract('ReadProxy', async accounts => {
+contract('ReadProxy @ovm-skip', async accounts => {
 	const [, owner, account1, , account3] = accounts;
 
 	let resolver;

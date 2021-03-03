@@ -12,7 +12,7 @@ const { isBN } = require('web3-utils');
 
 const ExchangeState = artifacts.require('ExchangeState');
 
-contract('ExchangeState', accounts => {
+contract('ExchangeState @ovm-skip', accounts => {
 	const [
 		deployerAccount,
 		owner, // Oracle next, is not needed
