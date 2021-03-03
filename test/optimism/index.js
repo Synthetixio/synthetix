@@ -11,6 +11,7 @@ const { itCanPerformWithdrawals } = require('./withdrawals.test');
 const { itCanPerformWithdrawalsTo } = require('./withdrawalsTo.test');
 const { itCanPerformEscrowMigration } = require('./migrateEscrow.test');
 const { itCanPerformDepositAndEscrowMigration } = require('./depositAndMigrateEscrow.test');
+const { itCanPerformSynthExchange } = require('./synthExchange.test');
 
 /*
  * ===== L2 GOTCHAS =====
@@ -109,13 +110,14 @@ describe('Layer 2 production tests', () => {
 				currencyKeys.push(...additionalKeys);
 
 				const { timestamp } = await provider.getBlock();
-
+				let rates;
+				if (useOvm) {
+					rates = ['1700', '25', '1700'].map(ethers.utils.parseEther);
+				} else {
+					rates = currencyKeys.map(() => ethers.utils.parseEther('1'));
+				}
 				ExchangeRates = ExchangeRates.connect(owner);
-				let tx = await ExchangeRates.updateRates(
-					currencyKeys,
-					currencyKeys.map(() => ethers.utils.parseEther('1')),
-					timestamp
-				);
+				let tx = await ExchangeRates.updateRates(currencyKeys, rates, timestamp);
 				await tx.wait();
 
 				DebtCache = DebtCache.connect(owner);
@@ -174,5 +176,6 @@ describe('Layer 2 production tests', () => {
 		itCanPerformRewardDeposits({ ctx: this });
 		itCanPerformEscrowMigration({ ctx: this });
 		itCanPerformDepositAndEscrowMigration({ ctx: this });
+		itCanPerformSynthExchange({ ctx: this });
 	});
 });
