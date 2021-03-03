@@ -350,7 +350,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
+    ) external onlySynthetix returns (uint amountReceived) {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
@@ -374,7 +374,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         address destinationAddress,
         address originator,
         bytes32 trackingCode
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
+    ) external onlySynthetix returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee, ) = _exchange(
             from,
@@ -399,7 +399,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         address originator,
         bytes32 trackingCode
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
+    ) external onlySynthetix returns (uint amountReceived) {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
@@ -424,7 +424,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress,
         bytes32 trackingCode
-    ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
+    ) external onlySynthetix returns (uint amountReceived, IVirtualSynth vSynth) {
         uint fee;
         (amountReceived, fee, vSynth) = _exchange(
             from,
@@ -450,7 +450,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // TODO: this destinationAddress variable doesn't seem to be needed since it's always the same as from
         address destinationAddress,
         bytes32 trackingCode
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
+    ) external onlySynthetix returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee) = _exchangeAtomically(
             from,
@@ -1146,12 +1146,20 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     // ========== MODIFIERS ==========
 
-    // TODO: seems a bit overkill to always include synths when only the exchange() function needs it
     modifier onlySynthetixorSynth() {
         ISynthetix _synthetix = synthetix();
         require(
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
+        );
+        _;
+    }
+
+    modifier onlySynthetix() {
+        ISynthetix _synthetix = synthetix();
+        require(
+            msg.sender == address(_synthetix),
+            "Exchanger: Only synthetix can perform this action"
         );
         _;
     }
