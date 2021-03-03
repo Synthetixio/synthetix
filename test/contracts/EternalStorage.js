@@ -10,7 +10,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-contract('EternalStorage', accounts => {
+contract('EternalStorage @ovm-skip', accounts => {
 	const EternalStorage = artifacts.require('EternalStorage');
 	const [deployerAccount, owner, associatedContract, account1] = accounts;
 	let eternalStorage;

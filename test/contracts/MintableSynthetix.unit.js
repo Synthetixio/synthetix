@@ -11,7 +11,7 @@ const { smockit } = require('@eth-optimism/smock');
 
 const MintableSynthetix = artifacts.require('MintableSynthetix');
 
-contract('MintableSynthetix (unit tests)', accounts => {
+contract('MintableSynthetix (unit tests) @ovm-skip', accounts => {
 	const [owner, synthetixBridgeToBase, user1, mockAddress] = accounts;
 
 	it('ensure only known functions are mutative', () => {

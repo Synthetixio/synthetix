@@ -9,7 +9,7 @@ const { toUnit } = require('../utils')();
 
 const TokenState = artifacts.require('TokenState');
 
-contract('TokenState', accounts => {
+contract('TokenState @ovm-skip', accounts => {
 	const [deployerAccount, owner, associatedContract, account2] = accounts;
 
 	let instance;
