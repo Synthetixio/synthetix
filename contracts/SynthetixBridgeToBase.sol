@@ -12,14 +12,12 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 
 // solhint-disable indent
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/messenging/iAbs_BaseCrossDomainMessenger.sol";
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L1ERC20Gateway.sol";
-// TODO: There's a solidity version problem with this, using hardcoded interface for now.
-// import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L2DepositedERC20.sol";
-import "./interfaces/iOVM_L2DepositedERC20.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
 
 
-contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeToBase, iOVM_L2DepositedERC20 {
+contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeToBase, iOVM_L2DepositedToken {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -73,6 +71,10 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
+    function getFinalizeWithdrawalL1Gas() external view returns (uint32) {
+        return uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal));
+    }
+
     // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L2
@@ -91,7 +93,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         synthetix().burnSecondary(msg.sender, amount);
 
         // create message payload for L1
-        iOVM_L1ERC20Gateway bridgeToOptimism;
+        iOVM_L1TokenGateway bridgeToOptimism;
         bytes memory messageData = abi.encodeWithSelector(bridgeToOptimism.finalizeWithdrawal.selector, to, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger

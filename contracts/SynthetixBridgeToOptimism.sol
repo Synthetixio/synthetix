@@ -15,14 +15,12 @@ import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // solhint-disable indent
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/messenging/iAbs_BaseCrossDomainMessenger.sol";
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L1ERC20Gateway.sol";
-// TODO: There's a solidity version problem with this, using hardcoded interface for now.
-// import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L2DepositedERC20.sol";
-import "./interfaces/iOVM_L2DepositedERC20.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
+import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
 
 
-contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism, iOVM_L1ERC20Gateway {
+contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism, iOVM_L1TokenGateway {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -92,6 +90,10 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         newAddresses[4] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
         newAddresses[5] = CONTRACT_REWARDESCROW;
         addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
+    function getFinalizeDepositL2Gas() external view returns (uint32) {
+        return uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Deposit));
     }
 
     // ========== MODIFIERS ============
@@ -200,7 +202,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         // First, move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), _depositAmount);
         // create message payload for L2
-        iOVM_L2DepositedERC20 bridgeToBase;
+        iOVM_L2DepositedToken bridgeToBase;
         bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeDeposit.selector, _to, _depositAmount);
 
         // relay the message to this contract on L2 via L1 Messenger
