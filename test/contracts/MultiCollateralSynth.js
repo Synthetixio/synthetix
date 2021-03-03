@@ -4,10 +4,10 @@ const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
-const CollateralState = artifacts.require('CollateralState');
-const CollateralManagerState = artifacts.require('CollateralManagerState');
-const CollateralManager = artifacts.require('CollateralManager');
+let MultiCollateralSynth;
+let CollateralState;
+let CollateralManagerState;
+let CollateralManager;
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { toUnit, currentTime, fastForward } = require('../utils')();
@@ -75,6 +75,13 @@ contract('MultiCollateralSynth @gas-skip @ovm-skip', accounts => {
 			from: oracle,
 		});
 	};
+
+	before(async () => {
+		MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
+		CollateralState = artifacts.require('CollateralState');
+		CollateralManagerState = artifacts.require('CollateralManagerState');
+		CollateralManager = artifacts.require('CollateralManager');
+	});
 
 	before(async () => {
 		synths = ['sUSD'];
