@@ -226,7 +226,7 @@ contract Synthetix is BaseSynthetix {
     }
 
     // ========== EVENTS ==========
-    // SIP-115: another event for atomic exchanges?
+    // SIP-120: another event for atomic exchanges?
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
