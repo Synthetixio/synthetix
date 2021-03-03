@@ -762,7 +762,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _;
     }
 
-    function _requireRateIsValid() private {
+    function _requireRateIsValid() private view {
         require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
     }
 
