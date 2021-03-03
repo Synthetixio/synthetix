@@ -693,19 +693,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
 
         // Update and check against per-block volume limit
-        uint lastTime = uint(lastAtomicVolume.time);
-        uint lastVolume = uint(lastAtomicVolume.volume);
-        uint currentVolume;
-        if (lastTime == block.timestamp) {
-            currentVolume = lastVolume.add(sourceSusdValue);
-            lastAtomicVolume.volume = uint192(currentVolume);
-        } else {
-            currentVolume = sourceSusdValue;
-            lastAtomicVolume.time = uint64(block.timestamp);
-            lastAtomicVolume.volume = uint192(currentVolume);
-        }
-        // Note that this check also protects the uint192 casts above from overflowing
+        uint currentVolume = uint(lastAtomicVolume.time) == block.timestamp
+            ? uint(lastAtomicVolume.volume).add(sourceSusdValue)
+            : sourceSusdValue;
         require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed per-block atomic exchange volume limit");
+        lastAtomicVolume.time = uint64(block.timestamp);
+        lastAtomicVolume.volume = uint192(currentVolume); // Protected by volume limit check above
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
