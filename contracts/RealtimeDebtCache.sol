@@ -1,12 +1,12 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./DebtCache.sol";
+import "./BaseDebtCache.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/realtimedebtcache
-contract RealtimeDebtCache is DebtCache {
-    constructor(address _owner, address _resolver) public DebtCache(_owner, _resolver) {}
+contract RealtimeDebtCache is BaseDebtCache {
+    constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
     // Report the current debt values from all cached debt functions, including public variables
 
