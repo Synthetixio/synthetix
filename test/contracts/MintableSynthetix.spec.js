@@ -7,7 +7,7 @@ const BN = require('bn.js');
 
 const SYNTHETIX_TOTAL_SUPPLY = toWei('100000000');
 
-contract('MintableSynthetix (spec tests)', accounts => {
+contract('MintableSynthetix (spec tests) @ovm-skip', accounts => {
 	const [, owner, synthetixBridgeToBase, account1] = accounts;
 
 	let mintableSynthetix;

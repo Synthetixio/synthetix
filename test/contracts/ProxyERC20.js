@@ -11,7 +11,7 @@ const { mockToken } = require('./setup');
 const { toUnit } = require('../utils')();
 const { ensureOnlyExpectedMutativeFunctions, proxyThruTo } = require('./helpers');
 
-contract('ProxyERC20', async accounts => {
+contract('ProxyERC20 @ovm-skip', async accounts => {
 	const [, owner, account1, account2, account3] = accounts;
 
 	const name = 'Some name';

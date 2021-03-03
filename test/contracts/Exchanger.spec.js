@@ -29,7 +29,7 @@ const bnCloseVariance = '30';
 
 const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
-contract('Exchanger (spec tests)', async accounts => {
+contract('Exchanger (spec tests) @ovm-skip', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH] = [
 		'sUSD',
 		'sAUD',

@@ -24,7 +24,7 @@ const {
 
 const { setupAllContracts } = require('./setup');
 
-contract('PurgeableSynth', accounts => {
+contract('PurgeableSynth @ovm-skip', accounts => {
 	const [sUSD, SNX, sAUD, iETH] = ['sUSD', 'SNX', 'sAUD', 'iETH'].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, iETH];
 	const [deployerAccount, owner, oracle, , account1, account2] = accounts;

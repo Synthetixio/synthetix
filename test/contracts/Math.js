@@ -11,7 +11,7 @@ const { toUnit } = require('../utils')();
 
 const { toBN } = web3.utils;
 
-contract('Math', async () => {
+contract('Math @ovm-skip', async () => {
 	let instance;
 
 	before(async () => {
