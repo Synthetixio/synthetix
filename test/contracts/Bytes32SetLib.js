@@ -4,7 +4,7 @@ const TestableBytes32Set = artifacts.require('TestableBytes32Set');
 
 const { toBytes32 } = require('../..');
 
-contract('Bytes32SetLib', accounts => {
+contract('Bytes32SetLib @ovm-skip', accounts => {
 	let set;
 
 	const testBytes32 = ['a', 'b', 'c', 'd', 'e'].map(toBytes32);

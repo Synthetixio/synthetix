@@ -15,7 +15,7 @@ const {
 
 const { setupAllContracts } = require('./setup');
 
-contract('RewardsDistribution', async accounts => {
+contract('RewardsDistribution @ovm-skip', async accounts => {
 	const [
 		deployerAccount,
 		owner,

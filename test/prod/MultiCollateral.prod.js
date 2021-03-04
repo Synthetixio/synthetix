@@ -21,7 +21,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
-contract('MultiCollateral (prod tests)', accounts => {
+contract('MultiCollateral (prod tests) @ovm-skip', accounts => {
 	const [, user1] = accounts;
 
 	let owner;
@@ -122,6 +122,10 @@ contract('MultiCollateral (prod tests)', accounts => {
 				network,
 			});
 		}
+	});
+
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
 	});
 
 	describe('general multicollateral state', () => {

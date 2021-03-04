@@ -10,15 +10,19 @@ task('test')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, hre, runSuper) => {
-		const { gas, grep, useOvm, native, gasOutputFile } = taskArguments;
+		const { gas, grep, useOvm, native, gasOutputFile, noCompile } = taskArguments;
 
 		if (useOvm) {
+			if (!noCompile) {
+				await hre.run('compile', { useOvm });
+			}
+
 			if (!hre.config.prod) {
 				hre.ovm = true;
 			}
 
 			console.log(gray('Running tests in the OVM...'));
-			require('@eth-optimism/plugins/hardhat/compiler/0.5.16');
+			require('@eth-optimism/plugins/hardhat/compiler');
 			require('@eth-optimism/plugins/hardhat/web3');
 
 			if (!grep) {

@@ -18,7 +18,7 @@ const {
 	resumeSystem,
 } = require('./utils');
 
-contract('TradingRewards (prod tests)', accounts => {
+contract('TradingRewards (prod tests) @ovm-skip', accounts => {
 	const [, user] = accounts;
 
 	let owner;
@@ -74,6 +74,10 @@ contract('TradingRewards (prod tests)', accounts => {
 			network,
 			deploymentPath,
 		});
+	});
+
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
 	});
 
 	it('has the expected resolver set', async () => {

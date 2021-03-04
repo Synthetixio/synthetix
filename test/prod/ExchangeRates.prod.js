@@ -18,7 +18,7 @@ const {
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
-contract('ExchangeRates (prod tests)', accounts => {
+contract('ExchangeRates (prod tests) @ovm-skip', accounts => {
 	const [, user] = accounts;
 
 	let owner;
@@ -74,6 +74,10 @@ contract('ExchangeRates (prod tests)', accounts => {
 			network,
 			deploymentPath,
 		});
+	});
+
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
 	});
 
 	describe('misc state', () => {

@@ -20,7 +20,7 @@ const {
 	getEventByName,
 } = require('./helpers');
 
-const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+let BinaryOptionMarket;
 
 const computePrices = (longs, shorts, debt, fee) => {
 	const totalOptions = multiplyDecimalRound(debt, toUnit(1).sub(fee));
@@ -69,6 +69,10 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 		});
 		return BinaryOptionMarket.at(getEventByName({ tx, name: 'MarketCreated' }).args.market);
 	};
+
+	before(async () => {
+		BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+	});
 
 	before(async () => {
 		({

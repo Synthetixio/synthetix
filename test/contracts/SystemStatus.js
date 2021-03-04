@@ -10,7 +10,7 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const { toBytes32 } = require('../..');
 
-contract('SystemStatus', async accounts => {
+contract('SystemStatus @ovm-skip', async accounts => {
 	const [SYSTEM, ISSUANCE, EXCHANGE, SYNTH_EXCHANGE, SYNTH] = [
 		'System',
 		'Issuance',

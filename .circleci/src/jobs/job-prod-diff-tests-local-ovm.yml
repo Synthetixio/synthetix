@@ -4,8 +4,11 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  # Compile
+  # Note: Both compilations below target the evm intentionally
+  # Compile - required for deploy
   - run: node publish build --test-helpers
+  # Compile again - required for tests
+  - run: npx hardhat compile --force
   # Start local chain
   - run:
       command: npx hardhat node
@@ -14,4 +17,4 @@ steps:
   # Deploy
   - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
   # Run production tests
-  - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
+  - run: npm run test:prod -- --no-compile --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
