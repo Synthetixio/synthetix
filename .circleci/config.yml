@@ -144,6 +144,11 @@ jobs:
           command: npx hardhat node --target-network mainnet
           background: true
       - cmd-wait-for-rpc
+      - run: |
+          which codechecks || true
+          ls /home/root/.npm-global/bin || true
+          ls /home/root/.config/yarn/global/node_modules/.bin || true
+          ls /home/root/.yarn/bin || true
       - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
