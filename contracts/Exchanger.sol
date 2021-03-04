@@ -586,15 +586,18 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             destinationAddress
         );
 
-        // persist the exchange information for the dest key
-        appendExchange(
-            destinationAddress,
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            amountReceived,
-            exchangeFeeRate
-        );
+        // iff the waiting period is gt 0
+        if (getWaitingPeriodSecs() > 0) {
+            // persist the exchange information for the dest key
+            appendExchange(
+                destinationAddress,
+                sourceCurrencyKey,
+                sourceAmountAfterSettlement,
+                destinationCurrencyKey,
+                amountReceived,
+                exchangeFeeRate
+            );
+        }
     }
 
     function _convert(
