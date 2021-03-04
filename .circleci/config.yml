@@ -1,12 +1,15 @@
 version: 2.1
 commands:
-  cmd-wait-for-rpc:
+  cmd-wait-for-port:
+    parameters:
+      port:
+        type: integer
     steps:
       - run: sleep 5
       - run:
           shell: /bin/sh
           command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:<<parameters.port>>
             :
 jobs:
   job-compile:
@@ -86,7 +89,8 @@ jobs:
       - run:
           command: npx hardhat node
           background: true
-      - cmd-wait-for-rpc
+      - cmd-wait-for-port:
+          port: 8545
       - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
       - run: npm run test:prod -- --no-compile --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
   job-prod-diff-tests-local:
@@ -104,7 +108,8 @@ jobs:
       - run:
           command: npx hardhat node
           background: true
-      - cmd-wait-for-rpc
+      - cmd-wait-for-port:
+          port: 8545
       - run: node publish deploy --network local --fresh-deploy --yes
       - run: npm run test:prod -- --patch-fresh-deployment
   job-prod-diff-tests:
@@ -123,12 +128,47 @@ jobs:
       - run:
           command: npx hardhat node --target-network mainnet
           background: true
-      - cmd-wait-for-rpc
+      - cmd-wait-for-port:
+          port: 8545
       - run: node publish prepare-deploy --network mainnet
       - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
       - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
+  job-prod-tests-ovm:
+    working_directory: ~/repo
+    machine:
+      image: ubuntu-2004:202010-01
+      docker_layer_caching: true
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Prepare docker containers
+          command: |
+            git clone git@github.com:ethereum-optimism/optimism-integration.git
+            cd optimism-integration
+            docker-compose pull
+      - run:
+          name: Start chains
+          background: true
+          command: |
+            cd optimism-integration
+            ./up.sh
+      - cmd-wait-for-port:
+          port: 8545
+      - cmd-wait-for-port:
+          port: 9545
+      - run:
+          name: Deploy OVM Synthetix instances
+          command: |
+            node publish deploy-ovm-pair
+      - run:
+          name: Run OVM production tests
+          command: |
+            npm run test:prod:ovm
   job-prod-tests:
     working_directory: ~/repo
     docker:
@@ -143,7 +183,8 @@ jobs:
       - run:
           command: npx hardhat node --target-network mainnet
           background: true
-      - cmd-wait-for-rpc
+      - cmd-wait-for-port:
+          port: 8545
       - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
@@ -318,6 +359,10 @@ workflows:
           requires:
             - job-prepare
       - job-prod-tests:
+          requires:
+            - job-prepare
+      - job-prod-tests-ovm:
+          name: job-prod-tests-ovm
           requires:
             - job-prepare
       - job-prod-diff-tests-local:

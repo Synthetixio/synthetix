@@ -368,6 +368,87 @@
 			"timestamp": "2021-01-14T17:22:03.923Z",
 			"txn": "",
 			"network": "kovan"
+		},
+		"TokenStatesETH": {
+			"name": "TokenStatesETH",
+			"address": "0x8E6734A7653175b3FDa62516A646709F547C8342",
+			"source": "TokenState",
+			"link": "https://kovan.etherscan.io/address/0x8E6734A7653175b3FDa62516A646709F547C8342",
+			"timestamp": "2021-03-03T17:36:06.427Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"ProxysETH": {
+			"name": "ProxysETH",
+			"address": "0x94B41091eB29b36003aC1C6f0E55a5225633c884",
+			"source": "ProxyERC20",
+			"link": "https://kovan.etherscan.io/address/0x94B41091eB29b36003aC1C6f0E55a5225633c884",
+			"timestamp": "2021-03-03T17:36:08.056Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"SynthsETH": {
+			"name": "SynthsETH",
+			"address": "0x41B7BE5A411e73Baf5B2C82dCD1C110b0c177335",
+			"source": "Synth",
+			"link": "https://kovan.etherscan.io/address/0x41B7BE5A411e73Baf5B2C82dCD1C110b0c177335",
+			"timestamp": "2021-03-03T17:36:10.081Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"TokenStatesBTC": {
+			"name": "TokenStatesBTC",
+			"address": "0x0F73cf03DFD5595e862aa27E98914E70554eCf6d",
+			"source": "TokenState",
+			"link": "https://kovan.etherscan.io/address/0x0F73cf03DFD5595e862aa27E98914E70554eCf6d",
+			"timestamp": "2021-03-03T17:36:15.917Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"ProxysBTC": {
+			"name": "ProxysBTC",
+			"address": "0x23F608ACc41bd7BCC617a01a9202214EE305439a",
+			"source": "ProxyERC20",
+			"link": "https://kovan.etherscan.io/address/0x23F608ACc41bd7BCC617a01a9202214EE305439a",
+			"timestamp": "2021-03-03T17:36:18.071Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"SynthsBTC": {
+			"name": "SynthsBTC",
+			"address": "0x082fbbaE20E472D1cEb9b51912d069C94A2b949b",
+			"source": "Synth",
+			"link": "https://kovan.etherscan.io/address/0x082fbbaE20E472D1cEb9b51912d069C94A2b949b",
+			"timestamp": "2021-03-03T17:36:20.316Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"TokenStatesLINK": {
+			"name": "TokenStatesLINK",
+			"address": "0xbFD9DaF95246b6e21461f2D48aD1bE5984145FFE",
+			"source": "TokenState",
+			"link": "https://kovan.etherscan.io/address/0xbFD9DaF95246b6e21461f2D48aD1bE5984145FFE",
+			"timestamp": "2021-03-03T17:43:06.004Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"ProxysLINK": {
+			"name": "ProxysLINK",
+			"address": "0xe2B26511C64FE18Acc0BE8EA7c888cDFcacD846E",
+			"source": "ProxyERC20",
+			"link": "https://kovan.etherscan.io/address/0xe2B26511C64FE18Acc0BE8EA7c888cDFcacD846E",
+			"timestamp": "2021-03-03T17:36:27.298Z",
+			"txn": "",
+			"network": "kovan"
+		},
+		"SynthsLINK": {
+			"name": "SynthsLINK",
+			"address": "0x25D0b662813D959cD0D03533Df4Da051765743AC",
+			"source": "Synth",
+			"link": "https://kovan.etherscan.io/address/0x25D0b662813D959cD0D03533Df4Da051765743AC",
+			"timestamp": "2021-03-03T17:43:08.085Z",
+			"txn": "",
+			"network": "kovan"
 		}
 	},
 	"sources": {
@@ -19772,10 +19853,10 @@
 				}
 			],
 			"source": {
-				"keccak256": "0x46ea3a53d11e9a3e1dcbb57dc0c282dcd37f3dea3d25fc83d2849d9da9055074",
+				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7",
 				"urls": [
-					"bzz-raw://097ce86063de286d47ac50d46b4699ce7748b9a6fda2b3f74312f85fc9ac5fd5",
-					"dweb:/ipfs/QmUuqDroQ7P1it9Qdic6NJ26SN4dFntiWcMJpknXo4K4eZ"
+					"bzz-raw://8aab6ea1f42ee59964a0096700bf2975b1d4764e4d94a4a774096f2503914ff4",
+					"dweb:/ipfs/QmevVvAtMJ46zwkbFDPFCHpmbH4J9qQAJYGdYKuRRvYNfb"
 				]
 			},
 			"metadata": {
@@ -19797,10 +19878,10 @@
 				},
 				"sources": {
 					"Synth.sol": {
-						"keccak256": "0x46ea3a53d11e9a3e1dcbb57dc0c282dcd37f3dea3d25fc83d2849d9da9055074",
+						"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7",
 						"urls": [
-							"bzz-raw://097ce86063de286d47ac50d46b4699ce7748b9a6fda2b3f74312f85fc9ac5fd5",
-							"dweb:/ipfs/QmUuqDroQ7P1it9Qdic6NJ26SN4dFntiWcMJpknXo4K4eZ"
+							"bzz-raw://8aab6ea1f42ee59964a0096700bf2975b1d4764e4d94a4a774096f2503914ff4",
+							"dweb:/ipfs/QmevVvAtMJ46zwkbFDPFCHpmbH4J9qQAJYGdYKuRRvYNfb"
 						]
 					}
 				},
