@@ -9,6 +9,6 @@ steps:
       background: true
   - cmd-wait-for-rpc
   - run: npm run test:prod:gas -- --target-network mainnet
-  - run: npm run codechecks codechecks.prod.yml
+  - run: npm run ci:codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log
