@@ -1,0 +1,11 @@
+# Wait until a connection is established with http://localhost:{port}
+parameters:
+  port:
+    type: integer
+steps:
+  - run: sleep 5
+  - run:
+      shell: /bin/sh
+      command: |
+        wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:<<parameters.port>>
+        :
