@@ -17,8 +17,10 @@ steps:
       command: |
         cd optimism-integration
         ./up.sh
-  - cmd-wait-for-rpc
-  - cmd-wait-for-hardhat
+  - cmd-wait-for-port:
+        port: 8545
+  - cmd-wait-for-port:
+        port: 9545
   - run:
       name: Deploy OVM Synthetix instances
       command: |

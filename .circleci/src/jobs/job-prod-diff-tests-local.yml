@@ -10,7 +10,8 @@ steps:
   - run:
       command: npx hardhat node
       background: true
-  - cmd-wait-for-rpc
+  - cmd-wait-for-port:
+        port: 8545
   # Deploy
   - run: node publish deploy --network local --fresh-deploy --yes
   # Run production tests
