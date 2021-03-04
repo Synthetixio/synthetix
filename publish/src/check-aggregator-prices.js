@@ -29,7 +29,12 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, stan
 
 			if (!abi) {
 				if (useOvm) {
-					abi = JSON.parse(fs.readFileSync('abis/chainlink/AggregatorV2V3Interface.json', 'utf8'));
+					abi = JSON.parse(
+						fs.readFileSync(
+							'node_modules/@chainlink/contracts-0.0.10/abi/v0.5/AggregatorV2V3Interface.json',
+							'utf8'
+						)
+					).compilerOutput.abi;
 				} else {
 					// Get the ABI from the first aggregator on Etherscan
 					// Note: assumes all use the same ABI
