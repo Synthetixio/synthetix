@@ -1,6 +1,5 @@
 'use strict';
 
-const fs = require('fs');
 const Web3 = require('web3');
 const axios = require('axios');
 const { gray, yellow, red, cyan } = require('chalk');
@@ -29,12 +28,8 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, stan
 
 			if (!abi) {
 				if (useOvm) {
-					abi = JSON.parse(
-						fs.readFileSync(
-							'node_modules/@chainlink/contracts-0.0.10/abi/v0.5/AggregatorV2V3Interface.json',
-							'utf8'
-						)
-					).compilerOutput.abi;
+					abi = require('@chainlink/contracts-0.0.10/abi/v0.5/AggregatorV2V3Interface.json')
+						.compilerOutput.abi;
 				} else {
 					// Get the ABI from the first aggregator on Etherscan
 					// Note: assumes all use the same ABI
