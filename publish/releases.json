@@ -154,7 +154,7 @@
 			"major": 2,
 			"minor": 39
 		},
-		"sources": [],
-		"sips": [110]
+		"sources": ["SynthetixBridgeToOptimism", "SynthetixBridgeToBase"],
+		"sips": [110, 116]
 	}
 ]
