@@ -14,7 +14,7 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 // 	constants: { ZERO_ADDRESS },
 // } = require('../..');
 
-contract('ImportableRewardEscrowV2', async accounts => {
+contract('ImportableRewardEscrowV2 @ovm-skip', async accounts => {
 	const [, owner, account1] = accounts;
 	let importableRewardEscrowV2;
 

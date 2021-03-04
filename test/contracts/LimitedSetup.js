@@ -9,7 +9,7 @@ const { timeIsClose } = require('./helpers');
 
 const OneWeekSetup = artifacts.require('OneWeekSetup');
 
-contract('LimitedSetup', accounts => {
+contract('LimitedSetup @ovm-skip', accounts => {
 	const [deployerAccount, owner] = accounts;
 
 	let instance;

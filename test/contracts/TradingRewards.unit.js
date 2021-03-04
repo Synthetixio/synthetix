@@ -13,8 +13,8 @@ const {
 	itCorrectlyRecoversAssignedTokens,
 } = require('./TradingRewards.behaviors');
 
-const TradingRewards = artifacts.require('TradingRewards');
-const FakeTradingRewards = artifacts.require('FakeTradingRewards');
+let TradingRewards;
+let FakeTradingRewards;
 
 /*
  * This tests the TradingRewards contract in a standalone manner,
@@ -24,7 +24,7 @@ const FakeTradingRewards = artifacts.require('FakeTradingRewards');
  *
  * Integration with the rest of the system are tested in TradingRewards.integration.js.
  **/
-contract('TradingRewards (unit tests)', accounts => {
+contract('TradingRewards (unit tests) @ovm-skip', accounts => {
 	const [
 		deployerAccount,
 		owner,
@@ -42,6 +42,11 @@ contract('TradingRewards (unit tests)', accounts => {
 
 	const zeroAddress = '0x0000000000000000000000000000000000000000';
 	const mockAddress = '0x0000000000000000000000000000000000000001';
+
+	before(async () => {
+		TradingRewards = artifacts.require('TradingRewards');
+		FakeTradingRewards = artifacts.require('FakeTradingRewards');
+	});
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
