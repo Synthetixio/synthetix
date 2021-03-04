@@ -5,7 +5,6 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npm run test:gas
-  - run: npm run ci:codechecks codechecks.unit.yml
+  - run: npm run test:gas && npx codechecks codechecks.unit.yml
   - store_artifacts:
       path: test-gas-used.log
