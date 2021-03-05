@@ -126,7 +126,7 @@ jobs:
       - cmd-wait-for-rpc
       - run: node publish prepare-deploy --network mainnet
       - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
-      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && DEBUG=* npx codechecks codechecks.prod.yml
+      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
   job-prod-tests:
@@ -149,7 +149,7 @@ jobs:
           ls /home/root/.npm-global/bin || true
           ls /home/root/.config/yarn/global/node_modules/.bin || true
           ls /home/root/.yarn/bin || true
-      - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
+      - run: npm run test:prod:gas -- --target-network mainnet && DEBUG=* npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
   job-static-analysis:
