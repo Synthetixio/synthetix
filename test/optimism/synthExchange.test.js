@@ -5,7 +5,7 @@ const { toBytes32, getUsers } = require('../..');
 const { assertRevertOptimism } = require('./utils/revertOptimism');
 
 const itCanPerformSynthExchange = ({ ctx }) => {
-	describe('[SYNTEXCHANGE] when exchanging synths on L2', () => {
+	describe.only('[SYNTEXCHANGE] when exchanging synths on L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
@@ -22,9 +22,38 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 			FeePoolL2;
 
 		let user1sETHBalanceL2, user1sUSDBalanceL2;
+		let waitingPeriod;
 		// --------------------------
 		// Setup
 		// --------------------------
+
+		const itCanSettle = async (canSettle, synth) => {
+			if (canSettle) {
+				it('settles correctly', async () => {
+					const tx = await SynthetixL2.settle(synth);
+					const receipt = await tx.wait();
+					if (!receipt) {
+						throw new Error(`Transaction reverted, even though it was not supposed to.`);
+					}
+				});
+			} else {
+				it('settling reverts', async () => {
+					const tx = await SynthetixL2.settle(synth);
+
+					await assertRevertOptimism({
+						tx,
+						reason: 'Cannot settle during waiting',
+						provider: ctx.providerL2,
+					});
+				});
+			}
+		};
+
+		const itHasExchangeEntries = async numEntries => {
+			it(`${numEntries} exchange state entries should have been created`, async () => {
+				assert.bnEqual(await ExchangeStateL2.getLengthOfEntries(user1L2.address, sETH), numEntries);
+			});
+		};
 
 		before('identify signers', async () => {
 			user1L1 = ctx.providerL1.getSigner(ctx.user1Address);
@@ -96,11 +125,9 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 			before('record current values', async () => {
 				user1sETHBalanceL2 = await SynthsETHL2.balanceOf(user1L2.address);
 				user1sUSDBalanceL2 = await SynthsETHL2.balanceOf(user1L2.address);
+				waitingPeriod = await ExchangerL2.waitingPeriodSecs();
 			});
 
-			it('the waiting period is 360 on L2', async () => {
-				assert.bnEqual(await ExchangerL2.waitingPeriodSecs(), '300');
-			});
 			it('the initial sETH balance is 0', async () => {
 				assert.bnEqual(await SynthsETHL2.balanceOf(user1L2.address), '0');
 			});
@@ -234,7 +261,7 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 								describe('when the exchanges sUSD for sETH', () => {
 									let received;
 									let normalizedFee;
-									before('sETH exchange', async () => {
+									before('sETH exchange and settlement', async () => {
 										const tx = await SynthetixL2.exchange(sUSD, sUSDIssued, sETH);
 										await tx.wait();
 										const { amountReceived, fee } = await ExchangerL2.getAmountsForExchange(
@@ -270,23 +297,17 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 										const feeAddress = getUsers({ network: 'mainnet', user: 'fee' }).address;
 										assert.bnEqual(await SynthsUSDL2.balanceOf(feeAddress), normalizedFee);
 									});
-									it('should create an exchange state entry', async () => {
-										assert.bnEqual(
-											await ExchangeStateL2.getLengthOfEntries(user1L2.address, sETH),
-											'1'
-										);
-									});
-									describe('when settling the exchange', () => {
-										it('reverts when trying to settle without waiting', async () => {
-											const tx = await SynthetixL2.settle(toBytes32('sETH'));
 
-											await assertRevertOptimism({
-												tx,
-												reason: 'Cannot settle during waiting',
-												provider: ctx.providerL2,
-											});
-										});
-									});
+									if (waitingPeriod > 0) {
+										itHasExchangeEntries('1');
+										itCanSettle(false, sETH);
+										itHasExchangeEntries('1');
+										// itCanSetTheWaitingPeriod('0');
+									} else {
+										itHasExchangeEntries('0');
+										itCanSettle(true, sETH);
+										// itCanSetTheWaitingPeriod('0');
+									}
 								});
 							});
 						});
