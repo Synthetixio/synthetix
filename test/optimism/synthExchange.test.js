@@ -301,7 +301,7 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 									if (waitingPeriod > 0) {
 										itHasExchangeEntries('1');
 										itCanSettle(false, sETH);
-										itHasExchangeEntries('1');
+										itHasExchangeEntries('0');
 										// itCanSetTheWaitingPeriod('0');
 									} else {
 										itHasExchangeEntries('0');
