@@ -5,6 +5,11 @@ const { toBytes32 } = require('../..');
 const { Watcher } = require('@eth-optimism/watcher');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('../optimism/utils/connectContract');
+const commands = {
+	build: require('../../publish/src/commands/build').build,
+	deploy: require('../../publish/src/commands/deploy').deploy,
+	connectBridge: require('../../publish/src/commands/connect-bridge').connectBridge,
+};
 
 /*
  * Tests a migration of bridges with ongoing withdrawals and deposits
@@ -23,11 +28,16 @@ const { connectContract } = require('../optimism/utils/connectContract');
  * */
 describe('Layer 2 bridge migration tests', () => {
 	let SynthetixL1, SynthetixL2;
-	let SynthetixBridgeToOptimismL1, SynthetixBridgeToBaseL2;
 
+	let SynthetixBridgeToOptimismL1, SynthetixBridgeToBaseL2;
+	let SynthetixBridgeToOptimismL1New, SynthetixBridgeToBaseL2New;
+
+	const providerL1Url = 'http://localhost:9545';
+	const providerL2Url = 'http://localhost:8545';
 	let providerL1, providerL2;
 
-	let ownerAddress, ownerL1, ownerL2;
+	let ownerAddress, ownerPrivateKey;
+	let ownerL1, ownerL2;
 
 	let watcher;
 
@@ -35,14 +45,18 @@ describe('Layer 2 bridge migration tests', () => {
 	// Setup
 	// --------------------------
 
+	after('exit', async () => {
+		process.exit(0);
+	});
+
 	before('set up providers', () => {
-		providerL1 = new ethers.providers.JsonRpcProvider('http://localhost:9545');
-		providerL2 = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+		providerL1 = new ethers.providers.JsonRpcProvider(providerL1Url);
+		providerL2 = new ethers.providers.JsonRpcProvider(providerL2Url);
 	});
 
 	before('set up signers', () => {
 		ownerAddress = '0x640e7cc27b750144ED08bA09515F3416A988B6a3';
-		const ownerPrivateKey = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
+		ownerPrivateKey = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
 
 		ownerL1 = providerL1.getSigner(ownerAddress);
 		ownerL2 = new ethers.Wallet(ownerPrivateKey, providerL2);
@@ -255,7 +269,24 @@ describe('Layer 2 bridge migration tests', () => {
 				// -------------------------------
 
 				describe('when new bridges are deployed', () => {
-					// TODO
+					before('deploy new L1 bridge', async () => {
+						await commands.build({ useOvm: false, optimizerRuns: 200, testHelpers: true });
+
+						await commands.deploy({
+							concurrency: 1,
+							network: 'local',
+							yes: true,
+							specifyContracts: 'SynthetixBridgeToOptimism',
+							providerUrl: providerL1Url,
+							privateKey: ownerPrivateKey,
+							ignoreCustomParameters: true,
+						});
+
+						SynthetixBridgeToOptimismL1New = connectContract({
+							contract: 'SynthetixBridgeToOptimism',
+							provider: providerL1,
+						});
+					});
 
 					// -------------------------------
 					// Make a new withdrawal

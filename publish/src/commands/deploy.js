@@ -68,6 +68,7 @@ const deploy = async ({
 	ignoreSafetyChecks,
 	ignoreCustomParameters,
 	concurrency,
+	specifyContracts,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -94,6 +95,25 @@ const deploy = async ({
 		deploymentPath,
 		network,
 	});
+
+	// Mark contracts for deployment specified via an argument
+	if (specifyContracts) {
+		// Ignore config.json
+		Object.keys(config).map(name => {
+			config[name].deploy = false;
+		});
+
+		// Add specified contracts
+		specifyContracts.split(',').map(name => {
+			if (!config[name]) {
+				config[name] = {
+					deploy: true,
+				};
+			} else {
+				config[name].deploy = true;
+			}
+		});
+	}
 
 	if (!ignoreSafetyChecks) {
 		// Using Goerli without manageNonces?
@@ -2396,6 +2416,10 @@ module.exports = {
 			.option(
 				'-u, --force-update-inverse-synths-on-testnet',
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
+			)
+			.option(
+				'-x, --specify-contracts <value>',
+				'Ignore config.json  and specify contracts to be deployed (Comma separated list)'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
