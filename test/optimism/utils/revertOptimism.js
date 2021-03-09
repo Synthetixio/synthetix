@@ -1,5 +1,20 @@
 const ethers = require('ethers');
 
+function _hexToString(hex) {
+	let str = '';
+
+	const terminator = '**zÛ';
+	for (var i = 0; i < hex.length; i += 2) {
+		str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+
+		if (str.includes(terminator)) {
+			break;
+		}
+	}
+
+	return str.substring(0, str.length - 4);
+}
+
 async function getOptimismRevertReason({ tx, provider }) {
 	try {
 		let code = await provider.call(tx);
@@ -10,14 +25,7 @@ async function getOptimismRevertReason({ tx, provider }) {
 		if (code.length === 64) {
 			reason = ethers.utils.parseBytes32String(`0x${code}`);
 		} else {
-			reason = '';
-			const chunks = code.match(/.{1,62}/g);
-			chunks.map(chunk => {
-				try {
-					const parsed = ethers.utils.toUtf8String(`0x${chunk}00`);
-					reason += parsed;
-				} catch (error) {}
-			});
+			reason = _hexToString(`0x${code}`);
 		}
 
 		return reason;

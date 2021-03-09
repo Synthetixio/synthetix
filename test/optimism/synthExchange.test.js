@@ -54,7 +54,7 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 		};
 
 		const itHasExchangeEntriesL2 = async numEntries => {
-			describe('When checking the Exhange state', () => {
+			describe('When checking ExhangeState', () => {
 				it(`${numEntries} exchange state entries should have been created`, async () => {
 					assert.bnEqual(
 						await ExchangeStateL2.getLengthOfEntries(user1L2.address, sETH),
