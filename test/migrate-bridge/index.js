@@ -60,7 +60,6 @@ describe('Layer 2 bridge migration tests', () => {
 	});
 
 	before('show elapsed time', async () => {
-		let elapsedSeconds = 0;
 		const startSeconds = Math.floor(new Date().getTime() / 1000);
 
 		setInterval(() => {
@@ -442,10 +441,7 @@ describe('Layer 2 bridge migration tests', () => {
 								});
 
 								it('shows that the original L1 bridge is no longer active', async () => {
-									assert.equal(
-										await SynthetixBridgeToOptimismL1.activated(),
-										false
-									);
+									assert.equal(await SynthetixBridgeToOptimismL1.activated(), false);
 								});
 
 								it('shows that the original bridge balance is zero', async () => {
