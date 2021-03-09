@@ -9,7 +9,12 @@ const commands = {
 	build: require('../../publish/src/commands/build').build,
 	deploy: require('../../publish/src/commands/deploy').deploy,
 	connectBridge: require('../../publish/src/commands/connect-bridge').connectBridge,
+	deployOvmPair: require('../../publish/src/commands/deploy-ovm-pair').deployOvmPair,
 };
+
+const {
+	constants: { OVM_MAX_GAS_LIMIT },
+} = require('../../index');
 
 /*
  * Tests a migration of bridges with ongoing withdrawals and deposits
@@ -19,8 +24,7 @@ const commands = {
  * How to run:
  * 1. Set optimism-integration FRAUD_PROOF_WINDOW_SECONDS to 300 in docker-compose.env.yml
  * 2. Start optimism-integration `./up.sh`
- * 3. Deploy an ovm pair `node publish deploy-ovm-pair`
- * 4. Run the tests: `npm run test:migrate-bridge`
+ * 3. Run the tests: `npm run test:migrate-bridge`
  *
  * Notes:
  * Not intended to be run on CI.
@@ -32,8 +36,10 @@ describe('Layer 2 bridge migration tests', () => {
 	let SynthetixBridgeToOptimismL1, SynthetixBridgeToBaseL2;
 	let SynthetixBridgeToOptimismL1New, SynthetixBridgeToBaseL2New;
 
-	const providerL1Url = 'http://localhost:9545';
-	const providerL2Url = 'http://localhost:8545';
+	const l1ProviderUrl = 'http://localhost:9545';
+	const l2ProviderUrl = 'http://localhost:8545';
+	const dataProviderUrl = 'http://localhost:8080';
+
 	let providerL1, providerL2;
 
 	let ownerAddress, ownerPrivateKey;
@@ -45,13 +51,40 @@ describe('Layer 2 bridge migration tests', () => {
 	// Setup
 	// --------------------------
 
-	after('exit', async () => {
-		process.exit(0);
+	let log;
+
+	// Comment to see all output (e.g. deploy script output).
+	before('silence output', async () => {
+		log = console.log;
+		console.log = () => {};
+	});
+
+	before('show elapsed time', async () => {
+		let elapsedSeconds = 0;
+		const startSeconds = Math.floor(new Date().getTime() / 1000);
+
+		setInterval(() => {
+			const now = Math.floor(new Date().getTime() / 1000);
+
+			log(chalk.gray(`t = ${now - startSeconds}s`));
+		}, 10 * 1000);
+	});
+
+	before('deploy L1 and L2 fresh instances', async () => {
+		log(chalk.cyan('* Deploying fresh L1 and L2 instances...'));
+
+		await commands.deployOvmPair({
+			l1ProviderUrl,
+			l2ProviderUrl,
+			dataProviderUrl,
+		});
+
+		log(chalk.gray('> Instances deployed'));
 	});
 
 	before('set up providers', () => {
-		providerL1 = new ethers.providers.JsonRpcProvider(providerL1Url);
-		providerL2 = new ethers.providers.JsonRpcProvider(providerL2Url);
+		providerL1 = new ethers.providers.JsonRpcProvider(l1ProviderUrl);
+		providerL2 = new ethers.providers.JsonRpcProvider(l2ProviderUrl);
 	});
 
 	before('set up signers', () => {
@@ -87,17 +120,6 @@ describe('Layer 2 bridge migration tests', () => {
 				gasPrice: 0,
 			});
 		}, 5 * 1000);
-	});
-
-	before('show elapsed time', async () => {
-		let elapsed = 0;
-		const tick = 60;
-
-		setInterval(() => {
-			elapsed += tick;
-
-			console.log(chalk.gray(`${elapsed} seconds`));
-		}, tick * 1000);
 	});
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
@@ -269,7 +291,39 @@ describe('Layer 2 bridge migration tests', () => {
 				// -------------------------------
 
 				describe('when new bridges are deployed', () => {
+					before('deploy new L2 bridge', async () => {
+						// Commented out, because we can assume that the last compilation was for ovm
+						// given the deployOvmPair call above.
+						// await commands.build({ useOvm: true, optimizerRuns: 1, testHelpers: true });
+
+						log(chalk.cyan('* Upgrading L2 bridge...'));
+
+						await commands.deploy({
+							concurrency: 1,
+							network: 'local',
+							yes: true,
+							specifyContracts: 'SynthetixBridgeToBase',
+							providerUrl: l2ProviderUrl,
+							gasPrice: '0',
+							useOvm: true,
+							methodCallGasLimit: '3500000',
+							contractDeploymentGasLimit: OVM_MAX_GAS_LIMIT,
+							privateKey: ownerPrivateKey,
+							ignoreCustomParameters: true,
+						});
+
+						log(chalk.gray('> L2 bridge upgraded'));
+
+						SynthetixBridgeToBaseL2New = connectContract({
+							contract: 'SynthetixBridgeToBase',
+							provider: providerL2,
+							useOvm: true,
+						});
+					});
+
 					before('deploy new L1 bridge', async () => {
+						log(chalk.cyan('* Upgrading L1 bridge...'));
+
 						await commands.build({ useOvm: false, optimizerRuns: 200, testHelpers: true });
 
 						await commands.deploy({
@@ -277,15 +331,49 @@ describe('Layer 2 bridge migration tests', () => {
 							network: 'local',
 							yes: true,
 							specifyContracts: 'SynthetixBridgeToOptimism',
-							providerUrl: providerL1Url,
+							providerUrl: l1ProviderUrl,
 							privateKey: ownerPrivateKey,
 							ignoreCustomParameters: true,
 						});
+
+						log(chalk.gray('> L1 bridge upgraded'));
 
 						SynthetixBridgeToOptimismL1New = connectContract({
 							contract: 'SynthetixBridgeToOptimism',
 							provider: providerL1,
 						});
+					});
+
+					const getMessengers = async ({ dataProviderUrl }) => {
+						const response = await axios.get(`${dataProviderUrl}/addresses.json`);
+						const addresses = response.data;
+
+						return {
+							l1Messenger: addresses['Proxy__OVM_L1CrossDomainMessenger'],
+							l2Messenger: '0x4200000000000000000000000000000000000007',
+						};
+					};
+
+					before('connect bridges', async () => {
+						log(chalk.cyan('* Connecting new bridges...'));
+
+						const { l1Messenger, l2Messenger } = await getMessengers({ dataProviderUrl });
+
+						await commands.connectBridge({
+							l1Network: 'local',
+							l2Network: 'local',
+							l1ProviderUrl,
+							l2ProviderUrl,
+							l1Messenger,
+							l2Messenger,
+							l1PrivateKey: ownerPrivateKey,
+							l2PrivateKey: ownerPrivateKey,
+							l1GasPrice: 0,
+							l2GasPrice: 0,
+							gasLimit: 8000000,
+						});
+
+						log(chalk.gray('> New bridges connected'));
 					});
 
 					// -------------------------------
