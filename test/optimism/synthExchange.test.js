@@ -5,7 +5,7 @@ const { toBytes32, getUsers } = require('../..');
 const { assertRevertOptimism } = require('./utils/revertOptimism');
 
 const itCanPerformSynthExchange = ({ ctx }) => {
-	describe.only('[SYNTEXCHANGE] when exchanging synths on L2', () => {
+	describe('[SYNTEXCHANGE] when exchanging synths on L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
@@ -54,8 +54,13 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 		};
 
 		const itHasExchangeEntriesL2 = async numEntries => {
-			it(`${numEntries} exchange state entries should have been created`, async () => {
-				assert.bnEqual(await ExchangeStateL2.getLengthOfEntries(user1L2.address, sETH), numEntries);
+			describe('When checking the Exhange state', () => {
+				it(`${numEntries} exchange state entries should have been created`, async () => {
+					assert.bnEqual(
+						await ExchangeStateL2.getLengthOfEntries(user1L2.address, sETH),
+						numEntries
+					);
+				});
 			});
 		};
 
@@ -86,7 +91,8 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 					user1sETHBalanceL2 = await SynthsETHL2.balanceOf(user1L2.address);
 					user1sUSDBalanceL2 = await SynthsUSDL2.balanceOf(user1L2.address);
 					feeAddresssUSDBalanceL2 = await SynthsUSDL2.balanceOf(feeAddress);
-					feesToDistributeL2 = await FeePoolL2.recentFeePeriods(0).feesToDistribute;
+					const feePeriodZero = await FeePoolL2.recentFeePeriods(0);
+					feesToDistributeL2 = feePeriodZero.feesToDistribute;
 				});
 
 				before('connect user to contract', async () => {
