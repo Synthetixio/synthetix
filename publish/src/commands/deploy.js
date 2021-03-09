@@ -139,7 +139,8 @@ const deploy = async ({
 		}
 
 		// Deploying on OVM and not using an OVM deployment path?
-		const isOvmPath = deploymentPath.includes('ovm');
+		const lastPathItem = deploymentPath.split('/').pop();
+		const isOvmPath = lastPathItem.includes('ovm');
 		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
 		if (deploymentPathMismatch) {
 			if (useOvm) {
