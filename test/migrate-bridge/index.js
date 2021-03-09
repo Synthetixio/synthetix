@@ -22,7 +22,7 @@ const {
  * to the new L1 bridge once all withdrawals that target it are finalized.
  *
  * How to run:
- * 1. Set optimism-integration FRAUD_PROOF_WINDOW_SECONDS to 300 in docker-compose.env.yml
+ * 1. Set optimism-integration FRAUD_PROOF_WINDOW_SECONDS to != 0 in docker-compose.env.yml
  * 2. Start optimism-integration `./up.sh`
  * 3. Run the tests: `npm run test:migrate-bridge`
  *
@@ -381,13 +381,30 @@ describe('Layer 2 bridge migration tests', () => {
 					// -------------------------------
 
 					describe('when a withdrawal is initiated with the new bridges', () => {
-						// TODO
+						let newWithdrawalReceipt;
+
+						before('initiate withdrawal', async () => {
+							SynthetixBridgeToBaseL2New = SynthetixBridgeToBaseL2New.connect(ownerL2);
+
+							const tx = await SynthetixBridgeToBaseL2New.withdraw(amountToWithdraw);
+							newWithdrawalReceipt = await tx.wait();
+						});
+
+						it('shows that the owners L2 balance decreased', async () => {
+							assert.bnEqual(
+								await SynthetixL2.balanceOf(ownerAddress),
+								initialOwnerBalanceL2
+									.add(amountToDeposit)
+									.sub(amountToWithdraw)
+									.sub(amountToWithdraw)
+							);
+						});
 
 						// -------------------------------
 						// Original withdrawal finalizes
 						// -------------------------------
 
-						describe('when the original withdrawal is finalized', () => {
+						describe('when waiting for the original withdrawal to be finalized', () => {
 							before('listen for completion', async () => {
 								const [transactionHashL1] = await watcher.getMessageHashesFromL2Tx(
 									withdrawalReceipt.transactionHash
@@ -407,15 +424,63 @@ describe('Layer 2 bridge migration tests', () => {
 							// Migrate SNX to the new bridge
 							// ------------------------------
 
-							describe('when the new withdrawal is finalized', () => {
-								// TODO
+							describe('when the bridge is migrated', () => {
+								let bridgeBalanceBeforeMigration;
+
+								before('record bridge balance', async () => {
+									bridgeBalanceBeforeMigration = await SynthetixL1.balanceOf(
+										SynthetixBridgeToOptimismL1.address
+									);
+								});
+
+								before('migrate bridge SNX', async () => {
+									const tx = await SynthetixBridgeToOptimismL1.migrateBridge(
+										SynthetixBridgeToOptimismL1New.address
+									);
+
+									await tx.wait();
+								});
+
+								it('shows that the original L1 bridge is no longer active', async () => {
+									assert.equal(
+										await SynthetixBridgeToOptimismL1.activated(),
+										false
+									);
+								});
+
+								it('shows that the original bridge balance is zero', async () => {
+									assert.bnEqual(
+										await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address),
+										ethers.utils.parseEther('0')
+									);
+								});
+
+								it('shows that the new bridge balance is the same as the old one was', async () => {
+									assert.bnEqual(
+										await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1New.address),
+										bridgeBalanceBeforeMigration
+									);
+								});
 
 								// -------------------------
 								// New withdrawal finalizes
 								// -------------------------
 
-								describe('when the new withdrawal is finalized', () => {
-									// TODO
+								describe('when waiting for the new withdrawal to be finalized', () => {
+									before('listen for completion', async () => {
+										const [transactionHashL1] = await watcher.getMessageHashesFromL2Tx(
+											newWithdrawalReceipt.transactionHash
+										);
+
+										await watcher.getL1TransactionReceipt(transactionHashL1);
+									});
+
+									it('shows that the owners L1 balance increased, and is equal to the its initial balance', async () => {
+										assert.bnEqual(
+											await SynthetixL1.balanceOf(ownerAddress),
+											initialOwnerBalanceL1
+										);
+									});
 								});
 							});
 						});
