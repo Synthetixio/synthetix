@@ -10,11 +10,11 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts, setupContract } = require('./setup');
 const { currentTime, toUnit, fastForward } = require('../utils')();
 
-const CollateralManager = artifacts.require(`CollateralManager`);
-const CollateralState = artifacts.require(`CollateralState`);
-const CollateralManagerState = artifacts.require('CollateralManagerState');
+let CollateralManager;
+let CollateralState;
+let CollateralManagerState;
 
-contract('ShortingRewards', accounts => {
+contract('ShortingRewards @ovm-skip', accounts => {
 	const [
 		deployerAccount,
 		owner,
@@ -113,6 +113,12 @@ contract('ShortingRewards', accounts => {
 	};
 
 	addSnapshotBeforeRestoreAfterEach();
+
+	before(async () => {
+		CollateralManager = artifacts.require(`CollateralManager`);
+		CollateralState = artifacts.require(`CollateralState`);
+		CollateralManagerState = artifacts.require('CollateralManagerState');
+	});
 
 	before(async () => {
 		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];

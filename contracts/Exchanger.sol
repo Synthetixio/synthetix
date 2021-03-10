@@ -18,7 +18,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
-import "./interfaces/IDebtCache.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./Proxyable.sol";
 
@@ -587,15 +586,18 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             destinationAddress
         );
 
-        // persist the exchange information for the dest key
-        appendExchange(
-            destinationAddress,
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            amountReceived,
-            exchangeFeeRate
-        );
+        // iff the waiting period is gt 0
+        if (getWaitingPeriodSecs() > 0) {
+            // persist the exchange information for the dest key
+            appendExchange(
+                destinationAddress,
+                sourceCurrencyKey,
+                sourceAmountAfterSettlement,
+                destinationCurrencyKey,
+                amountReceived,
+                exchangeFeeRate
+            );
+        }
     }
 
     function _convert(

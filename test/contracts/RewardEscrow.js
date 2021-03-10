@@ -12,7 +12,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-contract('RewardEscrow', async accounts => {
+contract('RewardEscrow @ovm-skip', async accounts => {
 	const SECOND = 1000;
 	const DAY = 86400;
 	const WEEK = 604800;

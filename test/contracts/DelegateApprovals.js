@@ -12,7 +12,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-contract('DelegateApprovals', async accounts => {
+contract('DelegateApprovals @ovm-skip', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	let delegateApprovals;

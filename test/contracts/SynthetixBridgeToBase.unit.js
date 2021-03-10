@@ -7,7 +7,7 @@ const { smockit } = require('@eth-optimism/smock');
 
 const SynthetixBridgeToBase = artifacts.require('SynthetixBridgeToBase');
 
-contract('SynthetixBridgeToBase (unit tests)', accounts => {
+contract('SynthetixBridgeToBase (unit tests) @ovm-skip', accounts => {
 	const [owner, user1, snxBridgeToOptimism, smockedMessenger, randomAddress] = accounts;
 
 	it('ensure only known functions are mutative', () => {
