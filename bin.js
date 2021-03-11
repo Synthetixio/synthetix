@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const util = require('util');
 
-const { getSuspensionReasons, networks, toBytes32, getNetworkFromId, wrap } = require('./index');
+const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
 
 const {
 	decode,
@@ -182,9 +182,6 @@ program
 		console.log(JSON.stringify(versions, null, 2));
 	});
 
-program.command('chainid').action(async () => {
-	console.log(getNetworkFromId({ id: 69 }));
-});
 // perform as CLI tool if args given
 if (require.main === module) {
 	require('pretty-error').start();
