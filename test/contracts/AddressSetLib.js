@@ -2,7 +2,7 @@ const { contract, artifacts } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const TestableAddressSet = artifacts.require('TestableAddressSet');
 
-contract('AddressSetLib', accounts => {
+contract('AddressSetLib @ovm-skip', accounts => {
 	let set;
 
 	const [a, b, c, d, e] = accounts;

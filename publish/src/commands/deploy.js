@@ -379,6 +379,7 @@ const deploy = async ({
 		const padding = '\n\t\t\t\t';
 		const aggResults = await checkAggregatorPrices({
 			network,
+			useOvm,
 			providerUrl,
 			synths,
 			oldExrates,

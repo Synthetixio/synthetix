@@ -10,7 +10,7 @@ const { toUnit } = require('../utils')();
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-contract('SynthetixState', async accounts => {
+contract('SynthetixState @ovm-skip', async accounts => {
 	const [, owner, account1, account2] = accounts;
 
 	let synthetixState;

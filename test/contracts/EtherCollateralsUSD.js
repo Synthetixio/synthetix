@@ -23,7 +23,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-contract('EtherCollateralsUSD', async accounts => {
+contract('EtherCollateralsUSD @ovm-skip', async accounts => {
 	const MINUTE = 60;
 	const DAY = 86400;
 	const WEEK = 604800;

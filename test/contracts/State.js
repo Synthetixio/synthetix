@@ -9,7 +9,7 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 const State = artifacts.require('State');
 const TestableState = artifacts.require('TestableState');
 
-contract('State', accounts => {
+contract('State @ovm-skip', accounts => {
 	const [deployerAccount, owner, associatedContract, account2] = accounts;
 
 	it('ensure only known functions are mutative', () => {
