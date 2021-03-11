@@ -1813,7 +1813,9 @@ contract('Exchanger (spec tests)', async accounts => {
 							}
 						);
 
-						const sAUDBalance = await sAUDContract.balanceOf(account1);
+					const { fee } = await exchanger.getAmountsForExchange(amountIssued, sUSD, sAUD);
+
+					const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 						const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
 						assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
@@ -1825,12 +1827,12 @@ contract('Exchanger (spec tests)', async accounts => {
 							toAddress: account1,
 						});
 
-						const trackingEvent = txn.logs.find(log => log.event === 'ExchangeTracking');
-						assert.eventEqual(trackingEvent, 'ExchangeTracking', {
-							trackingCode,
-							toCurrencyKey: toBytes32('sAUD'),
-							toAmount: sAUDBalance,
-						});
+					const trackingEvent = txn.logs.find(log => log.event === 'ExchangeTracking');
+					assert.eventEqual(trackingEvent, 'ExchangeTracking', {
+						trackingCode,
+						toCurrencyKey: toBytes32('sAUD'),
+						toAmount: sAUDBalance,
+						fee,
 					});
 
 					it('when a user tries to exchange more than they have, then it fails', async () => {
@@ -2175,13 +2177,13 @@ contract('Exchanger (spec tests)', async accounts => {
 								const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
 								assert.bnEqual(usdFeeAmount, feePeriodZero.feesToDistribute);
 
-								// Assert the tracking event is fired.
-								const trackingEvent = txn.logs.find(log => log.event === 'ExchangeTracking');
-								assert.eventEqual(trackingEvent, 'ExchangeTracking', {
-									trackingCode,
-									toCurrencyKey: toBytes32('sAUD'),
-									toAmount: sAUDBalance,
-								});
+							// Assert the tracking event is fired.
+							const trackingEvent = txn.logs.find(log => log.event === 'ExchangeTracking');
+							assert.eventEqual(trackingEvent, 'ExchangeTracking', {
+								trackingCode,
+								toCurrencyKey: toBytes32('sAUD'),
+								toAmount: sAUDBalance,
+								fee,
 							});
 						});
 					});
