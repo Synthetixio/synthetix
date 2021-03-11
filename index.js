@@ -22,13 +22,53 @@ const releases = require('./publish/releases.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
-const networkToChainId = {
-	mainnet: 1,
-	ropsten: 3,
-	rinkeby: 4,
-	goerli: 5,
-	kovan: 42,
+const chainIdMapping = {
+	1: {
+		network: 'mainnet',
+		useOvm: false,
+	},
+	3: {
+		network: 'ropsten',
+		useOvm: false,
+	},
+	4: {
+		network: 'rinkeby',
+		useOvm: false,
+	},
+	5: {
+		network: 'goerli',
+		useOvm: false,
+	},
+	42: {
+		network: 'kovan',
+		useOvm: false,
+	},
+
+	// OVM networks: see https://github.com/ethereum-optimism/regenesis/
+	10: {
+		network: 'mainnet',
+		useOvm: true,
+	},
+	69: {
+		network: 'kovan',
+		useOvm: true,
+	},
+	'-1': {
+		// no chain ID for this currently
+		network: 'goerli',
+		useOvm: true,
+	},
 };
+
+const getNetworkFromId = ({ id }) => chainIdMapping[id];
+
+const networkToChainId = Object.entries(chainIdMapping).reduce(
+	(memo, [id, { network, useOvm }]) => {
+		memo[network + (useOvm ? '-ovm' : '')] = id;
+		return memo;
+	},
+	{}
+);
 
 const constants = {
 	BUILD_FOLDER: 'build',
@@ -588,10 +628,12 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 	}, {});
 
 module.exports = {
+	chainIdMapping,
 	constants,
 	decode,
 	defaults,
 	getAST,
+	getNetworkFromId,
 	getPathToNetwork,
 	getSource,
 	getStakingRewards,
