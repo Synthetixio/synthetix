@@ -782,4 +782,183 @@ contract('SystemSettings @ovm-skip', async accounts => {
 			});
 		});
 	});
+
+	describe('setAtomicMaxVolumePerBlock', () => {
+		const limit = toUnit('1000000');
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAtomicMaxVolumePerBlock,
+				args: [limit],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if limit exceeds uint192', async () => {
+			const aboveUint192 = new BN(2).pow(new BN(192));
+			await assert.revert(
+				systemSettings.setAtomicMaxVolumePerBlock(aboveUint192, { from: owner }),
+				'Atomic max volume exceed maximum uint192'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAtomicMaxVolumePerBlock(limit, { from: owner });
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.atomicMaxVolumePerBlock(), limit);
+			});
+
+			it('and emits an AtomicMaxVolumePerBlockUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicMaxVolumePerBlockUpdated', [limit]);
+			});
+
+			it('allows to be changed', async () => {
+				const newLimit = limit.mul(new BN(2));
+				await systemSettings.setAtomicPriceBuffer(newLimit, { from: owner });
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(), newLimit);
+			});
+
+			it('allows to be reset to zero', async () => {
+				await systemSettings.setAtomicMaxVolumePerBlock(0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicMaxVolumePerBlock(), 0);
+			});
+		});
+	});
+
+	describe('setAtomicPriceBuffer', () => {
+		const buffer = toUnit('0.5');
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAtomicPriceBuffer,
+				args: [buffer],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAtomicPriceBuffer(buffer, { from: owner });
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(), buffer);
+			});
+
+			it('and emits an AtomicPriceBufferUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicPriceBufferUpdated', [buffer]);
+			});
+
+			it('allows to be changed', async () => {
+				const newBuffer = buffer.div(new BN(2));
+				await systemSettings.setAtomicPriceBuffer(newBuffer, { from: owner });
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(), newBuffer);
+			});
+
+			it('allows to be reset to zero', async () => {
+				await systemSettings.setAtomicPriceBuffer(0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(), 0);
+			});
+		});
+	});
+
+	describe('setAtomicTwapPriceWindow', () => {
+		const priceWindow = 2;
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAtomicTwapPriceWindow,
+				args: [priceWindow],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if window is below minimum', async () => {
+			const minimum = await systemSettings.MIN_ATOMIC_TWAP_PRICE_WINDOW();
+			await assert.revert(
+				systemSettings.setAtomicTwapPriceWindow(minimum.sub(new BN(1)), { from: owner }),
+				'Atomic twap window under minimum 30 min'
+			);
+		});
+
+		it('should revert if window is above maximum', async () => {
+			const maximum = await systemSettings.MAX_ATOMIC_TWAP_PRICE_WINDOW();
+			await assert.revert(
+				systemSettings.setAtomicTwapPriceWindow(maximum.add(new BN(1)), { from: owner }),
+				'Atomic twap window exceed maximum 1 day'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAtomicTwapPriceWindow(priceWindow, { from: owner });
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.atomicTwapPriceWindow(), priceWindow);
+			});
+
+			it('and emits an AtomicTwapPriceWindowUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicTwapPriceWindowUpdated', [priceWindow]);
+			});
+
+			it('allows to be changed', async () => {
+				const newPriceWindow = priceWindow + 1;
+				await systemSettings.setAtomicTwapPriceWindow(newPriceWindow, { from: owner });
+				assert.bnEqual(await systemSettings.atomicTwapPriceWindow(), newPriceWindow);
+			});
+		});
+	});
+
+	describe('setAtomicEquivalentForSynth', () => {
+		const sETH = toBytes32('sETH');
+		const [equivalentAsset, secondEquivalentAsset] = accounts.slice(accounts.length - 2);
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAtomicEquivalentForSynth,
+				args: [sETH, equivalentAsset],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAtomicEquivalentForSynth(sETH, equivalentAsset, {
+					from: owner,
+				});
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.equal(await systemSettings.atomicEquivalentForSynth(sETH), equivalentAsset);
+			});
+
+			it('and emits an AtomicEquivalentForSynthUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicEquivalentForSynthUpdated', [sETH, equivalentAsset]);
+			});
+
+			it('allows equivalent to be changed', async () => {
+				await systemSettings.setAtomicEquivalentForSynth(sETH, secondEquivalentAsset, {
+					from: owner,
+				});
+				assert.equal(await systemSettings.atomicEquivalentForSynth(sETH), secondEquivalentAsset);
+			});
+
+			it('allows to be reset', async () => {
+				await systemSettings.setAtomicEquivalentForSynth(sETH, ZERO_ADDRESS, { from: owner });
+				assert.equal(await systemSettings.atomicEquivalentForSynth(sETH), ZERO_ADDRESS);
+			});
+		});
+	});
 });

@@ -298,7 +298,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setAtomicMaxVolumePerBlock(uint _maxVolume) external onlyOwner {
-        require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "atomic max volume exceed maximum uint192");
+        require(_maxVolume <= MAX_ATOMIC_VOLUME_PER_BLOCK, "Atomic max volume exceed maximum uint192");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK, _maxVolume);
         emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
     }
@@ -309,8 +309,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setAtomicTwapPriceWindow(uint _window) external onlyOwner {
-        require(_window >= MIN_ATOMIC_TWAP_PRICE_WINDOW, "atomic twap window under minimum 30 min");
-        require(_window <= MAX_ATOMIC_TWAP_PRICE_WINDOW, "atomic twap window exceed maximum 1 day");
+        require(_window >= MIN_ATOMIC_TWAP_PRICE_WINDOW, "Atomic twap window under minimum 30 min");
+        require(_window <= MAX_ATOMIC_TWAP_PRICE_WINDOW, "Atomic twap window exceed maximum 1 day");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_TWAP_PRICE_WINDOW, _window);
         emit AtomicTwapPriceWindowUpdated(_window);
     }
