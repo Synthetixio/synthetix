@@ -162,6 +162,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         return state.long(synth);
     }
 
+    // TODO this gives you the shorts back
     function short(bytes32 synth) external view returns (uint amount) {
         return state.short(synth);
     }
@@ -186,6 +187,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         }
     }
 
+    // TODO get the total shorts
     function totalShort() public view returns (uint susdValue, bool anyRateIsInvalid) {
         bytes32[] memory synths = _shortableSynths.elements;
 
