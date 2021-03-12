@@ -329,7 +329,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
+    ) external returns (uint amountReceived) {
+        _ensureOnlySynthetixOrSynth();
+
         uint fee;
         (amountReceived, fee, ) = _exchange(
             from,
@@ -349,7 +351,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
-    ) external onlySynthetix returns (uint amountReceived) {
+    ) external returns (uint amountReceived) {
+        _ensureOnlySynthetix();
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
@@ -373,7 +376,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         address destinationAddress,
         address originator,
         bytes32 trackingCode
-    ) external onlySynthetix returns (uint amountReceived) {
+    ) external returns (uint amountReceived) {
+        _ensureOnlySynthetix();
+
         uint fee;
         (amountReceived, fee, ) = _exchange(
             from,
@@ -398,7 +403,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         address originator,
         bytes32 trackingCode
-    ) external onlySynthetix returns (uint amountReceived) {
+    ) external returns (uint amountReceived) {
+        _ensureOnlySynthetix();
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
@@ -423,7 +429,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress,
         bytes32 trackingCode
-    ) external onlySynthetix returns (uint amountReceived, IVirtualSynth vSynth) {
+    ) external returns (uint amountReceived, IVirtualSynth vSynth) {
+        _ensureOnlySynthetix();
+
         uint fee;
         (amountReceived, fee, vSynth) = _exchange(
             from,
@@ -449,7 +457,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // TODO: this destinationAddress variable doesn't seem to be needed since it's always the same as from
         address destinationAddress,
         bytes32 trackingCode
-    ) external onlySynthetix returns (uint amountReceived) {
+    ) external returns (uint amountReceived) {
+        _ensureOnlySynthetix();
+
         uint fee;
         (amountReceived, fee) = _exchangeAtomically(
             from,
@@ -747,7 +757,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint currentVolume = uint(lastAtomicVolume.time) == block.timestamp
             ? uint(lastAtomicVolume.volume).add(sourceSusdValue)
             : sourceSusdValue;
-        require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed per-block atomic exchange volume limit");
+        require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed volume limit");
         lastAtomicVolume.time = uint64(block.timestamp);
         lastAtomicVolume.volume = uint192(currentVolume); // Protected by volume limit check above
     }
@@ -1140,22 +1150,20 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
     }
 
-    // ========== MODIFIERS ==========
-
-    modifier onlySynthetixorSynth() {
+    function _ensureOnlySynthetixOrSynth() internal {
         ISynthetix _synthetix = synthetix();
         require(
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
-        _;
     }
 
-    modifier onlySynthetix() {
+    function _ensureOnlySynthetix() internal {
         ISynthetix _synthetix = synthetix();
         require(msg.sender == address(_synthetix), "Exchanger: Only synthetix can perform this action");
-        _;
     }
+
+    // ========== MODIFIERS ==========
 
     modifier onlyExchangeRates() {
         IExchangeRates _exchangeRates = exchangeRates();
