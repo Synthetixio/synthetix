@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # Detect changes in js and sol files
-jsChangedFiles=$(git diff --name-only --exit-code --staged -- '***.js')
-solChangedFiles=$(git diff --name-only --exit-code --staged -- '***.sol' ':!contracts/interfaces/*.sol')
-isolChangedFiles=$(git diff --name-only --exit-code --staged -- 'contracts/interfaces/*.sol')
+jsChangedFiles=$(git diff --name-only --diff-filter ACMRT --exit-code --staged -- '***.js')
+solChangedFiles=$(git diff --name-only --diff-filter ACMRT --exit-code --staged -- '***.sol' ':!contracts/interfaces/*.sol')
+isolChangedFiles=$(git diff --name-only --diff-filter ACMRT --exit-code --staged -- 'contracts/interfaces/*.sol')
 
 # Lint Javascript, only on changed files
 if [[ ! -z $jsChangedFiles ]]; then
