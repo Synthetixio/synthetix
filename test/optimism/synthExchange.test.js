@@ -367,6 +367,10 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 								itCanSettleL2(false, sETH);
 								// since settlement fails, the entries should persist
 								itHasExchangeEntriesL2('1');
+								// set the waiting period to 0
+								itCanSetTheWaitingPeriodL2('0');
+								// it should be able to settle now!
+								itCanSettleL2(true, sETH);
 							});
 						});
 					});
