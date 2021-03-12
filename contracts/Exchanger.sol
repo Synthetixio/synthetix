@@ -686,7 +686,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
 
         // Sanity check observed output amount against current system value
-        // TODO: maybe this shouldn't revert?  Is the (0, 0) return enough to let a trader know
         // their exchange inputs were incorrect?
         require(!_isDeviationAboveThreshold(systemAmountReceived, amountReceived), "Atomic rate too low");
 

@@ -72,7 +72,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     mapping(bytes32 => uint) public roundFrozen;
 
-    // The address of the external TWAP aggregator oracle for SIP-120
+    // SIP-120 Atomic exchanges
+    // Address of the external TWAP aggregator oracle
     IDexTwapAggregator public dexTwapAggregator;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -81,7 +82,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     //
     // ========== CONSTRUCTOR ==========
 
-    // TODO: should this include the twap oracle?
     constructor(
         address _owner,
         address _oracle,
@@ -405,7 +405,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(getAtomicPriceBuffer()));
 
         // Normalize decimals in case equivalent asset uses different decimals from internal unit
-        // TODO: prefer SafeDecimalMath.multiplyDecimal() and SafeDecimalMath.divideDecimal() instead?
         uint sourceAmountInEquivalent = (sourceAmount * 10**uint(sourceEquivalent.decimals())) / SafeDecimalMath.unit();
         // TODO: add sanity check here to make sure the price window isn't 0?
         IDexTwapAggregator.QuoteParams memory dexTwapQuote = dexTwapAggregator.assetToAsset(
