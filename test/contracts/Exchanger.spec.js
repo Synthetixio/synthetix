@@ -16,6 +16,7 @@ const {
 	onlyGivenAddressCanInvoke,
 	setStatus,
 	convertToAggregatorPrice,
+	updateRatesWithDefaults,
 } = require('./helpers');
 
 const {
@@ -107,6 +108,7 @@ contract('Exchanger (spec tests) @ovm-skip', async accounts => {
 				'DelegateApprovals',
 				'FlexibleStorage',
 				'CollateralManager',
+				'RewardEscrowV2', // required for issuer._collateral to read collateral
 			],
 		}));
 
@@ -184,6 +186,141 @@ contract('Exchanger (spec tests) @ovm-skip', async accounts => {
 						describe('when settle() is called', () => {
 							it('it successed', async () => {
 								await synthetix.settle(sEUR, { from: account1 });
+							});
+						});
+					});
+				});
+			});
+		});
+	});
+
+	describe('When the waiting period is set to 0', () => {
+		let initialWaitingPeriod;
+
+		beforeEach(async () => {
+			initialWaitingPeriod = await systemSettings.waitingPeriodSecs();
+			await systemSettings.setWaitingPeriodSecs('0', { from: owner });
+		});
+
+		it('is set correctly', async () => {
+			assert.bnEqual(await systemSettings.waitingPeriodSecs(), '0');
+		});
+
+		describe('When exchanging', () => {
+			const amountOfSrcExchanged = toUnit('10');
+
+			beforeEach(async () => {
+				await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
+				await sUSDContract.issue(owner, toUnit('100'));
+				await synthetix.exchange(sUSD, toUnit('10'), sETH, { from: owner });
+			});
+
+			it('creates no new entries', async () => {
+				let { numEntries } = await exchanger.settlementOwing(owner, sETH);
+				assert.bnEqual(numEntries, '0');
+				numEntries = await exchangeState.getLengthOfEntries(owner, sETH);
+				assert.bnEqual(numEntries, '0');
+			});
+
+			it('can exchange back without waiting', async () => {
+				const { amountReceived } = await exchanger.getAmountsForExchange(
+					amountOfSrcExchanged,
+					sUSD,
+					sETH
+				);
+				await synthetix.exchange(sETH, amountReceived, sUSD, { from: owner });
+				assert.bnEqual(await sETHContract.balanceOf(owner), '0');
+			});
+
+			describe('When the waiting period is switched on again', () => {
+				beforeEach(async () => {
+					await systemSettings.setWaitingPeriodSecs(initialWaitingPeriod, { from: owner });
+				});
+
+				it('is set correctly', async () => {
+					assert.bnEqual(await systemSettings.waitingPeriodSecs(), initialWaitingPeriod);
+				});
+
+				describe('a new exchange takes place', () => {
+					let exchangeTransaction;
+
+					beforeEach(async () => {
+						await fastForward(await systemSettings.waitingPeriodSecs());
+						exchangeTransaction = await synthetix.exchange(sUSD, amountOfSrcExchanged, sETH, {
+							from: owner,
+						});
+					});
+
+					it('creates a new entry', async () => {
+						const { numEntries } = await exchanger.settlementOwing(owner, sETH);
+						assert.bnEqual(numEntries, '1');
+					});
+
+					it('then it emits an ExchangeEntryAppended', async () => {
+						const { amountReceived, exchangeFeeRate } = await exchanger.getAmountsForExchange(
+							amountOfSrcExchanged,
+							sUSD,
+							sETH
+						);
+						const logs = await getDecodedLogs({
+							hash: exchangeTransaction.tx,
+							contracts: [synthetix, exchanger, sUSDContract, issuer, flexibleStorage, debtCache],
+						});
+						decodedEventEqual({
+							log: logs.find(({ name }) => name === 'ExchangeEntryAppended'),
+							event: 'ExchangeEntryAppended',
+							emittedFrom: exchanger.address,
+							args: [
+								owner,
+								sUSD,
+								amountOfSrcExchanged,
+								sETH,
+								amountReceived,
+								exchangeFeeRate,
+								new web3.utils.BN(1),
+								new web3.utils.BN(2),
+							],
+						});
+					});
+
+					it('reverts if the user tries to settle before the waiting period has expired', async () => {
+						await assert.revert(
+							synthetix.settle(sETH, {
+								from: owner,
+							}),
+							'Cannot settle during waiting period'
+						);
+					});
+
+					describe('When the waiting period is set back to 0', () => {
+						beforeEach(async () => {
+							await systemSettings.setWaitingPeriodSecs('0', { from: owner });
+						});
+
+						it('there should be only one sETH entry', async () => {
+							let numEntries = await exchangeState.getLengthOfEntries(owner, sETH);
+							assert.bnEqual(numEntries, '1');
+							numEntries = await exchangeState.getLengthOfEntries(owner, sEUR);
+							assert.bnEqual(numEntries, '0');
+						});
+
+						describe('new trades take place', () => {
+							beforeEach(async () => {
+								// await fastForward(await systemSettings.waitingPeriodSecs());
+								const sEthBalance = await sETHContract.balanceOf(owner);
+								await synthetix.exchange(sETH, sEthBalance, sUSD, { from: owner });
+								await synthetix.exchange(sUSD, toUnit('10'), sEUR, { from: owner });
+							});
+
+							it('should settle the pending exchanges and remove all entries', async () => {
+								assert.bnEqual(await sETHContract.balanceOf(owner), '0');
+								const { numEntries } = await exchanger.settlementOwing(owner, sETH);
+								assert.bnEqual(numEntries, '0');
+							});
+
+							it('should not create any new entries', async () => {
+								const { numEntries } = await exchanger.settlementOwing(owner, sEUR);
+								assert.bnEqual(numEntries, '0');
 							});
 						});
 					});
