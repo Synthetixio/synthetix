@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const Web3 = require('web3');
 const axios = require('axios');
 const { gray, yellow, red, cyan } = require('chalk');

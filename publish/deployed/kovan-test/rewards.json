@@ -1,0 +1,17 @@
+[
+	{
+		"name": "iETH",
+		"stakingToken": "ProxyiETH",
+		"rewardsToken": "ProxyERC20"
+	},
+	{
+		"name": "iETH2",
+		"stakingToken": "ProxyiETH",
+		"rewardsToken": "ProxyERC20"
+	},
+	{
+		"name": "iBTC",
+		"stakingToken": "ProxyiBTC",
+		"rewardsToken": "ProxyERC20"
+	}
+]
