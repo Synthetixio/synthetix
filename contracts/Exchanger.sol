@@ -688,15 +688,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             revert("Src/dest synth must be sUSD");
         }
 
-        // Update and check against per-block volume limit
-        /*
-        uint currentVolume = uint(lastAtomicVolume.time) == block.timestamp
-            ? uint(lastAtomicVolume.volume).add(sourceSusdValue)
-            : sourceSusdValue;
-        require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed per-block atomic exchange volume limit");
-        lastAtomicVolume.time = uint64(block.timestamp);
-        lastAtomicVolume.volume = uint192(currentVolume); // Protected by volume limit check above
-        */
+        // Check and update atomic volume limit
+        _checkAndUpdateAtomicVolume(sourceSusdValue);
 
         // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
@@ -745,6 +738,15 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
 
         // No need to persist any exchange information, as no settlement is required for atomic exchanges
+    }
+
+    function _checkAndUpdateAtomicVolume(uint sourceSusdValue) internal {
+        uint currentVolume = uint(lastAtomicVolume.time) == block.timestamp
+            ? uint(lastAtomicVolume.volume).add(sourceSusdValue)
+            : sourceSusdValue;
+        require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed per-block atomic exchange volume limit");
+        lastAtomicVolume.time = uint64(block.timestamp);
+        lastAtomicVolume.volume = uint192(currentVolume); // Protected by volume limit check above
     }
 
     function _convert(
