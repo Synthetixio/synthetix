@@ -23,8 +23,8 @@ import "./interfaces/IExchanger.sol";
 // TODO: where best to put this?
 interface IDexTwapAggregator {
     struct QuoteParams {
-        uint quoteOut;   // Aggregated output
-        uint amountOut;  // Aggregated TWAP output
+        uint quoteOut; // Aggregated output
+        uint amountOut; // Aggregated TWAP output
         uint currentOut; // Aggregated spot output
         uint sTWAP;
         uint uTWAP;
@@ -33,7 +33,12 @@ interface IDexTwapAggregator {
         uint cl;
     }
 
-    function assetToAsset(address tokenIn, uint amountIn, address tokenOut, uint granularity) external view returns (QuoteParams memory q);
+    function assetToAsset(
+        address tokenIn,
+        uint amountIn,
+        address tokenOut,
+        uint granularity
+    ) external view returns (QuoteParams memory q);
 }
 
 
@@ -392,13 +397,16 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         IERC20 destEquivalent = IERC20(getAtomicEquivalentForSynth(destinationCurrencyKey));
         require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
-        (systemValue, systemSourceRate, systemDestinationRate) =
-            _effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+        (systemValue, systemSourceRate, systemDestinationRate) = _effectiveValueAndRates(
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey
+        );
         uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(getAtomicPriceBuffer()));
 
         // Normalize decimals in case equivalent asset uses different decimals from internal unit
         // TODO: prefer SafeDecimalMath.multiplyDecimal() and SafeDecimalMath.divideDecimal() instead?
-        uint sourceAmountInEquivalent = sourceAmount * 10 ** uint(sourceEquivalent.decimals()) / SafeDecimalMath.unit();
+        uint sourceAmountInEquivalent = (sourceAmount * 10**uint(sourceEquivalent.decimals())) / SafeDecimalMath.unit();
         // TODO: add sanity check here to make sure the price window isn't 0?
         IDexTwapAggregator.QuoteParams memory dexTwapQuote = dexTwapAggregator.assetToAsset(
             address(sourceEquivalent),
@@ -407,7 +415,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             getAtomicTwapPriceWindow()
         );
         // Similar to source amount, normalize decimals back to internal unit for output amount
-        uint pAggValue = dexTwapQuote.quoteOut * SafeDecimalMath.unit() / 10 ** uint(destEquivalent.decimals());
+        uint pAggValue = (dexTwapQuote.quoteOut * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());
 
         // Final value is minimum of P_CLBUF and P_AGG
         value = Math.min(pClbufValue, pAggValue);

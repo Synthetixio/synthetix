@@ -637,13 +637,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    )
-        internal
-        returns (
-            uint amountReceived,
-            uint fee
-        )
-    {
+    ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
@@ -661,11 +655,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Note: `fee` is denominated in the destinationCurrencyKey.
         // Note: also ensures the given synths are allowed to be atomically exchanged
-        (amountReceived, fee, exchangeFeeRate, systemAmountReceived, systemSourceRate, systemDestinationRate) = _getAmountsForAtomicExchangeMinusFees(
-            sourceAmountAfterSettlement,
-            sourceCurrencyKey,
-            destinationCurrencyKey
-        );
+        (
+            amountReceived,
+            fee,
+            exchangeFeeRate,
+            systemAmountReceived,
+            systemSourceRate,
+            systemDestinationRate
+        ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
 
         // SIP-65: Decentralized Circuit Breaker
         if (
@@ -732,7 +729,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
         // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
         // in these currencies
-        _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [systemSourceRate, systemDestinationRate]);
+        _updateSNXIssuedDebtOnExchange(
+            [sourceCurrencyKey, destinationCurrencyKey],
+            [systemSourceRate, systemDestinationRate]
+        );
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
@@ -1062,11 +1062,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         )
     {
         uint destinationAmount;
-        (destinationAmount, systemAmountReceived, systemSourceRate, systemDestinationRate) = exchangeRates().effectiveAtomicValueAndRates(
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey
-        );
+        (destinationAmount, systemAmountReceived, systemSourceRate, systemDestinationRate) = exchangeRates()
+            .effectiveAtomicValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
@@ -1151,10 +1148,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     modifier onlySynthetix() {
         ISynthetix _synthetix = synthetix();
-        require(
-            msg.sender == address(_synthetix),
-            "Exchanger: Only synthetix can perform this action"
-        );
+        require(msg.sender == address(_synthetix), "Exchanger: Only synthetix can perform this action");
         _;
     }
 
