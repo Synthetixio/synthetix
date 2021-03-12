@@ -87,6 +87,7 @@ contract('BaseSynthetix @ovm-skip', async accounts => {
 				'emitExchangeReclaim',
 				'emitExchangeTracking',
 				'exchange',
+				'exchangeAtomically',
 				'exchangeOnBehalf',
 				'exchangeOnBehalfWithTracking',
 				'exchangeWithTracking',

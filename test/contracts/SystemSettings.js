@@ -49,6 +49,10 @@ contract('SystemSettings @ovm-skip', async accounts => {
 				'setTradingRewardsEnabled',
 				'setDebtSnapshotStaleTime',
 				'setCrossDomainMessageGasLimit',
+				'setAtomicMaxVolumePerBlock',
+				'setAtomicPriceBuffer',
+				'setAtomicTwapPriceWindow',
+				'setAtomicEquivalentForSynth',
 			],
 		});
 	});

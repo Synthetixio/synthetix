@@ -1779,7 +1779,7 @@ contract('Exchanger (spec tests) @ovm-skip', async accounts => {
 				fnc: exchanger.exchangeWithTracking,
 				accounts,
 				args: [account1, sUSD, toUnit('100'), sAUD, account2, account3, trackingCode],
-				reason: 'Only synthetix or a synth contract can perform this action',
+				reason: 'Only synthetix can perform this action',
 			});
 		});
 
@@ -1966,7 +1966,7 @@ contract('Exchanger (spec tests) @ovm-skip', async accounts => {
 							fnc: exchanger.exchangeOnBehalf,
 							accounts,
 							args: [authoriser, delegate, sUSD, toUnit('100'), sAUD],
-							reason: 'Only synthetix or a synth contract can perform this action',
+							reason: 'Only synthetix can perform this action',
 						});
 					});
 
@@ -2070,7 +2070,7 @@ contract('Exchanger (spec tests) @ovm-skip', async accounts => {
 							fnc: exchanger.exchangeOnBehalfWithTracking,
 							accounts,
 							args: [authoriser, delegate, sUSD, toUnit('100'), sAUD, authoriser, trackingCode],
-							reason: 'Only synthetix or a synth contract can perform this action',
+							reason: 'Only synthetix can perform this action',
 						});
 					});
 

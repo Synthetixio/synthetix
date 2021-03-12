@@ -23,6 +23,7 @@ contract('ExchangerWithVirtualSynth (unit tests) @ovm-skip', async accounts => {
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'exchange',
+				'exchangeAtomically',
 				'exchangeOnBehalf',
 				'exchangeOnBehalfWithTracking',
 				'exchangeWithTracking',
@@ -51,7 +52,7 @@ contract('ExchangerWithVirtualSynth (unit tests) @ovm-skip', async accounts => {
 									fnc: this.instance.exchangeWithVirtual,
 									args,
 									accounts: accounts.filter(a => a !== this.mocks.Synthetix.address),
-									reason: 'Exchanger: Only synthetix or a synth contract can perform this action',
+									reason: 'Exchanger: Only synthetix can perform this action',
 									// address: this.mocks.Synthetix.address (doesnt work as this reverts due to lack of mocking setup)
 								});
 							});

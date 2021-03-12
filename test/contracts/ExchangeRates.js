@@ -109,6 +109,7 @@ contract('Exchange Rates @ovm-skip', async accounts => {
 				'freezeRate',
 				'removeAggregator',
 				'removeInversePricing',
+				'setDexTwapAggregator',
 				'setInversePricing',
 				'setOracle',
 				'updateRates',
