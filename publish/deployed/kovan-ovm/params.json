@@ -2,9 +2,5 @@
 	{
 		"name": "INITIAL_ISSUANCE",
 		"value": "0"
-	},
-	{
-		"name": "WAITING_PERIOD_SECS",
-		"value": "0"
 	}
 ]

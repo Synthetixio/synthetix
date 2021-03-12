@@ -156,5 +156,15 @@
 		},
 		"sources": [],
 		"sips": [110]
+	},
+	{
+		"name": "Miaplacidus",
+		"version": {
+			"major": 2,
+			"minor": 40
+		},
+		"ovm": true,
+		"sources": ["Synthetix", "Exchanger", "SystemStatus"],
+		"sips": [109, 117, 118]
 	}
 ]
