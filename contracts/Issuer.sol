@@ -165,6 +165,16 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return getIssuanceRatio();
     }
 
+    function currentOwnershipDebt(address issuer) external view returns (uint) {
+        ISynthetixState state = synthetixState();
+        (uint initialDebtOwnership, uint debtEntryIndex) = state.issuanceData(issuer);
+
+        return state
+                .lastDebtLedgerEntry()
+                .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
+                .multiplyDecimalRoundPrecise(initialDebtOwnership);
+    }
+
     function _availableCurrencyKeysWithOptionalSNX(bool withSNX) internal view returns (bytes32[] memory) {
         bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withSNX ? 1 : 0));
 

@@ -7,6 +7,9 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IERC20.sol";
 
+import "./Issuer.sol";
+import "./CollateralManager.sol";
+
 
 // https://docs.synthetix.io/contracts/source/contracts/synthutil
 contract SynthUtil {
@@ -28,6 +31,10 @@ contract SynthUtil {
         return IExchangeRates(addressResolverProxy.requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
+    function _currentOwnershipDebt(address issuer) internal view returns (uint) {
+        return Issuer.currentOwnershipDebt(issuer);
+    }
+
     function totalSynthsInKey(address account, bytes32 currencyKey) external view returns (uint total) {
         ISynthetix synthetix = _synthetix();
         IExchangeRates exchangeRates = _exchangeRates();
@@ -41,6 +48,14 @@ contract SynthUtil {
             );
         }
         return total;
+    }
+
+    function currentOwnershipDebt(address account) external view returns (uint) {
+        return _currentOwnershipDebt(account);
+    }
+
+    function shortAmountForSynth(bytes32 synth) external view returns (uint amount) {
+        return CollateralManager.short(synth);
     }
 
     function synthsBalances(address account)
