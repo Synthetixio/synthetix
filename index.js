@@ -22,26 +22,27 @@ const releases = require('./publish/releases.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
-const chainIdMapping = {
+const chainIdMapping = Object.entries({
 	1: {
 		network: 'mainnet',
-		useOvm: false,
 	},
 	3: {
 		network: 'ropsten',
-		useOvm: false,
 	},
 	4: {
 		network: 'rinkeby',
-		useOvm: false,
 	},
 	5: {
 		network: 'goerli',
-		useOvm: false,
 	},
 	42: {
 		network: 'kovan',
-		useOvm: false,
+	},
+
+	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
+	31337: {
+		network: 'mainnet',
+		fork: true,
 	},
 
 	// OVM networks: see https://github.com/ethereum-optimism/regenesis/
@@ -58,13 +59,17 @@ const chainIdMapping = {
 		network: 'goerli',
 		useOvm: true,
 	},
-};
+	// now append any defaults
+}).reduce((memo, [id, body]) => {
+	memo[id] = Object.assign({ useOvm: false, fork: false }, body);
+	return memo;
+}, {});
 
 const getNetworkFromId = ({ id }) => chainIdMapping[id];
 
 const networkToChainId = Object.entries(chainIdMapping).reduce(
-	(memo, [id, { network, useOvm }]) => {
-		memo[network + (useOvm ? '-ovm' : '')] = id;
+	(memo, [id, { network, useOvm, fork }]) => {
+		memo[network + (useOvm ? '-ovm' : '') + (fork ? '-fork' : '')] = id;
 		return memo;
 	},
 	{}
