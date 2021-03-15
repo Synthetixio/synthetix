@@ -1218,7 +1218,7 @@ const deploy = async ({
 	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
 	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
 	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
-	await deployer.deployContract({
+	const binaryOptionMarketManager = await deployer.deployContract({
 		name: 'BinaryOptionMarketManager',
 		args: [
 			account,
@@ -1476,13 +1476,54 @@ const deploy = async ({
 			target.options.jsonInterface.find(({ name }) => name === prop)
 		);
 
-	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
+	let contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
+
+	// now grab all possible binary option markets to rebuild caches as well
+	const binaryOptionsFetchPageSize = 100;
+	for (const marketType of ['Active', 'Matured']) {
+		const numBinaryOptionMarkets = Number(
+			await binaryOptionMarketManager.methods[`num${marketType}Markets`]().call()
+		);
+		if (numBinaryOptionMarkets > binaryOptionsFetchPageSize) {
+			console.log(
+				redBright(
+					'⚠⚠⚠ Warning: cannot fetch all',
+					marketType,
+					'binary option markets as there are',
+					numBinaryOptionMarkets,
+					'which is more than page size of',
+					binaryOptionsFetchPageSize
+				)
+			);
+		} else {
+			// fetch the list of markets
+			const marketAddresses = await binaryOptionMarketManager.methods[
+				`${marketType.toLowerCase()}Markets`
+			](0, binaryOptionsFetchPageSize).call();
+
+			// wrap them in a contract via the deployer
+			const markets = marketAddresses.map(binaryOptionMarket => [
+				`BinaryOptionMarket${binaryOptionMarket}`,
+				new deployer.web3.eth.Contract(compiled['BinaryOptionMarket'].abi, binaryOptionMarket),
+			]);
+
+			contractsWithRebuildableCache = contractsWithRebuildableCache.concat(markets);
+		}
+	}
 
 	// collect all resolver addresses required
 	const resolverAddressesRequired = (
 		await Promise.all(
 			contractsWithRebuildableCache.map(([, contract]) => {
-				return limitPromise(() => contract.methods.resolverAddressesRequired().call());
+				return limitPromise(() =>
+					contract.methods
+						.resolverAddressesRequired()
+						.call()
+						// catch errors for older contracts that don't
+						// implement this function (older BinaryOptionMarket
+						// contracts for instance )
+						.catch(() => [])
+				);
 			})
 		)
 	).reduce((allAddresses, contractAddresses) => {
@@ -1513,22 +1554,36 @@ const deploy = async ({
 	// now ensure all caches are rebuilt for those in need
 	const contractsToRebuildCache = [];
 	for (const [name, target] of contractsWithRebuildableCache) {
-		const isCached = await target.methods.isResolverCached().call();
-		if (!isCached) {
-			const requiredAddresses = await target.methods.resolverAddressesRequired().call();
+		try {
+			const isCached = await target.methods.isResolverCached().call();
+			if (!isCached) {
+				const requiredAddresses = await target.methods.resolverAddressesRequired().call();
 
-			const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
-			if (unknownAddress) {
-				console.log(
-					redBright(
-						`WARINING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
-							unknownAddress
-						)} is unknown. This contract requires: ${requiredAddresses.map(id => fromBytes32(id))}`
-					)
-				);
-			} else {
-				contractsToRebuildCache.push(target.options.address);
+				const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
+				if (unknownAddress) {
+					console.log(
+						redBright(
+							`WARINING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
+								unknownAddress
+							)} is unknown. This contract requires: ${requiredAddresses.map(id =>
+								fromBytes32(id)
+							)}`
+						)
+					);
+				} else {
+					contractsToRebuildCache.push(target.options.address);
+				}
 			}
+		} catch (err) {
+			// for older BinaryOptionMarket contracts, this will throw,
+			// so simply skip this check.
+			console.log(
+				gray(
+					'Note: contract',
+					name,
+					'cannot be checked for cached resolver. This is likely due to it being an older contract version.'
+				)
+			);
 		}
 	}
 
