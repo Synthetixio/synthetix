@@ -1581,9 +1581,10 @@ const deploy = async ({
 				gray(
 					'Note: contract',
 					name,
-					'cannot be checked for cached resolver. This is likely due to it being an older contract version.'
+					'cannot be checked for cached resolver. This is likely due to it being an older contract version. Adding it to rebuild cache regardless.'
 				)
 			);
+			contractsToRebuildCache.push(target.options.address);
 		}
 	}
 
