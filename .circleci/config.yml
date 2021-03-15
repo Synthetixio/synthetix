@@ -132,7 +132,7 @@ jobs:
             port: 8545
       - run: node publish prepare-deploy --network mainnet
       - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
-      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && npx codechecks codechecks.prod.yml
+      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment
       - store_artifacts:
           path: test-gas-used-prod.log
   job-prod-tests-ovm:
@@ -185,7 +185,7 @@ jobs:
           background: true
       - cmd-wait-for-port:
             port: 8545
-      - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
+      - run: npm run test:prod:gas -- --target-network mainnet
       - store_artifacts:
           path: test-gas-used-prod.log
   job-static-analysis:
@@ -257,7 +257,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:gas && npx codechecks codechecks.unit.yml
+      - run: npm run test:gas
       - store_artifacts:
           path: test-gas-used.log
   job-unit-tests-ovm:
