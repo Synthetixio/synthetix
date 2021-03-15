@@ -1847,13 +1847,14 @@ const deploy = async ({
 		}
 
 		// setup initial values if they are unset
+		const waitingPeriodSecs = await getDeployParameter('WAITING_PERIOD_SECS');
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'waitingPeriodSecs',
-			expected: input => input !== '0',
+			expected: input => input !== waitingPeriodSecs, // only change if non-default
 			write: 'setWaitingPeriodSecs',
-			writeArg: await getDeployParameter('WAITING_PERIOD_SECS'),
+			writeArg: waitingPeriodSecs,
 		});
 
 		await runStep({
