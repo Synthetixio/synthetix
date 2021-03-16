@@ -1422,18 +1422,25 @@ const deploy = async ({
 	let addressesAreImported = false;
 
 	if (addressResolver) {
-		// Now we add everything into the AddressResolver
-		const addressArgs = [
-			Object.entries(deployer.deployedContracts).map(([contract]) => toBytes32(contract)),
-			Object.entries(deployer.deployedContracts).map(
-				([
-					,
-					{
-						options: { address },
-					},
-				]) => address
-			),
-		];
+		const addressArgs = [[], []];
+
+		const allContracts = Object.entries(deployer.deployedContracts);
+		await Promise.all(
+			allContracts.map(([name, contract]) => {
+				return limitPromise(async () => {
+					const isImported = await addressResolver.methods
+						.areAddressesImported([toBytes32(name)], [contract.options.address])
+						.call();
+
+					if (!isImported) {
+						console.log(green(`${name} needs to be imported to the AddressResolver`));
+
+						addressArgs[0].push(toBytes32(name));
+						addressArgs[1].push(contract.options.address);
+					}
+				});
+			})
+		);
 
 		const { pending } = await runStep({
 			gasLimit: 6e6, // higher gas required
