@@ -9,7 +9,7 @@ task('test')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, hre, runSuper) => {
-		const { gas, grep, native, gasOutputFile, noCompile } = taskArguments;
+		const { gas, grep, native, gasOutputFile } = taskArguments;
 
 		// apply a 90s timeout unless already set (for coverage say)
 		hre.config.mocha.timeout = hre.config.mocha.timeout || 90e3;
