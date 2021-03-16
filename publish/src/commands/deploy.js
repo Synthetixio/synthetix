@@ -1485,36 +1485,38 @@ const deploy = async ({
 
 	let contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
 
-	// now grab all possible binary option markets to rebuild caches as well
-	const binaryOptionsFetchPageSize = 100;
-	for (const marketType of ['Active', 'Matured']) {
-		const numBinaryOptionMarkets = Number(
-			await binaryOptionMarketManager.methods[`num${marketType}Markets`]().call()
-		);
-		if (numBinaryOptionMarkets > binaryOptionsFetchPageSize) {
-			console.log(
-				redBright(
-					'⚠⚠⚠ Warning: cannot fetch all',
-					marketType,
-					'binary option markets as there are',
-					numBinaryOptionMarkets,
-					'which is more than page size of',
-					binaryOptionsFetchPageSize
-				)
+	if (binaryOptionMarketManager) {
+		// now grab all possible binary option markets to rebuild caches as well
+		const binaryOptionsFetchPageSize = 100;
+		for (const marketType of ['Active', 'Matured']) {
+			const numBinaryOptionMarkets = Number(
+				await binaryOptionMarketManager.methods[`num${marketType}Markets`]().call()
 			);
-		} else {
-			// fetch the list of markets
-			const marketAddresses = await binaryOptionMarketManager.methods[
-				`${marketType.toLowerCase()}Markets`
-			](0, binaryOptionsFetchPageSize).call();
+			if (numBinaryOptionMarkets > binaryOptionsFetchPageSize) {
+				console.log(
+					redBright(
+						'⚠⚠⚠ Warning: cannot fetch all',
+						marketType,
+						'binary option markets as there are',
+						numBinaryOptionMarkets,
+						'which is more than page size of',
+						binaryOptionsFetchPageSize
+					)
+				);
+			} else {
+				// fetch the list of markets
+				const marketAddresses = await binaryOptionMarketManager.methods[
+					`${marketType.toLowerCase()}Markets`
+				](0, binaryOptionsFetchPageSize).call();
 
-			// wrap them in a contract via the deployer
-			const markets = marketAddresses.map(binaryOptionMarket => [
-				`BinaryOptionMarket${binaryOptionMarket}`,
-				new deployer.web3.eth.Contract(compiled['BinaryOptionMarket'].abi, binaryOptionMarket),
-			]);
+				// wrap them in a contract via the deployer
+				const markets = marketAddresses.map(binaryOptionMarket => [
+					`BinaryOptionMarket${binaryOptionMarket}`,
+					new deployer.web3.eth.Contract(compiled['BinaryOptionMarket'].abi, binaryOptionMarket),
+				]);
 
-			contractsWithRebuildableCache = contractsWithRebuildableCache.concat(markets);
+				contractsWithRebuildableCache = contractsWithRebuildableCache.concat(markets);
+			}
 		}
 	}
 
