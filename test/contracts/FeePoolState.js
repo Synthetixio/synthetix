@@ -9,7 +9,7 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const FeePoolState = artifacts.require('FeePoolState');
 
-contract('FeePoolState @ovm-skip', async accounts => {
+contract('FeePoolState', async accounts => {
 	const [
 		deployerAccount,
 		owner,

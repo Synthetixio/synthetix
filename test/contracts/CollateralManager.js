@@ -19,7 +19,7 @@ let CollateralManager;
 let CollateralState;
 let CollateralManagerState;
 
-contract('CollateralManager @ovm-skip', async accounts => {
+contract('CollateralManager', async accounts => {
 	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');

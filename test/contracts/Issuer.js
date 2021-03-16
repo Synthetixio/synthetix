@@ -26,7 +26,7 @@ const {
 	defaults: { ISSUANCE_RATIO, MINIMUM_STAKE_TIME },
 } = require('../..');
 
-contract('Issuer (via Synthetix) @ovm-skip', async accounts => {
+contract('Issuer (via Synthetix)', async accounts => {
 	const WEEK = 604800;
 
 	const [sUSD, sAUD, sEUR, SNX, sETH, ETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH', 'ETH'].map(

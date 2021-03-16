@@ -13,7 +13,7 @@ const { mockGenericContractFnc, setupAllContracts } = require('./setup');
 
 const AddressResolver = artifacts.require('AddressResolver');
 
-contract('AddressResolver @ovm-skip', accounts => {
+contract('AddressResolver', accounts => {
 	const [deployerAccount, owner, account1, account2, account3, account4] = accounts;
 
 	let resolver;

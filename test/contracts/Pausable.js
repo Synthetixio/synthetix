@@ -14,7 +14,7 @@ const { currentTime, fastForward } = require('../utils')();
 const Pausable = artifacts.require('Pausable');
 const TestablePausable = artifacts.require('TestablePausable');
 
-contract('Pausable @ovm-skip', accounts => {
+contract('Pausable', accounts => {
 	const [deployerAccount, owner] = accounts;
 
 	let instance;

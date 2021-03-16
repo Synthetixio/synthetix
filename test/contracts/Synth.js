@@ -22,7 +22,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-contract('Synth @ovm-skip', async accounts => {
+contract('Synth', async accounts => {
 	const [sUSD, SNX, sEUR] = ['sUSD', 'SNX', 'sEUR'].map(toBytes32);
 
 	const [deployerAccount, owner, oracle, , account1, account2] = accounts;

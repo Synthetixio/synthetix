@@ -13,7 +13,7 @@ const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = requi
 const AddressResolver = artifacts.require('AddressResolver');
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
-contract('FlexibleStorage @ovm-skip', accounts => {
+contract('FlexibleStorage', accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	let storage;

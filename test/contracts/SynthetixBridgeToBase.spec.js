@@ -11,7 +11,7 @@ const {
 	},
 } = require('../../');
 
-contract('SynthetixBridgeToBase (spec tests) @ovm-skip', accounts => {
+contract('SynthetixBridgeToBase (spec tests)', accounts => {
 	const [, owner, user] = accounts;
 
 	let mintableSynthetix, synthetixBridgeToBase, systemSettings;
