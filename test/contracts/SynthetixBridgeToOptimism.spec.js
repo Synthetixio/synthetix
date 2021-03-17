@@ -11,7 +11,7 @@ const {
 	},
 } = require('../../');
 
-contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
+contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 	const [, owner, newBridge] = accounts;
 
 	let synthetix, synthetixBridgeToOptimism, systemSettings;

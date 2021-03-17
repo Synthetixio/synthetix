@@ -14,7 +14,7 @@ const { toBytes32 } = require('../..');
 
 const BN = require('bn.js');
 
-contract('RewardEscrowV2 @ovm-skip', async accounts => {
+contract('RewardEscrowV2', async accounts => {
 	const WEEK = 60 * 60 * 24 * 7; // week in seconds
 	const [, owner, feePoolAccount, account1] = accounts;
 	let rewardEscrowV2, synthetix, feePool, rewardEscrow, resolver;
