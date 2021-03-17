@@ -25,7 +25,7 @@ let CollateralState;
 let ProxyERC20;
 let TokenState;
 
-contract('CollateralErc20 @ovm-skip', async accounts => {
+contract('CollateralErc20', async accounts => {
 	const YEAR = 31536000;
 	const INTERACTION_DELAY = 300;
 

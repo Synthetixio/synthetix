@@ -19,7 +19,7 @@ let CollateralManager;
 let CollateralState;
 let CollateralManagerState;
 
-contract('CollateralShort @ovm-skip', async accounts => {
+contract('CollateralShort', async accounts => {
 	const YEAR = 31556926;
 
 	const sUSD = toBytes32('sUSD');
