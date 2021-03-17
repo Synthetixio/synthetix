@@ -6,7 +6,6 @@ steps:
   - attach_workspace:
       at: .
   - run: npm run test:gas
-  # disabled until codechecks issues are fixed
-  # - run: npx codechecks codechecks.unit.yml
+  - run: npx codechecks codechecks.unit.yml
   - store_artifacts:
       path: test-gas-used.log

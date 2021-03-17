@@ -19,7 +19,6 @@ steps:
   - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
   # Run production tests
   - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment
-  # disabled until codechecks issues are fixed
-  # - run: npx codechecks codechecks.prod.yml
+  - run: npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log

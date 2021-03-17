@@ -90,7 +90,7 @@ jobs:
           command: npx hardhat node
           background: true
       - cmd-wait-for-port:
-          port: 8545
+            port: 8545
       - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
       - run: npm run test:prod -- --no-compile --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
   job-prod-diff-tests-local:
@@ -109,7 +109,7 @@ jobs:
           command: npx hardhat node
           background: true
       - cmd-wait-for-port:
-          port: 8545
+            port: 8545
       - run: node publish deploy --network local --fresh-deploy --yes
       - run: npm run test:prod -- --patch-fresh-deployment
   job-prod-diff-tests:
@@ -129,10 +129,11 @@ jobs:
           command: npx hardhat node --target-network mainnet
           background: true
       - cmd-wait-for-port:
-          port: 8545
+            port: 8545
       - run: node publish prepare-deploy --network mainnet
       - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
       - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment
+      - run: npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
   job-prod-tests-ovm:
@@ -158,9 +159,9 @@ jobs:
             cd optimism-integration
             ./up.sh
       - cmd-wait-for-port:
-          port: 8545
+            port: 8545
       - cmd-wait-for-port:
-          port: 9545
+            port: 9545
       - run:
           name: Deploy OVM Synthetix instances
           command: |
@@ -184,8 +185,9 @@ jobs:
           command: npx hardhat node --target-network mainnet
           background: true
       - cmd-wait-for-port:
-          port: 8545
+            port: 8545
       - run: npm run test:prod:gas -- --target-network mainnet
+      - run: npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
   job-static-analysis:
@@ -258,6 +260,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: npm run test:gas
+      - run: npx codechecks codechecks.unit.yml
       - store_artifacts:
           path: test-gas-used.log
   job-unit-tests-ovm:
