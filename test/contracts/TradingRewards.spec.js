@@ -12,7 +12,7 @@ const { toBytes32 } = require('../..');
  *
  * Inner workings of the contract are tested in TradingRewards.unit.js.
  **/
-contract('TradingRewards @ovm-skip', accounts => {
+contract('TradingRewards', accounts => {
 	const [, owner, account1] = accounts;
 
 	const synths = ['sUSD', 'sETH', 'sBTC'];

@@ -24,7 +24,7 @@ let FakeTradingRewards;
  *
  * Integration with the rest of the system are tested in TradingRewards.integration.js.
  **/
-contract('TradingRewards (unit tests) @ovm-skip', accounts => {
+contract('TradingRewards (unit tests)', accounts => {
 	const [
 		deployerAccount,
 		owner,

@@ -6,7 +6,7 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 let Collateral;
 
-contract('Collateral @ovm-skip', async accounts => {
+contract('Collateral', async accounts => {
 	before(async () => {
 		Collateral = artifacts.require(`Collateral`);
 	});

@@ -18,7 +18,7 @@ const {
 } = require('./utils');
 const { toBytes32 } = require('../..');
 
-contract('ExchangeRates (prod tests) @ovm-skip', accounts => {
+contract('ExchangeRates (prod tests)', accounts => {
 	const [, user] = accounts;
 
 	let owner;

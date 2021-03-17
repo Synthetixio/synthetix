@@ -15,8 +15,6 @@ jobs:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-unit-tests:
       {{> require-prepare.yml}}
-  - job-unit-tests-ovm:
-      {{> require-prepare.yml}}
   - job-unit-tests-coverage:
       {{> require-prepare.yml}}
   - job-unit-tests-gas-report:

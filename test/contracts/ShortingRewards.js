@@ -14,7 +14,7 @@ let CollateralManager;
 let CollateralState;
 let CollateralManagerState;
 
-contract('ShortingRewards @ovm-skip', accounts => {
+contract('ShortingRewards', accounts => {
 	const [
 		deployerAccount,
 		owner,
