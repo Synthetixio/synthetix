@@ -1483,56 +1483,13 @@ const deploy = async ({
 			target.options.jsonInterface.find(({ name }) => name === prop)
 		);
 
-	let contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
-
-	if (binaryOptionMarketManager) {
-		// now grab all possible binary option markets to rebuild caches as well
-		const binaryOptionsFetchPageSize = 100;
-		for (const marketType of ['Active', 'Matured']) {
-			const numBinaryOptionMarkets = Number(
-				await binaryOptionMarketManager.methods[`num${marketType}Markets`]().call()
-			);
-			if (numBinaryOptionMarkets > binaryOptionsFetchPageSize) {
-				console.log(
-					redBright(
-						'⚠⚠⚠ Warning: cannot fetch all',
-						marketType,
-						'binary option markets as there are',
-						numBinaryOptionMarkets,
-						'which is more than page size of',
-						binaryOptionsFetchPageSize
-					)
-				);
-			} else {
-				// fetch the list of markets
-				const marketAddresses = await binaryOptionMarketManager.methods[
-					`${marketType.toLowerCase()}Markets`
-				](0, binaryOptionsFetchPageSize).call();
-
-				// wrap them in a contract via the deployer
-				const markets = marketAddresses.map(binaryOptionMarket => [
-					`BinaryOptionMarket${binaryOptionMarket}`,
-					new deployer.web3.eth.Contract(compiled['BinaryOptionMarket'].abi, binaryOptionMarket),
-				]);
-
-				contractsWithRebuildableCache = contractsWithRebuildableCache.concat(markets);
-			}
-		}
-	}
+	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
 
 	// collect all resolver addresses required
 	const resolverAddressesRequired = (
 		await Promise.all(
 			contractsWithRebuildableCache.map(([, contract]) => {
-				return limitPromise(() =>
-					contract.methods
-						.resolverAddressesRequired()
-						.call()
-						// catch errors for older contracts that don't
-						// implement this function (older BinaryOptionMarket
-						// contracts for instance )
-						.catch(() => [])
-				);
+				return limitPromise(() => contract.methods.resolverAddressesRequired().call());
 			})
 		)
 	).reduce((allAddresses, contractAddresses) => {
@@ -1563,37 +1520,22 @@ const deploy = async ({
 	// now ensure all caches are rebuilt for those in need
 	const contractsToRebuildCache = [];
 	for (const [name, target] of contractsWithRebuildableCache) {
-		try {
-			const isCached = await target.methods.isResolverCached().call();
-			if (!isCached) {
-				const requiredAddresses = await target.methods.resolverAddressesRequired().call();
+		const isCached = await target.methods.isResolverCached().call();
+		if (!isCached) {
+			const requiredAddresses = await target.methods.resolverAddressesRequired().call();
 
-				const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
-				if (unknownAddress) {
-					console.log(
-						redBright(
-							`WARINING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
-								unknownAddress
-							)} is unknown. This contract requires: ${requiredAddresses.map(id =>
-								fromBytes32(id)
-							)}`
-						)
-					);
-				} else {
-					contractsToRebuildCache.push(target.options.address);
-				}
+			const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
+			if (unknownAddress) {
+				console.log(
+					redBright(
+						`WARINING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
+							unknownAddress
+						)} is unknown. This contract requires: ${requiredAddresses.map(id => fromBytes32(id))}`
+					)
+				);
+			} else {
+				contractsToRebuildCache.push(target.options.address);
 			}
-		} catch (err) {
-			// for older BinaryOptionMarket contracts, this will throw,
-			// so simply skip this check.
-			console.log(
-				gray(
-					'Note: contract',
-					name,
-					'cannot be checked for cached resolver. This is likely due to it being an older contract version. Adding it to rebuild cache regardless.'
-				)
-			);
-			contractsToRebuildCache.push(target.options.address);
 		}
 	}
 
@@ -1621,6 +1563,131 @@ const deploy = async ({
 				expected: input => input,
 				publiclyCallable: true, // does not require owner
 				write: 'rebuildCache',
+			});
+		}
+	}
+
+	// Now do binary option market cache rebuilding
+	if (binaryOptionMarketManager) {
+		console.log(gray('Checking all binary option markets have rebuilt caches'));
+		let binaryOptionMarkets = [];
+		// now grab all possible binary option markets to rebuild caches as well
+		const binaryOptionsFetchPageSize = 100;
+		for (const marketType of ['Active', 'Matured']) {
+			const numBinaryOptionMarkets = Number(
+				await binaryOptionMarketManager.methods[`num${marketType}Markets`]().call()
+			);
+			console.log(
+				gray('Found'),
+				yellow(numBinaryOptionMarkets),
+				gray(marketType, 'binary option markets')
+			);
+
+			if (numBinaryOptionMarkets > binaryOptionsFetchPageSize) {
+				console.log(
+					redBright(
+						'⚠⚠⚠ Warning: cannot fetch all',
+						marketType,
+						'binary option markets as there are',
+						numBinaryOptionMarkets,
+						'which is more than page size of',
+						binaryOptionsFetchPageSize
+					)
+				);
+			} else {
+				// fetch the list of markets
+				const marketAddresses = await binaryOptionMarketManager.methods[
+					`${marketType.toLowerCase()}Markets`
+				](0, binaryOptionsFetchPageSize).call();
+
+				// wrap them in a contract via the deployer
+				const markets = marketAddresses.map(
+					binaryOptionMarket =>
+						new deployer.web3.eth.Contract(compiled['BinaryOptionMarket'].abi, binaryOptionMarket)
+				);
+
+				binaryOptionMarkets = binaryOptionMarkets.concat(markets);
+			}
+		}
+
+		// now figure out which binary option markets need their caches rebuilt
+		const binaryOptionMarketsToRebuildCacheOn = [];
+		for (const market of binaryOptionMarkets) {
+			try {
+				const isCached = await market.methods.isResolverCached().call();
+				if (!isCached) {
+					binaryOptionMarketsToRebuildCacheOn.push(addressOf(market));
+				}
+				console.log(
+					gray('Binary option market'),
+					yellow(addressOf(market)),
+					gray('is newer and cache status'),
+					yellow(isCached)
+				);
+			} catch (err) {
+				// the challenge being that some used an older MixinResolver API
+				const oldBinaryOptionMarketABI = [
+					{
+						constant: true,
+						inputs: [
+							{
+								internalType: 'contract AddressResolver',
+								name: '_resolver',
+								type: 'address',
+							},
+						],
+						name: 'isResolverCached',
+						outputs: [
+							{
+								internalType: 'bool',
+								name: '',
+								type: 'bool',
+							},
+						],
+						payable: false,
+						stateMutability: 'view',
+						type: 'function',
+						signature: '0x631e1444',
+					},
+				];
+
+				const oldBinaryOptionMarket = new deployer.web3.eth.Contract(
+					oldBinaryOptionMarketABI,
+					addressOf(market)
+				);
+
+				const isCached = await oldBinaryOptionMarket.methods
+					.isResolverCached(addressOf(readProxyForResolver))
+					.call();
+				if (!isCached) {
+					binaryOptionMarketsToRebuildCacheOn.push(addressOf(market));
+				}
+
+				console.log(
+					gray('Binary option market'),
+					yellow(addressOf(market)),
+					gray('is older and cache status'),
+					yellow(isCached)
+				);
+			}
+		}
+
+		console.log(
+			gray('In total'),
+			yellow(binaryOptionMarketsToRebuildCacheOn.length),
+			gray('binary option markets need their caches rebuilt')
+		);
+
+		const addressesChunkSize = useOvm ? 7 : 20;
+		for (let i = 0; i < binaryOptionMarketsToRebuildCacheOn.length; i += addressesChunkSize) {
+			const chunk = binaryOptionMarketsToRebuildCacheOn.slice(i, i + addressesChunkSize);
+			await runStep({
+				gasLimit: useOvm ? OVM_MAX_GAS_LIMIT : 7e6,
+				contract: `BinaryOptionMarketManager`,
+				target: binaryOptionMarketManager,
+				publiclyCallable: true, // does not require owner
+				write: 'rebuildMarketCaches',
+				writeArg: [chunk],
 			});
 		}
 	}
