@@ -10,7 +10,6 @@ steps:
   - cmd-wait-for-port:
         port: 8545
   - run: npm run test:prod:gas -- --target-network mainnet
-  # disabled until codechecks issues are fixed
-  # - run: npx codechecks codechecks.prod.yml
+  - run: npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log
