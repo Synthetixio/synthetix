@@ -20,6 +20,9 @@ const {
 		RATE_STALE_PERIOD,
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
+		ATOMIC_MAX_VOLUME_PER_BLOCK,
+		ATOMIC_PRICE_BUFFER,
+		ATOMIC_TWAP_PRICE_WINDOW,
 		CROSS_DOMAIN_DEPOSIT_GAS_LIMIT,
 		CROSS_DOMAIN_REWARD_GAS_LIMIT,
 		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
@@ -961,6 +964,15 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setAtomicMaxVolumePerBlock(ATOMIC_MAX_VOLUME_PER_BLOCK, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setAtomicPriceBuffer(ATOMIC_PRICE_BUFFER, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setAtomicTwapPriceWindow(ATOMIC_TWAP_PRICE_WINDOW, {
 				from: owner,
 			}),
 		]);

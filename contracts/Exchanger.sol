@@ -177,6 +177,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return getPriceDeviationThresholdFactor();
     }
 
+    function atomicMaxVolumePerBlock() external view returns (uint) {
+        return getAtomicMaxVolumePerBlock();
+    }
+
     function settlementOwing(address account, bytes32 currencyKey)
         public
         view

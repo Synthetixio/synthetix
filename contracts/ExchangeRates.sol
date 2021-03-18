@@ -283,6 +283,18 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return getAggregatorWarningFlags();
     }
 
+    function atomicPriceBuffer() external view returns (uint) {
+        return getAtomicPriceBuffer();
+    }
+
+    function atomicTwapPriceWindow() external view returns (uint) {
+        return getAtomicTwapPriceWindow();
+    }
+
+    function atomicEquivalentForSynth(bytes32 currencyKey) external view returns (address) {
+        return getAtomicEquivalentForSynth(currencyKey);
+    }
+
     function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
         return (rateAndTime.rate, rateAndTime.time);

@@ -1144,6 +1144,8 @@ const deploy = async ({
 				writeArg: [currencyKeyInBytes, feed],
 			});
 		}
+
+		// TODO: set up DEX TWAP oracle for exchange rates
 	}
 
 	console.log(gray(`\n------ DEPLOY ANCILLARY CONTRACTS ------\n`));
@@ -1954,6 +1956,8 @@ const deploy = async ({
 			write: 'setDebtSnapshotStaleTime',
 			writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
 		});
+
+		// TODO: add new atomic exchange system settings
 
 		await runStep({
 			contract: 'SystemSettings',
