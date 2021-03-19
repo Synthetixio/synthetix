@@ -167,6 +167,12 @@
 		"sign": "",
 		"description": "yearn.finance"
 	},
+	"DOT": {
+		"asset": "DOT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Polkadot"
+	},
 	"LRC": {
 		"asset": "LRC",
 		"category": "crypto",
@@ -294,5 +300,24 @@
 		"sign": "",
 		"exchange": "TSE",
 		"description": "Nikkei 225 Index"
+	},
+	"TSLA": {
+		"asset": "TSLA",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Tesla"
+	},
+	"SUSHI": {
+		"asset": "SUSHI",
+		"category": "crypto",
+		"sign": "",
+		"description": "SushiSwap"
+	},
+	"1INCH": {
+		"asset": "1INCH",
+		"category": "crypto",
+		"sign": "",
+		"description": "1inch"
 	}
 }

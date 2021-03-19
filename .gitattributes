@@ -1,3 +1,2 @@
 *.sol linguist-language=Solidity
 test/* linguist-detectable=false
-legacy/* linguist-detectable=false

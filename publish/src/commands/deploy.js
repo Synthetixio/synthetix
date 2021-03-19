@@ -7,6 +7,7 @@ const Deployer = require('../Deployer');
 const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 const checkAggregatorPrices = require('../check-aggregator-prices');
+const pLimit = require('p-limit');
 
 const {
 	ensureNetwork,
@@ -22,6 +23,7 @@ const {
 
 const {
 	toBytes32,
+	fromBytes32,
 	constants: {
 		BUILD_FOLDER,
 		CONFIG_FILENAME,
@@ -33,6 +35,7 @@ const {
 		inflationStartTimestampInSecs,
 	},
 	defaults,
+	nonUpgradeable,
 } = require('../../../.');
 
 const DEFAULTS = {
@@ -43,18 +46,6 @@ const DEFAULTS = {
 	network: 'kovan',
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
 };
-
-function splitArrayIntoChunks(array, chunkSize) {
-	const chunks = [];
-	for (let i = 0; i < array.length; i += chunkSize) {
-		const chunk = array.slice(i, i + chunkSize);
-		if (chunk.length > 0) {
-			chunks.push(chunk);
-		}
-	}
-
-	return chunks;
-}
 
 const deploy = async ({
 	addNewSynths,
@@ -76,6 +67,7 @@ const deploy = async ({
 	manageNonces,
 	ignoreSafetyChecks,
 	ignoreCustomParameters,
+	concurrency,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -85,6 +77,8 @@ const deploy = async ({
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
 		gasPrice = w3utils.toBN('0');
 	}
+
+	const limitPromise = pLimit(concurrency);
 
 	const {
 		config,
@@ -107,6 +101,29 @@ const deploy = async ({
 			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
 		}
 
+		// Cannot re-deploy legacy contracts
+		if (!freshDeploy) {
+			// Get list of contracts to be deployed
+			const contractsToDeploy = [];
+			Object.keys(config).map(contractName => {
+				if (config[contractName].deploy) {
+					contractsToDeploy.push(contractName);
+				}
+			});
+
+			// Check that no non-deployable is marked for deployment.
+			// Note: if nonDeployable = 'TokenState', this will match 'TokenStatesUSD'
+			nonUpgradeable.map(nonUpgradeableContract => {
+				contractsToDeploy.map(contractName => {
+					if (contractName.match(new RegExp(`^${nonUpgradeableContract}`, 'g'))) {
+						throw new Error(
+							`You are attempting to deploy a contract marked as non-upgradeable: ${contractName}. This action could result in loss of state. Please verify and use --ignore-safety-checks if you really know what you're doing.`
+						);
+					}
+				});
+			});
+		}
+
 		// Every transaction in Optimism needs to be below 9m gas, to ensure
 		// there are no deployment out of gas errors during fraud proofs.
 		if (useOvm) {
@@ -122,7 +139,8 @@ const deploy = async ({
 		}
 
 		// Deploying on OVM and not using an OVM deployment path?
-		const isOvmPath = deploymentPath.includes('ovm');
+		const lastPathItem = deploymentPath.split('/').pop();
+		const isOvmPath = lastPathItem.includes('ovm');
 		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
 		if (deploymentPathMismatch) {
 			if (useOvm) {
@@ -361,6 +379,7 @@ const deploy = async ({
 		const padding = '\n\t\t\t\t';
 		const aggResults = await checkAggregatorPrices({
 			network,
+			useOvm,
 			providerUrl,
 			synths,
 			oldExrates,
@@ -398,6 +417,7 @@ const deploy = async ({
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		'Using a fork': useFork ? green('true') : yellow('⚠ NO'),
+		Concurrency: `${concurrency} max parallel calls`,
 		Network: network,
 		'OVM?': useOvm
 			? ovmDeploymentPathWarning
@@ -522,6 +542,24 @@ const deploy = async ({
 		args: [account],
 	});
 
+	if (network !== 'mainnet' && systemStatus) {
+		// On testnet, give the deployer the rights to update status
+		await runStep({
+			contract: 'SystemStatus',
+			target: systemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('System'), account],
+			expected: ({ canSuspend } = {}) => canSuspend,
+			write: 'updateAccessControls',
+			writeArg: [
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
+				[account, account, account, account, account],
+				[true, true, true, true, true],
+				[true, true, true, true, true],
+			],
+		});
+	}
+
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
 		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
@@ -547,6 +585,7 @@ const deploy = async ({
 
 	const synthetixState = await deployer.deployContract({
 		name: 'SynthetixState',
+		source: useOvm ? 'SynthetixStateWithLimitedSetup' : 'SynthetixState',
 		args: [account, account],
 	});
 
@@ -820,6 +859,18 @@ const deploy = async ({
 			expected: input => input === issuerAddress,
 			write: 'setAssociatedContract',
 			writeArg: issuerAddress,
+		});
+	}
+
+	if (useOvm && synthetixState && feePool) {
+		// The SynthetixStateLimitedSetup) contract has FeePool to appendAccountIssuanceRecord
+		await runStep({
+			contract: 'SynthetixState',
+			target: synthetixState,
+			read: 'feePool',
+			expected: input => input === addressOf(feePool),
+			write: 'setFeePool',
+			writeArg: addressOf(feePool),
 		});
 	}
 
@@ -1371,18 +1422,25 @@ const deploy = async ({
 	let addressesAreImported = false;
 
 	if (addressResolver) {
-		// Now we add everything into the AddressResolver
-		const addressArgs = [
-			Object.entries(deployer.deployedContracts).map(([contract]) => toBytes32(contract)),
-			Object.entries(deployer.deployedContracts).map(
-				([
-					,
-					{
-						options: { address },
-					},
-				]) => address
-			),
-		];
+		const addressArgs = [[], []];
+
+		const allContracts = Object.entries(deployer.deployedContracts);
+		await Promise.all(
+			allContracts.map(([name, contract]) => {
+				return limitPromise(async () => {
+					const isImported = await addressResolver.methods
+						.areAddressesImported([toBytes32(name)], [contract.options.address])
+						.call();
+
+					if (!isImported) {
+						console.log(green(`${name} needs to be imported to the AddressResolver`));
+
+						addressArgs[0].push(toBytes32(name));
+						addressArgs[1].push(contract.options.address);
+					}
+				});
+			})
+		);
 
 		const { pending } = await runStep({
 			gasLimit: 6e6, // higher gas required
@@ -1425,67 +1483,88 @@ const deploy = async ({
 			target.options.jsonInterface.find(({ name }) => name === prop)
 		);
 
-	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' })
-		// And filter out the bridge contracts as they have resolver requirements that cannot be met in this deployment
-		.filter(([contract]) => {
-			if (/^(SynthetixBridgeToOptimism|SynthetixBridgeToBase)$/.test(contract)) {
-				// Note: better yet is to check if those contracts required in resolverAddressesRequired are in the resolver...
-				console.log(
-					redBright(
-						`WARNING: Not invoking ${contract}.rebuildCache(). Run node publish connect-bridge after deployment.`
-					)
-				);
-				return false;
-			}
-			return true;
-		});
+	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
+
+	// collect all resolver addresses required
+	const resolverAddressesRequired = (
+		await Promise.all(
+			contractsWithRebuildableCache.map(([, contract]) => {
+				return limitPromise(() => contract.methods.resolverAddressesRequired().call());
+			})
+		)
+	).reduce((allAddresses, contractAddresses) => {
+		return allAddresses.concat(
+			contractAddresses.filter(contractAddress => !allAddresses.includes(contractAddress))
+		);
+	}, []);
+
+	// check which resolver addresses are imported
+	const resolvedAddresses = await Promise.all(
+		resolverAddressesRequired.map(id => {
+			return limitPromise(() => addressResolver.methods.getAddress(id).call());
+		})
+	);
+	const isResolverAddressImported = {};
+	for (let i = 0; i < resolverAddressesRequired.length; i++) {
+		isResolverAddressImported[resolverAddressesRequired[i]] = resolvedAddresses[i] !== ZERO_ADDRESS;
+	}
+
+	// print out resolver addresses
+	console.log(gray('Imported resolver addresses:'));
+	for (const id of Object.keys(isResolverAddressImported)) {
+		const isImported = isResolverAddressImported[id];
+		const chalkFn = isImported ? gray : red;
+		console.log(chalkFn(`  > ${fromBytes32(id)}: ${isImported}`));
+	}
 
 	// now ensure all caches are rebuilt for those in need
 	const contractsToRebuildCache = [];
-	for (const [, target] of contractsWithRebuildableCache) {
+	for (const [name, target] of contractsWithRebuildableCache) {
 		const isCached = await target.methods.isResolverCached().call();
 		if (!isCached) {
-			contractsToRebuildCache.push(target.options.address);
+			const requiredAddresses = await target.methods.resolverAddressesRequired().call();
+
+			const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
+			if (unknownAddress) {
+				console.log(
+					redBright(
+						`WARINING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
+							unknownAddress
+						)} is unknown. This contract requires: ${requiredAddresses.map(id => fromBytes32(id))}`
+					)
+				);
+			} else {
+				contractsToRebuildCache.push(target.options.address);
+			}
 		}
 	}
 
-	if (useOvm) {
-		// NOTE: If using OVM, split the array of addresses to cache,
-		// since things spend signifficantly more gas in OVM
-		const chunks = splitArrayIntoChunks(contractsToRebuildCache, 4);
-		for (let i = 0; i < chunks.length; i++) {
-			const chunk = chunks[i];
-			await runStep({
-				gasLimit: 7e6, // higher gas required
-				contract: `AddressResolver`,
-				target: addressResolver,
-				publiclyCallable: true, // does not require owner
-				write: 'rebuildCaches',
-				writeArg: [chunk],
-			});
-		}
-	} else if (contractsToRebuildCache.length) {
+	const addressesChunkSize = useOvm ? 7 : 20;
+	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
+		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
 		await runStep({
-			gasLimit: 9e6, // higher gas required
+			gasLimit: useOvm ? OVM_MAX_GAS_LIMIT : 7e6,
 			contract: `AddressResolver`,
 			target: addressResolver,
 			publiclyCallable: true, // does not require owner
 			write: 'rebuildCaches',
-			writeArg: [contractsToRebuildCache],
+			writeArg: [chunk],
 		});
 	}
 
 	console.log(gray('Double check all contracts with rebuildCache() are rebuilt...'));
 	for (const [contract, target] of contractsWithRebuildableCache) {
-		await runStep({
-			gasLimit: 500e3, // higher gas required
-			contract,
-			target,
-			read: 'isResolverCached',
-			expected: input => input,
-			publiclyCallable: true, // does not require owner
-			write: 'rebuildCache',
-		});
+		if (contractsToRebuildCache.includes(target.options.address)) {
+			await runStep({
+				gasLimit: 500e3, // higher gas required
+				contract,
+				target,
+				read: 'isResolverCached',
+				expected: input => input,
+				publiclyCallable: true, // does not require owner
+				write: 'rebuildCache',
+			});
+		}
 	}
 
 	// Now perform a sync of legacy contracts that have not been replaced in Shaula (v2.35.x)
@@ -1716,11 +1795,20 @@ const deploy = async ({
 
 		// override individual currencyKey / synths exchange rates
 		const synthExchangeRateOverride = {
-			sETH: w3utils.toWei('0.003'),
-			iETH: w3utils.toWei('0.007'),
+			sETH: w3utils.toWei('0.0025'),
+			iETH: w3utils.toWei('0.004'),
 			sBTC: w3utils.toWei('0.003'),
 			iBTC: w3utils.toWei('0.003'),
 			iBNB: w3utils.toWei('0.021'),
+			sXTZ: w3utils.toWei('0.0085'),
+			iXTZ: w3utils.toWei('0.0085'),
+			sEOS: w3utils.toWei('0.0085'),
+			iEOS: w3utils.toWei('0.009'),
+			sETC: w3utils.toWei('0.0085'),
+			sLINK: w3utils.toWei('0.0085'),
+			sDASH: w3utils.toWei('0.009'),
+			iDASH: w3utils.toWei('0.009'),
+			sXRP: w3utils.toWei('0.009'),
 		};
 
 		const synthsRatesToUpdate = synths
@@ -2142,6 +2230,7 @@ const deploy = async ({
 				target: debtCache,
 				write: 'takeDebtSnapshot',
 				writeArg: [],
+				publiclyCallable: true, // does not require owner
 			});
 		} else if (!validityChanged) {
 			console.log(
@@ -2245,6 +2334,11 @@ module.exports = {
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+			)
+			.option(
+				'-e, --concurrency <value>',
+				'Number of parallel calls that can be made to a provider',
+				10
 			)
 			.option(
 				'-f, --fee-auth <value>',

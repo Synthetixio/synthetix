@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -8,12 +8,12 @@ const { fastForward, toUnit } = require('../utils')();
 
 const { ensureOnlyExpectedMutativeFunctions, onlyGivenAddressCanInvoke } = require('./helpers');
 
-const MockBinaryOptionMarket = artifacts.require('MockBinaryOptionMarket');
-const BinaryOption = artifacts.require('BinaryOption');
+let MockBinaryOptionMarket;
+let BinaryOption;
 
 const ZERO_ADDRESS = '0x' + '0'.repeat(40);
 
-contract('BinaryOption @gas-skip @ovm-skip', accounts => {
+contract('BinaryOption @gas-skip', accounts => {
 	const [account, bidder, recipient] = accounts;
 
 	const biddingTime = 100;
@@ -22,6 +22,9 @@ contract('BinaryOption @gas-skip @ovm-skip', accounts => {
 	let market, option;
 
 	before(async () => {
+		MockBinaryOptionMarket = artifacts.require('MockBinaryOptionMarket');
+		BinaryOption = artifacts.require('BinaryOption');
+
 		market = await MockBinaryOptionMarket.new();
 		await Promise.all([
 			market.setSenderPrice(toUnit(0.5)),

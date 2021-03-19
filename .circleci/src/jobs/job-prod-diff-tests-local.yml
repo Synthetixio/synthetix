@@ -1,0 +1,18 @@
+# Simulates a deployment in a local chain, and runs production tests against it
+{{> job-header.yml}}
+steps:
+  - checkout
+  - attach_workspace:
+      at: .
+  # Compile
+  - run: node publish build --test-helpers
+  # Start local chain
+  - run:
+      command: npx hardhat node
+      background: true
+  - cmd-wait-for-port:
+        port: 8545
+  # Deploy
+  - run: node publish deploy --network local --fresh-deploy --yes
+  # Run production tests
+  - run: npm run test:prod -- --patch-fresh-deployment

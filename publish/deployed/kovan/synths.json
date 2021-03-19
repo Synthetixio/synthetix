@@ -74,10 +74,6 @@
 		"asset": "EOS"
 	},
 	{
-		"name": "sBCH",
-		"asset": "BCH"
-	},
-	{
 		"name": "sETC",
 		"asset": "ETC"
 	},
@@ -92,6 +88,10 @@
 	{
 		"name": "sADA",
 		"asset": "ADA"
+	},
+	{
+		"name": "sTSLA",
+		"asset": "TSLA"
 	},
 	{
 		"name": "sCEX",
@@ -141,62 +141,72 @@
 		"index": [
 			{
 				"asset": "COMP",
-				"units": 4.01,
-				"weight": 20.5
+				"units": 1.55,
+				"weight": 5
 			},
 			{
 				"asset": "MKR",
-				"units": 0.8,
-				"weight": 15.0
+				"units": 0.54,
+				"weight": 10
 			},
 			{
-				"asset": "ZRX",
-				"units": 708.02,
-				"weight": 9.7
-			},
-			{
-				"asset": "REP",
-				"units": 9.45,
-				"weight": 7.2
-			},
-			{
-				"asset": "LEND",
-				"units": 666.51,
-				"weight": 6.7
+				"asset": "AAVE",
+				"units": 4.72,
+				"weight": 15
 			},
 			{
 				"asset": "UMA",
-				"units": 28.87,
-				"weight": 4.2
+				"units": 26.06,
+				"weight": 5
 			},
 			{
 				"asset": "SNX",
-				"units": 81.63,
-				"weight": 10.2
+				"units": 87.2,
+				"weight": 15
 			},
 			{
 				"asset": "REN",
-				"units": 814.38,
-				"weight": 5.0
+				"units": 680.59,
+				"weight": 5
 			},
 			{
-				"asset": "LRC",
-				"units": 913.1,
-				"weight": 3.8
+				"asset": "UNI",
+				"units": 100.71,
+				"weight": 15
 			},
 			{
 				"asset": "KNC",
-				"units": 213.76,
-				"weight": 11.8
+				"units": 334.06,
+				"weight": 5
 			},
 			{
-				"asset": "BNT",
-				"units": 62.87,
-				"weight": 3.4
+				"asset": "CRV",
+				"units": 254.94,
+				"weight": 5
+			},
+			{
+				"asset": "SUSHI",
+				"units": 43.111,
+				"weight": 5
+			},
+			{
+				"asset": "YFI",
+				"units": 0.01604,
+				"weight": 5
 			},
 			{
 				"asset": "BAL",
-				"units": 7.06,
+				"units": 14.84,
+				"weight": 5
+			},
+			{
+				"asset": "BNT",
+				"units": 90.661,
+				"weight": 2.5
+			},
+			{
+				"asset": "1INCH",
+				"units": 71.837,
 				"weight": 2.5
 			}
 		],
@@ -290,16 +300,6 @@
 			"entryPoint": 2.22,
 			"upperLimit": 3.33,
 			"lowerLimit": 1.11
-		}
-	},
-	{
-		"name": "iBCH",
-		"asset": "BCH",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 229.54,
-			"upperLimit": 344.31,
-			"lowerLimit": 114.77
 		}
 	},
 	{

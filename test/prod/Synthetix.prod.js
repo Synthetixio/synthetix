@@ -1,12 +1,11 @@
-const { grey, red } = require('chalk');
-const { web3, contract, artifacts, config } = require('@nomiclabs/buidler');
 const fs = require('fs');
 const path = require('path');
+const { grey, red } = require('chalk');
+const { web3, contract, artifacts, config } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit, fromUnit } = require('../utils')();
 const { knownAccounts, wrap, toBytes32 } = require('../..');
 const {
-	detectNetworkName,
 	connectContracts,
 	connectContract,
 	ensureAccountHasEther,
@@ -37,11 +36,9 @@ contract('Synthetix (prod tests)', accounts => {
 	let SynthsUSD, SynthsETH;
 
 	before('prepare', async () => {
-		network = await detectNetworkName();
+		network = config.targetNetwork;
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
-
 		owner = getUsers({ network, user: 'owner' }).address;
 
 		await avoidStaleRates({ network, deploymentPath });
@@ -93,6 +90,11 @@ contract('Synthetix (prod tests)', accounts => {
 			deploymentPath,
 		});
 	});
+
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
+	});
+
 	describe('core infrastructure', () => {
 		describe('misc state', () => {
 			it('has the expected resolver set', async () => {
@@ -351,12 +353,7 @@ contract('Synthetix (prod tests)', accounts => {
 
 						assert.equal(numEntries.toString(), '0');
 					});
-					// NOTE: There seems to be an error with ganache-core forks.
-					// Skip until after hardhat migration or ganache-core fix.
-					// vSynth.settled() shows as false even though it should be true.
-					// Probably has to do with how the variable is stored and fork caching.
-					// Disabling caching in ganache-core yields it unusable.
-					it.skip('and the vSynth shows settled', async () => {
+					it('and the vSynth shows settled', async () => {
 						assert.equal(await vSynth.settled(), true);
 					});
 				});

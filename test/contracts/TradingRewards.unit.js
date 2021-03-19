@@ -1,4 +1,4 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { mockToken } = require('./setup');
@@ -13,8 +13,8 @@ const {
 	itCorrectlyRecoversAssignedTokens,
 } = require('./TradingRewards.behaviors');
 
-const TradingRewards = artifacts.require('TradingRewards');
-const FakeTradingRewards = artifacts.require('FakeTradingRewards');
+let TradingRewards;
+let FakeTradingRewards;
 
 /*
  * This tests the TradingRewards contract in a standalone manner,
@@ -42,6 +42,11 @@ contract('TradingRewards (unit tests)', accounts => {
 
 	const zeroAddress = '0x0000000000000000000000000000000000000000';
 	const mockAddress = '0x0000000000000000000000000000000000000001';
+
+	before(async () => {
+		TradingRewards = artifacts.require('TradingRewards');
+		FakeTradingRewards = artifacts.require('FakeTradingRewards');
+	});
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({

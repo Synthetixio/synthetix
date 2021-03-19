@@ -24,11 +24,31 @@ interface ISystemStatus {
 
     function requireExchangeActive() external view;
 
+    function requireExchangeBetweenSynthsAllowed(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
+
     function requireSynthActive(bytes32 currencyKey) external view;
 
     function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
 
+    function systemSuspension() external view returns (bool suspended, uint248 reason);
+
+    function issuanceSuspension() external view returns (bool suspended, uint248 reason);
+
+    function exchangeSuspension() external view returns (bool suspended, uint248 reason);
+
+    function synthExchangeSuspension(bytes32 currencyKey) external view returns (bool suspended, uint248 reason);
+
     function synthSuspension(bytes32 currencyKey) external view returns (bool suspended, uint248 reason);
+
+    function getSynthExchangeSuspensions(bytes32[] calldata synths)
+        external
+        view
+        returns (bool[] memory exchangeSuspensions, uint256[] memory reasons);
+
+    function getSynthSuspensions(bytes32[] calldata synths)
+        external
+        view
+        returns (bool[] memory suspensions, uint256[] memory reasons);
 
     // Restricted functions
     function suspendSynth(bytes32 currencyKey, uint256 reason) external;

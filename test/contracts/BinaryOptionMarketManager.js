@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -20,7 +20,7 @@ const {
 	getEventByName,
 } = require('./helpers');
 
-const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+let BinaryOptionMarket;
 
 const computePrices = (longs, shorts, debt, fee) => {
 	const totalOptions = multiplyDecimalRound(debt, toUnit(1).sub(fee));
@@ -30,7 +30,7 @@ const computePrices = (longs, shorts, debt, fee) => {
 	};
 };
 
-contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
+contract('BinaryOptionMarketManager @gas-skip', accounts => {
 	const [initialCreator, managerOwner, bidder, dummy] = accounts;
 
 	const sUSDQty = toUnit(10000);
@@ -69,6 +69,10 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 		});
 		return BinaryOptionMarket.at(getEventByName({ tx, name: 'MarketCreated' }).args.market);
 	};
+
+	before(async () => {
+		BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+	});
 
 	before(async () => {
 		({

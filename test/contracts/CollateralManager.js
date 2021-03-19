@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -15,11 +15,11 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const CollateralManager = artifacts.require(`CollateralManager`);
-const CollateralState = artifacts.require(`CollateralState`);
-const CollateralManagerState = artifacts.require('CollateralManagerState');
+let CollateralManager;
+let CollateralState;
+let CollateralManagerState;
 
-contract('CollateralManager @ovm-skip', async accounts => {
+contract('CollateralManager', async accounts => {
 	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
@@ -316,6 +316,10 @@ contract('CollateralManager @ovm-skip', async accounts => {
 	};
 
 	before(async () => {
+		CollateralManager = artifacts.require(`CollateralManager`);
+		CollateralState = artifacts.require(`CollateralState`);
+		CollateralManagerState = artifacts.require('CollateralManagerState');
+
 		await setupManager();
 	});
 

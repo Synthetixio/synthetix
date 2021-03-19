@@ -131,11 +131,23 @@ program
 	.description('Get deployed target files for an environment')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.option('-c, --contract [value]', 'The name of the contract')
-	.option('-k, --key [value]', 'A specific key wanted')
+	.option('-k, --key [value]', 'A specific key wanted (ignored when using csv)')
+	.option('-v, --csv', 'Whether or not to CSV output the results')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-	.action(async ({ network, useOvm, contract, key }) => {
+	.action(async ({ network, useOvm, contract, key, csv }) => {
 		const target = getTarget({ network, useOvm, contract });
-		console.log(JSON.stringify(key in target ? target[key] : target, null, 2));
+		if (csv) {
+			let headerComplete;
+			for (const entry of Object.values(target)) {
+				if (!headerComplete) {
+					console.log(Object.keys(entry).join(','));
+					headerComplete = true;
+				}
+				console.log(Object.values(entry).join(','));
+			}
+		} else {
+			console.log(JSON.stringify(key in target ? target[key] : target, null, 2));
+		}
 	});
 
 program

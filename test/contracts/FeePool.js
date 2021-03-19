@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -202,7 +202,7 @@ contract('FeePool', async accounts => {
 				fnc: feePool.appendAccountIssuanceRecord,
 				accounts,
 				args: [account1, toUnit('0.001'), '0'],
-				reason: 'FeePool: Only Issuer Authorised',
+				reason: 'Issuer and SynthetixState only',
 			});
 		});
 	});

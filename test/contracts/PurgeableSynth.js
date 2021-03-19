@@ -1,9 +1,11 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
+const TokenState = artifacts.require('TokenState');
+const Proxy = artifacts.require('Proxy');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 
 const { currentTime, fastForward, toUnit } = require('../utils')();
@@ -27,9 +29,6 @@ contract('PurgeableSynth', accounts => {
 	const synthKeys = [sUSD, sAUD, iETH];
 	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
-	let TokenState;
-	let Proxy;
-
 	let exchangeRates,
 		exchanger,
 		systemSettings,
@@ -43,10 +42,6 @@ contract('PurgeableSynth', accounts => {
 		issuer;
 
 	before(async () => {
-		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
-		TokenState = artifacts.require('TokenState');
-		Proxy = artifacts.require('Proxy');
-
 		PurgeableSynth.link(await artifacts.require('SafeDecimalMath').new());
 
 		({

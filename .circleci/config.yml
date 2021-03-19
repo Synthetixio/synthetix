@@ -1,38 +1,21 @@
 version: 2.1
 commands:
-  cmd-fork-start:
-    description: Starts a local ganache fork on the specified network
+  cmd-wait-for-port:
     parameters:
-      network:
-        type: string
-      reset:
-        type: boolean
-        default: false
-    steps:
-      - run:
-          command: node publish fork --network << parameters.network >> <<# parameters.reset >> --reset <</ parameters.reset >>
-          background: true
-      - cmd-wait-for-rpc
-  cmd-local-start:
-    description: Starts a local ganache chain
-    steps:
-      - run:
-          command: npx buidler node
-          background: true
-      - cmd-wait-for-rpc
-  cmd-wait-for-rpc:
+      port:
+        type: integer
     steps:
       - run: sleep 5
       - run:
           shell: /bin/sh
           command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:8545
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:<<parameters.port>>
             :
 jobs:
   job-compile:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -40,65 +23,13 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npx buidler compile --optimizer --fail-oversize
-      - run: npx buidler compile --use-ovm --optimizer --fail-oversize
-  job-diff-prod-tests-local-ovm:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build --test-helpers
-      - cmd-local-start
-      - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
-      - run: npm run test:prod -- --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
-  job-diff-prod-tests-local:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build --test-helpers
-      - cmd-local-start
-      - run: node publish deploy --network local --fresh-deploy --yes
-      - run: npm run test:prod -- --patch-fresh-deployment
-  job-diff-prod-tests:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    parameters:
-      network:
-        type: string
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build
-      - cmd-fork-start:
-          network: << parameters.network >>
-          reset: true
-      - run: node publish prepare-deploy --network << parameters.network >>
-      - run: node publish deploy --add-new-synths --use-fork --yes --network << parameters.network >>
-      - run: npm run test:prod:gas -- --patch-fresh-deployment && npx codechecks codechecks.prod.yml
-      - store_artifacts:
-          path: test-gas-used-prod.log
+      - run: npx hardhat compile --optimizer --fail-oversize
+      - run: rm -rf build # force a clean build
+      - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
   job-lint:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -110,7 +41,7 @@ jobs:
   job-pack-browser:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -124,7 +55,7 @@ jobs:
   job-prepare:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -132,39 +63,137 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - "v2-dependencies-"
+            - v4-dependencies-{{ checksum "package-lock.json" }}
       - run: npm install
       - save_cache:
-          key: "v2-dependencies-"
+          key: v4-dependencies-{{ checksum "package-lock.json" }}
           paths:
             - node_modules
       - persist_to_workspace:
           root: .
           paths:
             - node_modules
-  job-prod-tests:
+  job-prod-diff-tests-local-ovm:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
-    parameters:
-      network:
-        type: string
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - cmd-fork-start:
-          network: << parameters.network >>
-      - run: npm run test:prod:gas && npx codechecks codechecks.prod.yml
+      - run: node publish build --test-helpers
+      - run: npx hardhat compile --force
+      - run:
+          command: npx hardhat node
+          background: true
+      - cmd-wait-for-port:
+            port: 8545
+      - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
+      - run: npm run test:prod -- --no-compile --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
+  job-prod-diff-tests-local:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build --test-helpers
+      - run:
+          command: npx hardhat node
+          background: true
+      - cmd-wait-for-port:
+            port: 8545
+      - run: node publish deploy --network local --fresh-deploy --yes
+      - run: npm run test:prod -- --patch-fresh-deployment
+  job-prod-diff-tests:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run: node publish build
+      - run:
+          command: npx hardhat node --target-network mainnet
+          background: true
+      - cmd-wait-for-port:
+            port: 8545
+      - run: node publish prepare-deploy --network mainnet
+      - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
+      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment
+      - run: npx codechecks codechecks.prod.yml
+      - store_artifacts:
+          path: test-gas-used-prod.log
+  job-prod-tests-ovm:
+    working_directory: ~/repo
+    machine:
+      image: ubuntu-2004:202010-01
+      docker_layer_caching: true
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Prepare docker containers
+          command: |
+            git clone git@github.com:ethereum-optimism/optimism-integration.git
+            cd optimism-integration
+            docker-compose pull
+      - run:
+          name: Start chains
+          background: true
+          command: |
+            cd optimism-integration
+            ./up.sh
+      - cmd-wait-for-port:
+            port: 8545
+      - cmd-wait-for-port:
+            port: 9545
+      - run:
+          name: Deploy OVM Synthetix instances
+          command: |
+            node publish deploy-ovm-pair
+      - run:
+          name: Run OVM production tests
+          command: |
+            npm run test:prod:ovm
+  job-prod-tests:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npx hardhat node --target-network mainnet
+          background: true
+      - cmd-wait-for-port:
+            port: 8545
+      - run: npm run test:prod:gas -- --target-network mainnet
+      - run: npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
   job-static-analysis:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -181,7 +210,7 @@ jobs:
   job-test-deploy-script:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -207,11 +236,11 @@ jobs:
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
-    resource_class: xlarge
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -221,7 +250,7 @@ jobs:
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -230,41 +259,14 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:gas && npx codechecks codechecks.unit.yml
+      - run: npm run test:gas
+      - run: npx codechecks codechecks.unit.yml
       - store_artifacts:
           path: test-gas-used.log
-  job-unit-tests-legacy:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    resource_class: large
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npm run compile:legacy
-      - run: npx buidler test:legacy
-  job-unit-tests-ovm:
-    working_directory: ~/repo
-    docker:
-      - image: circleci/node:12.18
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          command: |
-            npx buidler compile --use-ovm --optimizer
   job-unit-tests:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -273,7 +275,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npx buidler compile --showsize --optimizer
+      - run: npx hardhat compile --showsize --optimizer
       - run:
           name: Test and output gas used
           command: |
@@ -286,7 +288,7 @@ jobs:
   job-validate-deployments:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -298,7 +300,7 @@ jobs:
   job-validate-etherscan:
     working_directory: ~/repo
     docker:
-      - image: circleci/node:12.18
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -311,7 +313,7 @@ jobs:
           at: .
       - run: npm run test:etherscan --  --network << parameters.network >>
 workflows:
-  workflow-any:
+  workflow-all:
     jobs:
       - job-prepare
       - job-lint:
@@ -323,119 +325,40 @@ workflows:
       - job-static-analysis:
           requires:
             - job-prepare
-  workflow-develop:
-    jobs:
-      - job-prepare:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
       - job-unit-tests:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
+          requires:
+            - job-prepare
+      - job-unit-tests-coverage:
           requires:
             - job-prepare
       - job-unit-tests-gas-report:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
-          requires:
-            - job-prepare
-      - job-unit-tests-legacy:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
           requires:
             - job-prepare
       - job-test-deploy-script:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
-          requires:
-            - job-prepare
-      - job-unit-tests-ovm:
-          filters:
-            branches:
-              only: /.*(develop|staging|master).*/
-          requires:
-            - job-prepare
-  workflow-master:
-    jobs:
-      - job-prepare:
-          filters:
-            branches:
-              only: /.*(master).*/
-  workflow-scheduled:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - job-prepare
-      - job-validate-deployments:
           requires:
             - job-prepare
       - job-prod-tests:
-          name: job-prod-tests-mainnet
-          network: mainnet
           requires:
             - job-prepare
-      - job-diff-prod-tests-local:
-          name: job-diff-prod-tests-local
+      - job-prod-tests-ovm:
+          name: job-prod-tests-ovm
           requires:
             - job-prepare
-      - job-diff-prod-tests-local-ovm:
-          name: job-diff-prod-tests-local-ovm
+      - job-prod-diff-tests-local:
+          name: job-prod-diff-tests-local
           requires:
             - job-prepare
-  workflow-staging:
-    jobs:
-      - job-prepare:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
+      - job-prod-diff-tests-local-ovm:
+          name: job-prod-diff-tests-local-ovm
+          requires:
+            - job-prepare
+      - job-prod-diff-tests:
+          name: job-prod-diff-tests-mainnet
+          requires:
+            - job-prepare
       - job-pack-browser:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
           requires:
             - job-prepare
       - job-validate-deployments:
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-prod-tests:
-          name: job-prod-tests-mainnet
-          network: mainnet
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-diff-prod-tests-local:
-          name: job-diff-prod-tests-local
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-diff-prod-tests-local-ovm:
-          name: job-diff-prod-tests-local-ovm
-          filters:
-            branches:
-              only: /.*(staging|master).*/
-          requires:
-            - job-prepare
-      - job-diff-prod-tests:
-          name: job-diff-prod-tests-mainnet
-          network: mainnet
-          filters:
-            branches:
-              only: /.*(staging|master).*/
           requires:
             - job-prepare

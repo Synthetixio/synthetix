@@ -19,6 +19,22 @@
 		"asset": "REN",
 		"feed": "0x0f59666EDE214281e956cb3b2D0d69415AfF4A01"
 	},
+	"AAVE": {
+		"asset": "AAVE",
+		"feed": "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9"
+	},
+	"UNI": {
+		"asset": "UNI",
+		"feed": "0x553303d460EE0afB37EdFf9bE42922D8FF63220e"
+	},
+	"YFI": {
+		"asset": "YFI",
+		"feed": "0xA027702dbb89fbd58938e4324ac03B58d812b0E1"
+	},
+	"DOT": {
+		"asset": "DOT",
+		"feed": "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734"
+	},
 	"BTC": {"asset": "BTC", "feed": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c"},
 	"BNB": {"asset": "BNB", "feed": "0x14e613AC84a31f709eadbdF89C6CC390fDc9540A"},
 	"TRX": {"asset": "TRX", "feed": "0xacD0D1A29759CC01E8D925371B72cb2b5610EA25"},
@@ -57,5 +73,9 @@
 		"feed": "0x5c4939a2ab3A2a9f93A518d81d4f8D0Bc6a68980"
 	},
 	"XAG": {"asset": "XAG", "feed": "0x379589227b15F1a12195D3f2d90bBc9F31f95235"},
-	"OIL": {"asset": "OIL", "feed": "0xf3584F4dd3b467e73C2339EfD008665a70A4185c"}
+	"OIL": {"asset": "OIL", "feed": "0xf3584F4dd3b467e73C2339EfD008665a70A4185c"},
+	"TSLA": {
+		"asset": "TSLA",
+		"feed": "0x1ceDaaB50936881B3e449e47e40A2cDAF5576A4a"
+	}
 }

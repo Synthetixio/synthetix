@@ -1,13 +1,17 @@
 'use strict';
 
-const { artifacts, web3 } = require('@nomiclabs/buidler');
+const { artifacts, web3 } = require('hardhat');
 const { smockit } = require('@eth-optimism/smock');
 const { toBytes32 } = require('../..');
 const { prepareSmocks } = require('./helpers');
 
-const ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+let ExchangerWithVirtualSynth;
 
 module.exports = function({ accounts }) {
+	before(async () => {
+		ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+	});
+
 	beforeEach(async () => {
 		({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 			contracts: [

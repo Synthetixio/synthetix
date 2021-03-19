@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -10,7 +10,7 @@ const { fastForward, getEthBalance, toUnit, multiplyDecimal, currentTime } = req
 
 const { mockToken, setupAllContracts } = require('./setup');
 
-const { GAS_PRICE } = require('../../buidler.config');
+const { GAS_PRICE } = require('../../hardhat.config');
 
 const {
 	setStatus,
@@ -20,7 +20,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
-contract('EtherCollateral @ovm-skip', async accounts => {
+contract('EtherCollateral', async accounts => {
 	const MINUTE = 60;
 	const DAY = 86400;
 	const WEEK = 604800;

@@ -128,5 +128,43 @@
 			"SystemSettings"
 		],
 		"sips": [60, 102, 105]
+	},
+	{
+		"name": "Gacrux",
+		"version": {
+			"major": 2,
+			"minor": 37
+		},
+		"ovm": true,
+		"sources": ["FeePool", "FeePoolState", "SynthetixState"],
+		"sips": [106]
+	},
+	{
+		"name": "Bellatrix",
+		"version": {
+			"major": 2,
+			"minor": 38
+		},
+		"sources": ["Synthetix", "SystemStatus"],
+		"sips": [109]
+	},
+	{
+		"name": "Elnath",
+		"version": {
+			"major": 2,
+			"minor": 39
+		},
+		"sources": [],
+		"sips": [110]
+	},
+	{
+		"name": "Miaplacidus",
+		"version": {
+			"major": 2,
+			"minor": 40
+		},
+		"ovm": true,
+		"sources": ["Synthetix", "Exchanger", "SystemStatus"],
+		"sips": [109, 117, 118]
 	}
 ]

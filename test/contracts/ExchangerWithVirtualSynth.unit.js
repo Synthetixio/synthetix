@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 
 const { assert } = require('./common');
 
@@ -8,10 +8,14 @@ const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = requi
 
 const { toBytes32 } = require('../..');
 
-const ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+let ExchangerWithVirtualSynth;
 
 contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 	const [, owner] = accounts;
+
+	before(async () => {
+		ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+	});
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
@@ -30,7 +34,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 		});
 	});
 
-	describe('when a contract is instantiated @cov-skip', () => {
+	describe('when a contract is instantiated', () => {
 		// ensure all of the behaviors are bound to "this" for sharing test state
 		const behaviors = require('./ExchangerWithVirtualSynth.behaviors').call(this, { accounts });
 

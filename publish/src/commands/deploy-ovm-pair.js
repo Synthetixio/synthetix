@@ -50,6 +50,7 @@ const deployInstance = async ({ useOvm, privateKey, l1ProviderUrl, l2ProviderUrl
 
 	await commands.deploy({
 		network: 'local',
+		concurrency: 1,
 		freshDeploy: true,
 		yes: true,
 		providerUrl: useOvm ? l2ProviderUrl : l1ProviderUrl,
@@ -58,7 +59,7 @@ const deployInstance = async ({ useOvm, privateKey, l1ProviderUrl, l2ProviderUrl
 		methodCallGasLimit: '3500000',
 		contractDeploymentGasLimit: useOvm ? OVM_MAX_GAS_LIMIT : '9500000',
 		privateKey,
-		ignoreCustomParameters: true,
+		ignoreCustomParameters: false,
 	});
 };
 

@@ -1,12 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const { contract, config, artifacts } = require('@nomiclabs/buidler');
+const { contract, config, artifacts } = require('hardhat');
 const { wrap, knownAccounts } = require('../..');
 const { assert } = require('../contracts/common');
 const { toUnit, multiplyDecimalRound, fastForward } = require('../utils')();
 const Web3 = require('web3');
 const {
-	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
@@ -46,11 +45,9 @@ contract('MultiCollateral (prod tests)', accounts => {
 		SynthsUSD;
 
 	before('prepare', async function() {
-		network = await detectNetworkName();
+		network = config.targetNetwork;
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
 		owner = getUsers({ network, user: 'owner' }).address;
-
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
 
 		if (config.useOvm) {
@@ -127,6 +124,10 @@ contract('MultiCollateral (prod tests)', accounts => {
 		}
 	});
 
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
+	});
+
 	describe('general multicollateral state', () => {
 		it('has the expected resolver set', async () => {
 			assert.equal(await CollateralManager.resolver(), ReadProxyAddressResolver.address);
@@ -140,6 +141,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('2'),
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
+			amountToRepay: toUnit('0.25'),
 			oldAddress: oldEthAddress,
 		});
 
@@ -149,6 +151,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: Web3.utils.toBN('1000000000'), // 10 renBTC (renBTC uses 8 decimals)
 			borrowCurrency: 'sUSD',
 			amountToBorrow: toUnit('0.5'),
+			amountToRepay: toUnit('0.25'),
 			oldAddress: oldRenAddress,
 		});
 
@@ -158,6 +161,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			amountToDeposit: toUnit('1000'),
 			borrowCurrency: 'sETH',
 			amountToBorrow: toUnit('0.01'),
+			amountToRepay: toUnit('0.005'),
 			oldAddress: oldShortAddress,
 		});
 	});
@@ -168,6 +172,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		amountToDeposit,
 		borrowCurrency,
 		amountToBorrow,
+		amountToRepay,
 		oldAddress,
 	}) {
 		let CollateralContract, CollateralStateContract;
@@ -404,8 +409,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 						await fastForward(period.toString());
 					});
 
-					before('repay all debt', async () => {
-						tx = await CollateralContract.repay(user1, loanId, amountToBorrow, {
+					before('repay some debt', async () => {
+						tx = await CollateralContract.repay(user1, loanId, amountToRepay, {
 							from: user1,
 						});
 					});

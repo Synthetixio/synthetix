@@ -1,12 +1,12 @@
 'use strict';
 
-const { contract } = require('@nomiclabs/buidler');
+const { contract } = require('hardhat');
 const { assert } = require('./common');
 const { setupContract, setupAllContracts } = require('./setup');
 const { currentTime, toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 
-contract('BinaryOptionMarketData @gas-skip @ovm-skip', accounts => {
+contract('BinaryOptionMarketData @gas-skip', accounts => {
 	let market, setupTime, dataContract;
 
 	before(async () => {

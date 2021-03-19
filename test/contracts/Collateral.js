@@ -1,12 +1,16 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const Collateral = artifacts.require(`Collateral`);
+let Collateral;
 
 contract('Collateral', async accounts => {
+	before(async () => {
+		Collateral = artifacts.require(`Collateral`);
+	});
+
 	it('should ensure only expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: Collateral.abi,

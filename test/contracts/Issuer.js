@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3, legacy } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -337,7 +337,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						it('and in an unknown currency, reverts', async () => {
 							await assert.revert(
 								synthetix.totalIssuedSynths(toBytes32('XYZ')),
-								!legacy ? 'SafeMath: division by zero' : undefined
+								'SafeMath: division by zero'
 							);
 						});
 					});
@@ -373,7 +373,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						it('and in an unknown currency, reverts', async () => {
 							await assert.revert(
 								synthetix.totalIssuedSynths(toBytes32('XYZ')),
-								!legacy ? 'SafeMath: division by zero' : undefined
+								'SafeMath: division by zero'
 							);
 						});
 					});
@@ -1322,8 +1322,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 					// Burning any amount of sUSD beyond what is owned will cause a revert
 					await assert.revert(
 						synthetix.burnSynths('1', { from: account1 }),
-						// Legacy safe math had no revert reasons
-						!legacy ? 'SafeMath: subtraction overflow' : undefined
+						'SafeMath: subtraction overflow'
 					);
 				});
 
@@ -1541,8 +1540,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						await assert.revert(
 							synthetix.issueSynths(issuedSynths1, { from: account1 }),
-							// Legacy safe math had no revert reasons
-							!legacy ? 'SafeMath: division by zero' : undefined
+							'SafeMath: division by zero'
 						);
 					});
 				});
@@ -1652,8 +1650,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						it('then calling burnSynthsToTarget() reverts', async () => {
 							await assert.revert(
 								synthetix.burnSynthsToTarget({ from: account1 }),
-								// Legacy safe math had no revert reasons
-								!legacy ? 'SafeMath: subtraction overflow' : undefined
+								'SafeMath: subtraction overflow'
 							);
 						});
 					});
