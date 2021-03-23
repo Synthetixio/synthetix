@@ -86,7 +86,7 @@ const owner = async ({
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
 	const code = await web3.eth.getCode(newOwner);
-	const isContract = !useOvm && code !== '0x';
+	const isContract = code !== '0x';
 	if (!isContract && !yes) {
 		try {
 			await confirmAction(
