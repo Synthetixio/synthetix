@@ -275,10 +275,14 @@ contract('ETHWrapper', async accounts => {
 			let amount = toUnit('1.0')
 			let mintFee
 			let expectedFeesUSD
+
+			let prevCapacity
 			
 			beforeEach(async () => {
+				prevCapacity = await ethWrapper.capacity()
 				await ethWrapper.mint(amount, { from: account1, value: amount })
-				
+
+				// Mint fees.
 				const mintFeeRate = await ethWrapper.mintFeeRate()
 				mintFee = multiplyDecimalRound(amount, mintFeeRate)
 				expectedFeesUSD = await calculateLoanFeesUSD(mintFee)
@@ -293,6 +297,9 @@ contract('ETHWrapper', async accounts => {
 				})
 				it('sends sETH to the fee pool', async () => {
 					assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
+				})
+				it('updates capacity', async () => {
+					assert.bnEqual(await ethWrapper.capacity(), prevCapacity.sub(amount))
 				})
 			})
 		})

@@ -53,6 +53,12 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     // The maximum amount of ETH held by contract.
     uint public maxETH = 5000 ether;
 
+    // The "controlled" ETH balance of the contract.
+    // Note: we keep track of this in contract state, rather than using address(this).balance,
+    // as there are ways to move Ether without creating a message call, which would allow
+    // someone to DoS the contract. 
+    uint public _balance = 0 ether;
+
     // The fee for depositing ETH into the contract. Default 50 bps.
     uint public mintFeeRate = (5 * SafeDecimalMath.unit()) / 1000;
 
@@ -92,29 +98,12 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
 
     /* ========== PUBLIC FUNCTIONS ========== */
 
-    function mint(uint _amount) external payable {
-        require(msg.value == _amount, "Not enough ETH sent to mint sETH. Please see the _amount");
-        
-        // Calculate minting fee.
-        uint feeAmountEth = _amount.multiplyDecimalRound(mintFeeRate);
-
-        // Fee Distribution. Purchase sUSD with ETH from Depot
-        require(
-            IERC20(address(synthsUSD())).balanceOf(address(depot())) >= depot().synthsReceivedForEther(feeAmountEth),
-            "The sUSD Depot does not have enough sUSD to buy for fees"
-        );
-        depot().exchangeEtherForSynths.value(feeAmountEth)();
-
-        // Transfer the sUSD to distribute to SNX holders.
-        IERC20(address(synthsUSD())).transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
-
-        // Finally, issue sETH.
-        synthsETH().issue(msg.sender, _amount.sub(feeAmountEth));
-    }
-
-    function burn(uint amount) external {}
 
     // ========== VIEWS ==========
+
+    function capacity() public view returns (uint) {
+        return _balance >= maxETH ? 0 : maxETH.sub(_balance);
+    }
 
     // function maxETH() public view returns (uint256) {
     //     // return flexibleStorage().getUIntValue(CONTRACT_NAME, MAX_ETH);
@@ -127,11 +116,52 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     // function burnFeeRate() public view returns (uint256) {
     //     // return flexibleStorage().getUIntValue(CONTRACT_NAME, BURN_FEE_RATE);
     // }
+    
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function mint(uint _amount) external payable {
+        require(capacity() > 0, "Contract has no spare capacity to mint");
+        require(msg.value == _amount, "Not enough ETH sent to mint sETH. Please see the _amount");
+
+        // Accept depositAmount of max(capacity, _amount).
+        uint depositAmount = _amount >= capacity() ? capacity() : _amount;
+        
+        // Calculate minting fee.
+        uint feeAmountEth = depositAmount.multiplyDecimalRound(mintFeeRate);
+
+        // Fee Distribution. Purchase sUSD with ETH from Depot
+        require(
+            IERC20(address(synthsUSD())).balanceOf(address(depot())) >= depot().synthsReceivedForEther(feeAmountEth),
+            "The sUSD Depot does not have enough sUSD to buy for fees"
+        );
+        depot().exchangeEtherForSynths.value(feeAmountEth)();
+
+        // Transfer the sUSD to distribute to SNX holders.
+        IERC20(address(synthsUSD())).transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
+
+        // Finally, issue sETH.
+        synthsETH().issue(msg.sender, depositAmount.sub(feeAmountEth));
+
+        // Update balance.
+        _balance = _balance.add(depositAmount);
+        
+        // Refund remainder.
+        if(depositAmount < _amount) {
+            msg.sender.transfer(_amount.sub(depositAmount));
+        }
+    }
+
+    function burn(uint amount) external {}
 
     // ========== RESTRICTED ==========
 
     function setMaxETH(uint _maxETH) external onlyOwner {
         // flexibleStorage().setUIntValue(CONTRACT_NAME, MAX_ETH, _maxETH);
+
+        // If we set the _newMaxETH to be lower than the current maxETH,
+        // then the perms are (mint=0, burn=1).
+        // Else if it is higher,
+        // then the perms are (mint=1, burn=1)
         maxETH = _maxETH;
         emit MaxETHUpdated(_maxETH);
     }
@@ -146,6 +176,14 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
         // flexibleStorage().setUIntValue(CONTRACT_NAME, BURN_FEE_RATE, _rate);
         burnFeeRate = _rate;
         emit BurnFeeRateUpdated(_rate);
+    }
+
+    /**
+     * @notice Fallback function
+     */
+    function() external payable {
+        // mint(msg.value);
+        revert("Fallback disabled, use mint()");
     }
 
     /* ========== EVENTS ========== */
