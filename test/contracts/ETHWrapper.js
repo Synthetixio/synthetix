@@ -66,6 +66,7 @@ contract('ETHWrapper', async accounts => {
 		addressResolver,
 		sBTCSynth,
 		renBTC,
+		depot,
 		systemStatus,
 		synths,
 		manager,
@@ -78,22 +79,26 @@ contract('ETHWrapper', async accounts => {
 		ethWrapper,
 		timestamp;
 
-	before(async () => {
-		// Mock SNX, sUSD and sETH
-		// [{ token: synthetix }, { token: sUSDSynth }, { token: sETHSynth }] = await Promise.all([
-		// 	mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
-		// 	mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
-		// 	mockToken({ accounts, synth: 'sETH', name: 'Synthetic ETH', symbol: 'sETH' }),
-		// ]);
 
+	const calculateLoanFeesUSD = async feesInETH => {
+		// Ask the Depot how many sUSD I will get for this ETH
+		const expectedFeesUSD = await depot.synthsReceivedForEther(feesInETH);
+		console.log('expectedFeesUSD', expectedFeesUSD.toString());
+		return expectedFeesUSD;
+	};
+
+	before(async () => {
 		synths = ['sUSD', 'sETH'];
 		({
 			SystemStatus: systemStatus,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
 			DebtCache: debtCache,
+			FeePool: feePool,
+			Depot: depot,
 			ExchangeRates: exchangeRates,
 			SynthsETH: sETHSynth,
+			SynthsUSD: sUSDSynth,
 			ETHWrapper: ethWrapper,
 		} = await setupAllContracts({
 			accounts,
@@ -105,27 +110,45 @@ contract('ETHWrapper', async accounts => {
 				'Issuer',
 				'Depot',
 				'ExchangeRates',
+				'FeePool',
 				'DebtCache',
 				'ETHWrapper',
 			],
 		}));
 
+		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 		timestamp = await currentTime();
 
-		await exchangeRates.updateRates([sETH], ['200'].map(toUnit), timestamp, { from: oracle });
-
-		// set a 0.3% default exchange fee rate
-		const exchangeFeeRate = toUnit('0.003');
-		// await setExchangeFeeRateForSynths({
-		// 	owner,
-		// 	systemSettings,
-		// 	synthKeys,
-		// 	exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
-		// });
-		// await debtCache.takeDebtSnapshot();
+		// Depot requires ETH rates
+		await exchangeRates.updateRates(
+			[sETH, ETH],
+			['1500', '1500'].map(toUnit),
+			timestamp,
+			{
+				from: oracle,
+			}
+		);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
+
+	it.skip('should ensure only expected functions are mutative', async () => {
+		// ensureOnlyExpectedMutativeFunctions({
+		// 	abi: ceth.abi,
+		// 	ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
+		// 	expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'claim', 'draw'],
+		// });
+	});
+
+	it.skip('should access its dependencies via the address resolver', async () => {
+		// assert.equal(await addressResolver.getAddress(toBytes32('SynthsUSD')), sUSDSynth.address);
+		// assert.equal(await addressResolver.getAddress(toBytes32('FeePool')), feePool.address);
+		// assert.equal(
+		// 	await addressResolver.getAddress(toBytes32('ExchangeRates')),
+		// 	exchangeRates.address
+		// );
+	});
+
 
 	describe('On deployment of Contract', async () => {
 		let instance;
@@ -202,7 +225,14 @@ contract('ETHWrapper', async accounts => {
 		})
 	})
 
-	describe('mint', async () => {
+	describe.only('mint', async () => {
+		before(async () => {
+			// TODO: Is it okay to rely on the defaults set above?
+			// 	ethWrapper.setMaxETH('1000', { from: owner })
+			// 	ethWrapper.setMintFeeRate('1000', { from: owner })
+			// 	ethWrapper.setBurnFeeRate('1000', { from: owner })
+		})
+
 		describe('when eth sent is less than _amount', () => {
 			it('then it reverts', async () => {
 				await assert.revert(
@@ -211,17 +241,30 @@ contract('ETHWrapper', async accounts => {
 				);
 			});
 		});
+
+		describe("when eth is sent that matches _amount", () => {
+			let amount = toUnit('1.0')
+			let mintFee
+			let expectedFeesUSD
+			
+			beforeEach(async () => {
+				await ethWrapper.mint(amount, { from: account1, value: amount })
+				const mintFeeRate = await ethWrapper.mintFeeRate()
+				mintFee = multiplyDecimalRound(amount, mintFeeRate)
+				expectedFeesUSD = await calculateLoanFeesUSD(mintFee)
 	});
 
-	// it('should set constructor params on deployment', async () => {
-	// sETHWrapper.link(await artifacts.require('SafeDecimalMath').new());
-	// const instance = await sETHWrapper.new(
-	// 	account1, // proxy
-	// 	account2, // owner
-	// 	addressResolver.address, // resolver
-	// 	{
-	// 		from: deployerAccount,
-	// 	}
-	// );
-	// });
+			describe.skip('amount is larger than or equal to capacity', () => {})
+
+			describe('amount is lower than capacity', () => {
+				it('exchanges ETH for sETH', async () => {
+					assert.bnEqual(await sETHSynth.balanceOf(account1), amount.sub(mintFee));
+					assert.bnEqual(await web3.eth.getBalance(ethWrapper.address), amount.sub(mintFee));
+				})
+				it('sends sETH to the fee pool', async () => {
+					assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
+				})
+			})
+		})
+	});
 });

@@ -20,7 +20,13 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    /* ========== CONSTANTS ============== */
+
+    // Where fees are pooled in sUSD.
+    address internal constant FEE_ADDRESS = 0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF;
+    
     /* ========== ENCODED NAMES ========== */
+
     bytes32 internal constant sUSD = "sUSD";
     bytes32 internal constant sETH = "sETH";
     bytes32 internal constant SNX = "SNX";
@@ -77,6 +83,7 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
 
     function mint(uint _amount) external payable {
         require(msg.value == _amount, "Not enough ETH sent to mint sETH. Please see the _amount");
+        // multiplyDecimalRound(issueFeeRate);
         synthsETH().issue(msg.sender, _amount);
     }
 
