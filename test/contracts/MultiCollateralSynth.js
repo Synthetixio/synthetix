@@ -228,6 +228,8 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 			);
 		});
 
+		// TODO: we should test for the EtherCollateral* contracts here,
+		// that are able to call issue.
 		describe('when non-multiCollateral tries to issue', () => {
 			it('then it fails', async () => {
 				await onlyGivenAddressCanInvoke({
