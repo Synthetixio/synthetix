@@ -25,7 +25,8 @@ const {
 	getSafeNonce,
 	getSafeTransactions,
 	checkExistingPendingTx,
-	createAndSaveApprovalTransaction,
+	getNewTransactionHash,
+	saveTransactionToApi,
 } = require('../safe-utils');
 
 const DEFAULTS = {
@@ -104,11 +105,11 @@ const owner = async ({
 	const account = web3.eth.accounts.wallet[0].address;
 	console.log(gray(`Using account with public key ${account}`));
 
-	if (!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
-		throw new Error(
-			`New owner is ${newOwner} and signer is ${account}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
-		);
-	}
+	// if (!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
+	// 	throw new Error(
+	// 		`New owner is ${newOwner} and signer is ${account}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
+	// 	);
+	// }
 
 	console.log(gray(`Gas Price: ${gasPrice} gwei`));
 
@@ -117,7 +118,7 @@ const owner = async ({
 	let currentSafeNonce;
 	if (isContract) {
 		// new owner should be gnosis safe proxy address
-		protocolDaoContract = getSafeInstance(web3, newOwner);
+		protocolDaoContract = getSafeInstance(web3, '0xC847048ecB376AB0378c7769e028563445BcD5EB');
 
 		// get protocolDAO nonce
 		currentSafeNonce = await getSafeNonce(protocolDaoContract);
@@ -182,18 +183,33 @@ const owner = async ({
 		await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
 
 		try {
-			let newNonce;
 			if (isContract) {
-				newNonce = await createAndSaveApprovalTransaction({
+				const { txHash, newNonce } = await getNewTransactionHash({
 					safeContract: protocolDaoContract,
 					data,
 					to: target,
 					sender: account,
-					gasLimit,
-					gasPrice,
 					network,
 					lastNonce,
 				});
+
+				// sign txHash to get signature
+				const { signature } = web3.eth.accounts.wallet[0].sign(txHash);
+
+				// save transaction and signature to Gnosis Safe API
+				await saveTransactionToApi({
+					safeContract: protocolDaoContract,
+					network,
+					data,
+					nonce: newNonce,
+					to: target,
+					sender: account,
+					transactionHash: txHash,
+					signature: signature,
+				});
+
+				// track lastNonce submitted
+				lastNonce = newNonce;
 			} else {
 				const tx = await web3.eth.sendTransaction({
 					from: account,
@@ -205,9 +221,6 @@ const owner = async ({
 
 				logTx(tx);
 			}
-
-			// track lastNonce submitted
-			lastNonce = newNonce;
 
 			entry.complete = true;
 			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
@@ -257,7 +270,7 @@ const owner = async ({
 
 			try {
 				if (isContract) {
-					const newNonce = await createAndSaveApprovalTransaction({
+					const newNonce = await getNewTransactionHash({
 						safeContract: protocolDaoContract,
 						data: encodedData,
 						to: deployedContract.options.address,
