@@ -14,6 +14,7 @@ const {
 	toPreciseUnit,
 	fromUnit,
 	multiplyDecimal,
+	multiplyDecimalRound
 } = require('../utils')();
 
 const {
@@ -32,14 +33,13 @@ const {
 	toBytes32,
 	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD },
 } = require('../..');
+const { expect } = require('chai');
 
 contract('ETHWrapper', async accounts => {
 	const YEAR = 31536000;
 	const INTERACTION_DELAY = 300;
 
-	const sUSD = toBytes32('sUSD');
-	const sETH = toBytes32('sETH');
-	const sBTC = toBytes32('sBTC');
+	const [sUSD, sETH, ETH, SNX] = ['sUSD', 'sETH', 'ETH', 'SNX'].map(toBytes32);
 
 	const oneRenBTC = web3.utils.toBN('100000000');
 	const twoRenBTC = web3.utils.toBN('200000000');
@@ -56,7 +56,7 @@ contract('ETHWrapper', async accounts => {
 	let id;
 	let proxy, tokenState;
 
-	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
+	const [deployerAccount, owner, oracle, depotDepositor, account1, account2] = accounts;
 
 	let cerc20,
 		state,
@@ -64,8 +64,6 @@ contract('ETHWrapper', async accounts => {
 		feePool,
 		exchangeRates,
 		addressResolver,
-		sBTCSynth,
-		renBTC,
 		depot,
 		systemStatus,
 		synths,
@@ -79,16 +77,42 @@ contract('ETHWrapper', async accounts => {
 		ethWrapper,
 		timestamp;
 
+	const issueSynthsUSD = async (issueAmount, receiver) => {
+		// Set up the depositor with an amount of synths to deposit.
+		await sUSDSynth.transfer(receiver, issueAmount, {
+			from: owner,
+		});
+	};
+	
+	const depositUSDInDepot = async (synthsToDeposit, depositor) => {
+		// Ensure Depot has latest rates
+		// await updateRatesWithDefaults();
+
+		// Get sUSD from Owner
+		await issueSynthsUSD(synthsToDeposit, depositor);
+
+		// Approve Transaction
+		await sUSDSynth.approve(depot.address, synthsToDeposit, { from: depositor });
+
+		// Deposit sUSD in Depot
+		await depot.depositSynths(synthsToDeposit, {
+			from: depositor,
+		});
+	};
 
 	const calculateLoanFeesUSD = async feesInETH => {
 		// Ask the Depot how many sUSD I will get for this ETH
 		const expectedFeesUSD = await depot.synthsReceivedForEther(feesInETH);
-		console.log('expectedFeesUSD', expectedFeesUSD.toString());
 		return expectedFeesUSD;
 	};
 
 	before(async () => {
-		synths = ['sUSD', 'sETH'];
+		[{ token: synthetix }, { token: sUSDSynth }, { token: sETHSynth }] = await Promise.all([
+			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
+			mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
+			mockToken({ accounts, synth: 'sETH', name: 'Synthetic ETH', symbol: 'sETH' }),
+		]);
+
 		({
 			SystemStatus: systemStatus,
 			AddressResolver: addressResolver,
@@ -97,12 +121,14 @@ contract('ETHWrapper', async accounts => {
 			FeePool: feePool,
 			Depot: depot,
 			ExchangeRates: exchangeRates,
-			SynthsETH: sETHSynth,
-			SynthsUSD: sUSDSynth,
 			ETHWrapper: ethWrapper,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			mocks: {
+				SynthsUSD: sUSDSynth,
+				SynthsETH: sETHSynth,
+				Synthetix: synthetix,
+			},
 			contracts: [
 				'Synthetix',
 				'AddressResolver',
@@ -220,7 +246,7 @@ contract('ETHWrapper', async accounts => {
 						address: owner,
 						reason: 'Only the contract owner may perform this action',
 					});
-	});
+				});
 			})
 		})
 	})
@@ -231,6 +257,9 @@ contract('ETHWrapper', async accounts => {
 			// 	ethWrapper.setMaxETH('1000', { from: owner })
 			// 	ethWrapper.setMintFeeRate('1000', { from: owner })
 			// 	ethWrapper.setBurnFeeRate('1000', { from: owner })
+
+			// Deposit sUSD in Depot to allow fees to be bought with ETH
+			await depositUSDInDepot(toUnit('10000'), depotDepositor);
 		})
 
 		describe('when eth sent is less than _amount', () => {
@@ -249,10 +278,11 @@ contract('ETHWrapper', async accounts => {
 			
 			beforeEach(async () => {
 				await ethWrapper.mint(amount, { from: account1, value: amount })
+				
 				const mintFeeRate = await ethWrapper.mintFeeRate()
 				mintFee = multiplyDecimalRound(amount, mintFeeRate)
 				expectedFeesUSD = await calculateLoanFeesUSD(mintFee)
-	});
+			});
 
 			describe.skip('amount is larger than or equal to capacity', () => {})
 

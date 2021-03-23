@@ -4,7 +4,10 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IDepot.sol";
 import "./interfaces/IETHWrapper.sol";
+import "./interfaces/ISynth.sol";
+import "./interfaces/IERC20.sol";
 
 // Internal references
 import "./interfaces/IIssuer.sol";
@@ -75,6 +78,14 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
+    function depot() internal view returns (IDepot) {
+        return IDepot(requireAndGetAddress(CONTRACT_DEPOT));
+    }
+
+    function synthsUSD() internal view returns (ISynth) {
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
+    }
+
     function synthsETH() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSETH));
     }
@@ -83,8 +94,22 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
 
     function mint(uint _amount) external payable {
         require(msg.value == _amount, "Not enough ETH sent to mint sETH. Please see the _amount");
-        // multiplyDecimalRound(issueFeeRate);
-        synthsETH().issue(msg.sender, _amount);
+        
+        // Calculate minting fee.
+        uint feeAmountEth = _amount.multiplyDecimalRound(mintFeeRate);
+
+        // Fee Distribution. Purchase sUSD with ETH from Depot
+        require(
+            IERC20(address(synthsUSD())).balanceOf(address(depot())) >= depot().synthsReceivedForEther(feeAmountEth),
+            "The sUSD Depot does not have enough sUSD to buy for fees"
+        );
+        depot().exchangeEtherForSynths.value(feeAmountEth)();
+
+        // Transfer the sUSD to distribute to SNX holders.
+        IERC20(address(synthsUSD())).transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
+
+        // Finally, issue sETH.
+        synthsETH().issue(msg.sender, _amount.sub(feeAmountEth));
     }
 
     function burn(uint amount) external {}
