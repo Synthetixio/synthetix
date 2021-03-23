@@ -39,12 +39,17 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     bytes32 private constant CONTRACT_DEPOT = "Depot";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
-    /* Contract state */
-    uint public maxETH;
-    uint public burnFeeRate;
-    uint public mintFeeRate;
+    // ========== STATE VARIABLES ==========
+    
+    // The maximum amount of ETH held by contract.
+    uint public maxETH = 5000 ether;
 
-    //
+    // The fee for depositing ETH into the contract. Default 50 bps.
+    uint public mintFeeRate = (5 * SafeDecimalMath.unit()) / 1000;
+
+    // The fee for burning sETH and releasing ETH from the contract. Default 50 bps.
+    uint public burnFeeRate = (5 * SafeDecimalMath.unit()) / 1000;
+
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     /* ========== VIEWS ========== */

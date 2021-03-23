@@ -132,7 +132,75 @@ contract('ETHWrapper', async accounts => {
 		beforeEach(async () => {
 			instance = ethWrapper;
 		});
+		
+		describe('should have a default', async () => {
+			const MAX_ETH = toUnit(5000);
+			const FIFTY_BIPS = toUnit('0.005');
+
+			it('maxETH of 5,000 ETH', async () => {
+				assert.bnEqual(await ethWrapper.maxETH(), MAX_ETH);
+			});
+			it('mintFeeRate of 50 bps', async () => {
+				assert.bnEqual(await ethWrapper.mintFeeRate(), FIFTY_BIPS);
+			});
+			it('burnFeeRate of 50 bps', async () => {
+				assert.bnEqual(await ethWrapper.burnFeeRate(), FIFTY_BIPS);
+			});
+		});
 	});
+
+	describe('should allow owner to set', async () => {
+		it('setMintFeeRate', async () => {
+			const newMintFeeRate = toUnit('0.005');
+			await ethWrapper.setMintFeeRate(newMintFeeRate, { from: owner });
+			assert.bnEqual(await ethWrapper.mintFeeRate(), newMintFeeRate);
+		})
+		it('setBurnFeeRate', async () => {
+			const newBurnFeeRate = toUnit('0.005');
+			await ethWrapper.setBurnFeeRate(newBurnFeeRate, { from: owner });
+			assert.bnEqual(await ethWrapper.burnFeeRate(), newBurnFeeRate);
+		})
+		it('setMaxETH', async () => {
+			const newMaxETH = toUnit('100');
+			await ethWrapper.setMaxETH(newMaxETH, { from: owner });
+			assert.bnEqual(await ethWrapper.maxETH(), newMaxETH);
+		})
+
+		describe('then revert when', async () => {
+			describe('non owner attempts to set', async () => {
+				it('setMintFeeRate()', async () => {
+					const newMintFeeRate = toUnit('0.005');
+					await onlyGivenAddressCanInvoke({
+						fnc: ethWrapper.setMintFeeRate,
+						args: [newMintFeeRate],
+						accounts,
+						address: owner,
+						reason: 'Only the contract owner may perform this action',
+					});
+				});
+				it('setBurnFeeRate()', async () => {
+					const newBurnFeeRate = toUnit('0.005');
+					await onlyGivenAddressCanInvoke({
+						fnc: ethWrapper.setBurnFeeRate,
+						args: [newBurnFeeRate],
+						accounts,
+						address: owner,
+						reason: 'Only the contract owner may perform this action',
+					});
+				});
+				it('setMaxETH()', async () => {
+					const newMaxETH = toUnit('100');
+					await onlyGivenAddressCanInvoke({
+						fnc: ethWrapper.setMaxETH,
+						args: [newMaxETH],
+						accounts,
+						address: owner,
+						reason: 'Only the contract owner may perform this action',
+					});
+	});
+			})
+		})
+	})
 
 	describe('mint', async () => {
 		describe('when eth sent is less than _amount', () => {
