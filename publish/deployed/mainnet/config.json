@@ -661,5 +661,14 @@
 	},
 	"SynthsTSLA": {
 		"deploy": false
+	},
+	"TokenStatesKRW": {
+		"deploy": false
+	},
+	"ProxysKRW": {
+		"deploy": false
+	},
+	"SynthsKRW": {
+		"deploy": false
 	}
 }
