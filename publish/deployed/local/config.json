@@ -71,6 +71,9 @@
 	"EtherCollateralsUSD": {
 		"deploy": true
 	},
+	"ETHWrapper": {
+		"deploy": true
+	},
 	"FeePool": {
 		"deploy": true
 	},

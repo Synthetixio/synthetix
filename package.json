@@ -103,7 +103,7 @@
 		"ethers": "5.0.31",
 		"execa": "^4.1.0",
 		"fs-extra": "9.0.1",
-		"hardhat": "^2.0.11",
+		"hardhat": "file:../../../../open-source/optimism/prediction-markets-spam/hardhat/packages/hardhat-core/hardhat-v2.1.1.tgz",
 		"hardhat-gas-reporter": "1.0.1",
 		"husky": "^4.3.0",
 		"is-ci": "^2.0.0",

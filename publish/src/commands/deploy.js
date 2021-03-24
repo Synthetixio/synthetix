@@ -1190,6 +1190,7 @@ const deploy = async ({
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
+		// TODO
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
 			deps: ['AddressResolver'],
