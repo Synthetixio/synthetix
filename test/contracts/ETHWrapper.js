@@ -41,6 +41,7 @@ contract('ETHWrapper', async accounts => {
 	const YEAR = 31536000;
 	const INTERACTION_DELAY = 300;
 
+	const synths = ['sUSD', 'sETH', 'ETH', 'SNX']
 	const [sUSD, sETH, ETH, SNX] = ['sUSD', 'sETH', 'ETH', 'SNX'].map(toBytes32);
 
 	const oneRenBTC = web3.utils.toBN('100000000');
@@ -68,7 +69,6 @@ contract('ETHWrapper', async accounts => {
 		addressResolver,
 		depot,
 		systemStatus,
-		synths,
 		manager,
 		issuer,
 		debtCache,
@@ -115,11 +115,11 @@ contract('ETHWrapper', async accounts => {
 	}
 
 	before(async () => {
-		[{ token: synthetix }, { token: sUSDSynth }, { token: sETHSynth }] = await Promise.all([
-			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
-			mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
-			mockToken({ accounts, synth: 'sETH', name: 'Synthetic ETH', symbol: 'sETH' }),
-		]);
+		// [{ token: synthetix }, { token: sUSDSynth }, { token: sETHSynth }] = await Promise.all([
+		// 	mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
+		// 	mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
+		// 	mockToken({ accounts, synth: 'sETH', name: 'Synthetic ETH', symbol: 'sETH' }),
+		// ]);
 
 		({
 			SystemStatus: systemStatus,
@@ -130,13 +130,11 @@ contract('ETHWrapper', async accounts => {
 			Depot: depot,
 			ExchangeRates: exchangeRates,
 			ETHWrapper: ethWrapper,
+			SynthsUSD: sUSDSynth,
+			SynthsETH: sETHSynth
 		} = await setupAllContracts({
 			accounts,
-			mocks: {
-				SynthsUSD: sUSDSynth,
-				SynthsETH: sETHSynth,
-				Synthetix: synthetix,
-			},
+			synths,
 			contracts: [
 				'Synthetix',
 				'AddressResolver',
@@ -145,8 +143,11 @@ contract('ETHWrapper', async accounts => {
 				'Depot',
 				'ExchangeRates',
 				'FeePool',
+				'FeePoolEternalStorage',
 				'DebtCache',
+				'Exchanger',
 				'ETHWrapper',
+				'CollateralManager',
 			],
 		}));
 
@@ -289,35 +290,25 @@ contract('ETHWrapper', async accounts => {
 	// })
 
 	describe.only('mint', async () => {
-		before(async () => {
-			// Deposit sUSD in Depot to allow fees to be bought with ETH
-			await depositUSDInDepot(toUnit('5000000'), depotDepositor);
-
-			// Mint fees.
-			// const mintFeeRate = await ethWrapper.mintFeeRate()
-			// mintFee = multiplyDecimalRound(amount, mintFeeRate)
-			// expectedFeesUSD = await calculateLoanFeesUSD(mintFee)
-		})
-
 		describe("when eth is sent", () => {
 			
 			addSnapshotBeforeRestoreAfterEach();
 
 			describe('amount is less than than capacity', () => {
-			let amount = toUnit('1.0')
+				let amount = toUnit('1.0')
 				let initialCapacity
-			let mintFee
-			let expectedFeesUSD
+				let mintFee
+				let expectedFeesUSD
 
-			beforeEach(async () => {
+				beforeEach(async () => {
 					initialCapacity = await ethWrapper.capacity();
 					({ 
 						mintFee, 
 						expectedFeesUSD 
 					} = await calculateMintFees(amount));
-
+					
 					await ethWrapper.mint({ from: account1, value: amount });
-			});
+				});
 
 				it('exchanges ETH for sETH', async () => {
 					assert.bnEqual(await sETHSynth.balanceOf(account1), amount.sub(mintFee));
