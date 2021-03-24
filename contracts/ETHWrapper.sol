@@ -105,6 +105,18 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
         return _balance >= maxETH ? 0 : maxETH.sub(_balance);
     }
 
+    function getBalance() public view returns (uint) {
+        return _balance;
+    }
+
+    function calculateMintFee(uint amount) public view returns (uint) {
+        return amount.multiplyDecimalRound(mintFeeRate);
+    }
+
+    function calculateBurnFee(uint amount) public view returns (uint) {
+        return amount.multiplyDecimalRound(burnFeeRate);
+    }
+
     // function maxETH() public view returns (uint256) {
     //     // return flexibleStorage().getUIntValue(CONTRACT_NAME, MAX_ETH);
     // }
@@ -119,20 +131,20 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function mint(uint _amount) external payable {
+    function mint() external payable {
         require(capacity() > 0, "Contract has no spare capacity to mint");
-        require(msg.value == _amount, "Not enough ETH sent to mint sETH. Please see the _amount");
 
-        // Accept depositAmount of max(capacity, _amount).
-        uint depositAmount = _amount >= capacity() ? capacity() : _amount;
+        // Accept deposit of min(capacity, msg.value).
+        uint depositAmountEth = msg.value >= capacity() ? capacity() : msg.value;
         
         // Calculate minting fee.
-        uint feeAmountEth = depositAmount.multiplyDecimalRound(mintFeeRate);
+        uint feeAmountEth = calculateMintFee(depositAmountEth);
 
         // Fee Distribution. Purchase sUSD with ETH from Depot
+        // 1) Mint sUSD internally.
         require(
             IERC20(address(synthsUSD())).balanceOf(address(depot())) >= depot().synthsReceivedForEther(feeAmountEth),
-            "The sUSD Depot does not have enough sUSD to buy for fees"
+            "The sUSD Depot does not have enough 0-sUSD to buy for fees"
         );
         depot().exchangeEtherForSynths.value(feeAmountEth)();
 
@@ -140,14 +152,15 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
         IERC20(address(synthsUSD())).transfer(FEE_ADDRESS, IERC20(address(synthsUSD())).balanceOf(address(this)));
 
         // Finally, issue sETH.
-        synthsETH().issue(msg.sender, depositAmount.sub(feeAmountEth));
+        synthsETH().issue(msg.sender, depositAmountEth.sub(feeAmountEth));
 
-        // Update balance.
-        _balance = _balance.add(depositAmount);
+        // Update contract balance, and hence capacity.
+        _balance = _balance.add(depositAmountEth.sub(feeAmountEth));
         
         // Refund remainder.
-        if(depositAmount < _amount) {
-            msg.sender.transfer(_amount.sub(depositAmount));
+        // If the deposit was less than the sum, there is some to refund.
+        if(depositAmountEth < msg.value) {
+            msg.sender.transfer(msg.value.sub(depositAmountEth));
         }
     }
 

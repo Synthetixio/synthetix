@@ -14,7 +14,8 @@ const {
 	toPreciseUnit,
 	fromUnit,
 	multiplyDecimal,
-	multiplyDecimalRound
+	multiplyDecimalRound,
+	getEthBalance
 } = require('../utils')();
 
 const {
@@ -28,6 +29,7 @@ const {
 } = require('./helpers');
 
 const { mockToken, setupAllContracts } = require('./setup');
+const { GAS_PRICE } = require('../../hardhat.config');
 
 const {
 	toBytes32,
@@ -106,6 +108,12 @@ contract('ETHWrapper', async accounts => {
 		return expectedFeesUSD;
 	};
 
+	const calculateMintFees = async amount => {
+		const mintFee = await ethWrapper.calculateMintFee(amount)
+		const expectedFeesUSD = await calculateLoanFeesUSD(mintFee)
+		return { mintFee, expectedFeesUSD }
+	}
+
 	before(async () => {
 		[{ token: synthetix }, { token: sUSDSynth }, { token: sETHSynth }] = await Promise.all([
 			mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
@@ -183,11 +191,14 @@ contract('ETHWrapper', async accounts => {
 		});
 		
 		describe('should have a default', async () => {
-			const MAX_ETH = toUnit(5000);
+			const MAX_ETH = toUnit('5000');
 			const FIFTY_BIPS = toUnit('0.005');
 
 			it('maxETH of 5,000 ETH', async () => {
 				assert.bnEqual(await ethWrapper.maxETH(), MAX_ETH);
+			});
+			it('capacity of 5,000 ETH', async () => {
+				assert.bnEqual(await ethWrapper.capacity(), MAX_ETH);
 			});
 			it('mintFeeRate of 50 bps', async () => {
 				assert.bnEqual(await ethWrapper.mintFeeRate(), FIFTY_BIPS);
@@ -251,55 +262,118 @@ contract('ETHWrapper', async accounts => {
 		})
 	})
 
+	// describe.only('capacity', async () => {
+	// 	before(async () => {
+
+	// 	})
+
+	// 	describe('after setting maxETH', async () => {
+	// 		it('returns 0', async () => {
+	// 			// Mint fees.
+	// 			// const mintFeeRate = await ethWrapper.mintFeeRate()
+	// 			// const mintFee = multiplyDecimalRound(amount, mintFeeRate)
+	// 			// const expectedFeesUSD = await calculateLoanFeesUSD(mintFee)
+
+	// 			await ethWrapper.setMaxETH(toUnit('1'), { from: owner })
+
+	// 			const amount = toUnit('0.5')
+	// 			await ethWrapper.mint({ from: owner, value: amount })
+	// 			assert.bnEqual(await ethWrapper.getBalance(), amount.sub(mintFee))
+	// 			assert.bnEqual(await ethWrapper.capacity(), amount.sub(mintFee))
+				
+	// 			await ethWrapper.setMaxETH(toUnit('1'), { from: owner })
+				
+	// 			assert.bnEqual(await ethWrapper.maxETH(), newMaxETH)
+	// 		})
+	// 	})
+	// })
+
 	describe.only('mint', async () => {
 		before(async () => {
-			// TODO: Is it okay to rely on the defaults set above?
-			// 	ethWrapper.setMaxETH('1000', { from: owner })
-			// 	ethWrapper.setMintFeeRate('1000', { from: owner })
-			// 	ethWrapper.setBurnFeeRate('1000', { from: owner })
-
 			// Deposit sUSD in Depot to allow fees to be bought with ETH
-			await depositUSDInDepot(toUnit('10000'), depotDepositor);
+			await depositUSDInDepot(toUnit('5000000'), depotDepositor);
+
+			// Mint fees.
+			// const mintFeeRate = await ethWrapper.mintFeeRate()
+			// mintFee = multiplyDecimalRound(amount, mintFeeRate)
+			// expectedFeesUSD = await calculateLoanFeesUSD(mintFee)
 		})
 
-		describe('when eth sent is less than _amount', () => {
-			it('then it reverts', async () => {
-				await assert.revert(
-					ethWrapper.mint('100'),
-					'Not enough ETH sent to mint sETH. Please see the _amount'
-				);
-			});
-		});
+		describe("when eth is sent", () => {
+			
+			addSnapshotBeforeRestoreAfterEach();
 
-		describe("when eth is sent that matches _amount", () => {
+			describe('amount is less than than capacity', () => {
 			let amount = toUnit('1.0')
+				let initialCapacity
 			let mintFee
 			let expectedFeesUSD
 
-			let prevCapacity
-			
 			beforeEach(async () => {
-				prevCapacity = await ethWrapper.capacity()
-				await ethWrapper.mint(amount, { from: account1, value: amount })
+					initialCapacity = await ethWrapper.capacity();
+					({ 
+						mintFee, 
+						expectedFeesUSD 
+					} = await calculateMintFees(amount));
 
-				// Mint fees.
-				const mintFeeRate = await ethWrapper.mintFeeRate()
-				mintFee = multiplyDecimalRound(amount, mintFeeRate)
-				expectedFeesUSD = await calculateLoanFeesUSD(mintFee)
+					await ethWrapper.mint({ from: account1, value: amount });
 			});
 
-			describe.skip('amount is larger than or equal to capacity', () => {})
-
-			describe('amount is lower than capacity', () => {
 				it('exchanges ETH for sETH', async () => {
 					assert.bnEqual(await sETHSynth.balanceOf(account1), amount.sub(mintFee));
-					assert.bnEqual(await web3.eth.getBalance(ethWrapper.address), amount.sub(mintFee));
+					assert.bnEqual(await ethWrapper.getBalance(), amount.sub(mintFee));
 				})
 				it('sends sETH to the fee pool', async () => {
 					assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
 				})
 				it('updates capacity', async () => {
-					assert.bnEqual(await ethWrapper.capacity(), prevCapacity.sub(amount))
+					assert.bnEqual(await ethWrapper.capacity(), initialCapacity.sub(amount.sub(mintFee)))
+				})
+			})
+
+			describe('amount is larger than or equal to capacity', () => {
+				let amount = toUnit('5001')
+				let initialCapacity
+				let mintFee
+				let expectedFeesUSD
+
+				// Tracking of ETH refund.
+				let mintTx
+				let minterInitialBalance
+
+				before(async () => {
+					initialCapacity = await ethWrapper.capacity();
+
+					// Calculate the mint fees on the capacity amount,
+					// as this will be the ETH accepted by the contract.
+					({ 
+						mintFee, 
+						expectedFeesUSD 
+					} = await calculateMintFees(initialCapacity));
+					
+					minterInitialBalance = await getEthBalance(account1)
+					mintTx = await ethWrapper.mint({ from: account1, value: amount });
+				})
+
+				it('exchanges `capacity` of ETH for sETH', async () => {
+					assert.bnEqual(await sETHSynth.balanceOf(account1), initialCapacity.sub(mintFee));
+					assert.bnEqual(await ethWrapper.getBalance(), initialCapacity.sub(mintFee));
+				})
+				it('refunds the remainder to the user', async () => {
+					const gasPaid = web3.utils.toBN(mintTx.receipt.gasUsed * GAS_PRICE);
+					const minterEndingBalance = await getEthBalance(account1);
+					const depositAmount = initialCapacity
+
+					assert.bnEqual(
+						web3.utils
+							.toBN(minterEndingBalance)
+							.add(gasPaid)
+							.add(depositAmount),
+						web3.utils.toBN(minterInitialBalance)
+					);
+				})
+				it('has a capacity of 0 after', async () => {
+					assert.bnEqual(await ethWrapper.capacity(), mintFee)
 				})
 			})
 		})
