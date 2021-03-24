@@ -48,7 +48,7 @@ const persistTokens = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const chainId = networkToChainId[network];
+	const chainId = Number(networkToChainId[network]);
 
 	const tokens = getTokens({ network, path, fs });
 
