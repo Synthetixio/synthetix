@@ -3267,5 +3267,30 @@
 				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
 			}
 		}
+	},
+	"v2.41.0": {
+		"tag": "v2.41.0",
+		"fulltag": "v2.41.0",
+		"release": "Miaplacidus",
+		"network": "mainnet",
+		"date": "2021-03-25T07:06:27+11:00",
+		"commit": "d0e83584eeb6fe18957a8203e7afae667ab8117d",
+		"contracts": {
+			"TokenStatesKRW": {
+				"address": "0x93B6e9FbBd2c32a0DC3C2B943B7C3CBC2fE23730",
+				"status": "current",
+				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
+			},
+			"ProxysKRW": {
+				"address": "0x269895a3dF4D73b077Fc823dD6dA1B95f72Aaf9B",
+				"status": "current",
+				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
+			},
+			"SynthsKRW": {
+				"address": "0xCeC4e038371d32212C6Dcdf36Fdbcb6F8a34C6d8",
+				"status": "current",
+				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
+			}
+		}
 	}
 }

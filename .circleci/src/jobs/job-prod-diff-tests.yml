@@ -1,5 +1,6 @@
 # Simulates a deployment in a fork, and runs production tests against it
 {{> job-header.yml}}
+resource_class: large
 steps:
   - checkout
   - attach_workspace:
@@ -10,12 +11,14 @@ steps:
   - run:
       command: npx hardhat node --target-network mainnet
       background: true
-  - cmd-wait-for-rpc
+  - cmd-wait-for-port:
+        port: 8545
   # Prepare deploy
   - run: node publish prepare-deploy --network mainnet
   # Deploy
   - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
   # Run production tests
-  - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && npx codechecks codechecks.prod.yml
+  - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment
+  - run: npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log

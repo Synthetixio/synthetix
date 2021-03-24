@@ -19,13 +19,13 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const CollateralManager = artifacts.require(`CollateralManager`);
-const CollateralManagerState = artifacts.require('CollateralManagerState');
-const CollateralState = artifacts.require(`CollateralState`);
-const ProxyERC20 = artifacts.require(`ProxyERC20`);
-const TokenState = artifacts.require(`TokenState`);
+let CollateralManager;
+let CollateralManagerState;
+let CollateralState;
+let ProxyERC20;
+let TokenState;
 
-contract('CollateralErc20 @ovm-skip', async accounts => {
+contract('CollateralErc20', async accounts => {
 	const YEAR = 31536000;
 	const INTERACTION_DELAY = 300;
 
@@ -244,6 +244,12 @@ contract('CollateralErc20 @ovm-skip', async accounts => {
 	};
 
 	before(async () => {
+		CollateralManager = artifacts.require(`CollateralManager`);
+		CollateralManagerState = artifacts.require('CollateralManagerState');
+		CollateralState = artifacts.require(`CollateralState`);
+		ProxyERC20 = artifacts.require(`ProxyERC20`);
+		TokenState = artifacts.require(`TokenState`);
+
 		await setupMultiCollateral();
 	});
 

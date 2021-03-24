@@ -63,6 +63,7 @@
 	"AUD": {"asset": "AUD", "feed": "0x77F9710E7d0A19669A13c055F62cd80d313dF022"},
 	"GBP": {"asset": "GBP", "feed": "0x5c0Ab2d9b5a7ed9f470386e82BB36A3613cDd4b5"},
 	"CHF": {"asset": "CHF", "feed": "0x449d117117838fFA61263B61dA6301AA2a88B13A"},
+	"KRW": {"asset": "KRW", "feed": "0x01435677FB11763550905594A16B645847C1d0F3"},
 	"XAU": {"asset": "XAU", "feed": "0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6"},
 	"FTSE100": {
 		"asset": "FTSE100",

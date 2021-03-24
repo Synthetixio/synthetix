@@ -7,7 +7,9 @@ steps:
   - run:
       command: npx hardhat node --target-network mainnet
       background: true
-  - cmd-wait-for-rpc
-  - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
+  - cmd-wait-for-port:
+        port: 8545
+  - run: npm run test:prod:gas -- --target-network mainnet
+  - run: npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log

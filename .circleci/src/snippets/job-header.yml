@@ -1,6 +1,6 @@
 working_directory: ~/repo
 docker:
-  - image: circleci/node:12.18
+  - image: synthetixio/docker-node:14.16-focal
     auth:
       username: $DOCKERHUB_USERNAME
       password: $DOCKERHUB_TOKEN

@@ -269,6 +269,12 @@
 		"sign": "Fr",
 		"description": "Swiss Franc"
 	},
+	"KRW": {
+		"asset": "KRW",
+		"category": "forex",
+		"sign": "₩",
+		"description": "South Korean Won"
+	},
 	"XAU": {
 		"asset": "XAU",
 		"category": "commodity",
@@ -307,5 +313,17 @@
 		"sign": "",
 		"exchange": "NASDAQ",
 		"description": "Tesla"
+	},
+	"SUSHI": {
+		"asset": "SUSHI",
+		"category": "crypto",
+		"sign": "",
+		"description": "SushiSwap"
+	},
+	"1INCH": {
+		"asset": "1INCH",
+		"category": "crypto",
+		"sign": "",
+		"description": "1inch"
 	}
 }

@@ -22,13 +22,58 @@ const releases = require('./publish/releases.json');
 
 const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
-const networkToChainId = {
-	mainnet: 1,
-	ropsten: 3,
-	rinkeby: 4,
-	goerli: 5,
-	kovan: 42,
-};
+const chainIdMapping = Object.entries({
+	1: {
+		network: 'mainnet',
+	},
+	3: {
+		network: 'ropsten',
+	},
+	4: {
+		network: 'rinkeby',
+	},
+	5: {
+		network: 'goerli',
+	},
+	42: {
+		network: 'kovan',
+	},
+
+	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
+	31337: {
+		network: 'mainnet',
+		fork: true,
+	},
+
+	// OVM networks: see https://github.com/ethereum-optimism/regenesis/
+	10: {
+		network: 'mainnet',
+		useOvm: true,
+	},
+	69: {
+		network: 'kovan',
+		useOvm: true,
+	},
+	'-1': {
+		// no chain ID for this currently
+		network: 'goerli',
+		useOvm: true,
+	},
+	// now append any defaults
+}).reduce((memo, [id, body]) => {
+	memo[id] = Object.assign({ useOvm: false, fork: false }, body);
+	return memo;
+}, {});
+
+const getNetworkFromId = ({ id }) => chainIdMapping[id];
+
+const networkToChainId = Object.entries(chainIdMapping).reduce(
+	(memo, [id, { network, useOvm, fork }]) => {
+		memo[network + (useOvm ? '-ovm' : '') + (fork ? '-fork' : '')] = id;
+		return memo;
+	},
+	{}
+);
 
 const constants = {
 	BUILD_FOLDER: 'build',
@@ -122,7 +167,7 @@ const defaults = {
 			{ long: 'sBTC', short: 'iBTC' },
 			{ long: 'sETH', short: 'iETH' },
 		],
-		MAX_DEBT: w3utils.toWei('30000000'), // 30 million sUSD
+		MAX_DEBT: w3utils.toWei('50000000'), // 50 million sUSD
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
@@ -151,6 +196,7 @@ const defaults = {
  * Converts a string into a hex representation of bytes32, with right padding
  */
 const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
+const fromBytes32 = key => w3utils.hexToAscii(key);
 
 const getFolderNameForNetwork = ({ network, useOvm = false }) => {
 	if (network.includes('ovm')) {
@@ -587,10 +633,12 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 	}, {});
 
 module.exports = {
+	chainIdMapping,
 	constants,
 	decode,
 	defaults,
 	getAST,
+	getNetworkFromId,
 	getPathToNetwork,
 	getSource,
 	getStakingRewards,
@@ -605,6 +653,7 @@ module.exports = {
 	networks,
 	networkToChainId,
 	toBytes32,
+	fromBytes32,
 	wrap,
 	ovmIgnored,
 	nonUpgradeable,

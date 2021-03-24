@@ -22,12 +22,12 @@ const {
 	getEventByName,
 } = require('./helpers');
 
-const MockBinaryOptionMarketManager = artifacts.require('MockBinaryOptionMarketManager');
-const TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
-const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
-const BinaryOption = artifacts.require('BinaryOption');
-const SafeDecimalMath = artifacts.require('SafeDecimalMath');
-const Synth = artifacts.require('Synth');
+let MockBinaryOptionMarketManager;
+let TestableBinaryOptionMarket;
+let BinaryOptionMarket;
+let BinaryOption;
+let SafeDecimalMath;
+let Synth;
 
 // All inputs should be BNs.
 const computePrices = (longs, shorts, debt, fee) => {
@@ -38,7 +38,7 @@ const computePrices = (longs, shorts, debt, fee) => {
 	};
 };
 
-contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
+contract('BinaryOptionMarket @gas-skip', accounts => {
 	const [initialBidder, newBidder, pauper] = accounts;
 
 	const ZERO_ADDRESS = '0x' + '0'.repeat(40);
@@ -201,6 +201,13 @@ contract('BinaryOptionMarket @gas-skip @ovm-skip', accounts => {
 	};
 
 	before(async () => {
+		MockBinaryOptionMarketManager = artifacts.require('MockBinaryOptionMarketManager');
+		TestableBinaryOptionMarket = artifacts.require('TestableBinaryOptionMarket');
+		BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+		BinaryOption = artifacts.require('BinaryOption');
+		SafeDecimalMath = artifacts.require('SafeDecimalMath');
+		Synth = artifacts.require('Synth');
+
 		const math = await SafeDecimalMath.new();
 		TestableBinaryOptionMarket.link(math);
 		MockBinaryOptionMarketManager.link(math);
