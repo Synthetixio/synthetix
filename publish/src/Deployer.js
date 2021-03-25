@@ -215,7 +215,12 @@ class Deployer {
 				// determine which actions can be performed directly or need to be added to ownerActions
 				Object.keys(deployedContract.methods).forEach(key => {
 					deployedContract.methods[key] = () => ({
-						call: () => (key === 'owner' ? Promise.resolve(account) : undefined),
+						call: () =>
+							key === 'owner'
+								? Promise.resolve(account)
+								: key === 'resolverAddressesRequired'
+								? Promise.resolve([])
+								: undefined,
 					});
 				});
 				deployedContract.options.address = '0x' + this._dryRunCounter.toString().padStart(40, '0');
