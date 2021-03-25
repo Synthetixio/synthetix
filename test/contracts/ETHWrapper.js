@@ -50,6 +50,7 @@ contract('ETHWrapper', async accounts => {
 	const fiveRenBTC = web3.utils.toBN('500000000');
 
 	const ONE = toBN(1)
+	const zeroAddress = '0x0000000000000000000000000000000000000000';
 
 	const onesUSD = toUnit(1);
 	const tensUSD = toUnit(10);
@@ -298,6 +299,8 @@ contract('ETHWrapper', async accounts => {
 	// 	})
 	// })
 
+	addSnapshotBeforeRestoreAfterEach()
+
 	describe('mint', async () => {
 		describe('when amount is less than than capacity', () => {
 			let amount = toUnit('1.0')
@@ -336,8 +339,9 @@ contract('ETHWrapper', async accounts => {
 			// Tracking of ETH refund.
 			let minterInitialBalance
 			let mintTx
+			let minterEndingBalance
 
-			before(async () => {
+			beforeEach(async () => {
 				initialCapacity = await ethWrapper.capacity();
 
 				// Calculate the mint fees on the capacity amount,
@@ -349,6 +353,7 @@ contract('ETHWrapper', async accounts => {
 				
 				minterInitialBalance = await getEthBalance(account1)
 				mintTx = await ethWrapper.mint({ from: account1, value: amount });
+				minterEndingBalance = await getEthBalance(account1);
 			})
 
 			it('exchanges `capacity` of ETH for sETH', async () => {
@@ -357,15 +362,15 @@ contract('ETHWrapper', async accounts => {
 			})
 			it('refunds the remainder to the user', async () => {
 				const gasPaid = web3.utils.toBN(mintTx.receipt.gasUsed * GAS_PRICE);
-				const minterEndingBalance = await getEthBalance(account1);
 				const depositAmount = initialCapacity
 
 				assert.bnEqual(
 					web3.utils
-						.toBN(minterEndingBalance)
-						.add(gasPaid)
-						.add(depositAmount),
-					web3.utils.toBN(minterInitialBalance)
+						.toBN(minterInitialBalance)
+						.sub(gasPaid)
+						.sub(amount)
+						.add(amount.sub(initialCapacity).sub(mintFee)),
+					minterEndingBalance
 				);
 			})
 			it('has a capacity of 0 after', async () => {
@@ -374,7 +379,7 @@ contract('ETHWrapper', async accounts => {
 		})
 
 		describe('capacity = 0', () => {
-			before(async () => {
+			beforeEach(async () => {
 				await ethWrapper.setMaxETH('0', { from: owner });
 			})
 
@@ -387,112 +392,40 @@ contract('ETHWrapper', async accounts => {
 		})
 	});
 
-	describe.only('burn', async () => {
+	describe('burn', async () => {
+
+		describe('when the contract has 0 ETH', async () => {
+			it('reverts', async () => {
+				await assert.revert(
+					ethWrapper.burn('1', { from: account1 }),
+					'Contract cannot burn sETH for ETH, ETH balance is zero'
+				);
+			})
+		})
 
 		describe('when the contract has ETH reserves', async () => {
-			let reserves = toUnit('10')
-
-			let burnFee
-			let expectedFeesUSD
-			
 			// Tracking of ETH balance.
 			let burnerInitialBalance
 			let burnTx
+			let burnerEndingBalance
 
-			before(async () => {
-				await ethWrapper.mint({ value: reserves, from: account1 })
-			})
-
-			describe('when amount is larger than or equal to reserves(1+burnFeeRate)', async () => {
-				let amount
-
-				before(async () => {
-					const burnFeeRate = await ethWrapper.burnFeeRate()
-					amount = (reserves.mul(ONE.add(burnFeeRate))).add(ONE)
-					
-					await sETHSynth.issue(account1, amount);
-
-					({ 
-						burnFee, 
-						expectedFeesUSD 
-					} = await calculateBurnFees(reserves));
-
-					burnerInitialBalance = await getEthBalance(account1)
-					burnTx = await ethWrapper.burn(amount)
-				})
-
-				it('transfers `reserves` amount of sETH from user', async () => {
-					const logs = await getDecodedLogs({
-						hash: burnTx.tx,
-						contracts: [sETHSynth],
-					});
-
-					decodedEventEqual({
-						event: 'Transfer',
-						emittedFrom: sETHSynth.address,
-						args: [account1, ethWrapper.address, reserves],
-						log: logs
-							.reverse()
-							.filter(l => !!l)
-							.find(({ name }) => name === 'Transfer'),
-					});
-				})
-
-				it('burns reserves amount of sETH', async () => {
-					const logs = await getDecodedLogs({
-						hash: burnTx.tx,
-						contracts: [sETHSynth],
-					});
-
-					decodedEventEqual({
-						event: 'Burned',
-						emittedFrom: sETHSynth.address,
-						args: [account1, reserves],
-						log: logs
-							.reverse()
-							.filter(l => !!l)
-							.find(({ name }) => name === 'Burned'),
-					});
-				})
-
-				it('sends reserves(1-burnFeeRate) ETH to user', async () => {
-					assert.bnEqual(await ethWrapper.getBalance(), toBN('0'));
-					
-					const gasPaid = web3.utils.toBN(burnTx.receipt.gasUsed * GAS_PRICE);
-					const burnerEndingBalance = await getEthBalance(account1);
-					assert.bnEqual(
-						web3.utils
-							.toBN(burnerEndingBalance)
-							.add(gasPaid)
-							.add(reserves.sub(burnFee)),
-						web3.utils.toBN(burnerInitialBalance)
-					);
-				})
-
-				it('sends fees as sUSD to the fee pool', async () => {
-					// assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
-					const logs = await getDecodedLogs({
-						hash: burnTx.tx,
-						contracts: [sUSDSynth],
-					});
-
-					decodedEventEqual({
-						event: 'Transfer',
-						emittedFrom: sUSDSynth.address,
-						args: [ethWrapper.address, FEE_ADDRESS, expectedFeesUSD],
-						log: logs
-							.reverse()
-							.filter(l => !!l)
-							.find(({ name }) => name === 'Transfer'),
-					});
-				})
+			beforeEach(async () => {
+				await ethWrapper.mint({ value: toUnit('10'), from: account1 })
 			})
 
 			describe('when amount is strictly lower than reserves(1+burnFeeRate)', async () => {
 				let amount = toUnit('1.0')
+				let reserves
+				let burnFee
+				let expectedFeesUSD
+				let gasUsed
 
-				before(async () => {
-					await sETHSynth.issue(account1, amount);
+
+				beforeEach(async () => {
+					reserves = await ethWrapper.getBalance()
+
+					await sETHSynth.issue(account1, amount)
+					await sETHSynth.approve(ethWrapper.address, amount, { from: account1 });
 
 					({ 
 						burnFee, 
@@ -500,24 +433,9 @@ contract('ETHWrapper', async accounts => {
 					} = await calculateBurnFees(amount));
 
 					burnerInitialBalance = await getEthBalance(account1)
-					burnTx = await ethWrapper.burn(amount)
-				})
-
-				it('transfers amount of sETH from user', async () => {
-					const logs = await getDecodedLogs({
-						hash: burnTx.tx,
-						contracts: [sETHSynth],
-					});
-
-					decodedEventEqual({
-						event: 'Transfer',
-						emittedFrom: sETHSynth.address,
-						args: [account1, ethWrapper.address, amount],
-						log: logs
-							.reverse()
-							.filter(l => !!l)
-							.find(({ name }) => name === 'Transfer'),
-					});
+					burnTx = await ethWrapper.burn(amount, { from: account1 })
+					burnerEndingBalance = await getEthBalance(account1);
+					await ethWrapper.withdraw(amount.sub(burnFee), { from: account1 })
 				})
 
 				it('burns amount of sETH', async () => {
@@ -536,49 +454,108 @@ contract('ETHWrapper', async accounts => {
 							.find(({ name }) => name === 'Burned'),
 					});
 				})
-
-				it('sends reserves(1-burnFeeRate) ETH to user', async () => {
-					assert.bnEqual(await ethWrapper.getBalance(), toBN('0'));
-					
+				it('sends reserves(1-burnFeeRate) ETH to user', async () => {					
 					const gasPaid = web3.utils.toBN(burnTx.receipt.gasUsed * GAS_PRICE);
-					const burnerEndingBalance = await getEthBalance(account1);
 					assert.bnEqual(
 						web3.utils
-							.toBN(burnerEndingBalance)
-							.add(gasPaid)
+							.toBN(burnerInitialBalance)
+							.sub(gasPaid)
 							.add(amount.sub(burnFee)),
-						web3.utils.toBN(burnerInitialBalance)
+						burnerEndingBalance
 					);
 				})
-
 				it('sends fees as sUSD to the fee pool', async () => {
-					// assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
 						contracts: [sUSDSynth],
 					});
 
 					decodedEventEqual({
-						event: 'Transfer',
+						event: 'Issued',
 						emittedFrom: sUSDSynth.address,
-						args: [ethWrapper.address, FEE_ADDRESS, expectedFeesUSD],
+						args: [FEE_ADDRESS, expectedFeesUSD],
 						log: logs
 							.reverse()
 							.filter(l => !!l)
-							.find(({ name }) => name === 'Transfer'),
+							.find(({ name }) => name === 'Issued'),
 					});
 				})
 			})
+
+			describe('when amount is larger than or equal to reserves(1+burnFeeRate)', async () => {
+				let reserves
+				let amount
+				let burnFee
+				let expectedFeesUSD
+
+				beforeEach(async () => {
+					reserves = await ethWrapper.getBalance()
+
+					const burnFeeRate = await ethWrapper.burnFeeRate()
+					amount = (reserves.mul(ONE.add(burnFeeRate))).add(ONE)
+					
+					await sETHSynth.issue(account1, amount)
+					await sETHSynth.approve(ethWrapper.address, amount, { from: account1 });
+
+					({ 
+						burnFee, 
+						expectedFeesUSD 
+					} = await calculateBurnFees(reserves));
+
+					burnerInitialBalance = await getEthBalance(account1)
+					burnTx = await ethWrapper.burn(amount, { from: account1 })
+					burnerEndingBalance = await getEthBalance(account1);
+					await ethWrapper.withdraw(reserves.sub(burnFee), { from: account1 })
+				})
+
+				it('burns reserves amount of sETH', async () => {
+					const logs = await getDecodedLogs({
+						hash: burnTx.tx,
+						contracts: [sETHSynth],
+					});
+
+					decodedEventEqual({
+						event: 'Burned',
+						emittedFrom: sETHSynth.address,
+						args: [account1, reserves],
+						log: logs
+							.reverse()
+							.filter(l => !!l)
+							.find(({ name }) => name === 'Burned'),
+					});
+				})
+				it('sends reserves(1-burnFeeRate) ETH to user', async () => {
+					const gasPaid = web3.utils.toBN(burnTx.receipt.gasUsed * GAS_PRICE);
+					assert.bnEqual(
+						web3.utils
+							.toBN(burnerInitialBalance)
+							.sub(gasPaid)
+							.add(reserves.sub(burnFee)),
+						burnerEndingBalance
+					);
+				})
+				it('sends fees as sUSD to the fee pool', async () => {
+					const logs = await getDecodedLogs({
+						hash: burnTx.tx,
+						contracts: [sUSDSynth],
+					});
+					
+					// TODO: I was going to check a Transfer event,
+					// however there are none in the logs?
+					decodedEventEqual({
+						event: 'Issued',
+						emittedFrom: sUSDSynth.address,
+						args: [FEE_ADDRESS, expectedFeesUSD],
+						log: logs
+							.reverse()
+							.filter(l => !!l)
+							.find(({ name }) => name === 'Issued'),
+					});
+				})
+			})
+
 		})
 
-		describe('when the contract has 0 ETH', async () => {
-			it('reverts', async () => {
-				await assert.revert(
-					ethWrapper.burn('1', { from: account1 }),
-					'Contract cannot burn sETH for ETH, ETH balance is zero.'
-				);
-			})
-		})
 		
 	})
 });
