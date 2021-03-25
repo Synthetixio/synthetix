@@ -20,7 +20,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
-contract('EtherCollateral @ovm-skip', async accounts => {
+contract('EtherCollateral', async accounts => {
 	const MINUTE = 60;
 	const DAY = 86400;
 	const WEEK = 604800;

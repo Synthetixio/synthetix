@@ -16,7 +16,7 @@ const {
 } = require('../../');
 const BN = require('bn.js');
 
-contract('SystemSettings @ovm-skip', async accounts => {
+contract('SystemSettings', async accounts => {
 	const [, owner] = accounts;
 	const oneWeek = web3.utils.toBN(7 * 24 * 60 * 60);
 

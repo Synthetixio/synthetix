@@ -13,7 +13,7 @@ const {
 
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-contract('ExternStateToken @ovm-skip', async accounts => {
+contract('ExternStateToken', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 
 	let proxy;

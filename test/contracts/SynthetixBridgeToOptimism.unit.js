@@ -10,7 +10,7 @@ const { smockit } = require('@eth-optimism/smock');
 
 const SynthetixBridgeToOptimism = artifacts.require('SynthetixBridgeToOptimism');
 
-contract('SynthetixBridgeToOptimism (unit tests) @ovm-skip', accounts => {
+contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 	const [
 		owner,
 		user1,

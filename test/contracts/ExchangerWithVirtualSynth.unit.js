@@ -10,7 +10,7 @@ const { toBytes32 } = require('../..');
 
 let ExchangerWithVirtualSynth;
 
-contract('ExchangerWithVirtualSynth (unit tests) @ovm-skip', async accounts => {
+contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 	const [, owner] = accounts;
 
 	before(async () => {

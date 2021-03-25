@@ -23,7 +23,7 @@ const {
 	constants: { inflationStartTimestampInSecs },
 } = require('../..');
 
-contract('Synthetix @ovm-skip', async accounts => {
+contract('Synthetix', async accounts => {
 	const [sAUD, sEUR] = ['sAUD', 'sEUR'].map(toBytes32);
 
 	const [, owner, account1, account2] = accounts;

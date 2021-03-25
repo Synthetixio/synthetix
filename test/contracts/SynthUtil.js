@@ -9,7 +9,7 @@ const { setExchangeFeeRateForSynths } = require('./helpers');
 const { setupAllContracts } = require('./setup');
 const ZERO_BYTES32 = '0x' + '0'.repeat(64);
 
-contract('SynthUtil @ovm-skip', accounts => {
+contract('SynthUtil', accounts => {
 	const [, ownerAccount, oracle, account2] = accounts;
 	let synthUtil, sUSDContract, synthetix, exchangeRates, timestamp, systemSettings, debtCache;
 

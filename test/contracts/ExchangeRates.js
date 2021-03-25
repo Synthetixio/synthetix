@@ -48,7 +48,7 @@ const createRandomKeysAndRates = quantity => {
 	return { currencyKeys, rates };
 };
 
-contract('Exchange Rates @ovm-skip', async accounts => {
+contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;
 	const [SNX, sJPY, sXTZ, sBNB, sUSD, sEUR, sAUD, fastGasPrice] = [
 		'SNX',
