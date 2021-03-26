@@ -1,18 +1,24 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./interfaces/ISynth.sol";
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IAddressResolver.sol";
-import "./interfaces/IERC20.sol";
+import "./ISynth.sol";
+import "./ISynthetix.sol";
+import "./ICollateralManager.sol";
+import "./ISynthetixState.sol";
+import "./IExchangeRates.sol";
+import "./IAddressResolver.sol";
+import "./IERC20.sol";
+import "./SafeDecimalMath.sol";
 
 
 // https://docs.synthetix.io/contracts/source/contracts/synthutil
 contract SynthUtil {
+    using SafeDecimalMath for uint;
     IAddressResolver public addressResolverProxy;
 
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
+    bytes32 internal constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
+    bytes32 internal constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant SUSD = "sUSD";
 
@@ -22,6 +28,20 @@ contract SynthUtil {
 
     function _synthetix() internal view returns (ISynthetix) {
         return ISynthetix(addressResolverProxy.requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+    }
+
+    function synthetixState() internal view returns (ISynthetixState) {
+        return
+            ISynthetixState(
+                addressResolverProxy.requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address")
+            );
+    }
+
+    function collateralManager() internal view returns (ICollateralManager) {
+        return
+            ICollateralManager(
+                addressResolverProxy.requireAndGetAddress(CONTRACT_COLLATERALMANAGER, "Missing CollateralManager address")
+            );
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
@@ -41,6 +61,22 @@ contract SynthUtil {
             );
         }
         return total;
+    }
+
+    function currentOwnershipDebt(address issuer) external view returns (uint) {
+        ISynthetixState state = synthetixState();
+        (uint initialDebtOwnership, uint debtEntryIndex) = state.issuanceData(issuer);
+
+        return
+            state
+                .lastDebtLedgerEntry()
+                .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
+                .multiplyDecimalRoundPrecise(initialDebtOwnership);
+    }
+
+    function shortAmountForSynth(bytes32 synth) external view returns (uint amount) {
+        ICollateralManager cm = collateralManager();
+        return cm.short(synth);
     }
 
     function synthsBalances(address account)
