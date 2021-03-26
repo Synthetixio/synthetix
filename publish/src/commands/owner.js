@@ -27,6 +27,7 @@ const {
 	checkExistingPendingTx,
 	getNewTransactionHash,
 	saveTransactionToApi,
+	getSafeSignature,
 } = require('../safe-utils');
 
 const DEFAULTS = {
@@ -194,7 +195,10 @@ const owner = async ({
 				});
 
 				// sign txHash to get signature
-				const { signature } = web3.eth.accounts.wallet[0].sign(txHash);
+				const sig = getSafeSignature({
+					signer: web3.eth.accounts.wallet[0],
+					contractTxHash: txHash,
+				});
 
 				// save transaction and signature to Gnosis Safe API
 				await saveTransactionToApi({
@@ -205,7 +209,7 @@ const owner = async ({
 					to: target,
 					sender: account,
 					transactionHash: txHash,
-					signature: signature,
+					signature: sig,
 				});
 
 				// track lastNonce submitted
@@ -270,15 +274,31 @@ const owner = async ({
 
 			try {
 				if (isContract) {
-					const newNonce = await getNewTransactionHash({
+					const { txHash, newNonce } = await getNewTransactionHash({
 						safeContract: protocolDaoContract,
 						data: encodedData,
 						to: deployedContract.options.address,
 						sender: account,
-						gasLimit,
-						gasPrice,
 						network,
 						lastNonce,
+					});
+
+					// sign txHash to get signature
+					const sig = getSafeSignature({
+						signer: web3.eth.accounts.wallet[0],
+						contractTxHash: txHash,
+					});
+
+					// save transaction and signature to Gnosis Safe API
+					await saveTransactionToApi({
+						safeContract: protocolDaoContract,
+						network,
+						data: encodedData,
+						nonce: newNonce,
+						to: deployedContract.options.address,
+						sender: account,
+						transactionHash: txHash,
+						signature: sig,
 					});
 
 					// track lastNonce submitted

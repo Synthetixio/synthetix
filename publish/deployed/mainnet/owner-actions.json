@@ -1,8 +1,8 @@
 {
 	"ProxyFeePool.setTarget(0x013D16CB1Bd493bBB89D45b43254842FadC169C8)": {
-		"target": "0xb440DD674e1243644791a4AdfE3A2AbB0A92d309",
+		"target": "0x57Ab1ec28D129707052df4dF418D58a2D46d5f51",
 		"action": "setTarget(0x013D16CB1Bd493bBB89D45b43254842FadC169C8)",
-		"complete": false,
+		"complete": true,
 		"link": "https://etherscan.io/address/0xb440DD674e1243644791a4AdfE3A2AbB0A92d309#writeContract",
 		"data": "0x776d1a01000000000000000000000000013d16cb1bd493bbb89d45b43254842fadc169c8"
 	}

@@ -239,6 +239,21 @@ const getNewTransactionHash = async ({ safeContract, data, to, sender, network, 
 	return { txHash, newNonce };
 };
 
+const getSafeSignature = ({ signer, contractTxHash }) => {
+	// sign txHash to get signature
+	const { signature } = signer.sign(contractTxHash);
+
+	// For ethereum valid V is 27 or 28
+	// Adding 4 is required to make signature valid for safe contracts:
+	// https://gnosis-safe.readthedocs.io/en/latest/contracts/signatures.html#eth-sign-signature
+	let sigV = parseInt(signature.slice(-2), 16);
+	sigV += 4;
+
+	const sig = signature.slice(0, -2) + sigV.toString(16);
+
+	return sig;
+};
+
 module.exports = {
 	getSafeInstance,
 	getSafeNonce,
@@ -246,4 +261,5 @@ module.exports = {
 	checkExistingPendingTx,
 	saveTransactionToApi,
 	getNewTransactionHash,
+	getSafeSignature,
 };
