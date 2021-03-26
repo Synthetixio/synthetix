@@ -60,6 +60,7 @@ const nominate = async ({
 	}
 
 	const { providerUrl: envProviderUrl, privateKey } = loadConnections({ network });
+	console.log(envProviderUrl);
 	if (!providerUrl) {
 		if (!envProviderUrl) {
 			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
@@ -89,7 +90,9 @@ const nominate = async ({
 	}
 
 	for (const contract of contracts) {
+		console.log(contract);
 		const { address, source } = deployment.targets[contract];
+		console.log(address);
 		const { abi } = deployment.sources[source];
 		const deployedContract = new web3.eth.Contract(abi, address);
 
@@ -110,6 +113,7 @@ const nominate = async ({
 			console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 			console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
+			console.log(gasLimit, gasPrice);
 			await deployedContract.methods.nominateNewOwner(newOwner).send({
 				from: account,
 				gas: gasLimit,
@@ -132,7 +136,7 @@ module.exports = {
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
-			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
+			.option('-l, --gas-limit <value>', 'Gas limit', parseFloat, 15e4)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-o, --new-owner <value>',

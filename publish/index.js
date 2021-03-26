@@ -16,6 +16,7 @@ require('./src/commands/migrate-binary-option-markets').cmd(program);
 require('./src/commands/migrate-bridge').cmd(program);
 require('./src/commands/nominate').cmd(program);
 require('./src/commands/owner').cmd(program);
+require('./src/commands/owner-multisig').cmd(program);
 require('./src/commands/persist-tokens').cmd(program);
 require('./src/commands/prepare-deploy-detect-diff').cmd(program);
 require('./src/commands/prepare-deploy').cmd(program);
