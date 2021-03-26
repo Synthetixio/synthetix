@@ -106,11 +106,11 @@ const owner = async ({
 	const account = web3.eth.accounts.wallet[0].address;
 	console.log(gray(`Using account with public key ${account}`));
 
-	// if (!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
-	// 	throw new Error(
-	// 		`New owner is ${newOwner} and signer is ${account}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
-	// 	);
-	// }
+	if (!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
+		throw new Error(
+			`New owner is ${newOwner} and signer is ${account}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
+		);
+	}
 
 	console.log(gray(`Gas Price: ${gasPrice} gwei`));
 
@@ -119,7 +119,7 @@ const owner = async ({
 	let currentSafeNonce;
 	if (isContract) {
 		// new owner should be gnosis safe proxy address
-		protocolDaoContract = getSafeInstance(web3, '0xC847048ecB376AB0378c7769e028563445BcD5EB');
+		protocolDaoContract = getSafeInstance(web3, newOwner);
 
 		// get protocolDAO nonce
 		currentSafeNonce = await getSafeNonce(protocolDaoContract);
