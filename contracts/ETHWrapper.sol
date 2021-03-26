@@ -7,6 +7,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IETHWrapper.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/IWETH.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 // Internal references
@@ -52,7 +53,8 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     // ========== STATE VARIABLES ==========
-
+    IWETH public weth;
+    
     mapping(address => uint) public pendingWithdrawals;
     
     // The maximum amount of ETH held by contract.
@@ -70,7 +72,9 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
     // The fee for burning sETH and releasing ETH from the contract. Default 50 bps.
     uint public burnFeeRate = (5 * SafeDecimalMath.unit()) / 1000;
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+    constructor(address _owner, address _resolver, address payable _WETH) public Owned(_owner) MixinResolver(_resolver) {
+        weth = IWETH(_WETH);
+    }
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -206,7 +210,6 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
         revert("Fallback disabled, use mint()");
     }
 
-
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _mint(uint depositAmountEth) internal {
@@ -234,11 +237,11 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
         require(amount <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amount <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
 
-        // Calculate burning fee.
-        uint feeAmountEth = calculateBurnFee(amount);
-
         // Burn the full amount sent.
         synthsETH().burn(msg.sender, amount);
+
+        // Calculate burning fee.
+        uint feeAmountEth = calculateBurnFee(amount);
 
         // Fee Distribution. Mints sUSD internally.
         // Normalize fee to sUSD
@@ -250,7 +253,7 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
         // Tell the fee pool about this
         feePool().recordFeePaid(feeSusd);        
 
-        // Finally, allow the sender to withdraw this ETH, less the fee.
+        // Finally, allow the sender to withdraw their ETH, less the fee.
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount.sub(feeAmountEth));
     }
 
