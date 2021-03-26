@@ -199,7 +199,7 @@ const setupContract = async ({
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
-		ETHWrapper: [owner, tryGetAddressOf('AddressResolver')],
+		ETHWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
 		EtherCollateralsUSD: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
@@ -239,6 +239,7 @@ const setupContract = async ({
 			0,
 			0,
 		],
+		WETH: []
 	};
 
 	let instance;
@@ -624,10 +625,11 @@ const setupAllContracts = async ({
 			mocks: ['Issuer', 'Depot'],
 			deps: ['AddressResolver', 'SystemStatus'],
 		},
+		{ contract: 'WETH' },
 		{
 			contract: 'ETHWrapper',
 			mocks: [],
-			deps: ['AddressResolver'],
+			deps: ['AddressResolver', 'WETH'],
 		},
 		{
 			contract: 'EtherCollateralsUSD',
