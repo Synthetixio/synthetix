@@ -1,13 +1,13 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./ISynth.sol";
-import "./ISynthetix.sol";
-import "./ICollateralManager.sol";
-import "./ISynthetixState.sol";
-import "./IExchangeRates.sol";
-import "./IAddressResolver.sol";
-import "./IERC20.sol";
+import "./interfaces/ISynth.sol";
+import "./interfaces/ISynthetix.sol";
+import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IAddressResolver.sol";
+import "./interfaces/IERC20.sol";
+import "./interfaces/ICollateralManager.sol";
+import "./interfaces/ISynthetixState.sol";
 import "./SafeDecimalMath.sol";
 
 
