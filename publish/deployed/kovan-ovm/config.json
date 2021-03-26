@@ -148,5 +148,32 @@
 	},
 	"SynthsLINK": {
 		"deploy": false
+	},
+	"TokenStatesUNI": {
+		"deploy": false
+	},
+	"ProxysUNI": {
+		"deploy": false
+	},
+	"SynthsUNI": {
+		"deploy": false
+	},
+	"TokenStatesAAVE": {
+		"deploy": false
+	},
+	"ProxysAAVE": {
+		"deploy": false
+	},
+	"SynthsAAVE": {
+		"deploy": false
+	},
+	"TokenStatesTSLA": {
+		"deploy": false
+	},
+	"ProxysTSLA": {
+		"deploy": false
+	},
+	"SynthsTSLA": {
+		"deploy": false
 	}
 }

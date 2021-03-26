@@ -14,5 +14,17 @@
 	{
 		"name": "sLINK",
 		"asset": "LINK"
+	},
+	{
+		"name": "sUNI",
+		"asset": "UNI"
+	},
+	{
+		"name": "sAAVE",
+		"asset": "AAVE"
+	},
+	{
+		"name": "sTSLA",
+		"asset": "TSLA"
 	}
 ]

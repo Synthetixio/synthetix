@@ -14,5 +14,17 @@
 	"LINK": {
 		"asset": "LINK",
 		"feed": "0xb37aA79EBc31B93864Bff2d5390b385bE482897b"
+	},
+	"UNI": {
+		"asset": "UNI",
+		"feed": "0xbac904786e476632e75fC6214C797fA80cce9311"
+	},
+	"AAVE": {
+		"asset": "AAVE",
+		"feed": "0xc051eCEaFd546e0Eb915a97F4D0643BEd7F98a11"
+	},
+	"TSLA": {
+		"asset": "TSLA",
+		"feed": "0x4bFa8c47f9521B0E8f48C14b3288c2258c538C49"
 	}
 }
