@@ -143,6 +143,11 @@ contract DelegateApprovals is Owned, IDelegateApprovals {
         address authoriser,
         address delegate
     ) internal {
+        // Toggle off "ALL" approval if set
+        if (eternalStorage.getBooleanValue(_getKey(APPROVE_ALL, authoriser, delegate))) {
+            eternalStorage.deleteBooleanValue(_getKey(APPROVE_ALL, authoriser, delegate));
+            emit WithdrawApproval(authoriser, delegate, APPROVE_ALL);
+        }
         // Check approval is set otherwise skip deleting approval
         if (eternalStorage.getBooleanValue(_getKey(action, authoriser, delegate))) {
             eternalStorage.deleteBooleanValue(_getKey(action, authoriser, delegate));
