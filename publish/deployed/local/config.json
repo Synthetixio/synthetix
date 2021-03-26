@@ -451,5 +451,11 @@
 	},
 	"MockToken": {
 		"deploy": true
+	},
+	"ETHWrapper": {
+		"deploy": true
+	},
+	"WETH": {
+		"deploy": true
 	}
 }

@@ -1190,12 +1190,32 @@ const deploy = async ({
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
-		// TODO
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
+
+		let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
+		if (!WETH_ADDRESS) {
+			if (network !== 'local') {
+				throw new Error('WETH address is not known');
+			}
+	
+			// On local, deploy a mock WETH token
+			const weth = await deployer.deployContract({
+				name: 'WETH',
+				args: [],
+			});
+	
+			WETH_ADDRESS = weth.options.address;
+		}
+
+		await deployer.deployContract({
+			name: "ETHWrapper",
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver), WETH_ADDRESS]
+		})
 	}
 
 	// ----------------
