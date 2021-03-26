@@ -315,7 +315,7 @@ contract('ETHWrapper', async accounts => {
 					expectedFeesUSD 
 				} = await calculateMintFees(amount));
 				
-				await ethWrapper.mint({ from: account1, value: amount });
+				await ethWrapper.mint(amount, { from: account1, value: amount });
 			});
 
 			it('exchanges ETH for sETH', async () => {
@@ -352,7 +352,7 @@ contract('ETHWrapper', async accounts => {
 				} = await calculateMintFees(initialCapacity));
 				
 				minterInitialBalance = await getEthBalance(account1)
-				mintTx = await ethWrapper.mint({ from: account1, value: amount });
+				mintTx = await ethWrapper.mint(amount, { from: account1, value: amount });
 				minterEndingBalance = await getEthBalance(account1);
 			})
 
@@ -385,7 +385,7 @@ contract('ETHWrapper', async accounts => {
 
 			it('reverts', async () => {
 				await assert.revert(
-					ethWrapper.mint({ from: account1, value: '1' }),
+					ethWrapper.mint('1', { from: account1, value: '1' }),
 					'Contract has no spare capacity to mint'
 				);
 			})
@@ -397,7 +397,7 @@ contract('ETHWrapper', async accounts => {
 		describe('when the contract has 0 ETH', async () => {
 			it('reverts', async () => {
 				await assert.revert(
-					ethWrapper.burn('1', { from: account1 }),
+					ethWrapper.burn('1', false, { from: account1 }),
 					'Contract cannot burn sETH for ETH, ETH balance is zero'
 				);
 			})
@@ -410,7 +410,7 @@ contract('ETHWrapper', async accounts => {
 			let burnerEndingBalance
 
 			beforeEach(async () => {
-				await ethWrapper.mint({ value: toUnit('10'), from: account1 })
+				await ethWrapper.mint('1', { value: toUnit('10'), from: account1 })
 			})
 
 			describe('when amount is strictly lower than reserves(1+burnFeeRate)', async () => {
@@ -433,9 +433,9 @@ contract('ETHWrapper', async accounts => {
 					} = await calculateBurnFees(amount));
 
 					burnerInitialBalance = await getEthBalance(account1)
-					burnTx = await ethWrapper.burn(amount, { from: account1 })
+					burnTx = await ethWrapper.burn(amount, false, { from: account1 })
 					burnerEndingBalance = await getEthBalance(account1);
-					await ethWrapper.withdraw(amount.sub(burnFee), { from: account1 })
+					// await ethWrapper.withdraw(amount.sub(burnFee), { from: account1 })
 				})
 
 				it('burns amount of sETH', async () => {
@@ -503,9 +503,9 @@ contract('ETHWrapper', async accounts => {
 					} = await calculateBurnFees(reserves));
 
 					burnerInitialBalance = await getEthBalance(account1)
-					burnTx = await ethWrapper.burn(amount, { from: account1 })
+					burnTx = await ethWrapper.burn(amount, false, { from: account1 })
 					burnerEndingBalance = await getEthBalance(account1);
-					await ethWrapper.withdraw(reserves.sub(burnFee), { from: account1 })
+					// await ethWrapper.withdraw(reserves.sub(burnFee), { from: account1 })
 				})
 
 				it('burns reserves amount of sETH', async () => {

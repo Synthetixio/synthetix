@@ -54,17 +54,10 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
 
     // ========== STATE VARIABLES ==========
     IWETH public weth;
-    
     mapping(address => uint) public pendingWithdrawals;
     
     // The maximum amount of ETH held by contract.
     uint public maxETH = 5000 ether;
-
-    // The "controlled" ETH balance of the contract.
-    // Note: we keep track of this in contract state, rather than using address(this).balance,
-    // as there are ways to move Ether without creating a message call, which would allow
-    // someone to DoS the contract. 
-    uint private _balance = 0 ether;
 
     // The fee for depositing ETH into the contract. Default 50 bps.
     uint public mintFeeRate = (5 * SafeDecimalMath.unit()) / 1000;
@@ -121,11 +114,12 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
     // ========== VIEWS ==========
 
     function capacity() public view returns (uint) {
-        return _balance >= maxETH ? 0 : maxETH.sub(_balance);
+        uint balance = getBalance();
+        return balance >= maxETH ? 0 : maxETH.sub(balance);
     }
 
     function getBalance() public view returns (uint) {
-        return _balance;
+        return weth.balanceOf(address(this));
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
@@ -149,32 +143,32 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
     // }
     
     /* ========== MUTATIVE FUNCTIONS ========== */
-
-    function mint() external payable {
+    
+    function mint(uint amount) external payable receivesEthOrWeth(amount) {
         uint capacity = capacity();
         require(capacity > 0, "Contract has no spare capacity to mint");
         
-        if(msg.value >= capacity) {
+        if(amount >= capacity) {
             _mint(capacity);
             // Refund remainder.
-            msg.sender.transfer(msg.value.sub(capacity));
+            weth.transferFrom(address(this), msg.sender, amount.sub(capacity));
         } else {
-            _mint(msg.value);
+            _mint(amount);
         }
     }
 
     // Burn `amount` sETH for `amount - fees` ETH.
-    function burn(uint amount) external {
+    function burn(uint amount, bool receiveEth) external {
         uint reserves = getBalance();
         require(reserves > 0, "Contract cannot burn sETH for ETH, ETH balance is zero");
 
         uint burnFee = calculateBurnFee(amount);
         
         if(amount >= reserves) {
-            _burn(reserves);
+            _burn(reserves, receiveEth);
             // Refund is not needed, as we transfer the exact amount of reserves.
         } else {
-            _burn(amount);
+            _burn(amount, receiveEth);
         }
     }
 
@@ -222,18 +216,16 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
 
         // Remit the fee in sUSDs
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
+        weth.transfer(address(0), feeAmountEth); // burn weth
 
         // Tell the fee pool about this
         feePool().recordFeePaid(feeSusd);
 
         // Finally, issue sETH.
         synthsETH().issue(msg.sender, depositAmountEth.sub(feeAmountEth));
-
-        // Update contract balance, and hence capacity.
-        _balance = _balance.add(depositAmountEth.sub(feeAmountEth));
     }
 
-    function _burn(uint amount) internal {
+    function _burn(uint amount, bool receiveEth) internal {
         require(amount <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amount <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
 
@@ -254,20 +246,35 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
         feePool().recordFeePaid(feeSusd);        
 
         // Finally, allow the sender to withdraw their ETH, less the fee.
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount.sub(feeAmountEth));
+        _sendWeth(amount.sub(feeAmountEth), receiveEth);
+    }
+
+    function _sendWeth(uint amount, bool sendAsNativeEth) internal {
+        if(sendAsNativeEth) {
+            pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
+        } else {
+            weth.transfer(msg.sender, amount);
+        }
     }
 
     function withdraw(uint amount) external nonReentrant {
         // If they try to withdraw more than their total balance, it will fail on the safe sub.
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
 
-        // Update internally tracked ETH balance.
-        _balance = _balance.sub(amount);
-
         (bool success, ) = msg.sender.call.value(amount)("");
         require(success, "Transfer failed");
     }
 
+    modifier receivesEthOrWeth(uint amount) {
+        if(msg.value > 0) {
+            // Accept ETH.
+            weth.deposit.value(amount)();
+        } else {
+            // Accept WETH.
+            weth.transferFrom(msg.sender, address(this), amount);
+        }
+        _;
+    }
 
     /* ========== EVENTS ========== */
     event MaxETHUpdated(uint rate);
