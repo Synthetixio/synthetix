@@ -35,5 +35,9 @@
 	"TSLA": {
 		"asset": "TSLA",
 		"feed": "0xb31357d152638fd1ae0853d24b9Ea81dF29E3EF2"
+	},
+	"KRW": {
+		"asset": "KRW",
+		"feed": "0x9e465c5499023675051517E9Ee5f4C334D91e369"
 	}
 }

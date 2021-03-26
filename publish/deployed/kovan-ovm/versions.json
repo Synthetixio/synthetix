@@ -248,7 +248,7 @@
 	"v2.40.0-alpha": {
 		"tag": "v2.40.0-alpha",
 		"fulltag": "v2.40.0-alpha",
-		"release": "Miaplacidus",
+		"release": "L2 Phase 1 OVM (Kovan)",
 		"network": "kovan",
 		"date": "2021-03-12T15:16:08+00:00",
 		"commit": "0e0d6449ab765ef5bdef3824e9fa50332526ba3c",

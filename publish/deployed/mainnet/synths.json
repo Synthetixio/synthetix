@@ -25,6 +25,10 @@
 		"asset": "CHF"
 	},
 	{
+		"name": "sKRW",
+		"asset": "KRW"
+	},
+	{
 		"name": "sXAU",
 		"asset": "XAU"
 	},
