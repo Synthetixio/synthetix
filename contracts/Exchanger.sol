@@ -1006,6 +1006,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey
     ) internal pure returns (uint) {
+        if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
+            return exchangeFeeRate;
+        }
+
         // Is this a swing trade? long to short or short to long skipping sUSD.
         if (
             (sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69) ||
