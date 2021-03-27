@@ -820,8 +820,8 @@ contract('SystemSettings', async accounts => {
 
 			it('allows to be changed', async () => {
 				const newLimit = limit.mul(new BN(2));
-				await systemSettings.setAtomicPriceBuffer(newLimit, { from: owner });
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(), newLimit);
+				await systemSettings.setAtomicMaxVolumePerBlock(newLimit, { from: owner });
+				assert.bnEqual(await systemSettings.atomicMaxVolumePerBlock(), newLimit);
 			});
 
 			it('allows to be reset to zero', async () => {
