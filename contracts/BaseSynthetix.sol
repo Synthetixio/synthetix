@@ -374,7 +374,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     // ========== EVENTS ==========
-    // SIP-120: another event for atomic exchanges?
+    // TODO: another event for atomic exchanges?
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
