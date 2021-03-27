@@ -1152,7 +1152,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
     }
 
-    function _ensureOnlySynthetixOrSynth() internal {
+    function _ensureOnlySynthetixOrSynth() internal view {
         ISynthetix _synthetix = synthetix();
         require(
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
@@ -1160,7 +1160,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
     }
 
-    function _ensureOnlySynthetix() internal {
+    function _ensureOnlySynthetix() internal view {
         ISynthetix _synthetix = synthetix();
         require(msg.sender == address(_synthetix), "Exchanger: Only synthetix can perform this action");
     }
