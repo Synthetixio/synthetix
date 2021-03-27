@@ -52,7 +52,7 @@ contract('SystemSettings', async accounts => {
 				'setAtomicMaxVolumePerBlock',
 				'setAtomicPriceBuffer',
 				'setAtomicTwapPriceWindow',
-				'setAtomicEquivalentForSynth',
+				'setAtomicEquivalentForDexPricing',
 			],
 		});
 	});
@@ -919,12 +919,12 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
-	describe('setAtomicEquivalentForSynth', () => {
+	describe('setAtomicEquivalentForDexPricing', () => {
 		const sETH = toBytes32('sETH');
 		const [equivalentAsset, secondEquivalentAsset] = accounts.slice(accounts.length - 2);
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setAtomicEquivalentForSynth,
+				fnc: systemSettings.setAtomicEquivalentForDexPricing,
 				args: [sETH, equivalentAsset],
 				address: owner,
 				accounts,
@@ -935,29 +935,29 @@ contract('SystemSettings', async accounts => {
 		describe('when successfully invoked', () => {
 			let txn;
 			beforeEach(async () => {
-				txn = await systemSettings.setAtomicEquivalentForSynth(sETH, equivalentAsset, {
+				txn = await systemSettings.setAtomicEquivalentForDexPricing(sETH, equivalentAsset, {
 					from: owner,
 				});
 			});
 
 			it('then it changes the value as expected', async () => {
-				assert.equal(await systemSettings.atomicEquivalentForSynth(sETH), equivalentAsset);
+				assert.equal(await systemSettings.atomicEquivalentForDexPricing(sETH), equivalentAsset);
 			});
 
-			it('and emits an AtomicEquivalentForSynthUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicEquivalentForSynthUpdated', [sETH, equivalentAsset]);
+			it('and emits an AtomicEquivalentForDexPricingUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicEquivalentForDexPricingUpdated', [sETH, equivalentAsset]);
 			});
 
 			it('allows equivalent to be changed', async () => {
-				await systemSettings.setAtomicEquivalentForSynth(sETH, secondEquivalentAsset, {
+				await systemSettings.setAtomicEquivalentForDexPricing(sETH, secondEquivalentAsset, {
 					from: owner,
 				});
-				assert.equal(await systemSettings.atomicEquivalentForSynth(sETH), secondEquivalentAsset);
+				assert.equal(await systemSettings.atomicEquivalentForDexPricing(sETH), secondEquivalentAsset);
 			});
 
 			it('allows to be reset', async () => {
-				await systemSettings.setAtomicEquivalentForSynth(sETH, ZERO_ADDRESS, { from: owner });
-				assert.equal(await systemSettings.atomicEquivalentForSynth(sETH), ZERO_ADDRESS);
+				await systemSettings.setAtomicEquivalentForDexPricing(sETH, ZERO_ADDRESS, { from: owner });
+				assert.equal(await systemSettings.atomicEquivalentForDexPricing(sETH), ZERO_ADDRESS);
 			});
 		});
 	});

@@ -31,7 +31,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_ATOMIC_MAX_VOLUME_PER_BLOCK = "atomicMaxVolumePerBlock";
     bytes32 internal constant SETTING_ATOMIC_PRICE_BUFFER = "atomicPriceBuffer";
     bytes32 internal constant SETTING_ATOMIC_TWAP_PRICE_WINDOW = "atomicTwapPriceWindow";
-    bytes32 internal constant SETTING_ATOMIC_EQUIVALENT_FOR_SYNTH = "atomicEquivalentForSynth";
+    bytes32 internal constant SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING = "atomicEquivalentForDexPricing";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -141,11 +141,11 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_TWAP_PRICE_WINDOW);
     }
 
-    function getAtomicEquivalentForSynth(bytes32 currencyKey) internal view returns (address) {
+    function getAtomicEquivalentForDexPricing(bytes32 currencyKey) internal view returns (address) {
         return
             flexibleStorage().getAddressValue(
                 SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_SYNTH, currencyKey))
+                keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING, currencyKey))
             );
     }
 }

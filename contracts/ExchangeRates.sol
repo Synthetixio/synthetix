@@ -291,8 +291,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return getAtomicTwapPriceWindow();
     }
 
-    function atomicEquivalentForSynth(bytes32 currencyKey) external view returns (address) {
-        return getAtomicEquivalentForSynth(currencyKey);
+    function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address) {
+        return getAtomicEquivalentForDexPricing(currencyKey);
     }
 
     function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
@@ -403,10 +403,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             uint systemDestinationRate
         )
     {
-        IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForSynth(sourceCurrencyKey));
+        IERC20 sourceEquivalent = IERC20(getAtomicEquivalentForDexPricing(sourceCurrencyKey));
         require(address(sourceEquivalent) != address(0), "No atomic equivalent for src");
 
-        IERC20 destEquivalent = IERC20(getAtomicEquivalentForSynth(destinationCurrencyKey));
+        IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
         require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
         (systemValue, systemSourceRate, systemDestinationRate) = _effectiveValueAndRates(

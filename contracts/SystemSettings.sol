@@ -156,8 +156,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP-120 Atomic exchanges
     // equivalent asset to use for a synth when considering external prices for atomic exchanges
-    function atomicEquivalentForSynth(bytes32 currencyKey) external view returns (address) {
-        return getAtomicEquivalentForSynth(currencyKey);
+    function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address) {
+        return getAtomicEquivalentForDexPricing(currencyKey);
     }
 
     // ========== RESTRICTED ==========
@@ -315,14 +315,14 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicTwapPriceWindowUpdated(_window);
     }
 
-    function setAtomicEquivalentForSynth(bytes32 _currencyKey, address _equivalent) external onlyOwner {
+    function setAtomicEquivalentForDexPricing(bytes32 _currencyKey, address _equivalent) external onlyOwner {
         // TODO: sanity check with the Keep3r oracle for compatibility?
         flexibleStorage().setAddressValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_SYNTH, _currencyKey)),
+            keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING, _currencyKey)),
             _equivalent
         );
-        emit AtomicEquivalentForSynthUpdated(_currencyKey, _equivalent);
+        emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
     }
 
     // ========== EVENTS ==========
@@ -344,5 +344,5 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
     event AtomicPriceBufferUpdated(uint newBuffer);
     event AtomicTwapPriceWindowUpdated(uint newWindow);
-    event AtomicEquivalentForSynthUpdated(bytes32 synthKey, address equivalent);
+    event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
 }
