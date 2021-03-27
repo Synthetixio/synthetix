@@ -50,6 +50,8 @@ const {
 		MINIMUM_STAKE_TIME,
 		TRADING_REWARDS_ENABLED,
 		DEBT_SNAPSHOT_STALE_TIME,
+		ATOMIC_MAX_VOLUME_PER_BLOCK,
+		ATOMIC_TWAP_PRICE_WINDOW,
 	},
 	wrap,
 } = snx;
@@ -285,6 +287,10 @@ describe('publish scripts', () => {
 						await Exchanger.methods.tradingRewardsEnabled().call(),
 						TRADING_REWARDS_ENABLED
 					);
+					assert.strictEqual(
+						await Exchanger.methods.atomicMaxVolumePerBlock().call(),
+						ATOMIC_MAX_VOLUME_PER_BLOCK
+					);
 					assert.strictEqual(await Issuer.methods.issuanceRatio().call(), ISSUANCE_RATIO);
 					assert.strictEqual(await FeePool.methods.feePeriodDuration().call(), FEE_PERIOD_DURATION);
 					assert.strictEqual(
@@ -307,6 +313,10 @@ describe('publish scripts', () => {
 					assert.strictEqual(
 						await ExchangeRates.methods.rateStalePeriod().call(),
 						RATE_STALE_PERIOD
+					);
+					assert.strictEqual(
+						await ExchangeRates.methods.atomicTwapPriceWindow().call(),
+						ATOMIC_TWAP_PRICE_WINDOW
 					);
 					assert.strictEqual(
 						await DebtCache.methods.debtSnapshotStaleTime().call(),
