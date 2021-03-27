@@ -975,11 +975,49 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
         internal
         view
-        returns (uint exchangeFeeRate)
+        returns (uint)
     {
         // Get the exchange fee rate as per destination currencyKey
-        exchangeFeeRate = getExchangeFeeRate(destinationCurrencyKey);
+        uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
+        return _calculateFeeRateFromExchangeSynths(
+            baseRate,
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
+    }
 
+    function feeRateForAtomicExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        external
+        view
+        returns (uint exchangeFeeRate)
+    {
+        exchangeFeeRate = _feeRateForAtomicExchange(sourceCurrencyKey, destinationCurrencyKey);
+    }
+
+    function _feeRateForAtomicExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        internal
+        view
+        returns (uint)
+    {
+        // Get the exchange fee rate as per destination currencyKey
+        uint baseRate = getAtomicExchangeFeeRate(destinationCurrencyKey);
+        if (baseRate == 0) {
+            // If no atomic rate was set, fallback to the regular exchange rate
+            baseRate = getExchangeFeeRate(destinationCurrencyKey);
+        }
+
+        return _calculateFeeRateFromExchangeSynths(
+            baseRate,
+            sourceCurrencyKey,
+            destinationCurrencyKey
+        );
+    }
+
+    function _calculateFeeRateFromExchangeSynths(uint exchangeFeeRate, bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        internal
+        pure
+        returns (uint)
+    {
         if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
             return exchangeFeeRate;
         }
@@ -990,10 +1028,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73)
         ) {
             // Double the exchange fee
-            exchangeFeeRate = exchangeFeeRate.mul(2);
+            return exchangeFeeRate.mul(2);
         }
 
-        return exchangeFeeRate;
+        revert("Exchange fee rate not available");
     }
 
     function getAmountsForExchange(
@@ -1082,7 +1120,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         (destinationAmount, systemAmountReceived, systemSourceRate, systemDestinationRate) = exchangeRates()
             .effectiveAtomicValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
-        exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
+        exchangeFeeRate = _feeRateForAtomicExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }

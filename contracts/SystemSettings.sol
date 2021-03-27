@@ -144,8 +144,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP-120 Atomic exchanges
     // price dampener for chainlink prices when considered for atomic exchanges
-    function atomicPriceBuffer() external view returns (uint) {
-        return getAtomicPriceBuffer();
+    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicPriceBuffer(currencyKey);
     }
 
     // SIP-120 Atomic exchanges
@@ -158,6 +158,12 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // equivalent asset to use for a synth when considering external prices for atomic exchanges
     function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address) {
         return getAtomicEquivalentForDexPricing(currencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    // fee rate override for atomic exchanges into a synth
+    function atomicExchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicExchangeFeeRate(currencyKey);
     }
 
     // ========== RESTRICTED ==========
@@ -303,9 +309,16 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
     }
 
-    function setAtomicPriceBuffer(uint _buffer) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_PRICE_BUFFER, _buffer);
-        emit AtomicPriceBufferUpdated(_buffer);
+    function setAtomicPriceBuffer(bytes32 _currencyKey, uint _buffer)
+        external
+        onlyOwner
+    {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_PRICE_BUFFER, _currencyKey)),
+            _buffer
+        );
+        emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
     }
 
     function setAtomicTwapPriceWindow(uint _window) external onlyOwner {
@@ -325,6 +338,19 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
     }
 
+    function setAtomicExchangeFeeRate(bytes32 _currencyKey, uint256 _exchangeFeeRate)
+        external
+        onlyOwner
+    {
+        require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_EXCHANGE_FEE_RATE, _currencyKey)),
+            _exchangeFeeRate
+        );
+        emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
@@ -342,7 +368,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
     event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
-    event AtomicPriceBufferUpdated(uint newBuffer);
+    event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
     event AtomicTwapPriceWindowUpdated(uint newWindow);
     event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
+    event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
 }

@@ -53,6 +53,7 @@ contract('SystemSettings', async accounts => {
 				'setAtomicPriceBuffer',
 				'setAtomicTwapPriceWindow',
 				'setAtomicEquivalentForDexPricing',
+				'setAtomicExchangeFeeRate',
 			],
 		});
 	});
@@ -831,11 +832,12 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setAtomicPriceBuffer', () => {
+		const sETH = toBytes32('sETH');
 		const buffer = toUnit('0.5');
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setAtomicPriceBuffer,
-				args: [buffer],
+				args: [sETH, buffer],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -845,26 +847,26 @@ contract('SystemSettings', async accounts => {
 		describe('when successfully invoked', () => {
 			let txn;
 			beforeEach(async () => {
-				txn = await systemSettings.setAtomicPriceBuffer(buffer, { from: owner });
+				txn = await systemSettings.setAtomicPriceBuffer(sETH, buffer, { from: owner });
 			});
 
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(), buffer);
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), buffer);
 			});
 
 			it('and emits an AtomicPriceBufferUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicPriceBufferUpdated', [buffer]);
+				assert.eventEqual(txn, 'AtomicPriceBufferUpdated', [sETH, buffer]);
 			});
 
 			it('allows to be changed', async () => {
 				const newBuffer = buffer.div(new BN(2));
-				await systemSettings.setAtomicPriceBuffer(newBuffer, { from: owner });
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(), newBuffer);
+				await systemSettings.setAtomicPriceBuffer(sETH, newBuffer, { from: owner });
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), newBuffer);
 			});
 
 			it('allows to be reset to zero', async () => {
-				await systemSettings.setAtomicPriceBuffer(0, { from: owner });
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(), 0);
+				await systemSettings.setAtomicPriceBuffer(sETH, 0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), 0);
 			});
 		});
 	});
@@ -958,6 +960,58 @@ contract('SystemSettings', async accounts => {
 			it('allows to be reset', async () => {
 				await systemSettings.setAtomicEquivalentForDexPricing(sETH, ZERO_ADDRESS, { from: owner });
 				assert.equal(await systemSettings.atomicEquivalentForDexPricing(sETH), ZERO_ADDRESS);
+			});
+		});
+	});
+
+	describe('setAtomicExchangeFeeRate', () => {
+		const sETH = toBytes32('sETH');
+		const feeBips = toUnit('0.03');
+		const secondFeeBips = toUnit('0.05');
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAtomicExchangeFeeRate,
+				args: [sETH, feeBips],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if fee is above maximum', async () => {
+			const maximum = await systemSettings.MAX_EXCHANGE_FEE_RATE();
+			await assert.revert(
+				systemSettings.setAtomicExchangeFeeRate(sETH, maximum.add(new BN(1)), { from: owner }),
+				'MAX_EXCHANGE_FEE_RATE exceeded'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAtomicExchangeFeeRate(sETH, feeBips, {
+					from: owner,
+				});
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(sETH), feeBips);
+			});
+
+			it('and emits an AtomicExchangeFeeUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicExchangeFeeUpdated', [sETH, feeBips]);
+			});
+
+			it('allows fee to be changed', async () => {
+				await systemSettings.setAtomicExchangeFeeRate(sETH, secondFeeBips, {
+					from: owner,
+				});
+				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(sETH), secondFeeBips);
+			});
+
+			it('allows to be reset', async () => {
+				await systemSettings.setAtomicExchangeFeeRate(sETH, 0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(sETH), 0);
 			});
 		});
 	});

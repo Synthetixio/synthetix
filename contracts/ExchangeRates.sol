@@ -283,8 +283,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return getAggregatorWarningFlags();
     }
 
-    function atomicPriceBuffer() external view returns (uint) {
-        return getAtomicPriceBuffer();
+    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicPriceBuffer(currencyKey);
     }
 
     function atomicTwapPriceWindow() external view returns (uint) {
@@ -414,7 +414,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             sourceAmount,
             destinationCurrencyKey
         );
-        uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(getAtomicPriceBuffer()));
+        // Derive P_CLBUF from highest configured buffer between source and destination synth
+        uint priceBuffer = Math.max(getAtomicPriceBuffer(sourceCurrencyKey), getAtomicPriceBuffer(destinationCurrencyKey));
+        uint pClbufValue = systemValue.multiplyDecimal(SafeDecimalMath.unit().sub(priceBuffer));
 
         // Normalize decimals in case equivalent asset uses different decimals from internal unit
         uint sourceAmountInEquivalent = (sourceAmount * 10**uint(sourceEquivalent.decimals())) / SafeDecimalMath.unit();
