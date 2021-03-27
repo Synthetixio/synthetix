@@ -586,7 +586,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0, IVirtualSynth(0));
         }
 
-        // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
+        // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         vSynth = _convert(
@@ -681,7 +681,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             systemDestinationRate
         ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
 
-        // SIP-65: Decentralized Circuit Breaker
+        // SIP-65: Decentralized Circuit Breaker (checking current system rates)
         if (
             _suspendIfRateInvalid(sourceCurrencyKey, systemSourceRate) ||
             _suspendIfRateInvalid(destinationCurrencyKey, systemDestinationRate)
@@ -689,11 +689,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return (0, 0);
         }
 
-        // Sanity check observed output amount against current system value
-        // their exchange inputs were incorrect?
+        // Sanity check observed output value against current system value (checking atomic rates)
         require(!_isDeviationAboveThreshold(systemAmountReceived, amountReceived), "Atomic rate too low");
 
-        // Check src/dest synth is sUSD
+        // Ensure src/dest synth is sUSD and determine sUSD value of exchange
         uint sourceSusdValue;
         if (sourceCurrencyKey == sUSD) {
             sourceSusdValue = sourceAmount;
@@ -707,7 +706,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Check and update atomic volume limit
         _checkAndUpdateAtomicVolume(sourceSusdValue);
 
-        // Note: We don't need to check their balance as the burn() below will do a safe subtraction which requires
+        // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
 
         _convert(
