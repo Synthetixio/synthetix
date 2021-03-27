@@ -50,10 +50,10 @@ contract('SystemSettings', async accounts => {
 				'setDebtSnapshotStaleTime',
 				'setCrossDomainMessageGasLimit',
 				'setAtomicMaxVolumePerBlock',
-				'setAtomicPriceBuffer',
 				'setAtomicTwapPriceWindow',
 				'setAtomicEquivalentForDexPricing',
 				'setAtomicExchangeFeeRate',
+				'setAtomicPriceBuffer',
 			],
 		});
 	});
@@ -831,46 +831,6 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
-	describe('setAtomicPriceBuffer', () => {
-		const sETH = toBytes32('sETH');
-		const buffer = toUnit('0.5');
-		it('can only be invoked by owner', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setAtomicPriceBuffer,
-				args: [sETH, buffer],
-				address: owner,
-				accounts,
-				reason: 'Only the contract owner may perform this action',
-			});
-		});
-
-		describe('when successfully invoked', () => {
-			let txn;
-			beforeEach(async () => {
-				txn = await systemSettings.setAtomicPriceBuffer(sETH, buffer, { from: owner });
-			});
-
-			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), buffer);
-			});
-
-			it('and emits an AtomicPriceBufferUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicPriceBufferUpdated', [sETH, buffer]);
-			});
-
-			it('allows to be changed', async () => {
-				const newBuffer = buffer.div(new BN(2));
-				await systemSettings.setAtomicPriceBuffer(sETH, newBuffer, { from: owner });
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), newBuffer);
-			});
-
-			it('allows to be reset to zero', async () => {
-				await systemSettings.setAtomicPriceBuffer(sETH, 0, { from: owner });
-				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), 0);
-			});
-		});
-	});
-
 	describe('setAtomicTwapPriceWindow', () => {
 		const priceWindow = 2;
 		it('can only be invoked by owner', async () => {
@@ -954,7 +914,10 @@ contract('SystemSettings', async accounts => {
 				await systemSettings.setAtomicEquivalentForDexPricing(sETH, secondEquivalentAsset, {
 					from: owner,
 				});
-				assert.equal(await systemSettings.atomicEquivalentForDexPricing(sETH), secondEquivalentAsset);
+				assert.equal(
+					await systemSettings.atomicEquivalentForDexPricing(sETH),
+					secondEquivalentAsset
+				);
 			});
 
 			it('allows to be reset', async () => {
@@ -1012,6 +975,46 @@ contract('SystemSettings', async accounts => {
 			it('allows to be reset', async () => {
 				await systemSettings.setAtomicExchangeFeeRate(sETH, 0, { from: owner });
 				assert.bnEqual(await systemSettings.atomicExchangeFeeRate(sETH), 0);
+			});
+		});
+	});
+
+	describe('setAtomicPriceBuffer', () => {
+		const sETH = toBytes32('sETH');
+		const buffer = toUnit('0.5');
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAtomicPriceBuffer,
+				args: [sETH, buffer],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAtomicPriceBuffer(sETH, buffer, { from: owner });
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), buffer);
+			});
+
+			it('and emits an AtomicPriceBufferUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicPriceBufferUpdated', [sETH, buffer]);
+			});
+
+			it('allows to be changed', async () => {
+				const newBuffer = buffer.div(new BN(2));
+				await systemSettings.setAtomicPriceBuffer(sETH, newBuffer, { from: owner });
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), newBuffer);
+			});
+
+			it('allows to be reset to zero', async () => {
+				await systemSettings.setAtomicPriceBuffer(sETH, 0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), 0);
 			});
 		});
 	});
