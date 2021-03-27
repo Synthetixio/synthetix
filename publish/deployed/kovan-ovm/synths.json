@@ -22,9 +22,5 @@
 	{
 		"name": "sAAVE",
 		"asset": "AAVE"
-	},
-	{
-		"name": "sTSLA",
-		"asset": "TSLA"
 	}
 ]

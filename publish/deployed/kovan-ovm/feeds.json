@@ -22,9 +22,5 @@
 	"AAVE": {
 		"asset": "AAVE",
 		"feed": "0xc051eCEaFd546e0Eb915a97F4D0643BEd7F98a11"
-	},
-	"TSLA": {
-		"asset": "TSLA",
-		"feed": "0x4bFa8c47f9521B0E8f48C14b3288c2258c538C49"
 	}
 }
