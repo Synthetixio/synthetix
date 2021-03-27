@@ -326,10 +326,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicEquivalentForDexPricingUpdated(_currencyKey, _equivalent);
     }
 
-    function setAtomicExchangeFeeRate(bytes32 _currencyKey, uint256 _exchangeFeeRate)
-        external
-        onlyOwner
-    {
+    function setAtomicExchangeFeeRate(bytes32 _currencyKey, uint256 _exchangeFeeRate) external onlyOwner {
         require(_exchangeFeeRate <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
@@ -339,10 +336,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicExchangeFeeUpdated(_currencyKey, _exchangeFeeRate);
     }
 
-    function setAtomicPriceBuffer(bytes32 _currencyKey, uint _buffer)
-        external
-        onlyOwner
-    {
+    function setAtomicPriceBuffer(bytes32 _currencyKey, uint _buffer) external onlyOwner {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_ATOMIC_PRICE_BUFFER, _currencyKey)),

@@ -972,18 +972,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
-    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        internal
-        view
-        returns (uint)
-    {
+    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) internal view returns (uint) {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
-        return _calculateFeeRateFromExchangeSynths(
-            baseRate,
-            sourceCurrencyKey,
-            destinationCurrencyKey
-        );
+        return _calculateFeeRateFromExchangeSynths(baseRate, sourceCurrencyKey, destinationCurrencyKey);
     }
 
     function feeRateForAtomicExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
@@ -1006,18 +998,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             baseRate = getExchangeFeeRate(destinationCurrencyKey);
         }
 
-        return _calculateFeeRateFromExchangeSynths(
-            baseRate,
-            sourceCurrencyKey,
-            destinationCurrencyKey
-        );
+        return _calculateFeeRateFromExchangeSynths(baseRate, sourceCurrencyKey, destinationCurrencyKey);
     }
 
-    function _calculateFeeRateFromExchangeSynths(uint exchangeFeeRate, bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        internal
-        pure
-        returns (uint)
-    {
+    function _calculateFeeRateFromExchangeSynths(
+        uint exchangeFeeRate,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    ) internal pure returns (uint) {
         if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
             return exchangeFeeRate;
         }
