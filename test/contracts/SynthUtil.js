@@ -90,6 +90,11 @@ contract('SynthUtil', accounts => {
 				]);
 			});
 		});
+		describe('currentDebtOwnership', () => {
+			it('should return the debt ownership % of the total debt pool for a given address', async () => {
+				console.log(await synthUtil.currentDebtOwnership(account2, sUSD));
+			});
+		});
 		describe('frozenSynths', () => {
 			it('should not return any currency keys when no synths are frozen', async () => {
 				assert.deepEqual(

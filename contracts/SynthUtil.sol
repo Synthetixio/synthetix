@@ -7,7 +7,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
-import "./interfaces/ISynthetixState.sol";
+import "./interfaces/IIssuer.sol";
 import "./SafeDecimalMath.sol";
 
 
@@ -17,7 +17,7 @@ contract SynthUtil {
     IAddressResolver public addressResolverProxy;
 
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 internal constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
+    bytes32 internal constant CONTRACT_ISSUER = "Issuer";
     bytes32 internal constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant SUSD = "sUSD";
@@ -30,11 +30,8 @@ contract SynthUtil {
         return ISynthetix(addressResolverProxy.requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
     }
 
-    function synthetixState() internal view returns (ISynthetixState) {
-        return
-            ISynthetixState(
-                addressResolverProxy.requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address")
-            );
+    function _exchangeRates() internal view returns (IExchangeRates) {
+        return IExchangeRates(addressResolverProxy.requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
     }
 
     function collateralManager() internal view returns (ICollateralManager) {
@@ -44,8 +41,8 @@ contract SynthUtil {
             );
     }
 
-    function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(addressResolverProxy.requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+    function issuer() internal view returns (IIssuer) {
+        return IIssuer(addressResolverProxy.requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
     }
 
     function totalSynthsInKey(address account, bytes32 currencyKey) external view returns (uint total) {
@@ -63,15 +60,9 @@ contract SynthUtil {
         return total;
     }
 
-    function currentOwnershipDebt(address issuer) external view returns (uint) {
-        ISynthetixState state = synthetixState();
-        (uint initialDebtOwnership, uint debtEntryIndex) = state.issuanceData(issuer);
-
-        return
-            state
-                .lastDebtLedgerEntry()
-                .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
-                .multiplyDecimalRoundPrecise(initialDebtOwnership);
+    function currentDebtOwnership(address account) external view returns (uint) {
+        IIssuer issuer = issuer();
+        return issuer.debtBalanceOf(account, SUSD).divideDecimal(issuer.totalIssuedSynths(SUSD, true));
     }
 
     function shortAmountForSynth(bytes32 synth) external view returns (uint amount) {
