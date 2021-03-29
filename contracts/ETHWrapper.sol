@@ -22,9 +22,68 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "hardhat/console.sol";
 
+contract MixedETHTransactor is ReentrancyGuard {
+    using SafeMath for uint;
+
+    // ========== STATE VARIABLES ==========
+    IWETH public weth;
+    mapping(address => uint) public pendingWithdrawals;
+
+    constructor(address payable _WETH) public {
+        weth = IWETH(_WETH);
+    }
+
+    function receiveEthOrWeth(uint amount) internal {
+        if(msg.value > 0) {
+            require(msg.value == amount, "msg.value not equal to amount");
+            // Accept ETH.
+            weth.deposit.value(amount)();
+        } else {
+            // Accept WETH.
+            weth.transferFrom(msg.sender, address(this), amount);
+        }
+    }
+
+    function sendEthOrWeth(uint amount, bool sendEth) internal {
+        if(sendEth) {
+            // Use withdrawal pattern to mitigate attack vectors.
+            pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
+        } else {
+            weth.transfer(msg.sender, amount);
+        }
+    }
+
+    function withdraw(uint amount) external nonReentrant {
+        // If they try to withdraw more than their total balance, it will fail on the safe sub.
+        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
+
+        (bool success, ) = msg.sender.call.value(amount)("");
+        require(success, "Transfer failed");
+    }
+}
+
+// For use on OVM.
+contract WETHTransactor {
+    // ========== STATE VARIABLES ==========
+    IWETH public weth;
+
+    constructor(address payable _WETH) public {
+        weth = IWETH(_WETH);
+    }
+
+    function receiveEthOrWeth(uint amount, bool receiveEth) internal {
+        // Accept WETH.
+        weth.transferFrom(msg.sender, address(this), amount);
+    }
+
+    function sendEthOrWeth(uint amount, bool sendEth) internal {
+        weth.transfer(msg.sender, amount);
+    }
+}
+
 // MixinSystemSettings
 // Pausable
-contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
+contract ETHWrapper is Owned, MixinResolver, MixedETHTransactor, IETHWrapper {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -54,7 +113,6 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
 
     // ========== STATE VARIABLES ==========
     IWETH public weth;
-    mapping(address => uint) public pendingWithdrawals;
     
     // The maximum amount of ETH held by contract.
     uint public maxETH = 5000 ether;
@@ -65,7 +123,10 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
     // The fee for burning sETH and releasing ETH from the contract. Default 50 bps.
     uint public burnFeeRate = (5 * SafeDecimalMath.unit()) / 1000;
 
-    constructor(address _owner, address _resolver, address payable _WETH) public Owned(_owner) MixinResolver(_resolver) {
+    constructor(address _owner, address _resolver, address payable _WETH) 
+        public 
+        Owned(_owner) MixinResolver(_resolver) MixedETHTransactor(_WETH) 
+    {
         weth = IWETH(_WETH);
     }
 
@@ -144,14 +205,17 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
     
     /* ========== MUTATIVE FUNCTIONS ========== */
     
-    function mint(uint amount) external payable receivesEthOrWeth(amount) {
+    function mint(uint amount) external payable {
+        MixedETHTransactor.receiveEthOrWeth(amount, true);
+
         uint capacity = capacity();
         require(capacity > 0, "Contract has no spare capacity to mint");
         
         if(amount >= capacity) {
             _mint(capacity);
             // Refund remainder.
-            weth.transferFrom(address(this), msg.sender, amount.sub(capacity));
+            MixedETHTransactor.sendEthOrWeth(amount.sub(capacity), receiveEth);
+            // weth.transferFrom(address(this), msg.sender, amount.sub(capacity));
         } else {
             _mint(amount);
         }
@@ -246,34 +310,7 @@ contract ETHWrapper is Owned, MixinResolver, ReentrancyGuard, IETHWrapper {
         feePool().recordFeePaid(feeSusd);        
 
         // Finally, allow the sender to withdraw their ETH, less the fee.
-        _sendWeth(amount.sub(feeAmountEth), receiveEth);
-    }
-
-    function _sendWeth(uint amount, bool sendAsNativeEth) internal {
-        if(sendAsNativeEth) {
-            pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
-        } else {
-            weth.transfer(msg.sender, amount);
-        }
-    }
-
-    function withdraw(uint amount) external nonReentrant {
-        // If they try to withdraw more than their total balance, it will fail on the safe sub.
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
-
-        (bool success, ) = msg.sender.call.value(amount)("");
-        require(success, "Transfer failed");
-    }
-
-    modifier receivesEthOrWeth(uint amount) {
-        if(msg.value > 0) {
-            // Accept ETH.
-            weth.deposit.value(amount)();
-        } else {
-            // Accept WETH.
-            weth.transferFrom(msg.sender, address(this), amount);
-        }
-        _;
+        MixedETHTransactor.sendEthOrWeth(amount.sub(feeAmountEth), receiveEth);
     }
 
     /* ========== EVENTS ========== */
