@@ -49,7 +49,7 @@ contract('ETHWrapper', async accounts => {
 	const twoRenBTC = web3.utils.toBN('200000000');
 	const fiveRenBTC = web3.utils.toBN('500000000');
 
-	const ONE = toBN(1)
+	const ONE = toBN('1')
 	const zeroAddress = '0x0000000000000000000000000000000000000000';
 
 	const onesUSD = toUnit(1);
@@ -81,6 +81,7 @@ contract('ETHWrapper', async accounts => {
 		sUSDSynth,
 		sETHSynth,
 		ethWrapper,
+		weth,
 		timestamp;
 
 	const issueSynthsUSD = async (issueAmount, receiver) => {
@@ -141,7 +142,8 @@ contract('ETHWrapper', async accounts => {
 			ExchangeRates: exchangeRates,
 			ETHWrapper: ethWrapper,
 			SynthsUSD: sUSDSynth,
-			SynthsETH: sETHSynth
+			SynthsETH: sETHSynth,
+			WETH: weth
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -157,6 +159,7 @@ contract('ETHWrapper', async accounts => {
 				'DebtCache',
 				'Exchanger',
 				'ETHWrapper',
+				'WETH',
 				'CollateralManager',
 			],
 		}));
@@ -303,46 +306,62 @@ contract('ETHWrapper', async accounts => {
 
 	describe('mint', async () => {
 		describe('when amount is less than than capacity', () => {
-			let amount = toUnit('1.0')
+			let amount
 			let initialCapacity
 			let mintFee
 			let expectedFeesUSD
+			let mintTx
 
 			beforeEach(async () => {
 				initialCapacity = await ethWrapper.capacity();
+				amount = initialCapacity.sub(toUnit('1.0'));
+
 				({ 
 					mintFee, 
 					expectedFeesUSD 
 				} = await calculateMintFees(amount));
 				
-				await ethWrapper.mint(amount, { from: account1, value: amount });
+				await weth.deposit({ from: account1, value: amount })
+				await weth.approve(ethWrapper.address, amount, { from: account1 })
+				mintTx = await ethWrapper.mint(amount, { from: account1 });
 			});
+			
+			it('locks `amount` ETH in the contract', async () => {
+				const logs = await getDecodedLogs({
+					hash: mintTx.tx,
+					contracts: [weth],
+				});
 
-			it('exchanges ETH for sETH', async () => {
-				assert.bnEqual(await sETHSynth.balanceOf(account1), amount.sub(mintFee));
-				assert.bnEqual(await ethWrapper.getBalance(), amount.sub(mintFee));
+				decodedEventEqual({
+					event: 'Transfer',
+					emittedFrom: weth.address,
+					args: [account1, ethWrapper.address, amount],
+					log: logs[0]
+				});
 			})
-			it('sends sUSD to the fee pool', async () => {
+			it('mints amount(1-mintFeeRate) sETH into the user’s wallet', async () => {
+				assert.bnEqual(await sETHSynth.balanceOf(account1), amount.sub(mintFee));
+			})
+			it('sends amount*mintFeeRate worth of sETH to the fee pool as sUSD', async () => {
 				assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
 			})
-			it('updates capacity', async () => {
-				assert.bnEqual(await ethWrapper.capacity(), initialCapacity.sub(amount.sub(mintFee)))
+			it('has a capacity of (capacity - amount - fees) after', async () => {
+				assert.bnEqual(await ethWrapper.capacity(), initialCapacity.sub(amount).add(mintFee))
 			})
 		})
 
 		describe('amount is larger than or equal to capacity', () => {
-			let amount = toUnit('5001')
+			let amount
 			let initialCapacity
 			let mintFee
 			let expectedFeesUSD
-
-			// Tracking of ETH refund.
-			let minterInitialBalance
 			let mintTx
-			let minterEndingBalance
 
 			beforeEach(async () => {
 				initialCapacity = await ethWrapper.capacity();
+				amount = initialCapacity.add(ONE);
+				// console.log(`Mint amount: ${(amount).toString()}`)
+				// console.log(`Initial capacity: ${(initialCapacity).toString()}`);
 
 				// Calculate the mint fees on the capacity amount,
 				// as this will be the ETH accepted by the contract.
@@ -351,29 +370,32 @@ contract('ETHWrapper', async accounts => {
 					expectedFeesUSD 
 				} = await calculateMintFees(initialCapacity));
 				
-				minterInitialBalance = await getEthBalance(account1)
-				mintTx = await ethWrapper.mint(amount, { from: account1, value: amount });
-				minterEndingBalance = await getEthBalance(account1);
+				await weth.deposit({ from: account1, value: amount })
+				await weth.approve(ethWrapper.address, amount, { from: account1 })
+				mintTx = await ethWrapper.mint(amount, { from: account1 });
 			})
 
-			it('exchanges `capacity` of ETH for sETH', async () => {
+			it('locks `capacity` ETH in the contract', async () => {
+				const logs = await getDecodedLogs({
+					hash: mintTx.tx,
+					contracts: [weth],
+				});
+
+				decodedEventEqual({
+					event: 'Transfer',
+					emittedFrom: weth.address,
+					args: [account1, ethWrapper.address, initialCapacity],
+					log: logs[0]
+				});
+			})
+			it('mints capacity(1-mintFeeRate) sETH into the user’s wallet', async () => {
 				assert.bnEqual(await sETHSynth.balanceOf(account1), initialCapacity.sub(mintFee));
-				assert.bnEqual(await ethWrapper.getBalance(), initialCapacity.sub(mintFee));
 			})
-			it('refunds the remainder to the user', async () => {
-				const gasPaid = web3.utils.toBN(mintTx.receipt.gasUsed * GAS_PRICE);
-				const depositAmount = initialCapacity
-
-				assert.bnEqual(
-					web3.utils
-						.toBN(minterInitialBalance)
-						.sub(gasPaid)
-						.sub(amount)
-						.add(amount.sub(initialCapacity).sub(mintFee)),
-					minterEndingBalance
-				);
+			it('sends capacity*mintFeeRate worth of sETH to the fee pool as sUSD', async () => {
+				assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
 			})
-			it('has a capacity of 0 after', async () => {
+			it('has a capacity of 0.5 bps after', async () => {
+				// console.log(`End capacity: ${(await ethWrapper.capacity()).toString()}`)
 				assert.bnEqual(await ethWrapper.capacity(), mintFee)
 			})
 		})
@@ -384,8 +406,12 @@ contract('ETHWrapper', async accounts => {
 			})
 
 			it('reverts', async () => {
+				const amount = '1'
+				await weth.deposit({ from: account1, value: amount })
+				await weth.approve(ethWrapper.address, amount, { from: account1 })
+
 				await assert.revert(
-					ethWrapper.mint('1', { from: account1, value: '1' }),
+					ethWrapper.mint(amount, { from: account1 }),
 					'Contract has no spare capacity to mint'
 				);
 			})
@@ -397,20 +423,20 @@ contract('ETHWrapper', async accounts => {
 		describe('when the contract has 0 ETH', async () => {
 			it('reverts', async () => {
 				await assert.revert(
-					ethWrapper.burn('1', false, { from: account1 }),
+					ethWrapper.burn('1', { from: account1 }),
 					'Contract cannot burn sETH for ETH, ETH balance is zero'
 				);
 			})
 		})
 
 		describe('when the contract has ETH reserves', async () => {
-			// Tracking of ETH balance.
-			let burnerInitialBalance
 			let burnTx
-			let burnerEndingBalance
 
 			beforeEach(async () => {
-				await ethWrapper.mint('1', { value: toUnit('10'), from: account1 })
+				const amount = toUnit('10')
+				await weth.deposit({ from: account1, value: amount })
+				await weth.approve(ethWrapper.address, amount, { from: account1 })
+				await ethWrapper.mint(amount, { from: account1 })
 			})
 
 			describe('when amount is strictly lower than reserves(1+burnFeeRate)', async () => {
@@ -418,11 +444,12 @@ contract('ETHWrapper', async accounts => {
 				let reserves
 				let burnFee
 				let expectedFeesUSD
-				let gasUsed
-
+				let logs
+				let initialCapacity
 
 				beforeEach(async () => {
 					reserves = await ethWrapper.getBalance()
+					initialCapacity = await ethWrapper.capacity()
 
 					await sETHSynth.issue(account1, amount)
 					await sETHSynth.approve(ethWrapper.address, amount, { from: account1 });
@@ -432,10 +459,7 @@ contract('ETHWrapper', async accounts => {
 						expectedFeesUSD 
 					} = await calculateBurnFees(amount));
 
-					burnerInitialBalance = await getEthBalance(account1)
-					burnTx = await ethWrapper.burn(amount, false, { from: account1 })
-					burnerEndingBalance = await getEthBalance(account1);
-					// await ethWrapper.withdraw(amount.sub(burnFee), { from: account1 })
+					burnTx = await ethWrapper.burn(amount, { from: account1 })
 				})
 
 				it('burns amount of sETH', async () => {
@@ -454,15 +478,21 @@ contract('ETHWrapper', async accounts => {
 							.find(({ name }) => name === 'Burned'),
 					});
 				})
-				it('sends reserves(1-burnFeeRate) ETH to user', async () => {					
-					const gasPaid = web3.utils.toBN(burnTx.receipt.gasUsed * GAS_PRICE);
-					assert.bnEqual(
-						web3.utils
-							.toBN(burnerInitialBalance)
-							.sub(gasPaid)
-							.add(amount.sub(burnFee)),
-						burnerEndingBalance
-					);
+				it('sends amount(1-burnFeeRate) ETH to user', async () => {
+					const logs = await getDecodedLogs({
+						hash: burnTx.tx,
+						contracts: [weth],
+					});
+
+					decodedEventEqual({
+						event: 'Transfer',
+						emittedFrom: weth.address,
+						args: [ethWrapper.address, account1, amount.sub(burnFee)],
+						log: logs
+							.reverse()
+							.filter(l => !!l)
+							.find(({ name }) => name === 'Transfer'),
+					});
 				})
 				it('sends fees as sUSD to the fee pool', async () => {
 					const logs = await getDecodedLogs({
@@ -480,6 +510,9 @@ contract('ETHWrapper', async accounts => {
 							.find(({ name }) => name === 'Issued'),
 					});
 				})
+				it('updates capacity', async () => {
+					assert.bnEqual(await ethWrapper.capacity(), initialCapacity.add(amount))
+				})
 			})
 
 			describe('when amount is larger than or equal to reserves(1+burnFeeRate)', async () => {
@@ -487,9 +520,11 @@ contract('ETHWrapper', async accounts => {
 				let amount
 				let burnFee
 				let expectedFeesUSD
+				let initialCapacity
 
 				beforeEach(async () => {
 					reserves = await ethWrapper.getBalance()
+					initialCapacity = await ethWrapper.capacity()
 
 					const burnFeeRate = await ethWrapper.burnFeeRate()
 					amount = (reserves.mul(ONE.add(burnFeeRate))).add(ONE)
@@ -502,10 +537,7 @@ contract('ETHWrapper', async accounts => {
 						expectedFeesUSD 
 					} = await calculateBurnFees(reserves));
 
-					burnerInitialBalance = await getEthBalance(account1)
-					burnTx = await ethWrapper.burn(amount, false, { from: account1 })
-					burnerEndingBalance = await getEthBalance(account1);
-					// await ethWrapper.withdraw(reserves.sub(burnFee), { from: account1 })
+					burnTx = await ethWrapper.burn(amount, { from: account1 })
 				})
 
 				it('burns reserves amount of sETH', async () => {
@@ -525,14 +557,20 @@ contract('ETHWrapper', async accounts => {
 					});
 				})
 				it('sends reserves(1-burnFeeRate) ETH to user', async () => {
-					const gasPaid = web3.utils.toBN(burnTx.receipt.gasUsed * GAS_PRICE);
-					assert.bnEqual(
-						web3.utils
-							.toBN(burnerInitialBalance)
-							.sub(gasPaid)
-							.add(reserves.sub(burnFee)),
-						burnerEndingBalance
-					);
+					const logs = await getDecodedLogs({
+						hash: burnTx.tx,
+						contracts: [weth],
+					});
+
+					decodedEventEqual({
+						event: 'Transfer',
+						emittedFrom: weth.address,
+						args: [ethWrapper.address, account1, reserves.sub(burnFee)],
+						log: logs
+							.reverse()
+							.filter(l => !!l)
+							.find(({ name }) => name === 'Transfer'),
+					});
 				})
 				it('sends fees as sUSD to the fee pool', async () => {
 					const logs = await getDecodedLogs({
@@ -551,6 +589,9 @@ contract('ETHWrapper', async accounts => {
 							.filter(l => !!l)
 							.find(({ name }) => name === 'Issued'),
 					});
+				})
+				it('updates capacity', async () => {
+					assert.bnEqual(await ethWrapper.capacity(), initialCapacity.add(reserves))
 				})
 			})
 

@@ -88,7 +88,6 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
-    
 
     function synthsUSD() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
@@ -115,9 +114,15 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
 
     // ========== VIEWS ==========
 
-    function capacity() public view returns (uint) {
+    function capacity() public view returns (uint _capacity) {
+        // capacity = min(maxETH, maxETH - balance(1 - mintFeeRate))
+        // uint balance = getBalance().multiplyDecimal(SafeDecimalMath.unit().add(mintFeeRate));
+        // TODO: the capacity of the contract is exclusive of the mint fees?
         uint balance = getBalance();
-        return balance >= maxETH ? 0 : maxETH.sub(balance);
+        if(balance >= maxETH) {
+            return 0;
+        }
+        return maxETH.sub(balance);
     }
 
     function getBalance() public view returns (uint) {
@@ -149,15 +154,13 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     function mint(uint amount) external payable {
         require(amount <= weth.allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amount <= weth.balanceOf(msg.sender), "Balance is too low");
-        weth.transferFrom(msg.sender, address(this), amount);
 
         uint currentCapacity = capacity();
         require(currentCapacity > 0, "Contract has no spare capacity to mint");
         
         if(amount >= currentCapacity) {
             _mint(currentCapacity);
-            // Refund remainder.
-            weth.transfer(msg.sender, amount.sub(currentCapacity));
+            // Refund is not needed, as we transfer the exact amount of WETH.
         } else {
             _mint(amount);
         }
@@ -211,6 +214,8 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _mint(uint depositAmountEth) internal {
+        weth.transferFrom(msg.sender, address(this), depositAmountEth);
+
         // Calculate minting fee.
         uint feeAmountEth = calculateMintFee(depositAmountEth);
 
@@ -220,7 +225,9 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
 
         // Remit the fee in sUSDs
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
-        weth.transfer(address(0), feeAmountEth); // burn weth
+        // TODO(liamz): Yo this feels a bit weird, burning the WETH.
+        // Shouldn't we send it somewhere, else we're just inflating the sETH supply?
+        weth.transfer(address(0), feeAmountEth);
 
         // Tell the fee pool about this
         feePool().recordFeePaid(feeSusd);
@@ -245,6 +252,7 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
 
         // Remit the fee in sUSDs
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
+        weth.transfer(address(0), feeAmountEth);
 
         // Tell the fee pool about this
         feePool().recordFeePaid(feeSusd);        

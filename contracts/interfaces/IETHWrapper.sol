@@ -4,7 +4,7 @@ pragma solidity >=0.4.24;
 contract IETHWrapper {
     function mint(uint amount) external payable;
 
-    function burn(uint amount, bool receiveEth) external;
+    function burn(uint amount) external;
 
     function capacity() external view returns (uint);
 
