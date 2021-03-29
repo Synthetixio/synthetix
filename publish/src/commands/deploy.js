@@ -1985,7 +1985,7 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'waitingPeriodSecs',
-			expected: input => input !== waitingPeriodSecs,
+			expected: input => (waitingPeriodSecs === '0' ? true : input !== '0'),
 			write: 'setWaitingPeriodSecs',
 			writeArg: waitingPeriodSecs,
 		});
