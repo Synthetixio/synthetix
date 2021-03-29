@@ -275,4 +275,32 @@ contract('DelegateApprovals', async accounts => {
 			);
 		});
 	});
+	describe('revoking non-ALL power', () => {
+		it('should also revoke ALL power if set', async () => {
+			const authoriser = account1;
+			const delegate = account2;
+			const powers = [
+				['approveExchangeOnBehalf', 'removeExchangeOnBehalf', 'canExchangeFor'],
+				['approveIssueOnBehalf', 'removeIssueOnBehalf', 'canIssueFor'],
+				['approveBurnOnBehalf', 'removeBurnOnBehalf', 'canBurnFor'],
+				['approveClaimOnBehalf', 'removeClaimOnBehalf', 'canClaimFor'],
+			];
+
+			await delegateApprovals.approveAllDelegatePowers(delegate, { from: authoriser });
+			for (const [approve] of powers) {
+				await delegateApprovals[approve](delegate, { from: authoriser });
+			}
+
+			for (const [, remove, can] of powers) {
+				// check approval is set
+				assert.isTrue(await delegateApprovals[can](authoriser, delegate));
+
+				// revoke
+				await await delegateApprovals[remove](delegate, { from: authoriser });
+
+				// check revoked
+				assert.isNotTrue(await delegateApprovals[can](authoriser, delegate));
+			}
+		});
+	});
 });
