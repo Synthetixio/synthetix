@@ -182,28 +182,34 @@ contract('ETHWrapper', async accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	// it.skip('should ensure only expected functions are mutative', async () => {
-	// 	// ensureOnlyExpectedMutativeFunctions({
-	// 	// 	abi: ceth.abi,
-	// 	// 	ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
-	// 	// 	expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'claim', 'draw'],
-	// 	// });
-	// });
-
-	it.skip('should access its dependencies via the address resolver', async () => {
-		// assert.equal(await addressResolver.getAddress(toBytes32('SynthsUSD')), sUSDSynth.address);
-		// assert.equal(await addressResolver.getAddress(toBytes32('FeePool')), feePool.address);
-		// assert.equal(
-		// 	await addressResolver.getAddress(toBytes32('ExchangeRates')),
-		// 	exchangeRates.address
-		// );
+	it('ensure only expected functions are mutative', () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: ethWrapper.abi,
+			hasFallback: true,
+			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'MixinSystemSettings'],
+			expected: [
+				'mint',
+				'burn'
+			],
+		});
 	});
-
 
 	describe('On deployment of Contract', async () => {
 		let instance;
 		beforeEach(async () => {
 			instance = ethWrapper;
+		});
+		
+		it('should set constructor params on deployment', async () => {
+			assert.equal(await instance.resolver(), addressResolver.address);
+		});
+		
+		it('should access its dependencies via the address resolver', async () => {
+			assert.equal(await addressResolver.getAddress(toBytes32('SynthsETH')), sETHSynth.address);
+			assert.equal(await addressResolver.getAddress(toBytes32('SynthsUSD')), sUSDSynth.address);
+			assert.equal(await addressResolver.getAddress(toBytes32('ExchangeRates')), exchangeRates.address);
+			assert.equal(await addressResolver.getAddress(toBytes32('Issuer')), issuer.address);
+			assert.equal(await addressResolver.getAddress(toBytes32('FeePool')), feePool.address);
 		});
 		
 		describe('should have a default', async () => {
@@ -224,32 +230,6 @@ contract('ETHWrapper', async accounts => {
 			});
 		});
 	});
-
-	// describe.only('capacity', async () => {
-	// 	before(async () => {
-
-	// 	})
-
-	// 	describe('after setting maxETH', async () => {
-	// 		it('returns 0', async () => {
-	// 			// Mint fees.
-	// 			// const mintFeeRate = await ethWrapper.mintFeeRate()
-	// 			// const mintFee = multiplyDecimalRound(amount, mintFeeRate)
-	// 			// const expectedFeesUSD = await calculateLoanFeesUSD(mintFee)
-
-	// 			await ethWrapper.setMaxETH(toUnit('1'), { from: owner })
-
-	// 			const amount = toUnit('0.5')
-	// 			await ethWrapper.mint({ from: owner, value: amount })
-	// 			assert.bnEqual(await ethWrapper.getBalance(), amount.sub(mintFee))
-	// 			assert.bnEqual(await ethWrapper.capacity(), amount.sub(mintFee))
-				
-	// 			await ethWrapper.setMaxETH(toUnit('1'), { from: owner })
-				
-	// 			assert.bnEqual(await ethWrapper.maxETH(), newMaxETH)
-	// 		})
-	// 	})
-	// })
 
 	addSnapshotBeforeRestoreAfterEach()
 
