@@ -152,7 +152,7 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     // Burn `amount` sETH for `amount - fees` WETH.
     function burn(uint amount) external {
         uint reserves = getBalance();
-        require(reserves > 0, "Contract cannot burn sETH for ETH, ETH balance is zero");
+        require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
         
         if(amount >= reserves) {
             _burn(reserves);
