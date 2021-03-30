@@ -20,7 +20,7 @@ const { toBN } = require('web3-utils');
 contract('SystemSettings', async accounts => {
 	const [, owner] = accounts;
 	const oneWeek = toBN(7 * 24 * 60 * 60);
-	const ONE = toBN('1')
+	const ONE = toBN('1');
 
 	let systemSettings;
 
@@ -794,7 +794,7 @@ contract('SystemSettings', async accounts => {
 
 		describe('when successfully invoked', () => {
 			let txn;
-			let newValue = toUnit('6000')
+			const newValue = toUnit('6000');
 			beforeEach(async () => {
 				txn = await systemSettings.setETHWrapperMaxETH(newValue, { from: owner });
 			});
@@ -820,7 +820,7 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if the rate exceeds MAX_ETH_WRAPPER_MINT_FEE_RATE', async () => {
-			let newValue = (await systemSettings.MAX_ETH_WRAPPER_MINT_FEE_RATE()).add(ONE)
+			const newValue = (await systemSettings.MAX_ETH_WRAPPER_MINT_FEE_RATE()).add(ONE);
 			await assert.revert(
 				systemSettings.setETHWrapperMintFeeRate(newValue, { from: owner }),
 				'rate > MAX_ETH_WRAPPER_MINT_FEE_RATE'
@@ -829,7 +829,7 @@ contract('SystemSettings', async accounts => {
 
 		describe('when successfully invoked', () => {
 			let txn;
-			let newValue = toUnit('0.06')
+			const newValue = toUnit('0.06');
 			beforeEach(async () => {
 				txn = await systemSettings.setETHWrapperMintFeeRate(newValue, { from: owner });
 			});
@@ -855,7 +855,7 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if the rate exceeds MAX_ETH_WRAPPER_BURN_FEE_RATE', async () => {
-			let newValue = (await systemSettings.MAX_ETH_WRAPPER_BURN_FEE_RATE()).add(ONE)
+			const newValue = (await systemSettings.MAX_ETH_WRAPPER_BURN_FEE_RATE()).add(ONE);
 			await assert.revert(
 				systemSettings.setETHWrapperBurnFeeRate(newValue, { from: owner }),
 				'rate > MAX_ETH_WRAPPER_BURN_FEE_RATE'
@@ -864,7 +864,7 @@ contract('SystemSettings', async accounts => {
 
 		describe('when successfully invoked', () => {
 			let txn;
-			let newValue = toUnit('0.06')
+			const newValue = toUnit('0.06');
 			beforeEach(async () => {
 				txn = await systemSettings.setETHWrapperBurnFeeRate(newValue, { from: owner });
 			});
@@ -877,6 +877,4 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 	});
-
-
 });

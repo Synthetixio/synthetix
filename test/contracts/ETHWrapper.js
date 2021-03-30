@@ -1,116 +1,42 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('hardhat');
+const { contract } = require('hardhat');
 
-const {
-	assert,
-	addSnapshotBeforeRestoreAfterEach,
-	addSnapshotBeforeRestoreAfter,
-} = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const ETHWrapper = artifacts.require('ETHWrapper');
-const FlexibleStorage = artifacts.require('FlexibleStorage');
-
-const {
-	currentTime,
-	fastForward,
-	toUnit,
-	toPreciseUnit,
-	fromUnit,
-	multiplyDecimal,
-	multiplyDecimalRound,
-	getEthBalance,
-} = require('../utils')();
+const { currentTime, toUnit } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
-	onlyGivenAddressCanInvoke,
-	setStatus,
 	getDecodedLogs,
 	decodedEventEqual,
-	proxyThruTo,
-	setExchangeFeeRateForSynths,
 } = require('./helpers');
 
-const { mockToken, setupAllContracts } = require('./setup');
-const { GAS_PRICE } = require('../../hardhat.config');
+const { setupAllContracts } = require('./setup');
 
-const {
-	toBytes32,
-	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD },
-} = require('../..');
-const { expect } = require('chai');
+const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');
 
 contract('ETHWrapper', async accounts => {
-	const YEAR = 31536000;
-	const INTERACTION_DELAY = 300;
-
 	const synths = ['sUSD', 'sETH', 'ETH', 'SNX'];
-	const [sUSD, sETH, ETH, SNX] = ['sUSD', 'sETH', 'ETH', 'SNX'].map(toBytes32);
-
-	const oneRenBTC = web3.utils.toBN('100000000');
-	const twoRenBTC = web3.utils.toBN('200000000');
-	const fiveRenBTC = web3.utils.toBN('500000000');
+	const [sETH, ETH] = ['sETH', 'ETH'].map(toBytes32);
 
 	const ONE = toBN('1');
-	const zeroAddress = '0x0000000000000000000000000000000000000000';
 
-	const onesUSD = toUnit(1);
-	const tensUSD = toUnit(10);
-	const oneHundredsUSD = toUnit(100);
-	const oneThousandsUSD = toUnit(1000);
-	const fiveThousandsUSD = toUnit(5000);
+	const [, owner, oracle, , account1] = accounts;
 
-	let tx;
-	let loan;
-	let id;
-	let proxy, tokenState;
-
-	const [deployerAccount, owner, oracle, depotDepositor, account1, account2] = accounts;
-
-	let cerc20,
-		state,
-		systemSettings,
-		managerState,
+	let systemSettings,
 		feePool,
 		exchangeRates,
 		addressResolver,
 		depot,
-		systemStatus,
-		manager,
 		issuer,
-		debtCache,
 		FEE_ADDRESS,
-		synthetix,
 		sUSDSynth,
 		sETHSynth,
 		ethWrapper,
 		weth,
 		timestamp;
-
-	const issueSynthsUSD = async (issueAmount, receiver) => {
-		// Set up the depositor with an amount of synths to deposit.
-		await sUSDSynth.transfer(receiver, issueAmount, {
-			from: owner,
-		});
-	};
-
-	const depositUSDInDepot = async (synthsToDeposit, depositor) => {
-		// Ensure Depot has latest rates
-		// await updateRatesWithDefaults();
-
-		// Get sUSD from Owner
-		await issueSynthsUSD(synthsToDeposit, depositor);
-
-		// Approve Transaction
-		await sUSDSynth.approve(depot.address, synthsToDeposit, { from: depositor });
-
-		// Deposit sUSD in Depot
-		await depot.depositSynths(synthsToDeposit, {
-			from: depositor,
-		});
-	};
 
 	const calculateLoanFeesUSD = async feesInETH => {
 		// Ask the Depot how many sUSD I will get for this ETH
@@ -138,11 +64,9 @@ contract('ETHWrapper', async accounts => {
 		// ]);
 
 		({
-			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
-			DebtCache: debtCache,
 			FeePool: feePool,
 			Depot: depot,
 			ExchangeRates: exchangeRates,
@@ -361,15 +285,12 @@ contract('ETHWrapper', async accounts => {
 			});
 
 			describe('when amount is strictly lower than reserves(1+burnFeeRate)', async () => {
-				let amount = toUnit('1.0');
-				let reserves;
+				const amount = toUnit('1.0');
 				let burnFee;
 				let expectedFeesUSD;
-				let logs;
 				let initialCapacity;
 
 				beforeEach(async () => {
-					reserves = await ethWrapper.getBalance();
 					initialCapacity = await ethWrapper.capacity();
 
 					await sETHSynth.issue(account1, amount);

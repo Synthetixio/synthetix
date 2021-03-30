@@ -26,7 +26,7 @@ const {
 		CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
 		ETH_WRAPPER_MAX_ETH,
 		ETH_WRAPPER_MINT_FEE_RATE,
-		ETH_WRAPPER_BURN_FEE_RATE
+		ETH_WRAPPER_BURN_FEE_RATE,
 	},
 } = require('../../');
 
@@ -242,7 +242,7 @@ const setupContract = async ({
 			0,
 			0,
 		],
-		WETH: []
+		WETH: [],
 	};
 
 	let instance;
