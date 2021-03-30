@@ -20,7 +20,6 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "hardhat/console.sol";
 
-// MixinSystemSettings
 // Pausable
 contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     using SafeMath for uint;
@@ -45,13 +44,13 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     // ========== STATE VARIABLES ==========
-    IWETH public weth;
+    IWETH internal _weth;
     
     constructor(address _owner, address _resolver, address payable _WETH) 
         public 
         Owned(_owner) MixinSystemSettings(_resolver)
     {
-        weth = IWETH(_WETH);
+        _weth = IWETH(_WETH);
     }
 
     /* ========== VIEWS ========== */
@@ -105,7 +104,7 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     }
 
     function getBalance() public view returns (uint) {
-        return weth.balanceOf(address(this));
+        return _weth.balanceOf(address(this));
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
@@ -127,12 +126,17 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     function burnFeeRate() public view returns (uint256) {
         return getETHWrapperBurnFeeRate();
     }
+
+    function weth() public view returns (address) {
+        return address(_weth);
+    }
     
     /* ========== MUTATIVE FUNCTIONS ========== */
     
-    function mint(uint amount) external payable {
-        require(amount <= weth.allowance(msg.sender, address(this)), "Allowance not high enough");
-        require(amount <= weth.balanceOf(msg.sender), "Balance is too low");
+    // Transfers `amount` WETH to mint `amount - fees` sETH.
+    function mint(uint amount) external {
+        require(amount <= _weth.allowance(msg.sender, address(this)), "Allowance not high enough");
+        require(amount <= _weth.balanceOf(msg.sender), "Balance is too low");
 
         uint currentCapacity = capacity();
         require(currentCapacity > 0, "Contract has no spare capacity to mint");
@@ -145,7 +149,7 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
         }
     }
 
-    // Burn `amount` sETH for `amount - fees` ETH.
+    // Burn `amount` sETH for `amount - fees` WETH.
     function burn(uint amount) external {
         uint reserves = getBalance();
         require(reserves > 0, "Contract cannot burn sETH for ETH, ETH balance is zero");
@@ -170,7 +174,7 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _mint(uint depositAmountEth) internal {
-        weth.transferFrom(msg.sender, address(this), depositAmountEth);
+        _weth.transferFrom(msg.sender, address(this), depositAmountEth);
 
         // Calculate minting fee.
         uint feeAmountEth = calculateMintFee(depositAmountEth);
@@ -183,7 +187,7 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
         // TODO(liamz): Yo this feels a bit weird, burning the WETH.
         // Shouldn't we send it somewhere, else we're just inflating the sETH supply?
-        weth.transfer(address(0), feeAmountEth);
+        _weth.transfer(address(0), feeAmountEth);
 
         // Tell the fee pool about this
         feePool().recordFeePaid(feeSusd);
@@ -208,13 +212,13 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
 
         // Remit the fee in sUSDs
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
-        weth.transfer(address(0), feeAmountEth);
+        _weth.transfer(address(0), feeAmountEth);
 
         // Tell the fee pool about this
         feePool().recordFeePaid(feeSusd);        
 
         // Finally, transfer ETH to the user, less the fee.
-        weth.transfer(msg.sender, amount.sub(feeAmountEth));
+        _weth.transfer(msg.sender, amount.sub(feeAmountEth));
     }
 
 }
