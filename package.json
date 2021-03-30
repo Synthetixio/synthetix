@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.41.0",
+	"version": "2.40.1-alpha",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -103,7 +103,7 @@
 		"ethers": "5.0.31",
 		"execa": "^4.1.0",
 		"fs-extra": "9.0.1",
-		"hardhat": "file:../../../../open-source/optimism/prediction-markets-spam/hardhat/packages/hardhat-core/hardhat-v2.1.1.tgz",
+		"hardhat": "^2.0.11",
 		"hardhat-gas-reporter": "1.0.1",
 		"husky": "^4.3.0",
 		"is-ci": "^2.0.0",
