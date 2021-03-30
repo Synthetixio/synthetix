@@ -3,12 +3,10 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./interfaces/IAddressResolver.sol";
-import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IETHWrapper.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
-import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 
 // Internal references
 import "./interfaces/IIssuer.sol";
@@ -22,6 +20,7 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "hardhat/console.sol";
 
+// MixinSystemSettings
 // Pausable
 contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     using SafeMath for uint;
@@ -58,23 +57,17 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
-        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[1] = CONTRACT_SYNTHSETH;
-        newAddresses[2] = CONTRACT_SYNTHSUSD;
-        newAddresses[3] = CONTRACT_EXRATES;
-        newAddresses[4] = CONTRACT_ISSUER;
-        newAddresses[5] = CONTRACT_FEEPOOL;
+        bytes32[] memory newAddresses = new bytes32[](5);
+        newAddresses[0] = CONTRACT_SYNTHSETH;
+        newAddresses[1] = CONTRACT_SYNTHSUSD;
+        newAddresses[2] = CONTRACT_EXRATES;
+        newAddresses[3] = CONTRACT_ISSUER;
+        newAddresses[4] = CONTRACT_FEEPOOL;
         addresses = combineArrays(existingAddresses, newAddresses);
         return addresses;
     }
 
     /* ========== INTERNAL VIEWS ========== */
-
-    function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
-    }
-
     function synthsUSD() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
