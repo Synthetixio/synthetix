@@ -269,6 +269,12 @@
 		"sign": "Fr",
 		"description": "Swiss Franc"
 	},
+	"KRW": {
+		"asset": "KRW",
+		"category": "forex",
+		"sign": "₩",
+		"description": "South Korean Won"
+	},
 	"XAU": {
 		"asset": "XAU",
 		"category": "commodity",

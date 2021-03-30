@@ -21,6 +21,10 @@
 		"asset": "GBP"
 	},
 	{
+		"name": "sKRW",
+		"asset": "KRW"
+	},
+	{
 		"name": "sCHF",
 		"asset": "CHF"
 	},
