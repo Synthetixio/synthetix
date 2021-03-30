@@ -90,9 +90,10 @@ contract('SynthUtil', accounts => {
 				]);
 			});
 		});
-		describe('currentDebtOwnership', () => {
-			it('should return the debt ownership % of the total debt pool for a given address', async () => {
-				console.log(await synthUtil.currentDebtOwnership(account2, sUSD));
+		describe.only('currentDebtOwnership', () => {
+			it('should return the debt ownership for a given address relative to the total debt pool', async () => {
+				assert.bnEqual(await synthUtil.currentDebtOwnership(ownerAccount), toUnit('1'));
+				assert.bnEqual(await synthUtil.currentDebtOwnership(account2), toUnit('0'));
 			});
 		});
 		describe('frozenSynths', () => {
