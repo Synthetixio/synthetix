@@ -1201,21 +1201,21 @@ const deploy = async ({
 			if (network !== 'local') {
 				throw new Error('WETH address is not known');
 			}
-	
+
 			// On local, deploy a mock WETH token
 			const weth = await deployer.deployContract({
 				name: 'WETH',
 				args: [],
 			});
-	
+
 			WETH_ADDRESS = weth.options.address;
 		}
 
 		await deployer.deployContract({
-			name: "ETHWrapper",
+			name: 'ETHWrapper',
 			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver), WETH_ADDRESS]
-		})
+			args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
+		});
 	}
 
 	// ----------------
@@ -2035,6 +2035,34 @@ const deploy = async ({
 				writeArg: aggregatorWarningFlags,
 			});
 		}
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'ethWrapperMaxETH',
+			readArg: 0,
+			expected: input => input !== '0', // only change if zero
+			write: 'setETHWrapperMaxETH',
+			writeArg: [1, await getDeployParameter('ETH_WRAPPER_MAX_ETH')],
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'ethWrapperMintFeeRate',
+			readArg: 0,
+			expected: input => input !== '0', // only change if zero
+			write: 'setETHWrapperMintFeeRate',
+			writeArg: [1, await getDeployParameter('ETH_WRAPPER_MINT_FEE_RATE')],
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'ethWrapperBurnFeeRate',
+			readArg: 0,
+			expected: input => input !== '0', // only change if zero
+			write: 'setETHWrapperBurnFeeRate',
+			writeArg: [1, await getDeployParameter('ETH_WRAPPER_BURN_FEE_RATE')],
+		});
 	}
 
 	if (!useOvm) {
