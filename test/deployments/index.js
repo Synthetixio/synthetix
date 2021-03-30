@@ -210,6 +210,7 @@ describe('deployments', () => {
 								'DelegateApprovals',
 								'Depot',
 								'EtherCollateral',
+								'ETHWrapper',
 								'Exchanger',
 								'ExchangeRates',
 								'ExchangeState',
