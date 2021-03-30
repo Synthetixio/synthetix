@@ -67,6 +67,7 @@ contract('ETHWrapper', async accounts => {
 
 	let cerc20,
 		state,
+		systemSettings,
 		managerState,
 		feePool,
 		exchangeRates,
@@ -134,6 +135,7 @@ contract('ETHWrapper', async accounts => {
 
 		({
 			SystemStatus: systemStatus,
+			SystemSettings: systemSettings,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
 			DebtCache: debtCache,
@@ -180,13 +182,13 @@ contract('ETHWrapper', async accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	it.skip('should ensure only expected functions are mutative', async () => {
-		// ensureOnlyExpectedMutativeFunctions({
-		// 	abi: ceth.abi,
-		// 	ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
-		// 	expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'claim', 'draw'],
-		// });
-	});
+	// it.skip('should ensure only expected functions are mutative', async () => {
+	// 	// ensureOnlyExpectedMutativeFunctions({
+	// 	// 	abi: ceth.abi,
+	// 	// 	ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
+	// 	// 	expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'claim', 'draw'],
+	// 	// });
+	// });
 
 	it.skip('should access its dependencies via the address resolver', async () => {
 		// assert.equal(await addressResolver.getAddress(toBytes32('SynthsUSD')), sUSDSynth.address);
@@ -222,59 +224,6 @@ contract('ETHWrapper', async accounts => {
 			});
 		});
 	});
-
-	describe('should allow owner to set', async () => {
-		it('setMintFeeRate', async () => {
-			const newMintFeeRate = toUnit('0.005');
-			await ethWrapper.setMintFeeRate(newMintFeeRate, { from: owner });
-			assert.bnEqual(await ethWrapper.mintFeeRate(), newMintFeeRate);
-		})
-		it('setBurnFeeRate', async () => {
-			const newBurnFeeRate = toUnit('0.005');
-			await ethWrapper.setBurnFeeRate(newBurnFeeRate, { from: owner });
-			assert.bnEqual(await ethWrapper.burnFeeRate(), newBurnFeeRate);
-		})
-		it('setMaxETH', async () => {
-			const newMaxETH = toUnit('100');
-			await ethWrapper.setMaxETH(newMaxETH, { from: owner });
-			assert.bnEqual(await ethWrapper.maxETH(), newMaxETH);
-		})
-
-		describe('then revert when', async () => {
-			describe('non owner attempts to set', async () => {
-				it('setMintFeeRate()', async () => {
-					const newMintFeeRate = toUnit('0.005');
-					await onlyGivenAddressCanInvoke({
-						fnc: ethWrapper.setMintFeeRate,
-						args: [newMintFeeRate],
-						accounts,
-						address: owner,
-						reason: 'Only the contract owner may perform this action',
-					});
-				});
-				it('setBurnFeeRate()', async () => {
-					const newBurnFeeRate = toUnit('0.005');
-					await onlyGivenAddressCanInvoke({
-						fnc: ethWrapper.setBurnFeeRate,
-						args: [newBurnFeeRate],
-						accounts,
-						address: owner,
-						reason: 'Only the contract owner may perform this action',
-					});
-				});
-				it('setMaxETH()', async () => {
-					const newMaxETH = toUnit('100');
-					await onlyGivenAddressCanInvoke({
-						fnc: ethWrapper.setMaxETH,
-						args: [newMaxETH],
-						accounts,
-						address: owner,
-						reason: 'Only the contract owner may perform this action',
-					});
-				});
-			})
-		})
-	})
 
 	// describe.only('capacity', async () => {
 	// 	before(async () => {
@@ -402,7 +351,7 @@ contract('ETHWrapper', async accounts => {
 
 		describe('capacity = 0', () => {
 			beforeEach(async () => {
-				await ethWrapper.setMaxETH('0', { from: owner });
+				await systemSettings.setETHWrapperMaxETH('0', { from: owner });
 			})
 
 			it('reverts', async () => {
