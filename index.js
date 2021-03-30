@@ -198,6 +198,10 @@ const defaults = {
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
 		INTERACTION_DELAY: '3600', // 1 hour in secs
 	},
+
+	ETH_WRAPPER_MAX_ETH: w3utils.toWei('5000'),
+	ETH_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.005'), // 50 bps
+	ETH_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.005'), // 50 bps
 };
 
 /**

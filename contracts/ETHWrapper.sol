@@ -22,9 +22,8 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 import "hardhat/console.sol";
 
-// MixinSystemSettings
 // Pausable
-contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
+contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -36,12 +35,6 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     bytes32 internal constant sETH = "sETH";
     bytes32 internal constant ETH = "ETH";
     bytes32 internal constant SNX = "SNX";
-
-    // Flexible storage names
-    bytes32 public constant CONTRACT_NAME = "ETHWrapper";
-    bytes32 internal constant MAX_ETH = "maxETH";
-    bytes32 internal constant MINT_FEE_RATE = "mintFeeRate";
-    bytes32 internal constant BURN_FEE_RATE = "burnFeeRate";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -55,31 +48,24 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     // ========== STATE VARIABLES ==========
     IWETH public weth;
     
-    // The maximum amount of ETH held by contract.
-    uint public maxETH = 5000 ether;
-
-    // The fee for depositing ETH into the contract. Default 50 bps.
-    uint public mintFeeRate = (5 * SafeDecimalMath.unit()) / 1000;
-
-    // The fee for burning sETH and releasing ETH from the contract. Default 50 bps.
-    uint public burnFeeRate = (5 * SafeDecimalMath.unit()) / 1000;
-
     constructor(address _owner, address _resolver, address payable _WETH) 
         public 
-        Owned(_owner) MixinResolver(_resolver)
+        Owned(_owner) MixinSystemSettings(_resolver)
     {
         weth = IWETH(_WETH);
     }
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory addresses = new bytes32[](6);
-        addresses[0] = CONTRACT_SYSTEMSTATUS;
-        addresses[1] = CONTRACT_SYNTHSETH;
-        addresses[2] = CONTRACT_SYNTHSUSD;
-        addresses[3] = CONTRACT_EXRATES;
-        addresses[4] = CONTRACT_ISSUER;
-        addresses[5] = CONTRACT_FEEPOOL;
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](6);
+        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_SYNTHSETH;
+        newAddresses[2] = CONTRACT_SYNTHSUSD;
+        newAddresses[3] = CONTRACT_EXRATES;
+        newAddresses[4] = CONTRACT_ISSUER;
+        newAddresses[5] = CONTRACT_FEEPOOL;
+        addresses = combineArrays(existingAddresses, newAddresses);
         return addresses;
     }
 
@@ -119,10 +105,10 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
         // uint balance = getBalance().multiplyDecimal(SafeDecimalMath.unit().add(mintFeeRate));
         // TODO: the capacity of the contract is exclusive of the mint fees?
         uint balance = getBalance();
-        if(balance >= maxETH) {
+        if(balance >= maxETH()) {
             return 0;
         }
-        return maxETH.sub(balance);
+        return maxETH().sub(balance);
     }
 
     function getBalance() public view returns (uint) {
@@ -130,24 +116,24 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
-        return amount.multiplyDecimalRound(mintFeeRate);
+        return amount.multiplyDecimalRound(mintFeeRate());
     }
 
     function calculateBurnFee(uint amount) public view returns (uint) {
-        return amount.multiplyDecimalRound(burnFeeRate);
+        return amount.multiplyDecimalRound(burnFeeRate());
     }
 
-    // function maxETH() public view returns (uint256) {
-    //     // return flexibleStorage().getUIntValue(CONTRACT_NAME, MAX_ETH);
-    // }
+    function maxETH() public view returns (uint256) {
+        return getETHWrapperMaxETH();
+    }
 
-    // function mintFeeRate() public view returns (uint256) {
-    //     // return flexibleStorage().getUIntValue(CONTRACT_NAME, MINT_FEE_RATE);
-    // }
+    function mintFeeRate() public view returns (uint256) {
+        return getETHWrapperMintFeeRate();
+    }
 
-    // function burnFeeRate() public view returns (uint256) {
-    //     // return flexibleStorage().getUIntValue(CONTRACT_NAME, BURN_FEE_RATE);
-    // }
+    function burnFeeRate() public view returns (uint256) {
+        return getETHWrapperBurnFeeRate();
+    }
     
     /* ========== MUTATIVE FUNCTIONS ========== */
     
@@ -180,29 +166,6 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
     }
 
     // ========== RESTRICTED ==========
-
-    function setMaxETH(uint _maxETH) external onlyOwner {
-        // flexibleStorage().setUIntValue(CONTRACT_NAME, MAX_ETH, _maxETH);
-
-        // If we set the _newMaxETH to be lower than the current maxETH,
-        // then the perms are (mint=0, burn=1).
-        // Else if it is higher,
-        // then the perms are (mint=1, burn=1)
-        maxETH = _maxETH;
-        emit MaxETHUpdated(_maxETH);
-    }
-
-    function setMintFeeRate(uint _rate) external onlyOwner {
-        // flexibleStorage().setUIntValue(CONTRACT_NAME, MINT_FEE_RATE, _rate);
-        mintFeeRate = _rate;
-        emit MintFeeRateUpdated(_rate);
-    }
-
-    function setBurnFeeRate(uint _rate) external onlyOwner {
-        // flexibleStorage().setUIntValue(CONTRACT_NAME, BURN_FEE_RATE, _rate);
-        burnFeeRate = _rate;
-        emit BurnFeeRateUpdated(_rate);
-    }
 
     /**
      * @notice Fallback function
@@ -261,8 +224,4 @@ contract ETHWrapper is Owned, MixinResolver, IETHWrapper {
         weth.transfer(msg.sender, amount.sub(feeAmountEth));
     }
 
-    /* ========== EVENTS ========== */
-    event MaxETHUpdated(uint rate);
-    event MintFeeRateUpdated(uint rate);
-    event BurnFeeRateUpdated(uint rate);
 }

@@ -24,6 +24,9 @@ const {
 		CROSS_DOMAIN_REWARD_GAS_LIMIT,
 		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
 		CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
+		ETH_WRAPPER_MAX_ETH,
+		ETH_WRAPPER_MINT_FEE_RATE,
+		ETH_WRAPPER_BURN_FEE_RATE
 	},
 } = require('../../');
 
@@ -969,6 +972,15 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setETHWrapperMaxETH(ETH_WRAPPER_MAX_ETH, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setETHWrapperMintFeeRate(ETH_WRAPPER_MINT_FEE_RATE, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setETHWrapperBurnFeeRate(ETH_WRAPPER_BURN_FEE_RATE, {
 				from: owner,
 			}),
 		]);

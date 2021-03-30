@@ -28,6 +28,9 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT = "crossDomainEscrowGasLimit";
     bytes32 internal constant SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT = "crossDomainRewardGasLimit";
     bytes32 internal constant SETTING_CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT = "crossDomainWithdrawalGasLimit";
+    bytes32 internal constant SETTING_ETH_WRAPPER_MAX_ETH = "ethWrapperMaxETH";
+    bytes32 internal constant SETTING_ETH_WRAPPER_MINT_FEE_RATE = "ethWrapperMintFeeRate";
+    bytes32 internal constant SETTING_ETH_WRAPPER_BURN_FEE_RATE = "ethWrapperBurnFeeRate";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -123,5 +126,17 @@ contract MixinSystemSettings is MixinResolver {
 
     function getDebtSnapshotStaleTime() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME);
+    }
+
+    function getETHWrapperMaxETH() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ETH_WRAPPER_MAX_ETH);
+    }
+    
+    function getETHWrapperMintFeeRate() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ETH_WRAPPER_MINT_FEE_RATE);
+    }
+
+    function getETHWrapperBurnFeeRate() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ETH_WRAPPER_BURN_FEE_RATE);
     }
 }

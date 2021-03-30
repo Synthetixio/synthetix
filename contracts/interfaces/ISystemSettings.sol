@@ -25,4 +25,10 @@ interface ISystemSettings {
     function exchangeFeeRate(bytes32 currencyKey) external view returns (uint);
 
     function minimumStakeTime() external view returns (uint);
+    
+    function ethWrapperMaxETH() external view returns (uint);
+
+    function ethWrapperBurnFeeRate() external view returns (uint);
+
+    function ethWrapperMintFeeRate() external view returns (uint);
 }
