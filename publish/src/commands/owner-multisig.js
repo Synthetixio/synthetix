@@ -21,16 +21,16 @@ const {
 } = require('../util');
 
 const {
+	getLastTxId,
 	getMultisigInstance,
 	getMultisigTransactionCount,
-	getSafeTransactions,
-	checkExistingPendingTx,
+	getMultisigTransactions,
 	createAndSubmitTransaction,
 } = require('../multisig-utils');
 
 const DEFAULTS = {
-	gasPrice: '15',
-	gasLimit: 2e5, // 200,000
+	gasPrice: '0',
+	gasLimit: 8e6, // 8,000,000
 };
 
 const ownerMultisig = async ({
@@ -113,15 +113,19 @@ const ownerMultisig = async ({
 	}
 
 	console.log(gray(`Gas Price: ${gasPrice} gwei`));
+	console.log(gray(`Gas Limit: ${gasLimit}`));
 
 	let protocolDaoContract;
 	let currentTxCount;
+	let lastTx;
 	if (isContract) {
 		// new owner should be gnosis safe proxy address
 		protocolDaoContract = getMultisigInstance(web3, newOwner);
 
 		// get protocolDAO tx count
 		currentTxCount = await getMultisigTransactionCount(protocolDaoContract);
+		lastTx = await getLastTxId(protocolDaoContract);
+		console.log('TxCount, currentTxCount, lastTx', lastTx);
 
 		if (!currentTxCount) {
 			console.log(gray('Cannot access mutltisig. Exiting.'));
@@ -151,14 +155,34 @@ const ownerMultisig = async ({
 		}
 	};
 
-	// let stagedTransactions;
-	// if (isContract) {
-	// 	// Load staged transactions
-	// 	stagedTransactions = await getSafeTransactions({
-	// 		network,
-	// 		safeAddress: protocolDaoContract.options.address,
-	// 	});
-	// }
+	let stagedTransactions;
+	if (isContract) {
+		// Load staged transactions
+		stagedTransactions = await getMultisigTransactions({
+			multisigContract: protocolDaoContract,
+			from: 0,
+			to: currentTxCount,
+			pending: true,
+			executed: true,
+		});
+		console.log('1', stagedTransactions);
+		stagedTransactions = await getMultisigTransactions({
+			multisigContract: protocolDaoContract,
+			from: 0,
+			to: currentTxCount,
+			pending: true,
+			executed: false,
+		});
+		console.log('2', stagedTransactions);
+		stagedTransactions = await getMultisigTransactions({
+			multisigContract: protocolDaoContract,
+			from: 0,
+			to: currentTxCount,
+			pending: false,
+			executed: true,
+		});
+		console.log('3', stagedTransactions);
+	}
 
 	console.log(
 		gray('Running through operations during deployment that couldnt complete as not owner.')
@@ -232,45 +256,31 @@ const ownerMultisig = async ({
 		}
 		const currentOwner = (await deployedContract.methods.owner().call()).toLowerCase();
 		const nominatedOwner = (await deployedContract.methods.nominatedOwner().call()).toLowerCase();
-
+		console.log('SystemSetting', address);
 		if (currentOwner === newOwner) {
 			console.log(gray(`${newOwner} is already the owner of ${contract}`));
 		} else if (nominatedOwner === newOwner) {
 			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
 
-			// if (isContract) {
-			// 	// Check if similar one already staged and pending
-			// 	const existingTx = checkExistingPendingTx({
-			// 		stagedTransactions,
-			// 		target: deployedContract.options.address,
-			// 		encodedData,
-			// 		currentSafeNonce,
-			// 	});
-
-			// 	if (existingTx) continue;
-			// }
-
 			// continue if no pending tx found
 			await confirmOrEnd(yellow(`Confirm: Stage ${contract}.acceptOwnership() via protocolDAO?`));
 
-			if (isContract) console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
+			if (isContract)
+				console.log(yellow(`Attempting action protocolDaoContract.submitTransaction()`));
 			else console.log(yellow(`Calling acceptOwnership() on ${contract}...`));
 
 			try {
 				if (isContract) {
-					const newNonce = await createAndSubmitTransaction({
+					await createAndSubmitTransaction({
 						multisigContract: protocolDaoContract,
 						data: encodedData,
 						to: deployedContract.options.address,
 						sender: account,
+						value: 0,
 						gasLimit,
 						gasPrice,
 						network,
-						lastNonce,
 					});
-
-					// track lastNonce submitted
-					lastNonce = newNonce;
 				} else {
 					const tx = await web3.eth.sendTransaction({
 						from: account,
@@ -284,7 +294,7 @@ const ownerMultisig = async ({
 				}
 			} catch (err) {
 				console.log(
-					gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
+					gray(`Transaction failed, if sending txn to multisig failed retry manually - ${err}`)
 				);
 				return;
 			}
