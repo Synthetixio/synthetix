@@ -186,7 +186,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         IExchangeRates exRates = exchangeRates();
 
-        // bookmark.
         // Add total issued synths from non snx collateral back into the total if not excluded
         if (!excludeCollateral) {
             // Get the sUSD equivalent amount of all the MC issued synths.
