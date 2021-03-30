@@ -2165,28 +2165,25 @@ const deploy = async ({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'ethWrapperMaxETH',
-			readArg: 0,
 			expected: input => input !== '0', // only change if zero
 			write: 'setETHWrapperMaxETH',
-			writeArg: [1, await getDeployParameter('ETH_WRAPPER_MAX_ETH')],
+			writeArg: await getDeployParameter('ETH_WRAPPER_MAX_ETH'),
 		});
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'ethWrapperMintFeeRate',
-			readArg: 0,
 			expected: input => input !== '0', // only change if zero
 			write: 'setETHWrapperMintFeeRate',
-			writeArg: [1, await getDeployParameter('ETH_WRAPPER_MINT_FEE_RATE')],
+			writeArg: await getDeployParameter('ETH_WRAPPER_MINT_FEE_RATE'),
 		});
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'ethWrapperBurnFeeRate',
-			readArg: 0,
 			expected: input => input !== '0', // only change if zero
 			write: 'setETHWrapperBurnFeeRate',
-			writeArg: [1, await getDeployParameter('ETH_WRAPPER_BURN_FEE_RATE')],
+			writeArg: await getDeployParameter('ETH_WRAPPER_BURN_FEE_RATE'),
 		});
 	}
 
