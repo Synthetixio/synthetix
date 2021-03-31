@@ -556,7 +556,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Remit the fee if required
         if (fee > 0) {
-            // bookmark
             // Normalize fee to sUSD
             // Note: `fee` is being reused to avoid stack too deep errors.
             fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
