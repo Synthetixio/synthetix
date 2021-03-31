@@ -21,6 +21,7 @@ import "./SafeDecimalMath.sol";
 import "hardhat/console.sol";
 
 // Pausable
+// https://docs.synthetix.io/contracts/source/contracts/etherwrapper
 contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrapper {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -127,8 +128,8 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         return getEtherWrapperBurnFeeRate();
     }
 
-    function weth() public view returns (address) {
-        return address(_weth);
+    function weth() public view returns (IWETH) {
+        return _weth;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

@@ -1,0 +1,82 @@
+// @unsupported: ovm
+pragma solidity ^0.5.16;
+
+// Inheritance
+import "./Owned.sol";
+import "./interfaces/IAddressResolver.sol";
+import "./interfaces/IEtherWrapper.sol";
+import "./interfaces/ISynth.sol";
+import "./interfaces/IWETH.sol";
+import "./interfaces/IERC20.sol";
+
+// Internal references
+import "./MixinResolver.sol";
+import "./interfaces/IEtherWrapper.sol";
+
+// https://docs.synthetix.io/contracts/source/contracts/nativeetherwrapper
+contract NativeEtherWrapper is Owned, MixinResolver {
+    bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
+    bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
+
+    constructor(address _resolver) public MixinResolver(_resolver) {}
+
+    /* ========== PUBLIC FUNCTIONS ========== */
+
+    /* ========== VIEWS ========== */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses[0] = CONTRACT_ETHER_WRAPPER;
+        addresses[1] = CONTRACT_SYNTHSETH;
+    }
+
+    function etherWrapper() internal view returns (IEtherWrapper) {
+        return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
+    }
+
+    function weth() internal view returns (IWETH) {
+        return etherWrapper().weth();
+    }
+
+    function synthsETH() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSETH));
+    }
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function mint() public payable {
+        uint amount = msg.value;
+        require(amount > 0, "amount must be greater than 0");
+        IEtherWrapper etherWrapper = etherWrapper();
+        IWETH weth = weth();
+
+        // Convert sent ETH into WETH.
+        weth.deposit.value(amount)();
+
+        // Approve for the EtherWrapper.
+        weth.approve(address(etherWrapper), amount);
+
+        // Now call mint.
+        etherWrapper.mint(amount);
+
+        // Transfer the sETH to msg.sender.
+        synthsETH().transfer(msg.sender, synthsETH().balanceOf(address(this)));
+    }
+
+    function burn(uint amount) public {
+        require(amount > 0, "amount must be greater than 0");
+        IEtherWrapper etherWrapper = etherWrapper();
+        IWETH weth = weth();
+
+        // Transfer sETH from the msg.sender.
+        synthsETH().transferFrom(msg.sender, address(this), amount);
+
+        // Approve for the EtherWrapper.
+        synthsETH().approve(address(etherWrapper), amount);
+
+        // Now call burn.
+        etherWrapper.burn(amount);
+
+        // Convert WETH to ETH and send to msg.sender.
+        weth.withdraw(weth.balanceOf(address(this)));
+        msg.sender.transfer(address(this).balance);
+    }
+}

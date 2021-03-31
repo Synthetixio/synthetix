@@ -1,5 +1,7 @@
 pragma solidity >=0.4.24;
 
+import "./IWETH.sol";
+
 // https://docs.synthetix.io/contracts/source/interfaces/ietherwrapper
 contract IEtherWrapper {
     function mint(uint amount) external;
@@ -20,5 +22,5 @@ contract IEtherWrapper {
 
     function burnFeeRate() public view returns (uint256);
 
-    function weth() public view returns (address);
+    function weth() public view returns (IWETH);
 }
