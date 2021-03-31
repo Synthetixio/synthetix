@@ -60,6 +60,13 @@ module.exports = {
 		}
 	},
 
+	buildMinimalProxyCode(baseAddress) {
+		// See EIP-1167: https://eips.ethereum.org/EIPS/eip-1167#specification
+		// Assumes the non-optimized version of the proxy
+		const sanitizedBaseAddress = baseAddress.replace(/^0x/, '').toLowerCase();
+		return `0x363d3d373d3d3d363d73${sanitizedBaseAddress}5af43d82803e903d91602b57fd5bf3`;
+	},
+
 	timeIsClose({ actual, expected, variance = 1 }) {
 		assert.ok(
 			Math.abs(Number(actual) - Number(expected)) <= variance,

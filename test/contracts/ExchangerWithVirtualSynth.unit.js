@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract } = require('hardhat');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert } = require('./common');
 
@@ -8,6 +8,7 @@ const {
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	getEventByName,
+	buildMinimalProxyCode,
 } = require('./helpers');
 
 const { toBytes32 } = require('../..');
@@ -152,7 +153,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																recipient: owner,
 															});
 														});
-														describe('when interrogating the Virtual Synths construction params', () => {
+														describe('when interrogating the Virtual Synths', () => {
 															let vSynth;
 															beforeEach(async () => {
 																const VirtualSynth = artifacts.require('VirtualSynth');
@@ -180,6 +181,13 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																	vSynth.address
 																);
 																assert.equal(this.mocks.synth.smocked.issue.calls[0][1], amount);
+															});
+															it('the vSynth is an ERC-1167 minimal proxy instead of a full Virtual Synth', async () => {
+																const vSynthCode = await web3.eth.getCode(vSynth.address);
+																assert.equal(
+																	vSynthCode,
+																	buildMinimalProxyCode(this.baseVirtualSynth.address)
+																);
 															});
 														});
 													});
