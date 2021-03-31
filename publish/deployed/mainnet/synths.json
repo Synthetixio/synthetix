@@ -257,9 +257,9 @@
 		"asset": "BTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 40378,
-			"upperLimit": 60567,
-			"lowerLimit": 20189
+			"entryPoint": 58785,
+			"upperLimit": 88177.5,
+			"lowerLimit": 29392.5
 		}
 	},
 	{
@@ -377,9 +377,9 @@
 		"asset": "ADA",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 0.977,
-			"upperLimit": 1.466,
-			"lowerLimit": 0.489
+			"entryPoint": 1.198,
+			"upperLimit": 1.797,
+			"lowerLimit": 0.599
 		}
 	},
 	{
@@ -409,9 +409,9 @@
 		"asset": "OIL",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 45.087,
-			"upperLimit": 67.63,
-			"lowerLimit": 22.543
+			"entryPoint": 59.567,
+			"upperLimit": 89.351,
+			"lowerLimit": 29.784
 		}
 	},
 	{
