@@ -7,7 +7,7 @@ import "./Synth.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IEtherCollateral.sol";
-import "./interfaces/IETHWrapper.sol";
+import "./interfaces/IEtherWrapper.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
@@ -16,7 +16,7 @@ contract MultiCollateralSynth is Synth {
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_ETH_COLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
-    bytes32 private constant CONTRACT_ETH_WRAPPER = "ETHWrapper";
+    bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -45,8 +45,8 @@ contract MultiCollateralSynth is Synth {
         return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD));
     }
 
-    function ethWrapper() internal view returns (IETHWrapper) {
-        return IETHWrapper(requireAndGetAddress(CONTRACT_ETH_WRAPPER));
+    function etherWrapper() internal view returns (IEtherWrapper) {
+        return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -55,7 +55,7 @@ contract MultiCollateralSynth is Synth {
         newAddresses[0] = CONTRACT_COLLATERALMANAGER;
         newAddresses[1] = CONTRACT_ETH_COLLATERAL;
         newAddresses[2] = CONTRACT_ETH_COLLATERAL_SUSD;
-        newAddresses[3] = CONTRACT_ETH_WRAPPER;
+        newAddresses[3] = CONTRACT_ETHER_WRAPPER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -88,7 +88,7 @@ contract MultiCollateralSynth is Synth {
         bool isIssuer = msg.sender == address(issuer());
         bool isEtherCollateral = msg.sender == address(etherCollateral());
         bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
-        bool isETHWrapper = msg.sender == address(ethWrapper());
+        bool isEtherWrapper = msg.sender == address(etherWrapper());
         bool isMultiCollateral = collateralManager().hasCollateral(msg.sender);
 
         require(
@@ -97,7 +97,7 @@ contract MultiCollateralSynth is Synth {
                 isIssuer ||
                 isEtherCollateral ||
                 isEtherCollateralsUSD ||
-                isETHWrapper ||
+                isEtherWrapper ||
                 isMultiCollateral,
             "Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed"
         );

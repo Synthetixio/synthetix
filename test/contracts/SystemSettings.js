@@ -781,10 +781,10 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
-	describe('setETHWrapperMaxETH()', () => {
+	describe('setEtherWrapperMaxETH()', () => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setETHWrapperMaxETH,
+				fnc: systemSettings.setEtherWrapperMaxETH,
 				args: [owner],
 				address: owner,
 				accounts,
@@ -796,22 +796,22 @@ contract('SystemSettings', async accounts => {
 			let txn;
 			const newValue = toUnit('6000');
 			beforeEach(async () => {
-				txn = await systemSettings.setETHWrapperMaxETH(newValue, { from: owner });
+				txn = await systemSettings.setEtherWrapperMaxETH(newValue, { from: owner });
 			});
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.ethWrapperMaxETH(), newValue);
+				assert.bnEqual(await systemSettings.etherWrapperMaxETH(), newValue);
 			});
 
-			it('and emits an ETHWrapperMaxETHUpdated event', async () => {
-				assert.eventEqual(txn, 'ETHWrapperMaxETHUpdated', [newValue]);
+			it('and emits an EtherWrapperMaxETHUpdated event', async () => {
+				assert.eventEqual(txn, 'EtherWrapperMaxETHUpdated', [newValue]);
 			});
 		});
 	});
 
-	describe('setETHWrapperMintFeeRate()', () => {
+	describe('setEtherWrapperMintFeeRate()', () => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setETHWrapperMintFeeRate,
+				fnc: systemSettings.setEtherWrapperMintFeeRate,
 				args: [1],
 				address: owner,
 				accounts,
@@ -819,11 +819,11 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
-		it('should revert if the rate exceeds MAX_ETH_WRAPPER_MINT_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_ETH_WRAPPER_MINT_FEE_RATE()).add(ONE);
+		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_MINT_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_MINT_FEE_RATE()).add(ONE);
 			await assert.revert(
-				systemSettings.setETHWrapperMintFeeRate(newValue, { from: owner }),
-				'rate > MAX_ETH_WRAPPER_MINT_FEE_RATE'
+				systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner }),
+				'rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE'
 			);
 		});
 
@@ -831,22 +831,22 @@ contract('SystemSettings', async accounts => {
 			let txn;
 			const newValue = toUnit('0.06');
 			beforeEach(async () => {
-				txn = await systemSettings.setETHWrapperMintFeeRate(newValue, { from: owner });
+				txn = await systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner });
 			});
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.ethWrapperMintFeeRate(), newValue);
+				assert.bnEqual(await systemSettings.etherWrapperMintFeeRate(), newValue);
 			});
 
-			it('and emits an ETHWrapperMintFeeRateUpdated event', async () => {
-				assert.eventEqual(txn, 'ETHWrapperMintFeeRateUpdated', [newValue]);
+			it('and emits an EtherWrapperMintFeeRateUpdated event', async () => {
+				assert.eventEqual(txn, 'EtherWrapperMintFeeRateUpdated', [newValue]);
 			});
 		});
 	});
 
-	describe('setETHWrapperBurnFeeRate()', () => {
+	describe('setEtherWrapperBurnFeeRate()', () => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setETHWrapperBurnFeeRate,
+				fnc: systemSettings.setEtherWrapperBurnFeeRate,
 				args: [1],
 				address: owner,
 				accounts,
@@ -854,11 +854,11 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
-		it('should revert if the rate exceeds MAX_ETH_WRAPPER_BURN_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_ETH_WRAPPER_BURN_FEE_RATE()).add(ONE);
+		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_BURN_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_BURN_FEE_RATE()).add(ONE);
 			await assert.revert(
-				systemSettings.setETHWrapperBurnFeeRate(newValue, { from: owner }),
-				'rate > MAX_ETH_WRAPPER_BURN_FEE_RATE'
+				systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner }),
+				'rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE'
 			);
 		});
 
@@ -866,14 +866,14 @@ contract('SystemSettings', async accounts => {
 			let txn;
 			const newValue = toUnit('0.06');
 			beforeEach(async () => {
-				txn = await systemSettings.setETHWrapperBurnFeeRate(newValue, { from: owner });
+				txn = await systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner });
 			});
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.ethWrapperBurnFeeRate(), newValue);
+				assert.bnEqual(await systemSettings.etherWrapperBurnFeeRate(), newValue);
 			});
 
-			it('and emits an ETHWrapperBurnFeeRateUpdated event', async () => {
-				assert.eventEqual(txn, 'ETHWrapperBurnFeeRateUpdated', [newValue]);
+			it('and emits an EtherWrapperBurnFeeRateUpdated event', async () => {
+				assert.eventEqual(txn, 'EtherWrapperBurnFeeRateUpdated', [newValue]);
 			});
 		});
 	});

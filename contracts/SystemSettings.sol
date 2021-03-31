@@ -9,7 +9,6 @@ import "./interfaces/ISystemSettings.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/systemsettings
 contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     using SafeMath for uint;
@@ -44,8 +43,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // TODO(liamz): these are simple bounds for the mint/burn fee rates (max 100%).
     // Can we come up with better values?
-    uint public constant MAX_ETH_WRAPPER_MINT_FEE_RATE = 1e18;
-    uint public constant MAX_ETH_WRAPPER_BURN_FEE_RATE = 1e18;
+    uint public constant MAX_ETHER_WRAPPER_MINT_FEE_RATE = 1e18;
+    uint public constant MAX_ETHER_WRAPPER_BURN_FEE_RATE = 1e18;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -135,21 +134,21 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP 112: ETH Wrappr
-    // The maximum amount of ETH held by the ETHWrapper.
-    function ethWrapperMaxETH() external view returns (uint) {
-        return getETHWrapperMaxETH();
+    // The maximum amount of ETH held by the EtherWrapper.
+    function etherWrapperMaxETH() external view returns (uint) {
+        return getEtherWrapperMaxETH();
     }
 
     // SIP 112: ETH Wrappr
-    // The fee for depositing ETH into the ETHWrapper.
-    function ethWrapperMintFeeRate() external view returns (uint) {
-        return getETHWrapperMintFeeRate();
+    // The fee for depositing ETH into the EtherWrapper.
+    function etherWrapperMintFeeRate() external view returns (uint) {
+        return getEtherWrapperMintFeeRate();
     }
 
     // SIP 112: ETH Wrappr
-    // The fee for burning sETH and releasing ETH from the ETHWrapper.
-    function ethWrapperBurnFeeRate() external view returns (uint) {
-        return getETHWrapperBurnFeeRate();
+    // The fee for burning sETH and releasing ETH from the EtherWrapper.
+    function etherWrapperBurnFeeRate() external view returns (uint) {
+        return getEtherWrapperBurnFeeRate();
     }
 
     // ========== RESTRICTED ==========
@@ -289,21 +288,21 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
-    function setETHWrapperMaxETH(uint _maxETH) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETH_WRAPPER_MAX_ETH, _maxETH);
-        emit ETHWrapperMaxETHUpdated(_maxETH);
+    function setEtherWrapperMaxETH(uint _maxETH) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MAX_ETH, _maxETH);
+        emit EtherWrapperMaxETHUpdated(_maxETH);
     }
 
-    function setETHWrapperMintFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_ETH_WRAPPER_MINT_FEE_RATE, "rate > MAX_ETH_WRAPPER_MINT_FEE_RATE");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETH_WRAPPER_MINT_FEE_RATE, _rate);
-        emit ETHWrapperMintFeeRateUpdated(_rate);
+    function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
+        require(_rate <= MAX_ETHER_WRAPPER_MINT_FEE_RATE, "rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
+        emit EtherWrapperMintFeeRateUpdated(_rate);
     }
 
-    function setETHWrapperBurnFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_ETH_WRAPPER_BURN_FEE_RATE, "rate > MAX_ETH_WRAPPER_BURN_FEE_RATE");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETH_WRAPPER_BURN_FEE_RATE, _rate);
-        emit ETHWrapperBurnFeeRateUpdated(_rate);
+    function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
+        require(_rate <= MAX_ETHER_WRAPPER_BURN_FEE_RATE, "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
+        emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
     // ========== EVENTS ==========
@@ -322,7 +321,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
-    event ETHWrapperMaxETHUpdated(uint maxETH);
-    event ETHWrapperMintFeeRateUpdated(uint rate);
-    event ETHWrapperBurnFeeRateUpdated(uint rate);
+    event EtherWrapperMaxETHUpdated(uint maxETH);
+    event EtherWrapperMintFeeRateUpdated(uint rate);
+    event EtherWrapperBurnFeeRateUpdated(uint rate);
 }

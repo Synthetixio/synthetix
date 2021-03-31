@@ -71,7 +71,7 @@
 	"EtherCollateralsUSD": {
 		"deploy": true
 	},
-	"ETHWrapper": {
+	"EtherWrapper": {
 		"deploy": true
 	},
 	"FeePool": {
@@ -452,7 +452,7 @@
 	"MockToken": {
 		"deploy": true
 	},
-	"ETHWrapper": {
+	"EtherWrapper": {
 		"deploy": true
 	},
 	"WETH": {

@@ -1212,7 +1212,7 @@ const deploy = async ({
 		}
 
 		await deployer.deployContract({
-			name: 'ETHWrapper',
+			name: 'EtherWrapper',
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
 		});
@@ -2164,26 +2164,26 @@ const deploy = async ({
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
-			read: 'ethWrapperMaxETH',
+			read: 'etherWrapperMaxETH',
 			expected: input => input !== '0', // only change if zero
-			write: 'setETHWrapperMaxETH',
-			writeArg: await getDeployParameter('ETH_WRAPPER_MAX_ETH'),
+			write: 'setEtherWrapperMaxETH',
+			writeArg: await getDeployParameter('ETHER_WRAPPER_MAX_ETH'),
 		});
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
-			read: 'ethWrapperMintFeeRate',
+			read: 'etherWrapperMintFeeRate',
 			expected: input => input !== '0', // only change if zero
-			write: 'setETHWrapperMintFeeRate',
-			writeArg: await getDeployParameter('ETH_WRAPPER_MINT_FEE_RATE'),
+			write: 'setEtherWrapperMintFeeRate',
+			writeArg: await getDeployParameter('ETHER_WRAPPER_MINT_FEE_RATE'),
 		});
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
-			read: 'ethWrapperBurnFeeRate',
+			read: 'etherWrapperBurnFeeRate',
 			expected: input => input !== '0', // only change if zero
-			write: 'setETHWrapperBurnFeeRate',
-			writeArg: await getDeployParameter('ETH_WRAPPER_BURN_FEE_RATE'),
+			write: 'setEtherWrapperBurnFeeRate',
+			writeArg: await getDeployParameter('ETHER_WRAPPER_BURN_FEE_RATE'),
 		});
 	}
 

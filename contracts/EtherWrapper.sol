@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./interfaces/IAddressResolver.sol";
-import "./interfaces/IETHWrapper.sol";
+import "./interfaces/IEtherWrapper.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
@@ -21,12 +21,12 @@ import "./SafeDecimalMath.sol";
 import "hardhat/console.sol";
 
 // Pausable
-contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
+contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrapper {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
     /* ========== CONSTANTS ============== */
-    
+
     /* ========== ENCODED NAMES ========== */
 
     bytes32 internal constant sUSD = "sUSD";
@@ -45,11 +45,12 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
 
     // ========== STATE VARIABLES ==========
     IWETH internal _weth;
-    
-    constructor(address _owner, address _resolver, address payable _WETH) 
-        public 
-        Owned(_owner) MixinSystemSettings(_resolver)
-    {
+
+    constructor(
+        address _owner,
+        address _resolver,
+        address payable _WETH
+    ) public Owned(_owner) MixinSystemSettings(_resolver) {
         _weth = IWETH(_WETH);
     }
 
@@ -89,7 +90,6 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
 
     /* ========== PUBLIC FUNCTIONS ========== */
 
-
     // ========== VIEWS ==========
 
     function capacity() public view returns (uint _capacity) {
@@ -97,7 +97,7 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
         // uint balance = getBalance().multiplyDecimal(SafeDecimalMath.unit().add(mintFeeRate));
         // TODO: the capacity of the contract is exclusive of the mint fees?
         uint balance = getBalance();
-        if(balance >= maxETH()) {
+        if (balance >= maxETH()) {
             return 0;
         }
         return maxETH().sub(balance);
@@ -116,23 +116,23 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     }
 
     function maxETH() public view returns (uint256) {
-        return getETHWrapperMaxETH();
+        return getEtherWrapperMaxETH();
     }
 
     function mintFeeRate() public view returns (uint256) {
-        return getETHWrapperMintFeeRate();
+        return getEtherWrapperMintFeeRate();
     }
 
     function burnFeeRate() public view returns (uint256) {
-        return getETHWrapperBurnFeeRate();
+        return getEtherWrapperBurnFeeRate();
     }
 
     function weth() public view returns (address) {
         return address(_weth);
     }
-    
+
     /* ========== MUTATIVE FUNCTIONS ========== */
-    
+
     // Transfers `amount` WETH to mint `amount - fees` sETH.
     function mint(uint amount) external {
         require(amount <= _weth.allowance(msg.sender, address(this)), "Allowance not high enough");
@@ -140,8 +140,8 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
 
         uint currentCapacity = capacity();
         require(currentCapacity > 0, "Contract has no spare capacity to mint");
-        
-        if(amount >= currentCapacity) {
+
+        if (amount >= currentCapacity) {
             _mint(currentCapacity);
             // Refund is not needed, as we transfer the exact amount of WETH.
         } else {
@@ -153,8 +153,8 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
     function burn(uint amount) external {
         uint reserves = getBalance();
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
-        
-        if(amount >= reserves) {
+
+        if (amount >= reserves) {
             _burn(reserves);
             // Refund is not needed, as we transfer the exact amount of reserves.
         } else {
@@ -215,10 +215,9 @@ contract ETHWrapper is Owned, MixinResolver, MixinSystemSettings, IETHWrapper {
         _weth.transfer(address(0), feeAmountEth);
 
         // Tell the fee pool about this
-        feePool().recordFeePaid(feeSusd);        
+        feePool().recordFeePaid(feeSusd);
 
         // Finally, transfer ETH to the user, less the fee.
         _weth.transfer(msg.sender, amount.sub(feeAmountEth));
     }
-
 }

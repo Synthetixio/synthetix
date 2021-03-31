@@ -1,7 +1,7 @@
 pragma solidity >=0.4.24;
 
-// https://docs.synthetix.io/contracts/source/interfaces/iethwrapper
-contract IETHWrapper {
+// https://docs.synthetix.io/contracts/source/interfaces/ietherwrapper
+contract IEtherWrapper {
     function mint(uint amount) external;
 
     function burn(uint amount) external;
