@@ -59,6 +59,9 @@
 	"ExchangeRates": {
 		"deploy": true
 	},
+	"VirtualSynthBase": {
+		"deploy": true
+	},
 	"Exchanger": {
 		"deploy": true
 	},
