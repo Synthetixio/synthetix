@@ -36,13 +36,25 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
     bytes32 public currencyKey;
 
-    constructor(
+    // TODO: move this state elsewhere (no gas advantage)?
+    bool public initialized = false;
+
+    // TODO: alternatively a subclass could add this behaviour; might be cleaner for tests?
+    constructor() public ERC20() {
+        // Freeze base copy on deployment so it can never be initialized with real arguments
+        initialized = true;
+    }
+
+    function initialize(
         IERC20 _synth,
         IAddressResolver _resolver,
         address _recipient,
         uint _amount,
         bytes32 _currencyKey
-    ) public ERC20() {
+    ) external {
+        require(!initialized, "vSynth already initialized");
+        initialized = true;
+
         synth = _synth;
         resolver = _resolver;
         currencyKey = _currencyKey;
@@ -52,6 +64,9 @@ contract VirtualSynth is ERC20, IVirtualSynth {
         _mint(_recipient, _amount);
 
         initialSupply = _amount;
+
+        // Note: the ERC20 base contract does not have a constructor, so we do not have to worry
+        // about initializing its state separately
     }
 
     // INTERNALS
