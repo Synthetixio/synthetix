@@ -160,7 +160,7 @@ const setupContract = async ({
 		DappMaintenance: [owner],
 		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
-		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
+		Exchanger: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('VirtualSynth')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		BaseSynthetix: [
@@ -212,6 +212,7 @@ const setupContract = async ({
 			tryGetProperty({ property: 'totalSupply', otherwise: '0' }),
 			tryGetAddressOf('AddressResolver'),
 		],
+		VirtualSynth: [],
 		EternalStorage: [owner, tryGetAddressOf(forContract)],
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
@@ -648,6 +649,8 @@ const setupAllContracts = async ({
 			],
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
 		},
+		// TODO: thoughts about how to handle this?
+		{ contract: 'VirtualSynth' },
 		{
 			contract: 'Exchanger',
 			source: 'ExchangerWithVirtualSynth',
@@ -660,6 +663,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
+				'VirtualSynth',
 			],
 		},
 		{
