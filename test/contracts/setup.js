@@ -675,7 +675,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Synth',
-			mocks: ['Issuer', 'Exchanger', 'FeePool'],
+			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper'],
 			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
 		}, // a generic synth
 		{
@@ -768,6 +768,7 @@ const setupAllContracts = async ({
 				'FlexibleStorage',
 				'EtherCollateralsUSD',
 				'CollateralManager',
+				'EtherWrapper',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
