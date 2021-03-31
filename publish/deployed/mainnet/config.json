@@ -670,5 +670,8 @@
 	},
 	"SynthsKRW": {
 		"deploy": false
+	},
+	"EtherWrapper": {
+		"deploy": true
 	}
 }
