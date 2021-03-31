@@ -188,61 +188,44 @@ const ownerMultisig = async ({
 		gray('Running through operations during deployment that couldnt complete as not owner.')
 	);
 	// Read owner-actions.json + encoded data to stage tx's
-	// for (const [key, entry] of Object.entries(ownerActions)) {
-	// 	const { target, data, complete } = entry;
-	// 	if (complete) continue;
+	for (const [key, entry] of Object.entries(ownerActions)) {
+		const { target, data, complete } = entry;
+		if (complete) continue;
 
-	// 	let existingTx;
-	// 	if (isContract) {
-	// 		existingTx = checkExistingPendingTx({
-	// 			stagedTransactions,
-	// 			target,
-	// 			encodedData: data,
-	// 			currentSafeNonce,
-	// 		});
+		await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
 
-	// 		if (existingTx) continue;
-	// 	}
+		try {
+			if (isContract) {
+				await createAndSubmitTransaction({
+					safeContract: protocolDaoContract,
+					data,
+					to: target,
+					sender: account,
+					gasLimit,
+					gasPrice,
+					network,
+				});
+			} else {
+				const tx = await web3.eth.sendTransaction({
+					from: account,
+					to: target,
+					gasPrice,
+					gas: gasLimit,
+					data,
+				});
 
-	// 	await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
+				logTx(tx);
+			}
 
-	// 	try {
-	// 		let newNonce;
-	// 		if (isContract) {
-	// 			newNonce = await createAndSubmitTransaction({
-	// 				safeContract: protocolDaoContract,
-	// 				data,
-	// 				to: target,
-	// 				sender: account,
-	// 				gasLimit,
-	// 				gasPrice,
-	// 				network,
-	// 				lastNonce,
-	// 			});
-	// 		} else {
-	// 			const tx = await web3.eth.sendTransaction({
-	// 				from: account,
-	// 				to: target,
-	// 				gasPrice,
-	// 				gas: gasLimit,
-	// 				data,
-	// 			});
-
-	// 			logTx(tx);
-	// 		}
-
-	// 		// track lastNonce submitted
-	// 		lastNonce = newNonce;
-
-	// 		entry.complete = true;
-	// 		fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
-	// 	} catch (err) {
-	// 		console.log(
-	// 			gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
-	// 		);
-	// 		return;
-	// 	}
-	// }
+			entry.complete = true;
+			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+		} catch (err) {
+			console.log(
+				gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
+			);
+			return;
+		}
+	}
 
 	console.log(gray('Looking for contracts whose ownership we should accept'));
 	for (const contract of Object.keys(config)) {
