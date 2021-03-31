@@ -51,6 +51,9 @@ contract('SystemSettings', async accounts => {
 				'setTradingRewardsEnabled',
 				'setDebtSnapshotStaleTime',
 				'setCrossDomainMessageGasLimit',
+				'setEtherWrapperMaxETH',
+				'setEtherWrapperMintFeeRate',
+				'setEtherWrapperBurnFeeRate',
 			],
 		});
 	});
