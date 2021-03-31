@@ -48,6 +48,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 					const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner, toBytes32()];
 
 					behaviors.whenInstantiated({ owner }, () => {
+						// TODO: not sure I get this test--why does it need the behaviour mocked to allow checks?
 						// as we aren't calling as Synthetix, we need to mock the check for synths
 						behaviors.whenMockedToAllowChecks(() => {
 							it('it reverts when called by regular accounts', async () => {
