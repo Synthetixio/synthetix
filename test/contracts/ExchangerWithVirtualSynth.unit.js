@@ -4,7 +4,11 @@ const { artifacts, contract } = require('hardhat');
 
 const { assert } = require('./common');
 
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+	getEventByName,
+} = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
@@ -73,7 +77,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 										() => {
 											behaviors.whenMockedEffectiveRateAsEqual(() => {
 												behaviors.whenMockedLastNRates(() => {
-													behaviors.whenMockedASynthToIssueAmdBurn(() => {
+													behaviors.whenMockedASynthToIssueAndBurn(() => {
 														behaviors.whenMockedExchangeStatePersistance(() => {
 															it('it reverts trying to create a virtual synth with no supply', async () => {
 																await assert.revert(
@@ -123,7 +127,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 								() => {
 									behaviors.whenMockedEffectiveRateAsEqual(() => {
 										behaviors.whenMockedLastNRates(() => {
-											behaviors.whenMockedASynthToIssueAmdBurn(() => {
+											behaviors.whenMockedASynthToIssueAndBurn(() => {
 												behaviors.whenMockedExchangeStatePersistance(() => {
 													describe('when invoked', () => {
 														let txn;
@@ -150,10 +154,11 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 														describe('when interrogating the Virtual Synths construction params', () => {
 															let vSynth;
 															beforeEach(async () => {
-																const { vSynth: vSynthAddress } = txn.logs.find(
-																	({ event }) => event === 'VirtualSynthCreated'
-																).args;
-																vSynth = await artifacts.require('VirtualSynth').at(vSynthAddress);
+																const VirtualSynth = artifacts.require('VirtualSynth');
+																vSynth = await VirtualSynth.at(
+																	getEventByName({ tx: txn, name: 'VirtualSynthCreated' }).args
+																		.vSynth
+																);
 															});
 															it('the vSynth has the correct synth', async () => {
 																assert.equal(

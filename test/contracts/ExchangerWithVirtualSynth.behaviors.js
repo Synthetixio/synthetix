@@ -106,7 +106,7 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
-		whenMockedASynthToIssueAmdBurn: cb => {
+		whenMockedASynthToIssueAndBurn: cb => {
 			describe(`when mocked a synth to burn`, () => {
 				beforeEach(async () => {
 					// create and share the one synth for all Issuer.synths() calls
