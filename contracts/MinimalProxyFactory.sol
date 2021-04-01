@@ -1,7 +1,5 @@
 pragma solidity ^0.5.16;
 
-
-// TODO: how is this page generated?
 // https://docs.synthetix.io/contracts/source/contracts/minimalproxyfactory
 contract MinimalProxyFactory {
     function _cloneAsMinimalProxy(address _base, string memory _revertMsg) internal returns (address clone) {
