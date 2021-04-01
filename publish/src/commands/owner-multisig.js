@@ -158,7 +158,7 @@ const ownerMultisig = async ({
 
 	let pendingTransactions;
 	// this denotes the number of the latest transaction we want to check, multisig uses for loops to find the relevatn info
-	const numTxToCheck = 20;
+	const numTxToCheck = 25;
 	// If total multisig transactions are less than the ones we want to check then start from 0
 	const startIndex = currentTxCount > numTxToCheck ? currentTxCount - numTxToCheck : 0;
 	if (isContract) {
@@ -180,6 +180,17 @@ const ownerMultisig = async ({
 		const { target, data, complete } = entry;
 		if (complete) continue;
 
+		if (isContract) {
+			// Check if similar one already staged and pending
+			const existingTx = checkExistingPendingTx({
+				multisigContract: protocolDaoContract,
+				pendingTransactions,
+				target,
+				encodedData: data,
+			});
+
+			if (existingTx) continue;
+		}
 		await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
 
 		try {
