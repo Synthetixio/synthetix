@@ -3705,6 +3705,8 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	describe('When using Synthetix', () => {
 		before(async () => {
+			const VirtualSynth = artifacts.require('VirtualSynth');
+
 			({
 				Exchanger: exchanger,
 				Synthetix: synthetix,
@@ -3742,6 +3744,9 @@ contract('Exchanger (spec tests)', async accounts => {
 					'FlexibleStorage',
 					'CollateralManager',
 				],
+				mocks: {
+					VirtualSynthBase: await VirtualSynth.new(),
+				},
 			}));
 
 			// Send a price update to guarantee we're not stale.
