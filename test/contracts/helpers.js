@@ -256,8 +256,7 @@ module.exports = {
 		}
 	},
 
-	async prepareSmocks({ contracts, accounts = [] }) {
-		const mocks = {};
+	async prepareSmocks({ accounts = [], contracts, mocks = {} }) {
 		for (const [i, contract] of Object.entries(contracts).concat([
 			[contracts.length, 'AddressResolver'],
 		])) {

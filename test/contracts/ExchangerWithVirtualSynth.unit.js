@@ -186,7 +186,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																const vSynthCode = await web3.eth.getCode(vSynth.address);
 																assert.equal(
 																	vSynthCode,
-																	buildMinimalProxyCode(this.baseVirtualSynth.address)
+																	buildMinimalProxyCode(this.mocks.VirtualSynthBase.address)
 																);
 															});
 														});
