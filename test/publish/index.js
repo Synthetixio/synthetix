@@ -1584,6 +1584,8 @@ describe('publish scripts', () => {
 									// address here we should look up all required contracts and ignore any that have
 									// ':' in it
 									.filter(([contract]) => !/^SynthetixBridge/.test(contract))
+									// Note: the base VirtualSynth contract is null-initialized and shouldn't be checkd
+									.filter(([contract]) => !/^VirtualSynthBase/.test(contract))
 									.filter(([, { source }]) =>
 										sources[source].abi.find(({ name }) => name === 'resolver')
 									)
