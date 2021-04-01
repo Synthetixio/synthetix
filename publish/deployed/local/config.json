@@ -62,6 +62,9 @@
 	"Exchanger": {
 		"deploy": true
 	},
+	"VirtualSynthBase": {
+		"deploy": true
+	},
 	"ExchangeState": {
 		"deploy": true
 	},
