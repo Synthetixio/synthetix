@@ -1,19 +1,9 @@
 'use strict';
 
 const w3utils = require('web3-utils');
-const axios = require('axios');
 const { green, gray, red, yellow } = require('chalk');
 
-const {
-	constants: { ZERO_ADDRESS },
-} = require('../..');
-
 const { loadConnections } = require('./util');
-
-const CALL = 0;
-// const DELEGATE_CALL = 1;
-const TX_TYPE_CONFIRMATION = 'confirmation';
-// const TX_TYPE_EXECUTION = 'execution';
 
 // gnosis multisig abi
 const abi = [
@@ -119,6 +109,42 @@ const abi = [
 		stateMutability: 'nonpayable',
 		type: 'function',
 	},
+	{
+		constant: true,
+		inputs: [
+			{
+				internalType: 'uint256',
+				name: '',
+				type: 'uint256',
+			},
+		],
+		name: 'transactions',
+		outputs: [
+			{
+				internalType: 'address',
+				name: 'destination',
+				type: 'address',
+			},
+			{
+				internalType: 'uint256',
+				name: 'value',
+				type: 'uint256',
+			},
+			{
+				internalType: 'bytes',
+				name: 'data',
+				type: 'bytes',
+			},
+			{
+				internalType: 'bool',
+				name: 'executed',
+				type: 'bool',
+			},
+		],
+		payable: false,
+		stateMutability: 'view',
+		type: 'function',
+	},
 ];
 
 const getMultisigInstance = (web3, multisigAddress) => {
@@ -157,6 +183,42 @@ const getLastTxId = async multisigContract => {
 	}
 };
 
+const checkExistingPendingTx = async ({
+	multisigContract,
+	pendingTransactions,
+	target,
+	encodedData,
+}) => {
+	// pendingTransactions is the list of pending tx ids
+	let existingTx;
+	let found;
+	let txID;
+	for (let i = 0; i < pendingTransactions.length; i++) {
+		txID = pendingTransactions[i];
+		// break the loop if the rest of the array is empty i.e. 0 ID
+		if (txID === '0' && i !== 0) break;
+		// fetch tx from mutlisig
+		existingTx = await multisigContract.methods.transactions(txID).call();
+		// Safety checks
+		if (existingTx.executed === true)
+			throw new Error('Not a pending tx: transaction has been executed');
+		if (existingTx.value > 0) throw new Error('Value is non-zero');
+		if (existingTx.destination === target && existingTx.data == encodedData) {
+			found = true;
+			break;
+		}
+	}
+
+	if (found) {
+		console.log(
+			gray(
+				`Existing pending tx already submitted to gnosis mutlisig - target address: ${target} and data: ${encodedData}`
+			)
+		);
+	}
+	return existingTx;
+};
+
 const createAndSubmitTransaction = async ({
 	multisigContract,
 	data,
@@ -185,9 +247,10 @@ const createAndSubmitTransaction = async ({
 };
 
 module.exports = {
+	checkExistingPendingTx,
+	createAndSubmitTransaction,
 	getLastTxId,
 	getMultisigInstance,
 	getMultisigTransactionCount,
 	getMultisigTransactions,
-	createAndSubmitTransaction,
 };

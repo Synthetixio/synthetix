@@ -25,6 +25,7 @@ const {
 	getMultisigInstance,
 	getMultisigTransactionCount,
 	getMultisigTransactions,
+	checkExistingPendingTx,
 	createAndSubmitTransaction,
 } = require('../multisig-utils');
 
@@ -155,33 +156,20 @@ const ownerMultisig = async ({
 		}
 	};
 
-	let stagedTransactions;
+	let pendingTransactions;
+	// this denotes the number of the latest transaction we want to check, multisig uses for loops to find the relevatn info
+	const numTxToCheck = 20;
+	// If total multisig transactions are less than the ones we want to check then start from 0
+	const startIndex = currentTxCount > numTxToCheck ? currentTxCount - numTxToCheck : 0;
 	if (isContract) {
-		// Load staged transactions
-		stagedTransactions = await getMultisigTransactions({
+		pendingTransactions = await getMultisigTransactions({
 			multisigContract: protocolDaoContract,
-			from: 0,
-			to: currentTxCount,
-			pending: true,
-			executed: true,
-		});
-		console.log('1', stagedTransactions);
-		stagedTransactions = await getMultisigTransactions({
-			multisigContract: protocolDaoContract,
-			from: 0,
+			from: startIndex,
 			to: currentTxCount,
 			pending: true,
 			executed: false,
 		});
-		console.log('2', stagedTransactions);
-		stagedTransactions = await getMultisigTransactions({
-			multisigContract: protocolDaoContract,
-			from: 0,
-			to: currentTxCount,
-			pending: false,
-			executed: true,
-		});
-		console.log('3', stagedTransactions);
+		console.log(`Last ${numTxToCheck} Pending Transactions`, pendingTransactions);
 	}
 
 	console.log(
@@ -239,11 +227,23 @@ const ownerMultisig = async ({
 		}
 		const currentOwner = (await deployedContract.methods.owner().call()).toLowerCase();
 		const nominatedOwner = (await deployedContract.methods.nominatedOwner().call()).toLowerCase();
-		console.log('SystemSetting', address);
+
 		if (currentOwner === newOwner) {
 			console.log(gray(`${newOwner} is already the owner of ${contract}`));
 		} else if (nominatedOwner === newOwner) {
 			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
+
+			if (isContract) {
+				// Check if similar one already staged and pending
+				const existingTx = checkExistingPendingTx({
+					multisigContract: protocolDaoContract,
+					pendingTransactions,
+					target: deployedContract.options.address,
+					encodedData,
+				});
+
+				if (existingTx) continue;
+			}
 
 			// continue if no pending tx found
 			await confirmOrEnd(yellow(`Confirm: Stage ${contract}.acceptOwnership() via protocolDAO?`));
