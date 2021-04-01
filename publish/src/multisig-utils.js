@@ -1,7 +1,7 @@
 'use strict';
 
 const w3utils = require('web3-utils');
-const { green, gray, red, yellow } = require('chalk');
+const { green, gray, red } = require('chalk');
 
 const { loadConnections } = require('./util');
 
@@ -200,10 +200,10 @@ const checkExistingPendingTx = async ({
 		// fetch tx from mutlisig
 		existingTx = await multisigContract.methods.transactions(txID).call();
 		// Safety checks
-		if (existingTx.executed === true)
+		if (existingTx.executed === true && txID !== '0')
 			throw new Error('Not a pending tx: transaction has been executed');
 		if (existingTx.value > 0) throw new Error('Value is non-zero');
-		if (existingTx.destination === target && existingTx.data == encodedData) {
+		if (existingTx.destination === target && existingTx.data === encodedData) {
 			found = true;
 			break;
 		}
@@ -215,8 +215,9 @@ const checkExistingPendingTx = async ({
 				`Existing pending tx already submitted to gnosis mutlisig - target address: ${target} and data: ${encodedData}`
 			)
 		);
+		return existingTx;
 	}
-	return existingTx;
+	return null;
 };
 
 const createAndSubmitTransaction = async ({

@@ -182,7 +182,7 @@ const ownerMultisig = async ({
 
 		if (isContract) {
 			// Check if similar one already staged and pending
-			const existingTx = checkExistingPendingTx({
+			const existingTx = await checkExistingPendingTx({
 				multisigContract: protocolDaoContract,
 				pendingTransactions,
 				target,
@@ -228,6 +228,10 @@ const ownerMultisig = async ({
 
 	console.log(gray('Looking for contracts whose ownership we should accept'));
 	for (const contract of Object.keys(config)) {
+		if (contract === 'DappMaintenance') {
+			console.log(gray('Skipping DappMaintenance'));
+			continue;
+		}
 		const { address, source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
 		const deployedContract = new web3.eth.Contract(abi, address);
@@ -246,7 +250,7 @@ const ownerMultisig = async ({
 
 			if (isContract) {
 				// Check if similar one already staged and pending
-				const existingTx = checkExistingPendingTx({
+				const existingTx = await checkExistingPendingTx({
 					multisigContract: protocolDaoContract,
 					pendingTransactions,
 					target: deployedContract.options.address,
