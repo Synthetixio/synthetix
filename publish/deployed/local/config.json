@@ -62,7 +62,7 @@
 	"Exchanger": {
 		"deploy": true
 	},
-	"VirtualSynthBase": {
+	"VirtualSynthMastercopy": {
 		"deploy": true
 	},
 	"ExchangeState": {

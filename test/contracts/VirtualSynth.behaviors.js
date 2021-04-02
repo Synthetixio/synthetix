@@ -4,9 +4,8 @@ const { artifacts } = require('hardhat');
 
 const { toBytes32 } = require('../..');
 
-const { getEventByName, prepareSmocks } = require('./helpers');
+const { prepareSmocks } = require('./helpers');
 
-const TestableMinimalProxyFactory = artifacts.require('TestableMinimalProxyFactory');
 const VirtualSynth = artifacts.require('VirtualSynth');
 
 // note: cannot use fat-arrow here otherwise this function will be bound to this outer context
@@ -17,31 +16,14 @@ module.exports = function({ accounts }) {
 			contracts: ['Synth', 'Exchanger'],
 			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
-		this.minimalProxyDeployer = await TestableMinimalProxyFactory.new();
-		this.baseVirtualSynth = await VirtualSynth.new();
 	});
 
 	return {
 		// note: use fat-arrow to persist context rather
-		whenInstantiatedAsBase: cb => {
-			describe('when instantiated as base contract', () => {
+		whenInstantiated: ({ amount, user, synth = 'sETH' }, cb) => {
+			describe(`when instantiated for user ${user.slice(0, 7)}`, () => {
 				beforeEach(async () => {
 					this.instance = await VirtualSynth.new();
-				});
-				cb();
-			});
-		},
-		whenInstantiatedAsProxy: ({ amount, user, synth = 'sETH' }, cb) => {
-			describe(`when instantiated as proxy for user ${user.slice(0, 7)}`, () => {
-				beforeEach(async () => {
-					const deployTx = await this.minimalProxyDeployer.cloneAsMinimalProxy(
-						this.baseVirtualSynth.address,
-						'Could not create new vSynth'
-					);
-
-					this.instance = await VirtualSynth.at(
-						getEventByName({ tx: deployTx, name: 'CloneDeployed' }).args.clone
-					);
 					await this.instance.initialize(
 						this.mocks.Synth.address,
 						this.resolver.address,

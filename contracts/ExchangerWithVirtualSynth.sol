@@ -14,19 +14,19 @@ contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_VIRTUALSYNTH_BASE = "VirtualSynthBase";
+    bytes32 private constant CONTRACT_VIRTUALSYNTH_MASTERCOPY = "VirtualSynthMastercopy";
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Exchanger.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_VIRTUALSYNTH_BASE;
+        newAddresses[0] = CONTRACT_VIRTUALSYNTH_MASTERCOPY;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _virtualSynthBase() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_VIRTUALSYNTH_BASE);
+    function _virtualSynthMastercopy() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_VIRTUALSYNTH_MASTERCOPY);
     }
 
     function _createVirtualSynth(
@@ -38,7 +38,7 @@ contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
         // prevent inverse synths from being allowed due to purgeability
         require(currencyKey[0] != 0x69, "Cannot virtualize this synth");
 
-        VirtualSynth vSynth = VirtualSynth(_cloneAsMinimalProxy(_virtualSynthBase(), "Could not create new vSynth"));
+        VirtualSynth vSynth = VirtualSynth(_cloneAsMinimalProxy(_virtualSynthMastercopy(), "Could not create new vSynth"));
         vSynth.initialize(synth, resolver, recipient, amount, currencyKey);
         emit VirtualSynthCreated(address(synth), recipient, address(vSynth), currencyKey, amount);
 

@@ -789,8 +789,7 @@ const deploy = async ({
 		});
 
 		await deployer.deployContract({
-			name: 'VirtualSynthBase',
-			source: 'VirtualSynth',
+			name: 'VirtualSynthMastercopy',
 		});
 	}
 

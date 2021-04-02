@@ -75,6 +75,10 @@ module.exports = {
 		);
 	},
 
+	trimUtf8EscapeChars(input) {
+		return web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
+	},
+
 	async updateRatesWithDefaults({ exchangeRates, oracle, debtCache }) {
 		const timestamp = await currentTime();
 

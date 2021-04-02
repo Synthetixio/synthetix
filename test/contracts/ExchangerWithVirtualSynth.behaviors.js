@@ -13,7 +13,7 @@ module.exports = function({ accounts }) {
 	});
 
 	beforeEach(async () => {
-		const VirtualSynth = artifacts.require('VirtualSynth');
+		const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 
 		({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 			contracts: [
@@ -29,7 +29,8 @@ module.exports = function({ accounts }) {
 				'TradingRewards',
 			],
 			mocks: {
-				VirtualSynthBase: await VirtualSynth.new(),
+				// Use a real VirtualSynthMastercopy so the unit tests can interrogate deployed vSynths
+				VirtualSynthMastercopy: await VirtualSynthMastercopy.new(),
 			},
 			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
