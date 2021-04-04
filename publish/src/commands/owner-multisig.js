@@ -32,6 +32,7 @@ const {
 const DEFAULTS = {
 	gasPrice: '0',
 	gasLimit: 8e6, // 8,000,000
+	numPendingTx: 25, // denotes the number of the latest transactions we want to check, multisig uses for loops to find the relevant info so we need to loop through them
 };
 
 const ownerMultisig = async ({
@@ -44,6 +45,7 @@ const ownerMultisig = async ({
 	yes,
 	useOvm,
 	providerUrl,
+	numPendingTx = DEFAULTS.numPendingTx,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -157,10 +159,9 @@ const ownerMultisig = async ({
 	};
 
 	let pendingTransactions;
-	// this denotes the number of the latest transaction we want to check, multisig uses for loops to find the relevatn info
-	const numTxToCheck = 25;
+
 	// If total multisig transactions are less than the ones we want to check then start from 0
-	const startIndex = currentTxCount > numTxToCheck ? currentTxCount - numTxToCheck : 0;
+	const startIndex = currentTxCount > numPendingTx ? currentTxCount - numPendingTx : 0;
 	if (isContract) {
 		pendingTransactions = await getMultisigTransactions({
 			multisigContract: protocolDaoContract,
@@ -169,7 +170,7 @@ const ownerMultisig = async ({
 			pending: true,
 			executed: false,
 		});
-		console.log(`Last ${numTxToCheck} Pending Transactions`, pendingTransactions);
+		console.log(`Last ${numPendingTx} Pending Transactions`, pendingTransactions);
 	}
 
 	console.log(
@@ -329,6 +330,12 @@ module.exports = {
 			.option(
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
+			)
+			.option(
+				'-t --num-pending-tx <value>',
+				'Number of existing pending transactions to check for duplicates',
+				parseInt,
+				DEFAULTS.numPendingTx
 			)
 			.action(ownerMultisig),
 };
