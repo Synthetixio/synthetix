@@ -20,7 +20,6 @@ import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
 import "./interfaces/IExchanger.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeMath for uint;
@@ -400,12 +399,13 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         // Normalize decimals in case equivalent asset uses different decimals from internal unit
         uint sourceAmountInEquivalent = (sourceAmount * 10**uint(sourceEquivalent.decimals())) / SafeDecimalMath.unit();
         // TODO: add sanity check here to make sure the price window isn't 0?
-        IDexTwapAggregator.QuoteParams memory dexTwapQuote = dexTwapAggregator.assetToAsset(
-            address(sourceEquivalent),
-            sourceAmountInEquivalent,
-            address(destEquivalent),
-            getAtomicTwapPriceWindow()
-        );
+        IDexTwapAggregator.QuoteParams memory dexTwapQuote =
+            dexTwapAggregator.assetToAsset(
+                address(sourceEquivalent),
+                sourceAmountInEquivalent,
+                address(destEquivalent),
+                getAtomicTwapPriceWindow()
+            );
         // Similar to source amount, normalize decimals back to internal unit for output amount
         uint pAggValue = (dexTwapQuote.quoteOut * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());
 
@@ -671,10 +671,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
 
             if (success) {
-                (uint80 roundId, int256 answer, , uint256 updatedAt, ) = abi.decode(
-                    returnData,
-                    (uint80, int256, uint256, uint256, uint80)
-                );
+                (uint80 roundId, int256 answer, , uint256 updatedAt, ) =
+                    abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
                 return
                     RateAndUpdatedTime({
                         rate: uint216(_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer), roundId)),
@@ -710,10 +708,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
 
             if (success) {
-                (, int256 answer, , uint256 updatedAt, ) = abi.decode(
-                    returnData,
-                    (uint80, int256, uint256, uint256, uint80)
-                );
+                (, int256 answer, , uint256 updatedAt, ) =
+                    abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
                 return (_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer), roundId), updatedAt);
             }
         } else {
