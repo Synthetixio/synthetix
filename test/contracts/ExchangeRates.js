@@ -4,7 +4,14 @@ const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, fastForward, toUnit, bytesToString } = require('../utils')();
+const {
+	currentTime,
+	fastForward,
+	multiplyDecimal,
+	divideDecimal,
+	toUnit,
+	bytesToString,
+} = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
@@ -17,7 +24,7 @@ const { setupContract, setupAllContracts } = require('./setup');
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
-	defaults: { RATE_STALE_PERIOD },
+	defaults: { RATE_STALE_PERIOD, ATOMIC_TWAP_PRICE_WINDOW },
 } = require('../..');
 
 const { toBN } = require('web3-utils');
@@ -49,10 +56,11 @@ const createRandomKeysAndRates = quantity => {
 };
 
 contract('Exchange Rates', async accounts => {
-	const [deployerAccount, owner, oracle, accountOne, accountTwo] = accounts;
-	const [SNX, sJPY, sXTZ, sBNB, sUSD, sEUR, sAUD, fastGasPrice] = [
+	const [deployerAccount, owner, oracle, dexTwapAggregator, accountOne, accountTwo] = accounts;
+	const [SNX, sJPY, sETH, sXTZ, sBNB, sUSD, sEUR, sAUD, fastGasPrice] = [
 		'SNX',
 		'sJPY',
+		'sETH',
 		'sXTZ',
 		'sBNB',
 		'sUSD',
@@ -240,6 +248,8 @@ contract('Exchange Rates', async accounts => {
 			}
 		});
 	});
+
+	// Oracle rates
 
 	describe('updateRates()', () => {
 		it('should be able to update rates of only one currency without affecting other rates', async () => {
@@ -1863,6 +1873,8 @@ contract('Exchange Rates', async accounts => {
 		});
 	});
 
+	// Aggregator rates and flags
+
 	describe('when the flags interface is set', () => {
 		beforeEach(async () => {
 			// replace the FlagsInterface mock with a fully fledged mock that can
@@ -2943,6 +2955,545 @@ contract('Exchange Rates', async accounts => {
 							toUnit('0.15')
 						);
 					});
+				});
+			});
+		});
+	});
+
+	// Atomic rates
+	describe('setDexTwapAggregator()', () => {
+		it("only the owner should be able to change the dex twap aggregator's address", async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: instance.setDexTwapAggregator,
+				args: [dexTwapAggregator],
+				address: owner,
+				accounts,
+				skipPassCheck: true,
+			});
+
+			await instance.setDexTwapAggregator(accountOne, { from: owner });
+
+			assert.equal(await instance.dexTwapAggregator.call(), accountOne);
+			assert.notEqual(await instance.dexTwapAggregator.call(), dexTwapAggregator);
+		});
+
+		it('should emit event on successful address update', async () => {
+			// Ensure oracle is set to intended address originally
+			await instance.setDexTwapAggregator(dexTwapAggregator, { from: owner });
+			assert.equal(await instance.dexTwapAggregator.call(), dexTwapAggregator);
+
+			const txn = await instance.setDexTwapAggregator(accountOne, { from: owner });
+			assert.eventEqual(txn, 'DexTwapAggregatorUpdated', {
+				newDexTwapAggregator: accountOne,
+			});
+		});
+	});
+
+	describe('atomicTwapPriceWindow', () => {
+		it('atomicTwapPriceWindow default is set correctly', async () => {
+			assert.bnEqual(await instance.atomicTwapPriceWindow(), ATOMIC_TWAP_PRICE_WINDOW);
+		});
+		describe('when price window is changed in the system settings', () => {
+			const newPriceWindow = toBN(ATOMIC_TWAP_PRICE_WINDOW).add(toBN('1'));
+			beforeEach(async () => {
+				await systemSettings.setAtomicTwapPriceWindow(newPriceWindow, { from: owner });
+			});
+			it('then atomicTwapPriceWindow is correctly updated', async () => {
+				assert.bnEqual(await instance.atomicTwapPriceWindow(), newPriceWindow);
+			});
+		});
+	});
+
+	describe('atomicEquivalentForDexPricing', () => {
+		const snxEquivalentAddr = accountOne;
+		describe('when equivalent for SNX is changed in the system settings', () => {
+			beforeEach(async () => {
+				await systemSettings.setAtomicEquivalentForDexPricing(SNX, snxEquivalentAddr, {
+					from: owner,
+				});
+			});
+			it('then atomicEquivalentForDexPricing is correctly updated', async () => {
+				assert.bnEqual(await instance.atomicEquivalentForDexPricing(SNX), snxEquivalentAddr);
+			});
+		});
+	});
+
+	describe('atomicPriceBuffer', () => {
+		describe('when price buffer for SNX is changed in the system settings', () => {
+			const priceBuffer = toUnit('0.003');
+			beforeEach(async () => {
+				await systemSettings.setAtomicPriceBuffer(SNX, priceBuffer, { from: owner });
+			});
+			it('then rateStalePeriod is correctly updated', async () => {
+				assert.bnEqual(await instance.atomicPriceBuffer(SNX), priceBuffer);
+			});
+		});
+	});
+
+	describe('effectiveAtomicValueAndRates', () => {
+		const MockToken = artifacts.require('MockToken');
+		const one = toUnit('1');
+		const unitIn8 = convertToDecimals(1, 8);
+
+		let dexTwapAggregator, ethAggregator;
+		let susdDexEquivalentToken, sethDexEquivalentToken;
+
+		function itGivesTheCorrectRates({
+			inputs: { amountIn, srcToken, destToken },
+			rates: { pTwap, pSpot, pCl: pClRaw },
+			settings: { clBuffer },
+			expected: { amountOut: expectedAmountOut, rateTypes: expectedRateTypes },
+		}) {
+			describe(`P_TWAP of ${pTwap}, P_SPOT of ${pSpot}, P_CL of ${pClRaw}, and CL_BUFFER of ${clBuffer}bps`, () => {
+				let rates;
+
+				// Array-ify expected output types to allow for multiple rates types to be equivalent
+				expectedRateTypes = Array.isArray(expectedRateTypes)
+					? expectedRateTypes
+					: [expectedRateTypes];
+
+				// Adjust inputs to unit
+				pTwap = toUnit(pTwap);
+				pSpot = toUnit(pSpot);
+				clBuffer = toUnit(clBuffer).div(toBN('10000')); // bps to unit percentage
+
+				const pClIn8 = convertToDecimals(pClRaw, 8);
+				const pClIn18 = toUnit(pClRaw);
+
+				// Note that the chainlink rate is a bit awkward to specify.
+				// For simplicity, the given pCl rate is priced on the dest token.
+				// Internally, however, the CL aggregators are expected to be priced in USD and with 8 decimals.
+				// So if the source token is USD, we need to inverse the given CL rate for the CL aggregator.
+				const pClInUsdIn8 = srcToken === sUSD ? divideDecimal(unitIn8, pClIn8, unitIn8) : pClIn8;
+				const pClInUsdIn18 = divideDecimal(pClInUsdIn8, unitIn8); // divides with decimal base of 18
+
+				// Get potential outputs based on given rates
+				// Due to the 8-decimal precision limitation with chainlink, cl rates are calculated in a
+				// manner mimicing the internal math to obtain the same results
+				const pClOut =
+					srcToken === sUSD
+						? divideDecimal(amountIn, pClInUsdIn8, unitIn8) // x usd / rate (usd/dest)
+						: multiplyDecimal(amountIn, pClIn18); // x dest * rate (usd/dest)
+				const potentialOutputs = {
+					pTwap: multiplyDecimal(amountIn, pTwap),
+					pSpot: multiplyDecimal(amountIn, pSpot),
+					pCl: pClOut,
+					pClBuf: multiplyDecimal(pClOut, one.sub(clBuffer)),
+				};
+
+				beforeEach(async () => {
+					await dexTwapAggregator.setAssetToAssetRates(pTwap, pSpot, pClIn18);
+					await ethAggregator.setLatestAnswer(pClInUsdIn8, await currentTime());
+
+					await systemSettings.setAtomicPriceBuffer(destToken, clBuffer, { from: owner });
+
+					rates = await instance.effectiveAtomicValueAndRates(srcToken, amountIn, destToken);
+				});
+
+				it(`selects ${expectedRateTypes.length ? expectedRateTypes : expectedRateTypes[0]}`, () => {
+					for (const type of expectedRateTypes) {
+						assert.bnEqual(rates.value, potentialOutputs[type]);
+					}
+				});
+
+				it('provides the correct output', () => {
+					assert.bnEqual(rates.value, expectedAmountOut);
+				});
+
+				it('provides the correct system value', () => {
+					assert.bnEqual(rates.systemValue, potentialOutputs.pCl);
+				});
+
+				it('provides the correct system source rate', () => {
+					if (srcToken === sUSD) {
+						assert.bnEqual(rates.systemSourceRate, one); // sUSD is always one
+					} else {
+						assert.bnEqual(rates.systemSourceRate, pClInUsdIn18); // system reports prices in 18 decimals
+					}
+				});
+
+				it('provides the correct system destination rate', () => {
+					if (destToken === sUSD) {
+						assert.bnEqual(rates.systemDestinationRate, one); // sUSD is always one
+					} else {
+						assert.bnEqual(rates.systemDestinationRate, pClInUsdIn18); // system reports prices in 18 decimals
+					}
+				});
+			});
+		}
+
+		beforeEach('set up mocks', async () => {
+			ethAggregator = await MockAggregator.new({ from: owner });
+
+			const MockDexTwapAggregator = artifacts.require('MockDexTwapAggregator');
+			dexTwapAggregator = await MockDexTwapAggregator.new();
+
+			susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
+			sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
+		});
+
+		beforeEach('set initial configuration', async () => {
+			await ethAggregator.setDecimals('8');
+			await ethAggregator.setLatestAnswer(convertToDecimals(1, 8), await currentTime());
+			await instance.addAggregator(sETH, ethAggregator.address, {
+				from: owner,
+			});
+			await instance.setDexTwapAggregator(dexTwapAggregator.address, {
+				from: owner,
+			});
+			await systemSettings.setAtomicEquivalentForDexPricing(sUSD, susdDexEquivalentToken.address, {
+				from: owner,
+			});
+			await systemSettings.setAtomicEquivalentForDexPricing(sETH, sethDexEquivalentToken.address, {
+				from: owner,
+			});
+		});
+
+		describe('src/dest do not have an atomic equivalent for dex pricing', () => {
+			beforeEach(async () => {
+				await systemSettings.setAtomicEquivalentForDexPricing(sUSD, ZERO_ADDRESS, {
+					from: owner,
+				});
+			});
+			it('reverts on src not having equivalent', async () => {
+				await assert.revert(
+					instance.effectiveAtomicValueAndRates(sUSD, one, sETH),
+					'No atomic equivalent for src'
+				);
+			});
+			it('reverts on dest not having equivalent', async () => {
+				await assert.revert(
+					instance.effectiveAtomicValueAndRates(sETH, one, sUSD),
+					'No atomic equivalent for dest'
+				);
+			});
+		});
+
+		describe('aggregator reverts on latestRoundData', () => {
+			beforeEach(async () => {
+				await ethAggregator.setLatestRoundDataShouldRevert(true);
+			});
+			it('returns zero rates', async () => {
+				const rates = await instance.effectiveAtomicValueAndRates(sUSD, one, sETH);
+				assert.bnEqual(rates.value, '0');
+				assert.bnEqual(rates.systemValue, '0');
+				assert.bnEqual(rates.systemSourceRate, one); // sUSD rate is always 1
+				assert.bnEqual(rates.systemDestinationRate, '0');
+			});
+		});
+
+		describe('dexTwapAggregator reverts on assetToAsset', () => {
+			beforeEach(async () => {
+				await dexTwapAggregator.setAssetToAssetShouldRevert(true);
+			});
+			it('reverts', async () => {
+				await assert.revert(
+					instance.effectiveAtomicValueAndRates(sUSD, one, sETH),
+					'assetToAsset reverted'
+				);
+			});
+		});
+
+		describe('trades sUSD -> sETH', () => {
+			const amountIn = toUnit('1000');
+			const srcToken = sUSD;
+			const destToken = sETH;
+
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '0.01',
+					pSpot: '0.011',
+					pCl: '0.011',
+				},
+				settings: {
+					clBuffer: '50', // bps
+				},
+				expected: {
+					amountOut: toUnit('10'),
+					rateTypes: 'pTwap',
+				},
+			});
+
+			// P_TWAP of 0.01, P_SPOT of 0.011, P_CL of 0.011, and CL_BUFFER of 50bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '0.01',
+					pSpot: '0.0098',
+					pCl: '0.0099',
+				},
+				settings: {
+					clBuffer: '50', // bps
+				},
+				expected: {
+					amountOut: toUnit('9.8'),
+					rateTypes: 'pSpot',
+				},
+			});
+
+			// P_TWAP of 0.01, P_SPOT of 0.0098, P_CL of 0.0099, and CL_BUFFER of 50bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '0.01',
+					pSpot: '0.0098',
+					pCl: '0.0099',
+				},
+				settings: {
+					clBuffer: '50', // bps
+				},
+				expected: {
+					amountOut: toUnit('9.8'),
+					rateTypes: 'pSpot',
+				},
+			});
+
+			// P_TWAP of 0.01, P_SPOT of 0.011, P_CL of 0.0099, and CL_BUFFER of 50bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '0.01',
+					pSpot: '0.011',
+					pCl: '0.0099',
+				},
+				settings: {
+					clBuffer: '50', // bps
+				},
+				expected: {
+					amountOut: toUnit('9.8505000000098505'), // precision required due to 8 decimal precision
+					rateTypes: 'pClBuf',
+				},
+			});
+
+			// Given P_TWAP of 0.01, P_SPOT of 0.01, P_CL of 0.01, and CL_BUFFER of 50bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '0.01',
+					pSpot: '0.01',
+					pCl: '0.01',
+				},
+				settings: {
+					clBuffer: '50', // bps
+				},
+				expected: {
+					amountOut: toUnit('9.95'),
+					rateTypes: 'pClBuf',
+				},
+			});
+
+			// P_TWAP of 0.01, P_SPOT of 0.01, P_CL of 0.01, and CL_BUFFER of 0bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '0.01',
+					pSpot: '0.01',
+					pCl: '0.01',
+				},
+				settings: {
+					clBuffer: '0', // bps
+				},
+				expected: {
+					amountOut: toUnit('10'),
+					rateTypes: ['pTwap', 'pSpot', 'pClBuf'],
+				},
+			});
+		});
+
+		describe('trades sETH -> sUSD', () => {
+			const amountIn = toUnit('10');
+			const srcToken = sETH;
+			const destToken = sUSD;
+
+			// P_TWAP of 100, P_SPOT of 110, P_CL of 110, and CL_BUFFER of 50bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '100',
+					pSpot: '110',
+					pCl: '110',
+				},
+				settings: {
+					clBuffer: '50', // bps
+				},
+				expected: {
+					amountOut: toUnit('1000'),
+					rateTypes: 'pTwap',
+				},
+			});
+
+			// P_TWAP of 100, P_SPOT of 98, P_CL of 99, and CL_BUFFER of 50bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '100',
+					pSpot: '98',
+					pCl: '99',
+				},
+				settings: {
+					clBuffer: '50', // bps
+				},
+				expected: {
+					amountOut: toUnit('980'),
+					rateTypes: 'pSpot',
+				},
+			});
+
+			// P_TWAP of 100, P_SPOT of 110, P_CL of 99, and CL_BUFFER of 50bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '100',
+					pSpot: '110',
+					pCl: '99',
+				},
+				settings: {
+					clBuffer: '50', // bps
+				},
+				expected: {
+					amountOut: toUnit('985.05'),
+					rateTypes: 'pClBuf',
+				},
+			});
+
+			// P_TWAP of 100, P_SPOT of 100, P_CL of 100, and CL_BUFFER of 0bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '100',
+					pSpot: '100',
+					pCl: '100',
+				},
+				settings: {
+					clBuffer: '0', // bps
+				},
+				expected: {
+					amountOut: toUnit('1000'),
+					rateTypes: ['pTwap', 'pSpot', 'pClBuf'],
+				},
+			});
+		});
+
+		describe('when both tokens have a price buffer set', () => {
+			const pCl = toUnit('100');
+			const pClAggregator = convertToDecimals(100, 8);
+			const pTwap = pCl.mul(toBN('2'));
+			const pSpot = pTwap;
+			const susdBuffer = toUnit('0.003');
+			const sethBuffer = toUnit('0.005');
+
+			const amountIn = toUnit('10');
+
+			beforeEach(async () => {
+				await dexTwapAggregator.setAssetToAssetRates(pTwap, pSpot, pCl);
+				await ethAggregator.setLatestAnswer(pClAggregator, await currentTime());
+
+				await systemSettings.setAtomicPriceBuffer(sUSD, susdBuffer, { from: owner });
+				await systemSettings.setAtomicPriceBuffer(sETH, sethBuffer, { from: owner });
+			});
+
+			it('prices pClBuf with the highest buffer', async () => {
+				const rates = await instance.effectiveAtomicValueAndRates(sETH, amountIn, sUSD);
+				const higherBuffer = susdBuffer.gt(sethBuffer) ? susdBuffer : sethBuffer;
+				const expectedValue = multiplyDecimal(
+					multiplyDecimal(amountIn, pCl),
+					one.sub(higherBuffer)
+				);
+				assert.bnEqual(rates.value, expectedValue);
+			});
+		});
+
+		describe('when tokens use non-18 decimals', () => {
+			beforeEach('set up non-18 decimal tokens', async () => {
+				susdDexEquivalentToken = await MockToken.new('sUSD equivalent', 'esUSD', '6'); // mimic USDC and USDT
+				sethDexEquivalentToken = await MockToken.new('sETH equivalent', 'esETH', '8'); // mimic WBTC
+				await systemSettings.setAtomicEquivalentForDexPricing(
+					sUSD,
+					susdDexEquivalentToken.address,
+					{
+						from: owner,
+					}
+				);
+				await systemSettings.setAtomicEquivalentForDexPricing(
+					sETH,
+					sethDexEquivalentToken.address,
+					{
+						from: owner,
+					}
+				);
+			});
+
+			describe('sUSD -> sETH', () => {
+				// esETH has 8 decimals
+				const pTwap = convertToDecimals('0.01', 8);
+				const pSpot = convertToDecimals('0.01', 8);
+				const pCl = convertToDecimals('0.01', 8);
+
+				const amountIn = toUnit('1000');
+				const amountIn6 = convertToDecimals(1000, 6); // in input token's decimals
+
+				beforeEach('set up rates', async () => {
+					await dexTwapAggregator.setAssetToAssetRates(pTwap, pSpot, pCl);
+					await ethAggregator.setLatestAnswer(pCl, await currentTime()); // pCl is already in 8 decimals
+
+					await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
+				});
+
+				it('dex aggregator mock provides expected results', async () => {
+					const assetToAssetRates = await dexTwapAggregator.assetToAsset(
+						susdDexEquivalentToken.address,
+						amountIn6,
+						sethDexEquivalentToken.address,
+						'2'
+					);
+					// use UNIT as decimal base to get 8 decimals (output token's decimals)
+					const expectedOutput = multiplyDecimal(amountIn, pCl);
+					assert.bnEqual(assetToAssetRates.quoteOut, expectedOutput);
+				});
+
+				it('still provides results in 18 decimals', async () => {
+					const rates = await instance.effectiveAtomicValueAndRates(sUSD, amountIn, sETH);
+					const expectedOutput = multiplyDecimal(amountIn, pCl, unitIn8); // use 8 as decimal base to get 18 decimals
+					assert.bnEqual(rates.value, expectedOutput);
+				});
+			});
+
+			describe('sETH -> sUSD', () => {
+				// esUSD has 8 decimals
+				const pTwap = convertToDecimals(100, 6);
+				const pSpot = convertToDecimals(100, 6);
+				const pCl = convertToDecimals(100, 6);
+				const pClIn8 = convertToDecimals(100, 8);
+
+				const amountIn = toUnit('10');
+				const amountIn8 = convertToDecimals(10, 8); // in input token's decimals
+
+				const unitIn6 = convertToDecimals(1, 6);
+
+				beforeEach('set up rates', async () => {
+					await dexTwapAggregator.setAssetToAssetRates(pTwap, pSpot, pCl);
+					await ethAggregator.setLatestAnswer(pClIn8, await currentTime()); // pCl is already in 8 decimals
+
+					await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
+				});
+
+				it('dex aggregator mock provides expected results', async () => {
+					const assetToAssetRates = await dexTwapAggregator.assetToAsset(
+						sethDexEquivalentToken.address,
+						amountIn8,
+						susdDexEquivalentToken.address,
+						'2'
+					);
+					// use UNIT as decimal base to get 6 decimals (output token's decimals)
+					const expectedOutput = multiplyDecimal(amountIn, pCl);
+					assert.bnEqual(assetToAssetRates.quoteOut, expectedOutput);
+				});
+
+				it('still provides results in 18 decimals', async () => {
+					const rates = await instance.effectiveAtomicValueAndRates(sETH, amountIn, sUSD);
+					const expectedOutput = multiplyDecimal(amountIn, pCl, unitIn6); // use 6 as decimal base to get 18 decimals
+					assert.bnEqual(rates.value, expectedOutput);
 				});
 			});
 		});

@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 interface AggregatorV2V3Interface {
     function latestRound() external view returns (uint256);
 
@@ -33,7 +32,6 @@ interface AggregatorV2V3Interface {
         );
 }
 
-
 contract MockAggregatorV2V3 is AggregatorV2V3Interface {
     uint80 public roundId = 0;
     uint8 public keyDecimals = 0;
@@ -47,6 +45,8 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
     }
 
     mapping(uint => Entry) public entries;
+
+    bool public latestRoundDataShouldRevert;
 
     constructor() public {}
 
@@ -77,6 +77,10 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
         });
     }
 
+    function setLatestRoundDataShouldRevert(bool _shouldRevert) external {
+        latestRoundDataShouldRevert = _shouldRevert;
+    }
+
     function setDecimals(uint8 _decimals) external {
         keyDecimals = _decimals;
     }
@@ -92,6 +96,9 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
             uint80
         )
     {
+        if (latestRoundDataShouldRevert) {
+            revert("latestRoundData reverted");
+        }
         return getRoundData(uint80(latestRound()));
     }
 
