@@ -1195,28 +1195,30 @@ const deploy = async ({
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
+	}
 
-		let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
-		if (!WETH_ADDRESS) {
-			if (network !== 'local') {
-				throw new Error('WETH address is not known');
-			}
-
-			// On local, deploy a mock WETH token
-			const weth = await deployer.deployContract({
-				name: 'WETH',
-				args: [],
-			});
-
-			WETH_ADDRESS = weth.options.address;
+	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
+	if (!WETH_ADDRESS) {
+		if (network !== 'local') {
+			throw new Error('WETH address is not known');
 		}
 
-		await deployer.deployContract({
-			name: 'EtherWrapper',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
+		// On local, deploy a mock WETH token.
+		// OVM already has a deployment of WETH, however since we use
+		// Hardhat for the local-ovm environment, we must deploy
+		// our own.
+		const weth = await deployer.deployContract({
+			name: useOvm ? 'MockWETH' : 'WETH',
 		});
+
+		WETH_ADDRESS = weth.options.address;
 	}
+
+	await deployer.deployContract({
+		name: 'EtherWrapper',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
+	});
 
 	// ----------------
 	// Binary option market factory and manager setup

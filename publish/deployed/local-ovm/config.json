@@ -136,5 +136,11 @@
 	},
 	"CollateralManager": {
 		"deploy": true
+	},
+	"EtherWrapper": {
+		"deploy": true
+	},
+	"MockWETH": {
+		"deploy": true
 	}
 }
