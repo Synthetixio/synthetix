@@ -25,7 +25,6 @@ import "./Proxyable.sol";
 // during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
-
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
     function emitExchangeTracking(
@@ -56,13 +55,11 @@ interface ISynthetixInternal {
     ) external;
 }
 
-
 interface IExchangerInternalDebtCache {
     function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
 
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
 }
-
 
 // https://docs.synthetix.io/contracts/source/contracts/exchanger
 contract Exchanger is Owned, MixinSystemSettings, IExchanger {
@@ -219,13 +216,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(exchangeEntry);
 
             // given these round ids, determine what effective value they should have received
-            uint destinationAmount = exchangeRates().effectiveValueAtRound(
-                exchangeEntry.src,
-                exchangeEntry.amount,
-                exchangeEntry.dest,
-                srcRoundIdAtPeriodEnd,
-                destRoundIdAtPeriodEnd
-            );
+            uint destinationAmount =
+                exchangeRates().effectiveValueAtRound(
+                    exchangeEntry.src,
+                    exchangeEntry.amount,
+                    exchangeEntry.dest,
+                    srcRoundIdAtPeriodEnd,
+                    destRoundIdAtPeriodEnd
+                );
 
             // and deduct the fee from this amount using the exchangeFeeRate from storage
             uint amountShouldHaveReceived = _deductFeesFromAmount(destinationAmount, exchangeEntry.exchangeFeeRate);
@@ -333,9 +331,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress
-    ) external returns (uint amountReceived) {
-        _ensureOnlySynthetixOrSynth();
-
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee, ) = _exchange(
             from,
@@ -355,8 +351,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey
-    ) external returns (uint amountReceived) {
-        _ensureOnlySynthetix();
+    ) external onlySynthetix returns (uint amountReceived) {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
@@ -380,9 +375,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         address destinationAddress,
         address originator,
         bytes32 trackingCode
-    ) external returns (uint amountReceived) {
-        _ensureOnlySynthetix();
-
+    ) external onlySynthetix returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee, ) = _exchange(
             from,
@@ -407,8 +400,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         address originator,
         bytes32 trackingCode
-    ) external returns (uint amountReceived) {
-        _ensureOnlySynthetix();
+    ) external onlySynthetix returns (uint amountReceived) {
         require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
 
         uint fee;
@@ -433,9 +425,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress,
         bytes32 trackingCode
-    ) external returns (uint amountReceived, IVirtualSynth vSynth) {
-        _ensureOnlySynthetix();
-
+    ) external onlySynthetix returns (uint amountReceived, IVirtualSynth vSynth) {
         uint fee;
         (amountReceived, fee, vSynth) = _exchange(
             from,
@@ -461,9 +451,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // TODO: this destinationAddress variable doesn't seem to be needed since it's always the same as from
         address destinationAddress,
         bytes32 trackingCode
-    ) external returns (uint amountReceived) {
-        _ensureOnlySynthetix();
-
+    ) external onlySynthetix returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee) = _exchangeAtomically(
             from,
@@ -756,9 +744,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function _checkAndUpdateAtomicVolume(uint sourceSusdValue) internal {
-        uint currentVolume = uint(lastAtomicVolume.time) == block.timestamp
-            ? uint(lastAtomicVolume.volume).add(sourceSusdValue)
-            : sourceSusdValue;
+        uint currentVolume =
+            uint(lastAtomicVolume.time) == block.timestamp
+                ? uint(lastAtomicVolume.volume).add(sourceSusdValue)
+                : sourceSusdValue;
         require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed volume limit");
         lastAtomicVolume.time = uint64(block.timestamp);
         lastAtomicVolume.volume = uint192(currentVolume); // Protected by volume limit check above
@@ -893,12 +882,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        (
-            uint reclaimAmount,
-            uint rebateAmount,
-            uint entries,
-            ExchangeEntrySettlement[] memory settlements
-        ) = _settlementOwing(from, currencyKey);
+        (uint reclaimAmount, uint rebateAmount, uint entries, ExchangeEntrySettlement[] memory settlements) =
+            _settlementOwing(from, currencyKey);
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);
@@ -1178,20 +1163,22 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
     }
 
-    function _ensureOnlySynthetixOrSynth() internal view {
+    // ========== MODIFIERS ==========
+
+    modifier onlySynthetixorSynth() {
         ISynthetix _synthetix = synthetix();
         require(
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
+        _;
     }
 
-    function _ensureOnlySynthetix() internal view {
+    modifier onlySynthetix() {
         ISynthetix _synthetix = synthetix();
         require(msg.sender == address(_synthetix), "Exchanger: Only synthetix can perform this action");
+        _;
     }
-
-    // ========== MODIFIERS ==========
 
     modifier onlyExchangeRates() {
         IExchangeRates _exchangeRates = exchangeRates();
