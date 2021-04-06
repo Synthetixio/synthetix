@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "./IRewardEscrowV2.sol";
 
-
 interface ISynthetixBridgeToBase {
     // invoked by users on L2
     function initiateWithdrawal(uint amount) external;

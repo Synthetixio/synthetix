@@ -1,6 +1,5 @@
 pragma solidity >=0.4.24;
 
-
 interface ICollateralManager {
     // Manager information
     function hasCollateral(address collateral) external view returns (bool);

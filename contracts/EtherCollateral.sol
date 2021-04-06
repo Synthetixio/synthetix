@@ -18,7 +18,6 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
 import "./interfaces/IExchangeRates.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/ethercollateral
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
     using SafeMath for uint256;
@@ -309,14 +308,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         loanID = _incrementTotalLoansCounter();
 
         // Create Loan storage object
-        SynthLoanStruct memory synthLoan = SynthLoanStruct({
-            account: msg.sender,
-            collateralAmount: msg.value,
-            loanAmount: loanAmount,
-            timeCreated: now,
-            loanID: loanID,
-            timeClosed: 0
-        });
+        SynthLoanStruct memory synthLoan =
+            SynthLoanStruct({
+                account: msg.sender,
+                collateralAmount: msg.value,
+                loanAmount: loanAmount,
+                timeCreated: now,
+                loanID: loanID,
+                timeClosed: 0
+            });
 
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[msg.sender].push(synthLoan);

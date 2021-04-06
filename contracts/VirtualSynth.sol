@@ -15,7 +15,6 @@ import "./interfaces/IExchanger.sol";
 // during the build
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/virtualsynth
 contract VirtualSynth is ERC20, IVirtualSynth {
     using SafeMath for uint;

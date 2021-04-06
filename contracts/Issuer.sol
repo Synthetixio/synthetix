@@ -24,12 +24,10 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 import "./interfaces/ICollateralManager.sol";
 
-
 interface IRewardEscrowV2 {
     // Views
     function balanceOf(address account) external view returns (uint);
 }
-
 
 interface IIssuerInternalDebtCache {
     function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external;
@@ -48,7 +46,6 @@ interface IIssuerInternalDebtCache {
             bool isStale
         );
 }
-
 
 // https://docs.synthetix.io/contracts/source/contracts/issuer
 contract Issuer is Owned, MixinSystemSettings, IIssuer {
@@ -238,15 +235,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer of 27 (1e27) decimals.
-        uint currentDebtOwnership = state
-            .lastDebtLedgerEntry()
-            .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
-            .multiplyDecimalRoundPrecise(initialDebtOwnership);
+        uint currentDebtOwnership =
+            state
+                .lastDebtLedgerEntry()
+                .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
+                .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // Their debt balance is their portion of the total system value.
-        uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(
-            currentDebtOwnership
-        );
+        uint highPrecisionBalance =
+            totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(currentDebtOwnership);
 
         // Convert back into 18 decimals (1e18)
         debtBalance = highPrecisionBalance.preciseDecimalToDecimal();
@@ -587,10 +584,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
         uint collateralForAccount = _collateral(account);
-        uint amountToFixRatio = liquidations().calculateAmountToFixCollateral(
-            debtBalance,
-            _snxToUSD(collateralForAccount, snxRate)
-        );
+        uint amountToFixRatio =
+            liquidations().calculateAmountToFixCollateral(debtBalance, _snxToUSD(collateralForAccount, snxRate));
 
         // Cap amount to liquidate to repair collateral ratio based on issuance ratio
         amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;

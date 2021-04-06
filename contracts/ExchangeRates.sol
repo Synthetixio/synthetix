@@ -16,7 +16,6 @@ import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
 import "./interfaces/IExchanger.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     using SafeMath for uint;
@@ -598,10 +597,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
 
             if (success) {
-                (uint80 roundId, int256 answer, , uint256 updatedAt, ) = abi.decode(
-                    returnData,
-                    (uint80, int256, uint256, uint256, uint80)
-                );
+                (uint80 roundId, int256 answer, , uint256 updatedAt, ) =
+                    abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
                 return
                     RateAndUpdatedTime({
                         rate: uint216(_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer), roundId)),
@@ -637,10 +634,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             (bool success, bytes memory returnData) = address(aggregator).staticcall(payload);
 
             if (success) {
-                (, int256 answer, , uint256 updatedAt, ) = abi.decode(
-                    returnData,
-                    (uint80, int256, uint256, uint256, uint80)
-                );
+                (, int256 answer, , uint256 updatedAt, ) =
+                    abi.decode(returnData, (uint80, int256, uint256, uint256, uint80));
                 return (_rateOrInverted(currencyKey, _formatAggregatorAnswer(currencyKey, answer), roundId), updatedAt);
             }
         } else {

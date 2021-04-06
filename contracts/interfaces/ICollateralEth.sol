@@ -1,6 +1,5 @@
 pragma solidity >=0.4.24;
 
-
 interface ICollateralEth {
     function open(uint amount, bytes32 currency) external payable;
 

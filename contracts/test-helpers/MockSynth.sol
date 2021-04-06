@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 import "../ExternStateToken.sol";
 import "../interfaces/ISystemStatus.sol";
 
-
 // Mock synth that also adheres to system status
 
 contract MockSynth is ExternStateToken {

@@ -7,7 +7,6 @@ import "./Exchanger.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./VirtualSynth.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/exchangerwithvirtualsynth
 contract ExchangerWithVirtualSynth is Exchanger {
     constructor(address _owner, address _resolver) public Exchanger(_owner, _resolver) {}

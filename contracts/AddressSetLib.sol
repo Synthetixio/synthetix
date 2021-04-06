@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 // https://docs.synthetix.io/contracts/source/libraries/addresssetlib/
 library AddressSetLib {
     struct AddressSet {

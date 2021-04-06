@@ -5,7 +5,6 @@ import "./Owned.sol";
 import "./State.sol";
 import "./interfaces/IExchangeState.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/exchangestate
 contract ExchangeState is Owned, State, IExchangeState {
     mapping(address => mapping(bytes32 => IExchangeState.ExchangeEntry[])) public exchanges;

@@ -1,12 +1,10 @@
 pragma solidity ^0.5.16;
 
-
 interface ISynthetixEscrow {
     function numVestingEntries(address account) external view returns (uint);
 
     function getVestingScheduleEntry(address account, uint index) external view returns (uint[2] memory);
 }
-
 
 // https://docs.synthetix.io/contracts/source/contracts/escrowchecker
 contract EscrowChecker {
