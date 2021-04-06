@@ -105,6 +105,7 @@ contract('Synthetix', async accounts => {
 		beforeEach(async () => {
 			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
 			smockExchanger.smocked.exchangeWithVirtual.will.return.with(() => ['1', account1]);
+			smockExchanger.smocked.exchangeAtomically.will.return.with(() => ['1']);
 			await addressResolver.importAddresses(
 				['Exchanger'].map(toBytes32),
 				[smockExchanger.address],
@@ -129,6 +130,18 @@ contract('Synthetix', async accounts => {
 			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][3], currencyKey2);
 			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][4], msgSender);
 			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][5], trackingCode);
+		});
+
+		it('exchangeAtomically is called with the right arguments ', async () => {
+			await synthetix.exchangeAtomically(currencyKey1, amount1, currencyKey2, trackingCode, {
+				from: owner,
+			});
+			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][0], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][1], currencyKey1);
+			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][2].toString(), amount1);
+			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][3], currencyKey2);
+			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][4], msgSender);
+			assert.equal(smockExchanger.smocked.exchangeAtomically.calls[0][5], trackingCode);
 		});
 	});
 

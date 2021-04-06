@@ -151,6 +151,14 @@ contract('BaseSynthetix', async accounts => {
 				reason: 'Cannot be run on this layer',
 			});
 		});
+		it('ExchangeAtomically should revert no matter who the caller is', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: baseSynthetix.exchangeAtomically,
+				accounts,
+				args: [sUSD, amount, sETH, toBytes32('AGGREGATOR')],
+				reason: 'Cannot be run on this layer',
+			});
+		});
 		it('Mint should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.mint,
