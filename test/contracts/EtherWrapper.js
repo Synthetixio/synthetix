@@ -38,7 +38,7 @@ contract('EtherWrapper', async accounts => {
 		weth,
 		timestamp;
 
-	const calculateLoanFeesUSD = async feesInETH => {
+	const calculateETHToUSD = async feesInETH => {
 		// Ask the Depot how many sUSD I will get for this ETH
 		const expectedFeesUSD = await depot.synthsReceivedForEther(feesInETH);
 		return expectedFeesUSD;
@@ -46,13 +46,13 @@ contract('EtherWrapper', async accounts => {
 
 	const calculateMintFees = async amount => {
 		const mintFee = await etherWrapper.calculateMintFee(amount);
-		const expectedFeesUSD = await calculateLoanFeesUSD(mintFee);
+		const expectedFeesUSD = await calculateETHToUSD(mintFee);
 		return { mintFee, expectedFeesUSD };
 	};
 
 	const calculateBurnFees = async amount => {
 		const burnFee = await etherWrapper.calculateBurnFee(amount);
-		const expectedFeesUSD = await calculateLoanFeesUSD(burnFee);
+		const expectedFeesUSD = await calculateETHToUSD(burnFee);
 		return { burnFee, expectedFeesUSD };
 	};
 
@@ -153,8 +153,6 @@ contract('EtherWrapper', async accounts => {
 			});
 		});
 	});
-
-	addSnapshotBeforeRestoreAfterEach();
 
 	describe('mint', async () => {
 		describe('when amount is less than than capacity', () => {
