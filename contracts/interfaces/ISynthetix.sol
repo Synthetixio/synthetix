@@ -3,7 +3,6 @@ pragma solidity >=0.4.24;
 import "./ISynth.sol";
 import "./IVirtualSynth.sol";
 
-
 // https://docs.synthetix.io/contracts/source/interfaces/isynthetix
 interface ISynthetix {
     // Views
@@ -89,6 +88,13 @@ interface ISynthetix {
         bytes32 destinationCurrencyKey,
         bytes32 trackingCode
     ) external returns (uint amountReceived, IVirtualSynth vSynth);
+
+    function exchangeAtomically(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived);
 
     function issueMaxSynths() external;
 
