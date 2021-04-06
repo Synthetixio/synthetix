@@ -118,7 +118,7 @@
 		"rlp": "^2.2.6",
 		"semver": "7.3.2",
 		"solc": "0.5.16",
-		"solhint": "^2.3.0",
+		"solhint": "~3.3.4",
 		"solidifier": "github:synthetixio/solidifier#2.2.0",
 		"solidity-coverage": "^0.7.13",
 		"table": "^5.0.2",
