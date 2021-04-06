@@ -387,6 +387,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
         require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
+        // TODO: this may return 0s if the CL aggregator reverts on latestRoundData()--should it revert?
         (systemValue, systemSourceRate, systemDestinationRate) = _effectiveValueAndRates(
             sourceCurrencyKey,
             sourceAmount,
