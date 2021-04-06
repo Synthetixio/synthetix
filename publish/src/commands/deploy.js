@@ -1220,6 +1220,14 @@ const deploy = async ({
 		args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
 	});
 
+	if (!useOvm) {
+		await deployer.deployContract({
+			name: 'NativeEtherWrapper',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+	}
+
 	// ----------------
 	// Binary option market factory and manager setup
 	// ----------------

@@ -18,14 +18,16 @@ contract NativeEtherWrapper is Owned, MixinResolver {
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
     bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
 
-    constructor(address _resolver) public MixinResolver(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     /* ========== PUBLIC FUNCTIONS ========== */
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory addresses = new bytes32[](2);
         addresses[0] = CONTRACT_ETHER_WRAPPER;
         addresses[1] = CONTRACT_SYNTHSETH;
+        return addresses;
     }
 
     function etherWrapper() internal view returns (IEtherWrapper) {
@@ -45,17 +47,15 @@ contract NativeEtherWrapper is Owned, MixinResolver {
     function mint() public payable {
         uint amount = msg.value;
         require(amount > 0, "amount must be greater than 0");
-        IEtherWrapper etherWrapper = etherWrapper();
-        IWETH weth = weth();
 
         // Convert sent ETH into WETH.
-        weth.deposit.value(amount)();
+        weth().deposit.value(amount)();
 
         // Approve for the EtherWrapper.
-        weth.approve(address(etherWrapper), amount);
+        weth().approve(address(etherWrapper()), amount);
 
         // Now call mint.
-        etherWrapper.mint(amount);
+        etherWrapper().mint(amount);
 
         // Transfer the sETH to msg.sender.
         synthsETH().transfer(msg.sender, synthsETH().balanceOf(address(this)));
@@ -63,20 +63,26 @@ contract NativeEtherWrapper is Owned, MixinResolver {
 
     function burn(uint amount) public {
         require(amount > 0, "amount must be greater than 0");
-        IEtherWrapper etherWrapper = etherWrapper();
+        require(amount <= synthsETH().allowance(msg.sender, address(this)), "Allowance not high enough");
+        require(amount <= synthsETH().balanceOf(msg.sender), "Balance is too low");
         IWETH weth = weth();
 
         // Transfer sETH from the msg.sender.
         synthsETH().transferFrom(msg.sender, address(this), amount);
 
         // Approve for the EtherWrapper.
-        synthsETH().approve(address(etherWrapper), amount);
+        synthsETH().approve(address(etherWrapper()), amount);
 
         // Now call burn.
-        etherWrapper.burn(amount);
+        etherWrapper().burn(amount);
 
         // Convert WETH to ETH and send to msg.sender.
         weth.withdraw(weth.balanceOf(address(this)));
         msg.sender.transfer(address(this).balance);
+    }
+
+    function() external payable {
+        // Fallback function not implemented, as it is triggered by
+        // the ETH transfer during WETH.withdraw.
     }
 }

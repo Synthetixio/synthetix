@@ -179,6 +179,7 @@
 			"SynthsETH",
 			"SystemSettings",
 			"EtherWrapper",
+			"NativeEtherWrapper"
 		],
 		"sips": [112, 113]
 	}

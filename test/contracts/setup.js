@@ -203,6 +203,7 @@ const setupContract = async ({
 		TokenState: [owner, deployerAccount],
 		EtherCollateral: [owner, tryGetAddressOf('AddressResolver')],
 		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
+		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		EtherCollateralsUSD: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
@@ -633,6 +634,11 @@ const setupAllContracts = async ({
 			contract: 'EtherWrapper',
 			mocks: [],
 			deps: ['AddressResolver', 'WETH'],
+		},
+		{
+			contract: 'NativeEtherWrapper',
+			mocks: [],
+			deps: ['AddressResolver', 'EtherWrapper', 'WETH', 'SynthsETH'],
 		},
 		{
 			contract: 'EtherCollateralsUSD',
