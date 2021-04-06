@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
+import "./interfaces/IDexTwapAggregator.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
@@ -18,28 +19,6 @@ import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.
 // FlagsInterface from Chainlink addresses SIP-76
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
 import "./interfaces/IExchanger.sol";
-
-
-// TODO: where best to put this?
-interface IDexTwapAggregator {
-    struct QuoteParams {
-        uint quoteOut; // Aggregated output
-        uint amountOut; // Aggregated TWAP output
-        uint currentOut; // Aggregated spot output
-        uint sTWAP;
-        uint uTWAP;
-        uint sCUR;
-        uint uCUR;
-        uint cl;
-    }
-
-    function assetToAsset(
-        address tokenIn,
-        uint amountIn,
-        address tokenOut,
-        uint granularity
-    ) external view returns (QuoteParams memory q);
-}
 
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
@@ -283,16 +262,16 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return getAggregatorWarningFlags();
     }
 
-    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
-        return getAtomicPriceBuffer(currencyKey);
-    }
-
     function atomicTwapPriceWindow() external view returns (uint) {
         return getAtomicTwapPriceWindow();
     }
 
     function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address) {
         return getAtomicEquivalentForDexPricing(currencyKey);
+    }
+
+    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicPriceBuffer(currencyKey);
     }
 
     function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
