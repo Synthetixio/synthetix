@@ -33,7 +33,7 @@
 		"deploy": false
 	},
 	"ExchangeRates": {
-		"deploy": true
+		"deploy": false
 	},
 	"Exchanger": {
 		"deploy": false
@@ -51,7 +51,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": true
+		"deploy": false
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -672,6 +672,9 @@
 		"deploy": false
 	},
 	"EtherWrapper": {
+		"deploy": true
+	},
+	"NativeEtherWrapper": {
 		"deploy": true
 	}
 }

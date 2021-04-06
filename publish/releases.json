@@ -174,13 +174,11 @@
 			"minor": 41
 		},
 		"sources": [
-			"ExchangeRates",
 			"FeePool",
-			"Issuer",
 			"SynthsUSD",
 			"SynthsETH",
 			"SystemSettings",
-			"EtherWrapper"
+			"EtherWrapper",
 		],
 		"sips": [112, 113]
 	}
