@@ -45,16 +45,13 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 					const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner, toBytes32()];
 
 					behaviors.whenInstantiated({ owner }, () => {
-						// as we aren't calling as Synthetix, we need to mock the check for synths
-						behaviors.whenMockedToAllowChecks(() => {
-							it('it reverts when called by regular accounts', async () => {
-								await onlyGivenAddressCanInvoke({
-									fnc: this.instance.exchangeWithVirtual,
-									args,
-									accounts: accounts.filter(a => a !== this.mocks.Synthetix.address),
-									reason: 'Exchanger: Only synthetix can perform this action',
-									// address: this.mocks.Synthetix.address (doesnt work as this reverts due to lack of mocking setup)
-								});
+						it('it reverts when called by regular accounts', async () => {
+							await onlyGivenAddressCanInvoke({
+								fnc: this.instance.exchangeWithVirtual,
+								args,
+								accounts: accounts.filter(a => a !== this.mocks.Synthetix.address),
+								reason: 'Exchanger: Only synthetix can perform this action',
+								// address: this.mocks.Synthetix.address (doesnt work as this reverts due to lack of mocking setup)
 							});
 						});
 
