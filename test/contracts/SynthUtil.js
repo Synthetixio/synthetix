@@ -90,7 +90,7 @@ contract('SynthUtil', accounts => {
 				]);
 			});
 		});
-		describe.only('currentDebtOwnership', () => {
+		describe('currentDebtOwnership', () => {
 			it('should return the debt ownership for a given address relative to the total debt pool', async () => {
 				assert.bnEqual(await synthUtil.currentDebtOwnership(ownerAccount), toUnit('1'));
 				assert.bnEqual(await synthUtil.currentDebtOwnership(account2), toUnit('0'));
