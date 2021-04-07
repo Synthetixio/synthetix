@@ -1,0 +1,58 @@
+[
+	{
+		"name": "sUSD",
+		"asset": "USD"
+	},
+	{
+		"name": "sETH",
+		"asset": "ETH"
+	},
+	{
+		"name": "sBTC",
+		"asset": "BTC"
+	},
+	{
+		"name": "sLINK",
+		"asset": "LINK"
+	},
+	{
+		"name": "sUNI",
+		"asset": "UNI"
+	},
+	{
+		"name": "sAAVE",
+		"asset": "AAVE"
+	},
+	{
+		"name": "sRUNE",
+		"asset": "RUNE"
+	},
+	{
+		"name": "sBNB",
+		"asset": "BNB"
+	},
+	{
+		"name": "sXTZ",
+		"asset": "XTZ"
+	},
+	{
+		"name": "sLTC",
+		"asset": "LTC"
+	},
+	{
+		"name": "sXMR",
+		"asset": "XMR"
+	},
+	{
+		"name": "sCOMP",
+		"asset": "COMP"
+	},
+	{
+		"name": "sKNC",
+		"asset": "KNC"
+	},
+	{
+		"name": "sREN",
+		"asset": "REN"
+	}
+]
