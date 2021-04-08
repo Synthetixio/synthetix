@@ -94,8 +94,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
     // ========== VIEWS ==========
 
     function capacity() public view returns (uint _capacity) {
-        // capacity = min(maxETH, maxETH - balance(1 - mintFeeRate))
-        // uint balance = getBalance().multiplyDecimal(SafeDecimalMath.unit().add(mintFeeRate));
+        // capacity = max(maxETH - balance, 0)
         // TODO: the capacity of the contract is exclusive of the mint fees?
         uint balance = getBalance();
         if (balance >= maxETH()) {
@@ -106,6 +105,12 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
     function getBalance() public view returns (uint) {
         return _weth.balanceOf(address(this));
+    }
+
+    function totalIssuedSynths() public view returns (uint) {
+        // As the contract's issued sETH is always backed 1:1 with ETH,
+        // we can just return the WETH balance.
+        return getBalance();
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
@@ -135,6 +140,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // Transfers `amount` WETH to mint `amount - fees` sETH.
+    // `amount` is inclusive of fees, calculable via `calculateMintFee`.
     function mint(uint amount) external {
         require(amount <= _weth.allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amount <= _weth.balanceOf(msg.sender), "Balance is too low");
@@ -151,6 +157,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
     }
 
     // Burn `amount` sETH for `amount - fees` WETH.
+    // `amount` is inclusive of fees, calculable via `calculateBurnFee`.
     function burn(uint amount) external {
         uint reserves = getBalance();
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");

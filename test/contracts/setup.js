@@ -496,6 +496,13 @@ const setupContract = async ({
 					fncName: 'totalIssuedSynths',
 					returns: ['0'],
 				});
+			} else if (mock === 'EtherWrapper') {
+				await mockGenericContractFnc({
+					instance,
+					mock,
+					fncName: 'totalIssuedSynths',
+					returns: ['0'],
+				});
 			} else if (mock === 'FeePool') {
 				await Promise.all([
 					mockGenericContractFnc({
@@ -647,7 +654,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger', 'CollateralManager'],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper'],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -662,6 +669,7 @@ const setupAllContracts = async ({
 				'FeePool',
 				'DelegateApprovals',
 				'FlexibleStorage',
+				'EtherWrapper',
 			],
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
 		},

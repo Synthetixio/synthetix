@@ -12,6 +12,8 @@ contract IEtherWrapper {
 
     function getBalance() external view returns (uint);
 
+    function totalIssuedSynths() external view returns (uint);
+
     function calculateMintFee(uint amount) public view returns (uint);
 
     function calculateBurnFee(uint amount) public view returns (uint);
