@@ -1,0 +1,50 @@
+[
+	{
+		"name": "sUSD",
+		"asset": "USD"
+	},
+	{
+		"name": "sETH",
+		"asset": "ETH"
+	},
+	{
+		"name": "sBTC",
+		"asset": "BTC"
+	},
+	{
+		"name": "sLINK",
+		"asset": "LINK"
+	},
+	{
+		"name": "sUNI",
+		"asset": "UNI"
+	},
+	{
+		"name": "sAAVE",
+		"asset": "AAVE"
+	},
+	{
+		"name": "sYFI",
+		"asset": "YFI"
+	},
+	{
+		"name": "sSUSHI",
+		"asset": "SUSHI"
+	},
+	{
+		"name": "sCOMP",
+		"asset": "COMP"
+	},
+	{
+		"name": "sBAL",
+		"asset": "BAL"
+	},
+	{
+		"name": "sBNT",
+		"asset": "BNT"
+	},
+	{
+		"name": "sDOT",
+		"asset": "DOT"
+	}
+]
