@@ -45,7 +45,7 @@ module.exports = function({ accounts }) {
 			});
 		},
 		whenMockedWithExchangeRatesValidity: ({ valid = true }, cb) => {
-			describe(`when mocked with valid exchange rates`, () => {
+			describe(`when mocked with ${valid ? 'valid' : 'invalid'} exchange rates`, () => {
 				beforeEach(async () => {
 					this.mocks.ExchangeRates.smocked.anyRateIsInvalid.will.return.with(!valid);
 				});

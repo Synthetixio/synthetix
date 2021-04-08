@@ -678,7 +678,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
 
         // Sanity check observed output value against current system value (checking atomic rates)
-        require(!_isDeviationAboveThreshold(systemAmountReceived, amountReceived), "Atomic rate too low");
+        require(!_isDeviationAboveThreshold(systemAmountReceived, amountReceived), "Atomic rate deviates too much");
 
         // Ensure src/dest synth is sUSD and determine sUSD value of exchange
         uint sourceSusdValue;

@@ -2899,7 +2899,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 			describe('when a user has 1000 sUSD', () => {
 				describe('when the necessary configuration been set', () => {
-					const ethOnDex = toUnit('0.005'); // this should be chosen over the 100 specified by default
+					const ethOnDex = toUnit('0.005'); // this should be chosen over the 100 (0.01) specified by default
 
 					beforeEach(async () => {
 						// DexTwapAggregator
