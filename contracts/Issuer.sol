@@ -201,6 +201,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
             debt = debt.add(ethIssuedDebt);
             anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
+
+            // TOOD: Add ether wrapper sETH.
+            // uint ethIssuedDebt = etherWrapper().totalIssuedSynths().multiplyDecimalRound(ethRate);
+            // debt = debt.add(ethIssuedDebt);
         }
 
         if (currencyKey == sUSD) {

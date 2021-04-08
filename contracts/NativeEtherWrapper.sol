@@ -63,8 +63,6 @@ contract NativeEtherWrapper is Owned, MixinResolver {
 
     function burn(uint amount) public {
         require(amount > 0, "amount must be greater than 0");
-        require(amount <= synthsETH().allowance(msg.sender, address(this)), "Allowance not high enough");
-        require(amount <= synthsETH().balanceOf(msg.sender), "Balance is too low");
         IWETH weth = weth();
 
         // Transfer sETH from the msg.sender.

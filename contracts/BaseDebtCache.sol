@@ -19,7 +19,6 @@ import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
@@ -150,11 +149,11 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
             bool isSUSD = key == sUSD;
             if (isSUSD || key == sETH) {
-                IEtherCollateral etherCollateralContract = isSUSD
-                    ? IEtherCollateral(address(etherCollateralsUSD()))
-                    : etherCollateral();
+                IEtherCollateral etherCollateralContract =
+                    isSUSD ? IEtherCollateral(address(etherCollateralsUSD())) : etherCollateral();
                 uint etherCollateralSupply = etherCollateralContract.totalIssuedSynths();
                 supply = supply.sub(etherCollateralSupply);
+                // TODO: sub the EtherWrapper issuedSynths here too?
             }
 
             values[i] = supply.multiplyDecimalRound(rates[i]);
