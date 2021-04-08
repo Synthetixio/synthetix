@@ -179,7 +179,9 @@
 			"SynthsETH",
 			"SystemSettings",
 			"EtherWrapper",
-			"NativeEtherWrapper"
+			"NativeEtherWrapper",
+			"Issuer",
+			"DebtCache"
 		],
 		"sips": [112, 113]
 	}

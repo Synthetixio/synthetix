@@ -15,7 +15,7 @@
 		"deploy": false
 	},
 	"DebtCache": {
-		"deploy": false
+		"deploy": true
 	},
 	"DelegateApprovals": {
 		"deploy": false
@@ -51,7 +51,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
