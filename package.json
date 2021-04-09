@@ -118,7 +118,7 @@
 		"semver": "7.3.2",
 		"solc": "0.5.16",
 		"solhint": "~3.3.4",
-		"solidifier": "git@github.com:synthetixio/solidifier#2.2.0",
+		"solidifier": "github.com:synthetixio/solidifier#2.2.0",
 		"solidity-coverage": "^0.7.13",
 		"table": "^5.0.2",
 		"wait-port": "^0.2.2",
