@@ -25,7 +25,4 @@ contract IEtherWrapper {
     function burnFeeRate() public view returns (uint256);
 
     function weth() public view returns (IWETH);
-
-    event Minted(address indexed account, uint amount, uint fee);
-    event Burned(address indexed account, uint amount, uint fee);
 }

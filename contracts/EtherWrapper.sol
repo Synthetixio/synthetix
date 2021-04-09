@@ -232,4 +232,8 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
         emit Burned(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
     }
+
+    /* ========== EVENTS ========== */
+    event Minted(address indexed account, uint amount, uint fee);
+    event Burned(address indexed account, uint amount, uint fee);
 }
