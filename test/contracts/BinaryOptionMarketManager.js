@@ -30,7 +30,7 @@ const computePrices = (longs, shorts, debt, fee) => {
 	};
 };
 
-contract('BinaryOptionMarketManager @gas-skip', accounts => {
+contract('BinaryOptionMarketManager', accounts => {
 	const [initialCreator, managerOwner, bidder, dummy] = accounts;
 
 	const sUSDQty = toUnit(10000);
@@ -88,6 +88,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			contracts: [
 				'SystemStatus',
 				'BinaryOptionMarketManager',
+				'BinaryOptionMarketMastercopy',
 				'AddressResolver',
 				'ExchangeRates',
 				'FeePool',
@@ -392,9 +393,6 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				{ from: initialCreator }
 			);
 
-			assert.eventEqual(getEventByName({ tx: result, name: 'OwnerChanged' }), 'OwnerChanged', {
-				newOwner: manager.address,
-			});
 			assert.eventEqual(getEventByName({ tx: result, name: 'MarketCreated' }), 'MarketCreated', {
 				creator: initialCreator,
 				oracleKey: sAUDKey,
@@ -405,12 +403,12 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 			});
 
 			const decodedLogs = BinaryOptionMarket.decodeLogs(result.receipt.rawLogs);
-			assert.eventEqual(decodedLogs[1], 'Bid', {
+			assert.eventEqual(decodedLogs[0], 'Bid', {
 				side: Side.Long,
 				account: initialCreator,
 				value: toUnit(2),
 			});
-			assert.eventEqual(decodedLogs[2], 'Bid', {
+			assert.eventEqual(decodedLogs[1], 'Bid', {
 				side: Side.Short,
 				account: initialCreator,
 				value: toUnit(3),
@@ -422,7 +420,7 @@ contract('BinaryOptionMarketManager @gas-skip', accounts => {
 				toUnit(5),
 				initialPoolFee.add(initialCreatorFee)
 			);
-			assert.eventEqual(decodedLogs[3], 'PricesUpdated', {
+			assert.eventEqual(decodedLogs[2], 'PricesUpdated', {
 				longPrice: prices.long,
 				shortPrice: prices.short,
 			});

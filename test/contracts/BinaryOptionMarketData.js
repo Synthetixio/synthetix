@@ -15,6 +15,7 @@ contract('BinaryOptionMarketData @gas-skip', accounts => {
 			synths: ['sUSD'],
 			contracts: [
 				'BinaryOptionMarketManager',
+				'BinaryOptionMarketMastercopy',
 				'AddressResolver',
 				'ExchangeRates',
 				'FeePool',
