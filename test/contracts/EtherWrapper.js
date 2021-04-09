@@ -195,6 +195,19 @@ contract('EtherWrapper', async accounts => {
 			it('has a capacity of (capacity - amount - fees) after', async () => {
 				assert.bnEqual(await etherWrapper.capacity(), initialCapacity.sub(amount).add(mintFee));
 			});
+			it('emits Minted event', async () => {
+				const logs = await getDecodedLogs({
+					hash: mintTx.tx,
+					contracts: [etherWrapper],
+				});
+
+				decodedEventEqual({
+					event: 'Minted',
+					emittedFrom: etherWrapper.address,
+					args: [account1, amount.sub(mintFee), mintFee],
+					log: logs.filter(l => !!l)[0],
+				});
+			});
 		});
 
 		describe('amount is larger than or equal to capacity', () => {
@@ -350,6 +363,19 @@ contract('EtherWrapper', async accounts => {
 				it('increases capacity by `amount` WETH', async () => {
 					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(amount));
 				});
+				it('emits Burned event', async () => {
+					const logs = await getDecodedLogs({
+						hash: burnTx.tx,
+						contracts: [etherWrapper],
+					});
+
+					decodedEventEqual({
+						event: 'Burned',
+						emittedFrom: etherWrapper.address,
+						args: [account1, amount.sub(burnFee), burnFee],
+						log: logs.filter(l => !!l)[0],
+					});
+				});
 			});
 
 			describe('when amount is larger than or equal to reserves(1+burnFeeRate)', async () => {
@@ -426,6 +452,9 @@ contract('EtherWrapper', async accounts => {
 				});
 				it('increases capacity by `reserves` WETH', async () => {
 					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(reserves));
+				});
+				it('is left with 0 WETH balance remaining', async () => {
+					assert.equal(await etherWrapper.getBalance(), '0');
 				});
 			});
 		});

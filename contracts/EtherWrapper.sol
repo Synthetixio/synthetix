@@ -202,6 +202,8 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
         // Finally, issue sETH.
         synthsETH().issue(msg.sender, depositAmountEth.sub(feeAmountEth));
+
+        emit Minted(msg.sender, depositAmountEth.sub(feeAmountEth), feeAmountEth);
     }
 
     function _burn(uint amount) internal {
@@ -227,5 +229,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
         // Finally, transfer ETH to the user, less the fee.
         _weth.transfer(msg.sender, amount.sub(feeAmountEth));
+
+        emit Burned(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
     }
 }
