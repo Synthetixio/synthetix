@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 
+import "./MinimalProxyFactory.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/owned
 contract Owned {
@@ -9,12 +10,21 @@ contract Owned {
     constructor(address _owner) public {
         require(_owner != address(0), "Owner address cannot be 0");
         owner = _owner;
+        initialized = true;
         emit OwnerChanged(address(0), _owner);
     }
+
+    bool public initialized = false;
 
     function nominateNewOwner(address _owner) external onlyOwner {
         nominatedOwner = _owner;
         emit OwnerNominated(_owner);
+    }
+
+    function initOwner(address _owner) public {
+        //MinimalProxyFactory resets all state, thus an explicit init is needed
+        require(!initialized, "Can only be called if not initialized already");
+        owner = _owner;
     }
 
     function acceptOwnership() external {

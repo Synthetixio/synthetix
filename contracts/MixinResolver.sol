@@ -7,7 +7,6 @@ import "./Owned.sol";
 import "./AddressResolver.sol";
 import "./ReadProxy.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/mixinresolver
 contract MixinResolver {
     AddressResolver public resolver;
@@ -15,6 +14,15 @@ contract MixinResolver {
     mapping(bytes32 => address) private addressCache;
 
     constructor(address _resolver) internal {
+        resolver = AddressResolver(_resolver);
+        initialized = true;
+    }
+
+    bool public initialized = false;
+
+    function initResolver(address _resolver) public {
+        //MinimalProxyFactory resets all state, thus an explicit init is needed
+        require(!initialized, "Can only be called if not initialized already");
         resolver = AddressResolver(_resolver);
     }
 
@@ -47,10 +55,8 @@ contract MixinResolver {
         for (uint i = 0; i < requiredAddresses.length; i++) {
             bytes32 name = requiredAddresses[i];
             // Note: can only be invoked once the resolver has all the targets needed added
-            address destination = resolver.requireAndGetAddress(
-                name,
-                string(abi.encodePacked("Resolver missing target: ", name))
-            );
+            address destination =
+                resolver.requireAndGetAddress(name, string(abi.encodePacked("Resolver missing target: ", name)));
             addressCache[name] = destination;
             emit CacheUpdated(name, destination);
         }

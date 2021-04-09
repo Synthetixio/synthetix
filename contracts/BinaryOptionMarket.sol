@@ -14,7 +14,7 @@ import "./BinaryOption.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
-
+import "./interfaces/IAddressResolver.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarket
 contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
@@ -74,10 +74,10 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(
-        address _owner,
+    bool public initialized = false;
+
+    function initialize(
         address _creator,
-        address _resolver,
         uint[2] memory _creatorLimits, // [capitalRequirement, skewLimit]
         bytes32 _oracleKey,
         uint _strikePrice,
@@ -85,7 +85,9 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         uint[3] memory _times, // [biddingEnd, maturity, expiry]
         uint[2] memory _bids, // [longBid, shortBid]
         uint[3] memory _fees // [poolFee, creatorFee, refundFee]
-    ) public Owned(_owner) MixinResolver(_resolver) {
+    ) public {
+        require(!initialized, "vSynth already initialized");
+        initialized = true;
         creator = _creator;
         creatorLimits = BinaryOptionMarketManager.CreatorLimits(_creatorLimits[0], _creatorLimits[1]);
 
@@ -115,6 +117,9 @@ contract BinaryOptionMarket is Owned, MixinResolver, IBinaryOptionMarket {
         // Instantiate the options themselves
         options.long = new BinaryOption(_creator, longBid);
         options.short = new BinaryOption(_creator, shortBid);
+
+        // Note: the ERC20 base contract does not have a constructor, so we do not have to worry
+        // about initializing its state separately
     }
 
     /* ========== VIEWS ========== */
