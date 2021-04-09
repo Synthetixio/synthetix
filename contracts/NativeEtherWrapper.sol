@@ -46,7 +46,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
 
     function mint() public payable {
         uint amount = msg.value;
-        require(amount > 0, "amount must be greater than 0");
+        require(amount > 0, "msg.value must be greater than 0");
 
         // Convert sent ETH into WETH.
         weth().deposit.value(amount)();
