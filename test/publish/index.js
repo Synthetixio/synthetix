@@ -247,6 +247,7 @@ describe('publish scripts', () => {
 					freshDeploy: true,
 					yes: true,
 					privateKey: accounts.deployer.private,
+					ignoreCustomParameters: true,
 				});
 
 				sources = getSource();
