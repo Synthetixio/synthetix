@@ -59,6 +59,8 @@ contract NativeEtherWrapper is Owned, MixinResolver {
 
         // Transfer the sETH to msg.sender.
         synthsETH().transfer(msg.sender, synthsETH().balanceOf(address(this)));
+
+        emit Minted(msg.sender, amount);
     }
 
     function burn(uint amount) public {
@@ -77,10 +79,18 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         // Convert WETH to ETH and send to msg.sender.
         weth.withdraw(weth.balanceOf(address(this)));
         msg.sender.transfer(address(this).balance);
+
+        emit Burned(msg.sender, amount);
     }
 
     function() external payable {
         // Fallback function not implemented, as it is triggered by
         // the ETH transfer during WETH.withdraw.
     }
+
+    /* ========== EVENTS ========== */
+    // While these events are replicated in the core EtherWrapper,
+    // it is useful to see the usage of the NativeEtherWrapper contract.
+    event Minted(address indexed account, uint amount);
+    event Burned(address indexed account, uint amount);
 }
