@@ -2602,7 +2602,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 			});
 
-			describe.only('when EtherWrapper is set', async () => {
+			describe('when EtherWrapper is set', async () => {
 				it('should have zero totalIssuedSynths', async () => {
 					assert.bnEqual(
 						await synthetix.totalIssuedSynths(sUSD),
