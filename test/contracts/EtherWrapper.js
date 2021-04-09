@@ -205,7 +205,7 @@ contract('EtherWrapper', async accounts => {
 					event: 'Minted',
 					emittedFrom: etherWrapper.address,
 					args: [account1, amount.sub(mintFee), mintFee],
-					log: logs.filter(l => !!l)[0],
+					log: logs.filter(l => !!l).find(({ name }) => name === 'Minted'),
 				});
 			});
 		});
@@ -322,10 +322,7 @@ contract('EtherWrapper', async accounts => {
 						event: 'Burned',
 						emittedFrom: sETHSynth.address,
 						args: [account1, amount],
-						log: logs
-							.reverse()
-							.filter(l => !!l)
-							.find(({ name }) => name === 'Burned'),
+						log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
 					});
 				});
 				it('sends amount(1-burnFeeRate) WETH to user', async () => {
@@ -373,7 +370,10 @@ contract('EtherWrapper', async accounts => {
 						event: 'Burned',
 						emittedFrom: etherWrapper.address,
 						args: [account1, amount.sub(burnFee), burnFee],
-						log: logs.filter(l => !!l)[0],
+						log: logs
+							.reverse()
+							.filter(l => !!l)
+							.find(({ name }) => name === 'Burned'),
 					});
 				});
 			});
@@ -410,10 +410,7 @@ contract('EtherWrapper', async accounts => {
 						event: 'Burned',
 						emittedFrom: sETHSynth.address,
 						args: [account1, reserves],
-						log: logs
-							.reverse()
-							.filter(l => !!l)
-							.find(({ name }) => name === 'Burned'),
+						log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
 					});
 				});
 				it('sends reserves(1-burnFeeRate) WETH to user', async () => {
