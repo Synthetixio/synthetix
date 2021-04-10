@@ -2,7 +2,6 @@
 
 pragma solidity ^0.5.16;
 
-
 contract GenericMock {
     mapping(bytes4 => bytes) public mockConfig;
 

@@ -4,7 +4,6 @@ import "../BinaryOption.sol";
 
 import "../SafeDecimalMath.sol";
 
-
 contract MockBinaryOptionMarket {
     using SafeDecimalMath for uint;
 

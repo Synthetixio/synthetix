@@ -7,7 +7,6 @@ import "./interfaces/IFlexibleStorage.sol";
 // Internal References
 import "./interfaces/IAddressResolver.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/flexiblestorage
 contract FlexibleStorage is ContractStorage, IFlexibleStorage {
     mapping(bytes32 => mapping(bytes32 => uint)) internal uintStorage;

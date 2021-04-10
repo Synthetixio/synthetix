@@ -7,7 +7,6 @@ import "./SynthetixState.sol";
 // Internal References
 import "./interfaces/IFeePool.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/synthetixstate
 contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
     IFeePool public feePool;

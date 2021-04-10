@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 interface AggregatorV2V3Interface {
     function latestRound() external view returns (uint256);
 
@@ -32,7 +31,6 @@ interface AggregatorV2V3Interface {
             uint80 answeredInRound
         );
 }
-
 
 contract MockAggregatorV2V3 is AggregatorV2V3Interface {
     uint80 public roundId = 0;

@@ -1,6 +1,5 @@
 pragma solidity >=0.4.24;
 
-
 interface ICollateralErc20 {
     function open(
         uint collateral,

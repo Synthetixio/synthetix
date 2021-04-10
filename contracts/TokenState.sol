@@ -4,7 +4,6 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./State.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/tokenstate
 contract TokenState is Owned, State {
     /* ERC20 fields. */

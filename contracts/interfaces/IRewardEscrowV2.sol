@@ -1,7 +1,6 @@
 pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
 
-
 library VestingEntries {
     struct VestingEntry {
         uint64 endTime;
@@ -13,7 +12,6 @@ library VestingEntries {
         uint256 entryID;
     }
 }
-
 
 interface IRewardEscrowV2 {
     // Views
