@@ -2297,7 +2297,7 @@ const deploy = async ({
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'maxDebt',
-			expected: input => input === collateralManagerDefaults['MAX_DEBT'],
+			expected: input => input !== '0', // only change if zero
 			write: 'setMaxDebt',
 			writeArg: [collateralManagerDefaults['MAX_DEBT']],
 		});
@@ -2306,7 +2306,7 @@ const deploy = async ({
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'baseBorrowRate',
-			expected: input => input === collateralManagerDefaults['BASE_BORROW_RATE'],
+			expected: input => input !== '0', // only change if zero
 			write: 'setBaseBorrowRate',
 			writeArg: [collateralManagerDefaults['BASE_BORROW_RATE']],
 		});
@@ -2315,7 +2315,7 @@ const deploy = async ({
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'baseShortRate',
-			expected: input => input === collateralManagerDefaults['BASE_SHORT_RATE'],
+			expected: input => input !== '0', // only change if zero
 			write: 'setBaseShortRate',
 			writeArg: [collateralManagerDefaults['BASE_SHORT_RATE']],
 		});
@@ -2367,7 +2367,7 @@ const deploy = async ({
 			contract: 'CollateralShort',
 			target: collateralShort,
 			read: 'interactionDelay',
-			expected: input => input === collateralShortInteractionDelay,
+			expected: input => input !== '0', // only change if zero
 			write: 'setInteractionDelay',
 			writeArg: collateralShortInteractionDelay,
 		});

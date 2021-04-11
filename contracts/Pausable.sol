@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/pausable
 contract Pausable is Owned {
     uint public lastPauseTime;

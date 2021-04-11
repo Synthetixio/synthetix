@@ -1,7 +1,6 @@
 pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
 
-
 interface ISynthetixBridgeToOptimism {
     // Invoked by the relayer on L1
     function completeWithdrawal(address account, uint amount) external;

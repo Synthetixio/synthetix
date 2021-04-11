@@ -8,7 +8,6 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISupplySchedule.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/synthetix
 contract Synthetix is BaseSynthetix {
     // ========== ADDRESS RESOLVER CONFIGURATION ==========
@@ -128,11 +127,8 @@ contract Synthetix is BaseSynthetix {
         optionalProxy
         returns (bool)
     {
-        (uint totalRedeemed, uint amountLiquidated) = issuer().liquidateDelinquentAccount(
-            account,
-            susdAmount,
-            messageSender
-        );
+        (uint totalRedeemed, uint amountLiquidated) =
+            issuer().liquidateDelinquentAccount(account, susdAmount, messageSender);
 
         emitAccountLiquidated(account, totalRedeemed, amountLiquidated, messageSender);
 

@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 import "../Owned.sol";
 import "../MixinResolver.sol";
 
-
 contract TestableMixinResolver is Owned, MixinResolver {
     bytes32 private constant CONTRACT_EXAMPLE_1 = "Example_1";
     bytes32 private constant CONTRACT_EXAMPLE_2 = "Example_2";

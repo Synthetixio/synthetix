@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./BaseSynthetix.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/mintablesynthetix
 contract MintableSynthetix is BaseSynthetix {
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE = "SynthetixBridgeToBase";

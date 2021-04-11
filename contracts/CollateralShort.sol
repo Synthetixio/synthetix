@@ -8,7 +8,6 @@ import "./Collateral.sol";
 // Internal references
 import "./CollateralState.sol";
 
-
 contract CollateralShort is Collateral {
     constructor(
         CollateralState _state,

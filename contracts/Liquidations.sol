@@ -16,7 +16,6 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISystemStatus.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/liquidations
 contract Liquidations is Owned, MixinSystemSettings, ILiquidations {
     using SafeMath for uint;
