@@ -7,7 +7,6 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IERC20.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/synthutil
 contract SynthUtil {
     IAddressResolver public addressResolverProxy;

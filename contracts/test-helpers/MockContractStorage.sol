@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 import "../ContractStorage.sol";
 
-
 contract MockContractStorage is ContractStorage {
     struct SomeEntry {
         uint value;

@@ -7,7 +7,6 @@ import "./MixinResolver.sol";
 // Internal references
 import "./BinaryOptionMarket.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarketfactory
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
     /* ========== STATE VARIABLES ========== */
