@@ -1,0 +1,9 @@
+
+there are two scales of keeper systems
+1. account-based - such as individual staker positions, which must be independently kept.
+2. system-based - system-wide maintenance, such as taking a debt snapshot.
+
+the chainlink keeper network is implemented completely on chain
+
+https://kovan.etherscan.io/address/0xAaaD7966EBE0663b8C9C6f683FB9c3e66E03467F#code
+
