@@ -21,7 +21,6 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IShortingRewards.sol";
 
-
 contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
@@ -324,17 +323,18 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         id = _manager().getNewLoanId();
 
         // 10. Create the loan struct.
-        Loan memory loan = Loan({
-            id: id,
-            account: msg.sender,
-            collateral: collateral,
-            currency: currency,
-            amount: amount,
-            short: short,
-            accruedInterest: 0,
-            interestIndex: 0,
-            lastInteraction: block.timestamp
-        });
+        Loan memory loan =
+            Loan({
+                id: id,
+                account: msg.sender,
+                collateral: collateral,
+                currency: currency,
+                amount: amount,
+                short: short,
+                accruedInterest: 0,
+                interestIndex: 0,
+                lastInteraction: block.timestamp
+            });
 
         // 11. Accrue interest on the loan.
         loan = accrueInterest(loan);
@@ -684,14 +684,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loanAfter = loan;
 
         // 1. Get the rates we need.
-        (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) = loan.short
-            ? _manager().getShortRatesAndTime(loan.currency, loan.interestIndex)
-            : _manager().getRatesAndTime(loan.interestIndex);
+        (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) =
+            loan.short
+                ? _manager().getShortRatesAndTime(loan.currency, loan.interestIndex)
+                : _manager().getRatesAndTime(loan.interestIndex);
 
         // 2. Get the instantaneous rate.
-        (uint rate, bool invalid) = loan.short
-            ? _manager().getShortRate(synthsByKey[loan.currency])
-            : _manager().getBorrowRate();
+        (uint rate, bool invalid) =
+            loan.short ? _manager().getShortRate(synthsByKey[loan.currency]) : _manager().getBorrowRate();
 
         require(!invalid, "Rates are invalid");
 

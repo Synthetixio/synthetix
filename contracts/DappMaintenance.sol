@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 import "./Owned.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/dappmaintenance
 
 /**

@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 import "./interfaces/ICollateralManager.sol";
 
-
 contract EmptyCollateralManager is ICollateralManager {
     // Manager information
     function hasCollateral(address) external view returns (bool) {

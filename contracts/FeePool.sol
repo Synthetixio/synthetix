@@ -27,7 +27,6 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/ICollateralManager.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/feepool
 contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
@@ -424,9 +423,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // until we've exhausted the amount.
         // The condition checks for overflow because we're going to 0 with an unsigned int.
         for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint toDistribute = _recentFeePeriodsStorage(i).rewardsToDistribute.sub(
-                _recentFeePeriodsStorage(i).rewardsClaimed
-            );
+            uint toDistribute =
+                _recentFeePeriodsStorage(i).rewardsToDistribute.sub(_recentFeePeriodsStorage(i).rewardsClaimed);
 
             if (toDistribute > 0) {
                 // Take the smaller of the amount left to claim in the period and the amount we need to allocate
@@ -649,9 +647,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // This is a high precision integer.
         uint feesFromPeriod = _recentFeePeriodsStorage(period).feesToDistribute.multiplyDecimal(debtOwnershipForPeriod);
 
-        uint rewardsFromPeriod = _recentFeePeriodsStorage(period).rewardsToDistribute.multiplyDecimal(
-            debtOwnershipForPeriod
-        );
+        uint rewardsFromPeriod =
+            _recentFeePeriodsStorage(period).rewardsToDistribute.multiplyDecimal(debtOwnershipForPeriod);
 
         return (feesFromPeriod.preciseDecimalToDecimal(), rewardsFromPeriod.preciseDecimalToDecimal());
     }
@@ -664,10 +661,11 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         // Figure out their global debt percentage delta at end of fee Period.
         // This is a high precision integer.
         ISynthetixState _synthetixState = synthetixState();
-        uint feePeriodDebtOwnership = _synthetixState
-            .debtLedger(closingDebtIndex)
-            .divideDecimalRoundPrecise(_synthetixState.debtLedger(debtEntryIndex))
-            .multiplyDecimalRoundPrecise(ownershipPercentage);
+        uint feePeriodDebtOwnership =
+            _synthetixState
+                .debtLedger(closingDebtIndex)
+                .divideDecimalRoundPrecise(_synthetixState.debtLedger(debtEntryIndex))
+                .multiplyDecimalRoundPrecise(ownershipPercentage);
 
         return feePeriodDebtOwnership;
     }
@@ -753,9 +751,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         uint debtEntryIndex,
         uint feePeriodStartingDebtIndex
     );
-    bytes32 private constant ISSUANCEDEBTRATIOENTRY_SIG = keccak256(
-        "IssuanceDebtRatioEntry(address,uint256,uint256,uint256)"
-    );
+    bytes32 private constant ISSUANCEDEBTRATIOENTRY_SIG =
+        keccak256("IssuanceDebtRatioEntry(address,uint256,uint256,uint256)");
 
     function emitIssuanceDebtRatioEntry(
         address account,
