@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/state
 contract State is Owned {
     // the address of the contract that can modify variables

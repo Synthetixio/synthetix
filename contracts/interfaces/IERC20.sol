@@ -1,6 +1,5 @@
 pragma solidity >=0.4.24;
 
-
 // https://docs.synthetix.io/contracts/source/interfaces/ierc20
 interface IERC20 {
     // ERC20 Optional Views

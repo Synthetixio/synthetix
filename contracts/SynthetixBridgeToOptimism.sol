@@ -17,7 +17,6 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
-
 contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -218,12 +217,13 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
             if (escrowedAccountBalance > 0) {
                 // create message payload for L2
                 ISynthetixBridgeToBase bridgeToBase;
-                bytes memory messageData = abi.encodeWithSelector(
-                    bridgeToBase.completeEscrowMigration.selector,
-                    msg.sender,
-                    escrowedAccountBalance,
-                    vestingEntries
-                );
+                bytes memory messageData =
+                    abi.encodeWithSelector(
+                        bridgeToBase.completeEscrowMigration.selector,
+                        msg.sender,
+                        escrowedAccountBalance,
+                        vestingEntries
+                    );
                 // relay the message to this contract on L2 via L1 Messenger
                 messenger().sendMessage(
                     synthetixBridgeToBase(),

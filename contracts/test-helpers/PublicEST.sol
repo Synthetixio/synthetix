@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 import "../ExternStateToken.sol";
 
-
 contract PublicEST is ExternStateToken {
     uint8 public constant DECIMALS = 18;
 
