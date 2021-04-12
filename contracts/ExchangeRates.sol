@@ -141,7 +141,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
         // SIP-78
         uint rate = _getRate(currencyKey);
-        if (rate > 1) {
+        if (rate > 0) {
             exchanger().setLastExchangeRateForSynth(currencyKey, rate);
         }
 
