@@ -151,6 +151,9 @@ contract('EtherWrapper', async accounts => {
 			it('burnFeeRate of 50 bps', async () => {
 				assert.bnEqual(await etherWrapper.burnFeeRate(), FIFTY_BIPS);
 			});
+			it('totalIssuedSynths of 0', async () => {
+				assert.bnEqual(await etherWrapper.totalIssuedSynths(), toBN(0));
+			});
 		});
 	});
 
@@ -453,6 +456,24 @@ contract('EtherWrapper', async accounts => {
 				it('is left with 0 WETH balance remaining', async () => {
 					assert.equal(await etherWrapper.getBalance(), '0');
 				});
+			});
+		});
+	});
+
+	describe('totalIssuedSynths', async () => {
+		describe('when mint is called', async () => {
+			const amount = toUnit('1');
+			let mintFee;
+
+			beforeEach(async () => {
+				await weth.deposit({ from: account1, value: amount });
+				await weth.approve(etherWrapper.address, amount, { from: account1 });
+				await etherWrapper.mint(amount, { from: account1 });
+				({ mintFee } = await calculateMintFees(amount));
+			});
+
+			it('increases totalIssuedSynths by the amount of sETH issued', async () => {
+				assert.bnEqual(await etherWrapper.totalIssuedSynths(), amount.sub(mintFee));
 			});
 		});
 	});
