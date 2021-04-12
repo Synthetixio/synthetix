@@ -57,6 +57,6 @@ contract AccruedInterestUtil is ICollateralLoan {
         uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative.sub(entryRate));
 
         // 6. return the accrued interest from last time user updated the loan plus accrued interest since then
-        loan.accruedInterest.add(interest);
+        return loan.accruedInterest.add(interest);
     }
 }

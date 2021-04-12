@@ -4,7 +4,7 @@ const { artifacts, contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { fastForward, toUnit, fromUnit, currentTime } = require('../utils')();
+const { fastForward, toUnit, currentTime } = require('../utils')();
 
 const { setupAllContracts, setupContract } = require('./setup');
 
@@ -43,7 +43,7 @@ contract('AccruedInterestUtil', async accounts => {
 		debtCache,
 		accruedInterestUtil;
 
-	let tx, loan, id;
+	let tx, id;
 
 	const getid = tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
@@ -214,29 +214,12 @@ contract('AccruedInterestUtil', async accounts => {
 			id = getid(tx);
 
 			// after a year we should have accrued 33%.
-
 			await fastForwardAndUpdateRates(YEAR);
 
-			// deposit some collateral to trigger the interest accrual.
-
-			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
-
-			loan = await state.getLoan(account1, id);
-
-			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
-
-			assert.equal(interest, 0.3333);
-
-			await fastForwardAndUpdateRates(YEAR);
-
-			loan = await state.getLoan(account1, id);
-
-			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
-
-			// TODO make sure the result is correct and fix the test error.
-			assert.equal(
-				await accruedInterestUtil.getAccruedInterest(account1, loan.id, short.address),
-				0.6667
+			assert.bnClose(
+				await accruedInterestUtil.getAccruedInterest(account1, id, short.address),
+				toUnit(0.33333333),
+				33333333333
 			);
 		});
 	});
