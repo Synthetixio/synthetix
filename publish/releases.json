@@ -175,5 +175,14 @@
 		},
 		"sources": [],
 		"sips": [113]
+	},
+	{
+		"name": "",
+		"version": {
+			"major": 2,
+			"minor": 42
+		},
+		"sources": ["DelegateApprovals"],
+		"sips": [131]
 	}
 ]
