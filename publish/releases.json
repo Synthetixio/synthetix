@@ -173,6 +173,15 @@
 			"major": 2,
 			"minor": 41
 		},
+		"sources": [],
+		"sips": [113]
+	},
+	{
+		"name": "Alnilam",
+		"version": {
+			"major": 2,
+			"minor": 42
+		},
 		"sources": [
 			"FeePool",
 			"SynthsUSD",
@@ -183,6 +192,6 @@
 			"Issuer",
 			"DebtCache"
 		],
-		"sips": [112, 113]
+		"sips": [112]
 	}
 ]
