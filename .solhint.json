@@ -15,6 +15,7 @@
 		"not-rely-on-time": "off",
 		"no-unused-vars": "warn",
 		"quotes": ["error", "double"],
+		"reason-string": "off",
 		"var-name-mixedcase": "off",
 		"visibility-modifier-order": "off"
 	}
