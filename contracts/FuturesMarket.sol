@@ -60,7 +60,6 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     using SignedSafeDecimalMath for int;
 
     int private constant _UNIT = int(10**uint(18));
-    int private constant _SECONDS_PER_DAY = 60 * 60 * 24;
 
     /* ========== TYPES ========== */
 
@@ -243,7 +242,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     function _currentFundingRatePerSecond() internal view returns (int) {
-        return _currentFundingRate() / _SECONDS_PER_DAY;
+        return _currentFundingRate() / 1 days;
     }
 
     function _currentFundingRate() internal view returns (int) {
