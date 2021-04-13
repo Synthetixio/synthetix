@@ -110,46 +110,40 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentRoundId(), toBN(roundId).add(toBN(1)));
 		});
 
-		describe('Setters', async () => {
-			it('exchange fee', async () => {
-				const parameter = toBytes32('exchangeFee');
-				const value = toUnit('0.01');
-				const tx = await futuresMarket.setExchangeFee(value, { from: owner });
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
+		describe.only('Setters', () => {
+			it('setters', async () => {
+				const params = [
+					['exchangeFee', '0.01', futuresMarket.setExchangeFee],
+					['maxLeverage', '20', futuresMarket.setMaxLeverage],
+					['maxMarketDebt', '50000', futuresMarket.setMaxMarketDebt],
+					['minInitialMargin', '500', futuresMarket.setMinInitialMargin],
+					['maxFundingRate', '0.5', futuresMarket.setMaxFundingRate],
+					['maxFundingRateSkew', '0.5', futuresMarket.setMaxFundingRateSkew],
+					['maxFundingRateDelta', '0.02', futuresMarket.setMaxFundingRateDelta],
+				];
 
-				assert.equal(decodedLogs.length, 1);
-				decodedEventEqual({
-					event: 'ParameterUpdated',
-					emittedFrom: proxyFuturesMarket.address,
-					args: [parameter, value],
-					log: decodedLogs[0],
-				});
+				for (const p of params) {
+					const param = toBytes32(p[0]);
+					const value = toUnit(p[1]);
+					const setter = p[2];
 
-				assert.bnEqual((await futuresMarket.parameters()).exchangeFee, value);
-			});
+					// Only settable by the owner
+					await assert.revert(setter(value, { from: trader }), 'Owner only function');
 
-			it('max leverage', async () => {
-				assert.isTrue(false);
-			});
+					const tx = await setter(value, { from: owner });
+					const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
 
-			it('max market debt', async () => {
-				assert.isTrue(false);
-			});
+					assert.equal(decodedLogs.length, 1);
+					decodedEventEqual({
+						event: 'ParameterUpdated',
+						emittedFrom: proxyFuturesMarket.address,
+						args: [param, value],
+						log: decodedLogs[0],
+					});
 
-			it('min initial margin', async () => {
-				assert.isTrue(false);
-			});
-
-			it('max funding rate', async () => {
-				assert.isTrue(false);
-			});
-
-			it('max funding rate skew', async () => {
-				assert.isTrue(false);
-			});
-
-			it('max funding rate delta', async () => {
-				assert.isTrue(false);
+					// And the parameter was actually set properly
+					assert.bnEqual((await futuresMarket.parameters())[p[0]], value);
+				}
 			});
 		});
 	});
