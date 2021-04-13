@@ -573,7 +573,20 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Liquidation price reports invalidity properly', async () => {
-				assert.isTrue(false);
+				await futuresMarket.submitOrder(toUnit('1500'), toUnit('5'), { from: trader });
+				await futuresMarket.submitOrder(toUnit('-1000'), toUnit('5'), { from: trader2 });
+				const price = toUnit(250);
+				await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
+					from: oracle,
+				});
+				await futuresMarket.confirmOrder(trader);
+				await futuresMarket.confirmOrder(trader2);
+
+				await fastForward(60 * 60 * 24 * 7); // Stale the price
+
+				const lPrice = await futuresMarket.liquidationPrice(trader, true);
+				assert.bnClose(lPrice[0], toUnit(235.667), toUnit(0.001));
+				assert.isTrue(lPrice[1]);
 			});
 		});
 
