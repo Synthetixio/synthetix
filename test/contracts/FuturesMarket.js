@@ -546,8 +546,30 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual((await futuresMarket.liquidationPrice(trader, true)).price, toUnit(200));
 			});
 
-			it('Liquidation price includes funding', async () => {
-				assert.isTrue(false);
+			it('Liquidation price is accurate with funding', async () => {
+				// Submit orders that induce -0.05 funding rate
+				await futuresMarket.submitOrder(toUnit('1500'), toUnit('5'), { from: trader });
+				await futuresMarket.submitOrder(toUnit('-500'), toUnit('5'), { from: trader2 });
+				const price = toUnit(250);
+
+				await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
+					from: oracle,
+				});
+				await futuresMarket.confirmOrder(trader);
+				await futuresMarket.confirmOrder(trader2);
+
+				// One day of funding
+				await fastForward(24 * 60 * 60);
+
+				// Trader must pay (1500 * 5) / 20 = 375 funding
+				// liquidation price = ((30 * 250) + 20 - (1500 - 375)) / 30 = 213.166...
+				let lPrice = await futuresMarket.liquidationPrice(trader, true);
+				assert.bnClose(lPrice[0], toUnit(213.167), toUnit(0.001));
+
+				// trader2 receives (500 * 5) / 20 = 125 funding
+				// liquidation price = ((10 * 250) + 20 - (500 + 125)) / 10 = 189.50
+				lPrice = await futuresMarket.liquidationPrice(trader2, true);
+				assert.bnClose(lPrice[0], toUnit(189.5), toUnit(0.001));
 			});
 
 			it('Liquidation price reports invalidity properly', async () => {
