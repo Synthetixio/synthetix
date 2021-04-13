@@ -500,6 +500,129 @@ contract('FuturesMarket', accounts => {
 		});
 	});
 
+	describe('Profit & Loss, margin, leverage', () => {
+		describe('PnL', () => {
+			it('price increase', async () => {
+				assert.isTrue(false);
+			});
+
+			it('steady price', async () => {
+				assert.isTrue(false);
+			});
+
+			it('price decrease', async () => {
+				assert.isTrue(false);
+			});
+		});
+
+		describe('Remaining margin', async () => {
+			it('todo', async () => {
+				assert.isTrue(false);
+			});
+		});
+
+		describe('Leverage', async () => {
+			it('initial leverage', async () => {
+				assert.isTrue(false);
+			});
+
+			it('current leverage', async () => {
+				let price = toUnit(100);
+
+				await futuresMarket.submitOrder(toUnit('1000'), toUnit('5'), { from: trader });
+				await futuresMarket.submitOrder(toUnit('-1000'), toUnit('10'), { from: trader2 });
+				await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
+					from: oracle,
+				});
+				await futuresMarket.confirmOrder(trader);
+				await futuresMarket.confirmOrder(trader2);
+
+				// With no price motion and no funding rate, leverage should be unchanged.
+				assert.bnClose((await futuresMarket.currentLeverage(trader))[0], toUnit(5), toUnit(0.001));
+				assert.bnClose(
+					(await futuresMarket.currentLeverage(trader2))[0],
+					toUnit(10),
+					toUnit(0.001)
+				);
+
+				price = toUnit(105);
+				await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
+					from: oracle,
+				});
+
+				// Price moves to 105:
+				// long notional value 5000 -> 5250; long remaining margin 1000 -> 1250; leverage 5 -> 4.2
+				// short notional value -10000 -> 10500; short remaining margin -1000 -> -500; leverage 10 -> 21;
+				assert.bnClose(
+					(await futuresMarket.currentLeverage(trader))[0],
+					toUnit(4.2),
+					toUnit(0.001)
+				);
+				assert.bnClose(
+					(await futuresMarket.currentLeverage(trader2))[0],
+					toUnit(21),
+					toUnit(0.001)
+				);
+			});
+
+			it('current leverage: no position', async () => {
+				const currentLeverage = await futuresMarket.currentLeverage(trader);
+				assert.bnEqual(currentLeverage[0], toBN('0'));
+			});
+
+			it('current leverage properly reports invalid prices', async () => {
+				await fastForward(7 * 24 * 60 * 60);
+				const currentLeverage = await futuresMarket.currentLeverage(trader);
+				assert.isTrue(currentLeverage[1]);
+			});
+		});
+	});
+
+	describe('Funding', () => {
+		it('An empty market induces zero funding rate', async () => {
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+		});
+
+		it('A balanced market induces zero funding rate', async () => {
+			for (const marginTrader of [
+				['1000', trader],
+				['-1000', trader2],
+			]) {
+				await submitAndConfirmOrder({
+					market: futuresMarket,
+					account: marginTrader[1],
+					fillPrice: toUnit('100'),
+					margin: toUnit(marginTrader[0]),
+					leverage: toUnit('10'),
+				});
+			}
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+		});
+
+		for (const margin of ['1000', '-1000'].map(toUnit)) {
+			const side = parseInt(margin.toString()) > 0 ? 'long' : 'short';
+
+			describe(`${side}`, () => {
+				it('100% skew induces maximum funding rate', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin,
+						leverage: toUnit('10'),
+					});
+
+					const expected = side === 'long' ? -maxFundingRate : maxFundingRate;
+
+					assert.bnEqual(await futuresMarket.currentFundingRate(), expected);
+				});
+
+				// TODO: Loop for other funding rate levels.
+				// TODO: Change funding rate parameters and see if the numbers are still accurate
+			});
+		}
+	});
+
 	describe('Liquidations', () => {
 		describe('Liquidation price', () => {
 			it('Liquidation price is accurate with no funding', async () => {
@@ -694,50 +817,5 @@ contract('FuturesMarket', accounts => {
 		it('Liquidation fee is remitted to the liquidator', async () => {
 			assert.isTrue(false);
 		});
-	});
-
-	describe('Funding rate', () => {
-		it('An empty market induces zero funding rate', async () => {
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
-		});
-
-		it('A balanced market induces zero funding rate', async () => {
-			for (const marginTrader of [
-				['1000', trader],
-				['-1000', trader2],
-			]) {
-				await submitAndConfirmOrder({
-					market: futuresMarket,
-					account: marginTrader[1],
-					fillPrice: toUnit('100'),
-					margin: toUnit(marginTrader[0]),
-					leverage: toUnit('10'),
-				});
-			}
-			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
-		});
-
-		for (const margin of ['1000', '-1000'].map(toUnit)) {
-			const side = parseInt(margin.toString()) > 0 ? 'long' : 'short';
-
-			describe(`${side}`, () => {
-				it('100% skew induces maximum funding rate', async () => {
-					await submitAndConfirmOrder({
-						market: futuresMarket,
-						account: trader,
-						fillPrice: toUnit('100'),
-						margin,
-						leverage: toUnit('10'),
-					});
-
-					const expected = side === 'long' ? maxFundingRate : -maxFundingRate;
-
-					assert.bnEqual(await futuresMarket.currentFundingRate(), expected);
-				});
-
-				// TODO: Loop for other funding rate levels.
-				// TODO: Change funding rate parameters and see if the numbers are still accurate
-			});
-		}
 	});
 });
