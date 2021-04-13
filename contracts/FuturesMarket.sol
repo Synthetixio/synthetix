@@ -303,9 +303,11 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return (_notionalValue(account, price), invalid);
     }
 
+    // Profit/loss of a position will be relative to the position's side:
+    // Long PnL of -100 means a 100 dollar loss, while Short PnL of -100 means a 100 dollar profit
     function _profitLoss(Position storage position, uint price) internal view returns (int pnl) {
         int priceShift = int(price).sub(int(position.entryPrice));
-        return position.size.multiplyDecimalRound(priceShift);
+        return _signedAbs(position.size).multiplyDecimalRound(priceShift);
     }
 
     function profitLoss(address account) external view returns (int pnl, bool isInvalid) {
