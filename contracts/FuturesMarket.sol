@@ -576,6 +576,9 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     function _realiseMargin(Position storage position, uint fundingIndex) internal returns (int) {
         (int newMargin, bool isInvalid) = _remainingMargin(position, fundingIndex);
         _requireNotInvalid(isInvalid);
+
+        int marginDelta = newMargin.sub(_signedAbs(position.margin));
+        entryMarginSumMinusNotionalSkew = entryMarginSumMinusNotionalSkew.add(marginDelta);
         position.margin = newMargin;
         return newMargin;
     }
