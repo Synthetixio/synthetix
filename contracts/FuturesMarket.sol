@@ -32,6 +32,8 @@ import "./interfaces/IERC20.sol";
 //     Complete test coverage
 //     Remove pending in favour of orderId being nonzero
 //     Merge in develop
+//     Internal functions that take prices as arguments so that the oracle isn't repeat-queried
+//     Consider not exposing signs of short vs long positions
 //
 // Future (non-testnet) Functionality
 //     Consider settlements when issuing/burning
@@ -342,6 +344,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
         int pnl = _profitLoss(position, price);
         int margin = position.margin;
+        // TODO: a version of this that takes in the price so that the oracle is not queried twice
         (int funding, ) = _accruedFunding(position, fundingIndex);
         int remaining = margin.add(pnl).add(funding);
 
@@ -419,6 +422,22 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     function canLiquidate(address account) external view returns (bool) {
         return _canLiquidate(positions[account], _liquidationFee(), fundingSequence.length);
+    }
+
+    function currentLeverage(address account) external view returns (uint leverage, bool isInvalid) {
+        (uint price, bool invalid) = _priceAndInvalid(_exchangeRates());
+        // TODO: a version of this that takes in the price so that the oracle is not queried twice
+        (int remaining, ) = _remainingMargin(positions[account], fundingSequence.length);
+
+        // No position is open, or it is ready to be liquidated; leverage goes to nil
+        if (remaining == 0) {
+            return (0, invalid);
+        }
+
+        int notional = _notionalValue(account, price);
+
+        // notional and remaining margin will have the same sign, so we can cast to int here.
+        return (uint(notional.divideDecimalRound(remaining)), isInvalid);
     }
 
     // TODO: take into account existing positions
@@ -645,6 +664,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         uint id = _nextOrderId;
         _nextOrderId = _nextOrderId.add(1);
 
+        // TODO: convert to order = Order(...) syntax
         order.pending = true;
         order.id = id;
         order.margin = margin;
