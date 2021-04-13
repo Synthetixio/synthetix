@@ -357,7 +357,7 @@ module.exports = ({ web3 } = {}) => {
 	/**
 	 *  Convenience method to assert that two BN.js instances are within 100 units of each other.
 	 *  @param actualBN The BN.js instance you received
-	 *  @param expectedBN The BN.js amount you expected to receive, allowing a varience of +/- 100 units
+	 *  @param expectedBN The BN.js amount you expected to receive, allowing a variance of +/- 100 units
 	 */
 	const assertBNClose = (actualBN, expectedBN, varianceParam = '10') => {
 		const actual = BN.isBN(actualBN) ? actualBN : new BN(actualBN);
