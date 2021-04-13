@@ -76,6 +76,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         uint roundId;
     }
 
+    // If margin/size are positive, the position is long; if negative then it is short.
     struct Position {
         int margin;
         int size;
@@ -213,7 +214,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     function marketSizes() external view returns (uint short, uint long) {
         int size = int(marketSize);
-        int skew = int(marketSkew);
+        int skew = marketSkew;
         return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
     }
 
