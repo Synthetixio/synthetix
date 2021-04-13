@@ -624,8 +624,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         uint balance = _sUSD().balanceOf(sender);
         uint totalCharge = absoluteMargin.add(fee);
         // TODO: This should not charge anything if they're DECREASING their position.
-        require(totalCharge <= balance, "Insufficient balance");
         if (totalCharge > 0) {
+            require(totalCharge <= balance, "Insufficient balance");
             // TODO: allow the user to decrease their position without closing it if the debt exceeds the cap
             // Update pending order value, which increases the market debt
             // Revert if the new debt would exceed the maximum configured for the market
