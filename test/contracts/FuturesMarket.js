@@ -110,7 +110,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentRoundId(), toBN(roundId).add(toBN(1)));
 		});
 
-		describe.only('Setters', () => {
+		describe('Setters', () => {
 			it('setters', async () => {
 				const params = [
 					['exchangeFee', '0.01', futuresMarket.setExchangeFee],
