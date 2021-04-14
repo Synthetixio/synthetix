@@ -609,7 +609,41 @@ contract('FuturesMarket', accounts => {
 		});
 
 		describe('Remaining margin', async () => {
-			it('todo', async () => {
+			it('Remaining margin unchanged with no funding or profit', async () => {
+				assert.isTrue(false);
+			});
+
+			describe('no funding and profit', async () => {
+				it('positive profit', async () => {
+					assert.isTrue(false);
+				});
+
+				it('negative profit', async () => {
+					assert.isTrue(false);
+				});
+			});
+
+			describe('funding and no profit', async () => {
+				it('positive funding', async () => {
+					assert.isTrue(false);
+				});
+
+				it('negative funding', async () => {
+					assert.isTrue(false);
+				});
+			});
+
+			describe('funding and profit', async () => {
+				it('positive sum', async () => {
+					assert.isTrue(false);
+				});
+
+				it('negative sum', async () => {
+					assert.isTrue(false);
+				});
+			});
+
+			it('Remaining margin is clamped to zero if losses exceed initial margin', async () => {
 				assert.isTrue(false);
 			});
 		});
