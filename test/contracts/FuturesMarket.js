@@ -412,10 +412,6 @@ contract('FuturesMarket', accounts => {
 			});
 		});
 
-		it('properly emits events', async () => {
-			assert.isTrue(false);
-		});
-
 		it('cannot cancel an order if no pending order exists', async () => {
 			await assert.revert(futuresMarket.cancelOrder({ from: trader }), 'No pending order');
 		});
@@ -593,10 +589,6 @@ contract('FuturesMarket', accounts => {
 		});
 
 		describe('Leverage', async () => {
-			it('initial leverage', async () => {
-				assert.isTrue(false);
-			});
-
 			it('current leverage', async () => {
 				let price = toUnit(100);
 

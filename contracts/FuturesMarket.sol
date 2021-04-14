@@ -694,7 +694,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         }
     }
 
-    // TODO: What to do if an order already exists.
+    // TODO: What to do if a position already exists.
     function confirmOrder(address account) external optionalProxy {
         // TODO: Send the margin delta? How to handle pnl/funding accrued during order pending
         // TODO: Apply this difference to the pending margin
