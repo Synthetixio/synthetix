@@ -18,7 +18,6 @@ import "./MixinSystemSettings.sol";
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
-import "hardhat/console.sol";
 
 // Pausable
 // https://docs.synthetix.io/contracts/source/contracts/etherwrapper
