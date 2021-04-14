@@ -276,8 +276,79 @@ contract('FuturesMarket', accounts => {
 		});
 
 		it('submitting a second order cancels the first one.', async () => {
-			// TODO: And check that this increments the order id
-			assert.isTrue(false);
+			const margin = toUnit('1000');
+			const leverage = toUnit('10');
+			const fee = await futuresMarket.orderFee(trader, margin, leverage);
+
+			const preBalance = await sUSD.balanceOf(trader);
+			const pendingOrderValue = await futuresMarket.pendingOrderValue();
+
+			await futuresMarket.submitOrder(margin, leverage, { from: trader });
+
+			const id1 = toBN(1);
+			const roundId1 = await futuresMarket.currentRoundId();
+			const order1 = await futuresMarket.orders(trader);
+			assert.isTrue(order1.pending);
+			assert.bnEqual(order1.id, id1);
+			assert.bnEqual(order1.margin, margin);
+			assert.bnEqual(order1.leverage, leverage);
+			assert.bnEqual(order1.roundId, roundId1);
+
+			assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(margin.add(fee)));
+			assert.bnEqual(await futuresMarket.pendingOrderValue(), pendingOrderValue.add(margin));
+
+			await fastForward(24 * 60 * 60);
+			const price = toUnit('100');
+			await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
+				from: oracle,
+			});
+
+			const margin2 = toUnit('500');
+			const leverage2 = toUnit('5');
+			const fee2 = await futuresMarket.orderFee(trader, margin2, leverage2);
+
+			const tx = await futuresMarket.submitOrder(margin2, leverage2, { from: trader });
+
+			const id2 = toBN(2);
+			const roundId2 = await futuresMarket.currentRoundId();
+			const order2 = await futuresMarket.orders(trader);
+			assert.bnGt(roundId2, roundId1);
+			assert.isTrue(order2.pending);
+			assert.bnEqual(order2.id, id2);
+			assert.bnEqual(order2.margin, margin2);
+			assert.bnEqual(order2.leverage, leverage2);
+			assert.bnEqual(order2.roundId, roundId2);
+
+			assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(margin2.add(fee2)));
+			assert.bnEqual(await futuresMarket.pendingOrderValue(), pendingOrderValue.add(margin2));
+
+			// And it properly emits the relevant events.
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			assert.equal(decodedLogs.length, 4);
+			decodedEventEqual({
+				event: 'Issued',
+				emittedFrom: sUSD.address,
+				args: [trader, margin.add(fee)],
+				log: decodedLogs[0],
+			});
+			decodedEventEqual({
+				event: 'OrderCancelled',
+				emittedFrom: proxyFuturesMarket.address,
+				args: [id1, trader],
+				log: decodedLogs[1],
+			});
+			decodedEventEqual({
+				event: 'Burned',
+				emittedFrom: sUSD.address,
+				args: [trader, margin2.add(fee2)],
+				log: decodedLogs[2],
+			});
+			decodedEventEqual({
+				event: 'OrderSubmitted',
+				emittedFrom: proxyFuturesMarket.address,
+				args: [id2, trader, margin2, leverage2, fee2, roundId2],
+				log: decodedLogs[3],
+			});
 		});
 
 		it('max leverage cannot be exceeded', async () => {
