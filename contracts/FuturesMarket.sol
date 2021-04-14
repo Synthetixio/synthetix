@@ -274,6 +274,10 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return _netFundingPerUnit(startIndex, endIndex, fundingSequence.length);
     }
 
+    function fundingSequenceLength() external view returns (uint) {
+        return fundingSequence.length;
+    }
+
     /* ---------- Position Details ---------- */
 
     function _notionalValue(address account, uint price) internal view returns (int value) {
