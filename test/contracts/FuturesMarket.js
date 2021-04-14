@@ -652,15 +652,27 @@ contract('FuturesMarket', accounts => {
 				});
 				await futuresMarket.confirmOrder(trader);
 
-				assert.bnEqual((await futuresMarket.liquidationPrice(trader, true)).price, toUnit(201));
+				assert.bnClose(
+					(await futuresMarket.liquidationPrice(trader, true)).price,
+					toUnit(201),
+					toUnit('0.001')
+				);
 
 				await systemSettings.setFuturesLiquidationFee(toUnit('100'), { from: owner });
 
-				assert.bnEqual((await futuresMarket.liquidationPrice(trader, true)).price, toUnit(205));
+				assert.bnClose(
+					(await futuresMarket.liquidationPrice(trader, true)).price,
+					toUnit(205),
+					toUnit('0.001')
+				);
 
 				await systemSettings.setFuturesLiquidationFee(toUnit('0'), { from: owner });
 
-				assert.bnEqual((await futuresMarket.liquidationPrice(trader, true)).price, toUnit(200));
+				assert.bnClose(
+					(await futuresMarket.liquidationPrice(trader, true)).price,
+					toUnit(200),
+					toUnit('0.001')
+				);
 			});
 
 			it('Liquidation price is accurate with funding', async () => {
@@ -802,6 +814,7 @@ contract('FuturesMarket', accounts => {
 				emittedFrom: proxyFuturesMarket.address,
 				args: [trader, noBalance, positionSize, price],
 				log: decodedLogs[1],
+				bnCloseVariance: toUnit('0.001'),
 			});
 			assert.isTrue(false);
 		});
