@@ -201,10 +201,10 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         synthsETH().issue(address(this), depositAmountEth);
 
         // Send amount - fees to user.
-        synthsETH().transfer(msg.sender, depositAmountEth.sub(feeAmountEth));
+        IERC20(address(synthsETH())).transfer(msg.sender, depositAmountEth.sub(feeAmountEth));
         // Send fee to debt pool.
         // This is automatically converted into sUSD.
-        synthsETH().transfer(address(feePool), feeAmountEth);
+        IERC20(address(synthsETH())).transfer(address(feePool()), feeAmountEth);
 
         emit Minted(msg.sender, depositAmountEth.sub(feeAmountEth), feeAmountEth);
     }
@@ -216,13 +216,13 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         uint feeAmountEth = calculateBurnFee(amount);
 
         // Burn the amount - fees.
-        synthsETH().burn(msg.sender, amount.sub(feeAmountEth));
-        // Send the rest to the fee pool. 
+        synthsETH().burn(msg.sender, amount);
+        // Send the rest to the fee pool.
         // This is automatically converted into sUSD.
-        synthsETH().transferFrom(msg.sender, address(feePool()), feeAmountEth);
+        IERC20(address(synthsETH())).transferFrom(msg.sender, address(feePool()), feeAmountEth);
 
-        // Finally, transfer ETH to the user, less the fee.
-        _weth.transfer(msg.sender, amount.sub(feeAmountEth));
+        // Finally, transfer ETH to the user.
+        _weth.transfer(msg.sender, amount);
 
         emit Burned(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
     }
