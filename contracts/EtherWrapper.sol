@@ -45,6 +45,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
     // ========== STATE VARIABLES ==========
     IWETH internal _weth;
+    uint public feeBasket;
 
     constructor(
         address _owner,
@@ -94,22 +95,26 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
     function capacity() public view returns (uint _capacity) {
         // capacity = max(maxETH - balance, 0)
-        // TODO: the capacity of the contract is exclusive of the mint fees?
-        uint balance = getBalance();
+        uint balance = getReserves();
         if (balance >= maxETH()) {
             return 0;
         }
         return maxETH().sub(balance);
     }
 
-    function getBalance() public view returns (uint) {
-        return _weth.balanceOf(address(this));
+    function getBalance() external view returns (uint) {
+        // TODO: remove.
+        return getReserves();
+    }
+
+    function getReserves() public view returns (uint) {
+        return _weth.balanceOf(address(this)) - feeBasket;
     }
 
     function totalIssuedSynths() public view returns (uint) {
         // As the contract's issued sETH is always backed 1:1 with ETH,
         // we can just return the WETH balance.
-        return getBalance();
+        return getReserves();
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
@@ -158,7 +163,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
     // Burn `amount` sETH for `amount - fees` WETH.
     // `amount` is inclusive of fees, calculable via `calculateBurnFee`.
     function burn(uint amount) external {
-        uint reserves = getBalance();
+        uint reserves = getReserves();
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
 
         if (amount >= reserves) {
@@ -187,17 +192,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         uint feeAmountEth = calculateMintFee(depositAmountEth);
 
         // Fee Distribution. Mints sUSD internally.
-        // Normalize fee to sUSD
-        uint feeSusd = exchangeRates().effectiveValue(ETH, feeAmountEth, sUSD);
-
-        // Remit the fee in sUSDs
-        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
-        // TODO(liamz): Yo this feels a bit weird, burning the WETH.
-        // Shouldn't we send it somewhere, else we're just inflating the sETH supply?
-        _weth.transfer(address(0), feeAmountEth);
-
-        // Tell the fee pool about this
-        feePool().recordFeePaid(feeSusd);
+        remitFee(feeAmountEth);
 
         // Finally, issue sETH.
         synthsETH().issue(msg.sender, depositAmountEth.sub(feeAmountEth));
@@ -215,21 +210,38 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         // Calculate burning fee.
         uint feeAmountEth = calculateBurnFee(amount);
 
-        // Fee Distribution. Mints sUSD internally.
-        // Normalize fee to sUSD
-        uint feeSusd = exchangeRates().effectiveValue(ETH, feeAmountEth, sUSD);
-
         // Remit the fee in sUSDs
-        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
-        _weth.transfer(address(0), feeAmountEth);
-
-        // Tell the fee pool about this
-        feePool().recordFeePaid(feeSusd);
+        remitFee(feeAmountEth);
 
         // Finally, transfer ETH to the user, less the fee.
         _weth.transfer(msg.sender, amount.sub(feeAmountEth));
 
         emit Burned(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
+    }
+
+    function burnFromFeeBasket(uint wethAmount) public {
+        require(feeBasket >= 0, "no fees to burn");
+
+        synthsETH().burn(msg.sender, wethAmount);
+
+        feeBasket = feeBasket.sub(wethAmount);
+
+        _weth.transfer(msg.sender, wethAmount);
+    }
+
+    // Mints sUSD and sends it to the fee pool.
+    // The WETH is held by the contract in a fee basket, which can
+    // be exchanged using `burnFromFeeBasket`.
+    function remitFee(uint feeAmountEth) internal {
+        // Normalize fee to sUSD
+        uint feeSusd = exchangeRates().effectiveValue(ETH, feeAmountEth, sUSD);
+
+        // Remit the fee in sUSDs
+        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
+        feeBasket = feeBasket.add(feeAmountEth);
+
+        // Tell the fee pool about this
+        feePool().recordFeePaid(feeSusd);
     }
 
     /* ========== EVENTS ========== */
