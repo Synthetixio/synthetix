@@ -19,32 +19,12 @@ import "./interfaces/IERC20.sol";
 
 
 // Remaining Functionality
-//     Separated state
 //     Parameters into struct
-//     Pay funding to pool
-//     Separate (simplified) close position function
-//     Modification of existing positions (order submission, order fill, order fee computation)
-//     Margin Adjustment
 //     Functionalise price retrieval for efficiency (only one call to exrates per invocation of any function)
-//     Pausable from SystemStatus (no funding charged in this period, but people can close orders)
-//         Circuit breaker (relies on pausable if a price divergence is detected, part of keeper)
 //     Ensure total system debt is being computed properly.
-//     Complete test coverage
 //     Remove pending in favour of orderId being nonzero
 //     Merge in develop
-//     Internal functions that take prices as arguments so that the oracle isn't repeat-queried
 //     Consider not exposing signs of short vs long positions
-//
-// Future (non-testnet) Functionality
-//     Consider settlements when issuing/burning
-//     Gas tank
-//     Multi order confirmation
-//     Debt caching
-//     Retrospective liquidations
-//     Multi-liquidation
-//     Multi-confirmation
-//     max funding rate rate of change
-//     unified settings event/update framework
 
 interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
@@ -108,7 +88,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     int public entryNotionalSkew;
     uint public pendingOrderValue;
 
-    uint internal _nextOrderId = 1;
+    uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
 
     mapping(address => Order) public orders;
     mapping(address => Position) public positions;
