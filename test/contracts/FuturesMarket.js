@@ -569,16 +569,42 @@ contract('FuturesMarket', accounts => {
 
 	describe('Profit & Loss, margin, leverage', () => {
 		describe('PnL', () => {
-			it('price increase', async () => {
-				assert.isTrue(false);
+			beforeEach(async () => {
+				await futuresMarket.submitOrder(toUnit('1000'), toUnit('5'), { from: trader });
+				await futuresMarket.submitOrder(toUnit('-4000'), toUnit('1'), { from: trader2 });
+				await exchangeRates.updateRates([baseAsset], [toUnit('100')], await currentTime(), {
+					from: oracle,
+				});
+				await futuresMarket.confirmOrder(trader);
+				await futuresMarket.confirmOrder(trader2);
 			});
 
 			it('steady price', async () => {
-				assert.isTrue(false);
+				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], toBN(0));
+				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], toBN(0));
+			});
+
+			it('price increase', async () => {
+				await exchangeRates.updateRates([baseAsset], [toUnit('150')], await currentTime(), {
+					from: oracle,
+				});
+
+				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], toUnit('2500'));
+				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], toUnit('2000'));
 			});
 
 			it('price decrease', async () => {
-				assert.isTrue(false);
+				await exchangeRates.updateRates([baseAsset], [toUnit('90')], await currentTime(), {
+					from: oracle,
+				});
+
+				assert.bnEqual((await futuresMarket.profitLoss(trader))[0], toUnit('-500'));
+				assert.bnEqual((await futuresMarket.profitLoss(trader2))[0], toUnit('-400'));
+			});
+
+			it('Reports invalid prices properly', async () => {
+				await fastForward(7 * 24 * 60 * 60); // Stale the prices
+				assert.isTrue((await futuresMarket.profitLoss(trader))[1]);
 			});
 		});
 
