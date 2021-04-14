@@ -662,6 +662,22 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 		});
 
+		it('A balanced market (with differing leverage) induces zero funding rate', async () => {
+			for (const marginTrader of [
+				['1000', '5', trader],
+				['-2000', '2.5', trader2],
+			]) {
+				await submitAndConfirmOrder({
+					market: futuresMarket,
+					account: marginTrader[2],
+					fillPrice: toUnit('100'),
+					margin: toUnit(marginTrader[0]),
+					leverage: toUnit(marginTrader[1]),
+				});
+			}
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+		});
+
 		for (const margin of ['1000', '-1000'].map(toUnit)) {
 			const side = parseInt(margin.toString()) > 0 ? 'long' : 'short';
 
