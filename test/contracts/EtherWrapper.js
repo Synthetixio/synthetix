@@ -109,8 +109,8 @@ contract('EtherWrapper', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: etherWrapper.abi,
 			hasFallback: true,
-			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'MixinSystemSettings'],
-			expected: ['mint', 'burn'],
+			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
+			expected: ['mint', 'burn', 'withdrawFromFeeBasket'],
 		});
 	});
 
@@ -151,8 +151,8 @@ contract('EtherWrapper', async accounts => {
 			it('burnFeeRate of 50 bps', async () => {
 				assert.bnEqual(await etherWrapper.burnFeeRate(), FIFTY_BIPS);
 			});
-			it('totalIssuedSynths of 0', async () => {
-				assert.bnEqual(await etherWrapper.totalIssuedSynths(), toBN(0));
+			it('feeBasketBalance of 0', async () => {
+				assert.bnEqual(await etherWrapper.feeBasketBalance(), toBN(0));
 			});
 		});
 	});

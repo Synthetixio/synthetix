@@ -19,7 +19,6 @@ import "./MixinSystemSettings.sol";
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 
-// Pausable
 // https://docs.synthetix.io/contracts/source/contracts/etherwrapper
 contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrapper {
     using SafeMath for uint;
@@ -45,7 +44,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
     // ========== STATE VARIABLES ==========
     IWETH internal _weth;
-    uint public feeBasket;
+    uint public feeBasketBalance;
 
     constructor(
         address _owner,
@@ -103,7 +102,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
     }
 
     function getReserves() public view returns (uint) {
-        return _weth.balanceOf(address(this)) - feeBasket;
+        return _weth.balanceOf(address(this)) - feeBasketBalance;
     }
 
     function totalIssuedSynths() public view returns (uint) {
@@ -169,6 +168,18 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         }
     }
 
+    // Withdraws WETH from the fee basket, after burning
+    // the equivalent sETH from the user's balance.
+    function withdrawFromFeeBasket(uint wethAmount) external {
+        require(feeBasketBalance >= 0, "no fees to burn");
+
+        synthsETH().burn(msg.sender, wethAmount);
+
+        feeBasketBalance = feeBasketBalance.sub(wethAmount);
+
+        _weth.transfer(msg.sender, wethAmount);
+    }
+
     // ========== RESTRICTED ==========
 
     /**
@@ -214,29 +225,21 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         emit Burned(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
     }
 
-    function burnFromFeeBasket(uint wethAmount) public {
-        require(feeBasket >= 0, "no fees to burn");
-
-        synthsETH().burn(msg.sender, wethAmount);
-
-        feeBasket = feeBasket.sub(wethAmount);
-
-        _weth.transfer(msg.sender, wethAmount);
-    }
-
     // Mints sUSD and sends it to the fee pool.
     // The WETH is held by the contract in a fee basket, which can
-    // be exchanged using `burnFromFeeBasket`.
+    // be exchanged for sETH using `withdrawFromFeeBasket`.
     function remitFee(uint feeAmountEth) internal {
         // Normalize fee to sUSD
         uint feeSusd = exchangeRates().effectiveValue(ETH, feeAmountEth, sUSD);
 
-        // Remit the fee in sUSDs
+        // Issue sUSD to the fee pool
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
-        feeBasket = feeBasket.add(feeAmountEth);
-
+        
         // Tell the fee pool about this
         feePool().recordFeePaid(feeSusd);
+
+        // Lock the WETH in the fee basket.
+        feeBasketBalance = feeBasketBalance.add(feeAmountEth);
     }
 
     /* ========== EVENTS ========== */
