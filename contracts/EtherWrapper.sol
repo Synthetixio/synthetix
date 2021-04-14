@@ -102,7 +102,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
     }
 
     function getReserves() public view returns (uint) {
-        return _weth.balanceOf(address(this)) - feeBasketBalance;
+        return _weth.balanceOf(address(this));
     }
 
     function totalIssuedSynths() public view returns (uint) {
@@ -197,11 +197,14 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         // Calculate minting fee.
         uint feeAmountEth = calculateMintFee(depositAmountEth);
 
-        // Fee Distribution. Mints sUSD internally.
-        remitFee(feeAmountEth);
-
         // Finally, issue sETH.
-        synthsETH().issue(msg.sender, depositAmountEth.sub(feeAmountEth));
+        synthsETH().issue(address(this), depositAmountEth);
+
+        // Send amount - fees to user.
+        synthsETH().transfer(msg.sender, depositAmountEth.sub(feeAmountEth));
+        // Send fee to debt pool.
+        // This is automatically converted into sUSD.
+        synthsETH().transfer(address(feePool), feeAmountEth);
 
         emit Minted(msg.sender, depositAmountEth.sub(feeAmountEth), feeAmountEth);
     }
@@ -210,36 +213,18 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         require(amount <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amount <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
 
-        // Burn the full amount sent.
-        synthsETH().burn(msg.sender, amount);
-
-        // Calculate burning fee.
         uint feeAmountEth = calculateBurnFee(amount);
 
-        // Remit the fee in sUSDs
-        remitFee(feeAmountEth);
+        // Burn the amount - fees.
+        synthsETH().burn(msg.sender, amount.sub(feeAmountEth));
+        // Send the rest to the fee pool. 
+        // This is automatically converted into sUSD.
+        synthsETH().transferFrom(msg.sender, address(feePool()), feeAmountEth);
 
         // Finally, transfer ETH to the user, less the fee.
         _weth.transfer(msg.sender, amount.sub(feeAmountEth));
 
         emit Burned(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
-    }
-
-    // Mints sUSD and sends it to the fee pool.
-    // The WETH is held by the contract in a fee basket, which can
-    // be exchanged for sETH using `withdrawFromFeeBasket`.
-    function remitFee(uint feeAmountEth) internal {
-        // Normalize fee to sUSD
-        uint feeSusd = exchangeRates().effectiveValue(ETH, feeAmountEth, sUSD);
-
-        // Issue sUSD to the fee pool
-        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
-        
-        // Tell the fee pool about this
-        feePool().recordFeePaid(feeSusd);
-
-        // Lock the WETH in the fee basket.
-        feeBasketBalance = feeBasketBalance.add(feeAmountEth);
     }
 
     /* ========== EVENTS ========== */
