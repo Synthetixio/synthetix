@@ -851,6 +851,9 @@ contract('FuturesMarket', accounts => {
 				await futuresMarket.confirmOrder(trader);
 				await futuresMarket.confirmOrder(trader2);
 
+				const preLPrice1 = (await futuresMarket.liquidationPrice(trader, true))[0];
+				const preLPrice2 = (await futuresMarket.liquidationPrice(trader2, true))[0];
+
 				// One day of funding
 				await fastForward(24 * 60 * 60);
 
@@ -858,11 +861,15 @@ contract('FuturesMarket', accounts => {
 				// liquidation price = ((30 * 250) + 20 - (1500 - 375)) / 30 = 213.166...
 				let lPrice = await futuresMarket.liquidationPrice(trader, true);
 				assert.bnClose(lPrice[0], toUnit(213.167), toUnit(0.001));
+				lPrice = await futuresMarket.liquidationPrice(trader, false);
+				assert.bnClose(lPrice[0], preLPrice1, toUnit(0.001));
 
 				// trader2 receives (500 * 5) / 20 = 125 funding
 				// liquidation price = ((10 * 250) + 20 - (500 + 125)) / 10 = 189.50
 				lPrice = await futuresMarket.liquidationPrice(trader2, true);
 				assert.bnClose(lPrice[0], toUnit(189.5), toUnit(0.001));
+				lPrice = await futuresMarket.liquidationPrice(trader2, false);
+				assert.bnClose(lPrice[0], preLPrice2, toUnit(0.001));
 			});
 
 			it('Liquidation price reports invalidity properly', async () => {
