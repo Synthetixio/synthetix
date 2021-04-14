@@ -10,7 +10,7 @@ contract IEtherWrapper {
 
     function capacity() external view returns (uint);
 
-    function getBalance() external view returns (uint);
+    function getReserves() external view returns (uint);
 
     function totalIssuedSynths() external view returns (uint);
 

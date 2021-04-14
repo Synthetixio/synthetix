@@ -102,11 +102,6 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         return maxETH().sub(balance);
     }
 
-    function getBalance() external view returns (uint) {
-        // TODO: remove.
-        return getReserves();
-    }
-
     function getReserves() public view returns (uint) {
         return _weth.balanceOf(address(this)) - feeBasket;
     }

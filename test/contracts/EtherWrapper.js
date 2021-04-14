@@ -389,7 +389,7 @@ contract('EtherWrapper', async accounts => {
 				let initialCapacity;
 
 				beforeEach(async () => {
-					reserves = await etherWrapper.getBalance();
+					reserves = await etherWrapper.getReserves();
 					initialCapacity = await etherWrapper.capacity();
 
 					const burnFeeRate = await etherWrapper.burnFeeRate();
@@ -453,8 +453,8 @@ contract('EtherWrapper', async accounts => {
 				it('increases capacity by `reserves` WETH', async () => {
 					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(reserves));
 				});
-				it('is left with 0 WETH balance remaining', async () => {
-					assert.equal(await etherWrapper.getBalance(), '0');
+				it('is left with 0 reserves remaining', async () => {
+					assert.equal(await etherWrapper.getReserves(), '0');
 				});
 			});
 		});
