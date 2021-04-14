@@ -603,17 +603,36 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Reports invalid prices properly', async () => {
+				assert.isFalse((await futuresMarket.profitLoss(trader))[1]);
 				await fastForward(7 * 24 * 60 * 60); // Stale the prices
 				assert.isTrue((await futuresMarket.profitLoss(trader))[1]);
 			});
 		});
 
 		describe('Remaining margin', async () => {
-			it('Remaining margin unchanged with no funding or profit', async () => {
-				assert.isTrue(false);
+			beforeEach(async () => {
+				await futuresMarket.submitOrder(toUnit('1000'), toUnit('5'), { from: trader });
+				await futuresMarket.submitOrder(toUnit('-5000'), toUnit('1'), { from: trader2 });
+				await exchangeRates.updateRates([baseAsset], [toUnit('100')], await currentTime(), {
+					from: oracle,
+				});
+				await futuresMarket.confirmOrder(trader);
+				await futuresMarket.confirmOrder(trader2);
 			});
 
-			describe('no funding and profit', async () => {
+			it('Remaining margin unchanged with no funding or profit', async () => {
+				await fastForward(24 * 60 * 60);
+				// Note that the first guy paid a bit of funding as there was a delay between confirming
+				// the first and second orders
+				assert.bnClose(
+					(await futuresMarket.remainingMargin(trader))[0],
+					toUnit('1000'),
+					toUnit('0.01')
+				);
+				assert.bnEqual((await futuresMarket.remainingMargin(trader2))[0], toUnit('-5000'));
+			});
+
+			describe('profit and no funding', async () => {
 				it('positive profit', async () => {
 					assert.isTrue(false);
 				});
@@ -645,6 +664,12 @@ contract('FuturesMarket', accounts => {
 
 			it('Remaining margin is clamped to zero if losses exceed initial margin', async () => {
 				assert.isTrue(false);
+			});
+
+			it('Remaining margin reports invalid prices properly', async () => {
+				assert.isFalse((await futuresMarket.remainingMargin(trader))[1]);
+				await fastForward(7 * 24 * 60 * 60); // Stale the prices
+				assert.isTrue((await futuresMarket.remainingMargin(trader))[1]);
 			});
 		});
 
@@ -694,9 +719,9 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('current leverage properly reports invalid prices', async () => {
+				assert.isFalse((await futuresMarket.currentLeverage(trader))[1]);
 				await fastForward(7 * 24 * 60 * 60);
-				const currentLeverage = await futuresMarket.currentLeverage(trader);
-				assert.isTrue(currentLeverage[1]);
+				assert.isTrue((await futuresMarket.currentLeverage(trader))[1]);
 			});
 		});
 	});
@@ -850,6 +875,8 @@ contract('FuturesMarket', accounts => {
 				await futuresMarket.confirmOrder(trader);
 				await futuresMarket.confirmOrder(trader2);
 
+				assert.isFalse((await futuresMarket.liquidationPrice(trader, true))[1]);
+
 				await fastForward(60 * 60 * 24 * 7); // Stale the price
 
 				const lPrice = await futuresMarket.liquidationPrice(trader, true);
@@ -889,6 +916,7 @@ contract('FuturesMarket', accounts => {
 					from: oracle,
 				});
 
+				assert.isTrue(await futuresMarket.canLiquidate(trader));
 				await fastForward(60 * 60 * 24 * 7); // Stale the price
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 			});
@@ -896,10 +924,6 @@ contract('FuturesMarket', accounts => {
 
 		it('Cannot liquidate nonexistent positions', async () => {
 			await assert.revert(futuresMarket.liquidatePosition(trader), 'Position cannot be liquidated');
-		});
-
-		it('Cannot liquidate when the price is invalid', async () => {
-			assert.isTrue(false);
 		});
 
 		it('Can liquidate a position with less than the liquidation fee margin remaining', async () => {
