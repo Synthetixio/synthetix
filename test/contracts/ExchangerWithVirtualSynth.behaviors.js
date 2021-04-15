@@ -13,6 +13,8 @@ module.exports = function({ accounts }) {
 	});
 
 	beforeEach(async () => {
+		const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
+
 		({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 			contracts: [
 				'DebtCache',
@@ -26,6 +28,10 @@ module.exports = function({ accounts }) {
 				'SystemStatus',
 				'TradingRewards',
 			],
+			mocks: {
+				// Use a real VirtualSynthMastercopy so the unit tests can interrogate deployed vSynths
+				VirtualSynthMastercopy: await VirtualSynthMastercopy.new(),
+			},
 			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
 	});
@@ -99,7 +105,7 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
-		whenMockedASynthToIssueAmdBurn: cb => {
+		whenMockedASynthToIssueAndBurn: cb => {
 			describe(`when mocked a synth to burn`, () => {
 				beforeEach(async () => {
 					// create and share the one synth for all Issuer.synths() calls
