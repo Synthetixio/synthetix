@@ -15,15 +15,6 @@ contract MixinResolver {
 
     constructor(address _resolver) internal {
         resolver = AddressResolver(_resolver);
-        initialized = true;
-    }
-
-    bool public initialized = false;
-
-    function initResolver(address _resolver) public {
-        //MinimalProxyFactory resets all state, thus an explicit init is needed
-        require(!initialized, "Can only be called if not initialized already");
-        resolver = AddressResolver(_resolver);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

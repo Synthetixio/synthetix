@@ -230,10 +230,7 @@ const setupContract = async ({
 			toWei('0.02'), // refund fee
 		],
 		BinaryOptionMarketData: [],
-		BinaryOptionMarketMastercopy: [
-			tryGetAddressOf('BinaryOptionMarketManager'),
-			tryGetAddressOf('AddressResolver'),
-		],
+		BinaryOptionMarketMastercopy: [tryGetAddressOf('BinaryOptionMarketManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
 			owner,

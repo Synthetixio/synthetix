@@ -1584,7 +1584,7 @@ describe('publish scripts', () => {
 									// address here we should look up all required contracts and ignore any that have
 									// ':' in it
 									.filter(([contract]) => !/^SynthetixBridge/.test(contract))
-									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checkd
+									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checked
 									.filter(([contract]) => !/^VirtualSynthMastercopy/.test(contract))
 									.filter(([contract]) => !/^BinaryOptionMarketMastercopy/.test(contract))
 									.filter(([, { source }]) =>

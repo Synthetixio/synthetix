@@ -19,9 +19,19 @@ contract MockBinaryOptionMarketManager {
         uint[2] calldata bids, // [longBid, shortBid]
         uint[3] calldata fees // [poolFee, creatorFee, refundFee]
     ) external {
-        market = new BinaryOptionMarketMastercopy(address(this), address(resolver));
-        market.initialize(creator, creatorLimits, oracleKey, strikePrice, refundsEnabled, times, bids, fees);
-        market.rebuildCache();
+        market = new BinaryOptionMarketMastercopy(address(this));
+        market.initialize(
+            address(this),
+            resolver,
+            creator,
+            creatorLimits,
+            oracleKey,
+            strikePrice,
+            refundsEnabled,
+            times,
+            bids,
+            fees
+        );
     }
 
     function decrementTotalDeposited(uint) external pure {

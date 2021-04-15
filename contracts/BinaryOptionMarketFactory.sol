@@ -7,6 +7,7 @@ import "./MixinResolver.sol";
 // Internal references
 import "./BinaryOptionMarket.sol";
 import "./MinimalProxyFactory.sol";
+
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarketfactory
 contract BinaryOptionMarketFactory is MinimalProxyFactory, Owned, MixinResolver {
     /* ========== STATE VARIABLES ========== */
@@ -57,9 +58,7 @@ contract BinaryOptionMarketFactory is MinimalProxyFactory, Owned, MixinResolver 
 
         BinaryOptionMarket bom =
             BinaryOptionMarket(_cloneAsMinimalProxy(_binaryOptionMastercopy(), "Could not create a Binary Option Market"));
-        bom.initOwner(manager);
-        bom.initResolver(address(resolver));
-        bom.initialize(creator, creatorLimits, oracleKey, strikePrice, refundsEnabled, times, bids, fees);
+        bom.initialize(manager, resolver, creator, creatorLimits, oracleKey, strikePrice, refundsEnabled, times, bids, fees);
         return bom;
     }
 }
