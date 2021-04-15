@@ -274,7 +274,7 @@ contract('EtherWrapper', async accounts => {
 		});
 	});
 
-	describe.only('burn', async () => {
+	describe('burn', async () => {
 		describe('when the contract has 0 WETH', async () => {
 			it('reverts', async () => {
 				await assert.revert(
