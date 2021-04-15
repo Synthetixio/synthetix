@@ -152,19 +152,16 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         }
     }
 
-    // Burn `amount` sETH for `amount - fees` WETH.
-    // `amount` is inclusive of fees, calculable via `calculateBurnFee`.
+    // Receive `amount` WETH for burning `amount + fees` sETH.
+    // `amount` is exclusive of fees, calculable via `calculateBurnFee`.
     function burn(uint amount) external {
         uint reserves = getReserves();
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
 
-        // maxBurn = reserves(1 + burnFeeRate)
-        uint maxBurn = reserves.multiplyDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
-
-        if (amount < maxBurn) {
+        if(amount < reserves) {
             _burn(amount);
         } else {
-            _burn(maxBurn);
+            _burn(reserves);
         }
     }
 
@@ -186,33 +183,31 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         // Transfer WETH from user.
         _weth.transferFrom(msg.sender, address(this), amount);
 
-        // Remit fee.
-        remitFee(feeAmountEth);
-
         // Mint `amount - fees` sETH to user.
         synthsETH().issue(msg.sender, amount.sub(feeAmountEth));
+
+        // Remit fee.
+        // Less sETH is issued in the previous step to save gas.
+        remitFee(feeAmountEth);
 
         emit Minted(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
     }
 
-    // Burn `amount` sETH for `amount - fees` WETH.
     function _burn(uint amount) internal {
-        require(amount <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
-        require(amount <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
+        uint feeAmountEth = calculateBurnFee(amount);
+        uint amountPlusFees = amount.add(feeAmountEth);
+        require(amountPlusFees <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
+        require(amountPlusFees <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
 
-        // Calculate burning fee.
-        uint principal = amount.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
-        uint feeAmountEth = amount.sub(principal);
-
-        // Burn `amount` sETH from user.
-        synthsETH().burn(msg.sender, amount);
+        // Burn `amount + fees` sETH from user.
+        synthsETH().burn(msg.sender, amountPlusFees);
 
         // Remit fee.
         // sETH fee is burned in previous step to save gas.
         remitFee(feeAmountEth);
 
-        // Transfer `amount - fees` WETH to user.
-        _weth.transfer(msg.sender, amount.sub(feeAmountEth));
+        // Transfer `amount` WETH to user.
+        _weth.transfer(msg.sender, amount);
 
         emit Burned(msg.sender, amount, feeAmountEth);
     }
