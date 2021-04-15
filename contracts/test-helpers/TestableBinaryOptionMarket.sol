@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 import "../BinaryOptionMarket.sol";
 import "../BinaryOptionMarketMastercopy.sol";
 
+contract TestableBinaryOptionMarket is BinaryOptionMarketMastercopy {
     constructor(
         address _owner,
         address _creator,
