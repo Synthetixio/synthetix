@@ -110,7 +110,7 @@ contract('EtherWrapper', async accounts => {
 			abi: etherWrapper.abi,
 			hasFallback: true,
 			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
-			expected: ['mint', 'burn', 'withdrawFromFeeBasket'],
+			expected: ['mint', 'burn'],
 		});
 	});
 
@@ -150,9 +150,6 @@ contract('EtherWrapper', async accounts => {
 			});
 			it('burnFeeRate of 50 bps', async () => {
 				assert.bnEqual(await etherWrapper.burnFeeRate(), FIFTY_BIPS);
-			});
-			it('feeBasketBalance of 0', async () => {
-				assert.bnEqual(await etherWrapper.feeBasketBalance(), toBN(0));
 			});
 		});
 	});
@@ -195,8 +192,8 @@ contract('EtherWrapper', async accounts => {
 			it('sends amount*mintFeeRate worth of sETH to the fee pool as sUSD', async () => {
 				assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
 			});
-			it('has a capacity of (capacity - amount - fees) after', async () => {
-				assert.bnEqual(await etherWrapper.capacity(), initialCapacity.sub(amount).add(mintFee));
+			it('has a capacity of (capacity - amount) after', async () => {
+				assert.bnEqual(await etherWrapper.capacity(), initialCapacity.sub(amount));
 			});
 			it('emits Minted event', async () => {
 				const logs = await getDecodedLogs({
@@ -254,9 +251,8 @@ contract('EtherWrapper', async accounts => {
 			it('sends capacity*mintFeeRate worth of sETH to the fee pool as sUSD', async () => {
 				assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
 			});
-			it('has a capacity of 0.5 bps after', async () => {
-				// console.log(`End capacity: ${(await etherWrapper.capacity()).toString()}`)
-				assert.bnEqual(await etherWrapper.capacity(), mintFee);
+			it('has a capacity of 0 after', async () => {
+				assert.bnEqual(await etherWrapper.capacity(), toBN('0'));
 			});
 		});
 
@@ -278,7 +274,7 @@ contract('EtherWrapper', async accounts => {
 		});
 	});
 
-	describe('burn', async () => {
+	describe.only('burn', async () => {
 		describe('when the contract has 0 WETH', async () => {
 			it('reverts', async () => {
 				await assert.revert(
@@ -315,7 +311,7 @@ contract('EtherWrapper', async accounts => {
 					burnTx = await etherWrapper.burn(amount, { from: account1 });
 				});
 
-				it('burns `amount` of sETH', async () => {
+				it('burns `amount` of sETH from user', async () => {
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
 						contracts: [sETHSynth],
@@ -361,7 +357,7 @@ contract('EtherWrapper', async accounts => {
 					});
 				});
 				it('increases capacity by `amount` WETH', async () => {
-					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(amount));
+					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(amount.sub(burnFee)));
 				});
 				it('emits Burned event', async () => {
 					const logs = await getDecodedLogs({
@@ -372,7 +368,7 @@ contract('EtherWrapper', async accounts => {
 					decodedEventEqual({
 						event: 'Burned',
 						emittedFrom: etherWrapper.address,
-						args: [account1, amount.sub(burnFee), burnFee],
+						args: [account1, amount, burnFee],
 						log: logs
 							.reverse()
 							.filter(l => !!l)
@@ -386,24 +382,20 @@ contract('EtherWrapper', async accounts => {
 				let amount;
 				let burnFee;
 				let expectedFeesUSD;
-				let initialCapacity;
 
 				beforeEach(async () => {
 					reserves = await etherWrapper.getReserves();
-					initialCapacity = await etherWrapper.capacity();
+					({ burnFee, expectedFeesUSD } = await calculateBurnFees(reserves));
 
-					const burnFeeRate = await etherWrapper.burnFeeRate();
-					amount = reserves.mul(ONE.add(burnFeeRate)).add(ONE);
+					amount = reserves.add(burnFee).add(ONE);
 
 					await sETHSynth.issue(account1, amount);
 					await sETHSynth.approve(etherWrapper.address, amount, { from: account1 });
 
-					({ burnFee, expectedFeesUSD } = await calculateBurnFees(reserves));
-
 					burnTx = await etherWrapper.burn(amount, { from: account1 });
 				});
 
-				it('burns `reserves` amount of sETH', async () => {
+				it('burns `reserves(1+burnFeeRate)` amount of sETH from user', async () => {
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
 						contracts: [sETHSynth],
@@ -412,11 +404,11 @@ contract('EtherWrapper', async accounts => {
 					decodedEventEqual({
 						event: 'Burned',
 						emittedFrom: sETHSynth.address,
-						args: [account1, reserves],
+						args: [account1, reserves.add(burnFee)],
 						log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
 					});
 				});
-				it('sends reserves(1-burnFeeRate) WETH to user', async () => {
+				it('sends `reserves` WETH to user', async () => {
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
 						contracts: [weth],
@@ -425,7 +417,7 @@ contract('EtherWrapper', async accounts => {
 					decodedEventEqual({
 						event: 'Transfer',
 						emittedFrom: weth.address,
-						args: [etherWrapper.address, account1, reserves.sub(burnFee)],
+						args: [etherWrapper.address, account1, reserves],
 						log: logs
 							.reverse()
 							.filter(l => !!l)
@@ -450,8 +442,8 @@ contract('EtherWrapper', async accounts => {
 							.find(({ name }) => name === 'Issued'),
 					});
 				});
-				it('increases capacity by `reserves` WETH', async () => {
-					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(reserves));
+				it('has a max capacity after', async () => {
+					assert.bnEqual(await etherWrapper.capacity(), await etherWrapper.maxETH());
 				});
 				it('is left with 0 reserves remaining', async () => {
 					assert.equal(await etherWrapper.getReserves(), '0');

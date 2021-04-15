@@ -44,7 +44,6 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
     // ========== STATE VARIABLES ==========
     IWETH internal _weth;
-    uint public feeBasketBalance;
 
     constructor(
         address _owner,
@@ -146,11 +145,10 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         uint currentCapacity = capacity();
         require(currentCapacity > 0, "Contract has no spare capacity to mint");
 
-        if (amount >= currentCapacity) {
-            _mint(currentCapacity);
-            // Refund is not needed, as we transfer the exact amount of WETH.
-        } else {
+        if (amount < currentCapacity) {
             _mint(amount);
+        } else {
+            _mint(currentCapacity);
         }
     }
 
@@ -160,24 +158,14 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         uint reserves = getReserves();
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
 
-        if (amount >= reserves) {
-            _burn(reserves);
-            // Refund is not needed, as we transfer the exact amount of reserves.
-        } else {
+        // maxBurn = reserves(1 + burnFeeRate)
+        uint maxBurn = reserves.multiplyDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
+
+        if (amount < maxBurn) {
             _burn(amount);
+        } else {
+            _burn(maxBurn);
         }
-    }
-
-    // Withdraws WETH from the fee basket, after burning
-    // the equivalent sETH from the user's balance.
-    function withdrawFromFeeBasket(uint wethAmount) external {
-        require(feeBasketBalance >= 0, "no fees to burn");
-
-        synthsETH().burn(msg.sender, wethAmount);
-
-        feeBasketBalance = feeBasketBalance.sub(wethAmount);
-
-        _weth.transfer(msg.sender, wethAmount);
     }
 
     // ========== RESTRICTED ==========
@@ -191,40 +179,53 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _mint(uint depositAmountEth) internal {
-        _weth.transferFrom(msg.sender, address(this), depositAmountEth);
-
+    function _mint(uint amount) internal {
         // Calculate minting fee.
-        uint feeAmountEth = calculateMintFee(depositAmountEth);
+        uint feeAmountEth = calculateMintFee(amount);
 
-        // Finally, issue sETH.
-        synthsETH().issue(address(this), depositAmountEth);
+        // Transfer WETH from user.
+        _weth.transferFrom(msg.sender, address(this), amount);
 
-        // Send amount - fees to user.
-        IERC20(address(synthsETH())).transfer(msg.sender, depositAmountEth.sub(feeAmountEth));
-        // Send fee to debt pool.
-        // This is automatically converted into sUSD.
-        IERC20(address(synthsETH())).transfer(address(feePool()), feeAmountEth);
+        // Remit fee.
+        remitFee(feeAmountEth);
 
-        emit Minted(msg.sender, depositAmountEth.sub(feeAmountEth), feeAmountEth);
+        // Mint `amount - fees` sETH to user.
+        synthsETH().issue(msg.sender, amount.sub(feeAmountEth));
+
+        emit Minted(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
     }
 
+    // Burn `amount` sETH for `amount - fees` WETH.
     function _burn(uint amount) internal {
         require(amount <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amount <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
 
-        uint feeAmountEth = calculateBurnFee(amount);
+        // Calculate burning fee.
+        uint principal = amount.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
+        uint feeAmountEth = amount.sub(principal);
 
-        // Burn the amount - fees.
+        // Burn `amount` sETH from user.
         synthsETH().burn(msg.sender, amount);
-        // Send the rest to the fee pool.
-        // This is automatically converted into sUSD.
-        IERC20(address(synthsETH())).transferFrom(msg.sender, address(feePool()), feeAmountEth);
 
-        // Finally, transfer ETH to the user.
-        _weth.transfer(msg.sender, amount);
+        // Remit fee.
+        // sETH fee is burned in previous step to save gas.
+        remitFee(feeAmountEth);
 
-        emit Burned(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
+        // Transfer `amount - fees` WETH to user.
+        _weth.transfer(msg.sender, amount.sub(feeAmountEth));
+
+        emit Burned(msg.sender, amount, feeAmountEth);
+    }
+
+    function remitFee(uint feeAmountEth) internal {
+        // Normalize fee to sUSD
+        uint feeSusd = exchangeRates().effectiveValue(ETH, feeAmountEth, sUSD);
+
+        // Issue sUSD to the fee pool
+        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
+
+        // Tell the fee pool about this
+        feePool().recordFeePaid(feeSusd);
     }
 
     /* ========== EVENTS ========== */
