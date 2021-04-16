@@ -103,48 +103,115 @@ contract('FuturesMarket', accounts => {
 			await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
 				from: oracle,
 			});
-			const result = await futuresMarket.priceAndInvalid();
+			const result = await futuresMarket.assetPrice();
 
-			assert.bnEqual(result.assetPrice, price);
-			assert.isFalse(result.isInvalid);
+			assert.bnEqual(result.price, price);
+			assert.isFalse(result.invalid);
 			assert.bnEqual(await futuresMarket.currentRoundId(), toBN(roundId).add(toBN(1)));
 		});
 
-		describe('Setters', () => {
-			it('setters', async () => {
-				const params = [
-					['exchangeFee', '0.01', futuresMarket.setExchangeFee],
-					['maxLeverage', '20', futuresMarket.setMaxLeverage],
-					['maxMarketDebt', '50000', futuresMarket.setMaxMarketDebt],
-					['minInitialMargin', '500', futuresMarket.setMinInitialMargin],
-					['maxFundingRate', '0.5', futuresMarket.setMaxFundingRate],
-					['maxFundingRateSkew', '0.5', futuresMarket.setMaxFundingRateSkew],
-					['maxFundingRateDelta', '0.02', futuresMarket.setMaxFundingRateDelta],
-				];
+		it('Setters', async () => {
+			const params = [
+				['exchangeFee', '0.01', futuresMarket.setExchangeFee],
+				['maxLeverage', '20', futuresMarket.setMaxLeverage],
+				['maxMarketDebt', '50000', futuresMarket.setMaxMarketDebt],
+				['minInitialMargin', '500', futuresMarket.setMinInitialMargin],
+				['maxFundingRate', '0.5', futuresMarket.setMaxFundingRate],
+				['maxFundingRateSkew', '0.5', futuresMarket.setMaxFundingRateSkew],
+				['maxFundingRateDelta', '0.02', futuresMarket.setMaxFundingRateDelta],
+			];
 
-				for (const p of params) {
-					const param = toBytes32(p[0]);
-					const value = toUnit(p[1]);
-					const setter = p[2];
+			for (const p of params) {
+				const param = toBytes32(p[0]);
+				const value = toUnit(p[1]);
+				const setter = p[2];
 
-					// Only settable by the owner
-					await assert.revert(setter(value, { from: trader }), 'Owner only function');
+				// Only settable by the owner
+				await assert.revert(setter(value, { from: trader }), 'Owner only function');
 
-					const tx = await setter(value, { from: owner });
-					const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
+				const tx = await setter(value, { from: owner });
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
 
-					assert.equal(decodedLogs.length, 1);
-					decodedEventEqual({
-						event: 'ParameterUpdated',
-						emittedFrom: proxyFuturesMarket.address,
-						args: [param, value],
-						log: decodedLogs[0],
-					});
+				assert.equal(decodedLogs.length, 1);
+				decodedEventEqual({
+					event: 'ParameterUpdated',
+					emittedFrom: proxyFuturesMarket.address,
+					args: [param, value],
+					log: decodedLogs[0],
+				});
 
-					// And the parameter was actually set properly
-					assert.bnEqual((await futuresMarket.parameters())[p[0]], value);
-				}
+				// And the parameter was actually set properly
+				assert.bnEqual((await futuresMarket.parameters())[p[0]], value);
+			}
+		});
+
+		it('market size & skew', async () => {
+			let sizes = await futuresMarket.marketSizes();
+			assert.bnEqual(sizes[0], toUnit('0'));
+			assert.bnEqual(sizes[1], toUnit('0'));
+			assert.bnEqual(await futuresMarket.marketSize(), toUnit('0'));
+			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('0'));
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('0'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('100'),
+				margin: toUnit('1000'),
+				leverage: toUnit('5'),
 			});
+
+			sizes = await futuresMarket.marketSizes();
+			assert.bnEqual(sizes[0], toUnit('50'));
+			assert.bnEqual(sizes[1], toUnit('0'));
+			assert.bnEqual(await futuresMarket.marketSize(), toUnit('50'));
+			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('50'));
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('-4000'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: toUnit('120'),
+				margin: toUnit('-600'),
+				leverage: toUnit('7'),
+			});
+
+			sizes = await futuresMarket.marketSizes();
+			assert.bnEqual(sizes[0], toUnit('50'));
+			assert.bnEqual(sizes[1], toUnit('35'));
+			assert.bnEqual(await futuresMarket.marketSize(), toUnit('85'));
+			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('15'));
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('800'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('110'),
+				margin: toUnit('0'),
+				leverage: toUnit('0'),
+			});
+
+			sizes = await futuresMarket.marketSizes();
+			assert.bnEqual(sizes[0], toUnit('0'));
+			assert.bnEqual(sizes[1], toUnit('35'));
+			assert.bnEqual(await futuresMarket.marketSize(), toUnit('35'));
+			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('-35'));
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('4800'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: toUnit('100'),
+				margin: toUnit('0'),
+				leverage: toUnit('0'),
+			});
+
+			sizes = await futuresMarket.marketSizes();
+			assert.bnEqual(sizes[0], toUnit('0'));
+			assert.bnEqual(sizes[1], toUnit('0'));
+			assert.bnEqual(await futuresMarket.marketSize(), toUnit('0'));
+			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('0'));
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('0'));
 		});
 	});
 
@@ -158,7 +225,7 @@ contract('FuturesMarket', accounts => {
 				it(`Submit a fresh order when there is no skew (${side})`, async () => {
 					const notional = multiplyDecimalRound(margin.abs(), leverage);
 					const fee = multiplyDecimalRound(notional, exchangeFee);
-					assert.bnEqual(await futuresMarket.orderFee(trader, margin, leverage), fee);
+					assert.bnEqual((await futuresMarket.orderFee(trader, margin, leverage))[0], fee);
 				});
 
 				it(`Submit a fresh order on the same side as the skew (${side})`, async () => {
@@ -172,7 +239,7 @@ contract('FuturesMarket', accounts => {
 
 					const notional = multiplyDecimalRound(margin.abs(), leverage);
 					const fee = multiplyDecimalRound(notional, exchangeFee);
-					assert.bnEqual(await futuresMarket.orderFee(trader, margin, leverage), fee);
+					assert.bnEqual((await futuresMarket.orderFee(trader, margin, leverage))[0], fee);
 				});
 
 				it(`Submit a fresh order on the opposite side to the skew smaller than the skew (${side})`, async () => {
@@ -185,7 +252,7 @@ contract('FuturesMarket', accounts => {
 					});
 
 					assert.bnEqual(
-						await futuresMarket.orderFee(trader, margin.div(toBN(2)), leverage),
+						(await futuresMarket.orderFee(trader, margin.div(toBN(2)), leverage))[0],
 						toBN(0)
 					);
 				});
@@ -201,7 +268,7 @@ contract('FuturesMarket', accounts => {
 
 					const notional = multiplyDecimalRound(margin.abs(), leverage);
 					const fee = multiplyDecimalRound(notional, exchangeFee).div(toBN(2));
-					assert.bnEqual(await futuresMarket.orderFee(trader, margin, leverage), fee);
+					assert.bnEqual((await futuresMarket.orderFee(trader, margin, leverage))[0], fee);
 				});
 
 				it('Increase an existing position', async () => {
@@ -227,7 +294,7 @@ contract('FuturesMarket', accounts => {
 		it('can successfully submit an order', async () => {
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');
-			const fee = await futuresMarket.orderFee(trader, margin, leverage);
+			const fee = (await futuresMarket.orderFee(trader, margin, leverage))[0];
 
 			const preBalance = await sUSD.balanceOf(trader);
 			const pendingOrderValue = await futuresMarket.pendingOrderValue();
@@ -278,7 +345,7 @@ contract('FuturesMarket', accounts => {
 		it('submitting a second order cancels the first one.', async () => {
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');
-			const fee = await futuresMarket.orderFee(trader, margin, leverage);
+			const fee = (await futuresMarket.orderFee(trader, margin, leverage))[0];
 
 			const preBalance = await sUSD.balanceOf(trader);
 			const pendingOrderValue = await futuresMarket.pendingOrderValue();
@@ -305,7 +372,7 @@ contract('FuturesMarket', accounts => {
 
 			const margin2 = toUnit('500');
 			const leverage2 = toUnit('5');
-			const fee2 = await futuresMarket.orderFee(trader, margin2, leverage2);
+			const fee2 = (await futuresMarket.orderFee(trader, margin2, leverage2))[0];
 
 			const tx = await futuresMarket.submitOrder(margin2, leverage2, { from: trader });
 
@@ -378,7 +445,7 @@ contract('FuturesMarket', accounts => {
 			const preBalance = await sUSD.balanceOf(trader);
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');
-			const fee = await futuresMarket.orderFee(trader, margin, leverage);
+			const fee = (await futuresMarket.orderFee(trader, margin, leverage))[0];
 			await futuresMarket.submitOrder(margin, leverage, { from: trader });
 
 			const pendingOrderValue = await futuresMarket.pendingOrderValue();
@@ -421,7 +488,7 @@ contract('FuturesMarket', accounts => {
 		it('can confirm a pending order once a new price arrives', async () => {
 			const margin = toUnit('1000');
 			const leverage = toUnit('10');
-			const fee = await futuresMarket.orderFee(trader, margin, leverage);
+			const fee = (await futuresMarket.orderFee(trader, margin, leverage))[0];
 			await futuresMarket.submitOrder(margin, leverage, { from: trader });
 
 			const price = toUnit('200');
@@ -438,14 +505,14 @@ contract('FuturesMarket', accounts => {
 
 			assert.bnEqual(position.margin, margin);
 			assert.bnEqual(position.size, size);
-			assert.bnEqual(position.entryPrice, price);
-			assert.bnEqual(position.entryIndex, toBN(2)); // submission and confirmation
+			assert.bnEqual(position.lastPrice, price);
+			assert.bnEqual(position.fundingIndex, toBN(2)); // submission and confirmation
 
 			// Skew, size, entry notional sum, pending order value are updated.
 			assert.bnEqual(await futuresMarket.marketSkew(), size);
 			assert.bnEqual(await futuresMarket.marketSize(), size);
 			assert.bnEqual(
-				await futuresMarket.entryMarginSumMinusNotionalSkew(),
+				await futuresMarket.marginSumMinusNotionalSkew(),
 				margin.sub(multiplyDecimalRound(size, price))
 			);
 			assert.bnEqual(await futuresMarket.pendingOrderValue(), toBN(0));
@@ -531,13 +598,13 @@ contract('FuturesMarket', accounts => {
 
 			assert.bnEqual(position.margin, toUnit(0));
 			assert.bnEqual(position.size, toUnit(0));
-			assert.bnEqual(position.entryPrice, toUnit(0));
-			assert.bnEqual(position.entryIndex, toBN(0));
+			assert.bnEqual(position.lastPrice, toUnit(0));
+			assert.bnEqual(position.fundingIndex, toBN(0));
 
 			// Skew, size, entry notional sum, pending order value are updated.
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit(0));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit(0));
-			assert.bnEqual(await futuresMarket.entryMarginSumMinusNotionalSkew(), toUnit(0));
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit(0));
 			assert.bnEqual(await futuresMarket.pendingOrderValue(), toBN(0));
 
 			// Order values are deleted
@@ -803,8 +870,8 @@ contract('FuturesMarket', accounts => {
 
 				assert.bnEqual(liquidationPrice.price, liquidationPriceNoFunding.price);
 				assert.bnEqual(liquidationPrice.price, toUnit('90.2'));
-				assert.isFalse(liquidationPrice.isInvalid);
-				assert.isFalse(liquidationPriceNoFunding.isInvalid);
+				assert.isFalse(liquidationPrice.invalid);
+				assert.isFalse(liquidationPriceNoFunding.invalid);
 			});
 
 			it('Liquidation price is accurate if the liquidation fee changes', async () => {
@@ -958,8 +1025,8 @@ contract('FuturesMarket', accounts => {
 			const position = await futuresMarket.positions(trader, { from: noBalance });
 			assert.bnEqual(position.margin, toUnit(0));
 			assert.bnEqual(position.size, toUnit(0));
-			assert.bnEqual(position.entryPrice, toUnit(0));
-			assert.bnEqual(position.entryIndex, 0);
+			assert.bnEqual(position.lastPrice, toUnit(0));
+			assert.bnEqual(position.fundingIndex, 0);
 
 			assert.bnEqual(await sUSD.balanceOf(noBalance), liquidationFee);
 

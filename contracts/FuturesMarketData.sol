@@ -129,7 +129,7 @@ contract FuturesMarketData {
             FuturesMarket market = FuturesMarket(markets[i]);
 
             FuturesMarket.Parameters memory parameters = _getParameters(market);
-            (uint price, ) = market.priceAndInvalid();
+            (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
 
             summaries[i] = MarketSummary(
@@ -174,7 +174,7 @@ contract FuturesMarketData {
     }
 
     function _marketDetails(FuturesMarket market) internal view returns (MarketData memory) {
-        (uint price, bool isInvalid) = market.priceAndInvalid();
+        (uint price, bool isInvalid) = market.assetPrice();
         (uint marketDebt, ) = market.marketDebt();
 
         FuturesMarket.Parameters memory parameters = _getParameters(market);
@@ -192,7 +192,7 @@ contract FuturesMarketData {
                     marketDebt,
                     market.marketSkew(),
                     market.proportionalSkew(),
-                    market.entryMarginSumMinusNotionalSkew(),
+                    market.marginSumMinusNotionalSkew(),
                     market.pendingOrderValue()
                 ),
                 PriceDetails(price, market.currentRoundId(), isInvalid)

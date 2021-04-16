@@ -33,12 +33,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 pragma solidity ^0.5.16;
 
+
 /**
  * @title SignedSafeMath
  * @dev Signed math operations with safety checks that revert on error.
  */
 library SignedSafeMath {
-    int256 constant private _INT256_MIN = -2**255;
+    int256 private constant _INT256_MIN = -2**255;
 
     /**
      * @dev Returns the multiplication of two signed integers, reverting on
