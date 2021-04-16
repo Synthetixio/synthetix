@@ -22,6 +22,8 @@ const {
 	resumeSystem,
 } = require('./utils');
 
+const { trimUtf8EscapeChars } = require('../contracts/helpers');
+
 const gasFromReceipt = ({ receipt }) =>
 	receipt.gasUsed > 1e6 ? receipt.gasUsed / 1e6 + 'm' : receipt.gasUsed / 1e3 + 'k';
 
@@ -290,8 +292,6 @@ contract('Synthetix (prod tests)', accounts => {
 				const decoded = vSynthCreationEvent(txn);
 
 				vSynth = await artifacts.require('VirtualSynth').at(decoded.vSynth);
-
-				const trimUtf8EscapeChars = input => web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
 
 				assert.equal(trimUtf8EscapeChars(await vSynth.name()), 'Virtual Synth sETH');
 				assert.equal(trimUtf8EscapeChars(await vSynth.symbol()), 'vsETH');
