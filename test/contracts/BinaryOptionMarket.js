@@ -314,7 +314,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			let localCreationTime = await currentTime();
 			await assert.revert(
 				deployMarket({
-					resolver: addressResolver,
+					resolver: addressResolver.address,
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 200,
 					expiry: localCreationTime + 200 + expiryDuration,
@@ -335,7 +335,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			localCreationTime = await currentTime();
 			await assert.revert(
 				deployMarket({
-					resolver: addressResolver,
+					resolver: addressResolver.address,
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 200,
 					expiry: localCreationTime + 200 + expiryDuration,
@@ -355,7 +355,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			localCreationTime = await currentTime();
 			await assert.revert(
 				deployMarket({
-					resolver: addressResolver,
+					resolver: addressResolver.address,
 					endOfBidding: localCreationTime + 100,
 					maturity: localCreationTime + 200,
 					expiry: localCreationTime + 200 + expiryDuration,
@@ -395,7 +395,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 		it('updatePrices is correct.', async () => {
 			const localCreationTime = await currentTime();
 			const localMarket = await deployMarket({
-				resolver: addressResolver,
+				resolver: addressResolver.address,
 				endOfBidding: localCreationTime + 100,
 				maturity: localCreationTime + 200,
 				expiry: localCreationTime + 200 + expiryDuration,
@@ -437,7 +437,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 		it('updatePrices emits the correct event.', async () => {
 			const localCreationTime = await currentTime();
 			const localMarket = await deployMarket({
-				resolver: addressResolver,
+				resolver: addressResolver.address,
 				endOfBidding: localCreationTime + 100,
 				maturity: localCreationTime + 200,
 				expiry: localCreationTime + 200 + expiryDuration,
@@ -464,7 +464,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 		it('Update prices is correct with higher total debt than sum of bids.', async () => {
 			const localCreationTime = await currentTime();
 			const localMarket = await deployMarket({
-				resolver: addressResolver,
+				resolver: addressResolver.address,
 				endOfBidding: localCreationTime + 100,
 				maturity: localCreationTime + 200,
 				expiry: localCreationTime + 200 + expiryDuration,

@@ -26,7 +26,7 @@ contract('MixinResolver', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: MixinResolver.abi,
 			ignoreParents: ['Owned'],
-			expected: ['rebuildCache', 'initResolver'],
+			expected: ['rebuildCache'],
 		});
 	});
 
