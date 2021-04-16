@@ -403,12 +403,12 @@ contract('BinaryOptionMarketManager', accounts => {
 			});
 
 			const decodedLogs = BinaryOptionMarket.decodeLogs(result.receipt.rawLogs);
-			assert.eventEqual(decodedLogs[0], 'Bid', {
+			assert.eventEqual(decodedLogs[1], 'Bid', {
 				side: Side.Long,
 				account: initialCreator,
 				value: toUnit(2),
 			});
-			assert.eventEqual(decodedLogs[1], 'Bid', {
+			assert.eventEqual(decodedLogs[2], 'Bid', {
 				side: Side.Short,
 				account: initialCreator,
 				value: toUnit(3),
@@ -420,7 +420,7 @@ contract('BinaryOptionMarketManager', accounts => {
 				toUnit(5),
 				initialPoolFee.add(initialCreatorFee)
 			);
-			assert.eventEqual(decodedLogs[2], 'PricesUpdated', {
+			assert.eventEqual(decodedLogs[3], 'PricesUpdated', {
 				longPrice: prices.long,
 				shortPrice: prices.short,
 			});
@@ -1591,34 +1591,35 @@ contract('BinaryOptionMarketManager', accounts => {
 			assert.equal(tx.logs[5].args.markets[1], markets[1].address);
 		});
 
-		it('Can sync the caches of child markets.', async () => {
-			const statusMock = await setupContract({
-				accounts,
-				contract: 'GenericMock',
-				mock: 'SystemStatus',
-			});
-
-			await addressResolver.importAddresses([toBytes32('SystemStatus')], [statusMock.address], {
-				from: accounts[1],
-			});
-
-			// Only sets the resolver for the listed addresses
-			await manager.rebuildMarketCaches([markets[0].address], {
-				from: managerOwner,
-			});
-
-			assert.ok(await markets[0].isResolverCached());
-			assert.notOk(await markets[1].isResolverCached());
-			assert.notOk(await markets[2].isResolverCached());
-
-			// Only sets the resolver for the remaining addresses
-			await manager.rebuildMarketCaches([markets[1].address, markets[2].address], {
-				from: managerOwner,
-			});
-
-			assert.ok(await markets[0].isResolverCached());
-			assert.ok(await markets[1].isResolverCached());
-			assert.ok(await markets[2].isResolverCached());
-		});
+		// FIXME: No longer applicable since BOM is not a MixinResolver
+		// it('Can sync the caches of child markets.', async () => {
+		// 	const statusMock = await setupContract({
+		// 		accounts,
+		// 		contract: 'GenericMock',
+		// 		mock: 'SystemStatus',
+		// 	});
+		//
+		// 	await addressResolver.importAddresses([toBytes32('SystemStatus')], [statusMock.address], {
+		// 		from: accounts[1],
+		// 	});
+		//
+		// 	// Only sets the resolver for the listed addresses
+		// 	await manager.rebuildMarketCaches([markets[0].address], {
+		// 		from: managerOwner,
+		// 	});
+		//
+		// 	assert.ok(await markets[0].isResolverCached());
+		// 	assert.notOk(await markets[1].isResolverCached());
+		// 	assert.notOk(await markets[2].isResolverCached());
+		//
+		// 	// Only sets the resolver for the remaining addresses
+		// 	await manager.rebuildMarketCaches([markets[1].address, markets[2].address], {
+		// 		from: managerOwner,
+		// 	});
+		//
+		// 	assert.ok(await markets[0].isResolverCached());
+		// 	assert.ok(await markets[1].isResolverCached());
+		// 	assert.ok(await markets[2].isResolverCached());
+		// });
 	});
 });

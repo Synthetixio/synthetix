@@ -16,6 +16,7 @@ contract TestableBinaryOptionMarket is BinaryOptionMarketMastercopy {
         uint[2] memory _bids,
         uint[3] memory _fees
     ) public BinaryOptionMarketMastercopy(_owner) {
+        owner = address(0);
         initialize(
             _owner,
             _resolver,

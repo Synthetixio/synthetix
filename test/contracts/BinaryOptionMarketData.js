@@ -30,7 +30,7 @@ contract('BinaryOptionMarketData @gas-skip', accounts => {
 			args: [
 				accounts[0], // manager
 				accounts[1], // creator
-				addressResolver.address,
+				addressResolver,
 				[toUnit(2), toUnit(0.05)], // Capital requirement, skew limit
 				toBytes32('sAUD'), // oracle key
 				toUnit(1), // strike price
