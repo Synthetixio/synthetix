@@ -104,9 +104,12 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         return _weth.balanceOf(address(this));
     }
 
+    // Returns the total issued sETH by this contract.
     function totalIssuedSynths() public view returns (uint) {
-        // As the contract's issued sETH is always backed 1:1 with ETH,
-        // we can just return the WETH balance.
+        // We use the reserve balance as a simple proxy for the total supply of
+        // synths which is backed by WETH.
+        // Note: The sETH which is converted into sUSD fees is still backed by
+        // the WETH in the contract's reserves.
         return getReserves();
     }
 
@@ -158,7 +161,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         uint reserves = getReserves();
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
 
-        if(amount < reserves) {
+        if (amount < reserves) {
             _burn(amount);
         } else {
             _burn(reserves);
@@ -196,7 +199,10 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
     function _burn(uint amount) internal {
         uint feeAmountEth = calculateBurnFee(amount);
         uint amountPlusFees = amount.add(feeAmountEth);
-        require(amountPlusFees <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
+        require(
+            amountPlusFees <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)),
+            "Allowance not high enough"
+        );
         require(amountPlusFees <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
 
         // Burn `amount + fees` sETH from user.

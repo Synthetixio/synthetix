@@ -454,17 +454,15 @@ contract('EtherWrapper', async accounts => {
 	describe('totalIssuedSynths', async () => {
 		describe('when mint is called', async () => {
 			const amount = toUnit('1');
-			let mintFee;
 
 			beforeEach(async () => {
 				await weth.deposit({ from: account1, value: amount });
 				await weth.approve(etherWrapper.address, amount, { from: account1 });
 				await etherWrapper.mint(amount, { from: account1 });
-				({ mintFee } = await calculateMintFees(amount));
 			});
 
-			it('increases totalIssuedSynths by the amount of sETH issued', async () => {
-				assert.bnEqual(await etherWrapper.totalIssuedSynths(), amount.sub(mintFee));
+			it('it increases the totalIssuedSynths by the amount of sETH issued', async () => {
+				assert.bnEqual(await etherWrapper.totalIssuedSynths(), amount);
 			});
 		});
 	});
