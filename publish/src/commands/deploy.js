@@ -772,12 +772,26 @@ const deploy = async ({
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
-	const exchanger = await deployer.deployContract({
-		name: 'Exchanger',
-		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
-	});
+	let exchanger;
+	if (useOvm) {
+		exchanger = await deployer.deployContract({
+			name: 'Exchanger',
+			source: 'Exchanger',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+	} else {
+		exchanger = await deployer.deployContract({
+			name: 'Exchanger',
+			source: 'ExchangerWithVirtualSynth',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+
+		await deployer.deployContract({
+			name: 'VirtualSynthMastercopy',
+		});
+	}
 
 	const exchangeState = await deployer.deployContract({
 		name: 'ExchangeState',

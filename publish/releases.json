@@ -183,6 +183,8 @@
 			"minor": 42
 		},
 		"sources": [
+			"Exchanger",
+			"VirtualSynthMastercopy",
 			"FeePool",
 			"SynthsUSD",
 			"SynthsETH",
@@ -192,6 +194,6 @@
 			"Issuer",
 			"DebtCache"
 		],
-		"sips": [112]
+		"sips": [112, 127]
 	}
 ]

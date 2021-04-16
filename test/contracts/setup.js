@@ -676,7 +676,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'Exchanger',
 			source: 'ExchangerWithVirtualSynth',
-			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
+			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: [
 				'AddressResolver',
 				'TradingRewards',
