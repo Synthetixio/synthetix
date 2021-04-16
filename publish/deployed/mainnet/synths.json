@@ -134,6 +134,26 @@
 		"asset": "TSLA"
 	},
 	{
+		"name": "sAAPL",
+		"asset": "AAPL"
+	},
+	{
+		"name": "sFB",
+		"asset": "FB"
+	},
+	{
+		"name": "sGOOGL",
+		"asset": "GOOGL"
+	},
+	{
+		"name": "sNFLX",
+		"asset": "NFLX"
+	},
+	{
+		"name": "sAMZN",
+		"asset": "AMZN"
+	},
+	{
 		"name": "sCEX",
 		"asset": "CEX",
 		"index": [
