@@ -506,7 +506,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     function _sameSide(int a, int b) internal pure returns (bool) {
         // Since we only care about the sign of the product, we don't care about overflow and
         // aren't using SignedSafeDecimalMath
-        return a * b > 0;
+        return a * b >= 0;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
