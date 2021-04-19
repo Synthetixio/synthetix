@@ -257,7 +257,7 @@ contract('FuturesMarket', accounts => {
 					);
 				});
 
-				it('Submit an fresh order on the opposite side to the skew larger than the skew', async () => {
+				it('Submit a fresh order on the opposite side to the skew larger than the skew', async () => {
 					await submitAndConfirmOrder({
 						market: futuresMarket,
 						account: trader2,
