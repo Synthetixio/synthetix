@@ -29,7 +29,17 @@ describe('Gas measurements', () => {
 		console.log(chalk.blue(`Signer: ${signer.address}`));
 	});
 
-	let Synthetix, Issuer, ExchangeRates, DebtCache, ReadProxyAddressResolver, SystemSettings;
+	// ------------------------
+	// CONTRACTS
+	// ------------------------
+	let Synthetix,
+		Issuer,
+		ExchangeRates,
+		DebtCache,
+		ReadProxyAddressResolver,
+		SystemSettings,
+		FeePool;
+
 	before('connect to contracts', async () => {
 		Synthetix = _getContract({ name: 'Synthetix' });
 		Issuer = _getContract({ name: 'Issuer' });
@@ -37,8 +47,13 @@ describe('Gas measurements', () => {
 		DebtCache = _getContract({ name: 'DebtCache' });
 		ReadProxyAddressResolver = _getContract({ name: 'ReadProxyAddressResolver' });
 		SystemSettings = _getContract({ name: 'SystemSettings' });
+		FeePool = _getContract({ name: 'FeePool' });
 	});
 
+	// ------------------------
+	// SETTINGS
+	// ------------------------
+	let feePeriodDuration;
 	before('tweak system settings', async () => {
 		let tx = await SystemSettings.setMinimumStakeTime(0);
 		await tx.wait();
@@ -48,6 +63,8 @@ describe('Gas measurements', () => {
 
 		tx = await SystemSettings.setRateStalePeriod(100000000000);
 		await tx.wait();
+
+		feePeriodDuration = (await SystemSettings.feePeriodDuration()).toNumber();
 	});
 
 	before('remove all synths', async () => {
@@ -83,15 +100,23 @@ describe('Gas measurements', () => {
 
 	for (let numSynths = 1; numSynths <= MAX_SYNTHS; numSynths++) {
 		describe(`When the system has ${numSynths} synths`, () => {
+			// ------------------------
+			// DATA
+			// ------------------------
 			let target;
+
 			before('prepare data', () => {
 				target = data[`${numSynths}_synths`] = {
 					minting: { measurements: [], avg: 0 },
 					burning: { measurements: [], avg: 0 },
 					exchanging: { measurements: [], avg: 0 },
+					claiming: { measurements: [], avg: 0 },
 				};
 			});
 
+			// ------------------------
+			// ADD SYNTH
+			// ------------------------
 			before('add synths', async () => {
 				const activeSynths = await Issuer.availableSynthCount();
 				console.log(chalk.blue(`Taking measurements with ${numSynths} synths...`));
@@ -124,6 +149,9 @@ describe('Gas measurements', () => {
 				}
 			});
 
+			// ------------------------
+			// PRINT
+			// ------------------------
 			after('print data', () => {
 				Object.keys(data).map(numSynthsKey => {
 					const entry = data[numSynthsKey];
@@ -131,12 +159,14 @@ describe('Gas measurements', () => {
 
 					Object.keys(entry).map(measurementKey => {
 						const measurement = entry[measurementKey];
-						console.log('  ', measurementKey, measurement.avg);
+						console.log('  ', measurementKey, Math.ceil(measurement.avg));
 					});
 				});
 			});
 
 			it('take measurements', async () => {
+				let tx;
+
 				async function measureGas({ tx, target }) {
 					const receipt = await tx.wait();
 
@@ -147,11 +177,17 @@ describe('Gas measurements', () => {
 					target.avg = target.measurements.reduce((acum, val) => acum + val, 0) / numMeasurements;
 				}
 
+				// ------------------------
+				// MEASUREMENTS
+				// ------------------------
 				for (let i = 0; i < NUM_MEASUREMENTS; i++) {
+					// Minting
 					await measureGas({
 						tx: await Synthetix.issueSynths(ethers.utils.parseEther('100')),
 						target: target.minting,
 					});
+
+					// Exchanging
 					if (numSynths >= 2) {
 						const targetSynth = `s${numSynths - 1}`;
 						await measureGas({
@@ -171,6 +207,19 @@ describe('Gas measurements', () => {
 							target: target.exchanging,
 						});
 					}
+
+					// Claiming
+					await _fastForward({ seconds: feePeriodDuration });
+					tx = await FeePool.closeCurrentFeePeriod();
+					await tx.wait();
+					tx = await Synthetix.mint();
+					await tx.wait();
+					await measureGas({
+						tx: await FeePool.claimFees(),
+						target: target.claiming,
+					});
+
+					// Burning
 					await measureGas({
 						tx: await Synthetix.burnSynths(ethers.utils.parseEther('50')),
 						target: target.burning,
@@ -249,4 +298,9 @@ function _getDeploymentFile({ filename }) {
 
 function _getDeploymentFolder() {
 	return `./publish/deployed/local`;
+}
+
+async function _fastForward({ seconds }) {
+	await provider.send('evm_increaseTime', [seconds]);
+	await provider.send('evm_mine', []);
 }
