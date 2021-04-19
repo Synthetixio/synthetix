@@ -188,7 +188,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return exchangeRates.rateAndInvalid(baseAsset);
     }
 
-    function _assetPriceRequireNotInvalid(IExchangeRates exchangeRates) internal view returns (uint price) {
+    function _assetPriceRequireNotInvalid(IExchangeRates exchangeRates) internal view returns (uint) {
         (uint price, bool invalid) = _assetPrice(exchangeRates);
         require(!invalid, "Price is invalid");
         return price;
@@ -357,8 +357,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         address account,
         bool includeFunding,
         uint fundingIndex,
-        uint assetPrice
-    ) internal view returns (uint price) {
+        uint price
+    ) internal view returns (uint) {
         // If margin > 0, we're long, the position can be liquidated whenever:
         //     remainingMargin < liquidationFee
         // Otherwise, we're short, and we'll examine
@@ -380,7 +380,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         if (includeFunding) {
             // prettier-ignore
             function(int, int) pure returns (int) operation = margin > 0 ? SignedSafeMath.add : SignedSafeMath.sub;
-            marginPlusFunding = operation(marginPlusFunding, _accruedFunding(position, fundingIndex, assetPrice));
+            marginPlusFunding = operation(marginPlusFunding, _accruedFunding(position, fundingIndex, price));
         }
 
         int lastPrice = int(position.lastPrice);
@@ -389,8 +389,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
-        (uint assetPrice, bool isInvalid) = _assetPrice(_exchangeRates());
-        return (_liquidationPrice(account, includeFunding, fundingSequence.length, assetPrice), isInvalid);
+        (uint aPrice, bool isInvalid) = _assetPrice(_exchangeRates());
+        return (_liquidationPrice(account, includeFunding, fundingSequence.length, aPrice), isInvalid);
     }
 
     function _canLiquidate(
@@ -587,6 +587,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         marginSumMinusNotionalSkew = marginSumMinusNotionalSkew.add(marginDelta).sub(notionalDelta);
         position.margin = newMargin;
         position.lastPrice = price;
+        position.fundingIndex = fundingIndex;
 
         return newMargin;
     }
@@ -774,7 +775,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         address account,
         address liquidator,
         uint fundingIndex,
-        uint assetPrice
+        uint price
     ) internal {
         uint liquidationFee = _liquidationFee();
 
@@ -789,7 +790,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         }
 
         // Retrieve the liquidation price before we close the order.
-        uint price = _liquidationPrice(account, true, fundingIndex, assetPrice);
+        uint lPrice = _liquidationPrice(account, true, fundingIndex, price);
 
         // Close the position itself.
         int positionSize = position.size;
@@ -806,7 +807,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         // Issue the reward to the liquidator.
         _manager().issueSUSD(liquidator, liquidationFee);
 
-        emitPositionLiquidated(account, liquidator, positionSize, price);
+        emitPositionLiquidated(account, liquidator, positionSize, lPrice);
     }
 
     function liquidatePosition(address account) external optionalProxy {
