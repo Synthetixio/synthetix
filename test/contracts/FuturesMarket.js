@@ -271,20 +271,257 @@ contract('FuturesMarket', accounts => {
 					assert.bnEqual((await futuresMarket.orderFee(trader, margin, leverage))[0], fee);
 				});
 
-				it('Increase an existing position', async () => {
-					assert.isTrue(false);
+				it('Increase an existing position on the side of the skew', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin,
+						leverage,
+					});
+
+					const notional = multiplyDecimalRound(margin.abs().div(toBN(2)), leverage);
+					const fee = multiplyDecimalRound(notional, exchangeFee);
+					assert.bnEqual(
+						(await futuresMarket.orderFee(trader, margin.add(margin.div(toBN(2))), leverage))[0],
+						fee
+					);
 				});
 
-				it('reduce an existing position', async () => {
-					assert.isTrue(false);
+				it('Increase an existing position opposite to the skew smaller than the skew', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin.mul(toBN(2)),
+						leverage,
+					});
+
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin.neg(),
+						leverage,
+					});
+
+					assert.bnEqual(
+						(
+							await futuresMarket.orderFee(trader, margin.add(margin.neg().mul(toBN(2))), leverage)
+						)[0],
+						toBN(0)
+					);
 				});
 
-				it('smaller order on opposite side of an existing position', async () => {
-					assert.isTrue(false);
+				it('Increase an existing position opposite to the skew larger than the skew', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin.mul(toBN(2)),
+						leverage,
+					});
+
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin.neg(),
+						leverage,
+					});
+
+					const notional = multiplyDecimalRound(margin.abs(), leverage);
+					const fee = multiplyDecimalRound(notional, exchangeFee);
+					assert.bnEqual(
+						(await futuresMarket.orderFee(trader, margin.neg().mul(toBN(3)), leverage))[0],
+						fee
+					);
 				});
 
-				it('larger order on opposite side of an existing position', async () => {
-					assert.isTrue(false);
+				it('reduce an existing position on the side of the skew', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin,
+						leverage,
+					});
+
+					assert.bnEqual(
+						(await futuresMarket.orderFee(trader, margin.div(toBN(2)), leverage))[0],
+						toBN(0)
+					);
+				});
+
+				it('reduce an existing position opposite to the skew', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin.mul(toBN(2)),
+						leverage,
+					});
+
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin.neg(),
+						leverage,
+					});
+
+					assert.bnEqual(
+						(await futuresMarket.orderFee(trader, margin.neg().div(toBN(2)), leverage))[0],
+						toBN(0)
+					);
+				});
+
+				it('close an existing position on the side of the skew', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin,
+						leverage,
+					});
+
+					assert.bnEqual((await futuresMarket.orderFee(trader, toBN(0), leverage))[0], toBN(0));
+					assert.bnEqual((await futuresMarket.orderFee(trader, margin, toBN(0)))[0], toBN(0));
+					assert.bnEqual((await futuresMarket.orderFee(trader, toBN(0), toBN(0)))[0], toBN(0));
+				});
+
+				it('close an existing position opposite to the skew', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin.mul(toBN(2)),
+						leverage,
+					});
+
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin.neg(),
+						leverage,
+					});
+
+					assert.bnEqual((await futuresMarket.orderFee(trader, toBN(0), leverage))[0], toBN(0));
+					assert.bnEqual((await futuresMarket.orderFee(trader, margin.neg(), toBN(0)))[0], toBN(0));
+					assert.bnEqual((await futuresMarket.orderFee(trader, toBN(0), toBN(0)))[0], toBN(0));
+				});
+
+				it('Updated order, on the same side as the skew, on the opposite side of an existing position', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin.mul(toBN(2)),
+						leverage,
+					});
+
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin.neg(),
+						leverage,
+					});
+
+					const notional = multiplyDecimalRound(margin.abs(), leverage);
+					const fee = multiplyDecimalRound(notional, exchangeFee);
+					assert.bnEqual((await futuresMarket.orderFee(trader, margin, leverage))[0], fee);
+				});
+
+				it('Updated order, opposite and smaller than the skew, on opposite side of an existing position', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin.mul(toBN(2)),
+						leverage,
+					});
+
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin,
+						leverage,
+					});
+
+					assert.bnEqual(
+						(await futuresMarket.orderFee(trader, margin.neg().div(toBN(2)), leverage))[0],
+						toBN(0)
+					);
+				});
+
+				it('Updated order, opposite and larger than the skew, on the opposite side of an existing position', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin,
+						leverage,
+					});
+
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin,
+						leverage,
+					});
+
+					const notional = multiplyDecimalRound(margin.abs(), leverage);
+					const fee = multiplyDecimalRound(notional, exchangeFee);
+					assert.bnEqual(
+						(await futuresMarket.orderFee(trader, margin.neg().mul(toBN(2)), leverage))[0],
+						fee
+					);
+				});
+
+				it('Updated order, opposite and larger than the skew, on the opposite side of an existing position (2)', async () => {
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader2,
+						fillPrice: toUnit('100'),
+						margin: margin,
+						leverage,
+					});
+
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader3,
+						fillPrice: toUnit('100'),
+						margin: margin.neg().div(toBN(2)),
+						leverage,
+					});
+
+					await submitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						margin: margin.div(toBN(2)),
+						leverage,
+					});
+
+					const notional = multiplyDecimalRound(margin.abs().div(toBN(2)), leverage);
+					const fee = multiplyDecimalRound(notional, exchangeFee);
+					assert.bnEqual(
+						(
+							await futuresMarket.orderFee(
+								trader,
+								margin
+									.add(margin)
+									.neg()
+									.div(toBN(2)),
+								leverage
+							)
+						)[0],
+						fee
+					);
 				});
 			});
 		}
