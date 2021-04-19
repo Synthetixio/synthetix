@@ -433,34 +433,47 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return (uint(notional.divideDecimalRound(remaining)), isInvalid);
     }
 
-    // TODO: take into account existing positions
     function _orderFee(
         int margin,
         uint leverage,
         int existingSize,
         uint price
     ) internal view returns (uint) {
-        // TODO: Generalise to decreasing a position
         // Charge nothing if closing a position.
         if (margin == 0 || leverage == 0) {
             return 0;
         }
 
-        int skew = marketSkew;
+        int existingValue = existingSize.multiplyDecimalRound(int(price));
         int chargeableValue = margin.multiplyDecimalRound(int(leverage));
+        int skew = marketSkew;
 
-        // If the order is submitted on the same side as the skew, a fee is charged on the entire position.
-        // If not, the fee is only charged on the new skew they induce on their side, if any.
-        if (!_sameSide(skew, chargeableValue)) {
+        // If the order is submitted on the same side as the skew, a fee is charged on any increase
+        // in their position.
+        // Otherwise if the order is opposite to the skew,
+        // the fee is only charged on any new skew they induce on the order's side of the market.
+        if (_sameSide(skew, chargeableValue)) {
+            // If an existing position is open the same side as the order, deduct its value,
+            // ignore it as this position will be closed.
+            if (_sameSide(existingValue, chargeableValue)) {
+                // If decreasing their position, no fee is charged, even if it would increase the skew.
+                if (_abs(chargeableValue) <= _abs(existingValue)) {
+                    return 0;
+                }
+
+                // Now we know that |chargeable| > |existing|
+                chargeableValue = chargeableValue.sub(existingValue);
+            }
+        } else {
+            // Remove their existing contribution to the skew
             int notionalSkew = skew.multiplyDecimalRound(int(price));
-            int notionalSkewInduced = notionalSkew.add(chargeableValue);
+            chargeableValue = notionalSkew.sub(existingValue).add(chargeableValue);
 
-            // The order was insufficient to flip the skew, so no fee is charged.
-            if (_sameSide(notionalSkew, notionalSkewInduced)) {
+            // If the order was insufficient to flip the skew, no fee is charged.
+            // Otherwise, there is a fee on the entire new skew induced on the side of their order.
+            if (_sameSide(notionalSkew, chargeableValue)) {
                 return 0;
             }
-
-            chargeableValue = notionalSkewInduced;
         }
 
         return _abs(chargeableValue.multiplyDecimalRound(int(parameters.exchangeFee)));
