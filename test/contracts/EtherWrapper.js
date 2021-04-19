@@ -220,8 +220,6 @@ contract('EtherWrapper', async accounts => {
 			beforeEach(async () => {
 				initialCapacity = await etherWrapper.capacity();
 				amount = initialCapacity.add(ONE);
-				// console.log(`Mint amount: ${(amount).toString()}`)
-				// console.log(`Initial capacity: ${(initialCapacity).toString()}`);
 
 				// Calculate the mint fees on the capacity amount,
 				// as this will be the ETH accepted by the contract.
@@ -288,14 +286,15 @@ contract('EtherWrapper', async accounts => {
 			let burnTx;
 
 			beforeEach(async () => {
-				const amount = toUnit('10');
+				const amount = toUnit('1');
 				await weth.deposit({ from: account1, value: amount });
 				await weth.approve(etherWrapper.address, amount, { from: account1 });
 				await etherWrapper.mint(amount, { from: account1 });
 			});
 
 			describe('when amount is strictly lower than reserves(1+burnFeeRate)', async () => {
-				const amount = toUnit('1.0');
+				const principal = toUnit('1.0');
+				let amount;
 				let burnFee;
 				let expectedFeesUSD;
 				let initialCapacity;
@@ -303,14 +302,15 @@ contract('EtherWrapper', async accounts => {
 				beforeEach(async () => {
 					initialCapacity = await etherWrapper.capacity();
 
-					({ burnFee, expectedFeesUSD } = await calculateBurnFees(amount));
-					await sETHSynth.issue(account1, amount.add(burnFee));
-					await sETHSynth.approve(etherWrapper.address, amount.add(burnFee), { from: account1 });
+					({ burnFee, expectedFeesUSD } = await calculateBurnFees(principal));
+					amount = principal.add(burnFee);
+					await sETHSynth.issue(account1, amount);
+					await sETHSynth.approve(etherWrapper.address, amount, { from: account1 });
 
 					burnTx = await etherWrapper.burn(amount, { from: account1 });
 				});
 
-				it('burns `amount(1+burnFeeRate)` of sETH from user', async () => {
+				it('burns `amount` of sETH from user', async () => {
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
 						contracts: [sETHSynth],
@@ -319,7 +319,7 @@ contract('EtherWrapper', async accounts => {
 					decodedEventEqual({
 						event: 'Burned',
 						emittedFrom: sETHSynth.address,
-						args: [account1, amount.add(burnFee)],
+						args: [account1, amount],
 						log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
 					});
 				});
@@ -332,14 +332,14 @@ contract('EtherWrapper', async accounts => {
 					decodedEventEqual({
 						event: 'Transfer',
 						emittedFrom: weth.address,
-						args: [etherWrapper.address, account1, amount],
+						args: [etherWrapper.address, account1, amount.sub(burnFee)],
 						log: logs
 							.reverse()
 							.filter(l => !!l)
 							.find(({ name }) => name === 'Transfer'),
 					});
 				});
-				it('sends fees as sUSD to the fee pool', async () => {
+				it('sends `amount * burnFeeRate` fees as sUSD to the fee pool', async () => {
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
 						contracts: [sUSDSynth],
@@ -355,8 +355,8 @@ contract('EtherWrapper', async accounts => {
 							.find(({ name }) => name === 'Issued'),
 					});
 				});
-				it('increases capacity by `amount` WETH', async () => {
-					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(amount));
+				it('increases capacity by `amount - fees` WETH', async () => {
+					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(amount.sub(burnFee)));
 				});
 				it('emits Burned event', async () => {
 					const logs = await getDecodedLogs({
@@ -367,7 +367,7 @@ contract('EtherWrapper', async accounts => {
 					decodedEventEqual({
 						event: 'Burned',
 						emittedFrom: etherWrapper.address,
-						args: [account1, amount, burnFee],
+						args: [account1, amount.sub(burnFee), burnFee],
 						log: logs
 							.reverse()
 							.filter(l => !!l)
@@ -386,7 +386,7 @@ contract('EtherWrapper', async accounts => {
 					reserves = await etherWrapper.getReserves();
 					({ burnFee, expectedFeesUSD } = await calculateBurnFees(reserves));
 
-					amount = reserves.add(burnFee).add(ONE);
+					amount = reserves.add(burnFee).add(toBN('100000000'));
 
 					await sETHSynth.issue(account1, amount);
 					await sETHSynth.approve(etherWrapper.address, amount, { from: account1 });
@@ -423,14 +423,12 @@ contract('EtherWrapper', async accounts => {
 							.find(({ name }) => name === 'Transfer'),
 					});
 				});
-				it('sends fees as sUSD to the fee pool', async () => {
+				it('sends `reserves * burnFeeRate` fees as sUSD to the fee pool', async () => {
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
 						contracts: [sUSDSynth],
 					});
 
-					// TODO: I was going to check a Transfer event,
-					// however there are none in the logs?
 					decodedEventEqual({
 						event: 'Issued',
 						emittedFrom: sUSDSynth.address,
