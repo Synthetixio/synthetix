@@ -19,7 +19,7 @@
 		"test": "hardhat test",
 		"describe": "hardhat describe",
 		"test:gas": "hardhat test --gas --optimizer || cat test-gas-used.log",
-		"test:gas:detail": "concurrently --kill-others --success first \"wait-port 8545 && mocha test/gas --timeout 900000\"",
+		"test:gas:detail": "concurrently --kill-others --success first \"wait-port 8545 && mocha test/gas --timeout 900000 --bail\"",
 		"test:prod": "hardhat test:prod --network localhost --optimizer",
 		"test:prod:gas": "hardhat test:prod --gas --network localhost --optimizer --gas-output-file test-gas-used-prod.log",
 		"test:prod:ovm": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism --timeout 900000\"",
