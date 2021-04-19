@@ -5,6 +5,7 @@ const program = require('commander');
 require('pretty-error').start();
 require('dotenv').config();
 
+require('./src/commands/accept-ownership').cmd(program);
 require('./src/commands/build').cmd(program);
 require('./src/commands/connect-bridge').cmd(program);
 require('./src/commands/deploy-ovm-pair').cmd(program);
