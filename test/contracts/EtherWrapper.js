@@ -109,7 +109,7 @@ contract('EtherWrapper', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: etherWrapper.abi,
 			hasFallback: true,
-			ignoreParents: ['Owned', 'MixinResolver', 'MixinSystemSettings'],
+			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'MixinSystemSettings'],
 			expected: ['mint', 'burn'],
 		});
 	});

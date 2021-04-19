@@ -9,6 +9,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 
 // Internal references
+import "./Pausable.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IFeePool.sol";
@@ -20,7 +21,7 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/etherwrapper
-contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrapper {
+contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IEtherWrapper {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -49,7 +50,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
         address _owner,
         address _resolver,
         address payable _WETH
-    ) public Owned(_owner) MixinSystemSettings(_resolver) {
+    ) public Owned(_owner) Pausable() MixinSystemSettings(_resolver) {
         _weth = IWETH(_WETH);
     }
 
@@ -141,7 +142,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
     // Transfers `amount` WETH to mint `amount - fees` sETH.
     // `amount` is inclusive of fees, calculable via `calculateMintFee`.
-    function mint(uint amount) external {
+    function mint(uint amount) external notPaused {
         require(amount <= _weth.allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amount <= _weth.balanceOf(msg.sender), "Balance is too low");
 
@@ -157,7 +158,7 @@ contract EtherWrapper is Owned, MixinResolver, MixinSystemSettings, IEtherWrappe
 
     // Burns `amount` WETH for `amount - fees` sETH.
     // `amount` is inclusive of fees, calculable via `calculateBurnFee`.
-    function burn(uint amount) public {
+    function burn(uint amount) external notPaused {
         uint reserves = getReserves();
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
 
