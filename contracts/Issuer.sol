@@ -47,7 +47,7 @@ interface IIssuerInternalDebtCache {
         );
 }
 
-// https://docs.synthetix.io/contracts/source/contracts/issuer
+// https://docs.synthetix.io/contracts/source/contracts/Issuer
 contract Issuer is Owned, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

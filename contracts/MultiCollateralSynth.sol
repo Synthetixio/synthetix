@@ -8,7 +8,7 @@ import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IEtherCollateral.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
+// https://docs.synthetix.io/contracts/source/contracts/MultiCollateralSynth
 contract MultiCollateralSynth is Synth {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 

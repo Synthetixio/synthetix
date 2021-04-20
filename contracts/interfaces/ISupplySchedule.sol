@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-// https://docs.synthetix.io/contracts/source/interfaces/isupplyschedule
+// https://docs.synthetix.io/contracts/source/interfaces/ISupplySchedule
 interface ISupplySchedule {
     // Views
     function mintableSupply() external view returns (uint);

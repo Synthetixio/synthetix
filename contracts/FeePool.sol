@@ -27,7 +27,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/ICollateralManager.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/feepool
+// https://docs.synthetix.io/contracts/source/contracts/FeePool
 contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

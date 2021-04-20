@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Libraries
 import "./SafeDecimalMath.sol";
 
-// https://docs.synthetix.io/contracts/source/libraries/math
+// https://docs.synthetix.io/contracts/source/libraries/Math
 library Math {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

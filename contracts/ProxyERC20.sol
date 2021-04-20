@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Proxy.sol";
 import "./interfaces/IERC20.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/proxyerc20
+// https://docs.synthetix.io/contracts/source/contracts/ProxyERC20
 contract ProxyERC20 is Proxy, IERC20 {
     constructor(address _owner) public Proxy(_owner) {}
 

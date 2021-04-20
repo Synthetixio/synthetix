@@ -4,7 +4,7 @@ import "./Owned.sol";
 
 // solhint-disable payable-fallback
 
-// https://docs.synthetix.io/contracts/source/contracts/readproxy
+// https://docs.synthetix.io/contracts/source/contracts/ReadProxy
 contract ReadProxy is Owned {
     address public target;
 

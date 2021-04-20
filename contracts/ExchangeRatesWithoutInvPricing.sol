@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Internal references
 import "./ExchangeRates.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/exchangerateswithoutinvpricing
+// https://docs.synthetix.io/contracts/source/contracts/ExchangeRatesWithoutInvPricing
 contract ExchangeRatesWithoutInvPricing is ExchangeRates {
     constructor(
         address _owner,

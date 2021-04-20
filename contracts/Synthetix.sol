@@ -8,7 +8,7 @@ import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISupplySchedule.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/synthetix
+// https://docs.synthetix.io/contracts/source/contracts/Synthetix
 contract Synthetix is BaseSynthetix {
     // ========== ADDRESS RESOLVER CONFIGURATION ==========
     bytes32 private constant CONTRACT_REWARD_ESCROW = "RewardEscrow";

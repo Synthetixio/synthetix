@@ -10,6 +10,7 @@ import "./interfaces/ICollateralLoan.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/CollateralState
 contract CollateralState is Owned, State, ICollateralLoan {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

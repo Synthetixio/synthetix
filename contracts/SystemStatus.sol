@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./interfaces/ISystemStatus.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/systemstatus
+// https://docs.synthetix.io/contracts/source/contracts/SystemStatus
 contract SystemStatus is Owned, ISystemStatus {
     mapping(bytes32 => mapping(address => Status)) public accessControl;
 

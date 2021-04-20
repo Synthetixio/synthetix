@@ -61,7 +61,7 @@ interface IExchangerInternalDebtCache {
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
 }
 
-// https://docs.synthetix.io/contracts/source/contracts/exchanger
+// https://docs.synthetix.io/contracts/source/contracts/Exchanger
 contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

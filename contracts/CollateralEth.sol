@@ -11,6 +11,7 @@ import "./interfaces/ICollateralEth.sol";
 import "./CollateralState.sol";
 
 // This contract handles the payable aspects of eth loans.
+// https://docs.synthetix.io/contracts/source/contracts/CollateralEth
 contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
     mapping(address => uint) public pendingWithdrawals;
 

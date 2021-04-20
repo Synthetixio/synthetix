@@ -8,7 +8,7 @@ import "./interfaces/ISynthetixState.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/synthetixstate
+// https://docs.synthetix.io/contracts/source/contracts/SynthetixState
 contract SynthetixState is Owned, State, ISynthetixState {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./BaseDebtCache.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/realtimedebtcache
+// https://docs.synthetix.io/contracts/source/contracts/RealtimeDebtCache
 contract RealtimeDebtCache is BaseDebtCache {
     constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 

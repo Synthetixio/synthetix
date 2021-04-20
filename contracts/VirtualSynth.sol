@@ -15,7 +15,7 @@ import "./interfaces/IExchanger.sol";
 // during the build
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/virtualsynth
+// https://docs.synthetix.io/contracts/source/contracts/VirtualSynth
 // Note: this contract should be treated as an abstract contract and should not be directly deployed.
 //       On higher versions of solidity, it would be marked with the `abstract` keyword.
 //       This contracts implements logic that is only intended to be accessed behind a proxy.

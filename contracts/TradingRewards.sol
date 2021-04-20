@@ -17,7 +17,7 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IExchanger.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/tradingrewards
+// https://docs.synthetix.io/contracts/source/contracts/TradingRewards
 contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, MixinResolver {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

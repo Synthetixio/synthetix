@@ -12,7 +12,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynthetix.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/rewardescrow
+// https://docs.synthetix.io/contracts/source/contracts/RewardEscrow
 contract RewardEscrow is Owned, IRewardEscrow {
     using SafeMath for uint;
 

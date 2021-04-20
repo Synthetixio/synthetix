@@ -17,6 +17,7 @@ import "./interfaces/ISynthetixBridgeToBase.sol";
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/SynthetixBridgeToOptimism
 contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";

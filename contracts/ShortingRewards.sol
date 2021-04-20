@@ -16,7 +16,7 @@ import "./MixinResolver.sol";
 
 import "./interfaces/ICollateralErc20.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/stakingrewards
+// https://docs.synthetix.io/contracts/source/contracts/ShortingRewards
 contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, ReentrancyGuard, Pausable, MixinResolver {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;

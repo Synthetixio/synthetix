@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-// https://docs.synthetix.io/contracts/source/contracts/limitedsetup
+// https://docs.synthetix.io/contracts/source/contracts/LimitedSetup
 contract LimitedSetup {
     uint public setupExpiryTime;
 

@@ -3,7 +3,7 @@ pragma solidity >=0.4.24;
 import "./ISynth.sol";
 import "./IVirtualSynth.sol";
 
-// https://docs.synthetix.io/contracts/source/interfaces/isynthetix
+// https://docs.synthetix.io/contracts/source/interfaces/ISynthetix
 interface ISynthetix {
     // Views
     function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);

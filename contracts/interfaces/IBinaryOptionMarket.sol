@@ -3,7 +3,7 @@ pragma solidity >=0.4.24;
 import "../interfaces/IBinaryOptionMarketManager.sol";
 import "../interfaces/IBinaryOption.sol";
 
-// https://docs.synthetix.io/contracts/source/interfaces/ibinaryoptionmarket
+// https://docs.synthetix.io/contracts/source/interfaces/IBinaryOptionMarket
 interface IBinaryOptionMarket {
     /* ========== TYPES ========== */
 

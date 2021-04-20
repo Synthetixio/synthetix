@@ -18,7 +18,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
 import "./interfaces/IExchangeRates.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/ethercollateral
+// https://docs.synthetix.io/contracts/source/contracts/EtherCollateral
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;

@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-// https://docs.synthetix.io/contracts/source/interfaces/isystemstatus
+// https://docs.synthetix.io/contracts/source/interfaces/ISystemStatus
 interface ISystemStatus {
     struct Status {
         bool canSuspend;
