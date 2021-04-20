@@ -5,7 +5,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts } = require('./setup');
 
-contract('DappMaintenance @ovm-skip', accounts => {
+contract('DappMaintenance', accounts => {
 	const [, ownerAccount, account1] = accounts;
 	let dappMaintenance;
 

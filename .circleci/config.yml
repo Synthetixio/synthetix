@@ -15,7 +15,7 @@ jobs:
   job-compile:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -29,7 +29,7 @@ jobs:
   job-lint:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -41,7 +41,7 @@ jobs:
   job-pack-browser:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -55,7 +55,7 @@ jobs:
   job-prepare:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -76,7 +76,7 @@ jobs:
   job-prod-diff-tests-local-ovm:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -96,7 +96,7 @@ jobs:
   job-prod-diff-tests-local:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -115,7 +115,7 @@ jobs:
   job-prod-diff-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -132,7 +132,8 @@ jobs:
           port: 8545
       - run: node publish prepare-deploy --network mainnet
       - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
-      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment && npx codechecks codechecks.prod.yml
+      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment
+      - run: npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
   job-prod-tests-ovm:
@@ -172,7 +173,7 @@ jobs:
   job-prod-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -185,13 +186,14 @@ jobs:
           background: true
       - cmd-wait-for-port:
           port: 8545
-      - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
+      - run: npm run test:prod:gas -- --target-network mainnet
+      - run: npx codechecks codechecks.prod.yml
       - store_artifacts:
           path: test-gas-used-prod.log
   job-static-analysis:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -208,7 +210,7 @@ jobs:
   job-test-deploy-script:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -234,7 +236,7 @@ jobs:
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -248,7 +250,7 @@ jobs:
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -257,34 +259,14 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:gas && npx codechecks codechecks.unit.yml
+      - run: npm run test:gas
+      - run: npx codechecks codechecks.unit.yml
       - store_artifacts:
           path: test-gas-used.log
-  job-unit-tests-ovm:
-    working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:12.21-focal
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: npx hardhat compile --showsize --optimizer --force --use-ovm
-      - run:
-          name: Test and output gas used
-          command: |
-            set +e
-            npm run test:ovm -- --no-compile
-            EXIT_CODE=$?
-            cat test-gas-used.log
-            printf "\\n"
-            exit $EXIT_CODE
   job-unit-tests:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -306,7 +288,7 @@ jobs:
   job-validate-deployments:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -318,7 +300,7 @@ jobs:
   job-validate-etherscan:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-node:12.21-focal
+      - image: synthetixio/docker-node:14.16-focal
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -344,9 +326,6 @@ workflows:
           requires:
             - job-prepare
       - job-unit-tests:
-          requires:
-            - job-prepare
-      - job-unit-tests-ovm:
           requires:
             - job-prepare
       - job-unit-tests-coverage:

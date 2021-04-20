@@ -21,7 +21,7 @@ const {
 
 const { toBytes32 } = require('../..');
 
-contract('MultiCollateral (prod tests) @ovm-skip', accounts => {
+contract('MultiCollateral (prod tests)', accounts => {
 	const [, user1] = accounts;
 
 	let owner;

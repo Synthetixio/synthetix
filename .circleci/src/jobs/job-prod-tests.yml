@@ -9,6 +9,7 @@ steps:
       background: true
   - cmd-wait-for-port:
         port: 8545
-  - run: npm run test:prod:gas -- --target-network mainnet && npx codechecks codechecks.prod.yml
+  - run: npm run test:prod:gas -- --target-network mainnet
+  - run: npx codechecks codechecks.prod.yml
   - store_artifacts:
       path: test-gas-used-prod.log

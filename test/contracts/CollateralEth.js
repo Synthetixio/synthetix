@@ -21,7 +21,7 @@ let CollateralManager;
 let CollateralState;
 let CollateralManagerState;
 
-contract('CollateralEth @ovm-skip', async accounts => {
+contract('CollateralEth', async accounts => {
 	const YEAR = 31556926;
 	const INTERACTION_DELAY = 300;
 

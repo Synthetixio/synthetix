@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "./IRewardEscrowV2.sol";
 
-
 interface ISynthetixBridgeToBase {
     // invoked by the xDomain messenger on L2
     function finalizeEscrowMigration(

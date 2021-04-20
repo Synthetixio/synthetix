@@ -22,7 +22,7 @@ const {
 const MockExchanger = artifacts.require('MockExchanger');
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
-contract('Liquidations @ovm-skip', accounts => {
+contract('Liquidations', accounts => {
 	const [sUSD, SNX] = ['sUSD', 'SNX'].map(toBytes32);
 	const [deployerAccount, owner, oracle, account1, alice, bob, carol, david] = accounts;
 	const week = 3600 * 24 * 7;

@@ -1,7 +1,6 @@
 pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
 
-
 interface ISynthetixBridgeToOptimism {
     function migrateEscrow(uint256[][] calldata entryIDs) external;
 

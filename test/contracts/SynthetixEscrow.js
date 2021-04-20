@@ -12,7 +12,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-contract('SynthetixEscrow @ovm-skip', async accounts => {
+contract('SynthetixEscrow', async accounts => {
 	const DAY = 86400;
 	const WEEK = 604800;
 	const YEAR = 31556926;

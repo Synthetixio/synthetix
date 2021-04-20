@@ -25,6 +25,10 @@
 		"asset": "CHF"
 	},
 	{
+		"name": "sKRW",
+		"asset": "KRW"
+	},
+	{
 		"name": "sXAU",
 		"asset": "XAU"
 	},
@@ -253,9 +257,9 @@
 		"asset": "BTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 40378,
-			"upperLimit": 60567,
-			"lowerLimit": 20189
+			"entryPoint": 58785,
+			"upperLimit": 88177.5,
+			"lowerLimit": 29392.5
 		}
 	},
 	{

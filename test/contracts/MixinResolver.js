@@ -12,7 +12,7 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
-contract('MixinResolver @ovm-skip', async accounts => {
+contract('MixinResolver', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
 	const addressesToCache = ['Example_1', 'Example_2', 'Example_3'];
 

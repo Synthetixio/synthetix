@@ -11,7 +11,7 @@ const { toUnit, fromUnit, toPreciseUnit, fromPreciseUnit } = require('../utils')
 
 const { toBN } = web3.utils;
 
-contract('SafeDecimalMath @ovm-skip', async () => {
+contract('SafeDecimalMath', async () => {
 	let instance;
 
 	before(async () => {

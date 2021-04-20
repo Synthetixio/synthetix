@@ -154,7 +154,35 @@
 			"major": 2,
 			"minor": 39
 		},
-		"sources": ["SynthetixBridgeToOptimism", "SynthetixBridgeToBase"],
-		"sips": [110, 116]
+		"sources": [],
+		"sips": [110]
+	},
+	{
+		"name": "L2 Phase 1 OVM (Kovan)",
+		"version": {
+			"major": 2,
+			"minor": 40
+		},
+		"ovm": true,
+		"sources": ["Synthetix", "Exchanger", "SystemStatus"],
+		"sips": [109, 117, 118]
+	},
+	{
+		"name": "Miaplacidus",
+		"version": {
+			"major": 2,
+			"minor": 41
+		},
+		"sources": [],
+		"sips": [113]
+	},
+	{
+		"name": "Alnilam",
+		"version": {
+			"major": 2,
+			"minor": 42
+		},
+		"sources": ["Exchanger", "VirtualSynthMastercopy"],
+		"sips": [127]
 	}
 ]

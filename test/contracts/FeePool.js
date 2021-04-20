@@ -33,7 +33,7 @@ const {
 	defaults: { ISSUANCE_RATIO, FEE_PERIOD_DURATION, TARGET_THRESHOLD },
 } = require('../..');
 
-contract('FeePool @ovm-skip', async accounts => {
+contract('FeePool', async accounts => {
 	const [deployerAccount, owner, oracle, account1, account2] = accounts;
 
 	// Updates rates with defaults so they're not stale.

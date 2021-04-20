@@ -14,5 +14,13 @@
 	{
 		"name": "sLINK",
 		"asset": "LINK"
+	},
+	{
+		"name": "sUNI",
+		"asset": "UNI"
+	},
+	{
+		"name": "sAAVE",
+		"asset": "AAVE"
 	}
 ]

@@ -18,7 +18,7 @@ const {
 	resumeSystem,
 } = require('./utils');
 
-contract('TradingRewards (prod tests) @ovm-skip', accounts => {
+contract('TradingRewards (prod tests)', accounts => {
 	const [, user] = accounts;
 
 	let owner;

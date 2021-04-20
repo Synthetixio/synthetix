@@ -2,14 +2,16 @@
 
 const { contract } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_BYTES32 },
+} = require('../..');
 const { toUnit, currentTime } = require('../utils')();
 const { setExchangeFeeRateForSynths } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
-const ZERO_BYTES32 = '0x' + '0'.repeat(64);
 
-contract('SynthUtil @ovm-skip', accounts => {
+contract('SynthUtil', accounts => {
 	const [, ownerAccount, oracle, account2] = accounts;
 	let synthUtil, sUSDContract, synthetix, exchangeRates, timestamp, systemSettings, debtCache;
 

@@ -19,7 +19,7 @@ const BN = require('bn.js');
 const ethers = require('ethers');
 const { parseEther } = ethers.utils;
 
-contract('BaseRewardEscrowV2 @ovm-skip', async accounts => {
+contract('BaseRewardEscrowV2', async accounts => {
 	const WEEK = 604800;
 	const YEAR = 31556926;
 
