@@ -45,7 +45,9 @@ contract AccruedInterestUtil is ICollateralLoan {
         (uint rate, bool invalid) =
             loan.short ? _manager.getShortRate(collateral.synthsByKey(loan.currency)) : _manager.getBorrowRate();
 
-        require(!invalid, "Rates are invalid");
+        if (invalid) {
+            return 0;
+        }
 
         // 3. Get the time since we last updated the rate.
         uint timeDelta = block.timestamp.sub(lastUpdated).mul(SafeDecimalMath.unit());
