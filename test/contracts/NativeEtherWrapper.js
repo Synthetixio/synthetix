@@ -213,7 +213,10 @@ contract('NativeEtherWrapper', async accounts => {
 					event: 'Burned',
 					emittedFrom: etherWrapper.address,
 					args: [nativeEtherWrapper.address, amount, '0'],
-					log: logs.filter(l => !!l).filter(({ name }) => name === 'Burned')[0],
+					log: logs
+						.filter(l => !!l)
+						.filter(({ address }) => address === etherWrapper.address)
+						.filter(({ name }) => name === 'Burned')[0],
 				});
 			});
 			it('unwraps received WETH into ETH', async () => {
