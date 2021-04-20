@@ -1103,6 +1103,79 @@ contract('FuturesMarket', accounts => {
 		}
 	});
 
+	describe('Market Debt', () => {
+		it('Basic debt movements', async () => {
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('0'));
+			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('100'),
+				margin: toUnit('1000'),
+				leverage: toUnit('5'),
+			});
+
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('-4000'));
+			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('1000'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: toUnit('120'),
+				margin: toUnit('-600'),
+				leverage: toUnit('7'),
+			});
+
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('800'));
+			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('110'),
+				margin: toUnit('0'),
+				leverage: toUnit('0'),
+			});
+
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('4800'));
+			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: toUnit('100'),
+				margin: toUnit('0'),
+				leverage: toUnit('0'),
+			});
+
+			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('0'));
+			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
+
+			assert.isTrue(false);
+		});
+
+		it('market debt includes pending order value', async () => {
+			// No pending value
+			// Some pending value after an order
+			assert.isTrue(false);
+		});
+
+		it('Order confirmation folds pending value into overall debt', async () => {
+			assert.isTrue(false);
+		});
+
+		it('Order cancellation removes pending value from debt', async () => {
+			assert.isTrue(false);
+		});
+
+		it('Market debt is reported as invalid when price is stale', async () => {
+			assert.isFalse((await futuresMarket.marketDebt())[1]);
+			await fastForward(7 * 24 * 60 * 60);
+			assert.isTrue((await futuresMarket.marketDebt())[1]);
+		});
+	});
+
 	describe('Liquidations', () => {
 		describe('Liquidation price', () => {
 			it('Liquidation price is accurate with no funding', async () => {
