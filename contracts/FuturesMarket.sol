@@ -33,6 +33,14 @@ import "@nomiclabs/buidler/console.sol";
 //       t1: - 1000x5 @ 110
 //       t2: - -600x7 @ 100
 
+/* Notes:
+ *
+ * Internal functions assume:
+ *    - prices passed into them are valid;
+ *    - funding has already been recomputed up to the current time;
+ *    - the account being managed was not liquidated in the same transaction;
+ */
+
 interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
@@ -573,38 +581,22 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return sequenceLength;
     }
 
-    function _realiseMargin(
-        Position storage position,
-        uint fundingIndex,
-        uint price
-    ) internal returns (int) {
-        int newMargin = _remainingMargin(position, fundingIndex, price);
-        int marginDelta = newMargin.sub(_signedAbs(position.margin));
-
-        // Position size does not change, but the price did.
-        int notionalDelta = position.size.multiplyDecimalRound(int(price).sub(int(position.lastPrice)));
-
-        marginSumMinusNotionalSkew = marginSumMinusNotionalSkew.add(marginDelta).sub(notionalDelta);
-        position.margin = newMargin;
-        position.lastPrice = price;
-        position.fundingIndex = fundingIndex;
-
-        return newMargin;
-    }
-
-    function _updateRemainingMargin(address account, uint price) internal returns (uint fundingIndex, bool liquidated) {
-        fundingIndex = _recomputeFunding(price);
+    function _liquidateIfNeeded(
+        address account,
+        uint price,
+        uint fundingIndex
+    ) internal returns (bool liquidated) {
         Position storage position = positions[account];
-        // Don't bother to do anything for empty positions.
+
         if (position.size != 0) {
-            int newMargin = _realiseMargin(position, fundingIndex, price);
+            int newMargin = _remainingMargin(position, fundingIndex, price);
 
             if (_abs(newMargin) <= _liquidationFee()) {
                 _liquidatePosition(account, account, fundingIndex, price);
-                return (fundingIndex, true);
+                return true;
             }
         }
-        return (fundingIndex, false);
+        return false;
     }
 
     function _cancelOrder(address account) internal {
@@ -622,7 +614,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         require(orders[sender].pending, "No pending order");
 
         uint price = _assetPriceRequireNotInvalid(_exchangeRates());
-        (, bool liquidated) = _updateRemainingMargin(sender, price);
+        uint fundingIndex = _recomputeFunding(price);
+        bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
 
         // Liquidations cancel pending orders.
         if (!liquidated) {
@@ -693,23 +686,26 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         require(leverage <= parameters.maxLeverage, "Max leverage exceeded");
         address sender = messageSender;
         uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint fundingIndex = _recomputeFunding(price);
+        bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
 
-        // Margin or leverage at zero closes the entire position.
-        if (margin == 0 || leverage == 0) {
-            _closePosition(sender, price);
-            return;
+        // The order is not submitted if the user's existing position needed to be liquidated.
+        if (!liquidated) {
+            // Margin or leverage at zero closes the entire position.
+            if (margin == 0 || leverage == 0) {
+                _closePosition(sender, price);
+                return;
+            }
+
+            require(parameters.minInitialMargin <= _abs(margin), "Insufficient margin");
+
+            _submitOrder(sender, margin, leverage, price);
         }
-
-        require(parameters.minInitialMargin <= _abs(margin), "Insufficient margin");
-
-        // TODO: Determine what to do if updating the remaining margin liquidates any existing position
-
-        _updateRemainingMargin(sender, price);
-        _submitOrder(sender, margin, leverage, price);
     }
 
     function _closePosition(address sender, uint price) internal {
-        (, bool liquidated) = _updateRemainingMargin(sender, price);
+        uint fundingIndex = _recomputeFunding(price);
+        bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
         // No need to close the order if it was liquidated
         if (!liquidated) {
             _submitOrder(sender, 0, 0, price);
@@ -726,7 +722,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         // TODO: Apply this difference to the pending margin
 
         uint price = _assetPriceRequireNotInvalid(_exchangeRates());
-        (uint fundingIndex, bool liquidated) = _updateRemainingMargin(account, price);
+        uint fundingIndex = _recomputeFunding(price);
+        bool liquidated = _liquidateIfNeeded(account, price, fundingIndex);
 
         // If the account needed to be liquidated, then the order was cancelled and it doesn't need to be confirmed.
         if (liquidated) {
