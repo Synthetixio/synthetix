@@ -1067,6 +1067,18 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 		});
 
+		it('Altering the max funding has a proportional effect', async () => {
+			// TODO: Try when it's 0%, +-50%, +-100%
+			assert.isTrue(false);
+		});
+
+		it('Altering the max funding rate skew has a proportional effect', async () => {
+			// TODO: Try clamping at +- max
+			// TODO: Try when it's 0%, +-50% , +-100%
+			// TODO: Try 0
+			assert.isTrue(false);
+		});
+
 		for (const margin of ['1000', '-1000'].map(toUnit)) {
 			const side = parseInt(margin.toString()) > 0 ? 'long' : 'short';
 
