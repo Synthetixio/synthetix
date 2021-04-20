@@ -15,9 +15,9 @@ import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // solhint-disable indent
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
+import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
+import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
+import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
 
 contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism, iOVM_L1TokenGateway {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -31,14 +31,15 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
     uint8 private constant MAX_ENTRIES_MIGRATED_PER_MESSAGE = 26;
 
     bool public activated;
+    address public depositEscrow; // this is the address that holds user deposits
 
     // ========== CONSTRUCTOR ==========
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
         activated = true;
+        depositEscrow = _owner;
     }
 
-    //
     // ========== INTERNALS ============
 
     function messenger() internal view returns (iAbs_BaseCrossDomainMessenger) {
@@ -123,8 +124,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
 
     // invoked by a generous user on L1
     function depositReward(uint amount) external requireActive {
-        // move the SNX into this contract
-        synthetixERC20().transferFrom(msg.sender, address(this), amount);
+        // move the SNX into the deposit escrow
+        synthetixERC20().transferFrom(msg.sender, depositEscrow, amount);
 
         _depositReward(amount);
     }
@@ -138,23 +139,10 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
         require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
 
         // transfer amount back to user
-        synthetixERC20().transfer(to, amount);
+        synthetixERC20().transferFrom(depositEscrow, to, amount);
 
         // no escrow actions - escrow remains on L2
         emit WithdrawalFinalized(to, amount);
-    }
-
-    // invoked by the owner for migrating the contract to the new version that will allow for withdrawals
-    function migrateBridge(address newBridge) external onlyOwner requireActive {
-        require(newBridge != address(0), "Cannot migrate to address 0");
-        activated = false;
-
-        IERC20 ERC20Synthetix = synthetixERC20();
-        // get the current contract balance and transfer it to the new SynthetixL1ToL2Bridge contract
-        uint256 contractBalance = ERC20Synthetix.balanceOf(address(this));
-        ERC20Synthetix.transfer(newBridge, contractBalance);
-
-        emit BridgeMigrated(address(this), newBridge, contractBalance);
     }
 
     // invoked by RewardsDistribution on L1 (takes SNX)
@@ -198,8 +186,8 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
 
     function _initiateDeposit(address _to, uint256 _depositAmount) private {
         // Transfer SNX to L2
-        // First, move the SNX into this contract
-        synthetixERC20().transferFrom(msg.sender, address(this), _depositAmount);
+        // First, move the SNX into the deposit escrow
+        synthetixERC20().transferFrom(msg.sender, depositEscrow, _depositAmount);
         // create message payload for L2
         iOVM_L2DepositedToken bridgeToBase;
         bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeDeposit.selector, _to, _depositAmount);

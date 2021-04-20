@@ -7,6 +7,7 @@ import "./BaseRewardEscrowV2.sol";
 // Internal references
 import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
 // https://docs.synthetix.io/contracts/RewardEscrow
 contract RewardEscrowV2 is BaseRewardEscrowV2 {
@@ -212,11 +213,13 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
         /**
          *  update account total escrow balances for migration
-         *  transfer the escrowed SNX being migrated to the L2 deposit contract
+         *  transfer the escrowed SNX being migrated to the L2 deposit escrow
          */
         if (escrowedAccountBalance > 0) {
             _reduceAccountEscrowBalances(account, escrowedAccountBalance);
-            IERC20(address(synthetix())).transfer(synthetixBridgeToOptimism(), escrowedAccountBalance);
+            // get the escrow address and transfer the migrating SNX into it
+            address depositEscrow = ISynthetixBridgeToOptimism(synthetixBridgeToOptimism()).depositEscrow();
+            IERC20(address(synthetix())).transfer(depositEscrow, escrowedAccountBalance);
         }
 
         emit BurnedForMigrationToL2(account, entryIDs, escrowedAccountBalance, block.timestamp);

@@ -12,10 +12,9 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 
 // solhint-disable indent
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
-import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
-
+import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
+import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
+import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
 
 contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeToBase, iOVM_L2DepositedToken {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
