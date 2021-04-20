@@ -95,6 +95,7 @@ const constants = {
 	AST_FILENAME: 'asts.json',
 
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
+	ZERO_BYTES32: '0x' + '0'.repeat(64),
 
 	OVM_MAX_GAS_LIMIT: '8999999',
 

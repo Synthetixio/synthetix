@@ -175,5 +175,14 @@
 		},
 		"sources": [],
 		"sips": [113]
+	},
+	{
+		"name": "Alnilam",
+		"version": {
+			"major": 2,
+			"minor": 42
+		},
+		"sources": ["Exchanger", "VirtualSynthMastercopy"],
+		"sips": [127]
 	}
 ]
