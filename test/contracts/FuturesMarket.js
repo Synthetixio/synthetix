@@ -1128,7 +1128,7 @@ contract('FuturesMarket', accounts => {
 			});
 
 			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('800'));
-			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
+			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('2600'));
 
 			await submitAndConfirmOrder({
 				market: futuresMarket,
@@ -1139,7 +1139,7 @@ contract('FuturesMarket', accounts => {
 			});
 
 			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('4800'));
-			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
+			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('950'));
 
 			await submitAndConfirmOrder({
 				market: futuresMarket,
@@ -1151,8 +1151,6 @@ contract('FuturesMarket', accounts => {
 
 			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('0'));
 			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
-
-			assert.isTrue(false);
 		});
 
 		it('market debt includes pending order value', async () => {
