@@ -151,7 +151,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(sizes[1], toUnit('0'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('0'));
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('0'));
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('0'));
+			assert.bnEqual(await futuresMarket.proportionalSkew(), toUnit('0'));
 
 			await submitAndConfirmOrder({
 				market: futuresMarket,
@@ -166,7 +166,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(sizes[1], toUnit('0'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('50'));
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('50'));
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('-4000'));
+			assert.bnEqual(await futuresMarket.proportionalSkew(), toUnit('1'));
 
 			await submitAndConfirmOrder({
 				market: futuresMarket,
@@ -181,7 +181,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(sizes[1], toUnit('35'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('85'));
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('15'));
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('800'));
+			assert.bnClose(await futuresMarket.proportionalSkew(), toUnit(15 / 85), toUnit('0.0001'));
 
 			await submitAndConfirmOrder({
 				market: futuresMarket,
@@ -196,7 +196,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(sizes[1], toUnit('35'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('35'));
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('-35'));
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('4800'));
+			assert.bnClose(await futuresMarket.proportionalSkew(), toUnit('-1'));
 
 			await submitAndConfirmOrder({
 				market: futuresMarket,
@@ -211,7 +211,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(sizes[1], toUnit('0'));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit('0'));
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit('0'));
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('0'));
+			assert.bnEqual(await futuresMarket.proportionalSkew(), toUnit('0'));
 		});
 	});
 
