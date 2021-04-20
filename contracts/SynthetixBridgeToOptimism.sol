@@ -19,15 +19,7 @@ import "@eth-optimism/contracts/build/contracts/iOVM/bridge/messaging/iAbs_BaseC
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
 
-<<<<<<< HEAD
-
 contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism, iOVM_L1TokenGateway {
-||||||| 313fbfc2
-
-contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism {
-=======
-contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism {
->>>>>>> develop
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -236,29 +228,13 @@ contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBrid
             if (escrowedAccountBalance > 0) {
                 // create message payload for L2
                 ISynthetixBridgeToBase bridgeToBase;
-<<<<<<< HEAD
-                bytes memory messageData = abi.encodeWithSelector(
-                    bridgeToBase.finalizeEscrowMigration.selector,
-                    msg.sender,
-                    escrowedAccountBalance,
-                    vestingEntries
-                );
-||||||| 313fbfc2
-                bytes memory messageData = abi.encodeWithSelector(
-                    bridgeToBase.completeEscrowMigration.selector,
-                    msg.sender,
-                    escrowedAccountBalance,
-                    vestingEntries
-                );
-=======
                 bytes memory messageData =
                     abi.encodeWithSelector(
-                        bridgeToBase.completeEscrowMigration.selector,
+                        bridgeToBase.finalizeEscrowMigration.selector,
                         msg.sender,
                         escrowedAccountBalance,
                         vestingEntries
                     );
->>>>>>> develop
                 // relay the message to this contract on L2 via L1 Messenger
                 messenger().sendMessage(
                     synthetixBridgeToBase(),
