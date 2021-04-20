@@ -7,6 +7,7 @@ let provider;
 let signer;
 
 const DATA_FILE = 'test/gas/measurements.json';
+const DEPLOYMENT_PATH = './publish/deployed/local-ovm';
 const MAX_SYNTHS = 10;
 const NUM_MEASUREMENTS = 3;
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
@@ -32,13 +33,7 @@ describe('Gas measurements', () => {
 	// ------------------------
 	// CONTRACTS
 	// ------------------------
-	let Synthetix,
-		Issuer,
-		ExchangeRates,
-		DebtCache,
-		ReadProxyAddressResolver,
-		SystemSettings,
-		FeePool;
+	let Synthetix, Issuer, ExchangeRates, DebtCache, ReadProxyAddressResolver, SystemSettings;
 
 	before('connect to contracts', async () => {
 		Synthetix = _getContract({ name: 'Synthetix' });
@@ -47,13 +42,11 @@ describe('Gas measurements', () => {
 		DebtCache = _getContract({ name: 'DebtCache' });
 		ReadProxyAddressResolver = _getContract({ name: 'ReadProxyAddressResolver' });
 		SystemSettings = _getContract({ name: 'SystemSettings' });
-		FeePool = _getContract({ name: 'FeePool' });
 	});
 
 	// ------------------------
 	// SETTINGS
 	// ------------------------
-	let feePeriodDuration;
 	before('tweak system settings', async () => {
 		let tx = await SystemSettings.setMinimumStakeTime(0);
 		await tx.wait();
@@ -61,10 +54,8 @@ describe('Gas measurements', () => {
 		tx = await SystemSettings.setWaitingPeriodSecs(0);
 		await tx.wait();
 
-		tx = await SystemSettings.setRateStalePeriod(100000000000);
+		tx = await SystemSettings.setRateStalePeriod(1000000000000000);
 		await tx.wait();
-
-		feePeriodDuration = (await SystemSettings.feePeriodDuration()).toNumber();
 	});
 
 	before('remove all synths', async () => {
@@ -153,6 +144,7 @@ describe('Gas measurements', () => {
 			// PRINT
 			// ------------------------
 			after('print data', () => {
+				// Stdout
 				Object.keys(data).map(numSynthsKey => {
 					const entry = data[numSynthsKey];
 					console.log(numSynthsKey);
@@ -162,15 +154,20 @@ describe('Gas measurements', () => {
 						console.log('  ', measurementKey, Math.ceil(measurement.avg));
 					});
 				});
+
+				// File
+				fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 			});
 
 			it('take measurements', async () => {
-				let tx;
-
 				async function measureGas({ tx, target }) {
-					const receipt = await tx.wait();
-
-					const gasUsed = receipt.cumulativeGasUsed.toNumber();
+					let gasUsed;
+					try {
+						const receipt = await tx.wait();
+						gasUsed = receipt.cumulativeGasUsed.toNumber();
+					} catch (err) {
+						gasUsed = 9000000;
+					}
 					target.measurements.push(gasUsed);
 
 					const numMeasurements = target.measurements.length;
@@ -190,7 +187,7 @@ describe('Gas measurements', () => {
 					// Exchanging
 					if (numSynths >= 2) {
 						const targetSynth = `s${numSynths - 1}`;
-						await measureGas({
+						await await measureGas({
 							tx: await Synthetix.exchange(
 								ethers.utils.formatBytes32String(`sUSD`),
 								ethers.utils.parseEther('1'),
@@ -209,15 +206,17 @@ describe('Gas measurements', () => {
 					}
 
 					// Claiming
-					await _fastForward({ seconds: feePeriodDuration });
-					tx = await FeePool.closeCurrentFeePeriod();
-					await tx.wait();
-					tx = await Synthetix.mint();
-					await tx.wait();
-					await measureGas({
-						tx: await FeePool.claimFees(),
-						target: target.claiming,
-					});
+					// await _fastForward({ seconds: feePeriodDuration });
+					// tx = await DebtCache.takeDebtSnapshot();
+					// await tx.wait();
+					// tx = await Synthetix.mint();
+					// await tx.wait();
+					// tx = await FeePool.closeCurrentFeePeriod();
+					// await tx.wait();
+					// await measureGas({
+					// 	tx: await FeePool.claimFees(),
+					// 	target: target.claiming,
+					// });
 
 					// Burning
 					await measureGas({
@@ -293,14 +292,5 @@ function _getContract({ name }) {
 }
 
 function _getDeploymentFile({ filename }) {
-	return JSON.parse(fs.readFileSync(path.join(_getDeploymentFolder(), filename), 'utf8'));
-}
-
-function _getDeploymentFolder() {
-	return `./publish/deployed/local`;
-}
-
-async function _fastForward({ seconds }) {
-	await provider.send('evm_increaseTime', [seconds]);
-	await provider.send('evm_mine', []);
+	return JSON.parse(fs.readFileSync(path.join(DEPLOYMENT_PATH, filename), 'utf8'));
 }
