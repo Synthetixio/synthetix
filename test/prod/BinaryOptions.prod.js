@@ -31,7 +31,7 @@ contract('Binary Options (prod tests)', accounts => {
 
 	let network, deploymentPath;
 
-	let BinaryOptionMarketManager, ExchangeRates;
+	let BinaryOptionMarketManager;
 	let SynthsUSD;
 
 	before('prepare', async function() {
@@ -54,14 +54,17 @@ contract('Binary Options (prod tests)', accounts => {
 			await mockOptimismBridge({ network, deploymentPath });
 		}
 
-		({ SynthsUSD, BinaryOptionMarketManager, ExchangeRates } = await connectContracts({
+		({ SynthsUSD, BinaryOptionMarketManager } = await connectContracts({
 			network,
 			requests: [
-				{ contractName: 'ExchangeRates' },
 				{ contractName: 'SynthsUSD', abiName: 'Synth' },
 				{ contractName: 'BinaryOptionMarketManager' },
 			],
 		}));
+
+		await BinaryOptionMarketManager.setMaxOraclePriceAge(720000, {
+			from: owner,
+		});
 
 		await skipWaitingPeriod({ network });
 
@@ -145,13 +148,7 @@ contract('Binary Options (prod tests)', accounts => {
 			assert.bnEqual(expectedPrices.long, prices.long);
 			assert.bnEqual(expectedPrices.short, prices.short);
 
-			// FIXME: Resulting in price is stale revert even though the rate is updated before the resolve market call
-			const oracle = await ExchangeRates.oracle();
 			await fastForward(expiryDuration + 2000);
-			now = await currentTime();
-			await ExchangeRates.updateRates([sAUDKey], [toUnit(1)], now, {
-				from: oracle,
-			});
 			await BinaryOptionMarketManager.resolveMarket(binaryOptionMarket.address);
 		});
 	});
