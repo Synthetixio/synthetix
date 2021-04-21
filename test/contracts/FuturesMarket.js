@@ -1141,6 +1141,28 @@ contract('FuturesMarket', accounts => {
 				// TODO: Change funding rate parameters and see if the numbers are still accurate
 			});
 		}
+
+		describe('Funding sequence', () => {
+			it('Funding sequence is recomputed by order submission', async () => {
+				assert.isTrue(false);
+			});
+
+			it('Funding sequence is recomputed by order confirmation', async () => {
+				assert.isTrue(false);
+			});
+
+			it('Funding sequence is recomputed by order cancellation', async () => {
+				assert.isTrue(false);
+			});
+
+			it('Funding sequence is recomputed by position closure', async () => {
+				assert.isTrue(false);
+			});
+
+			it('Funding sequence is recomputed by liquidation', async () => {
+				assert.isTrue(false);
+			});
+		});
 	});
 
 	describe('Market Debt', () => {
