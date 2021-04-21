@@ -2093,8 +2093,8 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"TokenStatesGOOGL": {
-			"name": "TokenStatesGOOGL",
+		"TokenStatesGOOG": {
+			"name": "TokenStatesGOOG",
 			"address": "0x272BbF5eEf131A3eb4a3078A58cFcD0978585F98",
 			"source": "TokenState",
 			"link": "https://etherscan.io/address/0x272BbF5eEf131A3eb4a3078A58cFcD0978585F98",
@@ -2102,8 +2102,8 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"ProxysGOOGL": {
-			"name": "ProxysGOOGL",
+		"ProxysGOOG": {
+			"name": "ProxysGOOG",
 			"address": "0xC63B8ECCE56aB9C46184eC6aB85e4771fEa4c8AD",
 			"source": "ProxyERC20",
 			"link": "https://etherscan.io/address/0xC63B8ECCE56aB9C46184eC6aB85e4771fEa4c8AD",
@@ -2111,12 +2111,12 @@
 			"txn": "",
 			"network": "mainnet"
 		},
-		"SynthsGOOGL": {
-			"name": "SynthsGOOGL",
-			"address": "0xEf3FBBfbaca5695359815497C83533F57AfC2115",
+		"SynthsGOOG": {
+			"name": "SynthsGOOG",
+			"address": "0x8e082925e78538955bC0e2F363FC5d1Ab3be739b",
 			"source": "Synth",
-			"link": "https://etherscan.io/address/0xEf3FBBfbaca5695359815497C83533F57AfC2115",
-			"timestamp": "2021-04-20T02:01:56.946Z",
+			"link": "https://etherscan.io/address/0x8e082925e78538955bC0e2F363FC5d1Ab3be739b",
+			"timestamp": "2021-04-21T23:01:15.821Z",
 			"txn": "",
 			"network": "mainnet"
 		},
