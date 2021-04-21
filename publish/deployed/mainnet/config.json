@@ -671,6 +671,24 @@
 	"SynthsKRW": {
 		"deploy": false
 	},
+	"TokenStates1INCH": {
+		"deploy": false
+	},
+	"Proxys1INCH": {
+		"deploy": false
+	},
+	"Synths1INCH": {
+		"deploy": false
+	},
+	"TokenStatesRUNE": {
+		"deploy": false
+	},
+	"ProxysRUNE": {
+		"deploy": false
+	},
+	"SynthsRUNE": {
+		"deploy": false
+	},
 	"TokenStatesCRV": {
 		"deploy": false
 	},

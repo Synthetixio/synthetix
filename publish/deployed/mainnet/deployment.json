@@ -2039,6 +2039,60 @@
 			"txn": "",
 			"network": "mainnet"
 		},
+		"TokenStates1INCH": {
+			"name": "TokenStates1INCH",
+			"address": "0xeD1EfD716C7E2e821BBD4EC1480D649df7fb2279",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0xeD1EfD716C7E2e821BBD4EC1480D649df7fb2279",
+			"timestamp": "2021-04-21T22:40:22.817Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"Proxys1INCH": {
+			"name": "Proxys1INCH",
+			"address": "0xcD39b5434a0A92cf47D1F567a7dF84bE356814F0",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0xcD39b5434a0A92cf47D1F567a7dF84bE356814F0",
+			"timestamp": "2021-04-21T22:40:28.198Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"Synths1INCH": {
+			"name": "Synths1INCH",
+			"address": "0x0E8Fa2339314AB7E164818F26207897bBe29C3af",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x0E8Fa2339314AB7E164818F26207897bBe29C3af",
+			"timestamp": "2021-04-21T22:41:42.829Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesRUNE": {
+			"name": "TokenStatesRUNE",
+			"address": "0x860C5f944b098cE28CF9f2Da099913F01c9364D8",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x860C5f944b098cE28CF9f2Da099913F01c9364D8",
+			"timestamp": "2021-04-21T22:45:07.902Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysRUNE": {
+			"name": "ProxysRUNE",
+			"address": "0x0352557B007A4Aae1511C114409b932F06F9E2f4",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x0352557B007A4Aae1511C114409b932F06F9E2f4",
+			"timestamp": "2021-04-21T22:48:02.028Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsRUNE": {
+			"name": "SynthsRUNE",
+			"address": "0xe615Df79AC987193561f37E77465bEC2aEfe9aDb",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0xe615Df79AC987193561f37E77465bEC2aEfe9aDb",
+			"timestamp": "2021-04-21T22:48:37.731Z",
+			"txn": "",
+			"network": "mainnet"
+		},
 		"TokenStatesCRV": {
 			"name": "TokenStatesCRV",
 			"address": "0x602590F2aa35B71ccB1Ca72E673A75b26eC7f4E8",

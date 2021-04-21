@@ -326,6 +326,12 @@
 		"sign": "",
 		"description": "1inch"
 	},
+	"RUNE": {
+		"asset": "RUNE",
+		"category": "crypto",
+		"sign": "",
+		"description": "THORChain"
+	},
 	"AAPL": {
 		"asset": "AAPL",
 		"category": "equities",

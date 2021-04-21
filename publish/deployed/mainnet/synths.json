@@ -122,6 +122,14 @@
 		"asset": "COMP"
 	},
 	{
+		"name": "s1INCH",
+		"asset": "1INCH"
+	},
+	{
+		"name": "sRUNE",
+		"asset": "RUNE"
+	},
+	{
 		"name": "sFTSE",
 		"asset": "FTSE100"
 	},
