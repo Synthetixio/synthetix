@@ -93,9 +93,11 @@ contract('Binary Options (prod tests)', accounts => {
 		const expiryDuration = toBN(26 * 7 * 24 * 60 * 60);
 		const sAUDKey = toBytes32('sAUD');
 		let now;
+		let maturity;
+		let bidding;
 		let binaryOptionMarket;
 
-		it('produces expected event and pricesAfterBidOrRefund correctly computes the result of bids.', async () => {
+		before('Create the market', async () => {
 			now = await currentTime();
 			const amount = toUnit('1000');
 
@@ -103,11 +105,13 @@ contract('Binary Options (prod tests)', accounts => {
 				from: user1,
 			});
 
+			maturity = now + 200;
+			bidding = now + 100;
 			result = await BinaryOptionMarketManager.createMarket(
 				sAUDKey,
 				toUnit(1),
 				true,
-				[now + 1000, now + 2000],
+				[bidding, maturity],
 				[toUnit(500), toUnit(500)],
 				{ from: user1 }
 			);
@@ -120,17 +124,20 @@ contract('Binary Options (prod tests)', accounts => {
 				}).args.market
 			);
 			console.log('Binary Option Market loaded at:' + binaryOptionMarket.address);
-			await skipWaitingPeriod({ network, deploymentPath });
+		});
 
+		it('produces expected event', async () => {
 			assert.eventEqual(getEventByName({ tx: result, name: 'MarketCreated' }), 'MarketCreated', {
 				creator: user1,
 				oracleKey: sAUDKey,
 				strikePrice: toUnit(1),
-				biddingEndDate: toBN(now + 1000),
-				maturityDate: toBN(now + 2000),
-				expiryDate: toBN(now + 2000).add(expiryDuration),
+				biddingEndDate: toBN(bidding),
+				maturityDate: toBN(maturity),
+				expiryDate: toBN(maturity).add(expiryDuration),
 			});
+		});
 
+		it('pricesAfterBidOrRefund correctly computes the result of bids.', async () => {
 			const longBid = toUnit(100);
 
 			await SynthsUSD.approve(binaryOptionMarket.address, longBid, {
@@ -147,8 +154,10 @@ contract('Binary Options (prod tests)', accounts => {
 			const prices = await binaryOptionMarket.prices();
 			assert.bnEqual(expectedPrices.long, prices.long);
 			assert.bnEqual(expectedPrices.short, prices.short);
+		});
 
-			await fastForward(expiryDuration + 2000);
+		it('should resolve', async () => {
+			await fastForward(maturity);
 			await BinaryOptionMarketManager.resolveMarket(binaryOptionMarket.address);
 		});
 	});
