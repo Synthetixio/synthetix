@@ -679,5 +679,50 @@
 	},
 	"SynthsCRV": {
 		"deploy": false
+	},
+	"TokenStatesAAPL": {
+		"deploy": false
+	},
+	"ProxysAAPL": {
+		"deploy": false
+	},
+	"SynthsAAPL": {
+		"deploy": false
+	},
+	"TokenStatesFB": {
+		"deploy": false
+	},
+	"ProxysFB": {
+		"deploy": false
+	},
+	"SynthsFB": {
+		"deploy": false
+	},
+	"TokenStatesGOOG": {
+		"deploy": false
+	},
+	"ProxysGOOG": {
+		"deploy": false
+	},
+	"SynthsGOOG": {
+		"deploy": false
+	},
+	"TokenStatesNFLX": {
+		"deploy": false
+	},
+	"ProxysNFLX": {
+		"deploy": false
+	},
+	"SynthsNFLX": {
+		"deploy": false
+	},
+	"TokenStatesAMZN": {
+		"deploy": false
+	},
+	"ProxysAMZN": {
+		"deploy": false
+	},
+	"SynthsAMZN": {
+		"deploy": false
 	}
 }

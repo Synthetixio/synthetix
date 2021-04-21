@@ -2062,7 +2062,140 @@
 			"address": "0x13D0F5B8630520eA04f694F17A001fb95eaFD30E",
 			"source": "Synth",
 			"link": "https://etherscan.io/address/0x13D0F5B8630520eA04f694F17A001fb95eaFD30E",
-			"timestamp": "2021-04-21T22:33:01.821Z",
+			"timestamp": "2021-04-21T22:33:01.821Z"
+		},
+		"TokenStatesAAPL": {
+			"name": "TokenStatesAAPL",
+			"address": "0x830B48539D82a4D34dD670bfE163f9eF84B6c2f1",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x830B48539D82a4D34dD670bfE163f9eF84B6c2f1",
+			"timestamp": "2021-04-20T01:56:26.786Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysAAPL": {
+			"name": "ProxysAAPL",
+			"address": "0x7537AAe01f3B218DAE75e10d952473823F961B87",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x7537AAe01f3B218DAE75e10d952473823F961B87",
+			"timestamp": "2021-04-20T01:56:41.349Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsAAPL": {
+			"name": "SynthsAAPL",
+			"address": "0x815CeF3b7773f35428B4353073B086ecB658f73C",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x815CeF3b7773f35428B4353073B086ecB658f73C",
+			"timestamp": "2021-04-20T01:57:22.684Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesFB": {
+			"name": "TokenStatesFB",
+			"address": "0xBF416bdf37b1590A3A37A1504865354Bf5D90b34",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0xBF416bdf37b1590A3A37A1504865354Bf5D90b34",
+			"timestamp": "2021-04-20T01:59:22.197Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysFB": {
+			"name": "ProxysFB",
+			"address": "0xf50B5e535F62a56A9BD2d8e2434204E726c027Fa",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0xf50B5e535F62a56A9BD2d8e2434204E726c027Fa",
+			"timestamp": "2021-04-20T01:59:50.005Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsFB": {
+			"name": "SynthsFB",
+			"address": "0xb0e0BA880775B7F2ba813b3800b3979d719F0379",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0xb0e0BA880775B7F2ba813b3800b3979d719F0379",
+			"timestamp": "2021-04-20T02:00:07.200Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesGOOG": {
+			"name": "TokenStatesGOOG",
+			"address": "0x272BbF5eEf131A3eb4a3078A58cFcD0978585F98",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x272BbF5eEf131A3eb4a3078A58cFcD0978585F98",
+			"timestamp": "2021-04-20T02:00:57.043Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysGOOG": {
+			"name": "ProxysGOOG",
+			"address": "0xC63B8ECCE56aB9C46184eC6aB85e4771fEa4c8AD",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0xC63B8ECCE56aB9C46184eC6aB85e4771fEa4c8AD",
+			"timestamp": "2021-04-20T02:01:10.781Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsGOOG": {
+			"name": "SynthsGOOG",
+			"address": "0x8e082925e78538955bC0e2F363FC5d1Ab3be739b",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x8e082925e78538955bC0e2F363FC5d1Ab3be739b",
+			"timestamp": "2021-04-21T23:01:15.821Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesNFLX": {
+			"name": "TokenStatesNFLX",
+			"address": "0x438D8701892AB7578ea34F8cDCdCAdc93e48D443",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x438D8701892AB7578ea34F8cDCdCAdc93e48D443",
+			"timestamp": "2021-04-20T02:03:25.045Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysNFLX": {
+			"name": "ProxysNFLX",
+			"address": "0x5A7E3c07604EB515C16b36cd51906a65f021F609",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x5A7E3c07604EB515C16b36cd51906a65f021F609",
+			"timestamp": "2021-04-20T02:03:30.501Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsNFLX": {
+			"name": "SynthsNFLX",
+			"address": "0x399BA516a6d68d6Ad4D5f3999902D0DeAcaACDdd",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x399BA516a6d68d6Ad4D5f3999902D0DeAcaACDdd",
+			"timestamp": "2021-04-20T02:03:34.622Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesAMZN": {
+			"name": "TokenStatesAMZN",
+			"address": "0xc341BD8d6BB064FdD94b5142513027A01c1716C9",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0xc341BD8d6BB064FdD94b5142513027A01c1716C9",
+			"timestamp": "2021-04-20T02:04:45.536Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysAMZN": {
+			"name": "ProxysAMZN",
+			"address": "0x9CF7E61853ea30A41b02169391b393B901eac457",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x9CF7E61853ea30A41b02169391b393B901eac457",
+			"timestamp": "2021-04-20T02:04:52.958Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsAMZN": {
+			"name": "SynthsAMZN",
+			"address": "0x9530FA32a3059114AC20A5812870Da12D97d1174",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x9530FA32a3059114AC20A5812870Da12D97d1174",
+			"timestamp": "2021-04-20T02:05:14.353Z",
 			"txn": "",
 			"network": "mainnet"
 		}
