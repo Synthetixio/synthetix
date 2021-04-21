@@ -39,14 +39,14 @@ contract FuturesMarketData {
         uint marketDebt;
         int marketSkew;
         int proportionalSkew;
-        int entryMarginSumMinusNotionalSkew;
+        int marginSumMinusNotionalSkew;
         uint pendingOrderValue;
     }
 
     struct PriceDetails {
         uint price;
         uint currentRoundId;
-        bool isInvalid;
+        bool invalid;
     }
 
     struct FundingParameters {
@@ -73,6 +73,7 @@ contract FuturesMarketData {
 
     struct PositionData {
         FuturesMarket.Order order;
+        bool orderPending;
         FuturesMarket.Position position;
         int notionalValue;
         int profitLoss;
@@ -174,7 +175,7 @@ contract FuturesMarketData {
     }
 
     function _marketDetails(FuturesMarket market) internal view returns (MarketData memory) {
-        (uint price, bool isInvalid) = market.assetPrice();
+        (uint price, bool invalid) = market.assetPrice();
         (uint marketDebt, ) = market.marketDebt();
 
         FuturesMarket.Parameters memory parameters = _getParameters(market);
@@ -195,7 +196,7 @@ contract FuturesMarketData {
                     market.marginSumMinusNotionalSkew(),
                     market.pendingOrderValue()
                 ),
-                PriceDetails(price, market.currentRoundId(), isInvalid)
+                PriceDetails(price, market.currentRoundId(), invalid)
             );
     }
 

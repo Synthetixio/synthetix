@@ -154,8 +154,8 @@ contract('FuturesMarketData', accounts => {
 				await futuresMarket.proportionalSkew()
 			);
 			assert.bnEqual(
-				details.marketSizeDetails.entryMarginSumMinusNotionalSkew,
-				await futuresMarket.entryMarginSumMinusNotionalSkew()
+				details.marketSizeDetails.marginSumMinusNotionalSkew,
+				await futuresMarket.marginSumMinusNotionalSkew()
 			);
 
 			assert.bnEqual(
@@ -163,9 +163,9 @@ contract('FuturesMarketData', accounts => {
 				await futuresMarket.pendingOrderValue()
 			);
 
-			const priceAndInvalid = await futuresMarket.priceAndInvalid();
-			assert.bnEqual(details.priceDetails.price, priceAndInvalid.assetPrice);
-			assert.bnEqual(details.priceDetails.isInvalid, priceAndInvalid.isInvalid);
+			const assetPrice = await futuresMarket.assetPrice();
+			assert.bnEqual(details.priceDetails.price, assetPrice.price);
+			assert.equal(details.priceDetails.invalid, assetPrice.invalid);
 			assert.bnEqual(details.priceDetails.currentRoundId, await futuresMarket.currentRoundId());
 		});
 
@@ -191,8 +191,8 @@ contract('FuturesMarketData', accounts => {
 			const position = await futuresMarket.positions(trader1);
 			assert.bnEqual(details2.position.margin, position.margin);
 			assert.bnEqual(details2.position.size, position.size);
-			assert.bnEqual(details2.position.entryPrice, position.entryPrice);
-			assert.bnEqual(details2.position.entryIndex, position.entryIndex);
+			assert.bnEqual(details2.position.lastPrice, position.lastPrice);
+			assert.bnEqual(details2.position.fundingIndex, position.fundingIndex);
 
 			const notional = await futuresMarket.notionalValue(trader1);
 			assert.bnEqual(details2.notionalValue, notional.value);
@@ -228,8 +228,8 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sETHSummary.market, sethMarket.address);
 			assert.equal(sETHSummary.asset, newAsset);
 			assert.equal(sETHSummary.maxLeverage, params.maxLeverage);
-			const price = await sethMarket.priceAndInvalid();
-			assert.equal(sETHSummary.price, price.assetPrice);
+			const price = await sethMarket.assetPrice();
+			assert.equal(sETHSummary.price, price.price);
 			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
 			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
@@ -259,8 +259,8 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sBTCSummary.market, futuresMarket.address);
 			assert.equal(sBTCSummary.asset, baseAsset);
 			assert.equal(sBTCSummary.maxLeverage, fmParams.maxLeverage);
-			let price = await futuresMarket.priceAndInvalid();
-			assert.equal(sBTCSummary.price, price.assetPrice);
+			let price = await futuresMarket.assetPrice();
+			assert.equal(sBTCSummary.price, price.price);
 			assert.equal(sBTCSummary.marketSize, await futuresMarket.marketSize());
 			assert.equal(sBTCSummary.marketSkew, await futuresMarket.marketSkew());
 			assert.equal(sBTCSummary.currentFundingRate, await futuresMarket.currentFundingRate());
@@ -271,8 +271,8 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sETHSummary.market, sethMarket.address);
 			assert.equal(sETHSummary.asset, newAsset);
 			assert.equal(sETHSummary.maxLeverage, sETHParams.maxLeverage);
-			price = await sethMarket.priceAndInvalid();
-			assert.equal(sETHSummary.price, price.assetPrice);
+			price = await sethMarket.assetPrice();
+			assert.equal(sETHSummary.price, price.price);
 			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
 			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
 			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
