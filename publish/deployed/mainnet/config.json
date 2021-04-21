@@ -670,5 +670,14 @@
 	},
 	"SynthsKRW": {
 		"deploy": false
+	},
+	"TokenStatesCRV": {
+		"deploy": false
+	},
+	"ProxysCRV": {
+		"deploy": false
+	},
+	"SynthsCRV": {
+		"deploy": false
 	}
 }
