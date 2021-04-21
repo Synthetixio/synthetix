@@ -183,6 +183,6 @@
 			"minor": 42
 		},
 		"sources": ["Exchanger", "VirtualSynthMastercopy"],
-		"sips": [127]
+		"sips": [114, 127]
 	}
 ]

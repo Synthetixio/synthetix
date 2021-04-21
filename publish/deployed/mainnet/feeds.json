@@ -138,5 +138,25 @@
 	"TSLA": {
 		"asset": "TSLA",
 		"feed": "0x1ceDaaB50936881B3e449e47e40A2cDAF5576A4a"
+	},
+	"AAPL": {
+		"asset": "AAPL",
+		"feed": "0x139C8512Cde1778e9b9a8e721ce1aEbd4dD43587"
+	},
+	"FB": {
+		"asset": "FB",
+		"feed": "0xCe1051646393087e706288C1B57Fd26446657A7f"
+	},
+	"GOOG": {
+		"asset": "GOOG",
+		"feed": "0x36D39936BeA501755921beB5A382a88179070219"
+	},
+	"NFLX": {
+		"asset": "NFLX",
+		"feed": "0x67C2e69c5272B94AF3C90683a9947C39Dc605ddE"
+	},
+	"AMZN": {
+		"asset": "AMZN",
+		"feed": "0x8994115d287207144236c13Be5E2bDbf6357D9Fd"
 	}
 }
