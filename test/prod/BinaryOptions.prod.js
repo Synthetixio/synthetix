@@ -151,7 +151,7 @@ contract('Binary Options (prod tests)', accounts => {
 		});
 
 		it('should resolve', async () => {
-			await fastForward(maturity);
+			await fastForward(200);
 			await BinaryOptionMarketManager.resolveMarket(binaryOptionMarket.address);
 		});
 	});
