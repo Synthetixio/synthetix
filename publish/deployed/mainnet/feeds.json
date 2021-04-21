@@ -138,5 +138,37 @@
 	"TSLA": {
 		"asset": "TSLA",
 		"feed": "0x1ceDaaB50936881B3e449e47e40A2cDAF5576A4a"
+	},
+	"1INCH": {
+		"asset": "1INCH",
+		"feed": "0xc929ad75B72593967DE83E7F7Cda0493458261D9"
+	},
+	"RUNE": {
+		"asset": "RUNE",
+		"feed": "0x48731cF7e84dc94C5f84577882c14Be11a5B7456"
+	},
+	"CRV": {
+		"asset": "CRV",
+		"feed": "0xCd627aA160A6fA45Eb793D19Ef54f5062F20f33f"
+	},
+	"AAPL": {
+		"asset": "AAPL",
+		"feed": "0x139C8512Cde1778e9b9a8e721ce1aEbd4dD43587"
+	},
+	"FB": {
+		"asset": "FB",
+		"feed": "0xCe1051646393087e706288C1B57Fd26446657A7f"
+	},
+	"GOOG": {
+		"asset": "GOOG",
+		"feed": "0x36D39936BeA501755921beB5A382a88179070219"
+	},
+	"NFLX": {
+		"asset": "NFLX",
+		"feed": "0x67C2e69c5272B94AF3C90683a9947C39Dc605ddE"
+	},
+	"AMZN": {
+		"asset": "AMZN",
+		"feed": "0x8994115d287207144236c13Be5E2bDbf6357D9Fd"
 	}
 }
