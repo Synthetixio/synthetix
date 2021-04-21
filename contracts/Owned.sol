@@ -7,6 +7,11 @@ contract Owned {
 
     constructor(address _owner) public {
         require(_owner != address(0), "Owner address cannot be 0");
+        initOwner(_owner);
+    }
+
+    function initOwner(address _owner) internal {
+        require(owner == address(0), "Init can only be called when owner is 0");
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
     }

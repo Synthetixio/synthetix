@@ -15,6 +15,7 @@ contract('BinaryOptionMarketData @gas-skip', accounts => {
 			synths: ['sUSD'],
 			contracts: [
 				'BinaryOptionMarketManager',
+				'BinaryOptionMarketMastercopy',
 				'AddressResolver',
 				'ExchangeRates',
 				'FeePool',
@@ -39,7 +40,6 @@ contract('BinaryOptionMarketData @gas-skip', accounts => {
 				[toUnit(0.01), toUnit(0.02), toUnit(0.03)], // pool, creator, refund fees
 			],
 		});
-		await market.rebuildCache();
 
 		dataContract = await setupContract({
 			accounts,

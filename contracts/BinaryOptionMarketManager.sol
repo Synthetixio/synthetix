@@ -272,7 +272,6 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
                 bids,
                 [fees.poolFee, fees.creatorFee, fees.refundFee]
             );
-        market.rebuildCache();
         _activeMarkets.add(address(market));
 
         // The debt can't be incremented in the new market's constructor because until construction is complete,

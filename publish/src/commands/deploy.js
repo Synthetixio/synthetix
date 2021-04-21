@@ -1249,6 +1249,12 @@ const deploy = async ({
 		deps: ['AddressResolver'],
 	});
 
+	await deployer.deployContract({
+		name: 'BinaryOptionsMarketMastercopy',
+		args: [account, addressOf(readProxyForResolver)],
+		deps: ['AddressResolver'],
+	});
+
 	console.log(gray(`\n------ DEPLOY DAPP UTILITIES ------\n`));
 
 	await deployer.deployContract({

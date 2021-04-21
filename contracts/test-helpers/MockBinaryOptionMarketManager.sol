@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "../BinaryOptionMarket.sol";
+import "./MockBinaryOptionMarketMastercopy.sol";
 import "../AddressResolver.sol";
 
 contract MockBinaryOptionMarketManager {
@@ -18,19 +19,8 @@ contract MockBinaryOptionMarketManager {
         uint[2] calldata bids, // [longBid, shortBid]
         uint[3] calldata fees // [poolFee, creatorFee, refundFee]
     ) external {
-        market = new BinaryOptionMarket(
-            address(this),
-            creator,
-            address(resolver),
-            creatorLimits,
-            oracleKey,
-            strikePrice,
-            refundsEnabled,
-            times,
-            bids,
-            fees
-        );
-        market.rebuildCache();
+        market = new MockBinaryOptionMarketMastercopy(address(this));
+        market.initialize(resolver, creator, creatorLimits, oracleKey, strikePrice, refundsEnabled, times, bids, fees);
     }
 
     function decrementTotalDeposited(uint) external pure {

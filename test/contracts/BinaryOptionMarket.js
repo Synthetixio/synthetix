@@ -134,6 +134,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 			synths: ['sUSD'],
 			contracts: [
 				'BinaryOptionMarketManager',
+				'BinaryOptionMarketMastercopy',
 				'AddressResolver',
 				'ExchangeRates',
 				'FeePool',
@@ -384,6 +385,7 @@ contract('BinaryOptionMarket @gas-skip', accounts => {
 					'exerciseOptions',
 					'expire',
 					'cancel',
+					'initialize',
 				],
 			});
 		});
