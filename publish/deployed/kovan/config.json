@@ -514,5 +514,8 @@
 	},
 	"SynthsKRW": {
 		"deploy": false
+	},
+	"VirtualSynthMastercopy": {
+		"deploy": false
 	}
 }
