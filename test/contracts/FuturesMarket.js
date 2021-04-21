@@ -867,7 +867,47 @@ contract('FuturesMarket', accounts => {
 		});
 
 		it('closing a position cancels any open orders.', async () => {
-			assert.isFalse(true);
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('100'),
+				margin: toUnit('1000'),
+				leverage: toUnit('2'),
+			});
+
+			await futuresMarket.submitOrder(toUnit('2000'), toUnit('3'), { from: trader });
+
+			let order = await futuresMarket.orders(trader);
+			assert.isTrue(order.pending);
+			assert.bnNotEqual(order.id, toBN(0));
+			assert.bnEqual(order.margin, toUnit('2000'));
+			assert.bnEqual(order.leverage, toUnit('3'));
+			assert.bnNotEqual(order.fee, toBN(0));
+			assert.bnNotEqual(order.roundId, toBN(0));
+
+			const tx = await futuresMarket.closePosition({ from: trader });
+			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+			assert.equal(decodedLogs.length, 3);
+			decodedEventEqual({
+				event: 'OrderCancelled',
+				emittedFrom: proxyFuturesMarket.address,
+				args: [order.id, trader],
+				log: decodedLogs[1],
+			});
+			decodedEventEqual({
+				event: 'OrderSubmitted',
+				emittedFrom: proxyFuturesMarket.address,
+				args: [order.id.add(toBN(1)), trader, toBN(0), toBN(0), toBN(0), order.roundId],
+				log: decodedLogs[2],
+			});
+
+			order = await futuresMarket.orders(trader);
+			assert.isTrue(order.pending);
+			assert.bnNotEqual(order.id, toBN(0));
+			assert.bnEqual(order.margin, toBN(0));
+			assert.bnEqual(order.leverage, toBN(0));
+			assert.bnEqual(order.fee, toBN(0));
+			assert.bnNotEqual(order.roundId, toBN(0));
 		});
 	});
 
