@@ -23,9 +23,13 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
+    bool public initiationActive;
+
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
+        initiationActive = true;
+    }
 
     //
     // ========== INTERNALS ============
@@ -53,8 +57,17 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         require(_messenger.xDomainMessageSender() == synthetixBridgeToOptimism(), "Only the L1 bridge can invoke");
     }
 
+    function initiatingActive() internal view {
+        require(initiationActive, "Initiation deactivated");
+    }
+
     modifier onlyOptimismBridge() {
         onlyAllowFromOptimism();
+        _;
+    }
+
+    modifier requireInitiationActive() {
+        initiatingActive();
         _;
     }
 
@@ -77,11 +90,11 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L2
-    function withdraw(uint amount) external {
+    function withdraw(uint amount) external requireInitiationActive {
         _initiateWithdraw(msg.sender, amount);
     }
 
-    function withdrawTo(address to, uint amount) external {
+    function withdrawTo(address to, uint amount) external requireInitiationActive {
         _initiateWithdraw(to, amount);
     }
 
@@ -136,7 +149,19 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         emit MintedSecondaryRewards(amount);
     }
 
+    function suspendInitiation() external onlyOwner {
+        initiationActive = false;
+        emit InitiationSuspended();
+    }
+
+    function resumeInitiation() external onlyOwner {
+        initiationActive = true;
+        emit InitiationResumed();
+    }
+
     // ========== EVENTS ==========
+    event InitiationSuspended();
+    event InitiationResumed();
     event ImportedVestingEntries(
         address indexed account,
         uint256 escrowedAmount,
@@ -145,4 +170,5 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     event DepositFinalized(address indexed to, uint256 amount);
     event MintedSecondaryRewards(uint256 amount);
     event WithdrawalInitiated(address indexed from, address to, uint256 amount);
+    event WithdrawalsSuspended();
 }
