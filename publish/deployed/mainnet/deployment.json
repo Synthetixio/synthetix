@@ -2039,6 +2039,31 @@
 			"txn": "",
 			"network": "mainnet"
 		},
+		"TokenStatesCRV": {
+			"name": "TokenStatesCRV",
+			"address": "0x602590F2aa35B71ccB1Ca72E673A75b26eC7f4E8",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x602590F2aa35B71ccB1Ca72E673A75b26eC7f4E8",
+			"timestamp": "2021-04-21T22:32:32.270Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysCRV": {
+			"name": "ProxysCRV",
+			"address": "0xD38aEb759891882e78E957c80656572503D8c1B1",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0xD38aEb759891882e78E957c80656572503D8c1B1",
+			"timestamp": "2021-04-21T22:32:54.720Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsCRV": {
+			"name": "SynthsCRV",
+			"address": "0x13D0F5B8630520eA04f694F17A001fb95eaFD30E",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x13D0F5B8630520eA04f694F17A001fb95eaFD30E",
+			"timestamp": "2021-04-21T22:33:01.821Z"
+		},
 		"TokenStatesAAPL": {
 			"name": "TokenStatesAAPL",
 			"address": "0x830B48539D82a4D34dD670bfE163f9eF84B6c2f1",
