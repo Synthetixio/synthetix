@@ -147,8 +147,8 @@
 		"asset": "FB",
 		"feed": "0xCe1051646393087e706288C1B57Fd26446657A7f"
 	},
-	"GOOGL": {
-		"asset": "GOOGL",
+	"GOOG": {
+		"asset": "GOOG",
 		"feed": "0x36D39936BeA501755921beB5A382a88179070219"
 	},
 	"NFLX": {
