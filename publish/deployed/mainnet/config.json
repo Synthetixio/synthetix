@@ -689,13 +689,13 @@
 	"SynthsFB": {
 		"deploy": false
 	},
-	"TokenStatesGOOGL": {
+	"TokenStatesGOOG": {
 		"deploy": false
 	},
-	"ProxysGOOGL": {
+	"ProxysGOOG": {
 		"deploy": false
 	},
-	"SynthsGOOGL": {
+	"SynthsGOOG": {
 		"deploy": false
 	},
 	"TokenStatesNFLX": {
