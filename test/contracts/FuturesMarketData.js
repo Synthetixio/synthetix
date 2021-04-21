@@ -182,7 +182,7 @@ contract('FuturesMarketData', accounts => {
 			const details2 = await futuresMarketData.positionDetails(futuresMarket.address, trader1);
 
 			const order = await futuresMarket.orders(trader3);
-			assert.equal(details.order.pending, order.pending);
+			assert.equal(details.orderPending, await futuresMarket.orderPending(trader3));
 			assert.bnEqual(details.order.margin, order.margin);
 			assert.bnEqual(details.order.leverage, order.leverage);
 			assert.bnEqual(details.order.fee, order.fee);

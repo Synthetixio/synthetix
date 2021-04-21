@@ -23,7 +23,6 @@ import "@nomiclabs/buidler/console.sol";
 // Remaining Functionality
 //     Parameters into struct
 //     Ensure total system debt is being computed properly.
-//     Remove pending in favour of orderId being nonzero
 //     Merge in develop
 //     Consider not exposing signs of short vs long positions
 
@@ -65,7 +64,6 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     enum Side {Long, Short}
 
     struct Order {
-        bool pending;
         uint id;
         int margin;
         uint leverage;
@@ -299,6 +297,14 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     /* ---------- Position Details ---------- */
 
+    function _orderPending(Order storage order) internal view returns (bool pending) {
+        return order.id != 0;
+    }
+
+    function orderPending(address account) external view returns (bool pending) {
+        return _orderPending(orders[account]);
+    }
+
     function _notionalValue(address account, uint price) internal view returns (int value) {
         return positions[account].size.multiplyDecimalRound(int(price));
     }
@@ -500,7 +506,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         IExchangeRates exRates = _exchangeRates();
         (uint price, bool invalid) = _assetPrice(exRates);
         Order storage order = orders[account];
-        if (invalid || price == 0 || !order.pending || _currentRoundId(exRates) <= order.roundId) {
+        if (invalid || price == 0 || !_orderPending(order) || _currentRoundId(exRates) <= order.roundId) {
             return false;
         }
         return true;
@@ -611,7 +617,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     function cancelOrder() external optionalProxy {
         address sender = messageSender;
-        require(orders[sender].pending, "No pending order");
+        require(_orderPending(orders[sender]), "No pending order");
 
         uint price = _assetPriceRequireNotInvalid(_exchangeRates());
         uint fundingIndex = _recomputeFunding(price);
@@ -635,7 +641,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     ) internal {
         // First cancel any open order.
         Order storage order = orders[sender];
-        if (order.pending) {
+        if (_orderPending(order)) {
             _cancelOrder(sender);
         }
 
@@ -673,7 +679,6 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         _nextOrderId = _nextOrderId.add(1);
 
         // TODO: convert to order = Order(...) syntax
-        order.pending = true;
         order.id = id;
         order.margin = margin;
         order.leverage = leverage;
@@ -722,6 +727,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         // TODO: Apply this difference to the pending margin
 
         uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        require(price != 0, "Zero entry price. Cancel order and try again.");
+
         uint fundingIndex = _recomputeFunding(price);
         bool liquidated = _liquidateIfNeeded(account, price, fundingIndex);
 
@@ -730,10 +737,10 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
             return;
         }
 
+        require(_orderPending(orders[account]), "No pending order");
+
         Order memory order = orders[account];
-        require(order.pending, "No pending order");
         require(_currentRoundId(_exchangeRates()) > order.roundId, "Awaiting next price");
-        require(price != 0, "Zero entry price. Cancel order and try again.");
 
         int newSize = order.margin.multiplyDecimalRound(int(order.leverage)).divideDecimalRound(int(price));
 
@@ -782,7 +789,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         require(_canLiquidate(position, liquidationFee, fundingIndex), "Position cannot be liquidated");
 
         // If there are any pending orders, the liquidation will cancel them.
-        if (orders[account].pending) {
+        if (_orderPending(orders[account])) {
             _cancelOrder(account);
         }
 

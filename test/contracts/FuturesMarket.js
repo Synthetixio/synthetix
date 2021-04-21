@@ -541,7 +541,7 @@ contract('FuturesMarket', accounts => {
 			const id = toBN(1);
 			const roundId = await futuresMarket.currentRoundId();
 			const order = await futuresMarket.orders(trader);
-			assert.isTrue(order.pending);
+			assert.isTrue(await futuresMarket.orderPending(trader));
 			assert.bnEqual(order.id, id);
 			assert.bnEqual(order.margin, margin);
 			assert.bnEqual(order.leverage, leverage);
@@ -592,7 +592,7 @@ contract('FuturesMarket', accounts => {
 			const id1 = toBN(1);
 			const roundId1 = await futuresMarket.currentRoundId();
 			const order1 = await futuresMarket.orders(trader);
-			assert.isTrue(order1.pending);
+			assert.isTrue(await futuresMarket.orderPending(trader));
 			assert.bnEqual(order1.id, id1);
 			assert.bnEqual(order1.margin, margin);
 			assert.bnEqual(order1.leverage, leverage);
@@ -617,7 +617,7 @@ contract('FuturesMarket', accounts => {
 			const roundId2 = await futuresMarket.currentRoundId();
 			const order2 = await futuresMarket.orders(trader);
 			assert.bnGt(roundId2, roundId1);
-			assert.isTrue(order2.pending);
+			assert.isTrue(await futuresMarket.orderPending(trader));
 			assert.bnEqual(order2.id, id2);
 			assert.bnEqual(order2.margin, margin2);
 			assert.bnEqual(order2.leverage, leverage2);
@@ -691,7 +691,7 @@ contract('FuturesMarket', accounts => {
 
 			const id = toBN(1);
 			const order = await futuresMarket.orders(trader);
-			assert.isFalse(order.pending);
+			assert.isFalse(await futuresMarket.orderPending(trader));
 			assert.bnEqual(order.id, toUnit(0));
 			assert.bnEqual(order.margin, toUnit(0));
 			assert.bnEqual(order.leverage, toUnit(0));
@@ -756,7 +756,7 @@ contract('FuturesMarket', accounts => {
 
 			// Order values are deleted
 			const order = await futuresMarket.orders(trader);
-			assert.isFalse(order.pending);
+			assert.isFalse(await futuresMarket.orderPending(trader));
 			assert.bnEqual(order.margin, toUnit(0));
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
@@ -846,7 +846,7 @@ contract('FuturesMarket', accounts => {
 
 			// Order values are deleted
 			const order = await futuresMarket.orders(trader);
-			assert.isFalse(order.pending);
+			assert.isFalse(await futuresMarket.orderPending(trader));
 			assert.bnEqual(order.margin, toUnit(0));
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
@@ -877,8 +877,8 @@ contract('FuturesMarket', accounts => {
 
 			await futuresMarket.submitOrder(toUnit('2000'), toUnit('3'), { from: trader });
 
+			assert.isTrue(await futuresMarket.orderPending(trader));
 			let order = await futuresMarket.orders(trader);
-			assert.isTrue(order.pending);
 			assert.bnNotEqual(order.id, toBN(0));
 			assert.bnEqual(order.margin, toUnit('2000'));
 			assert.bnEqual(order.leverage, toUnit('3'));
@@ -901,8 +901,8 @@ contract('FuturesMarket', accounts => {
 				log: decodedLogs[2],
 			});
 
+			assert.isTrue(await futuresMarket.orderPending(trader));
 			order = await futuresMarket.orders(trader);
-			assert.isTrue(order.pending);
 			assert.bnNotEqual(order.id, toBN(0));
 			assert.bnEqual(order.margin, toBN(0));
 			assert.bnEqual(order.leverage, toBN(0));
