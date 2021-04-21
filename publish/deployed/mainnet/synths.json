@@ -134,6 +134,10 @@
 		"asset": "TSLA"
 	},
 	{
+		"name": "sCRV",
+		"asset": "CRV"
+	},
+	{
 		"name": "sCEX",
 		"asset": "CEX",
 		"index": [
