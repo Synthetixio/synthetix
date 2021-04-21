@@ -104,7 +104,7 @@ contract('FuturesMarketData', accounts => {
 
 		// The traders take positions on market
 		await futuresMarket.submitOrder(toUnit('1000'), toUnit('5'), { from: trader1 });
-		await futuresMarket.submitOrder(toUnit('-750'), toUnit('10'), { from: trader2 });
+		await futuresMarket.submitOrder(toUnit('750'), toUnit('-10'), { from: trader2 });
 		await exchangeRates.updateRates([baseAsset], [toUnit('100')], await currentTime(), {
 			from: oracle,
 		});

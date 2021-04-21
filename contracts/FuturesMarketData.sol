@@ -78,7 +78,7 @@ contract FuturesMarketData {
         int notionalValue;
         int profitLoss;
         int accruedFunding;
-        int remainingMargin;
+        uint remainingMargin;
         uint liquidationPrice;
     }
 
@@ -223,19 +223,19 @@ contract FuturesMarketData {
         return value;
     }
 
-    function _remainingMargin(FuturesMarket market, address account) internal view returns (int) {
-        (int value, ) = market.remainingMargin(account);
+    function _remainingMargin(FuturesMarket market, address account) internal view returns (uint) {
+        (uint value, ) = market.remainingMargin(account);
         return value;
     }
 
     function _order(FuturesMarket market, address account) internal view returns (FuturesMarket.Order memory) {
-        (uint orderId, int orderMargin, uint orderLeverage, uint orderFee, uint orderRoundId) = market
+        (uint orderId, uint orderMargin, int orderLeverage, uint orderFee, uint orderRoundId) = market
             .orders(account);
         return FuturesMarket.Order(orderId, orderMargin, orderLeverage, orderFee, orderRoundId);
     }
 
     function _positionDetails(FuturesMarket market, address account) internal view returns (PositionData memory) {
-        (int positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) = market.positions(account);
+        (uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) = market.positions(account);
         (uint liquidationPrice, ) = market.liquidationPrice(account, true);
         return
             PositionData(
