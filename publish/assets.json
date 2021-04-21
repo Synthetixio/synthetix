@@ -340,8 +340,8 @@
 		"exchange": "NASDAQ",
 		"description": "Facebook"
 	},
-	"GOOGL": {
-		"asset": "GOOGL",
+	"GOOG": {
+		"asset": "GOOG",
 		"category": "equities",
 		"sign": "",
 		"exchange": "NASDAQ",
