@@ -2,49 +2,26 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Inheritance
-import "./Owned.sol";
-import "./MixinResolver.sol";
-import "./MixinSystemSettings.sol";
+import "./BaseSynthetixBridge.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
-
-// Internal references
-import "./interfaces/ISynthetix.sol";
-import "./interfaces/IRewardEscrowV2.sol";
-
-// solhint-disable indent
-import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
-import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
 import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
 
-contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeToBase, iOVM_L2DepositedToken {
-    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
-    bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
-    bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
+// Internal references
+import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
 
-    bool public initiationActive;
+contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, iOVM_L2DepositedToken {
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+    bytes32 private constant CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM = "base:SynthetixBridgeToOptimism";
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
-        initiationActive = true;
-    }
+    constructor(
+        address payable _proxy,
+        address _owner,
+        address _resolver
+    ) public BaseSynthetixBridge(_proxy, _owner, _resolver) {}
 
-    //
     // ========== INTERNALS ============
-
-    function messenger() internal view returns (iAbs_BaseCrossDomainMessenger) {
-        return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
-    }
-
-    function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
-
-    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
-        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
-    }
 
     function synthetixBridgeToOptimism() internal view returns (address) {
         return requireAndGetAddress(CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM);
@@ -53,12 +30,8 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     function onlyAllowFromOptimism() internal view {
         // ensure function only callable from the L2 bridge via messenger (aka relayer)
         iAbs_BaseCrossDomainMessenger _messenger = messenger();
-        require(msg.sender == address(_messenger), "Only the relayer can call this");
+        require(messageSender == address(_messenger), "Only the relayer can call this");
         require(_messenger.xDomainMessageSender() == synthetixBridgeToOptimism(), "Only the L1 bridge can invoke");
-    }
-
-    function initiatingActive() internal view {
-        require(initiationActive, "Initiation deactivated");
     }
 
     modifier onlyOptimismBridge() {
@@ -66,20 +39,12 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         _;
     }
 
-    modifier requireInitiationActive() {
-        initiatingActive();
-        _;
-    }
-
     // ========== VIEWS ==========
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
-        newAddresses[0] = CONTRACT_EXT_MESSENGER;
-        newAddresses[1] = CONTRACT_SYNTHETIX;
-        newAddresses[2] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
-        newAddresses[3] = CONTRACT_REWARDESCROW;
+        bytes32[] memory existingAddresses = BaseSynthetixBridge.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_BASE_SYNTHETIXBRIDGETOOPTIMISM;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -90,19 +55,19 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L2
-    function withdraw(uint amount) external requireInitiationActive {
-        _initiateWithdraw(msg.sender, amount);
+    function withdraw(uint amount) external requireInitiationActive optionalProxy {
+        _initiateWithdraw(messageSender, amount);
     }
 
-    function withdrawTo(address to, uint amount) external requireInitiationActive {
+    function withdrawTo(address to, uint amount) external requireInitiationActive optionalProxy {
         _initiateWithdraw(to, amount);
     }
 
     function _initiateWithdraw(address to, uint amount) private {
-        require(synthetix().transferableSynthetix(msg.sender) >= amount, "Not enough transferable SNX");
+        require(synthetix().transferableSynthetix(messageSender) >= amount, "Not enough transferable SNX");
 
         // instruct L2 Synthetix to burn this supply
-        synthetix().burnSecondary(msg.sender, amount);
+        synthetix().burnSecondary(messageSender, amount);
 
         // create message payload for L1
         iOVM_L1TokenGateway bridgeToOptimism;
@@ -115,7 +80,7 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
-        emit WithdrawalInitiated(msg.sender, to, amount);
+        emit WithdrawalInitiated(messageSender, to, amount);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
@@ -124,17 +89,17 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
         address account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries
-    ) external onlyOptimismBridge {
+    ) external onlyOptimismBridge optionalProxy {
         IRewardEscrowV2 rewardEscrow = rewardEscrowV2();
         // First, mint the escrowed SNX that are being migrated
         synthetix().mintSecondary(address(rewardEscrow), escrowedAmount);
         rewardEscrow.importVestingEntries(account, escrowedAmount, vestingEntries);
 
-        emit ImportedVestingEntries(account, escrowedAmount, vestingEntries);
+        emitImportedVestingEntries(account, escrowedAmount, vestingEntries);
     }
 
     // invoked by Messenger on L2
-    function finalizeDeposit(address to, uint256 amount) external onlyOptimismBridge {
+    function finalizeDeposit(address to, uint256 amount) external onlyOptimismBridge optionalProxy {
         // now tell Synthetix to mint these tokens, deposited in L1, into the specified account for L2
         synthetix().mintSecondary(to, amount);
 
@@ -142,33 +107,59 @@ contract SynthetixBridgeToBase is Owned, MixinSystemSettings, ISynthetixBridgeTo
     }
 
     // invoked by Messenger on L2
-    function finalizeRewardDeposit(uint256 amount) external onlyOptimismBridge {
+    function finalizeRewardDeposit(uint256 amount) external onlyOptimismBridge optionalProxy {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 
         emit MintedSecondaryRewards(amount);
     }
 
-    function suspendInitiation() external onlyOwner {
-        initiationActive = false;
-        emit InitiationSuspended();
-    }
-
-    function resumeInitiation() external onlyOwner {
-        initiationActive = true;
-        emit InitiationResumed();
-    }
-
     // ========== EVENTS ==========
-    event InitiationSuspended();
-    event InitiationResumed();
     event ImportedVestingEntries(
         address indexed account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] vestingEntries
     );
+    bytes32 private constant IMPORTEDVESTINGENTRIES_SIG =
+        keccak256("ImportedVestingEntries(address,uint256,(uint64,uint256)[])");
+
+    function emitImportedVestingEntries(
+        address account,
+        uint256 escrowedAmount,
+        VestingEntries.VestingEntry[] memory vestingEntries
+    ) internal {
+        proxy._emit(
+            abi.encode(escrowedAmount, vestingEntries),
+            2,
+            IMPORTEDVESTINGENTRIES_SIG,
+            bytes32(uint256(uint160(account))),
+            0,
+            0
+        );
+    }
+
     event DepositFinalized(address indexed to, uint256 amount);
+    bytes32 private constant DEPOSITFINALIZED_SIG = keccak256("DepositFinalized(address,uint256)");
+
+    function emitDepositFinalized(address to, uint256 amount) internal {
+        proxy._emit(abi.encode(amount), 2, DEPOSITFINALIZED_SIG, bytes32(uint256(uint160(to))), 0, 0);
+    }
+
     event MintedSecondaryRewards(uint256 amount);
+    bytes32 private constant MINTEDSECONDARYREWARDS_SIG = keccak256("MintedSecondaryRewards(uint256)");
+
+    function emitMintedSecondaryRewards(uint256 amount) internal {
+        proxy._emit(abi.encode(amount), 1, DEPOSITFINALIZED_SIG, 0, 0, 0);
+    }
+
     event WithdrawalInitiated(address indexed from, address to, uint256 amount);
-    event WithdrawalsSuspended();
+    bytes32 private constant WITHDRAWALINITIATED_SIG = keccak256("WithdrawalInitiated(address,address,uint256)");
+
+    function emitWithdrawalInitiated(
+        address from,
+        address to,
+        uint256 amount
+    ) internal {
+        proxy._emit(abi.encode(to, amount), 2, WITHDRAWALINITIATED_SIG, bytes32(uint256(uint160(from))), 0, 0);
+    }
 }
