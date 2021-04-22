@@ -742,5 +742,8 @@
 	},
 	"SynthsAMZN": {
 		"deploy": false
+	},
+	"VirtualSynthMastercopy": {
+		"deploy": false
 	}
 }
