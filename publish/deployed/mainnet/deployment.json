@@ -2262,6 +2262,51 @@
 			"timestamp": "2021-04-22T00:39:13.000Z",
 			"txn": "https://etherscan.io/tx/0x97cf7f9d52f180b4e0f1f642a3b18e84c3ce0c6fa31cfaef16616a31a81a808f",
 			"network": "mainnet"
+		},
+		"StakingRewardssFBBalancer": {
+			"name": "StakingRewardssFBBalancer",
+			"address": "0x26Fa0665660c1D3a3666584669511d3c66Ad37Cb",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x26Fa0665660c1D3a3666584669511d3c66Ad37Cb",
+			"timestamp": "2021-04-22T15:30:32.441Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"StakingRewardssAAPLBalancer": {
+			"name": "StakingRewardssAAPLBalancer",
+			"address": "0x7af65f1740c0eB816A27FD808EaF6Ab09F6Fa646",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x7af65f1740c0eB816A27FD808EaF6Ab09F6Fa646",
+			"timestamp": "2021-04-22T15:33:15.930Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"StakingRewardssAMZNBalancer": {
+			"name": "StakingRewardssAMZNBalancer",
+			"address": "0xDC338C7544654c7dadFEb7E44076E457963113B0",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0xDC338C7544654c7dadFEb7E44076E457963113B0",
+			"timestamp": "2021-04-22T15:39:13.829Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"StakingRewardssNFLXBalancer": {
+			"name": "StakingRewardssNFLXBalancer",
+			"address": "0x8Ef8cA2AcAaAfEc19fB366C11561718357F780F2",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x8Ef8cA2AcAaAfEc19fB366C11561718357F780F2",
+			"timestamp": "2021-04-22T15:45:46.242Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"StakingRewardssGOOGBalancer": {
+			"name": "StakingRewardssGOOGBalancer",
+			"address": "0x6fB7F0E78582746bd01BcB6dfbFE62cA5F4F9175",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x6fB7F0E78582746bd01BcB6dfbFE62cA5F4F9175",
+			"timestamp": "2021-04-22T15:47:27.982Z",
+			"txn": "",
+			"network": "mainnet"
 		}
 	},
 	"sources": {
