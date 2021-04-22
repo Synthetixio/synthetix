@@ -95,6 +95,21 @@
 	"StakingRewardssTSLABalancer": {
 		"deploy": false
 	},
+	"StakingRewardssFBBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssAAPLBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssAMZNBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssNFLXBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssGOOGBalancer": {
+		"deploy": false
+	},
 	"DappMaintenance": {
 		"deploy": false
 	},
