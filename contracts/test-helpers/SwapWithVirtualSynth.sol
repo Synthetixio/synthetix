@@ -12,7 +12,6 @@ import "../interfaces/IAddressResolver.sol";
 import "../interfaces/IVirtualSynth.sol";
 import "../interfaces/IExchanger.sol";
 
-
 interface IERC20Detailed {
     // ERC20 Optional Views
     function name() external view returns (string memory);
@@ -45,7 +44,6 @@ interface IERC20Detailed {
     event Approval(address indexed owner, address indexed spender, uint value);
 }
 
-
 interface ICurvePool {
     function exchange(
         int128 i,
@@ -54,7 +52,6 @@ interface ICurvePool {
         uint min_dy
     ) external;
 }
-
 
 contract VirtualToken is ERC20 {
     using SafeMath for uint;
@@ -143,7 +140,6 @@ contract VirtualToken is ERC20 {
     event Converted(address indexed virtualSynth, uint amount);
     event Settled(uint totalSupply, uint amountAfterSettled);
 }
-
 
 contract SwapWithVirtualSynth {
     ICurvePool public incomingPool = ICurvePool(0xA5407eAE9Ba41422680e2e00537571bcC53efBfD); // Curve: sUSD v2 Swap

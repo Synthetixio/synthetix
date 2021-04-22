@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 contract MockMintableSynthetix {
     address public mintSecondaryCallAccount;
     uint public mintSecondaryCallAmount;

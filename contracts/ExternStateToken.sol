@@ -10,7 +10,6 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./TokenState.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/externstatetoken
 contract ExternStateToken is Owned, Proxyable {
     using SafeMath for uint;

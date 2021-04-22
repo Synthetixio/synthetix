@@ -772,12 +772,26 @@ const deploy = async ({
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
-	const exchanger = await deployer.deployContract({
-		name: 'Exchanger',
-		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
-	});
+	let exchanger;
+	if (useOvm) {
+		exchanger = await deployer.deployContract({
+			name: 'Exchanger',
+			source: 'Exchanger',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+	} else {
+		exchanger = await deployer.deployContract({
+			name: 'Exchanger',
+			source: 'ExchangerWithVirtualSynth',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+
+		await deployer.deployContract({
+			name: 'VirtualSynthMastercopy',
+		});
+	}
 
 	const exchangeState = await deployer.deployContract({
 		name: 'ExchangeState',
@@ -1979,13 +1993,15 @@ const deploy = async ({
 		}
 
 		// setup initial values if they are unset
+
+		const waitingPeriodSecs = await getDeployParameter('WAITING_PERIOD_SECS');
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
 			read: 'waitingPeriodSecs',
-			expected: input => input !== '0',
+			expected: input => (waitingPeriodSecs === '0' ? true : input !== '0'),
 			write: 'setWaitingPeriodSecs',
-			writeArg: await getDeployParameter('WAITING_PERIOD_SECS'),
+			writeArg: waitingPeriodSecs,
 		});
 
 		await runStep({
@@ -2239,7 +2255,7 @@ const deploy = async ({
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'maxDebt',
-			expected: input => input === collateralManagerDefaults['MAX_DEBT'],
+			expected: input => input !== '0', // only change if zero
 			write: 'setMaxDebt',
 			writeArg: [collateralManagerDefaults['MAX_DEBT']],
 		});
@@ -2248,7 +2264,7 @@ const deploy = async ({
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'baseBorrowRate',
-			expected: input => input === collateralManagerDefaults['BASE_BORROW_RATE'],
+			expected: input => input !== '0', // only change if zero
 			write: 'setBaseBorrowRate',
 			writeArg: [collateralManagerDefaults['BASE_BORROW_RATE']],
 		});
@@ -2257,7 +2273,7 @@ const deploy = async ({
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'baseShortRate',
-			expected: input => input === collateralManagerDefaults['BASE_SHORT_RATE'],
+			expected: input => input !== '0', // only change if zero
 			write: 'setBaseShortRate',
 			writeArg: [collateralManagerDefaults['BASE_SHORT_RATE']],
 		});
@@ -2309,7 +2325,7 @@ const deploy = async ({
 			contract: 'CollateralShort',
 			target: collateralShort,
 			read: 'interactionDelay',
-			expected: input => input === collateralShortInteractionDelay,
+			expected: input => input !== '0', // only change if zero
 			write: 'setInteractionDelay',
 			writeArg: collateralShortInteractionDelay,
 		});

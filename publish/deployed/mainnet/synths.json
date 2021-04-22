@@ -122,6 +122,14 @@
 		"asset": "COMP"
 	},
 	{
+		"name": "s1INCH",
+		"asset": "1INCH"
+	},
+	{
+		"name": "sRUNE",
+		"asset": "RUNE"
+	},
+	{
 		"name": "sFTSE",
 		"asset": "FTSE100"
 	},
@@ -132,6 +140,30 @@
 	{
 		"name": "sTSLA",
 		"asset": "TSLA"
+	},
+	{
+		"name": "sCRV",
+		"asset": "CRV"
+	},
+	{
+		"name": "sAAPL",
+		"asset": "AAPL"
+	},
+	{
+		"name": "sFB",
+		"asset": "FB"
+	},
+	{
+		"name": "sGOOG",
+		"asset": "GOOG"
+	},
+	{
+		"name": "sNFLX",
+		"asset": "NFLX"
+	},
+	{
+		"name": "sAMZN",
+		"asset": "AMZN"
 	},
 	{
 		"name": "sCEX",
@@ -257,9 +289,9 @@
 		"asset": "BTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 40378,
-			"upperLimit": 60567,
-			"lowerLimit": 20189
+			"entryPoint": 58785,
+			"upperLimit": 88177.5,
+			"lowerLimit": 29392.5
 		}
 	},
 	{
