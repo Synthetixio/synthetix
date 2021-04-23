@@ -314,5 +314,45 @@
 				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
 			}
 		}
+	},
+	"v2.42.0": {
+		"tag": "v2.42.0",
+		"fulltag": "v2.42.0",
+		"release": "Alnilam",
+		"network": "kovan",
+		"date": "2021-03-29T15:05:19-03:00",
+		"commit": "30f443f545a5c06ce7baeec32f60f89e4234f4e2",
+		"contracts": {
+			"TokenStatesUNI": {
+				"address": "0xF6f4f3D2E06Af9BC431b8bC869A2B138a5175C26",
+				"status": "current",
+				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
+			},
+			"ProxysUNI": {
+				"address": "0x3E88bFAbDCd2b336C4a430262809Cf4a0AC5cd57",
+				"status": "current",
+				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
+			},
+			"SynthsUNI": {
+				"address": "0xa5D3600FF0fb98925f926f6E7C4DeEAb3ed8D004",
+				"status": "current",
+				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
+			},
+			"TokenStatesAAVE": {
+				"address": "0x2Bf6Bed12D1733FD649676d482c3D6d2c1c3df33",
+				"status": "current",
+				"keccak256": "0xe9a73f8ee5731dad3d6edc8ba982fbde4f3b6185636701fdc0928ee0fec4ee49"
+			},
+			"ProxysAAVE": {
+				"address": "0x503e91fc2b9Ad7453700130d0825E661565E4c3b",
+				"status": "current",
+				"keccak256": "0x067912d947f7e44dc3cc78c50cba795498728b2e8c213acc9a80f317df773762"
+			},
+			"SynthsAAVE": {
+				"address": "0x5D5D431159Ca065846DC38aeA5d146A541a8Ec27",
+				"status": "current",
+				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
+			}
+		}
 	}
 }
