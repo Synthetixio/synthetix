@@ -154,8 +154,8 @@ contract('FuturesMarketData', accounts => {
 				await futuresMarket.proportionalSkew()
 			);
 			assert.bnEqual(
-				details.marketSizeDetails.marginSumMinusNotionalSkew,
-				await futuresMarket.marginSumMinusNotionalSkew()
+				details.marketSizeDetails.entryDebtCorrection,
+				await futuresMarket.entryDebtCorrection()
 			);
 
 			assert.bnEqual(

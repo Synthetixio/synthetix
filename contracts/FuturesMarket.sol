@@ -34,7 +34,7 @@ import "@nomiclabs/buidler/console.sol";
  *
  * Internal functions assume:
  *    - prices passed into them are valid;
- *    - funding has already been recomputed up to the current time;
+ *    - funding has already been recomputed up to the current time (hence unrecorded funding is nil);
  *    - the account being managed was not liquidated in the same transaction;
  */
 
@@ -95,7 +95,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     uint public marketSize;
     int public marketSkew; // When positive, longs outweigh shorts. When negative, shorts outweigh longs.
-    int public marginSumMinusNotionalSkew;
+    int public entryDebtCorrection;
     uint public pendingOrderValue;
 
     uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
@@ -217,9 +217,11 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     function _marketDebt(uint price) internal view returns (uint) {
-        int totalDebt = int(price).multiplyDecimalRound(marketSkew).add(marginSumMinusNotionalSkew).add(
-            int(pendingOrderValue)
-        );
+        int totalDebt = marketSkew
+            .multiplyDecimalRound(int(price).add(_nextFundingEntry(fundingSequence.length, price)))
+            .add(entryDebtCorrection)
+            .add(int(pendingOrderValue));
+
         return uint(_max(totalDebt, 0));
     }
 
@@ -610,6 +612,53 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return false;
     }
 
+    /*
+    function modifyMargin(int marginDelta) external {
+        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint fundingIndex = _recomputeFunding(price);
+
+        address sender = messageSender;
+
+        Position storage position = positions[sender];
+
+        uint remainingMargin_ = _remainingMargin(position, fundingIndex, price);
+
+        // If newMargin < 0, then marginDelta < 0 and the require statement below will fail
+        uint newMargin = uint(int(remainingMargin_).add(marginDelta));
+
+        // The user can decrease their position as long as:
+        //     * they have sufficient margin to do so
+        //     * the resulting margin would not be lower than the minimum margin
+        //     * the resulting leverage is lower than the maximum leverage
+        // We will always allow the user to increase their remaining margin, even if this leaves
+        // them over-leveraged (since they already had even higher leverage).
+        if (marginDelta < 0) {
+            require(
+                _abs(marginDelta) <= remainingMargin_ && parameters.minInitialMargin <= newMargin,
+                "Insufficient margin"
+            );
+            require(
+                _abs(_currentLeverage(position, price, remainingMargin_)) < parameters.maxLeverage,
+                "Max leverage exceeded"
+            );
+        }
+
+        // Now update their position
+        // TODO: we need to realise the remaining margin -- This should exclude funding when dealing with the debt pool
+
+        int funding = _accruedFunding(position, fundingIndex, price);
+
+        entryDebtCorrection = entryDebtCorrection.add(marginDelta).sub(funding);
+        position.margin = position.margin.add(marginDelta);
+
+        // We disallow a top-up if the position is still able to be liquidated
+        require(!_canLiquidate(position, _liquidationFee(), fundingIndex), "Position should be liquidated");
+
+        //position.margin = position.margin.
+
+        bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
+    }*/
+
     function _cancelOrder(address account) internal {
         Order storage order = orders[account];
         uint margin = order.margin;
@@ -755,11 +804,11 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         marketSize = marketSize.add(_abs(newSize)).sub(_abs(positionSize));
 
         int marginDelta = int(order.margin).sub(int(position.margin));
-        int notionalDelta = newSize.multiplyDecimalRound(int(price)).sub(
-            positionSize.multiplyDecimalRound(int(position.lastPrice))
+        int notionalPlusFundingDelta = newSize.multiplyDecimalRound(int(price).add(fundingSequence[fundingIndex])).sub(
+            positionSize.multiplyDecimalRound(int(position.lastPrice).add(fundingSequence[position.fundingIndex]))
         );
 
-        marginSumMinusNotionalSkew = marginSumMinusNotionalSkew.add(marginDelta).sub(notionalDelta);
+        entryDebtCorrection = entryDebtCorrection.add(marginDelta).sub(notionalPlusFundingDelta);
         pendingOrderValue = pendingOrderValue.sub(order.margin);
 
         if (order.fee > 0) {
@@ -802,7 +851,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         marketSkew = marketSkew.sub(positionSize);
         marketSize = marketSize.sub(_abs(positionSize));
 
-        marginSumMinusNotionalSkew = marginSumMinusNotionalSkew.sub(int(position.margin)).add(
+        // TODO: Incorporate funding rate component here
+        entryDebtCorrection = entryDebtCorrection.sub(int(position.margin)).add(
             position.size.multiplyDecimalRound(int(position.lastPrice))
         );
 

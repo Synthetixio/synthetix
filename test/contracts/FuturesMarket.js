@@ -750,7 +750,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.marketSkew(), size);
 			assert.bnEqual(await futuresMarket.marketSize(), size);
 			assert.bnEqual(
-				await futuresMarket.marginSumMinusNotionalSkew(),
+				await futuresMarket.entryDebtCorrection(),
 				margin.sub(multiplyDecimalRound(size, price))
 			);
 			assert.bnEqual(await futuresMarket.pendingOrderValue(), toBN(0));
@@ -842,7 +842,7 @@ contract('FuturesMarket', accounts => {
 			// Skew, size, entry notional sum, pending order value are updated.
 			assert.bnEqual(await futuresMarket.marketSkew(), toUnit(0));
 			assert.bnEqual(await futuresMarket.marketSize(), toUnit(0));
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit(0));
+			assert.bnEqual(await futuresMarket.entryDebtCorrection(), toUnit(0));
 			assert.bnEqual(await futuresMarket.pendingOrderValue(), toBN(0));
 
 			// Order values are deleted
@@ -1172,7 +1172,7 @@ contract('FuturesMarket', accounts => {
 
 	describe('Market Debt', () => {
 		it('Basic debt movements', async () => {
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('0'));
+			assert.bnEqual(await futuresMarket.entryDebtCorrection(), toUnit('0'));
 			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
 
 			await submitAndConfirmOrder({
@@ -1183,7 +1183,7 @@ contract('FuturesMarket', accounts => {
 				leverage: toUnit('5'),
 			});
 
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('-4000'));
+			assert.bnEqual(await futuresMarket.entryDebtCorrection(), toUnit('-4000'));
 			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('1000'));
 
 			await submitAndConfirmOrder({
@@ -1194,8 +1194,8 @@ contract('FuturesMarket', accounts => {
 				leverage: toUnit('-7'),
 			});
 
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('800'));
-			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('2600'));
+			assert.bnClose(await futuresMarket.entryDebtCorrection(), toUnit('800'), toUnit('0.1'));
+			assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('2600'), toUnit('0.1'));
 
 			await submitAndConfirmOrder({
 				market: futuresMarket,
@@ -1205,8 +1205,8 @@ contract('FuturesMarket', accounts => {
 				leverage: toUnit('0'),
 			});
 
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('4800'));
-			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('950'));
+			assert.bnClose(await futuresMarket.entryDebtCorrection(), toUnit('4800'), toUnit('0.1'));
+			assert.bnClose((await futuresMarket.marketDebt())[0], toUnit('950'), toUnit('0.1'));
 
 			await submitAndConfirmOrder({
 				market: futuresMarket,
@@ -1216,8 +1216,12 @@ contract('FuturesMarket', accounts => {
 				leverage: toUnit('0'),
 			});
 
-			assert.bnEqual(await futuresMarket.marginSumMinusNotionalSkew(), toUnit('0'));
+			assert.bnEqual(await futuresMarket.entryDebtCorrection(), toUnit('0'));
 			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
+		});
+
+		it.skip('market debt incorporates funding flow', async () => {
+			assert.isTrue(false);
 		});
 
 		it.skip('market debt includes pending order value', async () => {

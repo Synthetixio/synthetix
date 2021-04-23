@@ -39,7 +39,7 @@ contract FuturesMarketData {
         uint marketDebt;
         int marketSkew;
         int proportionalSkew;
-        int marginSumMinusNotionalSkew;
+        int entryDebtCorrection;
         uint pendingOrderValue;
     }
 
@@ -193,7 +193,7 @@ contract FuturesMarketData {
                     marketDebt,
                     market.marketSkew(),
                     market.proportionalSkew(),
-                    market.marginSumMinusNotionalSkew(),
+                    market.entryDebtCorrection(),
                     market.pendingOrderValue()
                 ),
                 PriceDetails(price, market.currentRoundId(), invalid)
