@@ -184,5 +184,24 @@
 		},
 		"sources": ["Exchanger", "VirtualSynthMastercopy"],
 		"sips": [107, 114, 126, 127]
+	},
+	{
+		"name": "Alnair",
+		"version": {
+			"major": 2,
+			"minor": 43
+		},
+		"sources": ["SynthetixBridgeToOptimism", "SynthetixBridgeEscrow"],
+		"sips": [116]
+	},
+	{
+		"name": "Alnair (Optimism)",
+		"version": {
+			"major": 2,
+			"minor": 43
+		},
+		"ovm": true,
+		"sources": ["SynthetixBridgeToBase", "Synthetix", "DebtCache"],
+		"sips": [116, 117]
 	}
 ]
