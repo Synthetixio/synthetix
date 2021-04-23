@@ -808,7 +808,7 @@ contract('FuturesMarket', accounts => {
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Price is invalid');
 		});
 
-		it('Can confirm a set of multiple orders on both sides of the market', async () => {
+		it.skip('Can confirm a set of multiple orders on both sides of the market', async () => {
 			assert.isTrue(false);
 		});
 	});
@@ -977,7 +977,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual((await futuresMarket.remainingMargin(trader2))[0], toUnit('5000'));
 			});
 
-			describe('profit and no funding', async () => {
+			describe.skip('profit and no funding', async () => {
 				it('positive profit', async () => {
 					assert.isTrue(false);
 				});
@@ -987,7 +987,7 @@ contract('FuturesMarket', accounts => {
 				});
 			});
 
-			describe('funding and no profit', async () => {
+			describe.skip('funding and no profit', async () => {
 				it('positive funding', async () => {
 					assert.isTrue(false);
 				});
@@ -997,7 +997,7 @@ contract('FuturesMarket', accounts => {
 				});
 			});
 
-			describe('funding and profit', async () => {
+			describe.skip('funding and profit', async () => {
 				it('positive sum', async () => {
 					assert.isTrue(false);
 				});
@@ -1007,7 +1007,7 @@ contract('FuturesMarket', accounts => {
 				});
 			});
 
-			it('Remaining margin is clamped to zero if losses exceed initial margin', async () => {
+			it.skip('Remaining margin is clamped to zero if losses exceed initial margin', async () => {
 				assert.isTrue(false);
 			});
 
@@ -1108,12 +1108,12 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 		});
 
-		it('Altering the max funding has a proportional effect', async () => {
+		it.skip('Altering the max funding has a proportional effect', async () => {
 			// TODO: Try when it's 0%, +-50%, +-100%
 			assert.isTrue(false);
 		});
 
-		it('Altering the max funding rate skew has a proportional effect', async () => {
+		it.skip('Altering the max funding rate skew has a proportional effect', async () => {
 			// TODO: Try clamping at +- max
 			// TODO: Try when it's 0%, +-50% , +-100%
 			// TODO: Try 0
@@ -1143,7 +1143,7 @@ contract('FuturesMarket', accounts => {
 			});
 		}
 
-		describe('Funding sequence', () => {
+		describe.skip('Funding sequence', () => {
 			it('Funding sequence is recomputed by order submission', async () => {
 				assert.isTrue(false);
 			});
@@ -1161,6 +1161,10 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Funding sequence is recomputed by liquidation', async () => {
+				assert.isTrue(false);
+			});
+
+			it('Funding sequence is recomputed by margin modification', async () => {
 				assert.isTrue(false);
 			});
 		});
@@ -1216,17 +1220,17 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual((await futuresMarket.marketDebt())[0], toUnit('0'));
 		});
 
-		it('market debt includes pending order value', async () => {
+		it.skip('market debt includes pending order value', async () => {
 			// No pending value
 			// Some pending value after an order
 			assert.isTrue(false);
 		});
 
-		it('Order confirmation folds pending value into overall debt', async () => {
+		it.skip('Order confirmation folds pending value into overall debt', async () => {
 			assert.isTrue(false);
 		});
 
-		it('Order cancellation removes pending value from debt', async () => {
+		it.skip('Order cancellation removes pending value from debt', async () => {
 			assert.isTrue(false);
 		});
 
@@ -1466,15 +1470,15 @@ contract('FuturesMarket', accounts => {
 			assert.isTrue(false);
 		});
 
-		it('Can liquidate a position with zero margin remaining', async () => {
+		it.skip('Can liquidate a position with zero margin remaining', async () => {
 			assert.isTrue(false);
 		});
 
-		it('Liquidation cancels any outstanding orders', async () => {
+		it.skip('Liquidation cancels any outstanding orders', async () => {
 			assert.isTrue(false);
 		});
 
-		it('Liquidation fee is remitted to the liquidator', async () => {
+		it.skip('Liquidation fee is remitted to the liquidator', async () => {
 			assert.isTrue(false);
 		});
 	});
