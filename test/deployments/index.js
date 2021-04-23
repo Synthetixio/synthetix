@@ -277,7 +277,7 @@ describe('deployments', () => {
 									);
 									// Depot is the only contract not currently updated to the latest MixinResolver so it
 									// doesn't expose the is cached predicate
-								} else if (target !== 'Depot') {
+								} else if (['Depot', 'VirtualSynthMastercopy'].indexOf(target) < 0) {
 									throw Error(`${target} is missing isResolverCached() function`);
 								}
 							});
