@@ -27,7 +27,7 @@ contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynt
         address payable _proxy,
         address _owner,
         address _resolver
-    ) internal Owned(_owner) Proxyable(_proxy) MixinSystemSettings(_resolver) {
+    ) public Owned(_owner) Proxyable(_proxy) MixinSystemSettings(_resolver) {
         initiationActive = true;
     }
 
@@ -70,11 +70,13 @@ contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynt
     // ========= RESTRICTED FUNCTIONS ==============
 
     function suspendInitiation() external optionalProxy_onlyOwner {
+        require(initiationActive, "initiation suspended");
         initiationActive = false;
         emitInitiationSuspended();
     }
 
     function resumeInitiation() external optionalProxy_onlyOwner {
+        require(!initiationActive, "initiation not suspended");
         initiationActive = true;
         emitInitiationResumed();
     }
@@ -82,7 +84,7 @@ contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynt
     // ========== EVENTS ==========
 
     event InitiationSuspended();
-    bytes32 private constant INITIATIONSUSPENDED_SIG = keccak256("FeePeriodClosed()");
+    bytes32 private constant INITIATIONSUSPENDED_SIG = keccak256("InitiationSuspended()");
 
     function emitInitiationSuspended() internal {
         proxy._emit("", 1, INITIATIONSUSPENDED_SIG, 0, 0, 0);
