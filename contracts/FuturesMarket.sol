@@ -26,6 +26,9 @@ import "@nomiclabs/buidler/console.sol";
 //     Merge in develop
 //     Consider not exposing signs of short vs long positions
 //     Rename marketSize, marketSkew -> size, skew
+//     Consider just reverting if things need to be liquidated rather than just triggering it except by the
+//         liquidatePosition function
+//     Consider eliminated the fundingIndex param everywhere if we're always computing up to the current time.
 
 /* Notes:
  *
@@ -267,18 +270,31 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return (_unrecordedFunding(price), isInvalid);
     }
 
+    function _nextFundingEntry(uint sequenceLength, uint price) internal view returns (int funding) {
+        return fundingSequence[sequenceLength.sub(1)].add(_unrecordedFunding(price));
+    }
+
     function _netFundingPerUnit(
         uint startIndex,
         uint endIndex,
         uint sequenceLength,
         uint price
     ) internal view returns (int) {
-        int funding;
-        if (endIndex == sequenceLength) {
-            funding = _unrecordedFunding(price);
-            endIndex = sequenceLength.sub(1);
+        int result;
+
+        if (endIndex == startIndex) {
+            return 0;
         }
-        return funding.add(fundingSequence[endIndex]).sub(fundingSequence[startIndex]);
+
+        require(startIndex < endIndex, "Funding index disordering");
+
+        if (endIndex == sequenceLength) {
+            result = _nextFundingEntry(sequenceLength, price);
+        } else {
+            result = fundingSequence[endIndex];
+        }
+
+        return result.sub(fundingSequence[startIndex]);
     }
 
     function netFundingPerUnit(uint startIndex, uint endIndex) external view returns (int funding, bool invalid) {
@@ -300,13 +316,13 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return _orderPending(orders[account]);
     }
 
-    function _notionalValue(address account, uint price) internal view returns (int value) {
-        return positions[account].size.multiplyDecimalRound(int(price));
+    function _notionalValue(Position storage position, uint price) internal view returns (int value) {
+        return position.size.multiplyDecimalRound(int(price));
     }
 
     function notionalValue(address account) external view returns (int value, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        return (_notionalValue(account, price), isInvalid);
+        return (_notionalValue(positions[account], price), isInvalid);
     }
 
     function _profitLoss(Position storage position, uint price) internal view returns (int pnl) {
@@ -420,17 +436,25 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return _canLiquidate(positions[account], _liquidationFee(), fundingSequence.length);
     }
 
+    function _currentLeverage(
+        Position storage position,
+        uint price,
+        uint remainingMargin_
+    ) internal view returns (int leverage) {
+        // No position is open, or it is ready to be liquidated; leverage goes to nil
+        if (remainingMargin_ == 0) {
+            return 0;
+        }
+
+        return _notionalValue(position, price).divideDecimalRound(int(remainingMargin_));
+    }
+
     function currentLeverage(address account) external view returns (int leverage, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
         Position storage position = positions[account];
-        uint remaining = _remainingMargin(position, fundingSequence.length, price);
-
-        // No position is open, or it is ready to be liquidated; leverage goes to nil
-        if (remaining == 0) {
-            return (0, isInvalid);
-        }
-
-        return (_notionalValue(account, price).divideDecimalRound(int(remaining)), isInvalid);
+        uint fundingIndex = fundingSequence.length;
+        uint remainingMargin_ = _remainingMargin(position, fundingIndex, price);
+        return (_currentLeverage(position, price, remainingMargin_), isInvalid);
     }
 
     function _orderFee(
@@ -564,10 +588,9 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     /* ---------- Market Operations ---------- */
 
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
-        int funding = _unrecordedFunding(price);
-
         uint sequenceLength = fundingSequence.length;
-        fundingSequence.push(fundingSequence[sequenceLength.sub(1)].add(funding));
+
+        fundingSequence.push(_nextFundingEntry(sequenceLength, price));
         fundingLastRecomputed = block.timestamp;
 
         return sequenceLength;
