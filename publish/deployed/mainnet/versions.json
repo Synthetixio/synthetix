@@ -3433,5 +3433,40 @@
 				"keccak256": "0xac5507c03171e54910218c5da4876e475e129a808af8b3050b81b3990ea73089"
 			}
 		}
+	},
+	"v2.42.1": {
+		"tag": "v2.42.1",
+		"fulltag": "v2.42.1",
+		"release": "Alnilam",
+		"network": "mainnet",
+		"date": "2021-04-22T10:21:26-06:00",
+		"commit": "36f0c0feeab994046cd77dd0bc784ca4c0567ecf",
+		"contracts": {
+			"StakingRewardssFBBalancer": {
+				"address": "0x26Fa0665660c1D3a3666584669511d3c66Ad37Cb",
+				"status": "current",
+				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
+			},
+			"StakingRewardssAAPLBalancer": {
+				"address": "0x7af65f1740c0eB816A27FD808EaF6Ab09F6Fa646",
+				"status": "current",
+				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
+			},
+			"StakingRewardssAMZNBalancer": {
+				"address": "0xDC338C7544654c7dadFEb7E44076E457963113B0",
+				"status": "current",
+				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
+			},
+			"StakingRewardssNFLXBalancer": {
+				"address": "0x8Ef8cA2AcAaAfEc19fB366C11561718357F780F2",
+				"status": "current",
+				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
+			},
+			"StakingRewardssGOOGBalancer": {
+				"address": "0x6fB7F0E78582746bd01BcB6dfbFE62cA5F4F9175",
+				"status": "current",
+				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
+			}
+		}
 	}
 }
