@@ -80,20 +80,20 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // ========== PUBLIC FUNCTIONS =========
 
-    function deposit(uint256 amount) external requireInitiationActive requireZeroDebt onlyProxy {
+    function deposit(uint256 amount) external requireInitiationActive requireZeroDebt optionalProxy {
         _initiateDeposit(messageSender, amount);
     }
 
-    function depositTo(address to, uint amount) external requireInitiationActive requireZeroDebt {
+    function depositTo(address to, uint amount) external requireInitiationActive requireZeroDebt optionalProxy {
         _initiateDeposit(to, amount);
     }
 
-    function migrateEscrow(uint256[][] memory entryIDs) public requireInitiationActive requireZeroDebt {
+    function migrateEscrow(uint256[][] memory entryIDs) public requireInitiationActive requireZeroDebt optionalProxy {
         _migrateEscrow(entryIDs);
     }
 
     // invoked by a generous user on L1
-    function depositReward(uint amount) external requireInitiationActive onlyProxy {
+    function depositReward(uint amount) external requireInitiationActive optionalProxy {
         // move the SNX into the deposit escrow
         synthetixERC20().transferFrom(messageSender, synthetixBridgeEscrow(), amount);
 

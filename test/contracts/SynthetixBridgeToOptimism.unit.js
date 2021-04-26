@@ -21,17 +21,15 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToOptimism.abi,
-			ignoreParents: ['Owned', 'MixinResolver'],
+			ignoreParents: ['BaseSynthetixBridge'],
 			expected: [
-				'finalizeWithdrawal',
 				'depositAndMigrateEscrow',
 				'deposit',
 				'depositTo',
-				'migrateEscrow',
 				'depositReward',
+				'finalizeWithdrawal',
+				'migrateEscrow',
 				'notifyRewardAmount',
-				'resumeInitiation',
-				'suspendInitiation',
 			],
 		});
 	});
@@ -48,6 +46,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		let issuer;
 		let resolver;
 		let rewardEscrow;
+		let proxy;
 		const escrowAmount = 100;
 		const emptyArray = [];
 
@@ -66,7 +65,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			issuer = await smockit(artifacts.require('IIssuer').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 
-			// now add to address resolver
+			proxy = await artifacts.require('Proxy').new(owner);
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
 				[
@@ -105,14 +104,20 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			flexibleStorage.smocked.getUIntValue.will.return.with(() => '3000000');
 		});
 
-		describe('when the target is deployed', () => {
+		describe('when the target is deployed and the proxy is set', () => {
 			let instance;
 			beforeEach(async () => {
 				instance = await artifacts
 					.require('SynthetixBridgeToOptimism')
-					.new(owner, resolver.address);
+					.new(proxy.address, owner, resolver.address);
 
 				await instance.rebuildCache();
+				await proxy.setTarget(instance.address, { from: owner });
+			});
+
+			it('should set constructor params on deployment', async () => {
+				assert.equal(await instance.proxy(), proxy.address);
+				assert.equal(await instance.owner(), owner);
 			});
 
 			describe('deposit', () => {
@@ -485,82 +490,6 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 					it('and a RewardDeposit event is emitted', async () => {
 						assert.eventEqual(txn, 'RewardDeposit', [rewardsDistribution, amount]);
-					});
-				});
-			});
-
-			describe('suspendInitiation', () => {
-				describe('failure modes', () => {
-					it('reverts when not invoked by the owner', async () => {
-						await onlyGivenAddressCanInvoke({
-							fnc: instance.suspendInitiation,
-							args: [],
-							accounts,
-							reason: 'Only the contract owner may perform this action',
-							address: owner,
-						});
-					});
-				});
-
-				it('initially initiations are active', async () => {
-					assert.equal(await instance.initiationActive(), true);
-				});
-
-				describe('when invoked by the owner', () => {
-					let txn;
-					beforeEach(async () => {
-						txn = await instance.suspendInitiation({ from: owner });
-					});
-
-					it('and initiationActive is false', async () => {
-						assert.equal(await instance.initiationActive(), false);
-					});
-
-					it('and a InitiationSuspended event is emitted', async () => {
-						assert.eventEqual(txn, 'InitiationSuspended', []);
-					});
-				});
-			});
-
-			describe('resumeInitiation', () => {
-				describe('failure modes', () => {
-					it('reverts when not invoked by the owner', async () => {
-						await onlyGivenAddressCanInvoke({
-							fnc: instance.resumeInitiation,
-							args: [],
-							accounts,
-							reason: 'Only the contract owner may perform this action',
-							address: owner,
-						});
-					});
-				});
-
-				it('initially initiations are active', async () => {
-					assert.equal(await instance.initiationActive(), true);
-				});
-
-				describe('when initiation is suspended', () => {
-					let txn;
-					beforeEach(async () => {
-						txn = await instance.suspendInitiation({ from: owner });
-					});
-
-					it('initiationActive is false', async () => {
-						assert.equal(await instance.initiationActive(), false);
-					});
-
-					describe('when initiation is resumed', () => {
-						beforeEach(async () => {
-							txn = await instance.resumeInitiation({ from: owner });
-						});
-
-						it('initiations are active again', async () => {
-							assert.equal(await instance.initiationActive(), true);
-						});
-
-						it('a InitiationResumed event is emitted', async () => {
-							assert.eventEqual(txn, 'InitiationResumed', []);
-						});
 					});
 				});
 			});

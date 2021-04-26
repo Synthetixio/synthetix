@@ -138,9 +138,6 @@ const setupContract = async ({
 
 	const defaultArgs = {
 		GenericMock: [],
-		SynthetixBridgeToOptimism: [owner, tryGetAddressOf('AddressResolver')],
-		SynthetixBridgeToBase: [owner, tryGetAddressOf('AddressResolver')],
-		SynthetixBridgeEscrow: [owner, tryGetAddressOf('AddressResolver')],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
@@ -185,6 +182,17 @@ const setupContract = async ({
 			SUPPLY_100M,
 			tryGetAddressOf('AddressResolver'),
 		],
+		SynthetixBridgeToOptimism: [
+			tryGetAddressOf('ProxySynthetixBridgeToOptimism'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
+		SynthetixBridgeToBase: [
+			tryGetAddressOf('ProxySynthetixBridgeToBase'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
+		SynthetixBridgeEscrow: [owner, tryGetAddressOf('AddressResolver')],
 		RewardsDistribution: [
 			owner,
 			tryGetAddressOf('Synthetix'),
@@ -405,6 +413,16 @@ const setupContract = async ({
 					)
 			);
 		},
+		async SynthetixBridgeToOptimism() {
+			await Promise.all(
+				[cache['ProxySynthetixBridgeToOptimism'].setTarget(instance.address, { from: owner })] || []
+			);
+		},
+		async SynthetixBridgeToBase() {
+			await Promise.all(
+				[cache['ProxySynthetixBridgeToBase'].setTarget(instance.address, { from: owner })] || []
+			);
+		},
 		async Synth() {
 			await Promise.all(
 				[
@@ -585,6 +603,8 @@ const setupAllContracts = async ({
 		{ contract: 'Proxy', forContract: 'MintableSynthetix' },
 		{ contract: 'Proxy', forContract: 'BaseSynthetix' },
 		{ contract: 'Proxy', forContract: 'FeePool' },
+		{ contract: 'Proxy', forContract: 'SynthetixBridgeToOptimism' },
+		{ contract: 'Proxy', forContract: 'SynthetixBridgeToBase' },
 		{ contract: 'TokenState', forContract: 'Synthetix' },
 		{ contract: 'TokenState', forContract: 'MintableSynthetix' },
 		{ contract: 'TokenState', forContract: 'BaseSynthetix' },
@@ -734,13 +754,13 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'SynthetixBridgeToOptimism',
-			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase'],
-			deps: ['AddressResolver', 'Issuer', 'RewardEscrowV2'],
+			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase', 'SynthetixBridgeEscrow'],
+			deps: ['Proxy', 'AddressResolver', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
 		},
 		{
 			contract: 'SynthetixBridgeToBase',
 			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'RewardEscrowV2'],
-			deps: ['AddressResolver', 'Issuer'],
+			deps: ['Proxy', 'AddressResolver', 'Synthetix'],
 		},
 		{
 			contract: 'SynthetixBridgeEscrow',

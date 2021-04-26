@@ -12,9 +12,9 @@ const {
 } = require('../../');
 
 contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
-	const [, owner, newBridge, randomAddress] = accounts;
+	const [, owner, randomAddress] = accounts;
 
-	let synthetix, synthetixBridgeToOptimism, systemSettings;
+	let synthetix, synthetixBridgeToOptimism, synthetixBridgeEscrow, systemSettings;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
@@ -22,9 +22,10 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 				Synthetix: synthetix,
 				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
 				SystemSettings: systemSettings,
+				SynthetixBridgeEscrow: synthetixBridgeEscrow,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['Synthetix', 'Issuer', 'SynthetixBridgeToOptimism'],
+				contracts: ['Synthetix', 'SynthetixBridgeToOptimism', 'SystemSettings'],
 			}));
 		});
 
@@ -109,9 +110,9 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 						assert.bnEqual(userBalanceBefore.sub(toBN(amountToDeposit)), userBalanceAfter);
 					});
 
-					it("increases the contract's balance", async () => {
+					it("increases the escrow's balance", async () => {
 						assert.bnEqual(
-							await synthetix.balanceOf(synthetixBridgeToOptimism.address),
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
 							amountToDeposit
 						);
 					});
@@ -144,7 +145,7 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 
 					before('record balances before', async () => {
 						userBalanceBefore = await synthetix.balanceOf(owner);
-						contractBalanceBefore = await synthetix.balanceOf(synthetixBridgeToOptimism.address);
+						contractBalanceBefore = await synthetix.balanceOf(synthetixBridgeEscrow.address);
 					});
 
 					before('perform a deposit to a separate address', async () => {
@@ -159,9 +160,9 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 						assert.bnEqual(userBalanceBefore.sub(toBN(amountToDeposit)), userBalanceAfter);
 					});
 
-					it("increases the contract's balance", async () => {
+					it("increases the escrow's balance", async () => {
 						assert.bnEqual(
-							await synthetix.balanceOf(synthetixBridgeToOptimism.address),
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
 							contractBalanceBefore.add(amountToDeposit)
 						);
 					});
@@ -185,7 +186,7 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 
 					before('record balance before', async () => {
 						userBalanceBefore = await synthetix.balanceOf(owner);
-						contractBalanceBefore = await synthetix.balanceOf(synthetixBridgeToOptimism.address);
+						contractBalanceBefore = await synthetix.balanceOf(synthetixBridgeEscrow.address);
 					});
 
 					before('perform a depositReward', async () => {
@@ -200,33 +201,12 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 						assert.bnEqual(userBalanceBefore.sub(toBN(amountToDeposit)), userBalanceAfter);
 					});
 
-					it("increases the contract's balance", async () => {
+					it("increases the escrow's balance", async () => {
 						assert.bnEqual(
-							await synthetix.balanceOf(synthetixBridgeToOptimism.address),
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
 							contractBalanceBefore.add(amountToDeposit)
 						);
 					});
-				});
-			});
-		});
-
-		describe('migrateBridge', () => {
-			describe('when the owner migrates the bridge', () => {
-				let bridgeBalance;
-
-				before('record balance', async () => {
-					bridgeBalance = await synthetix.balanceOf(synthetixBridgeToOptimism.address);
-				});
-
-				before('migrate the bridge', async () => {
-					await synthetixBridgeToOptimism.migrateBridge(newBridge, {
-						from: owner,
-					});
-				});
-
-				it('transfers the whole balance to the new bridge', async () => {
-					assert.bnEqual(await synthetix.balanceOf(synthetixBridgeToOptimism.address), 0);
-					assert.bnEqual(await synthetix.balanceOf(newBridge), bridgeBalance);
 				});
 			});
 		});
