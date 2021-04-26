@@ -97,7 +97,6 @@ describe('Layer 2 production tests', () => {
 				});
 				let DebtCache = connectContract({
 					contract: 'DebtCache',
-					source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
 					provider,
 					useOvm,
 				});
