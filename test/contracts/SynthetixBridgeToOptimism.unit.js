@@ -118,6 +118,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			it('should set constructor params on deployment', async () => {
 				assert.equal(await instance.proxy(), proxy.address);
 				assert.equal(await instance.owner(), owner);
+				assert.equal(await instance.resolver(), resolver.address);
 			});
 
 			describe('deposit', () => {

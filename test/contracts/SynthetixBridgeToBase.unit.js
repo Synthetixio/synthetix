@@ -13,7 +13,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToBase.abi,
-			ignoreParents: ['Owned', 'MixinResolver'],
+			ignoreParents: ['BaseSynthetixBridge'],
 			expected: [
 				'finalizeDeposit',
 				'finalizeEscrowMigration',
@@ -36,6 +36,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let resolver;
 		let rewardEscrow;
 		let flexibleStorage;
+		let proxy;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
@@ -47,7 +48,8 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
-			// now add to address resolver
+
+			proxy = await artifacts.require('Proxy').new(owner);
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
 				[
@@ -80,12 +82,21 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			flexibleStorage.smocked.getUIntValue.will.return.with(() => '3000000');
 		});
 
-		describe('when the target is deployed', () => {
+		describe('when the target is deployed and the proxy is set', () => {
 			let instance;
 			const escrowedAmount = 100;
 			beforeEach(async () => {
-				instance = await artifacts.require('SynthetixBridgeToBase').new(owner, resolver.address);
+				instance = await artifacts
+					.require('SynthetixBridgeToBase')
+					.new(proxy.address, owner, resolver.address);
 				await instance.rebuildCache();
+				await proxy.setTarget(instance.address, { from: owner });
+			});
+
+			it('should set constructor params on deployment', async () => {
+				assert.equal(await instance.proxy(), proxy.address);
+				assert.equal(await instance.owner(), owner);
+				assert.equal(await instance.resolver(), resolver.address);
 			});
 
 			describe('importVestingEntries', async () => {

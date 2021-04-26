@@ -89,7 +89,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         address account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries
-    ) external onlyOptimismBridge optionalProxy {
+    ) external optionalProxy onlyOptimismBridge {
         IRewardEscrowV2 rewardEscrow = rewardEscrowV2();
         // First, mint the escrowed SNX that are being migrated
         synthetix().mintSecondary(address(rewardEscrow), escrowedAmount);
@@ -99,7 +99,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     }
 
     // invoked by Messenger on L2
-    function finalizeDeposit(address to, uint256 amount) external onlyOptimismBridge optionalProxy {
+    function finalizeDeposit(address to, uint256 amount) external optionalProxy onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into the specified account for L2
         synthetix().mintSecondary(to, amount);
 
@@ -107,7 +107,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     }
 
     // invoked by Messenger on L2
-    function finalizeRewardDeposit(uint256 amount) external onlyOptimismBridge optionalProxy {
+    function finalizeRewardDeposit(uint256 amount) external optionalProxy onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 
