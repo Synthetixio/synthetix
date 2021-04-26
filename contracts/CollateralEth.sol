@@ -24,53 +24,53 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         uint _minCollateral
     ) public Collateral(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
 
-    function open(uint amount, bytes32 currency) external payable {
-        openInternal(msg.value, amount, currency, false);
-    }
+    // function open(uint amount, bytes32 currency) external payable {
+    //     openInternal(msg.value, amount, currency, false);
+    // }
 
-    function close(uint id) external {
-        uint collateral = closeInternal(msg.sender, id);
+    // function close(uint id) external {
+    //     uint collateral = closeInternal(msg.sender, id);
 
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateral);
-    }
+    //     pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateral);
+    // }
 
-    function deposit(address borrower, uint id) external payable {
-        depositInternal(borrower, id, msg.value);
-    }
+    // function deposit(address borrower, uint id) external payable {
+    //     depositInternal(borrower, id, msg.value);
+    // }
 
-    function withdraw(uint id, uint withdrawAmount) external {
-        uint amount = withdrawInternal(id, withdrawAmount);
+    // function withdraw(uint id, uint withdrawAmount) external {
+    //     uint amount = withdrawInternal(id, withdrawAmount);
 
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
-    }
+    //     pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
+    // }
 
-    function repay(
-        address account,
-        uint id,
-        uint amount
-    ) external {
-        repayInternal(account, msg.sender, id, amount);
-    }
+    // function repay(
+    //     address account,
+    //     uint id,
+    //     uint amount
+    // ) external {
+    //     repayInternal(account, msg.sender, id, amount);
+    // }
 
-    function draw(uint id, uint amount) external {
-        drawInternal(id, amount);
-    }
+    // function draw(uint id, uint amount) external {
+    //     drawInternal(id, amount);
+    // }
 
-    function liquidate(
-        address borrower,
-        uint id,
-        uint amount
-    ) external {
-        uint collateralLiquidated = liquidateInternal(borrower, id, amount);
+    // function liquidate(
+    //     address borrower,
+    //     uint id,
+    //     uint amount
+    // ) external {
+    //     uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateralLiquidated);
-    }
+    //     pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateralLiquidated);
+    // }
 
-    function claim(uint amount) external nonReentrant {
-        // If they try to withdraw more than their total balance, it will fail on the safe sub.
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
+    // function claim(uint amount) external nonReentrant {
+    //     // If they try to withdraw more than their total balance, it will fail on the safe sub.
+    //     pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
 
-        (bool success, ) = msg.sender.call.value(amount)("");
-        require(success, "Transfer failed");
-    }
+    //     (bool success, ) = msg.sender.call.value(amount)("");
+    //     require(success, "Transfer failed");
+    // }
 }

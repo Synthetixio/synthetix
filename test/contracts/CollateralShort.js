@@ -216,7 +216,7 @@ contract('CollateralShort', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: short.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
-			expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'draw', 'getReward'],
+			expected: ['open', 'close', 'depositAndDraw', 'repayAndWithdraw', 'liquidate', 'getReward'],
 		});
 	});
 

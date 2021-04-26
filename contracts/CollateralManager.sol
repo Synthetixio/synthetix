@@ -31,10 +31,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     uint private constant SECONDS_IN_A_YEAR = 31556926 * 1e18;
 
-    // Flexible storage names
-    bytes32 public constant CONTRACT_NAME = "CollateralManager";
-    bytes32 internal constant COLLATERAL_SYNTHS = "collateralSynth";
-
     /* ========== STATE VARIABLES ========== */
 
     // Stores debt balances and borrow rates.
@@ -201,7 +197,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         }
     }
 
-    function getBorrowRate() external view returns (uint borrowRate, bool anyRateIsInvalid) {
+    // TODO: Enforce a maximum?
+    function getBorrowRate() public view returns (uint borrowRate, bool anyRateIsInvalid) {
         // get the snx backed debt.
         uint snxDebt = _issuer().totalIssuedSynths(sUSD, true);
 
@@ -223,16 +220,14 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         anyRateIsInvalid = ratesInvalid;
     }
 
-    function getShortRate(bytes32 synth) external view returns (uint shortRate, bool rateIsInvalid) {
-        bytes32 synthKey = _synth(synth).currencyKey();
-
+    // TODO: Enforce a maximum?
+    function getShortRate(bytes32 synthKey) public view returns (uint shortRate, bool rateIsInvalid) {
         rateIsInvalid = _exchangeRates().rateIsInvalid(synthKey);
 
-        // get the spot supply of the synth, its iSynth
-        uint longSupply = IERC20(address(_synth(synth))).totalSupply();
-        uint inverseSupply = IERC20(address(_synth(synthToInverseSynth[synth]))).totalSupply();
+        // get the long supply of
+        uint longSupply = IERC20(address(_synth(synthsByKey[synthKey]))).totalSupply();
         // add the iSynth to supply properly reflect the market skew.
-        uint shortSupply = state.short(synthKey).add(inverseSupply);
+        uint shortSupply = state.short(synthKey);
 
         // in this case, the market is skewed long so its free to short.
         if (longSupply > shortSupply) {
@@ -243,6 +238,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         uint skew = shortSupply.sub(longSupply);
 
         // divide through by the size of the market
+        // TOOD: add a maximum here
         uint proportionalSkew = skew.divideDecimal(longSupply.add(shortSupply)).divideDecimal(SECONDS_IN_A_YEAR);
 
         // finally, add the base short rate.
@@ -250,7 +246,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function getRatesAndTime(uint index)
-        external
+        public
         view
         returns (
             uint entryRate,
@@ -263,7 +259,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function getShortRatesAndTime(bytes32 currency, uint index)
-        external
+        public
         view
         returns (
             uint entryRate,
@@ -461,11 +457,11 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     /* ---------- STATE MUTATIONS ---------- */
 
-    function updateBorrowRates(uint rate) external onlyCollateral {
+    function updateBorrowRates(uint rate) internal {
         state.updateBorrowRates(rate);
     }
 
-    function updateShortRates(bytes32 currency, uint rate) external onlyCollateral {
+    function updateShortRates(bytes32 currency, uint rate) internal {
         state.updateShortRates(currency, rate);
     }
 
@@ -483,6 +479,35 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     function decrementShorts(bytes32 synth, uint amount) external onlyCollateral {
         state.decrementShorts(synth, amount);
+    }
+
+    function accrueInterest(
+        uint interestIndex,
+        bytes32 currency,
+        bool isShort
+    ) external onlyCollateral returns (uint difference, uint index) {
+        // 1. Get the rates we need.
+        (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) =
+            isShort ? getShortRatesAndTime(currency, interestIndex) : getRatesAndTime(interestIndex);
+
+        // 2. Get the instantaneous rate.
+        (uint rate, bool invalid) = isShort ? getShortRate(currency) : getBorrowRate();
+
+        require(!invalid);
+
+        // 3. Get the time since we last updated the rate.
+        // TODO: consider this in the context of l2 time.
+        uint timeDelta = block.timestamp.sub(lastUpdated).mul(1e18);
+
+        // 4. Get the latest cumulative rate. F_n+1 = F_n + F_last
+        uint latestCumulative = lastRate.add(rate.multiplyDecimal(timeDelta));
+
+        // 5. Return the rate differential and the new interest index.
+        difference = latestCumulative.sub(entryRate);
+        index = newIndex;
+
+        // 5. Update rates with the lastest cumulative rate. This also updates the time.
+        isShort ? updateShortRates(currency, latestCumulative) : updateBorrowRates(latestCumulative);
     }
 
     /* ========== MODIFIERS ========== */

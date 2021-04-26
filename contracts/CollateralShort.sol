@@ -5,9 +5,6 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Collateral.sol";
 
-// Internal references
-import "./CollateralState.sol";
-
 contract CollateralShort is Collateral {
     constructor(
         CollateralState _state,
@@ -23,15 +20,11 @@ contract CollateralShort is Collateral {
         uint collateral,
         uint amount,
         bytes32 currency
-    ) external {
-        require(
-            collateral <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)),
-            "Allowance not high enough"
-        );
-
-        openInternal(collateral, amount, currency, true);
-
+    ) external returns (uint id) {
+        // Transfer from will throw if they didn't set the allowance
         IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), collateral);
+
+        id = openInternal(collateral, amount, currency, true);
     }
 
     function close(uint id) external {
@@ -40,34 +33,25 @@ contract CollateralShort is Collateral {
         IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
     }
 
-    function deposit(
-        address borrower,
+    function depositAndDraw(
         uint id,
-        uint amount
+        uint drawAmount,
+        uint depositAmount
     ) external {
-        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance not high enough");
+        // Transfer from will throw if they didn't set the allowance
+        IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), depositAmount);
 
-        IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), amount);
-
-        depositInternal(borrower, id, amount);
+        depositAndDrawInternal(id, drawAmount, depositAmount);
     }
 
-    function withdraw(uint id, uint amount) external {
-        uint withdrawnAmount = withdrawInternal(id, amount);
-
-        IERC20(address(_synthsUSD())).transfer(msg.sender, withdrawnAmount);
-    }
-
-    function repay(
-        address borrower,
+    function repayAndWithdraw(
         uint id,
-        uint amount
+        uint repayAmount,
+        uint withdrawAmount
     ) external {
-        repayInternal(borrower, msg.sender, id, amount);
-    }
+        repayAndWithdrawInternal(id, repayAmount, withdrawAmount);
 
-    function draw(uint id, uint amount) external {
-        drawInternal(id, amount);
+        IERC20(address(_synthsUSD())).transfer(msg.sender, withdrawAmount);
     }
 
     function liquidate(
