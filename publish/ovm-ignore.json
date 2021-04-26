@@ -4,6 +4,7 @@
 	"BinaryOptionMarketData",
 	"BinaryOptionMarketFactory",
 	"BinaryOptionMarketManager",
+	"BinaryOptionMarketMastercopy",
 	"Collateral",
 	"CollateralErc20",
 	"CollateralEth",
@@ -14,6 +15,7 @@
 	"FakeTradingRewards",
 	"MockBinaryOptionMarket",
 	"MockBinaryOptionMarketManager",
+	"MockBinaryOptionMarketMastercopy",
 	"TestableBinaryOptionMarket",
 	"Synthetix"
 ]
