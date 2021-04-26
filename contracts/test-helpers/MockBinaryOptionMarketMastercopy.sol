@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "../Owned.sol";
+import "../OwnedWithInit.sol";
 import "../MixinResolver.sol";
 
 // Internal references
@@ -9,7 +9,7 @@ import "../BinaryOptionMarket.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarket
 contract MockBinaryOptionMarketMastercopy is BinaryOptionMarket {
-    constructor(address _owner) public Owned(_owner) {}
+    constructor(address _owner) public OwnedWithInit(_owner) {}
 
     function initialize(
         IAddressResolver _resolver,
