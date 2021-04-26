@@ -1,12 +1,17 @@
 pragma solidity ^0.5.16;
 
 // https://docs.synthetix.io/contracts/source/contracts/owned
-contract Owned {
+contract OwnedWithInit {
     address public owner;
     address public nominatedOwner;
 
     constructor(address _owner) public {
         require(_owner != address(0), "Owner address cannot be 0");
+        initOwner(_owner);
+    }
+
+    function initOwner(address _owner) internal {
+        require(owner == address(0), "Init can only be called when owner is 0");
         owner = _owner;
         emit OwnerChanged(address(0), _owner);
     }

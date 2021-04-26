@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IBinaryOptionMarket.sol";
 
@@ -15,9 +14,10 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IAddressResolver.sol";
+import "./OwnedWithInit.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarket
-contract BinaryOptionMarket is Owned, IBinaryOptionMarket {
+contract BinaryOptionMarket is OwnedWithInit, IBinaryOptionMarket {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
