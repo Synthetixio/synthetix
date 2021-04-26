@@ -48,7 +48,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     // The set of all synths that are shortable.
     Bytes32SetLib.Bytes32Set internal _shortableSynths;
 
-    mapping(bytes32 => bytes32) public synthToInverseSynth;
+    mapping(bytes32 => bytes32) public shortableSynthsByKey;
 
     // The factor that will scale the utilisation ratio.
     uint public utilisationMultiplier = 1e18;
@@ -100,11 +100,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         uint length = _shortableSynths.elements.length;
 
         if (length > 0) {
-            shortAddresses = new bytes32[](length * 2);
+            shortAddresses = new bytes32[](length);
 
             for (uint i = 0; i < length; i++) {
                 shortAddresses[i] = _shortableSynths.elements[i];
-                shortAddresses[i + length] = synthToInverseSynth[_shortableSynths.elements[i]];
             }
         }
 
@@ -225,7 +224,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         rateIsInvalid = _exchangeRates().rateIsInvalid(synthKey);
 
         // get the long supply of
-        uint longSupply = IERC20(address(_synth(synthsByKey[synthKey]))).totalSupply();
+        uint longSupply = IERC20(address(_synth(shortableSynthsByKey[synthKey]))).totalSupply();
         // add the iSynth to supply properly reflect the market skew.
         uint shortSupply = state.short(synthKey);
 
@@ -379,24 +378,23 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     // When we add a shortable synth, we need to know the iSynth as well
     // This is so we can get the proper skew for the short rate.
-    function addShortableSynths(bytes32[2][] calldata requiredSynthAndInverseNamesInResolver, bytes32[] calldata synthKeys)
+    function addShortableSynths(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
         external
         onlyOwner
     {
-        require(requiredSynthAndInverseNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+        require(requiredSynthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
 
-        for (uint i = 0; i < requiredSynthAndInverseNamesInResolver.length; i++) {
+        for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
             // setting these explicitly for clarity
             // Each entry in the array is [Synth, iSynth]
-            bytes32 synth = requiredSynthAndInverseNamesInResolver[i][0];
-            bytes32 iSynth = requiredSynthAndInverseNamesInResolver[i][1];
+            bytes32 synth = requiredSynthNamesInResolver[i];
 
             if (!_shortableSynths.contains(synth)) {
                 // Add it to the address set lib.
                 _shortableSynths.add(synth);
 
                 // store the mapping to the iSynth so we can get its total supply for the borrow rate.
-                synthToInverseSynth[synth] = iSynth;
+                shortableSynthsByKey[synthKeys[i]] = synth;
 
                 emit ShortableSynthAdded(synth);
 
@@ -421,10 +419,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
         // first check contract state
         for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
-            bytes32 synthName = requiredSynthNamesInResolver[i];
-            if (!_shortableSynths.contains(synthName) || synthToInverseSynth[synthName] == bytes32(0)) {
-                return false;
-            }
+            // bytes32 synthName = requiredSynthNamesInResolver[i];
+            // if (!_shortableSynths.contains(synthName) || synthToInverseSynth[synthName] == bytes32(0)) {
+            //     return false;
+            // }
         }
 
         // now check everything added to external state contract
@@ -448,7 +446,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
                 state.removeShortCurrency(synthKey);
 
                 // remove the inverse mapping.
-                delete synthToInverseSynth[synths[i]];
+                // delete synthToInverseSynth[synths[i]];
 
                 emit ShortableSynthRemoved(synths[i]);
             }

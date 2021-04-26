@@ -360,11 +360,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 9. Pay fees
         _payFees(loan.accruedInterest, loan.currency);
 
-        // 10. Record loan as closed
-        // loan.amount = 0;
-        // loan.collateral = 0;
-        // loan.accruedInterest = 0;
-        // loan.interestIndex = 0;
+        // 10. Record loan as closed.
+        loan.interestIndex = 0;
         state.updateLoan(loan);
 
         // 11. Emit the event
@@ -403,9 +400,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _payFees(loan.accruedInterest, loan.currency);
 
         // 7. Record loan as closed
-        // loan.amount = 0;
-        // loan.collateral = 0;
-        // loan.accruedInterest = 0;
         // loan.interestIndex = 0;
         state.updateLoan(loan);
 
@@ -519,32 +513,35 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 5. Add the collateral
         loan.collateral = loan.collateral.add(collateral);
-        loan.amount = loan.amount.add(amount);
 
-        // 5. If it is below the minimum, don't allow this draw.
-        require(collateralRatio(loan) > minCratio);
+        if (amount > 0) {
+            loan.amount = loan.amount.add(amount);
 
-        // 6. This fee is denominated in the currency of the loan
-        uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
+            // 5. If it is below the minimum, don't allow this draw.
+            require(collateralRatio(loan) > minCratio);
 
-        // 7. Calculate the minting fee and subtract it from the draw amount
-        uint amountMinusFee = amount.sub(issueFee);
+            // 6. This fee is denominated in the currency of the loan
+            uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
 
-        // 8. If its short, let the child handle it, otherwise issue the synths.
-        if (loan.short) {
-            _manager().incrementShorts(loan.currency, amount);
-            _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
+            // 7. Calculate the minting fee and subtract it from the draw amount
+            uint amountMinusFee = amount.sub(issueFee);
 
-            if (shortingRewards[loan.currency] != address(0)) {
-                IShortingRewards(shortingRewards[loan.currency]).enrol(msg.sender, amount);
+            // 8. If its short, let the child handle it, otherwise issue the synths.
+            if (loan.short) {
+                _manager().incrementShorts(loan.currency, amount);
+                _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
+
+                if (shortingRewards[loan.currency] != address(0)) {
+                    IShortingRewards(shortingRewards[loan.currency]).enrol(msg.sender, amount);
+                }
+            } else {
+                _manager().incrementLongs(loan.currency, amount);
+                _synth(synthsByKey[loan.currency]).issue(msg.sender, amountMinusFee);
             }
-        } else {
-            _manager().incrementLongs(loan.currency, amount);
-            _synth(synthsByKey[loan.currency]).issue(msg.sender, amountMinusFee);
-        }
 
-        // 9. Pay the minting fees to the fee pool
-        _payFees(issueFee, loan.currency);
+            // 9. Pay the minting fees to the fee pool
+            _payFees(issueFee, loan.currency);
+        }
 
         // 11. Store the loan
         state.updateLoan(loan);
