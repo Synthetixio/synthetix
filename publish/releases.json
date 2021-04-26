@@ -186,7 +186,7 @@
 		"sips": [107, 114, 126, 127]
 	},
 	{
-		"name": "Alnair",
+		"name": "Regora",
 		"version": {
 			"major": 2,
 			"minor": 43
@@ -195,13 +195,18 @@
 		"sips": [116]
 	},
 	{
-		"name": "Alnair (Optimism)",
+		"name": "Regora (Optimism)",
 		"version": {
 			"major": 2,
 			"minor": 43
 		},
 		"ovm": true,
-		"sources": ["SynthetixBridgeToBase", "Synthetix", "DebtCache"],
+		"sources": [
+			"SynthetixBridgeToBase",
+			"Synthetix",
+			"DebtCache",
+			"SystemStatus"
+		],
 		"sips": [116, 117]
 	}
 ]
