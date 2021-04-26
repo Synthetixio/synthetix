@@ -2,6 +2,10 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
+import "./MixinResolver.sol";
+
+// Internal references
+import "./interfaces/IERC20.sol";
 
 contract SynthetixBridgeEscrow is Owned, MixinResolver {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -20,8 +24,8 @@ contract SynthetixBridgeEscrow is Owned, MixinResolver {
         addresses[0] = CONTRACT_SYNTHETIX;
     }
 
-    function approveBridge(address _bridge, uitn256 _amount) external onlyOwner {
-        synthetixERC20().approve(_bridge, _amount);
+    function approveBridge(address _bridge, uint256 _amount) external onlyOwner {
+        IERC20(address(synthetixERC20())).approve(_bridge, _amount);
         emit Approval(msg.sender, _bridge, _amount);
     }
 
