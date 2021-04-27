@@ -17,6 +17,7 @@
 	"MockBinaryOptionMarket",
 	"MockBinaryOptionMarketManager",
 	"MockBinaryOptionMarketMastercopy",
+	"MockBinaryOption",
 	"TestableBinaryOptionMarket",
 	"Synthetix"
 ]
