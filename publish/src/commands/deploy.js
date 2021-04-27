@@ -1637,11 +1637,35 @@ const deploy = async ({
 		const binaryOptionMarketsToRebuildCacheOn = [];
 		for (const market of binaryOptionMarkets) {
 			try {
+				const oldBinaryOptionMarketABI = [
+					{
+						constant: true,
+						inputs: [],
+						name: 'isResolverCached',
+						outputs: [
+							{
+								internalType: 'bool',
+								name: '',
+								type: 'bool',
+							},
+						],
+						payable: false,
+						stateMutability: 'view',
+						type: 'function',
+					},
+				];
+
 				console.log(gray('Checking Binary option market'), yellow(addressOf(market)));
-				const isCached = await market.methods.isResolverCached().call();
+				const oldBinaryOptionMarket = new deployer.web3.eth.Contract(
+					oldBinaryOptionMarketABI,
+					addressOf(market)
+				);
+
+				const isCached = await oldBinaryOptionMarket.methods.isResolverCached().call();
 				if (!isCached) {
 					binaryOptionMarketsToRebuildCacheOn.push(addressOf(market));
 				}
+
 				console.log(
 					gray('Binary option market'),
 					yellow(addressOf(market)),
