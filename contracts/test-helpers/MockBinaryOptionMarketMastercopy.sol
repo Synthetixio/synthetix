@@ -9,9 +9,10 @@ import "../BinaryOptionMarket.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarket
 contract MockBinaryOptionMarketMastercopy is BinaryOptionMarket {
-    constructor(address _owner) public OwnedWithInit(_owner) {}
+    constructor() public OwnedWithInit() {}
 
     function initialize(
+        address _owner,
         IAddressResolver _resolver,
         address _creator,
         uint[2] memory _creatorLimits, // [capitalRequirement, skewLimit]
@@ -24,6 +25,8 @@ contract MockBinaryOptionMarketMastercopy is BinaryOptionMarket {
     ) public {
         require(!initialized, "Binary Option Market already initialized");
         initialized = true;
+
+        initOwner(_owner);
 
         resolver = _resolver;
         creator = _creator;

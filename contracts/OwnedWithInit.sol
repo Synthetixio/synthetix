@@ -5,10 +5,7 @@ contract OwnedWithInit {
     address public owner;
     address public nominatedOwner;
 
-    constructor(address _owner) public {
-        require(_owner != address(0), "Owner address cannot be 0");
-        initOwner(_owner);
-    }
+    constructor() public {}
 
     function initOwner(address _owner) internal {
         require(owner == address(0), "Init can only be called when owner is 0");

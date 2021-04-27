@@ -14,8 +14,19 @@ contract TestableBinaryOptionMarket is MockBinaryOptionMarketMastercopy {
         uint[3] memory _times,
         uint[2] memory _bids,
         uint[3] memory _fees
-    ) public MockBinaryOptionMarketMastercopy(_owner) {
-        initialize(_resolver, _creator, _creatorLimits, _oracleKey, _strikePrice, _refundsEnabled, _times, _bids, _fees);
+    ) public MockBinaryOptionMarketMastercopy() {
+        initialize(
+            _owner,
+            _resolver,
+            _creator,
+            _creatorLimits,
+            _oracleKey,
+            _strikePrice,
+            _refundsEnabled,
+            _times,
+            _bids,
+            _fees
+        );
     }
 
     function updatePrices(

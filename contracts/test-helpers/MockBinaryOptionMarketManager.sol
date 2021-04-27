@@ -19,7 +19,7 @@ contract MockBinaryOptionMarketManager {
         uint[2] calldata bids, // [longBid, shortBid]
         uint[3] calldata fees // [poolFee, creatorFee, refundFee]
     ) external {
-        market = new MockBinaryOptionMarketMastercopy(address(this));
+        market = new MockBinaryOptionMarketMastercopy();
         market.initialize(
             address(this),
             resolver,
