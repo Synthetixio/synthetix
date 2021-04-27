@@ -186,7 +186,7 @@
 		"sips": [107, 114, 126, 127]
 	},
 	{
-		"name": "Regora",
+		"name": "Alnair",
 		"version": {
 			"major": 2,
 			"minor": 43
@@ -195,7 +195,7 @@
 		"sips": [116]
 	},
 	{
-		"name": "Regora (Optimism)",
+		"name": "Alnair (Optimism)",
 		"version": {
 			"major": 2,
 			"minor": 43
