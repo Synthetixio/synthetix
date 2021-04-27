@@ -1,16 +1,37 @@
 {
-	"SNX": {"asset": "SNX"},
-	"ETH": {"asset": "ETH"},
-	"COMP": {"asset": "COMP"},
-	"KNC": {"asset": "KNC"},
-	"REN": {"asset": "REN"},
-	"EUR": {"asset": "EUR", "feed": "0xa28a03a00cEFE08d68025044FEfaC221cBEe8a55"},
-	"JPY": {"asset": "JPY", "feed": "0x795122664E4D4A3F7e66E8674953C97ADc60B17C"},
-	"AUD": {"asset": "AUD", "feed": "0x1e5a19e9f382DD254D6983FF253A64F0bF15058a"},
-	"GBP": {"asset": "GBP", "feed": "0xA8Ce4412fb92Fc5f6257197B229FE75A8c2e1E58"},
-	"CHF": {"asset": "CHF", "feed": "0x0c1dB240827677264E89AA6c0CC35C78BcC45799"},
-	"XAU": {"asset": "XAU", "feed": "0x09340fFCD275735C4Dfef24d21017d5B1cbd00fD"},
-	"XAG": {"asset": "XAG", "feed": "0x6021C0Ab48dDA82a81F83276AF123e0bd89eDCF3"},
+	"SNX": { "asset": "SNX" },
+	"ETH": { "asset": "ETH" },
+	"COMP": { "asset": "COMP" },
+	"KNC": { "asset": "KNC" },
+	"REN": { "asset": "REN" },
+	"EUR": {
+		"asset": "EUR",
+		"feed": "0xa28a03a00cEFE08d68025044FEfaC221cBEe8a55"
+	},
+	"JPY": {
+		"asset": "JPY",
+		"feed": "0x795122664E4D4A3F7e66E8674953C97ADc60B17C"
+	},
+	"AUD": {
+		"asset": "AUD",
+		"feed": "0x1e5a19e9f382DD254D6983FF253A64F0bF15058a"
+	},
+	"GBP": {
+		"asset": "GBP",
+		"feed": "0xA8Ce4412fb92Fc5f6257197B229FE75A8c2e1E58"
+	},
+	"CHF": {
+		"asset": "CHF",
+		"feed": "0x0c1dB240827677264E89AA6c0CC35C78BcC45799"
+	},
+	"XAU": {
+		"asset": "XAU",
+		"feed": "0x09340fFCD275735C4Dfef24d21017d5B1cbd00fD"
+	},
+	"XAG": {
+		"asset": "XAG",
+		"feed": "0x6021C0Ab48dDA82a81F83276AF123e0bd89eDCF3"
+	},
 	"FTSE100": {
 		"asset": "FTSE100",
 		"feed": "0xcC3A7753ee8a5C5969b068ed35eb5110b0c611A7"
