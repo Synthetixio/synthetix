@@ -80,15 +80,15 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // ========== PUBLIC FUNCTIONS =========
 
-    function deposit(uint256 amount) external requireInitiationActive requireZeroDebt optionalProxy {
+    function deposit(uint256 amount) external requireInitiationActive optionalProxy requireZeroDebt {
         _initiateDeposit(messageSender, amount);
     }
 
-    function depositTo(address to, uint amount) external requireInitiationActive requireZeroDebt optionalProxy {
+    function depositTo(address to, uint amount) external requireInitiationActive optionalProxy requireZeroDebt {
         _initiateDeposit(to, amount);
     }
 
-    function migrateEscrow(uint256[][] memory entryIDs) public requireInitiationActive requireZeroDebt optionalProxy {
+    function migrateEscrow(uint256[][] memory entryIDs) public requireInitiationActive optionalProxy requireZeroDebt {
         _migrateEscrow(entryIDs);
     }
 
@@ -126,8 +126,8 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] memory entryIDs)
         public
         requireInitiationActive
-        requireZeroDebt
         optionalProxy
+        requireZeroDebt
     {
         if (entryIDs.length > 0) {
             _migrateEscrow(entryIDs);
