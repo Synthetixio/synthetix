@@ -1637,6 +1637,7 @@ const deploy = async ({
 		const binaryOptionMarketsToRebuildCacheOn = [];
 		for (const market of binaryOptionMarkets) {
 			try {
+				console.log(gray('Checking Binary option market'), yellow(addressOf(market)));
 				const isCached = await market.methods.isResolverCached().call();
 				if (!isCached) {
 					binaryOptionMarketsToRebuildCacheOn.push(addressOf(market));
@@ -1674,6 +1675,7 @@ const deploy = async ({
 					},
 				];
 
+				console.log(gray('Checking older Binary option market'), yellow(addressOf(market)));
 				const oldBinaryOptionMarket = new deployer.web3.eth.Contract(
 					oldBinaryOptionMarketABI,
 					addressOf(market)
