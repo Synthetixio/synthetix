@@ -1250,7 +1250,7 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'BinaryOptionMarketMastercopy',
-		args: [account, addressOf(readProxyForResolver)],
+		args: [account],
 		deps: ['AddressResolver'],
 	});
 
