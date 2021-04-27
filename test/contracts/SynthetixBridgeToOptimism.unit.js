@@ -1,6 +1,12 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+	proxyThruTo,
+	decodedEventEqual,
+	getDecodedLogs,
+} = require('./helpers');
 
 const { toBytes32 } = require('../..');
 const { smockit } = require('@eth-optimism/smock');
@@ -135,7 +141,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by a user', () => {
+				describe('when invoked by a user directly', () => {
 					let txn;
 					const amount = 100;
 					beforeEach(async () => {
@@ -144,6 +150,43 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 					it('only one event is emitted (DepositInitiated)', async () => {
 						assert.eventEqual(txn, 'DepositInitiated', [user1, user1, amount]);
+					});
+
+					it('only one message is sent', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
+						const expectedData = getDataOfEncodedFncCall({
+							contract: 'SynthetixBridgeToBase',
+							fnc: 'finalizeDeposit',
+							args: [user1, amount],
+						});
+						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
+					});
+				});
+
+				describe('when invoked by a user via the proxy', () => {
+					let hash;
+					const amount = 100;
+					beforeEach(async () => {
+						const { tx: txHash } = await proxyThruTo({
+							proxy,
+							target: instance,
+							fncName: 'deposit',
+							from: user1,
+							args: [amount],
+						});
+						hash = txHash;
+					});
+
+					it('an DepositInitiated event is emitted via the proxy', async () => {
+						const logs = await getDecodedLogs({ hash, contracts: [instance] });
+						decodedEventEqual({
+							log: logs[0],
+							event: 'DepositInitiated',
+							emittedFrom: proxy.address,
+							args: [user1, user1, amount],
+						});
 					});
 
 					it('only one message is sent', async () => {
@@ -186,6 +229,43 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 					it('only one event is emitted (DepositInitiated)', async () => {
 						assert.eventEqual(txn, 'DepositInitiated', [user1, randomAddress, amount]);
+					});
+
+					it('only one message is sent', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToBase);
+						const expectedData = getDataOfEncodedFncCall({
+							contract: 'SynthetixBridgeToBase',
+							fnc: 'finalizeDeposit',
+							args: [randomAddress, amount],
+						});
+						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
+					});
+				});
+
+				describe('when invoked by a user via the proxy', () => {
+					let hash;
+					const amount = 100;
+					beforeEach(async () => {
+						const { tx: txHash } = await proxyThruTo({
+							proxy,
+							target: instance,
+							fncName: 'depositTo',
+							from: user1,
+							args: [randomAddress, amount],
+						});
+						hash = txHash;
+					});
+
+					it('an DepositInitiated event is emitted via the proxy', async () => {
+						const logs = await getDecodedLogs({ hash, contracts: [instance] });
+						decodedEventEqual({
+							log: logs[0],
+							event: 'DepositInitiated',
+							emittedFrom: proxy.address,
+							args: [user1, randomAddress, amount],
+						});
 					});
 
 					it('only one message is sent', async () => {
@@ -261,7 +341,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by a user', () => {
+				describe('when invoked by a user directly', () => {
 					let txn;
 					let amount;
 
@@ -318,17 +398,25 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						});
 
 						it('and three events are emitted', async () => {
-							assert.eventEqual(txn.logs[0], 'ExportedVestingEntries', [
-								user1,
-								escrowAmount,
-								emptyArray,
-							]);
-							assert.eventEqual(txn.logs[1], 'ExportedVestingEntries', [
-								user1,
-								escrowAmount,
-								emptyArray,
-							]);
-							assert.eventEqual(txn.logs[2], 'DepositInitiated', [user1, user1, amount]);
+							const logs = await getDecodedLogs({ hash: txn.tx, contracts: [instance] });
+							decodedEventEqual({
+								log: logs[0],
+								event: 'ExportedVestingEntries',
+								emittedFrom: proxy.address,
+								args: [user1, escrowAmount, emptyArray],
+							});
+							decodedEventEqual({
+								log: logs[0],
+								event: 'ExportedVestingEntries',
+								emittedFrom: proxy.address,
+								args: [user1, escrowAmount, emptyArray],
+							});
+							decodedEventEqual({
+								log: logs[2],
+								event: 'DepositInitiated',
+								emittedFrom: proxy.address,
+								args: [user1, user1, amount],
+							});
 						});
 					});
 
@@ -391,17 +479,58 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						});
 
 						it('and two events are emitted (ExportedVestingEntries)', async () => {
-							assert.equal(txn.logs.length, 2);
-							assert.eventEqual(txn.logs[0], 'ExportedVestingEntries', [
-								user1,
-								escrowAmount,
-								emptyArray,
-							]);
-							assert.eventEqual(txn.logs[1], 'ExportedVestingEntries', [
-								user1,
-								escrowAmount,
-								emptyArray,
-							]);
+							const logs = await getDecodedLogs({ hash: txn.tx, contracts: [instance] });
+							decodedEventEqual({
+								log: logs[0],
+								event: 'ExportedVestingEntries',
+								emittedFrom: proxy.address,
+								args: [user1, escrowAmount, emptyArray],
+							});
+							decodedEventEqual({
+								log: logs[1],
+								event: 'ExportedVestingEntries',
+								emittedFrom: proxy.address,
+								args: [user1, escrowAmount, emptyArray],
+							});
+						});
+					});
+				});
+
+				describe('when invoked by a user via the proxy', () => {
+					const amount = '99';
+					let hash;
+					describe('when the user deposits and migrates', () => {
+						beforeEach(async () => {
+							const { tx: txHash } = await proxyThruTo({
+								proxy,
+								target: instance,
+								fncName: 'depositAndMigrateEscrow',
+								from: user1,
+								args: [amount, entryIds],
+							});
+							hash = txHash;
+						});
+
+						it('three events are emitted via the proxy', async () => {
+							const logs = await getDecodedLogs({ hash, contracts: [instance] });
+							decodedEventEqual({
+								log: logs[0],
+								event: 'ExportedVestingEntries',
+								emittedFrom: proxy.address,
+								args: [user1, escrowAmount, emptyArray],
+							});
+							decodedEventEqual({
+								log: logs[1],
+								event: 'ExportedVestingEntries',
+								emittedFrom: proxy.address,
+								args: [user1, escrowAmount, emptyArray],
+							});
+							decodedEventEqual({
+								log: logs[2],
+								event: 'DepositInitiated',
+								emittedFrom: proxy.address,
+								args: [user1, user1, amount],
+							});
 						});
 					});
 				});
@@ -416,11 +545,10 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by a user', () => {
+				describe('when invoked by a user directly', () => {
 					let txn;
-					let amount;
+					const amount = '100';
 					beforeEach(async () => {
-						amount = '100';
 						txn = await instance.depositReward(amount, { from: user1 });
 					});
 
@@ -446,6 +574,31 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.eventEqual(txn, 'RewardDeposit', [user1, amount]);
 					});
 				});
+
+				describe('when invoked by a user via the proxy', () => {
+					let hash;
+					const amount = '100';
+					beforeEach(async () => {
+						const { tx: txHash } = await proxyThruTo({
+							proxy,
+							target: instance,
+							fncName: 'depositReward',
+							from: user1,
+							args: [amount],
+						});
+						hash = txHash;
+					});
+
+					it('a RewardDeposit event is emitted by the proxy', async () => {
+						const logs = await getDecodedLogs({ hash, contracts: [instance] });
+						decodedEventEqual({
+							log: logs[0],
+							event: 'RewardDeposit',
+							emittedFrom: proxy.address,
+							args: [user1, amount],
+						});
+					});
+				});
 			});
 
 			describe('notifyRewardAmount', () => {
@@ -467,11 +620,10 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by the rewardsDistribution', () => {
+				describe('when invoked by the rewardsDistribution directly', () => {
 					let txn;
-					let amount;
+					const amount = '1000';
 					beforeEach(async () => {
-						amount = '1000';
 						txn = await instance.notifyRewardAmount(amount, { from: rewardsDistribution });
 					});
 
@@ -491,6 +643,31 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 					it('and a RewardDeposit event is emitted', async () => {
 						assert.eventEqual(txn, 'RewardDeposit', [rewardsDistribution, amount]);
+					});
+				});
+
+				describe('when invoked by the rewardsDistribution viw the proxy', () => {
+					const amount = '1000';
+					let hash;
+					beforeEach(async () => {
+						const { tx: txHash } = await proxyThruTo({
+							proxy,
+							target: instance,
+							fncName: 'notifyRewardAmount',
+							from: rewardsDistribution,
+							args: [amount],
+						});
+						hash = txHash;
+					});
+
+					it('a RewardDeposit event is emitted by the proxy', async () => {
+						const logs = await getDecodedLogs({ hash, contracts: [instance] });
+						decodedEventEqual({
+							log: logs[0],
+							event: 'RewardDeposit',
+							emittedFrom: proxy.address,
+							args: [rewardsDistribution, amount],
+						});
 					});
 				});
 			});
@@ -547,6 +724,31 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							synthetix.smocked.transferFrom.calls[0][2].toString(),
 							finalizeWithdrawalAmount
 						);
+					});
+				});
+
+				describe('when invoked by the messenger (aka relayer) via the proxy', async () => {
+					const finalizeWithdrawalAmount = 100;
+					let hash;
+					beforeEach('finalizeWithdrawal is called', async () => {
+						const { tx: txHash } = await proxyThruTo({
+							proxy,
+							target: instance,
+							fncName: 'finalizeWithdrawal',
+							from: smockedMessenger,
+							args: [user1, finalizeWithdrawalAmount],
+						});
+						hash = txHash;
+					});
+
+					it('a WithdrawalFinalized event is emitted by the proxy', async () => {
+						const logs = await getDecodedLogs({ hash, contracts: [instance] });
+						decodedEventEqual({
+							log: logs[0],
+							event: 'WithdrawalFinalized',
+							emittedFrom: proxy.address,
+							args: [user1, finalizeWithdrawalAmount],
+						});
 					});
 				});
 			});

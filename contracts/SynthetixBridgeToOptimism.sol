@@ -227,8 +227,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         uint256 escrowedAccountBalance,
         VestingEntries.VestingEntry[] vestingEntries
     );
-    bytes32 private constant EXPORTEDVESTINGENTRIES_SIG =
-        keccak256("ExportedVestingEntries(address,uint256,(uint64,uint256)[])");
+    bytes32 private constant EXPORTEDVESTINGENTRIES_SIG = keccak256("ExportedVestingEntries(address,uint256,tuple[])");
 
     function emitExportedVestingEntries(
         address account,

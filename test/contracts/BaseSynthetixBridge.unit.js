@@ -120,7 +120,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 							proxy,
 							target: instance,
 							fncName: 'suspendInitiation',
-							user: owner,
+							from: owner,
 							args: [],
 						});
 						hash = txHash;
@@ -196,7 +196,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 								proxy,
 								target: instance,
 								fncName: 'resumeInitiation',
-								user: owner,
+								from: owner,
 								args: [],
 							});
 							hash = txHash;
