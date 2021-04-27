@@ -787,7 +787,6 @@ const deploy = async ({
 
 	const debtCache = await deployer.deployContract({
 		name: 'DebtCache',
-		source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});

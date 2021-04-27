@@ -122,6 +122,14 @@
 		"asset": "COMP"
 	},
 	{
+		"name": "s1INCH",
+		"asset": "1INCH"
+	},
+	{
+		"name": "sRUNE",
+		"asset": "RUNE"
+	},
+	{
 		"name": "sFTSE",
 		"asset": "FTSE100"
 	},
@@ -132,6 +140,30 @@
 	{
 		"name": "sTSLA",
 		"asset": "TSLA"
+	},
+	{
+		"name": "sCRV",
+		"asset": "CRV"
+	},
+	{
+		"name": "sAAPL",
+		"asset": "AAPL"
+	},
+	{
+		"name": "sFB",
+		"asset": "FB"
+	},
+	{
+		"name": "sGOOG",
+		"asset": "GOOG"
+	},
+	{
+		"name": "sNFLX",
+		"asset": "NFLX"
+	},
+	{
+		"name": "sAMZN",
+		"asset": "AMZN"
 	},
 	{
 		"name": "sCEX",
