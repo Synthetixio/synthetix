@@ -204,9 +204,10 @@
 		"sources": [
 			"SynthetixBridgeToBase",
 			"Synthetix",
+			"Exchanger",
 			"DebtCache",
 			"SystemStatus"
 		],
-		"sips": [116, 117]
+		"sips": [116, 117, 118]
 	}
 ]
