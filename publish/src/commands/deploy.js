@@ -1649,51 +1649,55 @@ const deploy = async ({
 					yellow(isCached)
 				);
 			} catch (err) {
-				// the challenge being that some used an older MixinResolver API
-				const oldBinaryOptionMarketABI = [
-					{
-						constant: true,
-						inputs: [
-							{
-								internalType: 'contract AddressResolver',
-								name: '_resolver',
-								type: 'address',
-							},
-						],
-						name: 'isResolverCached',
-						outputs: [
-							{
-								internalType: 'bool',
-								name: '',
-								type: 'bool',
-							},
-						],
-						payable: false,
-						stateMutability: 'view',
-						type: 'function',
-						signature: '0x631e1444',
-					},
-				];
+				try {
+					// the challenge being that some used an older MixinResolver API
+					const oldBinaryOptionMarketABI = [
+						{
+							constant: true,
+							inputs: [
+								{
+									internalType: 'contract AddressResolver',
+									name: '_resolver',
+									type: 'address',
+								},
+							],
+							name: 'isResolverCached',
+							outputs: [
+								{
+									internalType: 'bool',
+									name: '',
+									type: 'bool',
+								},
+							],
+							payable: false,
+							stateMutability: 'view',
+							type: 'function',
+							signature: '0x631e1444',
+						},
+					];
 
-				console.log(gray('Checking older Binary option market'), yellow(addressOf(market)));
-				const oldBinaryOptionMarket = new deployer.web3.eth.Contract(
-					oldBinaryOptionMarketABI,
-					addressOf(market)
-				);
+					console.log(gray('Checking older Binary option market'), yellow(addressOf(market)));
+					const oldBinaryOptionMarket = new deployer.web3.eth.Contract(
+						oldBinaryOptionMarketABI,
+						addressOf(market)
+					);
 
-				const isCached = await oldBinaryOptionMarket.methods
-					.isResolverCached(addressOf(readProxyForResolver))
-					.call();
-				if (!isCached) {
-					binaryOptionMarketsToRebuildCacheOn.push(addressOf(market));
+					const isCached = await oldBinaryOptionMarket.methods
+						.isResolverCached(addressOf(readProxyForResolver))
+						.call();
+					if (!isCached) {
+						binaryOptionMarketsToRebuildCacheOn.push(addressOf(market));
+					}
+
+					console.log(
+						gray('Binary option market'),
+						yellow(addressOf(market)),
+						gray('is older and cache status'),
+						yellow(isCached)
+					);
+				} catch (err) {
+					console.error(red(err));
 				}
-
-				console.log(
-					gray('Binary option market'),
-					yellow(addressOf(market)),
-					gray('is older and cache status'),
-					yellow(isCached)
-				);
 			}
 		}
 
