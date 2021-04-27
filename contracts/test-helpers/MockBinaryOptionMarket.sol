@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "../BinaryOption.sol";
+import "./MockBinaryOption.sol";
 
 import "../SafeDecimalMath.sol";
 
@@ -28,7 +29,7 @@ contract MockBinaryOptionMarket {
     }
 
     function deployOption(address initialBidder, uint initialBid) external {
-        binaryOption = new BinaryOption(initialBidder, initialBid);
+        binaryOption = new MockBinaryOption(initialBidder, initialBid);
     }
 
     function claimOptions() external returns (uint) {

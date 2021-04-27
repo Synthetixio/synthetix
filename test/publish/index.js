@@ -1587,6 +1587,7 @@ describe('publish scripts', () => {
 									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checked
 									.filter(([contract]) => !/^VirtualSynthMastercopy/.test(contract))
 									.filter(([contract]) => !/^BinaryOptionMarketMastercopy/.test(contract))
+									.filter(([contract]) => !/^BinaryOptionMastercopy/.test(contract))
 									.filter(([, { source }]) =>
 										sources[source].abi.find(({ name }) => name === 'resolver')
 									)

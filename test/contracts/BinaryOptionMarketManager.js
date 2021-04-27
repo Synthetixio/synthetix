@@ -89,6 +89,7 @@ contract('BinaryOptionMarketManager  @gas-skip', accounts => {
 				'SystemStatus',
 				'BinaryOptionMarketManager',
 				'BinaryOptionMarketMastercopy',
+				'BinaryOptionMastercopy',
 				'AddressResolver',
 				'ExchangeRates',
 				'FeePool',

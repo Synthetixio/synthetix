@@ -23,6 +23,9 @@
 	"BinaryOptionMarketMastercopy": {
 		"deploy": true
 	},
+	"BinaryOptionMastercopy": {
+		"deploy": true
+	},
 	"CollateralManager": {
 		"deploy": true
 	},

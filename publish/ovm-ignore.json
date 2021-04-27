@@ -5,6 +5,7 @@
 	"BinaryOptionMarketFactory",
 	"BinaryOptionMarketManager",
 	"BinaryOptionMarketMastercopy",
+	"BinaryOptionMastercopy",
 	"Collateral",
 	"CollateralErc20",
 	"CollateralEth",

@@ -231,6 +231,7 @@ const setupContract = async ({
 		],
 		BinaryOptionMarketData: [],
 		BinaryOptionMarketMastercopy: [],
+		BinaryOptionMastercopy: [],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
 			owner,
@@ -766,6 +767,14 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver'],
 		},
 		{
+			contract: 'BinaryOptionMarketMastercopy',
+			deps: ['BinaryOptionMarketManager'],
+		},
+		{
+			contract: 'BinaryOptionMastercopy',
+			deps: ['AddressResolver', 'BinaryOptionMarketMastercopy'],
+		},
+		{
 			contract: 'BinaryOptionMarketManager',
 			deps: [
 				'SystemStatus',
@@ -775,10 +784,6 @@ const setupAllContracts = async ({
 				'Synthetix',
 				'BinaryOptionMarketFactory',
 			],
-		},
-		{
-			contract: 'BinaryOptionMarketMastercopy',
-			deps: ['BinaryOptionMarketManager'],
 		},
 		{
 			contract: 'BinaryOptionMarketData',

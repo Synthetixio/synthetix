@@ -1,17 +1,17 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./interfaces/IERC20.sol";
-import "./interfaces/IBinaryOption.sol";
+import "../interfaces/IERC20.sol";
+import "../interfaces/IBinaryOption.sol";
 
 // Libraries
-import "./SafeDecimalMath.sol";
+import "../SafeDecimalMath.sol";
 
 // Internal references
-import "./BinaryOptionMarket.sol";
+import "../BinaryOptionMarket.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/binaryoption
-contract BinaryOption is IERC20, IBinaryOption {
+contract MockBinaryOption is BinaryOption {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -39,11 +39,7 @@ contract BinaryOption is IERC20, IBinaryOption {
 
     /* ========== CONSTRUCTOR ========== */
 
-    bool public initialized = false;
-
-    function initialize(address initialBidder, uint initialBid) public {
-        require(!initialized, "Binary Option Market already initialized");
-        initialized = true;
+    constructor(address initialBidder, uint initialBid) public {
         market = BinaryOptionMarket(msg.sender);
         bidOf[initialBidder] = initialBid;
         totalBids = initialBid;

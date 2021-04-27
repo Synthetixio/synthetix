@@ -9,5 +9,5 @@ import "./BinaryOptionMarket.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarket
 contract BinaryOptionMarketMastercopy is BinaryOptionMarket {
-    constructor() public OwnedWithInit() {}
+    constructor() public MinimalProxyFactory() OwnedWithInit() {}
 }

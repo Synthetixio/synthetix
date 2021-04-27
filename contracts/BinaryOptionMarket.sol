@@ -17,7 +17,7 @@ import "./interfaces/IAddressResolver.sol";
 import "./OwnedWithInit.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarket
-contract BinaryOptionMarket is OwnedWithInit, IBinaryOptionMarket {
+contract BinaryOptionMarket is MinimalProxyFactory, OwnedWithInit, IBinaryOptionMarket {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -72,6 +72,7 @@ contract BinaryOptionMarket is OwnedWithInit, IBinaryOptionMarket {
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 internal constant CONTRACT_BINARYOPTION_MASTERCOPY = "BinaryOptionMastercopy";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -121,8 +122,10 @@ contract BinaryOptionMarket is OwnedWithInit, IBinaryOptionMarket {
         _updatePrices(longBid, shortBid, initialDeposit);
 
         // Instantiate the options themselves
-        options.long = new BinaryOption(_creator, longBid);
-        options.short = new BinaryOption(_creator, shortBid);
+        options.long = BinaryOption(_cloneAsMinimalProxy(_binaryOptionMastercopy(), "Could not create a Binary Option"));
+        options.short = BinaryOption(_cloneAsMinimalProxy(_binaryOptionMastercopy(), "Could not create a Binary Option"));
+        options.long.initialize(_creator, longBid);
+        options.short.initialize(_creator, shortBid);
 
         // Note: the ERC20 base contract does not have a constructor, so we do not have to worry
         // about initializing its state separately
@@ -144,6 +147,10 @@ contract BinaryOptionMarket is OwnedWithInit, IBinaryOptionMarket {
 
     function _feePool() internal view returns (IFeePool) {
         return IFeePool(resolver.requireAndGetAddress(CONTRACT_FEEPOOL, "FeePool contract not found"));
+    }
+
+    function _binaryOptionMastercopy() internal view returns (address) {
+        return resolver.requireAndGetAddress(CONTRACT_BINARYOPTION_MASTERCOPY, "BinaryOptionMastercopy contract not found");
     }
 
     function _manager() internal view returns (BinaryOptionMarketManager) {

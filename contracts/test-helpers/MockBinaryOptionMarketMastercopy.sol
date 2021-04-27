@@ -6,6 +6,7 @@ import "../MixinResolver.sol";
 
 // Internal references
 import "../BinaryOptionMarket.sol";
+import "./MockBinaryOption.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarket
 contract MockBinaryOptionMarketMastercopy is BinaryOptionMarket {
@@ -56,8 +57,8 @@ contract MockBinaryOptionMarketMastercopy is BinaryOptionMarket {
         _updatePrices(longBid, shortBid, initialDeposit);
 
         // Instantiate the options themselves
-        options.long = new BinaryOption(_creator, longBid);
-        options.short = new BinaryOption(_creator, shortBid);
+        options.long = new MockBinaryOption(_creator, longBid);
+        options.short = new MockBinaryOption(_creator, shortBid);
 
         // Note: the ERC20 base contract does not have a constructor, so we do not have to worry
         // about initializing its state separately
