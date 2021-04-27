@@ -27,7 +27,7 @@ contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynt
         address payable _proxy,
         address _owner,
         address _resolver
-    ) public Owned(_owner) Proxyable(_proxy) MixinSystemSettings(_resolver) {
+    ) public Proxyable(_proxy) Owned(_owner) MixinSystemSettings(_resolver) {
         initiationActive = true;
     }
 
