@@ -69,6 +69,7 @@ contract('BinaryOption @gas-skip', accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: option.abi,
 				expected: [
+					'initialize',
 					'bid',
 					'refund',
 					'claim',
