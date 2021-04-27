@@ -1249,7 +1249,7 @@ const deploy = async ({
 	});
 
 	await deployer.deployContract({
-		name: 'BinaryOptionsMarketMastercopy',
+		name: 'BinaryOptionMarketMastercopy',
 		args: [account, addressOf(readProxyForResolver)],
 		deps: ['AddressResolver'],
 	});
