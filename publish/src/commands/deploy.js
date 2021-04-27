@@ -1203,15 +1203,30 @@ const deploy = async ({
 			args: [],
 		});
 		await deployer.deployContract({
-			name: 'SynthetixBridgeToBase',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-		await deployer.deployContract({
 			name: 'CollateralManager',
 			source: 'EmptyCollateralManager',
 			args: [],
 		});
+		const proxySynthetixBridgeToBase = await deployer.deployContract({
+			name: 'ProxySynthetixBridgeToBase',
+			source: 'Proxy',
+			args: [account],
+		});
+		const synthetixBridgeToBase = await deployer.deployContract({
+			name: 'SynthetixBridgeToBase',
+			deps: ['ProxySynthetixBridgeToBase', 'AddressResolver'],
+			args: [addressOf(proxySynthetixBridgeToBase), account, addressOf(readProxyForResolver)],
+		});
+		if (proxySynthetixBridgeToBase && synthetixBridgeToBase) {
+			await runStep({
+				contract: 'ProxySynthetixBridgeToBase',
+				target: proxySynthetixBridgeToBase,
+				read: 'target',
+				expected: input => input === addressOf(synthetixBridgeToBase),
+				write: 'setTarget',
+				writeArg: addressOf(synthetixBridgeToBase),
+			});
+		}
 	} else {
 		await deployer.deployContract({
 			name: 'EtherCollateral',
@@ -1223,8 +1238,28 @@ const deploy = async ({
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
-		await deployer.deployContract({
+		const proxySynthetixBridgeToOptimism = await deployer.deployContract({
+			name: 'ProxySynthetixBridgeToOptimism',
+			source: 'Proxy',
+			args: [account],
+		});
+		const synthetixBridgeToOptimism = await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
+			deps: ['ProxySynthetixBridgeToOptimism', 'AddressResolver'],
+			args: [addressOf(proxySynthetixBridgeToOptimism), account, addressOf(readProxyForResolver)],
+		});
+		if (proxySynthetixBridgeToOptimism && synthetixBridgeToOptimism) {
+			await runStep({
+				contract: 'ProxysynthetixBridgeToOptimism',
+				target: proxySynthetixBridgeToOptimism,
+				read: 'target',
+				expected: input => input === addressOf(synthetixBridgeToOptimism),
+				write: 'setTarget',
+				writeArg: addressOf(synthetixBridgeToOptimism),
+			});
+		}
+		await deployer.deployContract({
+			name: 'SynthetixBridgeEscrow',
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});

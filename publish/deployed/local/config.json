@@ -5,6 +5,9 @@
 	"SynthetixBridgeToOptimism": {
 		"deploy": true
 	},
+	"SynthetixBridgeEscrow": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},
@@ -165,6 +168,9 @@
 		"deploy": true
 	},
 	"ProxyFeePool": {
+		"deploy": true
+	},
+	"ProxySynthetixBridgeToOptimism": {
 		"deploy": true
 	},
 	"ProxySynthetix": {

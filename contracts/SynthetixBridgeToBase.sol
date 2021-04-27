@@ -103,7 +103,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         // now tell Synthetix to mint these tokens, deposited in L1, into the specified account for L2
         synthetix().mintSecondary(to, amount);
 
-        emitDepositFinalizedv(to, amount);
+        emitDepositFinalized(to, amount);
     }
 
     // invoked by Messenger on L2
