@@ -1,12 +1,12 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
+import "./MinimalProxyFactory.sol";
 import "./Owned.sol";
 import "./MixinResolver.sol";
 
 // Internal references
 import "./BinaryOptionMarket.sol";
-import "./MinimalProxyFactory.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarketfactory
 contract BinaryOptionMarketFactory is MinimalProxyFactory, Owned, MixinResolver {
