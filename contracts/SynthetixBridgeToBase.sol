@@ -80,7 +80,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
-        emit WithdrawalInitiated(messageSender, to, amount);
+        emitWithdrawalInitiated(messageSender, to, amount);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
@@ -120,8 +120,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] vestingEntries
     );
-    bytes32 private constant IMPORTEDVESTINGENTRIES_SIG =
-        keccak256("ImportedVestingEntries(address,uint256,(uint64,uint256)[])");
+    bytes32 private constant IMPORTEDVESTINGENTRIES_SIG = keccak256("ImportedVestingEntries(address,uint256,tuple[])");
 
     function emitImportedVestingEntries(
         address account,
@@ -149,7 +148,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     bytes32 private constant MINTEDSECONDARYREWARDS_SIG = keccak256("MintedSecondaryRewards(uint256)");
 
     function emitMintedSecondaryRewards(uint256 amount) internal {
-        proxy._emit(abi.encode(amount), 1, DEPOSITFINALIZED_SIG, 0, 0, 0);
+        proxy._emit(abi.encode(amount), 1, MINTEDSECONDARYREWARDS_SIG, 0, 0, 0);
     }
 
     event WithdrawalInitiated(address indexed from, address to, uint256 amount);
