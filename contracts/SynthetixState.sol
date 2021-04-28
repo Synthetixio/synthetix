@@ -34,6 +34,8 @@ contract SynthetixState is Owned, State, ISynthetixState {
     uint public totalIssuerCount;
 
     // Global debt pool tracking
+    // Cumulative Debt Delta Ratio
+    
     uint[] public debtLedger;
 
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {}
@@ -47,6 +49,7 @@ contract SynthetixState is Owned, State, ISynthetixState {
      * @param initialDebtOwnership The initial debt ownership for this address.
      */
     function setCurrentIssuanceData(address account, uint initialDebtOwnership) external onlyAssociatedContract {
+        // ??
         issuanceData[account].initialDebtOwnership = initialDebtOwnership;
         issuanceData[account].debtEntryIndex = debtLedger.length;
     }

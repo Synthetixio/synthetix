@@ -354,6 +354,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
                 IShortingRewards(shortingRewards[currency]).enrol(msg.sender, amount);
             }
         } else {
+            // todo: 
             _synth(synthsByKey[currency]).issue(msg.sender, loanAmountMinusFee);
             _manager().incrementLongs(currency, amount);
         }

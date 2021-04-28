@@ -473,6 +473,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Note that exchanges can't invalidate the debt cache, since if a rate is invalid,
         // the exchange will have failed already.
+        // Huh, does that mean exchanges fail after an oracle update, until the debt cache is updated? 
         debtCache().updateCachedSynthDebtsWithRates(keys, rates);
     }
 
@@ -613,6 +614,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Issue their new synths
         ISynth dest = issuer().synths(destinationCurrencyKey);
 
+        // here,
+        // TODO: so it looks like this calls the Synth contract directly, 
+        // rather than the Issuer as I would imagine??
         if (virtualSynth) {
             Proxyable synth = Proxyable(address(dest));
             vSynth = _createVirtualSynth(IERC20(address(synth.proxy())), recipient, amountReceived, destinationCurrencyKey);

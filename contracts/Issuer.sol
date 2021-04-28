@@ -211,6 +211,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return (debt.divideDecimalRound(currencyRate), anyRateIsInvalid || currencyRateInvalid);
     }
 
+    // here
     function _debtBalanceOfAndTotalDebt(address _issuer, bytes32 currencyKey)
         internal
         view
@@ -223,9 +224,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         ISynthetixState state = synthetixState();
 
         // What was their initial debt ownership?
+        // DEBT REGISTER
         (uint initialDebtOwnership, uint debtEntryIndex) = state.issuanceData(_issuer);
 
         // What's the total value of the system excluding ETH backed synths in their requested currency?
+        // DEBT CACHE
         (totalSystemValue, anyRateIsInvalid) = _totalIssuedSynths(currencyKey, true);
 
         // If it's zero, they haven't issued, and they have no debt.
@@ -496,6 +499,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function removeSynth(bytes32 currencyKey) external onlyOwner {
         // Remove its contribution from the debt pool snapshot, and
         // invalidate the cache to force a new snapshot.
+        // ..
         IIssuerInternalDebtCache cache = debtCache();
         cache.updateCachedSynthDebtWithRate(currencyKey, 0);
         cache.updateDebtCacheValidity(true);
@@ -518,6 +522,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
+    // entry
     function issueSynths(address from, uint amount) external onlySynthetix {
         _issueSynths(from, amount, false);
     }
@@ -633,11 +638,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
     }
 
+    // 2.
     function _issueSynths(
         address from,
         uint amount,
         bool issueMax
     ) internal {
+        // calculates from debt register
         (uint maxIssuable, uint existingDebt, uint totalSystemDebt, bool anyRateIsInvalid) = _remainingIssuableSynths(from);
         _requireRatesNotInvalid(anyRateIsInvalid);
 
@@ -648,15 +655,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
 
         // Keep track of the debt they're about to create
+        // another call here
         _addToDebtRegister(from, amount, existingDebt, totalSystemDebt);
 
         // record issue timestamp
         _setLastIssueEvent(from);
 
         // Create their synths
+        // calls the synth issue
         synths[sUSD].issue(from, amount);
 
         // Account for the issued debt in the cache
+        // ....
         debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
 
         // Store their locked SNX amount to determine their fee % for the period
@@ -741,6 +751,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         feePool().appendAccountIssuanceRecord(from, initialDebtOwnership, debtEntryIndex);
     }
 
+    // ??
     function _addToDebtRegister(
         address from,
         uint amount,
@@ -775,6 +786,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // And if we're the first, push 1 as there was no effect to any other holders, otherwise push
         // the change for the rest of the debt holders. The debt ledger holds high precision integers.
         if (state.debtLedgerLength() > 0) {
+            // ??
             state.appendDebtLedgerValue(state.lastDebtLedgerEntry().multiplyDecimalRoundPrecise(delta));
         } else {
             state.appendDebtLedgerValue(SafeDecimalMath.preciseUnit());

@@ -120,6 +120,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cacheStale(_cacheTimestamp);
     }
 
+    // Returns the total debt in USD of each synth in the system.
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates) internal view returns (uint[] memory) {
         uint numValues = currencyKeys.length;
         uint[] memory values = new uint[](numValues);
@@ -129,8 +130,11 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
             bytes32 key = currencyKeys[i];
             address synthAddress = address(synths[i]);
             require(synthAddress != address(0), "Synth does not exist");
+            // Most synths will contribute to the debt index through their total supply.
             uint supply = IERC20(synthAddress).totalSupply();
 
+            // special case - if the synth is managed by collateral manager
+            // eg. sETH, sUSD
             if (collateralManager().isSynthManaged(key)) {
                 uint collateralIssued = collateralManager().long(key);
 
@@ -165,7 +169,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         view
         returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid)
     {
+        // Fetches rates from exchangerates module.
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+        // Calls self to get current issued synths.
         return (_issuedSynthValues(currencyKeys, rates), isInvalid);
     }
 
@@ -191,6 +197,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     }
 
     function _currentDebt() internal view returns (uint debt, bool anyRateIsInvalid) {
+        // Calculates current debt.
         (uint[] memory values, bool isInvalid) = _currentSynthDebts(issuer().availableCurrencyKeys());
         uint numValues = values.length;
         uint total;

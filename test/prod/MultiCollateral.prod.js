@@ -454,7 +454,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			}
 		});
 
-		it('interacting with a loan on the old ETH contract works', async () => {
+		it.only('interacting with a loan on the old ETH contract works', async () => {
 			if (network === 'mainnet') {
 				const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
 				const period = await oldEthContract.interactionDelay();

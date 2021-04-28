@@ -7,7 +7,7 @@ import "./SynthetixState.sol";
 // Internal References
 import "./interfaces/IFeePool.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/synthetixstate
+// https://docs.synthetix.io/contracts/source/contracts/SynthetixStateWithLimitedSetup
 contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
     IFeePool public feePool;
 
@@ -43,11 +43,12 @@ contract SynthetixStateWithLimitedSetup is SynthetixState, LimitedSetup {
         }
     }
 
-    // /**
-    //  * @notice Import issuer debt data
-    //  * @dev Only used from importIssuerData above, meant to be disposable
-    //  */
+    /**
+     * @notice Import issuer debt data
+     * @dev Only used from importIssuerData above, meant to be disposable
+     */
     function _addToDebtRegister(address account, uint amount) internal {
+        // HIGH SIGNAL INFO BELOW.
         // What is the value that we've previously imported?
         uint totalDebtIssued = importedDebtAmount;
 
