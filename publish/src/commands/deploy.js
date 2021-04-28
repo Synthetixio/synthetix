@@ -1212,26 +1212,11 @@ const deploy = async ({
 			source: 'EmptyCollateralManager',
 			args: [],
 		});
-		const proxySynthetixBridgeToBase = await deployer.deployContract({
-			name: 'ProxySynthetixBridgeToBase',
-			source: 'Proxy',
-			args: [account],
-		});
-		const synthetixBridgeToBase = await deployer.deployContract({
+		await deployer.deployContract({
 			name: 'SynthetixBridgeToBase',
-			deps: ['ProxySynthetixBridgeToBase', 'AddressResolver'],
-			args: [addressOf(proxySynthetixBridgeToBase), account, addressOf(readProxyForResolver)],
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
 		});
-		if (proxySynthetixBridgeToBase && synthetixBridgeToBase) {
-			await runStep({
-				contract: 'ProxySynthetixBridgeToBase',
-				target: proxySynthetixBridgeToBase,
-				read: 'target',
-				expected: input => input === addressOf(synthetixBridgeToBase),
-				write: 'setTarget',
-				writeArg: addressOf(synthetixBridgeToBase),
-			});
-		}
 	} else {
 		await deployer.deployContract({
 			name: 'EtherCollateral',

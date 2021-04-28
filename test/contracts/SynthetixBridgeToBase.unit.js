@@ -1,12 +1,6 @@
 const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-	proxyThruTo,
-	decodedEventEqual,
-	getDecodedLogs,
-} = require('./helpers');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { toBytes32 } = require('../..');
 const { smockit } = require('@eth-optimism/smock');
@@ -42,7 +36,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let resolver;
 		let rewardEscrow;
 		let flexibleStorage;
-		let proxy;
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
@@ -55,7 +48,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 
-			proxy = await artifacts.require('Proxy').new(owner);
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
 				[
@@ -88,19 +80,15 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			flexibleStorage.smocked.getUIntValue.will.return.with(() => '3000000');
 		});
 
-		describe('when the target is deployed and the proxy is set', () => {
+		describe('when the target is deployed', () => {
 			let instance;
 			const escrowedAmount = 100;
 			beforeEach(async () => {
-				instance = await artifacts
-					.require('SynthetixBridgeToBase')
-					.new(proxy.address, owner, resolver.address);
+				instance = await artifacts.require('SynthetixBridgeToBase').new(owner, resolver.address);
 				await instance.rebuildCache();
-				await proxy.setTarget(instance.address, { from: owner });
 			});
 
 			it('should set constructor params on deployment', async () => {
-				assert.equal(await instance.proxy(), proxy.address);
 				assert.equal(await instance.owner(), owner);
 				assert.equal(await instance.resolver(), resolver.address);
 			});
@@ -151,39 +139,10 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					});
 
 					it('should emit a ImportedVestingEntries event', async () => {
-						const logs = await getDecodedLogs({
-							hash: importVestingEntriesTx.tx,
-							contracts: [instance],
-						});
-						decodedEventEqual({
-							log: logs[0],
-							event: 'ImportedVestingEntries',
-							emittedFrom: proxy.address,
-							args: [user1, escrowedAmount, emptyArray],
-						});
-					});
-				});
-
-				describe('when invoked by the messenger (aka relayer) via the proxy', async () => {
-					let hash;
-					beforeEach('importVestingEntries is called', async () => {
-						const { tx: txHash } = await proxyThruTo({
-							proxy,
-							target: instance,
-							fncName: 'finalizeEscrowMigration',
-							from: smockedMessenger,
-							args: [user1, escrowedAmount, emptyArray],
-						});
-						hash = txHash;
-					});
-
-					it('should emit a ImportedVestingEntries event', async () => {
-						const logs = await getDecodedLogs({ hash, contracts: [instance] });
-						decodedEventEqual({
-							log: logs[0],
-							event: 'ImportedVestingEntries',
-							emittedFrom: proxy.address,
-							args: [user1, escrowedAmount, emptyArray],
+						assert.eventEqual(importVestingEntriesTx, 'ImportedVestingEntries', {
+							account: user1,
+							escrowedAmount: escrowedAmount,
+							vestingEntries: emptyArray,
 						});
 					});
 				});
@@ -231,31 +190,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						});
 					});
 				});
-
-				describe('when invoked by a user via the proxy', () => {
-					const amount = 100;
-					let hash;
-					beforeEach('user tries to withdraw 100 tokens', async () => {
-						const { tx: txHash } = await proxyThruTo({
-							proxy,
-							target: instance,
-							fncName: 'withdraw',
-							from: user1,
-							args: [amount],
-						});
-						hash = txHash;
-					});
-
-					it('a WithdrawalInitiated event is emitted', async () => {
-						const logs = await getDecodedLogs({ hash, contracts: [instance] });
-						decodedEventEqual({
-							log: logs[0],
-							event: 'WithdrawalInitiated',
-							emittedFrom: proxy.address,
-							args: [user1, user1, amount],
-						});
-					});
-				});
 			});
 
 			describe('withdrawTo', () => {
@@ -300,31 +234,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 							from: user1,
 							to: randomAddress,
 							amount: amount,
-						});
-					});
-				});
-
-				describe('when invoked by a user via the proxy', () => {
-					const amount = 100;
-					let hash;
-					beforeEach('user tries to withdraw 100 tokens to a different address', async () => {
-						const { tx: txHash } = await proxyThruTo({
-							proxy,
-							target: instance,
-							fncName: 'withdrawTo',
-							from: user1,
-							args: [randomAddress, amount],
-						});
-						hash = txHash;
-					});
-
-					it('and a WithdrawalInitiated event is emitted', async () => {
-						const logs = await getDecodedLogs({ hash, contracts: [instance] });
-						decodedEventEqual({
-							log: logs[0],
-							event: 'WithdrawalInitiated',
-							emittedFrom: proxy.address,
-							args: [user1, randomAddress, amount],
 						});
 					});
 				});
@@ -379,31 +288,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						);
 					});
 				});
-
-				describe('when invoked by the messenger (aka relayer) via the proxy', async () => {
-					let hash;
-					const finalizeDepositAmount = 100;
-					beforeEach('finalizeDeposit is called', async () => {
-						const { tx: txHash } = await proxyThruTo({
-							proxy,
-							target: instance,
-							fncName: 'finalizeDeposit',
-							from: smockedMessenger,
-							args: [user1, finalizeDepositAmount],
-						});
-						hash = txHash;
-					});
-
-					it('should emit a DepositFinalized event', async () => {
-						const logs = await getDecodedLogs({ hash, contracts: [instance] });
-						decodedEventEqual({
-							log: logs[0],
-							event: 'DepositFinalized',
-							emittedFrom: proxy.address,
-							args: [user1, finalizeDepositAmount],
-						});
-					});
-				});
 			});
 
 			describe('finalizeRewardDeposit', async () => {
@@ -454,31 +338,6 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 							mintableSynthetix.smocked.mintSecondaryRewards.calls[0][0].toString(),
 							finalizeRewardDepositAmount
 						);
-					});
-				});
-
-				describe('when invoked by the bridge on the other layer via the proxy', async () => {
-					let hash;
-					const finalizeRewardDepositAmount = 100;
-					beforeEach('finalizeRewardDeposit is called', async () => {
-						const { tx: txHash } = await proxyThruTo({
-							proxy,
-							target: instance,
-							fncName: 'finalizeRewardDeposit',
-							from: smockedMessenger,
-							args: [finalizeRewardDepositAmount],
-						});
-						hash = txHash;
-					});
-
-					it('should emit a MintedSecondaryRewards event', async () => {
-						const logs = await getDecodedLogs({ hash, contracts: [instance] });
-						decodedEventEqual({
-							log: logs[0],
-							event: 'MintedSecondaryRewards',
-							emittedFrom: proxy.address,
-							args: [finalizeRewardDepositAmount],
-						});
 					});
 				});
 			});

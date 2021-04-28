@@ -39,7 +39,7 @@ module.exports = {
 			} else if (/^u?int/.test(type)) {
 				assert.bnClose(new web3.utils.BN(value), arg, bnCloseVariance);
 			} else {
-				assert.deepEqual(value, arg);
+				assert.equal(value, arg);
 			}
 		});
 	},

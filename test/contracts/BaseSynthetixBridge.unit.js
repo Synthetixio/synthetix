@@ -71,7 +71,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 							fnc: instance.suspendInitiation,
 							args: [],
 							accounts,
-							reason: 'Owner only function',
+							reason: 'Only the contract owner may perform this action',
 							address: owner,
 						});
 					});
@@ -111,7 +111,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 							fnc: instance.resumeInitiation,
 							args: [],
 							accounts,
-							reason: 'Owner only function',
+							reason: 'Only the contract owner may perform this action',
 							address: owner,
 						});
 					});
