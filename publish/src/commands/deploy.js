@@ -95,6 +95,11 @@ const deploy = async ({
 		network,
 	});
 
+	if (freshDeploy) {
+		deployment.targets = {};
+		deployment.sources = {};
+	}
+
 	if (!ignoreSafetyChecks) {
 		// Using Goerli without manageNonces?
 		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
