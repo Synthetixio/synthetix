@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
-import "./Proxyable.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/IBaseSynthetixBridge.sol";
@@ -13,7 +12,7 @@ import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynthetixBridge {
+contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
@@ -23,11 +22,7 @@ contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynt
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(
-        address payable _proxy,
-        address _owner,
-        address _resolver
-    ) public Proxyable(_proxy) Owned(_owner) MixinSystemSettings(_resolver) {
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
         initiationActive = true;
     }
 
@@ -69,31 +64,21 @@ contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynt
 
     // ========= RESTRICTED FUNCTIONS ==============
 
-    function suspendInitiation() external optionalProxy_onlyOwner {
+    function suspendInitiation() external onlyOwner {
         require(initiationActive, "initiation suspended");
         initiationActive = false;
-        emitInitiationSuspended();
+        emit InitiationSuspended();
     }
 
-    function resumeInitiation() external optionalProxy_onlyOwner {
+    function resumeInitiation() external onlyOwner {
         require(!initiationActive, "initiation not suspended");
         initiationActive = true;
-        emitInitiationResumed();
+        emit InitiationResumed();
     }
 
     // ========== EVENTS ==========
 
     event InitiationSuspended();
-    bytes32 private constant INITIATIONSUSPENDED_SIG = keccak256("InitiationSuspended()");
-
-    function emitInitiationSuspended() internal {
-        proxy._emit("", 1, INITIATIONSUSPENDED_SIG, 0, 0, 0);
-    }
 
     event InitiationResumed();
-    bytes32 private constant INITIATIONRESUMED_SIG = keccak256("InitiationResumed()");
-
-    function emitInitiationResumed() internal {
-        proxy._emit("", 1, INITIATIONRESUMED_SIG, 0, 0, 0);
-    }
 }

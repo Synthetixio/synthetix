@@ -1,12 +1,6 @@
 const { artifacts, contract } = require('hardhat');
 const { assert } = require('./common');
-const {
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-	proxyThruTo,
-	decodedEventEqual,
-	getDecodedLogs,
-} = require('./helpers');
+const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const { toBytes32 } = require('../..');
 const { smockit } = require('@eth-optimism/smock');
@@ -19,7 +13,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: BaseSynthetixBridge.abi,
-			ignoreParents: ['Owned', 'Proxyable', 'MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: ['resumeInitiation', 'suspendInitiation'],
 		});
 	});
@@ -29,7 +23,6 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 		let synthetix;
 		let resolver;
 		let rewardEscrow;
-		let proxy;
 
 		beforeEach(async () => {
 			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
@@ -43,7 +36,6 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 			// can't use ISynthetix as we need ERC20 functions as well
 			synthetix = await smockit(artifacts.require('Synthetix').abi);
 
-			proxy = await artifacts.require('Proxy').new(owner);
 			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
 
@@ -58,18 +50,14 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 			let instance;
 
 			beforeEach(async () => {
-				instance = await artifacts
-					.require('BaseSynthetixBridge')
-					.new(proxy.address, owner, resolver.address);
+				instance = await artifacts.require('BaseSynthetixBridge').new(owner, resolver.address);
 
 				await instance.rebuildCache();
-
-				await proxy.setTarget(instance.address, { from: owner });
 			});
 
 			it('should set constructor params on deployment', async () => {
-				assert.equal(await instance.proxy(), proxy.address);
 				assert.equal(await instance.owner(), owner);
+				assert.equal(await instance.resolver(), resolver.address);
 			});
 
 			it('initially initiations are active', async () => {
@@ -98,7 +86,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by the owner directly', () => {
+				describe('when invoked by the owner', () => {
 					let txn;
 					beforeEach(async () => {
 						txn = await instance.suspendInitiation({ from: owner });
@@ -110,35 +98,6 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 					it('and a InitiationSuspended event is emitted', async () => {
 						assert.eventEqual(txn, 'InitiationSuspended', []);
-					});
-				});
-
-				describe('when invoked by the owner via the proxy', () => {
-					let hash;
-					beforeEach(async () => {
-						const { tx: txHash } = await proxyThruTo({
-							proxy,
-							target: instance,
-							fncName: 'suspendInitiation',
-							from: owner,
-							args: [],
-						});
-						hash = txHash;
-					});
-
-					it('initiationActive is false', async () => {
-						assert.equal(await instance.initiationActive(), false);
-					});
-
-					it('and an InitiationSuspended event is emitted', async () => {
-						const logs = await getDecodedLogs({ hash, contracts: [instance] });
-
-						decodedEventEqual({
-							log: logs[0],
-							event: 'InitiationSuspended',
-							emittedFrom: proxy.address,
-							args: [],
-						});
 					});
 				});
 			});
@@ -175,7 +134,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 						assert.equal(await instance.initiationActive(), false);
 					});
 
-					describe('when invoked by the owner directly', () => {
+					describe('when invoked by the owner', () => {
 						beforeEach(async () => {
 							txn = await instance.resumeInitiation({ from: owner });
 						});
@@ -186,35 +145,6 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 						it('a InitiationResumed event is emitted', async () => {
 							assert.eventEqual(txn, 'InitiationResumed', []);
-						});
-					});
-
-					describe('when invoked by the owner via the proxy', () => {
-						let hash;
-						beforeEach(async () => {
-							const { tx: txHash } = await proxyThruTo({
-								proxy,
-								target: instance,
-								fncName: 'resumeInitiation',
-								from: owner,
-								args: [],
-							});
-							hash = txHash;
-						});
-
-						it('initiationActive is true', async () => {
-							assert.equal(await instance.initiationActive(), true);
-						});
-
-						it('and a InitiationResumed event is emitted', async () => {
-							const logs = await getDecodedLogs({ hash, contracts: [instance] });
-
-							decodedEventEqual({
-								log: logs[0],
-								event: 'InitiationResumed',
-								emittedFrom: proxy.address,
-								args: [],
-							});
 						});
 					});
 				});
