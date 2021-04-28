@@ -166,6 +166,14 @@
 		"asset": "AMZN"
 	},
 	{
+		"name": "sCOIN",
+		"asset": "COIN"
+	},
+	{
+		"name": "sMSFT",
+		"asset": "MSFT"
+	},
+	{
 		"name": "sCEX",
 		"asset": "CEX",
 		"index": [
