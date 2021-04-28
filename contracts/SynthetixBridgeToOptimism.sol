@@ -7,7 +7,6 @@ import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
 
 // Internal references
-import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
@@ -30,10 +29,6 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     ) public BaseSynthetixBridge(_proxy, _owner, _resolver) {}
 
     // ========== INTERNALS ============
-
-    function synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));

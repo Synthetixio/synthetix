@@ -272,5 +272,46 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 				});
 			});
 		});
+
+		describe('SNX recovery', () => {
+			describe('when SNX is sent to the contract accidentally', () => {
+				const lockedSNX = toBN('1000');
+				let bridgeBalanceBefore;
+				let escrowBalanceBefore;
+
+				beforeEach(async () => {
+					await synthetix.transfer(synthetixBridgeToOptimism.address, lockedSNX, { from: owner });
+				});
+
+				beforeEach('record balances before', async () => {
+					bridgeBalanceBefore = await synthetix.balanceOf(synthetixBridgeToOptimism.address);
+					escrowBalanceBefore = await synthetix.balanceOf(synthetixBridgeEscrow.address);
+				});
+
+				describe('when invoked by the owner directly', () => {
+					let txn;
+					beforeEach(async () => {
+						txn = await synthetixBridgeToOptimism.recoverSnx(synthetixBridgeEscrow.address, {
+							from: owner,
+						});
+					});
+
+					it('the balance of the bridge should be 0', async () => {
+						assert.bnEqual(await synthetix.balanceOf(synthetixBridgeToOptimism.address), '0');
+					});
+
+					it("increases the escrow's balance", async () => {
+						assert.bnEqual(
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
+							escrowBalanceBefore.add(bridgeBalanceBefore)
+						);
+					});
+
+					it('emits an SNXRecovered event ', async () => {
+						assert.eventEqual(txn, 'SNXRecovered', [synthetixBridgeEscrow.address, lockedSNX]);
+					});
+				});
+			});
+		});
 	});
 });

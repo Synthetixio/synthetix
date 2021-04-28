@@ -9,6 +9,7 @@ import "./MixinSystemSettings.sol";
 import "./interfaces/IBaseSynthetixBridge.sol";
 
 // Internal references
+import "./interfaces/IERC20.sol";
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
@@ -39,6 +40,10 @@ contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynt
 
     function synthetix() internal view returns (ISynthetix) {
         return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
+    }
+
+    function synthetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
@@ -81,6 +86,17 @@ contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynt
         emitInitiationResumed();
     }
 
+    function recoverSnx(address _recoverAddress) external optionalProxy_onlyOwner {
+        require(_recoverAddress != address(0) && _recoverAddress != address(this), "Invalid recover address");
+
+        uint256 snxBalance = synthetixERC20().balanceOf(address(this));
+        require(snxBalance > 0, "No SNX to recover");
+
+        synthetixERC20().transfer(_recoverAddress, snxBalance);
+
+        emitSNXRecovered(_recoverAddress, snxBalance);
+    }
+
     // ========== EVENTS ==========
 
     event InitiationSuspended();
@@ -95,5 +111,12 @@ contract BaseSynthetixBridge is Owned, Proxyable, MixinSystemSettings, IBaseSynt
 
     function emitInitiationResumed() internal {
         proxy._emit("", 1, INITIATIONRESUMED_SIG, 0, 0, 0);
+    }
+
+    event SNXRecovered(address recoverAddress, uint256 amount);
+    bytes32 private constant SNXRECOVERED_SIG = keccak256("SNXRecovered(address,uint256)");
+
+    function emitSNXRecovered(address recoverAddress, uint256 amount) internal {
+        proxy._emit(abi.encode(recoverAddress, amount), 1, SNXRECOVERED_SIG, 0, 0, 0);
     }
 }
