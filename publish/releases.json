@@ -186,23 +186,21 @@
 		"sips": [107, 114, 126, 127]
 	},
 	{
-		"name": "Regor[a]",
+		"name": "Alioth",
 		"version": {
 			"major": 2,
-			"minor": 43,
-			"sources": [
-				"Exchanger",
-				"VirtualSynthMastercopy",
-				"FeePool",
-				"SynthsUSD",
-				"SynthsETH",
-				"SystemSettings",
-				"EtherWrapper",
-				"NativeEtherWrapper",
-				"Issuer",
-				"DebtCache"
-			],
-			"sips": [112]
-		}
+			"minor": 45
+		},
+		"sources": [
+			"FeePool",
+			"SynthsUSD",
+			"SynthsETH",
+			"SystemSettings",
+			"EtherWrapper",
+			"NativeEtherWrapper",
+			"Issuer",
+			"DebtCache"
+		],
+		"sips": [112]
 	}
 ]
