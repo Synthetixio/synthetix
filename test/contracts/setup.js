@@ -754,7 +754,12 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'SynthetixBridgeToOptimism',
-			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase', 'SynthetixBridgeEscrow'],
+			mocks: [
+				'ext:Messenger',
+				'ovm:SynthetixBridgeToBase',
+				'SynthetixBridgeEscrow',
+				'RewardsDistribution',
+			],
 			deps: ['Proxy', 'AddressResolver', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
 		},
 		{

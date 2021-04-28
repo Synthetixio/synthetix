@@ -119,6 +119,9 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     function notifyRewardAmount(uint256 amount) external requireInitiationActive optionalProxy {
         require(messageSender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
+        // NOTE: transfer SNX to synthetixBridgeEscrow because RewardsDistribution transfers them initially to this contract.
+        synthetixERC20().transfer(synthetixBridgeEscrow(), amount);
+
         // to be here means I've been given an amount of SNX to distribute onto L2
         _depositReward(amount);
     }

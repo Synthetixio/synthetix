@@ -641,12 +641,17 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
+					it('SNX is transferred from the bridge to the bridge escrow', async () => {
+						assert.equal(synthetix.smocked.transfer.calls[0][0], SynthetixBridgeEscrow);
+						assert.equal(synthetix.smocked.transfer.calls[0][1].toString(), amount);
+					});
+
 					it('and a RewardDeposit event is emitted', async () => {
 						assert.eventEqual(txn, 'RewardDeposit', [rewardsDistribution, amount]);
 					});
 				});
 
-				describe('when invoked by the rewardsDistribution viw the proxy', () => {
+				describe('when invoked by the rewardsDistribution via the proxy', () => {
 					const amount = '1000';
 					let hash;
 					beforeEach(async () => {
@@ -658,6 +663,11 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 							args: [amount],
 						});
 						hash = txHash;
+					});
+
+					it('SNX is transferred from the bridge to the bridge escrow', async () => {
+						assert.equal(synthetix.smocked.transfer.calls[0][0], SynthetixBridgeEscrow);
+						assert.equal(synthetix.smocked.transfer.calls[0][1].toString(), amount);
 					});
 
 					it('a RewardDeposit event is emitted by the proxy', async () => {

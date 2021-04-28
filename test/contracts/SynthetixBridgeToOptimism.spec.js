@@ -14,7 +14,11 @@ const {
 contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 	const [, owner, randomAddress] = accounts;
 
-	let synthetix, synthetixBridgeToOptimism, synthetixBridgeEscrow, systemSettings;
+	let synthetix,
+		synthetixBridgeToOptimism,
+		synthetixBridgeEscrow,
+		systemSettings,
+		rewardsDistribution;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
@@ -23,9 +27,15 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
 				SystemSettings: systemSettings,
 				SynthetixBridgeEscrow: synthetixBridgeEscrow,
+				RewardsDistribution: rewardsDistribution,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['Synthetix', 'SynthetixBridgeToOptimism', 'SystemSettings'],
+				contracts: [
+					'Synthetix',
+					'SynthetixBridgeToOptimism',
+					'SystemSettings',
+					'RewardsDistribution',
+				],
 			}));
 		});
 
@@ -205,6 +215,58 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 						assert.bnEqual(
 							await synthetix.balanceOf(synthetixBridgeEscrow.address),
 							contractBalanceBefore.add(amountToDeposit)
+						);
+					});
+				});
+			});
+		});
+
+		describe('notifyReward', () => {
+			describe('the owner has added SynthetixBridgeToOptimism to rewards distributins list', () => {
+				const amountToDistribute = toBN(1000);
+				before('addRewardDistribution', async () => {
+					await rewardsDistribution.addRewardDistribution(
+						synthetixBridgeToOptimism.address,
+						amountToDistribute,
+						{
+							from: owner,
+						}
+					);
+				});
+
+				describe('distributing the rewards', () => {
+					let bridgeBalanceBefore;
+					let escrowBalanceBefore;
+
+					before('record balance before', async () => {
+						bridgeBalanceBefore = await synthetix.balanceOf(synthetixBridgeToOptimism.address);
+						escrowBalanceBefore = await synthetix.balanceOf(synthetixBridgeEscrow.address);
+					});
+
+					before('transfer amount to be distributed and distributeRewards', async () => {
+						// first pawn the authority contract
+						await rewardsDistribution.setAuthority(owner, {
+							from: owner,
+						});
+						await synthetix.transfer(rewardsDistribution.address, amountToDistribute, {
+							from: owner,
+						});
+						await rewardsDistribution.distributeRewards(amountToDistribute, {
+							from: owner,
+						});
+					});
+
+					it('the balance of the bridge remains intact', async () => {
+						assert.bnEqual(
+							await synthetix.balanceOf(synthetixBridgeToOptimism.address),
+							bridgeBalanceBefore
+						);
+					});
+
+					it("increases the escrow's balance", async () => {
+						assert.bnEqual(
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
+							escrowBalanceBefore.add(amountToDistribute)
 						);
 					});
 				});
