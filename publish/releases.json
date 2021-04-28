@@ -182,18 +182,27 @@
 			"major": 2,
 			"minor": 42
 		},
-		"sources": [
-			"Exchanger",
-			"VirtualSynthMastercopy",
-			"FeePool",
-			"SynthsUSD",
-			"SynthsETH",
-			"SystemSettings",
-			"EtherWrapper",
-			"NativeEtherWrapper",
-			"Issuer",
-			"DebtCache"
-		],
-		"sips": [112, 127]
+		"sources": ["Exchanger", "VirtualSynthMastercopy"],
+		"sips": [107, 114, 126, 127]
+	},
+	{
+		"name": "Regor[a]",
+		"version": {
+			"major": 2,
+			"minor": 43,
+			"sources": [
+				"Exchanger",
+				"VirtualSynthMastercopy",
+				"FeePool",
+				"SynthsUSD",
+				"SynthsETH",
+				"SystemSettings",
+				"EtherWrapper",
+				"NativeEtherWrapper",
+				"Issuer",
+				"DebtCache"
+			],
+			"sips": [112]
+		}
 	}
 ]

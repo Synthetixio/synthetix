@@ -515,6 +515,9 @@
 	"SynthsKRW": {
 		"deploy": false
 	},
+	"VirtualSynthMastercopy": {
+		"deploy": false
+	},
 	"EtherWrapper": {
 		"deploy": true
 	},
