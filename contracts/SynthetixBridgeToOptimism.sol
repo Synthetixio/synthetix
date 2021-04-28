@@ -23,11 +23,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(
-        address payable _proxy,
-        address _owner,
-        address _resolver
-    ) public BaseSynthetixBridge(_proxy, _owner, _resolver) {}
+    constructor(address _owner, address _resolver) public BaseSynthetixBridge(_owner, _resolver) {}
 
     // ========== INTERNALS ============
 
@@ -80,20 +76,20 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // ========== PUBLIC FUNCTIONS =========
 
-    function deposit(uint256 amount) external requireInitiationActive optionalProxy requireZeroDebt {
+    function deposit(uint256 amount) external requireInitiationActive requireZeroDebt {
         _initiateDeposit(messageSender, amount);
     }
 
-    function depositTo(address to, uint amount) external requireInitiationActive optionalProxy requireZeroDebt {
+    function depositTo(address to, uint amount) external requireInitiationActive requireZeroDebt {
         _initiateDeposit(to, amount);
     }
 
-    function migrateEscrow(uint256[][] memory entryIDs) public requireInitiationActive optionalProxy requireZeroDebt {
+    function migrateEscrow(uint256[][] memory entryIDs) public requireInitiationActive requireZeroDebt {
         _migrateEscrow(entryIDs);
     }
 
     // invoked by a generous user on L1
-    function depositReward(uint amount) external requireInitiationActive optionalProxy {
+    function depositReward(uint amount) external requireInitiationActive {
         // move the SNX into the deposit escrow
         synthetixERC20().transferFrom(messageSender, synthetixBridgeEscrow(), amount);
 
@@ -103,7 +99,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger on L1 after L2 waiting period elapses
-    function finalizeWithdrawal(address to, uint256 amount) external optionalProxy {
+    function finalizeWithdrawal(address to, uint256 amount) external {
         // ensure function only callable from L2 Bridge via messenger (aka relayer)
         require(messageSender == address(messenger()), "Only the relayer can call this");
         require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
@@ -112,11 +108,11 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         synthetixERC20().transferFrom(synthetixBridgeEscrow(), to, amount);
 
         // no escrow actions - escrow remains on L2
-        emitWithdrawalFinalized(to, amount);
+        emit WithdrawalFinalized(to, amount);
     }
 
     // invoked by RewardsDistribution on L1 (takes SNX)
-    function notifyRewardAmount(uint256 amount) external requireInitiationActive optionalProxy {
+    function notifyRewardAmount(uint256 amount) external requireInitiationActive {
         require(messageSender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
         // NOTE: transfer SNX to synthetixBridgeEscrow because RewardsDistribution transfers them initially to this contract.
@@ -129,7 +125,6 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] memory entryIDs)
         public
         requireInitiationActive
-        optionalProxy
         requireZeroDebt
     {
         if (entryIDs.length > 0) {
@@ -155,7 +150,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Reward))
         );
 
-        emitRewardDeposit(messageSender, _amount);
+        emit RewardDeposit(messageSender, _amount);
     }
 
     function _initiateDeposit(address _to, uint256 _depositAmount) private {
@@ -173,7 +168,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Deposit))
         );
 
-        emitDepositInitiated(messageSender, _to, _depositAmount);
+        emit DepositInitiated(messageSender, _to, _depositAmount);
     }
 
     function _migrateEscrow(uint256[][] memory _entryIDs) private {
@@ -207,7 +202,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
                     uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Escrow))
                 );
 
-                emitExportedVestingEntries(messageSender, escrowedAccountBalance, vestingEntries);
+                emit ExportedVestingEntries(messageSender, escrowedAccountBalance, vestingEntries);
             }
         }
     }
@@ -215,49 +210,14 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     // ========== EVENTS ==========
 
     event DepositInitiated(address indexed from, address to, uint256 amount);
-    bytes32 private constant DEPOSITINITIATED_SIG = keccak256("DepositInitiated(address,address,uint256)");
-
-    function emitDepositInitiated(
-        address from,
-        address to,
-        uint256 amount
-    ) internal {
-        proxy._emit(abi.encode(to, amount), 2, DEPOSITINITIATED_SIG, bytes32(uint256(uint160(from))), 0, 0);
-    }
 
     event ExportedVestingEntries(
         address indexed account,
         uint256 escrowedAccountBalance,
         VestingEntries.VestingEntry[] vestingEntries
     );
-    bytes32 private constant EXPORTEDVESTINGENTRIES_SIG = keccak256("ExportedVestingEntries(address,uint256,tuple[])");
-
-    function emitExportedVestingEntries(
-        address account,
-        uint256 escrowedAccountBalance,
-        VestingEntries.VestingEntry[] memory vestingEntries
-    ) internal {
-        proxy._emit(
-            abi.encode(escrowedAccountBalance, vestingEntries),
-            2,
-            EXPORTEDVESTINGENTRIES_SIG,
-            bytes32(uint256(uint160(account))),
-            0,
-            0
-        );
-    }
 
     event RewardDeposit(address indexed account, uint256 amount);
-    bytes32 private constant REWARDDEPOSIT_SIG = keccak256("RewardDeposit(address,uint256)");
-
-    function emitRewardDeposit(address account, uint256 amount) internal {
-        proxy._emit(abi.encode(amount), 2, REWARDDEPOSIT_SIG, bytes32(uint256(uint160(account))), 0, 0);
-    }
 
     event WithdrawalFinalized(address indexed to, uint256 amount);
-    bytes32 private constant WITHDRAWALFINALIZED_SIG = keccak256("WithdrawalFinalized(address,uint256)");
-
-    function emitWithdrawalFinalized(address to, uint256 amount) internal {
-        proxy._emit(abi.encode(amount), 2, WITHDRAWALFINALIZED_SIG, bytes32(uint256(uint160(to))), 0, 0);
-    }
 }

@@ -182,11 +182,7 @@ const setupContract = async ({
 			SUPPLY_100M,
 			tryGetAddressOf('AddressResolver'),
 		],
-		SynthetixBridgeToOptimism: [
-			tryGetAddressOf('ProxySynthetixBridgeToOptimism'),
-			owner,
-			tryGetAddressOf('AddressResolver'),
-		],
+		SynthetixBridgeToOptimism: [owner, tryGetAddressOf('AddressResolver')],
 		SynthetixBridgeToBase: [
 			tryGetAddressOf('ProxySynthetixBridgeToBase'),
 			owner,
@@ -413,11 +409,6 @@ const setupContract = async ({
 					)
 			);
 		},
-		async SynthetixBridgeToOptimism() {
-			await Promise.all(
-				[cache['ProxySynthetixBridgeToOptimism'].setTarget(instance.address, { from: owner })] || []
-			);
-		},
 		async SynthetixBridgeToBase() {
 			await Promise.all(
 				[cache['ProxySynthetixBridgeToBase'].setTarget(instance.address, { from: owner })] || []
@@ -603,7 +594,6 @@ const setupAllContracts = async ({
 		{ contract: 'Proxy', forContract: 'MintableSynthetix' },
 		{ contract: 'Proxy', forContract: 'BaseSynthetix' },
 		{ contract: 'Proxy', forContract: 'FeePool' },
-		{ contract: 'Proxy', forContract: 'SynthetixBridgeToOptimism' },
 		{ contract: 'Proxy', forContract: 'SynthetixBridgeToBase' },
 		{ contract: 'TokenState', forContract: 'Synthetix' },
 		{ contract: 'TokenState', forContract: 'MintableSynthetix' },
@@ -760,7 +750,7 @@ const setupAllContracts = async ({
 				'SynthetixBridgeEscrow',
 				'RewardsDistribution',
 			],
-			deps: ['Proxy', 'AddressResolver', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
+			deps: ['AddressResolver', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
 		},
 		{
 			contract: 'SynthetixBridgeToBase',

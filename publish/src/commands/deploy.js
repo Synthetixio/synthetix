@@ -1243,26 +1243,11 @@ const deploy = async ({
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
-		const proxySynthetixBridgeToOptimism = await deployer.deployContract({
-			name: 'ProxySynthetixBridgeToOptimism',
-			source: 'Proxy',
-			args: [account],
-		});
-		const synthetixBridgeToOptimism = await deployer.deployContract({
+		await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
-			deps: ['ProxySynthetixBridgeToOptimism', 'AddressResolver'],
-			args: [addressOf(proxySynthetixBridgeToOptimism), account, addressOf(readProxyForResolver)],
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
 		});
-		if (proxySynthetixBridgeToOptimism && synthetixBridgeToOptimism) {
-			await runStep({
-				contract: 'ProxysynthetixBridgeToOptimism',
-				target: proxySynthetixBridgeToOptimism,
-				read: 'target',
-				expected: input => input === addressOf(synthetixBridgeToOptimism),
-				write: 'setTarget',
-				writeArg: addressOf(synthetixBridgeToOptimism),
-			});
-		}
 		await deployer.deployContract({
 			name: 'SynthetixBridgeEscrow',
 			deps: ['AddressResolver'],
