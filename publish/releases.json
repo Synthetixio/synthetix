@@ -184,5 +184,14 @@
 		},
 		"sources": ["Exchanger", "VirtualSynthMastercopy"],
 		"sips": [107, 114, 126, 127]
+	},
+	{
+		"name": "Regora",
+		"version": {
+			"major": 2,
+			"minor": 43
+		},
+		"sources": [],
+		"sips": [115, 128]
 	}
 ]
