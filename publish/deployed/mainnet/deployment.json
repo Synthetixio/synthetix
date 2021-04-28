@@ -2307,6 +2307,60 @@
 			"timestamp": "2021-04-22T15:47:27.982Z",
 			"txn": "",
 			"network": "mainnet"
+		},
+		"TokenStatesCOIN": {
+			"name": "TokenStatesCOIN",
+			"address": "0x102e541a34AA7e7205c32ddF58308395d733Ce1f",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x102e541a34AA7e7205c32ddF58308395d733Ce1f",
+			"timestamp": "2021-04-28T01:21:25.200Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysCOIN": {
+			"name": "ProxysCOIN",
+			"address": "0x9EeF4CA7aB9fa8bc0650127341C2d3F707a40f8A",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x9EeF4CA7aB9fa8bc0650127341C2d3F707a40f8A",
+			"timestamp": "2021-04-28T01:23:43.849Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsCOIN": {
+			"name": "SynthsCOIN",
+			"address": "0x249612F641111022f2f48769f3Df5D85cb3E26a2",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x249612F641111022f2f48769f3Df5D85cb3E26a2",
+			"timestamp": "2021-04-28T01:24:18.499Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesMSFT": {
+			"name": "TokenStatesMSFT",
+			"address": "0x7EbeEa83591c048a40502985254A3Df19Ea90067",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x7EbeEa83591c048a40502985254A3Df19Ea90067",
+			"timestamp": "2021-04-28T01:26:29.902Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysMSFT": {
+			"name": "ProxysMSFT",
+			"address": "0x745a824D6aBBD236AA794b5530062778A6Ad7523",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x745a824D6aBBD236AA794b5530062778A6Ad7523",
+			"timestamp": "2021-04-28T01:26:44.272Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsMSFT": {
+			"name": "SynthsMSFT",
+			"address": "0x04720DbBD4599aD26811545595d97fB813E84964",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x04720DbBD4599aD26811545595d97fB813E84964",
+			"timestamp": "2021-04-28T01:28:50.921Z",
+			"txn": "",
+			"network": "mainnet"
 		}
 	},
 	"sources": {
