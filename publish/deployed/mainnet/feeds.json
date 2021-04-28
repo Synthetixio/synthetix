@@ -170,5 +170,13 @@
 	"AMZN": {
 		"asset": "AMZN",
 		"feed": "0x8994115d287207144236c13Be5E2bDbf6357D9Fd"
+	},
+	"COIN": {
+		"asset": "COIN",
+		"feed": "0xb10a047f8db80d781D006F1401BEB7d70Eb4da1a"
+	},
+	"MSFT": {
+		"asset": "MSFT",
+		"feed": "0x021Fb44bfeafA0999C7b07C4791cf4B859C3b431"
 	}
 }
