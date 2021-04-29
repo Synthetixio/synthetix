@@ -6,16 +6,22 @@ task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
 	.addFlag('gas', 'Compile gas usage')
 	.addFlag('native', 'Compile with the native solc compiler')
+	.addFlag('parallel', 'Run tests in parallel')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalParam('grep', 'Filter tests to only those with given logic')
 	.setAction(async (taskArguments, hre, runSuper) => {
-		const { gas, grep, native, gasOutputFile } = taskArguments;
+		const { gas, grep, native, gasOutputFile, parallel } = taskArguments;
 
 		if (native) {
 			hre.config.solc.native = true;
 		}
 
 		optimizeIfRequired({ hre, taskArguments });
+
+		if (parallel) {
+			console.log(gray('Running tests in parallel'));
+			hre.config.mocha.parallel = true;
+		}
 
 		if (grep) {
 			console.log(gray('Filtering tests to those containing'), yellow(grep));
