@@ -40,7 +40,6 @@ contract FuturesMarketData {
         int marketSkew;
         int proportionalSkew;
         int entryDebtCorrection;
-        uint pendingOrderValue;
     }
 
     struct PriceDetails {
@@ -193,8 +192,7 @@ contract FuturesMarketData {
                     marketDebt,
                     market.marketSkew(),
                     market.proportionalSkew(),
-                    market.entryDebtCorrection(),
-                    market.pendingOrderValue()
+                    market.entryDebtCorrection()
                 ),
                 PriceDetails(price, market.currentRoundId(), invalid)
             );
@@ -229,9 +227,9 @@ contract FuturesMarketData {
     }
 
     function _order(FuturesMarket market, address account) internal view returns (FuturesMarket.Order memory) {
-        (uint orderId, uint orderMargin, int orderLeverage, uint orderFee, uint orderRoundId) = market
+        (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId) = market
             .orders(account);
-        return FuturesMarket.Order(orderId, orderMargin, orderLeverage, orderFee, orderRoundId);
+        return FuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId);
     }
 
     function _positionDetails(FuturesMarket market, address account) internal view returns (PositionData memory) {

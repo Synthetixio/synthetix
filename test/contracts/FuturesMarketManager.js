@@ -1,9 +1,9 @@
 const { contract } = require('@nomiclabs/buidler');
 const { assert } = require('./common');
 
-contract('FuturesMarket', accounts => {
+contract('FuturesMarketManager', accounts => {
 	describe('Unimplemented', () => {
-		it('TODO', async () => {
+		it.skip('TODO', async () => {
 			assert.isTrue(false);
 		});
 	});

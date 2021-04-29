@@ -103,19 +103,25 @@ contract('FuturesMarketData', accounts => {
 		await sUSD.issue(trader3, traderInitialBalance);
 
 		// The traders take positions on market
-		await futuresMarket.submitOrder(toUnit('1000'), toUnit('5'), { from: trader1 });
-		await futuresMarket.submitOrder(toUnit('750'), toUnit('-10'), { from: trader2 });
+		await futuresMarket.modifyMargin(toUnit('1000'), { from: trader1 });
+		await futuresMarket.submitOrder(toUnit('5'), { from: trader1 });
+
+		await futuresMarket.modifyMargin(toUnit('750'), { from: trader2 });
+		await futuresMarket.submitOrder(toUnit('-10'), { from: trader2 });
+
 		await exchangeRates.updateRates([baseAsset], [toUnit('100')], await currentTime(), {
 			from: oracle,
 		});
 		await futuresMarket.confirmOrder(trader1);
 		await futuresMarket.confirmOrder(trader2);
 
-		await futuresMarket.submitOrder(toUnit('4000'), toUnit('1.25'), { from: trader3 });
+		await futuresMarket.modifyMargin(toUnit('4000'), { from: trader3 });
+		await futuresMarket.submitOrder(toUnit('1.25'), { from: trader3 });
 
 		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForAsset(newAsset));
 
-		await sethMarket.submitOrder(toUnit('3000'), toUnit('4'), { from: trader3 });
+		await sethMarket.modifyMargin(toUnit('3000'), { from: trader3 });
+		await sethMarket.submitOrder(toUnit('4'), { from: trader3 });
 		await exchangeRates.updateRates([newAsset], [toUnit('999')], await currentTime(), {
 			from: oracle,
 		});
@@ -158,11 +164,6 @@ contract('FuturesMarketData', accounts => {
 				await futuresMarket.entryDebtCorrection()
 			);
 
-			assert.bnEqual(
-				details.marketSizeDetails.pendingOrderValue,
-				await futuresMarket.pendingOrderValue()
-			);
-
 			const assetPrice = await futuresMarket.assetPrice();
 			assert.bnEqual(details.priceDetails.price, assetPrice.price);
 			assert.equal(details.priceDetails.invalid, assetPrice.invalid);
@@ -183,7 +184,7 @@ contract('FuturesMarketData', accounts => {
 
 			const order = await futuresMarket.orders(trader3);
 			assert.equal(details.orderPending, await futuresMarket.orderPending(trader3));
-			assert.bnEqual(details.order.margin, order.margin);
+			assert.bnEqual(details.order.id, order.id);
 			assert.bnEqual(details.order.leverage, order.leverage);
 			assert.bnEqual(details.order.fee, order.fee);
 			assert.bnEqual(details.order.roundId, order.roundId);
