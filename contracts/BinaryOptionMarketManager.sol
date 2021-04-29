@@ -328,8 +328,7 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
                     abi.encodeWithSignature("setResolverAndSyncCache(address)", address(resolver));
 
                 // solhint-disable avoid-low-level-calls
-                (bool legacySuccess, ) = market.call(payloadForLegacyCache);
-                require(legacySuccess, "Cannot rebuild cache for market");
+                market.call(payloadForLegacyCache);
             }
         }
     }
