@@ -156,7 +156,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         }
     }
 
-    // Burns `amount` WETH for `amount - fees` sETH.
+    // Burns `amount` sETH for `amount - fees` WETH.
     // `amount` is inclusive of fees, calculable via `calculateBurnFee`.
     function burn(uint amount) external notPaused {
         uint reserves = getReserves();
