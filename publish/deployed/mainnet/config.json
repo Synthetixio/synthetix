@@ -760,5 +760,23 @@
 	},
 	"VirtualSynthMastercopy": {
 		"deploy": false
+	},
+	"TokenStatesCOIN": {
+		"deploy": false
+	},
+	"ProxysCOIN": {
+		"deploy": false
+	},
+	"SynthsCOIN": {
+		"deploy": false
+	},
+	"TokenStatesMSFT": {
+		"deploy": false
+	},
+	"ProxysMSFT": {
+		"deploy": false
+	},
+	"SynthsMSFT": {
+		"deploy": false
 	}
 }

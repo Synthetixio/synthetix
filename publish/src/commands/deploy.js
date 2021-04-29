@@ -95,6 +95,11 @@ const deploy = async ({
 		network,
 	});
 
+	if (freshDeploy) {
+		deployment.targets = {};
+		deployment.sources = {};
+	}
+
 	if (!ignoreSafetyChecks) {
 		// Using Goerli without manageNonces?
 		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
@@ -2405,7 +2410,7 @@ const deploy = async ({
 		if (force || validityChanged) {
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
-				gasLimit: useOvm ? 3.5e6 : 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths on L1
+				gasLimit: useOvm ? 3.5e6 : 3.0e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths on L1
 				contract: 'DebtCache',
 				target: debtCache,
 				write: 'takeDebtSnapshot',

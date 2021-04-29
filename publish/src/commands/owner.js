@@ -142,7 +142,9 @@ const owner = async ({
 				await confirmAction(
 					message +
 						cyan(
-							'\nPlease type "y" to stage transaction, or enter "n" to cancel and resume this later? (y/n) '
+							`\nPlease type "y" to ${
+								isContract ? 'stage' : 'submit'
+							} transaction, or enter "n" to cancel and resume this later? (y/n) `
 						)
 				);
 			}
@@ -218,7 +220,7 @@ const owner = async ({
 				const tx = await web3.eth.sendTransaction({
 					from: account,
 					to: target,
-					gasPrice,
+					gasPrice: w3utils.toWei(gasPrice, 'gwei'),
 					gas: gasLimit,
 					data,
 				});
@@ -267,7 +269,7 @@ const owner = async ({
 			}
 
 			// continue if no pending tx found
-			await confirmOrEnd(yellow(`Confirm: Stage ${contract}.acceptOwnership() via protocolDAO?`));
+			await confirmOrEnd(yellow(`Confirm: ${contract}.acceptOwnership()?`));
 
 			if (isContract) console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
 			else console.log(yellow(`Calling acceptOwnership() on ${contract}...`));
@@ -307,7 +309,7 @@ const owner = async ({
 					const tx = await web3.eth.sendTransaction({
 						from: account,
 						to: deployedContract.options.address,
-						gasPrice,
+						gasPrice: w3utils.toWei(gasPrice, 'gwei'),
 						gas: gasLimit,
 						data: encodedData,
 					});
