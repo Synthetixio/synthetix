@@ -95,6 +95,21 @@
 	"StakingRewardssTSLABalancer": {
 		"deploy": false
 	},
+	"StakingRewardssFBBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssAAPLBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssAMZNBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssNFLXBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssGOOGBalancer": {
+		"deploy": false
+	},
 	"DappMaintenance": {
 		"deploy": false
 	},
@@ -744,6 +759,24 @@
 		"deploy": false
 	},
 	"VirtualSynthMastercopy": {
+		"deploy": false
+	},
+	"TokenStatesCOIN": {
+		"deploy": false
+	},
+	"ProxysCOIN": {
+		"deploy": false
+	},
+	"SynthsCOIN": {
+		"deploy": false
+	},
+	"TokenStatesMSFT": {
+		"deploy": false
+	},
+	"ProxysMSFT": {
+		"deploy": false
+	},
+	"SynthsMSFT": {
 		"deploy": false
 	}
 }

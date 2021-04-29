@@ -2262,6 +2262,105 @@
 			"timestamp": "2021-04-22T00:39:13.000Z",
 			"txn": "https://etherscan.io/tx/0x97cf7f9d52f180b4e0f1f642a3b18e84c3ce0c6fa31cfaef16616a31a81a808f",
 			"network": "mainnet"
+		},
+		"StakingRewardssFBBalancer": {
+			"name": "StakingRewardssFBBalancer",
+			"address": "0x26Fa0665660c1D3a3666584669511d3c66Ad37Cb",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x26Fa0665660c1D3a3666584669511d3c66Ad37Cb",
+			"timestamp": "2021-04-22T15:30:32.441Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"StakingRewardssAAPLBalancer": {
+			"name": "StakingRewardssAAPLBalancer",
+			"address": "0x7af65f1740c0eB816A27FD808EaF6Ab09F6Fa646",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x7af65f1740c0eB816A27FD808EaF6Ab09F6Fa646",
+			"timestamp": "2021-04-22T15:33:15.930Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"StakingRewardssAMZNBalancer": {
+			"name": "StakingRewardssAMZNBalancer",
+			"address": "0xDC338C7544654c7dadFEb7E44076E457963113B0",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0xDC338C7544654c7dadFEb7E44076E457963113B0",
+			"timestamp": "2021-04-22T15:39:13.829Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"StakingRewardssNFLXBalancer": {
+			"name": "StakingRewardssNFLXBalancer",
+			"address": "0x8Ef8cA2AcAaAfEc19fB366C11561718357F780F2",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x8Ef8cA2AcAaAfEc19fB366C11561718357F780F2",
+			"timestamp": "2021-04-22T15:45:46.242Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"StakingRewardssGOOGBalancer": {
+			"name": "StakingRewardssGOOGBalancer",
+			"address": "0x6fB7F0E78582746bd01BcB6dfbFE62cA5F4F9175",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x6fB7F0E78582746bd01BcB6dfbFE62cA5F4F9175",
+			"timestamp": "2021-04-22T15:47:27.982Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesCOIN": {
+			"name": "TokenStatesCOIN",
+			"address": "0x102e541a34AA7e7205c32ddF58308395d733Ce1f",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x102e541a34AA7e7205c32ddF58308395d733Ce1f",
+			"timestamp": "2021-04-28T01:21:25.200Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysCOIN": {
+			"name": "ProxysCOIN",
+			"address": "0x9EeF4CA7aB9fa8bc0650127341C2d3F707a40f8A",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x9EeF4CA7aB9fa8bc0650127341C2d3F707a40f8A",
+			"timestamp": "2021-04-28T01:23:43.849Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsCOIN": {
+			"name": "SynthsCOIN",
+			"address": "0x249612F641111022f2f48769f3Df5D85cb3E26a2",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x249612F641111022f2f48769f3Df5D85cb3E26a2",
+			"timestamp": "2021-04-28T01:24:18.499Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"TokenStatesMSFT": {
+			"name": "TokenStatesMSFT",
+			"address": "0x7EbeEa83591c048a40502985254A3Df19Ea90067",
+			"source": "TokenState",
+			"link": "https://etherscan.io/address/0x7EbeEa83591c048a40502985254A3Df19Ea90067",
+			"timestamp": "2021-04-28T01:26:29.902Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"ProxysMSFT": {
+			"name": "ProxysMSFT",
+			"address": "0x745a824D6aBBD236AA794b5530062778A6Ad7523",
+			"source": "ProxyERC20",
+			"link": "https://etherscan.io/address/0x745a824D6aBBD236AA794b5530062778A6Ad7523",
+			"timestamp": "2021-04-28T01:26:44.272Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"SynthsMSFT": {
+			"name": "SynthsMSFT",
+			"address": "0x04720DbBD4599aD26811545595d97fB813E84964",
+			"source": "Synth",
+			"link": "https://etherscan.io/address/0x04720DbBD4599aD26811545595d97fB813E84964",
+			"timestamp": "2021-04-28T01:28:50.921Z",
+			"txn": "",
+			"network": "mainnet"
 		}
 	},
 	"sources": {
