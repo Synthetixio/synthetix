@@ -42,9 +42,14 @@ contract('SynthetixBridgeEscrow (spec tests) @ovm-skip', accounts => {
 
 				describe('when there is approval', () => {
 					beforeEach(async () => {
-						await synthetixBridgeEscrow.approveBridge(snxBridgeToOptimism, amount, {
-							from: owner,
-						});
+						await synthetixBridgeEscrow.approveBridge(
+							synthetix.address,
+							snxBridgeToOptimism,
+							amount,
+							{
+								from: owner,
+							}
+						);
 					});
 
 					describe('when the bridge invokes transferFrom()', () => {

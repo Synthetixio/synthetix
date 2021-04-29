@@ -4,31 +4,23 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 
-// Internal references
-import "./interfaces/IERC20.sol";
+// External references.
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 
-contract SynthetixBridgeEscrow is Owned, MixinResolver {
-    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 internal constant CONTRACT_SYNTHETIX = "Synthetix";
+contract SynthetixBridgeEscrow is Owned {
+    using SafeERC20 for IERC20;
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+    constructor(address _owner) public Owned(_owner) {}
 
-    /* ========== VIEW FUNCTIONS ========== */
-
-    function synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
-    }
-
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](1);
-        addresses[0] = CONTRACT_SYNTHETIX;
-    }
-
-    function approveBridge(address _bridge, uint256 _amount) external onlyOwner {
-        IERC20(address(synthetixERC20())).approve(_bridge, _amount);
-        emit BridgeApproval(msg.sender, _bridge, _amount);
+    function approveBridge(
+        address _token,
+        address _bridge,
+        uint256 _amount
+    ) external onlyOwner {
+        IERC20(_token).safeApprove(_bridge, _amount);
+        emit BridgeApproval(_token, _bridge, _amount);
     }
 
     /* ========== EVENTS ========== */
-    event BridgeApproval(address indexed owner, address indexed spender, uint value);
+    event BridgeApproval(address _token, address indexed spender, uint value);
 }

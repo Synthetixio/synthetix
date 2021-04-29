@@ -184,7 +184,7 @@ const setupContract = async ({
 		],
 		SynthetixBridgeToOptimism: [owner, tryGetAddressOf('AddressResolver')],
 		SynthetixBridgeToBase: [owner, tryGetAddressOf('AddressResolver')],
-		SynthetixBridgeEscrow: [owner, tryGetAddressOf('AddressResolver')],
+		SynthetixBridgeEscrow: [owner],
 		RewardsDistribution: [
 			owner,
 			tryGetAddressOf('Synthetix'),
@@ -750,7 +750,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'SynthetixBridgeEscrow',
 			mocks: [],
-			deps: ['AddressResolver', 'Synthetix'],
+			deps: [],
 		},
 		{ contract: 'TradingRewards', deps: ['AddressResolver', 'Synthetix'] },
 		{

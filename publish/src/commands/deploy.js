@@ -96,6 +96,24 @@ const deploy = async ({
 		network,
 	});
 
+	// Mark contracts for deployment specified via an argument
+	if (specifyContracts) {
+		// Ignore config.json
+		Object.keys(config).map(name => {
+			config[name].deploy = false;
+		});
+		// Add specified contracts
+		specifyContracts.split(',').map(name => {
+			if (!config[name]) {
+				config[name] = {
+					deploy: true,
+				};
+			} else {
+				config[name].deploy = true;
+			}
+		});
+	}
+
 	if (freshDeploy) {
 		deployment.targets = {};
 		deployment.sources = {};
