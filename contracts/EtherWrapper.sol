@@ -45,6 +45,8 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
     // ========== STATE VARIABLES ==========
     IWETH internal _weth;
+    uint public sETHDebt = 0;
+    uint public sUSDDebt = 0;
 
     constructor(
         address _owner,
@@ -105,13 +107,26 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         return _weth.balanceOf(address(this));
     }
 
-    // Returns the total issued sETH by this contract.
-    function totalIssuedSynths() public view returns (uint) {
-        // We use the reserve balance as a simple proxy for the total supply of
-        // synths which is backed by WETH.
-        // Note: The sETH which is converted into sUSD fees is still backed by
-        // the WETH in the contract's reserves.
-        return getReserves();
+    function totalIssuedSynths(bytes32 currencyKey) public view returns (uint) {
+        // This contract issues two different synths:
+        // 1. sETH
+        // 2. sUSD
+        //
+        // The sETH is always backed 1:1 with WETH.
+        //
+        // The sUSD fees are backed in two ways, depending on the context:
+        // 1. For minting, the sUSD fees are backed by a portion of the
+        //    WETH deposited by the user.
+        //    TODO: if the contract is drained of WETH, then there is nothing backing them!!!
+        // 2. For burning, the sUSD fees are backed by a portion of the
+        //    sETH burnt by the user.
+        if (currencyKey == sETH) {
+            return sETHDebt;
+        }
+        if (currencyKey == sUSD) {
+            return sUSDDebt;
+        }
+        return 0;
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
@@ -186,12 +201,18 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
     function _mint(uint amount) internal {
         // Calculate minting fee.
         uint feeAmountEth = calculateMintFee(amount);
+        uint principal = amount.sub(feeAmountEth);
 
         // Transfer WETH from user.
         _weth.transferFrom(msg.sender, address(this), amount);
 
         // Mint `amount - fees` sETH to user.
-        synthsETH().issue(msg.sender, amount.sub(feeAmountEth));
+        synthsETH().issue(msg.sender, principal);
+        // Increase the sETH debt.
+        sETHDebt = sETHDebt.add(principal);
+        // Note that the sUSDDebt increases, as we issue the mint fee below.
+        // The sUSD debt is backed by the additional `feeAmountEth` of WETH, which is included
+        // in the full `amount`.
 
         // Remit fee.
         // Less sETH is issued in the previous step to save gas.
@@ -212,6 +233,11 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
         // Burn `amount` sETH from user.
         synthsETH().burn(msg.sender, amount);
+        // The sETH debt has now been paid back.
+        sETHDebt = sETHDebt.sub(principal);
+        // Note that the sUSDDebt increases, as we issue the burn fee below.
+        // The sUSD debt is backed by the additional `feeAmountEth` of sETH burnt, which is included
+        // in the full `amount`.
 
         // Remit fee.
         // sETH fee is burned in previous step to save gas.
@@ -229,6 +255,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
         // Issue sUSD to the fee pool
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), feeSusd);
+        sUSDDebt = sUSDDebt.add(feeSusd);
 
         // Tell the fee pool about this
         feePool().recordFeePaid(feeSusd);
