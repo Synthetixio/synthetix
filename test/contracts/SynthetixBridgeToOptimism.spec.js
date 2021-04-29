@@ -56,10 +56,6 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 				await systemSettings.crossDomainMessageGasLimit(3),
 				CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT
 			);
-			assert.bnEqual(
-				await synthetixBridgeToOptimism.getFinalizeDepositL2Gas(),
-				CROSS_DOMAIN_DEPOSIT_GAS_LIMIT
-			);
 		});
 
 		describe('migrateEscrow', () => {
