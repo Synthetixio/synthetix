@@ -6,7 +6,7 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 	describe('[REWARDS] when migrating SNX rewards from L1 to L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
-		let SynthetixL1, SynthetixBridgeToOptimismL1, SystemStatusL1;
+		let SynthetixL1, SynthetixBridgeToOptimismL1, SystemStatusL1, SynthetixBridgeEscrowL1;
 		let FeePoolL2, SynthetixBridgeToBaseL2;
 
 		// --------------------------
@@ -18,6 +18,10 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 			SynthetixL1 = connectContract({ contract: 'Synthetix', provider: ctx.providerL1 });
 			SynthetixBridgeToOptimismL1 = connectContract({
 				contract: 'SynthetixBridgeToOptimism',
+				provider: ctx.providerL1,
+			});
+			SynthetixBridgeEscrowL1 = connectContract({
+				contract: 'SynthetixBridgeEscrow',
 				provider: ctx.providerL1,
 			});
 			SystemStatusL1 = connectContract({
@@ -109,8 +113,8 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 			// Deposit rewards
 			// --------------------------
 
-			describe('when the owner deposits SNX in the L1 bridge', () => {
-				let ownerBalanceL1, bridgeBalanceL1;
+			describe('when the owner deposits SNX to the L1 bridge', () => {
+				let ownerBalanceL1, escrowBalanceL1;
 				let rewardsToDistributeL2;
 				let rewardDepositReceipt;
 				let mintedSecondaryEvent;
@@ -126,7 +130,7 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 				});
 
 				before('record current values', async () => {
-					bridgeBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address);
+					escrowBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address);
 					ownerBalanceL1 = await SynthetixL1.balanceOf(ctx.ownerAddress);
 
 					const period = await FeePoolL2.recentFeePeriods(0);
@@ -155,10 +159,10 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 					);
 				});
 
-				it('shows that the L1 bridge received the SNX', async () => {
+				it('shows that the bridge escrow received the SNX', async () => {
 					assert.bnEqual(
-						await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address),
-						bridgeBalanceL1.add(amountToDeposit)
+						await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address),
+						escrowBalanceL1.add(amountToDeposit)
 					);
 				});
 

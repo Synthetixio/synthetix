@@ -13,7 +13,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToBase.abi,
-			ignoreParents: ['Owned', 'MixinResolver'],
+			ignoreParents: ['BaseSynthetixBridge'],
 			expected: [
 				'finalizeDeposit',
 				'finalizeEscrowMigration',
@@ -47,7 +47,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
-			// now add to address resolver
+
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
 				[
@@ -86,6 +86,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 			beforeEach(async () => {
 				instance = await artifacts.require('SynthetixBridgeToBase').new(owner, resolver.address);
 				await instance.rebuildCache();
+			});
+
+			it('should set constructor params on deployment', async () => {
+				assert.equal(await instance.owner(), owner);
+				assert.equal(await instance.resolver(), resolver.address);
 			});
 
 			describe('importVestingEntries', async () => {

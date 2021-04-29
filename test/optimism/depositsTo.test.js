@@ -9,7 +9,7 @@ const itCanPerformDepositsTo = ({ ctx }) => {
 
 		let user1L1;
 
-		let SynthetixL1, SynthetixBridgeToOptimismL1, SystemStatusL1;
+		let SynthetixL1, SynthetixBridgeToOptimismL1, SynthetixBridgeEscrowL1, SystemStatusL1;
 		let SynthetixL2, SynthetixBridgeToBaseL2;
 
 		let snapshotId;
@@ -30,6 +30,10 @@ const itCanPerformDepositsTo = ({ ctx }) => {
 			SynthetixL1 = connectContract({ contract: 'Synthetix', provider: ctx.providerL1 });
 			SynthetixBridgeToOptimismL1 = connectContract({
 				contract: 'SynthetixBridgeToOptimism',
+				provider: ctx.providerL1,
+			});
+			SynthetixBridgeEscrowL1 = connectContract({
+				contract: 'SynthetixBridgeEscrow',
 				provider: ctx.providerL1,
 			});
 			SystemStatusL1 = connectContract({
@@ -186,13 +190,12 @@ const itCanPerformDepositsTo = ({ ctx }) => {
 
 					describe('when a user deposits SNX in the L1 bridge', () => {
 						let user1BalanceL2;
-						let bridgeBalanceL1;
-						let mintedSecondaryEvent;
+						let escrowBalanceL1;
+						let depositFinalizedEvent;
 						let randomAddressBalanceL2;
 
 						before('record current values', async () => {
-							bridgeBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address);
-
+							escrowBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address);
 							user1BalanceL1 = await SynthetixL1.balanceOf(user1L1.address);
 							user1BalanceL2 = await SynthetixL2.balanceOf(user1L1.address);
 							randomAddressBalanceL2 = await SynthetixL2.balanceOf(randomAddress);
@@ -204,7 +207,7 @@ const itCanPerformDepositsTo = ({ ctx }) => {
 
 						const eventListener = (from, value, event) => {
 							if (event && event.event === 'DepositFinalized') {
-								mintedSecondaryEvent = event;
+								depositFinalizedEvent = event;
 							}
 						};
 
@@ -238,10 +241,10 @@ const itCanPerformDepositsTo = ({ ctx }) => {
 							);
 						});
 
-						it('shows that the L1 bridge received the SNX', async () => {
+						it('shows that the bridge escrow received the SNX', async () => {
 							assert.bnEqual(
-								await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address),
-								bridgeBalanceL1.add(amountToDeposit)
+								await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address),
+								escrowBalanceL1.add(amountToDeposit)
 							);
 						});
 
@@ -262,9 +265,9 @@ const itCanPerformDepositsTo = ({ ctx }) => {
 							});
 
 							it('emitted a DepositFinalized event', async () => {
-								assert.exists(mintedSecondaryEvent);
-								assert.bnEqual(mintedSecondaryEvent.args.amount, amountToDeposit);
-								assert.equal(mintedSecondaryEvent.args.to, randomAddress);
+								assert.exists(depositFinalizedEvent);
+								assert.bnEqual(depositFinalizedEvent.args.amount, amountToDeposit);
+								assert.equal(depositFinalizedEvent.args.to, randomAddress);
 							});
 
 							it('shows that the L2 balances are updated', async () => {

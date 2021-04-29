@@ -2,10 +2,7 @@ const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../..');
+const { toBytes32 } = require('../..');
 const { smockit } = require('@eth-optimism/smock');
 
 const SynthetixBridgeToOptimism = artifacts.require('SynthetixBridgeToOptimism');
@@ -17,21 +14,21 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 		smockedMessenger,
 		rewardsDistribution,
 		snxBridgeToBase,
+		SynthetixBridgeEscrow,
 		randomAddress,
 	] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToOptimism.abi,
-			ignoreParents: ['Owned', 'MixinResolver'],
+			ignoreParents: ['BaseSynthetixBridge'],
 			expected: [
-				'finalizeWithdrawal',
 				'depositAndMigrateEscrow',
 				'deposit',
 				'depositTo',
-				'migrateEscrow',
 				'depositReward',
-				'migrateBridge',
+				'finalizeWithdrawal',
+				'migrateEscrow',
 				'notifyRewardAmount',
 			],
 		});
@@ -67,7 +64,6 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 			issuer = await smockit(artifacts.require('IIssuer').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
 
-			// now add to address resolver
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
 				[
@@ -78,6 +74,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					'RewardsDistribution',
 					'ovm:SynthetixBridgeToBase',
 					'RewardEscrowV2',
+					'SynthetixBridgeEscrow',
 				].map(toBytes32),
 				[
 					flexibleStorage.address,
@@ -87,6 +84,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					rewardsDistribution,
 					snxBridgeToBase,
 					rewardEscrow.address,
+					SynthetixBridgeEscrow,
 				],
 				{ from: owner }
 			);
@@ -114,12 +112,17 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				await instance.rebuildCache();
 			});
 
+			it('should set constructor params on deployment', async () => {
+				assert.equal(await instance.owner(), owner);
+				assert.equal(await instance.resolver(), resolver.address);
+			});
+
 			describe('deposit', () => {
 				describe('failure modes', () => {
-					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(randomAddress, { from: owner });
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
 
-						await assert.revert(instance.deposit('1'), 'Function deactivated');
+						await assert.revert(instance.deposit('1'), 'Initiation deactivated');
 					});
 
 					it('does not work when user has any debt', async () => {
@@ -128,7 +131,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by a user', () => {
+				describe('when invoked by a user directly', () => {
 					let txn;
 					const amount = 100;
 					beforeEach(async () => {
@@ -155,10 +158,10 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 			describe('depositTo', () => {
 				describe('failure modes', () => {
-					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(randomAddress, { from: owner });
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
 
-						await assert.revert(instance.depositTo(randomAddress, '1'), 'Function deactivated');
+						await assert.revert(instance.depositTo(randomAddress, '1'), 'Initiation deactivated');
 					});
 
 					it('does not work when user has any debt', async () => {
@@ -201,10 +204,10 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					[4, 5, 6],
 				];
 				describe('failure modes', () => {
-					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(randomAddress, { from: owner });
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
 
-						await assert.revert(instance.migrateEscrow(entryIds), 'Function deactivated');
+						await assert.revert(instance.migrateEscrow(entryIds), 'Initiation deactivated');
 					});
 
 					it('does not work when user has any debt', async () => {
@@ -236,12 +239,12 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				];
 
 				describe('failure modes', () => {
-					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(randomAddress, { from: owner });
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
 
 						await assert.revert(
 							instance.depositAndMigrateEscrow('1', entryIds),
-							'Function deactivated'
+							'Initiation deactivated'
 						);
 					});
 
@@ -254,7 +257,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by a user', () => {
+				describe('when invoked by a user directly', () => {
 					let txn;
 					let amount;
 
@@ -306,7 +309,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 						it('SNX is transferred from the user to the deposit contract', async () => {
 							assert.equal(synthetix.smocked.transferFrom.calls[0][0], user1);
-							assert.equal(synthetix.smocked.transferFrom.calls[0][1], instance.address);
+							assert.equal(synthetix.smocked.transferFrom.calls[0][1], SynthetixBridgeEscrow);
 							assert.equal(synthetix.smocked.transferFrom.calls[0][2].toString(), amount);
 						});
 
@@ -402,24 +405,23 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 			describe('depositReward', () => {
 				describe('failure modes', () => {
-					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(randomAddress, { from: owner });
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
 
-						await assert.revert(instance.depositReward('1'), 'Function deactivated');
+						await assert.revert(instance.depositReward('1'), 'Initiation deactivated');
 					});
 				});
 
-				describe('when invoked by a user', () => {
+				describe('when invoked by a user directly', () => {
 					let txn;
-					let amount;
+					const amount = '100';
 					beforeEach(async () => {
-						amount = '100';
 						txn = await instance.depositReward(amount, { from: user1 });
 					});
 
-					it('then SNX is transferred from the account to the user', async () => {
+					it('then SNX is transferred from the account to the bridge escrow', async () => {
 						assert.equal(synthetix.smocked.transferFrom.calls[0][0], user1);
-						assert.equal(synthetix.smocked.transferFrom.calls[0][1], instance.address);
+						assert.equal(synthetix.smocked.transferFrom.calls[0][1], SynthetixBridgeEscrow);
 						assert.equal(synthetix.smocked.transferFrom.calls[0][2].toString(), amount);
 					});
 
@@ -443,10 +445,10 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 			describe('notifyRewardAmount', () => {
 				describe('failure modes', () => {
-					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(randomAddress, { from: owner });
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
 
-						await assert.revert(instance.notifyRewardAmount('1'), 'Function deactivated');
+						await assert.revert(instance.notifyRewardAmount('1'), 'Initiation deactivated');
 					});
 
 					it('does not work when not invoked by the rewardDistribution address', async () => {
@@ -460,11 +462,10 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 				});
 
-				describe('when invoked by the rewardsDistribution', () => {
+				describe('when invoked by the rewardsDistribution directly', () => {
 					let txn;
-					let amount;
+					const amount = '1000';
 					beforeEach(async () => {
-						amount = '1000';
 						txn = await instance.notifyRewardAmount(amount, { from: rewardsDistribution });
 					});
 
@@ -482,86 +483,19 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
+					it('SNX is transferred from the bridge to the bridge escrow', async () => {
+						assert.equal(synthetix.smocked.transfer.calls[0][0], SynthetixBridgeEscrow);
+						assert.equal(synthetix.smocked.transfer.calls[0][1].toString(), amount);
+					});
+
 					it('and a RewardDeposit event is emitted', async () => {
 						assert.eventEqual(txn, 'RewardDeposit', [rewardsDistribution, amount]);
 					});
 				});
 			});
 
-			describe('migrateBridge', () => {
-				describe('failure modes', () => {
-					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(randomAddress, { from: owner });
-
-						await assert.revert(
-							instance.migrateBridge(randomAddress, { from: owner }),
-							'Function deactivated'
-						);
-					});
-
-					it('fails when the migration address is 0x0', async () => {
-						await assert.revert(
-							instance.migrateBridge(ZERO_ADDRESS, { from: owner }),
-							'Cannot migrate to address 0'
-						);
-					});
-
-					it('does not work when not invoked by the owner', async () => {
-						await onlyGivenAddressCanInvoke({
-							fnc: instance.migrateBridge,
-							args: [accounts[7]],
-							accounts,
-							reason: 'Only the contract owner may perform this action',
-							address: owner,
-						});
-					});
-				});
-
-				it('initially activated is true', async () => {
-					assert.equal(await instance.activated(), true);
-				});
-
-				describe('when invoked by the owner', () => {
-					let txn;
-					let newAccount;
-					let amount;
-					beforeEach(async () => {
-						newAccount = accounts[7];
-						amount = '999';
-						synthetix.smocked.balanceOf.will.return.with(address =>
-							address === instance.address ? amount : '0'
-						);
-						txn = await instance.migrateBridge(newAccount, { from: owner });
-					});
-
-					it('then all of the contracts SNX is transferred to the new account', async () => {
-						assert.equal(synthetix.smocked.transfer.calls[0][0], newAccount);
-						assert.equal(synthetix.smocked.transfer.calls[0][1].toString(), amount);
-					});
-
-					it('and activated is false', async () => {
-						assert.equal(await instance.activated(), false);
-					});
-
-					it('and a BridgeMigrated event is emitted', async () => {
-						assert.eventEqual(txn, 'BridgeMigrated', [instance.address, newAccount, amount]);
-					});
-				});
-			});
-
 			describe('finalizeWithdrawal', async () => {
 				describe('failure modes', () => {
-					it('does not work when the contract has been deactivated', async () => {
-						await instance.migrateBridge(randomAddress, { from: owner });
-
-						await assert.revert(
-							instance.finalizeWithdrawal(user1, 100, {
-								from: smockedMessenger,
-							}),
-							'Function deactivated'
-						);
-					});
-
 					it('should only allow the relayer (aka messenger) to call finalizeWithdrawal()', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.finalizeWithdrawal,
@@ -605,10 +539,11 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 					});
 
 					it('then SNX is minted via MintableSynthetix.finalizeWithdrawal', async () => {
-						assert.equal(synthetix.smocked.transfer.calls.length, 1);
-						assert.equal(synthetix.smocked.transfer.calls[0][0], user1);
+						assert.equal(synthetix.smocked.transferFrom.calls.length, 1);
+						assert.equal(synthetix.smocked.transferFrom.calls[0][0], SynthetixBridgeEscrow);
+						assert.equal(synthetix.smocked.transferFrom.calls[0][1], user1);
 						assert.equal(
-							synthetix.smocked.transfer.calls[0][1].toString(),
+							synthetix.smocked.transferFrom.calls[0][2].toString(),
 							finalizeWithdrawalAmount
 						);
 					});

@@ -17,15 +17,15 @@ function _hexToString(hex) {
 
 async function getOptimismRevertReason({ tx, provider }) {
 	try {
-		let code = await provider.call(tx);
-		code = code.substr(138);
+		const code = (await provider.call(tx)).substr(138);
+		const hex = `0x${code}`;
 
 		// Try to parse the revert reason bytes.
 		let reason;
-		if (code.length === 64) {
-			reason = ethers.utils.parseBytes32String(`0x${code}`);
+		if (code.length === '64') {
+			reason = ethers.utils.parseBytes32String(hex);
 		} else {
-			reason = _hexToString(`0x${code}`);
+			reason = _hexToString(hex);
 		}
 
 		return reason;

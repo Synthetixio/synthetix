@@ -115,6 +115,11 @@ const deploy = async ({
 		});
 	}
 
+	if (freshDeploy) {
+		deployment.targets = {};
+		deployment.sources = {};
+	}
+
 	if (!ignoreSafetyChecks) {
 		// Using Goerli without manageNonces?
 		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
@@ -1203,14 +1208,14 @@ const deploy = async ({
 			args: [],
 		});
 		await deployer.deployContract({
-			name: 'SynthetixBridgeToBase',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-		await deployer.deployContract({
 			name: 'CollateralManager',
 			source: 'EmptyCollateralManager',
 			args: [],
+		});
+		await deployer.deployContract({
+			name: 'SynthetixBridgeToBase',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	} else {
 		await deployer.deployContract({
@@ -1225,6 +1230,11 @@ const deploy = async ({
 		});
 		await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+		await deployer.deployContract({
+			name: 'SynthetixBridgeEscrow',
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
