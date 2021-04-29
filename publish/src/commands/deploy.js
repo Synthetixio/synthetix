@@ -1675,7 +1675,7 @@ const deploy = async ({
 			} catch (err) {
 				try {
 					// the challenge being that some used an older MixinResolver API
-					const oldBinaryOptionMarketABI = [
+					const olderBinaryOptionMarketABI = [
 						{
 							constant: true,
 							inputs: [
@@ -1701,12 +1701,12 @@ const deploy = async ({
 					];
 
 					console.log(gray('Checking older Binary option market'), yellow(addressOf(market)));
-					const oldBinaryOptionMarket = new deployer.web3.eth.Contract(
-						oldBinaryOptionMarketABI,
+					const olderBinaryOptionMarket = new deployer.web3.eth.Contract(
+						olderBinaryOptionMarketABI,
 						addressOf(market)
 					);
 
-					const isCached = await oldBinaryOptionMarket.methods
+					const isCached = await olderBinaryOptionMarket.methods
 						.isResolverCached(addressOf(readProxyForResolver))
 						.call();
 					if (!isCached) {
