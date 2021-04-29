@@ -21,8 +21,6 @@ import "@nomiclabs/buidler/console.sol";
 
 
 // Remaining Functionality
-//     Parameters into struct
-//     Ensure total system debt is being computed properly.
 //     Merge in develop
 //     Consider not exposing signs of short vs long positions
 //     Rename marketSize, marketSkew -> size, skew
@@ -729,10 +727,6 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         }
     }
 
-    // TODO: Net out funding and check sUSD balance is sufficient to cover difference between remaining and new margin.
-    // TODO: If they are owed anything because the position is being closed, then remit it at confirmation.
-    // TODO: What to do if a position already exists.
-    // TODO: What to do if user is swapping sides
     function _submitOrder(
         int leverage,
         uint price,
@@ -804,6 +798,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         _submitOrder(leverage, price, fundingIndex, sender);
     }
 
+    // TODO: Ensure that this is fine if the position is swapping sides
     // TODO: Check that everything is fine if a position already exists.
     function confirmOrder(address account) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid(_exchangeRates());
