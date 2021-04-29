@@ -110,6 +110,12 @@
 	"StakingRewardssGOOGBalancer": {
 		"deploy": false
 	},
+	"StakingRewardssCOINBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssMSFTBalancer": {
+		"deploy": false
+	},
 	"DappMaintenance": {
 		"deploy": false
 	},
