@@ -26,9 +26,9 @@ contract SynthetixBridgeEscrow is Owned, MixinResolver {
 
     function approveBridge(address _bridge, uint256 _amount) external onlyOwner {
         IERC20(address(synthetixERC20())).approve(_bridge, _amount);
-        emit Approval(msg.sender, _bridge, _amount);
+        emit BridgeApproval(msg.sender, _bridge, _amount);
     }
 
     /* ========== EVENTS ========== */
-    event Approval(address indexed owner, address indexed spender, uint value);
+    event BridgeApproval(address indexed owner, address indexed spender, uint value);
 }

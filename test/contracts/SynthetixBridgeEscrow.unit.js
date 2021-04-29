@@ -69,8 +69,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						txn = await instance.approveBridge(snxBridgeToOptimism, amount, { from: owner });
 					});
 
-					it('an Approval event is emitted', async () => {
-						assert.eventEqual(txn, 'Approval', [owner, snxBridgeToOptimism, amount]);
+					it('an BridgeApproval event is emitted', async () => {
+						assert.eventEqual(txn, 'BridgeApproval', [owner, snxBridgeToOptimism, amount]);
 					});
 
 					it('approve is called via Synthetix', async () => {
