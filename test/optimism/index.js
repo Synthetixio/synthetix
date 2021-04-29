@@ -69,10 +69,10 @@ describe('Layer 2 production tests', () => {
 		});
 	});
 
-	after('exit', async () => {
-		// TODO: Optimism watchers leave the process open, so we explicitely kill it
-		process.exit(0);
-	});
+	// after('exit', async () => {
+	// 	// TODO: Optimism watchers leave the process open, so we explicitely kill it
+	// 	process.exit(0);
+	// });
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
 		before('connect to contracts', async () => {
@@ -150,9 +150,9 @@ describe('Layer 2 production tests', () => {
 			await tweakSettings({ provider: this.providerL2, owner: this.ownerL2, useOvm: true });
 		});
 
-		// --------------------------
-		// General properties
-		// --------------------------
+		// // --------------------------
+		// // General properties
+		// // --------------------------
 
 		describe('[GENERAL] properties', () => {
 			it('shows the expected owners', async () => {

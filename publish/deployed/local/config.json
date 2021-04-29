@@ -170,9 +170,6 @@
 	"ProxyFeePool": {
 		"deploy": true
 	},
-	"ProxySynthetixBridgeToOptimism": {
-		"deploy": true
-	},
 	"ProxySynthetix": {
 		"deploy": true
 	},

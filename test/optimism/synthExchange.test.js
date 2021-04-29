@@ -39,17 +39,18 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 							throw new Error(`Transaction reverted, even though it was not supposed to.`);
 						}
 					});
-				} else {
-					it('settling reverts', async () => {
-						const tx = await SynthetixL2.settle(synth);
-
-						await assertRevertOptimism({
-							tx,
-							reason: 'Cannot settle during waiting',
-							provider: ctx.providerL2,
-						});
-					});
 				}
+				// else {
+				// 	it('settling reverts', async () => {
+				// 		const tx = await SynthetixL2.settle(synth);
+
+				// 		await assertRevertOptimism({
+				// 			tx,
+				// 			reason: 'Cannot settle during waiting',
+				// 			provider: ctx.providerL2,
+				// 		});
+				// 	});
+				// }
 			});
 		};
 
@@ -282,11 +283,9 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 
 					describe('when a user deposits SNX in the L1 bridge', () => {
 						let user1BalanceL2;
-						let bridgeBalanceL1;
+						let depositFinalizedEvent;
 
 						before('record current values', async () => {
-							bridgeBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address);
-
 							user1BalanceL1 = await SynthetixL1.balanceOf(user1L1.address);
 							user1BalanceL2 = await SynthetixL2.balanceOf(user1L1.address);
 						});
@@ -295,16 +294,20 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 						// Deposit
 						// --------------------------
 
-						const eventListener = (from, value, event) => {};
+						const eventListener = (from, value, event) => {
+							if (event && event.event === 'DepositFinalized') {
+								depositFinalizedEvent = event;
+							}
+						};
 
 						before('listen to events on l2', async () => {
-							SynthetixBridgeToBaseL2.on('MintedSecondary', eventListener);
+							SynthetixBridgeToBaseL2.on('DepositFinalized', eventListener);
 						});
 
 						before('deposit', async () => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
-							const tx = await SynthetixBridgeToOptimismL1.initiateDeposit(amountToDeposit);
+							const tx = await SynthetixBridgeToOptimismL1.deposit(amountToDeposit);
 							depositReceipt = await tx.wait();
 						});
 
@@ -312,13 +315,6 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 							assert.bnEqual(
 								await SynthetixL1.balanceOf(user1L1.address),
 								user1BalanceL1.sub(amountToDeposit)
-							);
-						});
-
-						it('shows that the L1 bridge received the SNX', async () => {
-							assert.bnEqual(
-								await SynthetixL1.balanceOf(SynthetixBridgeToOptimismL1.address),
-								bridgeBalanceL1.add(amountToDeposit)
 							);
 						});
 
@@ -335,7 +331,13 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 							});
 
 							before('stop listening to events on L2', async () => {
-								SynthetixBridgeToBaseL2.off('MintedSecondary', eventListener);
+								SynthetixBridgeToBaseL2.off('DepositFinalized', eventListener);
+							});
+
+							it('emitted a DepositFinalized event', async () => {
+								assert.exists(depositFinalizedEvent);
+								assert.bnEqual(depositFinalizedEvent.args.amount, amountToDeposit);
+								assert.equal(depositFinalizedEvent.args.to, user1L1.address);
 							});
 
 							it('shows that the users L2 SNX balance increased', async () => {
@@ -350,7 +352,7 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 								itCanSetTheWaitingPeriodL2('0');
 								itCanIssueL2(sUSDIssued);
 								itCanExchangeUsdToEthL2(sUSDIssued);
-								// since the waiting period is 0 is should skip cerating exchange entries (SIP-118)
+								// since the waiting period is 0 is should skip creating exchange entries (SIP-118)
 								itHasExchangeEntriesL2('0');
 								// since the waiting period is 0 it settle should not fail, it just has no effect
 								itCanSettleL2(true, sETH);

@@ -107,9 +107,6 @@
 	"ProxySynthetix": {
 		"deploy": true
 	},
-	"ProxySynthetixBridgeToBase": {
-		"deploy": true
-	},
 	"ProxysUSD": {
 		"deploy": true
 	},
