@@ -92,15 +92,30 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     uint public marketSize;
     int public marketSkew; // When positive, longs outweigh shorts. When negative, shorts outweigh longs.
-    int public entryDebtCorrection;
 
-    uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
+    /*
+     * The funding sequence allows constant-time calculation of the funding owed to a given position.
+     * Each entry in the sequence holds the net funding accumulated per base unit since the market was created.
+     * Then to obtain the net funding over a particular interval, subtract the start point's sequence entry
+     * from the end point's sequence entry.
+     * Positions contain the funding sequence entry at the time they were confirmed; so to compute
+     * funding profit/loss on a given position, find the net profit per base unit since the position was
+     * confirmed and multiply it by the position size.
+     */
+    uint public fundingLastRecomputed;
+    int[] public fundingSequence;
+
+    /*
+     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.fundingIndex])}
+     * Then marketSkew * (_assetPrice() + _marketDebt()) + entryDebtCorrection yields the total system debt,
+     * which is equivalent to the sum of remaining margins in all positions.
+     */
+    int public entryDebtCorrection;
 
     mapping(address => Order) public orders;
     mapping(address => Position) public positions;
 
-    uint public fundingLastRecomputed;
-    int[] public fundingSequence;
+    uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -206,12 +221,14 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         return _currentRoundId(_exchangeRates());
     }
 
+    // Total number of base units on each side of the market
     function marketSizes() external view returns (uint short, uint long) {
         int size = int(marketSize);
         int skew = marketSkew;
         return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
     }
 
+    // The total market debt is equivalent to the sum of remaining margins in all open positions
     function _marketDebt(uint price) internal view returns (uint) {
         int totalDebt = marketSkew
             .multiplyDecimalRound(int(price).add(_nextFundingEntry(fundingSequence.length, price)))
