@@ -42,7 +42,8 @@ contract('MultiCollateral (prod tests)', accounts => {
 		CollateralShort,
 		DebtCache,
 		ReadProxyAddressResolver,
-		SynthsUSD;
+		SynthsUSD,
+		Issuer;
 
 	before('prepare', async function() {
 		network = config.targetNetwork;
@@ -76,6 +77,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 			DebtCache,
 			SynthsUSD,
 			ReadProxyAddressResolver,
+			Issuer,
 		} = await connectContracts({
 			network,
 			requests: [
@@ -87,6 +89,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 				{ contractName: 'DebtCache' },
 				{ contractName: 'ReadProxyAddressResolver' },
 				{ contractName: 'SynthsUSD', abiName: 'Synth' },
+				{ contractName: 'Issuer' },
 			],
 		}));
 
@@ -458,6 +461,18 @@ contract('MultiCollateral (prod tests)', accounts => {
 			if (network === 'mainnet') {
 				const oldEthContract = await artifacts.require('CollateralEth').at(oldEthAddress);
 				const period = await oldEthContract.interactionDelay();
+
+				console.log(
+					`Debt of ${loansAccount} in ETH is ${(
+						await Issuer.debtBalanceOf(loansAccount, toBytes32('sUSD'))
+					).toString()}`
+				);
+				console.log(
+					`Debt of ${loansAccount} in USD is ${(
+						await Issuer.debtBalanceOf(loansAccount, toBytes32('sETH'))
+					).toString()}`
+				);
+
 				// First loan was opened by SNX test account.
 				const id = 1;
 				const repayAmount = toUnit(100);

@@ -164,8 +164,13 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
             if (key == sETH) {
                 // Subtract sETH minted by EtherWrapper.
-                uint etherWrapperSupply = etherWrapper().totalIssuedSynths();
+                uint etherWrapperSupply = etherWrapper().totalIssuedSynths(sETH);
                 supply = supply.sub(etherWrapperSupply);
+            }
+
+            if (key == sUSD) {
+                // Subtract sUSD minted by EtherWrapper.
+                supply = supply.sub(etherWrapper().totalIssuedSynths(sUSD));
             }
 
             values[i] = supply.multiplyDecimalRound(rates[i]);

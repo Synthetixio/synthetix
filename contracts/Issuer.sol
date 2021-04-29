@@ -210,7 +210,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
 
             // Add ether wrapper sETH.
-            debt = debt.add(etherWrapper().totalIssuedSynths().multiplyDecimalRound(ethRate));
+            debt = debt.add(etherWrapper().totalIssuedSynths(sETH).multiplyDecimalRound(ethRate));
+            // Add ether wrapper sUSD.
+            debt = debt.add(etherWrapper().totalIssuedSynths(sUSD));
         }
 
         if (currencyKey == sUSD) {
