@@ -10,8 +10,8 @@ const checkAggregatorPrices = require('../check-aggregator-prices');
 const pLimit = require('p-limit');
 
 const {
-	ensureNetwork,
 	ensureDeploymentPath,
+	ensureNetwork,
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
@@ -95,25 +95,6 @@ const deploy = async ({
 		deploymentPath,
 		network,
 	});
-
-	// Mark contracts for deployment specified via an argument
-	if (specifyContracts) {
-		// Ignore config.json
-		Object.keys(config).map(name => {
-			config[name].deploy = false;
-		});
-
-		// Add specified contracts
-		specifyContracts.split(',').map(name => {
-			if (!config[name]) {
-				config[name] = {
-					deploy: true,
-				};
-			} else {
-				config[name].deploy = true;
-			}
-		});
-	}
 
 	if (freshDeploy) {
 		deployment.targets = {};
@@ -2395,7 +2376,7 @@ const deploy = async ({
 		if (force || validityChanged) {
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
-				gasLimit: useOvm ? 3.5e6 : 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths on L1
+				gasLimit: useOvm ? 3.5e6 : 3.0e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths on L1
 				contract: 'DebtCache',
 				target: debtCache,
 				write: 'takeDebtSnapshot',
