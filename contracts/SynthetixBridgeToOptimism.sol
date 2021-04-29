@@ -104,7 +104,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         synthetixERC20().transferFrom(synthetixBridgeEscrow(), to, amount);
 
         // no escrow actions - escrow remains on L2
-        emit WithdrawalFinalized(to, amount);
+        emit iOVM_L1TokenGateway.WithdrawalFinalized(to, amount);
     }
 
     // invoked by RewardsDistribution on L1 (takes SNX)
@@ -214,6 +214,4 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     );
 
     event RewardDeposit(address indexed account, uint256 amount);
-
-    event WithdrawalFinalized(address indexed to, uint256 amount);
 }

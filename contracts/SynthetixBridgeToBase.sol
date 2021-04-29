@@ -72,7 +72,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
-        emit WithdrawalInitiated(msg.sender, to, amount);
+        emit iOVM_L2DepositedToken.WithdrawalInitiated(msg.sender, to, amount);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
@@ -116,6 +116,4 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     event DepositFinalized(address indexed to, uint256 amount);
 
     event MintedSecondaryRewards(uint256 amount);
-
-    event WithdrawalInitiated(address indexed from, address to, uint256 amount);
 }
