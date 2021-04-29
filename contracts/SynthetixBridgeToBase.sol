@@ -44,10 +44,6 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function getFinalizeWithdrawalL1Gas() external view returns (uint32) {
-        return uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal));
-    }
-
     // ========== PUBLIC FUNCTIONS =========
 
     // invoked by user on L2

@@ -63,10 +63,6 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function getFinalizeDepositL2Gas() external view returns (uint32) {
-        return uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Deposit));
-    }
-
     // ========== MODIFIERS ============
 
     modifier requireZeroDebt() {
