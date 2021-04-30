@@ -431,14 +431,14 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						const expectedData = getDataOfEncodedFncCall({
 							contract: 'SynthetixBridgeToBase',
 							fnc: 'finalizeRewardDeposit',
-							args: [amount],
+							args: [user1, amount],
 						});
 						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
 						assert.equal(messenger.smocked.sendMessage.calls[0][2], (3e6).toString());
 					});
 
-					it('and a RewardDeposit event is emitted', async () => {
-						assert.eventEqual(txn, 'RewardDeposit', [user1, amount]);
+					it('and a RewardDepositInitiated event is emitted', async () => {
+						assert.eventEqual(txn, 'RewardDepositInitiated', [user1, amount]);
 					});
 				});
 			});
@@ -476,7 +476,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						const expectedData = getDataOfEncodedFncCall({
 							contract: 'SynthetixBridgeToBase',
 							fnc: 'finalizeRewardDeposit',
-							args: [amount],
+							args: [rewardsDistribution, amount],
 						});
 
 						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
@@ -488,8 +488,8 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 						assert.equal(synthetix.smocked.transfer.calls[0][1].toString(), amount);
 					});
 
-					it('and a RewardDeposit event is emitted', async () => {
-						assert.eventEqual(txn, 'RewardDeposit', [rewardsDistribution, amount]);
+					it('and a RewardDepositInitiated event is emitted', async () => {
+						assert.eventEqual(txn, 'RewardDepositInitiated', [rewardsDistribution, amount]);
 					});
 				});
 			});

@@ -99,11 +99,11 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
     }
 
     // invoked by Messenger on L2
-    function finalizeRewardDeposit(uint256 amount) external onlyOptimismBridge {
+    function finalizeRewardDeposit(address from, uint256 amount) external onlyOptimismBridge {
         // now tell Synthetix to mint these tokens, deposited in L1, into reward escrow on L2
         synthetix().mintSecondaryRewards(amount);
 
-        emit MintedSecondaryRewards(amount);
+        emit RewardDepositFinalized(from, amount);
     }
 
     // ========== EVENTS ==========
@@ -113,5 +113,5 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         VestingEntries.VestingEntry[] vestingEntries
     );
 
-    event MintedSecondaryRewards(uint256 amount);
+    event RewardDepositFinalized(address from, uint256 amount);
 }

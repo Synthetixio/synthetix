@@ -295,7 +295,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					it('should only allow the relayer (aka messenger) to call finalizeRewardDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.finalizeRewardDeposit,
-							args: [100],
+							args: [user1, 100],
 							accounts,
 							address: smockedMessenger,
 							reason: 'Only the relayer can call this',
@@ -306,7 +306,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.finalizeRewardDeposit(100, {
+							instance.finalizeRewardDeposit(user1, 100, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -319,6 +319,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					const finalizeRewardDepositAmount = 100;
 					beforeEach('finalizeRewardDeposit is called', async () => {
 						finalizeRewardDepositTx = await instance.finalizeRewardDeposit(
+							user1,
 							finalizeRewardDepositAmount,
 							{
 								from: smockedMessenger,
@@ -326,8 +327,8 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						);
 					});
 
-					it('should emit a MintedSecondaryRewards event', async () => {
-						assert.eventEqual(finalizeRewardDepositTx, 'MintedSecondaryRewards', {
+					it('should emit a RewardDepositFinalized event', async () => {
+						assert.eventEqual(finalizeRewardDepositTx, 'RewardDepositFinalized', {
 							amount: finalizeRewardDepositAmount,
 						});
 					});

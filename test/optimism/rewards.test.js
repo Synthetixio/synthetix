@@ -117,16 +117,16 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 				let ownerBalanceL1, escrowBalanceL1;
 				let rewardsToDistributeL2;
 				let rewardDepositReceipt;
-				let mintedSecondaryEvent;
+				let rewardDepositFinalizedEvent;
 
-				const eventListener = (value, event) => {
-					if (event && event.event === 'MintedSecondaryRewards') {
-						mintedSecondaryEvent = event;
+				const eventListener = (from, value, event) => {
+					if (event && event.event === 'RewardDepositFinalized') {
+						rewardDepositFinalizedEvent = event;
 					}
 				};
 
 				before('listen to events on l2', async () => {
-					SynthetixBridgeToBaseL2.on('MintedSecondaryRewards', eventListener);
+					SynthetixBridgeToBaseL2.on('RewardDepositFinalized', eventListener);
 				});
 
 				before('record current values', async () => {
@@ -144,8 +144,8 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 					rewardDepositReceipt = await tx.wait();
 				});
 
-				it('emitted a RewardsDeposit event', async () => {
-					const event = rewardDepositReceipt.events.find(e => e.event === 'RewardDeposit');
+				it('emitted a RewardDepositInitiated event', async () => {
+					const event = rewardDepositReceipt.events.find(e => e.event === 'RewardDepositInitiated');
 					assert.exists(event);
 
 					assert.bnEqual(event.args.amount, amountToDeposit);
@@ -179,12 +179,13 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 					});
 
 					before('stop listening to events on L2', async () => {
-						SynthetixBridgeToBaseL2.off('MintedSecondaryRewards', eventListener);
+						SynthetixBridgeToBaseL2.off('RewardDepositFinalized', eventListener);
 					});
 
 					it('emitted a DepositFinalized event', async () => {
-						assert.exists(mintedSecondaryEvent);
-						assert.bnEqual(mintedSecondaryEvent.args.amount, amountToDeposit);
+						assert.exists(rewardDepositFinalizedEvent);
+						assert.bnEqual(rewardDepositFinalizedEvent.args.from, ctx.ownerAddress);
+						assert.bnEqual(rewardDepositFinalizedEvent.args.amount, amountToDeposit);
 					});
 
 					it('shows that the fee pool has registered rewards to distribute', async () => {

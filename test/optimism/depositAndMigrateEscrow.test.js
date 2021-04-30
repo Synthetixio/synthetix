@@ -184,7 +184,7 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 									const depositFinalizedEvents = [];
 									const importedVestingEntriesEvents = [];
 
-									const mintedSecondaryEventListener = (account, amount, event) => {
+									const depositFinalizedEventListener = (account, amount, event) => {
 										if (event && event.event === 'DepositFinalized') {
 											depositFinalizedEvents.push(event);
 										}
@@ -201,7 +201,7 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 											'ImportedVestingEntries',
 											importedVestingEntriesEventListener
 										);
-										SynthetixBridgeToBaseL2.on('DepositFinalized', mintedSecondaryEventListener);
+										SynthetixBridgeToBaseL2.on('DepositFinalized', depositFinalizedEventListener);
 									});
 
 									before('depositAndMigrateEscrow', async () => {
@@ -269,7 +269,10 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 												'ImportedVestingEntries',
 												importedVestingEntriesEventListener
 											);
-											SynthetixBridgeToBaseL2.off('DepositFinalized', mintedSecondaryEventListener);
+											SynthetixBridgeToBaseL2.off(
+												'DepositFinalized',
+												depositFinalizedEventListener
+											);
 										});
 
 										it('emitted two ImportedVestingEntries events', async () => {
