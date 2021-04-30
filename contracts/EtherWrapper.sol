@@ -155,29 +155,29 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // Transfers `amount` WETH to mint `amount - fees` sETH.
-    // `amount` is inclusive of fees, calculable via `calculateMintFee`.
-    function mint(uint amount) external notPaused {
-        require(amount <= _weth.allowance(msg.sender, address(this)), "Allowance not high enough");
-        require(amount <= _weth.balanceOf(msg.sender), "Balance is too low");
+    // Transfers `amountIn` WETH to mint `amountIn - fees` sETH.
+    // `amountIn` is inclusive of fees, calculable via `calculateMintFee`.
+    function mint(uint amountIn) external notPaused {
+        require(amountIn <= _weth.allowance(msg.sender, address(this)), "Allowance not high enough");
+        require(amountIn <= _weth.balanceOf(msg.sender), "Balance is too low");
 
         uint currentCapacity = capacity();
         require(currentCapacity > 0, "Contract has no spare capacity to mint");
 
-        if (amount < currentCapacity) {
-            _mint(amount);
+        if (amountIn < currentCapacity) {
+            _mint(amountIn);
         } else {
             _mint(currentCapacity);
         }
     }
 
-    // Burns `amount` sETH for `amount - fees` WETH.
-    // `amount` is inclusive of fees, calculable via `calculateBurnFee`.
-    function burn(uint amount) external notPaused {
+    // Burns `amountIn` sETH for `amountIn - fees` WETH.
+    // `amountIn` is inclusive of fees, calculable via `calculateBurnFee`.
+    function burn(uint amountIn) external notPaused {
         uint reserves = getReserves();
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
 
-        // principal = [amount / (1 + burnFeeRate)]
+        // principal = [amountIn / (1 + burnFeeRate)]
         uint principal = amountIn.divideDecimal(SafeDecimalMath.unit().add(burnFeeRate()));
 
         if (principal < reserves) {
@@ -198,27 +198,27 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _mint(uint amount) internal {
+    function _mint(uint amountIn) internal {
         // Calculate minting fee.
-        uint feeAmountEth = calculateMintFee(amount);
-        uint principal = amount.sub(feeAmountEth);
+        uint feeAmountEth = calculateMintFee(amountIn);
+        uint principal = amountIn.sub(feeAmountEth);
 
         // Transfer WETH from user.
-        _weth.transferFrom(msg.sender, address(this), amount);
+        _weth.transferFrom(msg.sender, address(this), amountIn);
 
-        // Mint `amount - fees` sETH to user.
+        // Mint `amountIn - fees` sETH to user.
         synthsETH().issue(msg.sender, principal);
         // Increase the sETH debt.
         sETHDebt = sETHDebt.add(principal);
         // Note that the sUSDDebt increases, as we issue the mint fee below.
         // The sUSD debt is backed by the additional `feeAmountEth` of WETH, which is included
-        // in the full `amount`.
+        // in the full `amountIn`.
 
         // Remit fee.
         // Less sETH is issued in the previous step to save gas.
         remitFee(feeAmountEth);
 
-        emit Minted(msg.sender, amount.sub(feeAmountEth), feeAmountEth, amount);
+        emit Minted(msg.sender, principal, feeAmountEth, amountIn);
     }
 
     function _burn(uint principal) internal {
@@ -226,8 +226,11 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         uint feeAmountEth = calculateBurnFee(principal);
         uint amountIn = principal.add(feeAmountEth);
 
+        require(amountIn <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
+        require(amountIn <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
+
         // Burn `amount` sETH from user.
-        synthsETH().burn(msg.sender, amount);
+        synthsETH().burn(msg.sender, amountIn);
         // The sETH debt has now been paid back.
         sETHDebt = sETHDebt.sub(principal);
         // Note that the sUSDDebt increases, as we issue the burn fee below.
@@ -241,7 +244,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         // Transfer `amount - fees` WETH to user.
         _weth.transfer(msg.sender, principal);
 
-        emit Burned(msg.sender, principal, feeAmountEth, amount);
+        emit Burned(msg.sender, principal, feeAmountEth, amountIn);
     }
 
     function remitFee(uint feeAmountEth) internal {
