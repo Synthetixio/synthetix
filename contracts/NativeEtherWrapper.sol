@@ -84,8 +84,12 @@ contract NativeEtherWrapper is Owned, MixinResolver {
     }
 
     function() external payable {
-        // Fallback function not implemented, as it is triggered by
-        // the ETH transfer during WETH.withdraw.
+        if (msg.sender == address(weth())) {
+            // Allow the WETH contract to send us ETH during
+            // our call to WETH.deposit.
+        } else {
+            revert("Fallback disabled.");
+        }
     }
 
     /* ========== EVENTS ========== */
