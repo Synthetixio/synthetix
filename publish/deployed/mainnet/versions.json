@@ -3508,5 +3508,25 @@
 				"keccak256": "0x3dcf8d0942b70d9bccd1f8ba0d5e16d55ea76bcf5c56a69201ef784630652751"
 			}
 		}
+	},
+	"v2.43.1": {
+		"tag": "v2.43.1",
+		"fulltag": "v2.43.1",
+		"release": "Regora",
+		"network": "mainnet",
+		"date": "2021-04-29T08:53:16-06:00",
+		"commit": "a018924f08c2b39d6e2607b0b3cea2e099583bc4",
+		"contracts": {
+			"StakingRewardssCOINBalancer": {
+				"address": "0x1C1D97f6338759AB814a5A717aE359573Ab5D5d4",
+				"status": "current",
+				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
+			},
+			"StakingRewardssMSFTBalancer": {
+				"address": "0x9D003Cc298E7Ea141A809C241C0a703176DA3ba3",
+				"status": "current",
+				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
+			}
+		}
 	}
 }

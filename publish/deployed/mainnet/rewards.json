@@ -68,5 +68,15 @@
 		"name": "sGOOGBalancer",
 		"stakingToken": "0x608410f602ce8967d1e59f599566aed340280efc",
 		"rewardsToken": "ProxyERC20"
+	},
+	{
+		"name": "sCOINBalancer",
+		"stakingToken": "0x2e27d4160b257708375a7bf23381110d2328bc1b",
+		"rewardsToken": "ProxyERC20"
+	},
+	{
+		"name": "sMSFTBalancer",
+		"stakingToken": "0x41c91eb43b7f0afd332725461b86a0e39e143789",
+		"rewardsToken": "ProxyERC20"
 	}
 ]
