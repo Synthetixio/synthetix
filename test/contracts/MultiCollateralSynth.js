@@ -227,7 +227,16 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 			const actual = await this.synth.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'CollateralManager', 'FuturesMarketManager'].map(toBytes32)
+				[
+					'SystemStatus',
+					'Exchanger',
+					'Issuer',
+					'FeePool',
+					'FuturesMarketManager',
+					'CollateralManager',
+					'EtherCollateral',
+					'EtherCollateralsUSD',
+				].map(toBytes32)
 			);
 		});
 

@@ -12,6 +12,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synth
 contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
@@ -174,6 +175,16 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== VIEWS ========== */
 
+    // Note: use public visibility so that it can be invoked in a subclass
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](5);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_EXCHANGER;
+        addresses[2] = CONTRACT_ISSUER;
+        addresses[3] = CONTRACT_FEEPOOL;
+        addresses[4] = CONTRACT_FUTURESMARKETMANAGER;
+    }
+
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
@@ -190,8 +201,8 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
-    function futuresMarketManager() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER);
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {

@@ -48,6 +48,7 @@ contract('SystemSettings', async accounts => {
 				'setAggregatorWarningFlags',
 				'setTradingRewardsEnabled',
 				'setDebtSnapshotStaleTime',
+				'setFuturesLiquidationFee',
 				'setCrossDomainMessageGasLimit',
 			],
 		});
@@ -602,6 +603,39 @@ contract('SystemSettings', async accounts => {
 			const txn = await systemSettings.setDebtSnapshotStaleTime(staleTime, { from: owner });
 			assert.eventEqual(txn, 'DebtSnapshotStaleTimeUpdated', {
 				debtSnapshotStaleTime: staleTime,
+			});
+		});
+	});
+
+	describe('setFuturesLiquidationFee()', () => {
+		it('should be able to change the futures liquidation fee', async () => {
+			const liquidationFee = toUnit('999');
+
+			const originalLiquidationFee = await systemSettings.futuresLiquidationFee.call();
+			await systemSettings.setFuturesLiquidationFee(liquidationFee, { from: owner });
+			const newLiquidationFee = await systemSettings.futuresLiquidationFee.call();
+			assert.bnEqual(newLiquidationFee, liquidationFee);
+			assert.bnNotEqual(newLiquidationFee, originalLiquidationFee);
+		});
+
+		it('only owner is permitted to change the futures liquidation fee', async () => {
+			const liquidationFee = toUnit('999');
+
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setFuturesLiquidationFee,
+				args: [liquidationFee.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should emit event on successful rate stale period change', async () => {
+			const liquidationFee = toUnit('999');
+
+			const txn = await systemSettings.setFuturesLiquidationFee(liquidationFee, { from: owner });
+			assert.eventEqual(txn, 'FuturesLiquidationFeeUpdated', {
+				sUSD: liquidationFee,
 			});
 		});
 	});

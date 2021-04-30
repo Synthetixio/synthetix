@@ -1,4 +1,4 @@
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { toWei } = web3.utils;
 const { toBytes32 } = require('../../');
 const { currentTime, toUnit } = require('../utils')();
@@ -79,8 +79,7 @@ contract('FuturesMarketData', accounts => {
 			});
 
 			await proxy.setTarget(market.address, { from: accounts[1] });
-			await market.setResolverAndSyncCache(addressResolver.address, { from: accounts[1] });
-
+			await addressResolver.rebuildCaches([market.address]);
 			marketsToAdd.push(market.address);
 		}
 

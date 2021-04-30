@@ -17,16 +17,13 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IERC20.sol";
 
-import "@nomiclabs/buidler/console.sol";
-
-
 // Remaining Functionality
-//     Merge in develop
 //     Consider not exposing signs of short vs long positions
 //     Rename marketSize, marketSkew -> size, skew
 //     Consider just reverting if things need to be liquidated rather than just triggering it except by the
 //         liquidatePosition function
 //     Consider eliminated the fundingIndex param everywhere if we're always computing up to the current time.
+//     Move the minimum initial margin into a global setting within SystemSettings, and then set a maximum liquidation fee that is the current minimum initial margin (otherwise we could set a value that will immediately liquidate every position)
 
 /* Notes:
  *
@@ -42,9 +39,8 @@ interface IFuturesMarketManagerInternal {
     function burnSUSD(address account, uint amount) external;
 }
 
-
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarket
-contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, IFuturesMarket {
+contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -125,14 +121,6 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
 
-    bytes32[24] internal _addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_EXRATES,
-        CONTRACT_SYNTHSUSD,
-        CONTRACT_FEEPOOL,
-        CONTRACT_FUTURESMARKETMANAGER
-    ];
-
     /* ---------- Parameter Names ---------- */
 
     bytes32 internal constant PARAMETER_EXCHANGEFEE = "exchangeFee";
@@ -155,7 +143,7 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         uint _maxMarketDebt,
         uint _minInitialMargin,
         uint[3] memory _fundingParameters
-    ) public Owned(_owner) Proxyable(_proxy) MixinResolver(_resolver, _addressesToCache) {
+    ) public Owned(_owner) Proxyable(_proxy) MixinSystemSettings(_resolver) {
         baseAsset = _baseAsset;
 
         parameters.exchangeFee = _exchangeFee;
@@ -174,23 +162,31 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     /* ---------- External Contracts ---------- */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](5);
+        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_EXRATES;
+        newAddresses[2] = CONTRACT_SYNTHSUSD;
+        newAddresses[3] = CONTRACT_FEEPOOL;
+        newAddresses[4] = CONTRACT_FUTURESMARKETMANAGER;
+        addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
     function _manager() internal view returns (IFuturesMarketManagerInternal) {
-        return
-            IFuturesMarketManagerInternal(
-                requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER, "Missing FuturesMarketManager")
-            );
+        return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function _feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function _sUSD() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     /* ---------- Market Details ---------- */
@@ -230,9 +226,10 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
 
     // The total market debt is equivalent to the sum of remaining margins in all open positions
     function _marketDebt(uint price) internal view returns (uint) {
-        int totalDebt = marketSkew
-            .multiplyDecimalRound(int(price).add(_nextFundingEntry(fundingSequence.length, price)))
-            .add(entryDebtCorrection);
+        int totalDebt =
+            marketSkew.multiplyDecimalRound(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
+                entryDebtCorrection
+            );
 
         return uint(_max(totalDebt, 0));
     }
@@ -373,9 +370,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         uint endFundingIndex,
         uint price
     ) internal view returns (uint) {
-        int remaining = int(position.margin).add(_profitLoss(position, price)).add(
-            _accruedFunding(position, endFundingIndex, price)
-        );
+        int remaining =
+            int(position.margin).add(_profitLoss(position, price)).add(_accruedFunding(position, endFundingIndex, price));
 
         // The margin went past zero and the position should have been liquidated - no remaining margin.
         if (remaining < 0) {
@@ -645,9 +641,10 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
         int marginDelta
     ) internal returns (uint) {
         // 1. Determine new margin, ensuring that the result is positive.
-        int newMargin = int(position.margin).add(
-            marginDelta.add(_accruedFunding(position, currentFundingIndex, price)).add(_profitLoss(position, price))
-        );
+        int newMargin =
+            int(position.margin).add(
+                marginDelta.add(_accruedFunding(position, currentFundingIndex, price)).add(_profitLoss(position, price))
+            );
         require(0 <= newMargin, "Withdrawing more than margin");
         uint uMargin = uint(newMargin);
 
@@ -961,9 +958,8 @@ contract FuturesMarket is Owned, Proxyable, MixinResolver, MixinSystemSettings, 
     }
 
     event OrderConfirmed(uint indexed id, address indexed account, uint margin, int size, uint price, uint fundingIndex);
-    bytes32 internal constant SIG_ORDERCONFIRMED = keccak256(
-        "OrderConfirmed(uint256,address,uint256,int256,uint256,uint256)"
-    );
+    bytes32 internal constant SIG_ORDERCONFIRMED =
+        keccak256("OrderConfirmed(uint256,address,uint256,int256,uint256,uint256)");
 
     function emitOrderConfirmed(
         uint id,

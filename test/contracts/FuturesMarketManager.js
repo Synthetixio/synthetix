@@ -1,4 +1,4 @@
-const { contract } = require('@nomiclabs/buidler');
+const { contract } = require('hardhat');
 const { assert } = require('./common');
 
 contract('FuturesMarketManager', accounts => {

@@ -8,27 +8,24 @@ import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
-import "./AddressListLib.sol";
+import "./AddressSetLib.sol";
 
 // Internal references
 import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/ISynth.sol";
 
-
 contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarketManager {
     using SafeMath for uint;
-    using AddressListLib for AddressListLib.AddressList;
+    using AddressSetLib for AddressSetLib.AddressSet;
 
     /* ========== STATE VARIABLES ========== */
 
-    AddressListLib.AddressList internal _markets;
+    AddressSetLib.AddressSet internal _markets;
     mapping(bytes32 => address) public marketForAsset;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
-
-    bytes32[24] internal _addressesToCache = [CONTRACT_SYNTHSUSD];
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -36,12 +33,17 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
         address payable _proxy,
         address _owner,
         address _resolver
-    ) public Owned(_owner) Proxyable(_proxy) MixinResolver(_resolver, _addressesToCache) {}
+    ) public Owned(_owner) Proxyable(_proxy) MixinResolver(_resolver) {}
 
     /* ========== VIEWS ========== */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_SYNTHSUSD;
+    }
+
     function _sUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function markets(uint index, uint pageSize) external view returns (address[] memory) {
@@ -94,7 +96,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
             bytes32 key = IFuturesMarket(market).baseAsset();
             require(marketForAsset[key] == address(0), "Market already exists for this asset");
             marketForAsset[key] = market;
-            _markets.push(market);
+            _markets.add(market);
             emitMarketAdded(market, key);
         }
     }

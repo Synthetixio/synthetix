@@ -76,6 +76,10 @@ contract MultiCollateralSynth is Synth {
 
     // Overrides the parent's internal contract to change the set of contracts accepted by onlyInternalContracts
     function _isInternalContract(address account) internal view returns (bool) {
-        return super._isInternalContract(account) || account == address(multiCollateral());
+        return
+            super._isInternalContract(account) ||
+            account == address(etherCollateral()) ||
+            account == address(etherCollateralsUSD()) ||
+            collateralManager().hasCollateral(msg.sender);
     }
 }

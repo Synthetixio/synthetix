@@ -1,4 +1,4 @@
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('hardhat');
 
 const { toBytes32 } = require('../..');
 const { currentTime, fastForward, toUnit, fromUnit, multiplyDecimalRound } = require('../utils')();
