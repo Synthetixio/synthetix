@@ -18,14 +18,12 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
-import "./interfaces/IDebtCache.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./Proxyable.sol";
 
 // Note: use OZ's IERC20 here as using ours will complain about conflicting names
 // during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
-
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
@@ -57,16 +55,14 @@ interface ISynthetixInternal {
     ) external;
 }
 
-
 interface IExchangerInternalDebtCache {
     function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
 
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
 }
 
-
 // https://docs.synthetix.io/contracts/source/contracts/exchanger
-contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
+contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -100,61 +96,59 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_EXCHANGESTATE,
-        CONTRACT_EXRATES,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_FEEPOOL,
-        CONTRACT_TRADING_REWARDS,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ISSUER,
-        CONTRACT_DEBTCACHE
-    ];
-
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
 
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](9);
+        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_EXCHANGESTATE;
+        newAddresses[2] = CONTRACT_EXRATES;
+        newAddresses[3] = CONTRACT_SYNTHETIX;
+        newAddresses[4] = CONTRACT_FEEPOOL;
+        newAddresses[5] = CONTRACT_TRADING_REWARDS;
+        newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[7] = CONTRACT_ISSUER;
+        newAddresses[8] = CONTRACT_DEBTCACHE;
+        addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function exchangeState() internal view returns (IExchangeState) {
-        return IExchangeState(requireAndGetAddress(CONTRACT_EXCHANGESTATE, "Missing ExchangeState address"));
+        return IExchangeState(requireAndGetAddress(CONTRACT_EXCHANGESTATE));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function tradingRewards() internal view returns (ITradingRewards) {
-        return ITradingRewards(requireAndGetAddress(CONTRACT_TRADING_REWARDS, "Missing TradingRewards address"));
+        return ITradingRewards(requireAndGetAddress(CONTRACT_TRADING_REWARDS));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
-        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function debtCache() internal view returns (IExchangerInternalDebtCache) {
-        return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE, "Missing DebtCache address"));
+        return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -211,13 +205,14 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(exchangeEntry);
 
             // given these round ids, determine what effective value they should have received
-            uint destinationAmount = exchangeRates().effectiveValueAtRound(
-                exchangeEntry.src,
-                exchangeEntry.amount,
-                exchangeEntry.dest,
-                srcRoundIdAtPeriodEnd,
-                destRoundIdAtPeriodEnd
-            );
+            uint destinationAmount =
+                exchangeRates().effectiveValueAtRound(
+                    exchangeEntry.src,
+                    exchangeEntry.amount,
+                    exchangeEntry.dest,
+                    srcRoundIdAtPeriodEnd,
+                    destRoundIdAtPeriodEnd
+                );
 
             // and deduct the fee from this amount using the exchangeFeeRate from storage
             uint amountShouldHaveReceived = _getAmountReceivedForExchange(destinationAmount, exchangeEntry.exchangeFeeRate);
@@ -589,15 +584,18 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
             destinationAddress
         );
 
-        // persist the exchange information for the dest key
-        appendExchange(
-            destinationAddress,
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            amountReceived,
-            exchangeFeeRate
-        );
+        // iff the waiting period is gt 0
+        if (getWaitingPeriodSecs() > 0) {
+            // persist the exchange information for the dest key
+            appendExchange(
+                destinationAddress,
+                sourceCurrencyKey,
+                sourceAmountAfterSettlement,
+                destinationCurrencyKey,
+                amountReceived,
+                exchangeFeeRate
+            );
+        }
     }
 
     function _convert(
@@ -630,7 +628,7 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         uint,
         bytes32
     ) internal returns (IVirtualSynth) {
-        revert("Not supported in this layer");
+        revert("Cannot be run on this layer");
     }
 
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
@@ -729,12 +727,8 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
     {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
-        (
-            uint reclaimAmount,
-            uint rebateAmount,
-            uint entries,
-            ExchangeEntrySettlement[] memory settlements
-        ) = _settlementOwing(from, currencyKey);
+        (uint reclaimAmount, uint rebateAmount, uint entries, ExchangeEntrySettlement[] memory settlements) =
+            _settlementOwing(from, currencyKey);
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);
@@ -808,11 +802,28 @@ contract Exchanger is Owned, MixinResolver, MixinSystemSettings, IExchanger {
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
-    function _feeRateForExchange(
-        bytes32, // API for source in case pricing model evolves to include source rate /* sourceCurrencyKey */
-        bytes32 destinationCurrencyKey
-    ) internal view returns (uint exchangeFeeRate) {
-        return getExchangeFeeRate(destinationCurrencyKey);
+    function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        internal
+        view
+        returns (uint exchangeFeeRate)
+    {
+        // Get the exchange fee rate as per destination currencyKey
+        exchangeFeeRate = getExchangeFeeRate(destinationCurrencyKey);
+
+        if (sourceCurrencyKey == sUSD || destinationCurrencyKey == sUSD) {
+            return exchangeFeeRate;
+        }
+
+        // Is this a swing trade? long to short or short to long skipping sUSD.
+        if (
+            (sourceCurrencyKey[0] == 0x73 && destinationCurrencyKey[0] == 0x69) ||
+            (sourceCurrencyKey[0] == 0x69 && destinationCurrencyKey[0] == 0x73)
+        ) {
+            // Double the exchange fee
+            exchangeFeeRate = exchangeFeeRate.mul(2);
+        }
+
+        return exchangeFeeRate;
     }
 
     function getAmountsForExchange(

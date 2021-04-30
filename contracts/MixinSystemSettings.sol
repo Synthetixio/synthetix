@@ -5,7 +5,6 @@ import "./MixinResolver.sol";
 // Internal references
 import "./interfaces/IFlexibleStorage.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/mixinsystemsettings
 contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_CONTRACT_NAME = "SystemSettings";
@@ -24,16 +23,43 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_AGGREGATOR_WARNING_FLAGS = "aggregatorWarningFlags";
     bytes32 internal constant SETTING_TRADING_REWARDS_ENABLED = "tradingRewardsEnabled";
     bytes32 internal constant SETTING_DEBT_SNAPSHOT_STALE_TIME = "debtSnapshotStaleTime";
+    bytes32 internal constant SETTING_CROSS_DOMAIN_DEPOSIT_GAS_LIMIT = "crossDomainDepositGasLimit";
+    bytes32 internal constant SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT = "crossDomainEscrowGasLimit";
+    bytes32 internal constant SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT = "crossDomainRewardGasLimit";
+    bytes32 internal constant SETTING_CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT = "crossDomainWithdrawalGasLimit";
+
+    bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 internal constant SETTING_FUTURES_LIQUIDATION_FEE = "futuresLiquidationFee";
 
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
+    enum CrossDomainMessageGasLimits {Deposit, Escrow, Reward, Withdrawal}
 
-    constructor() internal {
-        appendToAddressCache(CONTRACT_FLEXIBLESTORAGE);
+    constructor(address _resolver) internal MixinResolver(_resolver) {}
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_FLEXIBLESTORAGE;
     }
 
     function flexibleStorage() internal view returns (IFlexibleStorage) {
-        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE, "Missing FlexibleStorage address"));
+        return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
+    }
+
+    function _getGasLimitSetting(CrossDomainMessageGasLimits gasLimitType) internal pure returns (bytes32) {
+        if (gasLimitType == CrossDomainMessageGasLimits.Deposit) {
+            return SETTING_CROSS_DOMAIN_DEPOSIT_GAS_LIMIT;
+        } else if (gasLimitType == CrossDomainMessageGasLimits.Escrow) {
+            return SETTING_CROSS_DOMAIN_ESCROW_GAS_LIMIT;
+        } else if (gasLimitType == CrossDomainMessageGasLimits.Reward) {
+            return SETTING_CROSS_DOMAIN_REWARD_GAS_LIMIT;
+        } else if (gasLimitType == CrossDomainMessageGasLimits.Withdrawal) {
+            return SETTING_CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT;
+        } else {
+            revert("Unknown gas limit type");
+        }
+    }
+
+    function getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits gasLimitType) internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, _getGasLimitSetting(gasLimitType));
     }
 
     function getTradingRewardsEnabled() internal view returns (bool) {

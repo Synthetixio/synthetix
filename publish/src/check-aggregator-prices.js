@@ -7,7 +7,7 @@ const { gray, yellow, red, cyan } = require('chalk');
 const { loadConnections } = require('./util');
 const { toBytes32 } = require('../../.');
 
-module.exports = async ({ network, providerUrl, synths, oldExrates, standaloneFeeds }) => {
+module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, standaloneFeeds }) => {
 	const output = [];
 	const { etherscanUrl } = loadConnections({ network });
 
@@ -27,19 +27,24 @@ module.exports = async ({ network, providerUrl, synths, oldExrates, standaloneFe
 			}
 
 			if (!abi) {
-				// Get the ABI from the first aggregator on Etherscan
-				// Note: assumes all use the same ABI
-				const {
-					data: { result },
-				} = await axios.get(etherscanUrl, {
-					params: {
-						module: 'contract',
-						action: 'getabi',
-						address: feed,
-						apikey: process.env.ETHERSCAN_KEY,
-					},
-				});
-				abi = JSON.parse(result);
+				if (useOvm) {
+					abi = require('@chainlink/contracts-0.0.10/abi/v0.5/AggregatorV2V3Interface.json')
+						.compilerOutput.abi;
+				} else {
+					// Get the ABI from the first aggregator on Etherscan
+					// Note: assumes all use the same ABI
+					const {
+						data: { result },
+					} = await axios.get(etherscanUrl, {
+						params: {
+							module: 'contract',
+							action: 'getabi',
+							address: feed,
+							apikey: process.env.ETHERSCAN_KEY,
+						},
+					});
+					abi = JSON.parse(result);
+				}
 			}
 
 			const liveAggregator = new web3.eth.Contract(abi, feed);

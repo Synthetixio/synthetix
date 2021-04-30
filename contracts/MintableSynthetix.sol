@@ -1,11 +1,10 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./Synthetix.sol";
-
+import "./BaseSynthetix.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/mintablesynthetix
-contract MintableSynthetix is Synthetix {
+contract MintableSynthetix is BaseSynthetix {
     bytes32 private constant CONTRACT_SYNTHETIX_BRIDGE = "SynthetixBridgeToBase";
 
     constructor(
@@ -14,9 +13,7 @@ contract MintableSynthetix is Synthetix {
         address _owner,
         uint _totalSupply,
         address _resolver
-    ) public Synthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {
-        appendToAddressCache(CONTRACT_SYNTHETIX_BRIDGE);
-    }
+    ) public BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
 
     /* ========== INTERNALS =================== */
 
@@ -27,7 +24,7 @@ contract MintableSynthetix is Synthetix {
     }
 
     function onlyAllowFromBridge() internal view {
-        require(msg.sender == synthetixBridge(), "Can only be invoked by the SynthetixBridgeToBase contract");
+        require(msg.sender == synthetixBridge(), "Can only be invoked by bridge");
     }
 
     /* ========== MODIFIERS =================== */
@@ -38,9 +35,15 @@ contract MintableSynthetix is Synthetix {
     }
 
     /* ========== VIEWS ======================= */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = BaseSynthetix.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_SYNTHETIX_BRIDGE;
+        addresses = combineArrays(existingAddresses, newAddresses);
+    }
 
     function synthetixBridge() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE, "Resolver is missing SynthetixBridgeToBase address");
+        return requireAndGetAddress(CONTRACT_SYNTHETIX_BRIDGE);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
@@ -55,7 +58,7 @@ contract MintableSynthetix is Synthetix {
         _rewardsDistribution.distributeRewards(amount);
     }
 
-    function burnSecondary(address account, uint amount) external onlyBridge {
+    function burnSecondary(address account, uint amount) external onlyBridge systemActive {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).sub(amount));
         emitTransfer(account, address(0), amount);
         totalSupply = totalSupply.sub(amount);

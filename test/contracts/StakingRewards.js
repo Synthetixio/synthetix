@@ -1,4 +1,4 @@
-const { contract } = require('@nomiclabs/buidler');
+const { contract } = require('hardhat');
 const { toBN } = require('web3-utils');
 
 const { toBytes32 } = require('../..');
@@ -106,6 +106,7 @@ contract('StakingRewards', accounts => {
 				'setRewardsDistribution',
 				'setRewardsDuration',
 				'recoverERC20',
+				'updatePeriodFinish',
 			],
 		});
 	});
@@ -168,6 +169,15 @@ contract('StakingRewards', accounts => {
 				accounts,
 			});
 		});
+
+		it('only owner can call updatePeriodFinish', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: stakingRewards.updatePeriodFinish,
+				args: [0],
+				address: owner,
+				accounts,
+			});
+		});
 	});
 
 	describe('Pausable', async () => {
@@ -216,25 +226,7 @@ contract('StakingRewards', accounts => {
 				stakingRewards.recoverERC20(stakingToken.address, amount, {
 					from: owner,
 				}),
-				'Cannot withdraw the staking or rewards tokens'
-			);
-		});
-		it('should revert if recovering rewards token (SNX)', async () => {
-			// rewardsToken in these tests is the underlying contract
-			await assert.revert(
-				stakingRewards.recoverERC20(rewardsToken.address, amount, {
-					from: owner,
-				}),
-				'Cannot withdraw the staking or rewards tokens'
-			);
-		});
-		it('should revert if recovering the SNX Proxy', async () => {
-			const snxProxy = await rewardsToken.proxy();
-			await assert.revert(
-				stakingRewards.recoverERC20(snxProxy, amount, {
-					from: owner,
-				}),
-				'Cannot withdraw the staking or rewards tokens'
+				'Cannot withdraw the staking token'
 			);
 		});
 		it('should retrieve external token from StakingRewards and reduce contracts balance', async () => {
@@ -572,6 +564,26 @@ contract('StakingRewards', accounts => {
 
 		it('cannot withdraw 0', async () => {
 			await assert.revert(stakingRewards.withdraw('0'), 'Cannot withdraw 0');
+		});
+	});
+
+	describe('updatePeriodFinish()', () => {
+		const updateTimeStamp = toUnit('100');
+
+		before(async () => {
+			await stakingRewards.updatePeriodFinish(updateTimeStamp, {
+				from: owner,
+			});
+		});
+
+		it('should update periodFinish', async () => {
+			const periodFinish = await stakingRewards.periodFinish();
+			assert.bnEqual(periodFinish, updateTimeStamp);
+		});
+
+		it('should update rewardRate to zero', async () => {
+			const rewardRate = await stakingRewards.rewardRate();
+			assert.bnEqual(rewardRate, ZERO_BN);
 		});
 	});
 

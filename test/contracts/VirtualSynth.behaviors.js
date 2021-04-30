@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts } = require('@nomiclabs/buidler');
+const { artifacts } = require('hardhat');
 
 const { toBytes32 } = require('../..');
 
@@ -23,7 +23,8 @@ module.exports = function({ accounts }) {
 		whenInstantiated: ({ amount, user, synth = 'sETH' }, cb) => {
 			describe(`when instantiated for user ${user.slice(0, 7)}`, () => {
 				beforeEach(async () => {
-					this.instance = await VirtualSynth.new(
+					this.instance = await VirtualSynth.new();
+					await this.instance.initialize(
 						this.mocks.Synth.address,
 						this.resolver.address,
 						user,

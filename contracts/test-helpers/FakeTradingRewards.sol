@@ -6,7 +6,6 @@ import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/ERC20Detailed.sol";
 
 import "../interfaces/IExchanger.sol";
 
-
 contract FakeTradingRewards is TradingRewards {
     IERC20 public _mockSynthetixToken;
 
@@ -28,7 +27,4 @@ contract FakeTradingRewards is TradingRewards {
     function exchanger() internal view returns (IExchanger) {
         return IExchanger(msg.sender);
     }
-
-    // Easy way to send ETH to the contract. Alternative is to use selfdestruct, but this is easier.
-    function ethBackdoor() external payable {}
 }

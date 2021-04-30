@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
@@ -12,14 +12,15 @@ const {
 	divideDecimalRound,
 } = require('../utils')();
 const { toBytes32 } = require('../..');
-const { setupContract, setupAllContracts, mockGenericContractFnc } = require('./setup');
+const { setupContract, setupAllContracts } = require('./setup');
 const {
 	setStatus,
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
+	getEventByName,
 } = require('./helpers');
 
-const BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+let BinaryOptionMarket;
 
 const computePrices = (longs, shorts, debt, fee) => {
 	const totalOptions = multiplyDecimalRound(debt, toUnit(1).sub(fee));
@@ -29,7 +30,7 @@ const computePrices = (longs, shorts, debt, fee) => {
 	};
 };
 
-contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
+contract('BinaryOptionMarketManager @gas-skip', accounts => {
 	const [initialCreator, managerOwner, bidder, dummy] = accounts;
 
 	const sUSDQty = toUnit(10000);
@@ -66,8 +67,12 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 		const tx = await man.createMarket(oracleKey, strikePrice, refundsEnabled, times, bids, {
 			from: creator,
 		});
-		return BinaryOptionMarket.at(tx.logs[1].args.market);
+		return BinaryOptionMarket.at(getEventByName({ tx, name: 'MarketCreated' }).args.market);
 	};
+
+	before(async () => {
+		BinaryOptionMarket = artifacts.require('BinaryOptionMarket');
+	});
 
 	before(async () => {
 		({
@@ -132,25 +137,25 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 				abi: manager.abi,
 				ignoreParents: ['Owned', 'Pausable', 'MixinResolver'],
 				expected: [
-					'setMaxOraclePriceAge',
-					'setExpiryDuration',
-					'setMaxTimeToMaturity',
-					'setPoolFee',
-					'setCreatorFee',
-					'setRefundFee',
-					'setCreatorCapitalRequirement',
-					'setCreatorSkewLimit',
-					'incrementTotalDeposited',
-					'decrementTotalDeposited',
-					'createMarket',
-					'resolveMarket',
 					'cancelMarket',
+					'createMarket',
+					'decrementTotalDeposited',
 					'expireMarkets',
-					'setResolverAndSyncCacheOnMarkets',
-					'setMarketCreationEnabled',
-					'setMigratingManager',
+					'incrementTotalDeposited',
+					'rebuildMarketCaches',
 					'migrateMarkets',
 					'receiveMarkets',
+					'resolveMarket',
+					'setCreatorCapitalRequirement',
+					'setCreatorFee',
+					'setCreatorSkewLimit',
+					'setExpiryDuration',
+					'setMarketCreationEnabled',
+					'setMaxOraclePriceAge',
+					'setMaxTimeToMaturity',
+					'setMigratingManager',
+					'setPoolFee',
+					'setRefundFee',
 				],
 			});
 		});
@@ -387,8 +392,10 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 				{ from: initialCreator }
 			);
 
-			assert.eventEqual(result.logs[0], 'OwnerChanged', { newOwner: manager.address });
-			assert.eventEqual(result.logs[1], 'MarketCreated', {
+			assert.eventEqual(getEventByName({ tx: result, name: 'OwnerChanged' }), 'OwnerChanged', {
+				newOwner: manager.address,
+			});
+			assert.eventEqual(getEventByName({ tx: result, name: 'MarketCreated' }), 'MarketCreated', {
 				creator: initialCreator,
 				oracleKey: sAUDKey,
 				strikePrice: toUnit(1),
@@ -420,7 +427,9 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 				shortPrice: prices.short,
 			});
 
-			const market = await BinaryOptionMarket.at(result.logs[1].args.market);
+			const market = await BinaryOptionMarket.at(
+				getEventByName({ tx: result, name: 'MarketCreated' }).args.market
+			);
 
 			const times = await market.times();
 			assert.bnEqual(times.biddingEnd, toBN(now + 100));
@@ -710,7 +719,10 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 					from: initialCreator,
 				}
 			);
-			const localMarket = await BinaryOptionMarket.at(tx.logs[1].args.market);
+			const localMarket = await BinaryOptionMarket.at(
+				getEventByName({ tx, name: 'MarketCreated' }).args.market
+			);
+
 			assert.bnEqual((await localMarket.oracleDetails()).strikePrice, toUnit(1));
 		});
 
@@ -1307,8 +1319,7 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 					from: accounts[1],
 				}
 			);
-			await factory.setResolverAndSyncCache(addressResolver.address, { from: accounts[1] });
-			await newManager.setResolverAndSyncCache(addressResolver.address, { from: managerOwner });
+			await Promise.all([newManager.rebuildCache(), factory.rebuildCache()]);
 
 			await Promise.all(
 				markets.map(m => sUSDSynth.approve(m.address, toUnit(1000), { from: bidder }))
@@ -1582,50 +1593,34 @@ contract('BinaryOptionMarketManager @gas-skip @ovm-skip', accounts => {
 			assert.equal(tx.logs[5].args.markets[1], markets[1].address);
 		});
 
-		it('Can sync the resolver of child markets.', async () => {
-			const resolverMock = await setupContract({
+		it('Can sync the caches of child markets.', async () => {
+			const statusMock = await setupContract({
 				accounts,
 				contract: 'GenericMock',
-				mock: 'AddressResolver',
+				mock: 'SystemStatus',
 			});
 
-			await mockGenericContractFnc({
-				instance: resolverMock,
-				fncName: 'requireAndGetAddress',
-				mock: 'AddressResolver',
-				returns: [managerOwner],
+			await addressResolver.importAddresses([toBytes32('SystemStatus')], [statusMock.address], {
+				from: accounts[1],
 			});
 
 			// Only sets the resolver for the listed addresses
-			await manager.setResolverAndSyncCacheOnMarkets(resolverMock.address, [markets[0].address], {
+			await manager.rebuildMarketCaches([markets[0].address], {
 				from: managerOwner,
 			});
 
-			assert.equal(await markets[0].resolver(), resolverMock.address);
-			assert.equal(await markets[1].resolver(), addressResolver.address);
-			assert.equal(await markets[2].resolver(), addressResolver.address);
+			assert.ok(await markets[0].isResolverCached());
+			assert.notOk(await markets[1].isResolverCached());
+			assert.notOk(await markets[2].isResolverCached());
 
 			// Only sets the resolver for the remaining addresses
-			await manager.setResolverAndSyncCacheOnMarkets(
-				resolverMock.address,
-				[markets[1].address, markets[2].address],
-				{ from: managerOwner }
-			);
-
-			assert.equal(await markets[0].resolver(), resolverMock.address);
-			assert.equal(await markets[1].resolver(), resolverMock.address);
-			assert.equal(await markets[2].resolver(), resolverMock.address);
-		});
-
-		it('Only the owner can sync market resolvers', async () => {
-			onlyGivenAddressCanInvoke({
-				fnc: manager.setResolverAndSyncCacheOnMarkets,
-				args: [addressResolver.address, [markets[0].address]],
-				accounts,
-				address: managerOwner,
-				skipPassCheck: true,
-				reason: 'Only the contract owner may perform this action',
+			await manager.rebuildMarketCaches([markets[1].address, markets[2].address], {
+				from: managerOwner,
 			});
+
+			assert.ok(await markets[0].isResolverCached());
+			assert.ok(await markets[1].isResolverCached());
+			assert.ok(await markets[2].isResolverCached());
 		});
 	});
 });

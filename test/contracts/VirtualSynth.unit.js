@@ -1,10 +1,10 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 
 const { assert } = require('./common');
 
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, trimUtf8EscapeChars } = require('./helpers');
 
 const {
 	toBytes32,
@@ -12,8 +12,6 @@ const {
 } = require('../..');
 
 const { divideDecimal } = require('../utils')();
-
-const trimUtf8EscapeChars = input => web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
 
 const VirtualSynth = artifacts.require('VirtualSynth');
 
@@ -24,18 +22,21 @@ contract('VirtualSynth (unit tests)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: VirtualSynth.abi,
 			ignoreParents: ['ERC20'],
-			expected: ['settle'],
+			expected: ['initialize', 'settle'],
 		});
 	});
 
-	describe('with common setup @cov-skip', () => {
+	describe('with common setup', () => {
 		// ensure all of the behaviors are bound to "this" for sharing test state
 		const behaviors = require('./VirtualSynth.behaviors').call(this, { accounts });
-
-		describe('constructor', () => {
+		describe('initialize', () => {
 			const amount = '1001';
 			behaviors.whenInstantiated({ amount, user: owner, synth: 'sBTC' }, () => {
-				it('then each constructor arg is set correctly', async () => {
+				it('is initialized', async () => {
+					assert.isTrue(await this.instance.initialized());
+				});
+
+				it('and each initialize arg is set correctly', async () => {
 					assert.equal(trimUtf8EscapeChars(await this.instance.name()), 'Virtual Synth sBTC');
 					assert.equal(trimUtf8EscapeChars(await this.instance.symbol()), 'vsBTC');
 					assert.equal(await this.instance.decimals(), '18');
@@ -53,6 +54,19 @@ contract('VirtualSynth (unit tests)', async accounts => {
 					assert.equal(evt.args.from, ZERO_ADDRESS);
 					assert.equal(evt.args.to, owner);
 					assert.equal(evt.args.value.toString(), amount);
+				});
+
+				it('and it cannot be initialized again', async () => {
+					await assert.revert(
+						this.instance.initialize(
+							this.mocks.Synth.address,
+							this.resolver.address,
+							owner,
+							amount,
+							toBytes32('sUSD')
+						),
+						'vSynth already initialized'
+					);
 				});
 			});
 		});

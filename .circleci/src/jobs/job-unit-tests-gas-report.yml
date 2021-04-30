@@ -1,11 +1,11 @@
 # Measures deployment and transaction gas usage in unit tests
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
+resource_class: large
 steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npm run test:gas && npx codechecks codechecks.unit.yml
+  - run: npm run test:gas
+  - run: npx codechecks codechecks.unit.yml
   - store_artifacts:
       path: test-gas-used.log

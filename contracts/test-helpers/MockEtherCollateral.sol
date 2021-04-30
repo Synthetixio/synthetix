@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 import "../SafeDecimalMath.sol";
 
-
 contract MockEtherCollateral {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

@@ -17,7 +17,6 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
-
 // ETH Collateral v0.3 (sUSD)
 // https://docs.synthetix.io/contracts/source/contracts/ethercollateralsusd
 contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateralsUSD {
@@ -120,15 +119,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
-    bytes32[24] private addressesToCache = [CONTRACT_SYSTEMSTATUS, CONTRACT_SYNTHSUSD, CONTRACT_EXRATES, CONTRACT_FEEPOOL];
-
     // ========== CONSTRUCTOR ==========
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        Pausable()
-        MixinResolver(_resolver, addressesToCache)
-    {
+    constructor(address _owner, address _resolver) public Owned(_owner) Pausable() MixinResolver(_resolver) {
         liquidationDeadline = block.timestamp + 92 days; // Time before loans can be open for liquidation to end the trial contract
     }
 
@@ -183,6 +175,13 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     }
 
     // ========== PUBLIC VIEWS ==========
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](4);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_SYNTHSUSD;
+        addresses[2] = CONTRACT_EXRATES;
+        addresses[3] = CONTRACT_FEEPOOL;
+    }
 
     function getContractInfo()
         external
@@ -241,10 +240,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     function currentInterestOnLoan(address _account, uint256 _loanID) external view returns (uint256) {
         // Get the loan from storage
         SynthLoanStruct memory synthLoan = _getLoanFromStorage(_account, _loanID);
-        uint256 currentInterest = accruedInterestOnLoan(
-            synthLoan.loanAmount.add(synthLoan.accruedInterest),
-            _timeSinceInterestAccrual(synthLoan)
-        );
+        uint256 currentInterest =
+            accruedInterestOnLoan(synthLoan.loanAmount.add(synthLoan.accruedInterest), _timeSinceInterestAccrual(synthLoan));
         return synthLoan.accruedInterest.add(currentInterest);
     }
 
@@ -414,18 +411,19 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         loanID = _incrementTotalLoansCounter();
 
         // Create Loan storage object
-        SynthLoanStruct memory synthLoan = SynthLoanStruct({
-            account: msg.sender,
-            collateralAmount: msg.value,
-            loanAmount: _loanAmount,
-            mintingFee: mintingFee,
-            timeCreated: block.timestamp,
-            loanID: loanID,
-            timeClosed: 0,
-            loanInterestRate: interestRate,
-            accruedInterest: 0,
-            lastInterestAccrued: 0
-        });
+        SynthLoanStruct memory synthLoan =
+            SynthLoanStruct({
+                account: msg.sender,
+                collateralAmount: msg.value,
+                loanAmount: _loanAmount,
+                mintingFee: mintingFee,
+                timeCreated: block.timestamp,
+                loanID: loanID,
+                timeClosed: 0,
+                loanInterestRate: interestRate,
+                accruedInterest: 0,
+                lastInterestAccrued: 0
+            });
 
         // Fee distribution. Mint the sUSD fees into the FeePool and record fees paid
         if (mintingFee > 0) {
@@ -527,12 +525,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // and repay principal loan amount with remaining amounts
         uint256 accruedInterest = synthLoan.accruedInterest.add(interestAmount);
 
-        (
-            uint256 interestPaid,
-            uint256 loanAmountPaid,
-            uint256 accruedInterestAfter,
-            uint256 loanAmountAfter
-        ) = _splitInterestLoanPayment(_repayAmount, accruedInterest, synthLoan.loanAmount);
+        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, uint256 loanAmountAfter) =
+            _splitInterestLoanPayment(_repayAmount, accruedInterest, synthLoan.loanAmount);
 
         // burn sUSD from msg.sender for repaid amount
         synthsUSD().burn(msg.sender, _repayAmount);
@@ -567,10 +561,11 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         require(collateralRatio < liquidationRatio, "Collateral ratio above liquidation ratio");
 
         // calculate amount to liquidate to fix ratio including accrued interest
-        uint256 liquidationAmount = calculateAmountToLiquidate(
-            synthLoan.loanAmount.add(synthLoan.accruedInterest).add(interestAmount),
-            collateralValue
-        );
+        uint256 liquidationAmount =
+            calculateAmountToLiquidate(
+                synthLoan.loanAmount.add(synthLoan.accruedInterest).add(interestAmount),
+                collateralValue
+            );
 
         // cap debt to liquidate
         uint256 amountToLiquidate = liquidationAmount < _debtToCover ? liquidationAmount : _debtToCover;
@@ -578,11 +573,12 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         // burn sUSD from msg.sender for amount to liquidate
         synthsUSD().burn(msg.sender, amountToLiquidate);
 
-        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, ) = _splitInterestLoanPayment(
-            amountToLiquidate,
-            synthLoan.accruedInterest.add(interestAmount),
-            synthLoan.loanAmount
-        );
+        (uint256 interestPaid, uint256 loanAmountPaid, uint256 accruedInterestAfter, ) =
+            _splitInterestLoanPayment(
+                amountToLiquidate,
+                synthLoan.accruedInterest.add(interestAmount),
+                synthLoan.loanAmount
+            );
 
         // Send interests paid to fee pool and record loan amount paid
         _processInterestAndLoanPayment(interestPaid, loanAmountPaid);
@@ -591,9 +587,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
         uint256 collateralRedeemed = exchangeRates().effectiveValue(sUSD, amountToLiquidate, COLLATERAL);
 
         // Add penalty
-        uint256 totalCollateralLiquidated = collateralRedeemed.multiplyDecimal(
-            SafeDecimalMath.unit().add(liquidationPenalty)
-        );
+        uint256 totalCollateralLiquidated =
+            collateralRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
 
         // update remaining loanAmount less amount paid and update accrued interests less interest paid
         _updateLoan(synthLoan, synthLoan.loanAmount.sub(loanAmountPaid), accruedInterestAfter, block.timestamp);
@@ -686,10 +681,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
 
         // Calculate and deduct accrued interest (5%) for fee pool
         // Accrued interests (captured in loanAmount) + new interests
-        uint256 interestAmount = accruedInterestOnLoan(
-            synthLoan.loanAmount.add(synthLoan.accruedInterest),
-            _timeSinceInterestAccrual(synthLoan)
-        );
+        uint256 interestAmount =
+            accruedInterestOnLoan(synthLoan.loanAmount.add(synthLoan.accruedInterest), _timeSinceInterestAccrual(synthLoan));
         uint256 repayAmount = synthLoan.loanAmount.add(interestAmount);
 
         uint256 totalAccruedInterest = synthLoan.accruedInterest.add(interestAmount);
@@ -720,9 +713,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
             uint256 collateralRedeemed = exchangeRates().effectiveValue(sUSD, repayAmount, COLLATERAL);
 
             // add penalty
-            uint256 totalCollateralLiquidated = collateralRedeemed.multiplyDecimal(
-                SafeDecimalMath.unit().add(liquidationPenalty)
-            );
+            uint256 totalCollateralLiquidated =
+                collateralRedeemed.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
 
             // ensure remaining ETH collateral sufficient to cover collateral liquidated
             // will revert if the liquidated collateral + penalty is more than remaining collateral
@@ -809,9 +801,8 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     function _timeSinceInterestAccrual(SynthLoanStruct memory _synthLoan) private view returns (uint256 timeSinceAccrual) {
         // The last interest accrued timestamp for the loan
         // If lastInterestAccrued timestamp is not set (0), use loan timeCreated
-        uint256 lastInterestAccrual = _synthLoan.lastInterestAccrued > 0
-            ? uint256(_synthLoan.lastInterestAccrued)
-            : _synthLoan.timeCreated;
+        uint256 lastInterestAccrual =
+            _synthLoan.lastInterestAccrued > 0 ? uint256(_synthLoan.lastInterestAccrued) : _synthLoan.timeCreated;
 
         // diff between last interested accrued and now
         // use loan's timeClosed if loan is closed
@@ -828,19 +819,19 @@ contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver,
     /* ========== INTERNAL VIEWS ========== */
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function synthsUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     /* ========== MODIFIERS ========== */

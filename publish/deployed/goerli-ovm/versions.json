@@ -9,13 +9,15 @@
 		"contracts": {
 			"SafeDecimalMath": {
 				"address": "0x212dD0505eDECA3947b07b86e0b0d44ba8eE81c4",
-				"status": "current",
-				"keccak256": "0xbcc09d9e0a315788c29a9c5800737f6a4743b938f04628056a2640a63cb47715"
+				"status": "replaced",
+				"keccak256": "0xbcc09d9e0a315788c29a9c5800737f6a4743b938f04628056a2640a63cb47715",
+				"replaced_in": "v2.33.0-ovm"
 			},
 			"Math": {
 				"address": "0x5DF689ea1FB350bcB177Ff5e66ED8Dfe28C6045D",
-				"status": "current",
-				"keccak256": "0xa613ae2a85dbfbbad71e4b441b6c801f012a9e6690fd7dd7c2f9684ccd644799"
+				"status": "replaced",
+				"keccak256": "0xa613ae2a85dbfbbad71e4b441b6c801f012a9e6690fd7dd7c2f9684ccd644799",
+				"replaced_in": "v2.33.0-ovm"
 			},
 			"AddressResolver": {
 				"address": "0xCDe046E1c635d2D9F69E2081d46732d249c8465F",
@@ -44,8 +46,9 @@
 			},
 			"ExchangeRates": {
 				"address": "0x9eE29823210Cf00E38322f3FBd2606E52dEA8a3C",
-				"status": "current",
-				"keccak256": "0x69224f59c5a1bf68d4291222de82a28143f77c994c6255b9c3c2902a6755cfca"
+				"status": "replaced",
+				"keccak256": "0x69224f59c5a1bf68d4291222de82a28143f77c994c6255b9c3c2902a6755cfca",
+				"replaced_in": "v2.33.0-ovm"
 			},
 			"RewardEscrow": {
 				"address": "0xD5290dad339b7e6e05Fe3B93BAd20480d84e7a43",
@@ -119,8 +122,9 @@
 			},
 			"Synthetix": {
 				"address": "0xb269f194B62C0c127d08cFF1Dd02dd703d520bc5",
-				"status": "current",
-				"keccak256": "0x832cb4400e4bda9ca06dfed9de829285ac3e76325477b912c9f8622df4a32597"
+				"status": "replaced",
+				"keccak256": "0x832cb4400e4bda9ca06dfed9de829285ac3e76325477b912c9f8622df4a32597",
+				"replaced_in": "v2.33.0-ovm"
 			},
 			"ProxySynthetix": {
 				"address": "0x86272D814a997a46EB21fF56DBfE21921b2C0406",
@@ -129,8 +133,9 @@
 			},
 			"Exchanger": {
 				"address": "0xce1e1472Ce6a33A0e83fC422651C74616ee93e7A",
-				"status": "current",
-				"keccak256": "0x379d6cec3626abe69cd11fdd95c6f1f328896b04a8b35a5c2f14639a0225fcb1"
+				"status": "replaced",
+				"keccak256": "0x379d6cec3626abe69cd11fdd95c6f1f328896b04a8b35a5c2f14639a0225fcb1",
+				"replaced_in": "v2.33.0-ovm"
 			},
 			"ExchangeState": {
 				"address": "0x75EbcFA47ABE47b012061D045c53017E55b94C6e",
@@ -139,8 +144,9 @@
 			},
 			"Issuer": {
 				"address": "0x2a34c139907Ed18Ea6B7197DDbBE9a43F1B2FfBF",
-				"status": "current",
-				"keccak256": "0x40c5331e1d5a861572022b0f9aa8dcbb4c40c9447fd29567bc9709b7ff67015d"
+				"status": "replaced",
+				"keccak256": "0x40c5331e1d5a861572022b0f9aa8dcbb4c40c9447fd29567bc9709b7ff67015d",
+				"replaced_in": "v2.33.0-ovm"
 			},
 			"TradingRewards": {
 				"address": "0x45602503BF457df5D206e9E800Da4B786d6BC5dc",
@@ -199,8 +205,74 @@
 			},
 			"SecondaryDeposit": {
 				"address": "0x8EE9bd873387694644A585082bE436eC9a8056e0",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x51e722bc616870a5275de6cdc23eefa1da58b72fdb9a41ffd1a6020c62cf0085"
+			}
+		}
+	},
+	"v2.33.0-ovm": {
+		"tag": "v2.33.0-ovm",
+		"fulltag": "v2.33.0-ovm",
+		"release": "Regulus OVM",
+		"network": "goerli",
+		"date": "2020-11-20T16:47:18+00:00",
+		"commit": "e3584483e1884707994d761d7d0fb2021a15ffd9",
+		"contracts": {
+			"SafeDecimalMath": {
+				"address": "0x905c5ff75c58213d6e873D5BE576e3479456c9f4",
+				"status": "current",
+				"keccak256": "0xbcc09d9e0a315788c29a9c5800737f6a4743b938f04628056a2640a63cb47715"
+			},
+			"Math": {
+				"address": "0x5F010E3010d46cBdE975e65D97Ec3C12bB83D1ae",
+				"status": "current",
+				"keccak256": "0xa613ae2a85dbfbbad71e4b441b6c801f012a9e6690fd7dd7c2f9684ccd644799"
+			},
+			"ExchangeRates": {
+				"address": "0xaDA5F96e7fc44523E4d1c14DF7D79e3A9708dBc6",
+				"status": "current",
+				"keccak256": "0x737687c27488c3c1d457682a08226693405562aa6bd21245aed095bfd1206013"
+			},
+			"Synthetix": {
+				"address": "0xa1Ad2d2Bcc5bDf8c48840e11a71297B15F610Fe1",
+				"status": "current",
+				"keccak256": "0xb4bd3a4ea9eef2f305fdef11979cf0570075bc6df9e3b31137c2cf3f58517f86"
+			},
+			"Exchanger": {
+				"address": "0x1c1335475Aa4Ad3d937c5df4954E4f3677Da48a6",
+				"status": "current",
+				"keccak256": "0xac44c9b87209df02d5fc610dc652b358ac99c66f111f9ac891dda95f99218605"
+			},
+			"Issuer": {
+				"address": "0xF45B14ddaBF0F0e275E215b94dD24Ae013a27F12",
+				"status": "current",
+				"keccak256": "0x76181684676a3e2dafd69acdad3f28446d47ac45bf853be8fa3b2432b1ffc9a6"
+			},
+			"DebtCache": {
+				"address": "0xa6e5DA838D3b8338783E0710E1D5F6C8e8E998CE",
+				"status": "current",
+				"keccak256": "0xaba212f8ed4e4e32e531b64ac13e2a56795dbc7d160d2fba10813f8c83f5f810"
+			},
+			"SynthetixBridgeToBase": {
+				"address": "0xa0f161eb7ECd2B4311877dE15c495b884675b946",
+				"status": "replaced",
+				"keccak256": "0xc4e5720e1c9770ba9f97fd83c0bf910eadffda360965361f9175809bdebc7b3e",
+				"replaced_in": "v2.34.1-ovm"
+			}
+		}
+	},
+	"v2.34.1-ovm": {
+		"tag": "v2.34.1-ovm",
+		"fulltag": "v2.34.1-ovm",
+		"release": "Adhara OVM",
+		"network": "goerli",
+		"date": "2020-12-02T21:51:15-03:00",
+		"commit": "f3dda62bdd32c8ee549187fe9eabaa960d0b06c5",
+		"contracts": {
+			"SynthetixBridgeToBase": {
+				"address": "0x5A081fa7e3483504385e7C804AB1509499e2A408",
+				"status": "current",
+				"keccak256": "0x3e579fc7cbb4caf7a275029f4463b6c6a9a1280121130b2aaea9801082e9c9b8"
 			}
 		}
 	}

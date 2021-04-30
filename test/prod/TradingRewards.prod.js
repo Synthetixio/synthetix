@@ -1,11 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const { contract, config } = require('@nomiclabs/buidler');
-const { wrap } = require('../../index.js');
+const { wrap } = require('../..');
+const { contract, config } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common');
 const { toUnit } = require('../utils')();
 const {
-	detectNetworkName,
 	connectContracts,
 	ensureAccountHasEther,
 	ensureAccountHassUSD,
@@ -14,6 +13,9 @@ const {
 	simulateExchangeRates,
 	takeDebtSnapshot,
 	mockOptimismBridge,
+	writeSetting,
+	avoidStaleRates,
+	resumeSystem,
 } = require('./utils');
 
 contract('TradingRewards (prod tests)', accounts => {
@@ -28,20 +30,21 @@ contract('TradingRewards (prod tests)', accounts => {
 	let exchangeLogs;
 
 	before('prepare', async function() {
-		network = await detectNetworkName();
+		network = config.targetNetwork;
 		const { getUsers, getPathToNetwork } = wrap({ network, fs, path });
-
-		owner = getUsers({ network, user: 'owner' }).address;
-
 		deploymentPath = config.deploymentPath || getPathToNetwork(network);
+		owner = getUsers({ network, user: 'owner' }).address;
 
 		if (config.useOvm) {
 			return this.skip();
 		}
 
+		await avoidStaleRates({ network, deploymentPath });
+		await takeDebtSnapshot({ network, deploymentPath });
+		await resumeSystem({ owner, network, deploymentPath });
+
 		if (config.patchFreshDeployment) {
 			await simulateExchangeRates({ network, deploymentPath });
-			await takeDebtSnapshot({ network, deploymentPath });
 			await mockOptimismBridge({ network, deploymentPath });
 		}
 
@@ -62,21 +65,23 @@ contract('TradingRewards (prod tests)', accounts => {
 			account: owner,
 			fromAccount: accounts[7],
 			network,
+			deploymentPath,
 		});
 		await ensureAccountHassUSD({
 			amount: toUnit('100'),
 			account: user,
 			fromAccount: owner,
 			network,
+			deploymentPath,
 		});
+	});
+
+	beforeEach('check debt snapshot', async () => {
+		await takeDebtSnapshot({ network, deploymentPath });
 	});
 
 	it('has the expected resolver set', async () => {
 		assert.equal(await TradingRewards.resolver(), ReadProxyAddressResolver.address);
-	});
-
-	it('has the expected owner set', async () => {
-		assert.equal(await TradingRewards.owner(), owner);
 	});
 
 	it('has the expected setting for tradingRewardsEnabled (disabled)', async () => {
@@ -91,7 +96,12 @@ contract('TradingRewards (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await SystemSettings.setTradingRewardsEnabled(false, { from: owner });
+			await writeSetting({
+				setting: 'setTradingRewardsEnabled',
+				value: false,
+				network,
+				deploymentPath,
+			});
 		});
 
 		it('shows trading rewards disabled', async () => {
@@ -126,7 +136,12 @@ contract('TradingRewards (prod tests)', accounts => {
 		addSnapshotBeforeRestoreAfter();
 
 		before(async () => {
-			await SystemSettings.setTradingRewardsEnabled(true, { from: owner });
+			await writeSetting({
+				setting: 'setTradingRewardsEnabled',
+				value: true,
+				network,
+				deploymentPath,
+			});
 		});
 
 		it('shows trading rewards enabled', async () => {

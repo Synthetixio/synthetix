@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -72,6 +72,8 @@ contract('Liquidations', accounts => {
 				'SystemSettings',
 				'Synthetix',
 				'SynthetixState',
+				'CollateralManager',
+				'RewardEscrowV2', // required for Issuer._collateral() to load balances
 			],
 		}));
 	});
@@ -100,7 +102,7 @@ contract('Liquidations', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: liquidations.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'flagAccountForLiquidation',
 				'removeAccountInLiquidation',
@@ -205,8 +207,8 @@ contract('Liquidations', accounts => {
 						}
 					);
 
-					await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
-					await systemSettings.setResolverAndSyncCache(addressResolver.address, { from: owner });
+					await liquidations.rebuildCache();
+					await systemSettings.rebuildCache();
 				});
 				it('when flagAccountForLiquidation() is invoked, it reverts with liquidation ratio not set', async () => {
 					await assert.revert(
@@ -237,7 +239,7 @@ contract('Liquidations', accounts => {
 					});
 
 					// now have Liquidations resync its cache
-					await liquidations.setResolverAndSyncCache(addressResolver.address, { from: owner });
+					await liquidations.rebuildCache();
 				});
 				it('removeAccountInLiquidation() can only be invoked by issuer', async () => {
 					await onlyGivenAddressCanInvoke({
@@ -325,10 +327,7 @@ contract('Liquidations', accounts => {
 					await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [exchanger.address], {
 						from: owner,
 					});
-					await Promise.all([
-						synthetix.setResolverAndSyncCache(addressResolver.address, { from: owner }),
-						issuer.setResolverAndSyncCache(addressResolver.address, { from: owner }),
-					]);
+					await Promise.all([synthetix.rebuildCache(), issuer.rebuildCache()]);
 				});
 
 				it('when a liquidator has SettlementOwing from hasWaitingPeriodOrSettlementOwing then revert', async () => {

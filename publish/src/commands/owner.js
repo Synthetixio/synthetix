@@ -25,7 +25,9 @@ const {
 	getSafeNonce,
 	getSafeTransactions,
 	checkExistingPendingTx,
-	createAndSaveApprovalTransaction,
+	getNewTransactionHash,
+	saveTransactionToApi,
+	getSafeSignature,
 } = require('../safe-utils');
 
 const DEFAULTS = {
@@ -41,9 +43,11 @@ const owner = async ({
 	gasLimit = DEFAULTS.gasLimit,
 	privateKey,
 	yes,
+	useOvm,
+	providerUrl,
 }) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	function logTx(tx) {
@@ -51,7 +55,7 @@ const owner = async ({
 	}
 
 	if (!newOwner) {
-		newOwner = getUsers({ network, user: 'owner' }).address;
+		newOwner = getUsers({ network, useOvm, user: 'owner' }).address;
 	}
 
 	if (!w3utils.isAddress(newOwner)) {
@@ -66,9 +70,16 @@ const owner = async ({
 		network,
 	});
 
-	const { providerUrl, privateKey: envPrivateKey } = loadConnections({
+	const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
 	});
+	if (!providerUrl) {
+		if (!envProviderUrl) {
+			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
+		}
+
+		providerUrl = envProviderUrl;
+	}
 
 	if (!privateKey) {
 		privateKey = envPrivateKey;
@@ -131,7 +142,9 @@ const owner = async ({
 				await confirmAction(
 					message +
 						cyan(
-							'\nPlease type "y" to stage transaction, or enter "n" to cancel and resume this later? (y/n) '
+							`\nPlease type "y" to ${
+								isContract ? 'stage' : 'submit'
+							} transaction, or enter "n" to cancel and resume this later? (y/n) `
 						)
 				);
 			}
@@ -173,32 +186,47 @@ const owner = async ({
 		await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
 
 		try {
-			let newNonce;
 			if (isContract) {
-				newNonce = await createAndSaveApprovalTransaction({
+				const { txHash, newNonce } = await getNewTransactionHash({
 					safeContract: protocolDaoContract,
 					data,
 					to: target,
 					sender: account,
-					gasLimit,
-					gasPrice,
 					network,
 					lastNonce,
 				});
+
+				// sign txHash to get signature
+				const sig = getSafeSignature({
+					signer: web3.eth.accounts.wallet[0],
+					contractTxHash: txHash,
+				});
+
+				// save transaction and signature to Gnosis Safe API
+				await saveTransactionToApi({
+					safeContract: protocolDaoContract,
+					network,
+					data,
+					nonce: newNonce,
+					to: target,
+					sender: account,
+					transactionHash: txHash,
+					signature: sig,
+				});
+
+				// track lastNonce submitted
+				lastNonce = newNonce;
 			} else {
 				const tx = await web3.eth.sendTransaction({
 					from: account,
 					to: target,
-					gasPrice,
+					gasPrice: w3utils.toWei(gasPrice, 'gwei'),
 					gas: gasLimit,
 					data,
 				});
 
 				logTx(tx);
 			}
-
-			// track lastNonce submitted
-			lastNonce = newNonce;
 
 			entry.complete = true;
 			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
@@ -241,22 +269,38 @@ const owner = async ({
 			}
 
 			// continue if no pending tx found
-			await confirmOrEnd(yellow(`Confirm: Stage ${contract}.acceptOwnership() via protocolDAO?`));
+			await confirmOrEnd(yellow(`Confirm: ${contract}.acceptOwnership()?`));
 
 			if (isContract) console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
 			else console.log(yellow(`Calling acceptOwnership() on ${contract}...`));
 
 			try {
 				if (isContract) {
-					const newNonce = await createAndSaveApprovalTransaction({
+					const { txHash, newNonce } = await getNewTransactionHash({
 						safeContract: protocolDaoContract,
 						data: encodedData,
 						to: deployedContract.options.address,
 						sender: account,
-						gasLimit,
-						gasPrice,
 						network,
 						lastNonce,
+					});
+
+					// sign txHash to get signature
+					const sig = getSafeSignature({
+						signer: web3.eth.accounts.wallet[0],
+						contractTxHash: txHash,
+					});
+
+					// save transaction and signature to Gnosis Safe API
+					await saveTransactionToApi({
+						safeContract: protocolDaoContract,
+						network,
+						data: encodedData,
+						nonce: newNonce,
+						to: deployedContract.options.address,
+						sender: account,
+						transactionHash: txHash,
+						signature: sig,
 					});
 
 					// track lastNonce submitted
@@ -265,7 +309,7 @@ const owner = async ({
 					const tx = await web3.eth.sendTransaction({
 						from: account,
 						to: deployedContract.options.address,
-						gasPrice,
+						gasPrice: w3utils.toWei(gasPrice, 'gwei'),
 						gas: gasLimit,
 						data: encodedData,
 					});
@@ -307,5 +351,10 @@ module.exports = {
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+			.option(
+				'-p, --provider-url <value>',
+				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
+			)
 			.action(owner),
 };

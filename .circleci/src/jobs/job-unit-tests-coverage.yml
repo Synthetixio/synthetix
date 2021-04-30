@@ -1,8 +1,6 @@
 # Measures unit and spec test coverage
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
-resource_class: xlarge
+{{> job-header.yml}}
+resource_class: large
 steps:
   - checkout
   - attach_workspace:

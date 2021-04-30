@@ -1,4 +1,4 @@
-const { contract, web3 } = require('@nomiclabs/buidler');
+const { contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 const { setupAllContracts } = require('./setup');
 const { toWei } = web3.utils;
@@ -20,10 +20,15 @@ contract('MintableSynthetix (spec tests)', accounts => {
 				Synthetix: mintableSynthetix, // we request Synthetix instead of MintableSynthetix because it is renamed in setup.js
 				AddressResolver: addressResolver,
 				RewardsDistribution: rewardsDistribution,
-				RewardEscrow: rewardEscrow,
+				RewardEscrowV2: rewardEscrow,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['AddressResolver', 'MintableSynthetix', 'RewardsDistribution', 'RewardEscrow'],
+				contracts: [
+					'AddressResolver',
+					'MintableSynthetix',
+					'RewardsDistribution',
+					'RewardEscrowV2',
+				],
 			}));
 			// update resolver
 			await addressResolver.importAddresses(
@@ -33,8 +38,8 @@ contract('MintableSynthetix (spec tests)', accounts => {
 					from: owner,
 				}
 			);
-			// synch cache
-			await mintableSynthetix.setResolverAndSyncCache(addressResolver.address, { from: owner });
+			// sync cache
+			await mintableSynthetix.rebuildCache();
 		});
 
 		describe('mintSecondary()', async () => {
@@ -78,7 +83,7 @@ contract('MintableSynthetix (spec tests)', accounts => {
 				});
 			});
 
-			it('should tranfer the tokens initially to RewardsDistribution which  transfers them to RewardEscrow (no distributions)', async () => {
+			it('should tranfer the tokens initially to RewardsDistribution which  transfers them to RewardEscrowV2 (no distributions)', async () => {
 				assert.equal(await mintableSynthetix.balanceOf(rewardsDistribution.address), 0);
 				assert.equal(await mintableSynthetix.balanceOf(rewardEscrow.address), amount);
 			});

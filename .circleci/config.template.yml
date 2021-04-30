@@ -1,0 +1,7 @@
+version: 2.1
+commands:
+  {{> commands}}
+jobs:
+  {{> jobs}}
+workflows:
+  {{> workflows}}

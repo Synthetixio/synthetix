@@ -19,12 +19,15 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
-import "./interfaces/IRewardEscrow.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
-import "./interfaces/IDebtCache.sol";
+import "./interfaces/ICollateralManager.sol";
 
+interface IRewardEscrowV2 {
+    // Views
+    function balanceOf(address account) external view returns (uint);
+}
 
 interface IIssuerInternalDebtCache {
     function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external;
@@ -44,9 +47,8 @@ interface IIssuerInternalDebtCache {
         );
 }
 
-
 // https://docs.synthetix.io/contracts/source/contracts/issuer
-contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
+contract Issuer is Owned, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -76,84 +78,84 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
+    bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
-    bytes32 private constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYNTHETIX,
-        CONTRACT_EXCHANGER,
-        CONTRACT_EXRATES,
-        CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_FEEPOOL,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ETHERCOLLATERAL,
-        CONTRACT_ETHERCOLLATERAL_SUSD,
-        CONTRACT_REWARDESCROW,
-        CONTRACT_SYNTHETIXESCROW,
-        CONTRACT_LIQUIDATIONS,
-        CONTRACT_FLEXIBLESTORAGE,
-        CONTRACT_DEBTCACHE
-    ];
-
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](13);
+        newAddresses[0] = CONTRACT_SYNTHETIX;
+        newAddresses[1] = CONTRACT_EXCHANGER;
+        newAddresses[2] = CONTRACT_EXRATES;
+        newAddresses[3] = CONTRACT_SYNTHETIXSTATE;
+        newAddresses[4] = CONTRACT_FEEPOOL;
+        newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[6] = CONTRACT_ETHERCOLLATERAL;
+        newAddresses[7] = CONTRACT_ETHERCOLLATERAL_SUSD;
+        newAddresses[8] = CONTRACT_REWARDESCROW_V2;
+        newAddresses[9] = CONTRACT_SYNTHETIXESCROW;
+        newAddresses[10] = CONTRACT_LIQUIDATIONS;
+        newAddresses[11] = CONTRACT_DEBTCACHE;
+        newAddresses[12] = CONTRACT_COLLATERALMANAGER;
+        return combineArrays(existingAddresses, newAddresses);
+    }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function liquidations() internal view returns (ILiquidations) {
-        return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS, "Missing Liquidations address"));
+        return ILiquidations(requireAndGetAddress(CONTRACT_LIQUIDATIONS));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
-        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
     function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL, "Missing EtherCollateral address"));
+        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL));
     }
 
     function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return
-            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
+        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD));
     }
 
-    function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    function collateralManager() internal view returns (ICollateralManager) {
+        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
+    }
+
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
 
     function synthetixEscrow() internal view returns (IHasBalance) {
-        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW, "Missing SynthetixEscrow address"));
+        return IHasBalance(requireAndGetAddress(CONTRACT_SYNTHETIXESCROW));
     }
 
     function debtCache() internal view returns (IIssuerInternalDebtCache) {
-        return IIssuerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE, "Missing DebtCache address"));
+        return IIssuerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -174,7 +176,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         return currencyKeys;
     }
 
-    function _totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral)
+    function _totalIssuedSynths(bytes32 currencyKey, bool excludeCollateral)
         internal
         view
         returns (uint totalIssued, bool anyRateIsInvalid)
@@ -184,9 +186,14 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         IExchangeRates exRates = exchangeRates();
 
-        // Add total issued synths from Ether Collateral back into the total if not excluded
-        if (!excludeEtherCollateral) {
-            // Add ether collateral sUSD
+        // Add total issued synths from non snx collateral back into the total if not excluded
+        if (!excludeCollateral) {
+            // Get the sUSD equivalent amount of all the MC issued synths.
+            (uint nonSnxDebt, bool invalid) = collateralManager().totalLong();
+            debt = debt.add(nonSnxDebt);
+            anyRateIsInvalid = anyRateIsInvalid || invalid;
+
+            // Now add the ether collateral stuff as we are still supporting it.
             debt = debt.add(etherCollateralsUSD().totalIssuedSynths());
 
             // Add ether collateral sETH
@@ -228,15 +235,15 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer of 27 (1e27) decimals.
-        uint currentDebtOwnership = state
-            .lastDebtLedgerEntry()
-            .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
-            .multiplyDecimalRoundPrecise(initialDebtOwnership);
+        uint currentDebtOwnership =
+            state
+                .lastDebtLedgerEntry()
+                .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
+                .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // Their debt balance is their portion of the total system value.
-        uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(
-            currentDebtOwnership
-        );
+        uint highPrecisionBalance =
+            totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(currentDebtOwnership);
 
         // Convert back into 18 decimals (1e18)
         debtBalance = highPrecisionBalance.preciseDecimalToDecimal();
@@ -308,8 +315,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
             balance = balance.add(synthetixEscrow().balanceOf(account));
         }
 
-        if (address(rewardEscrow()) != address(0)) {
-            balance = balance.add(rewardEscrow().balanceOf(account));
+        if (address(rewardEscrowV2()) != address(0)) {
+            balance = balance.add(rewardEscrowV2().balanceOf(account));
         }
 
         return balance;
@@ -577,10 +584,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
         uint collateralForAccount = _collateral(account);
-        uint amountToFixRatio = liquidations().calculateAmountToFixCollateral(
-            debtBalance,
-            _snxToUSD(collateralForAccount, snxRate)
-        );
+        uint amountToFixRatio =
+            liquidations().calculateAmountToFixCollateral(debtBalance, _snxToUSD(collateralForAccount, snxRate));
 
         // Cap amount to liquidate to repair collateral ratio based on issuance ratio
         amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;
@@ -593,9 +598,8 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
 
         // if total SNX to redeem is greater than account's collateral
         // account is under collateralised, liquidate all collateral and reduce sUSD to burn
-        // an insurance fund will be added to cover these undercollateralised positions
         if (totalRedeemed > collateralForAccount) {
-            // set totalRedeemed to all collateral
+            // set totalRedeemed to all transferable collateral
             totalRedeemed = collateralForAccount;
 
             // whats the equivalent sUSD to burn for all collateral less penalty
@@ -608,6 +612,7 @@ contract Issuer is Owned, MixinResolver, MixinSystemSettings, IIssuer {
         // burn sUSD from messageSender (liquidator) and reduce account's debt
         _burnSynths(account, liquidator, amountToLiquidate, debtBalance, totalDebtIssued);
 
+        // Remove liquidation flag if amount liquidated fixes ratio
         if (amountToLiquidate == amountToFixRatio) {
             // Remove liquidation
             liquidations().removeAccountInLiquidation(account);

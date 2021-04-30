@@ -18,7 +18,6 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IDepot.sol";
 import "./interfaces/IExchangeRates.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/ethercollateral
 contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateral {
     using SafeMath for uint256;
@@ -101,21 +100,8 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     bytes32 private constant CONTRACT_DEPOT = "Depot";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHSETH,
-        CONTRACT_SYNTHSUSD,
-        CONTRACT_DEPOT,
-        CONTRACT_EXRATES
-    ];
-
     // ========== CONSTRUCTOR ==========
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        Pausable()
-        MixinResolver(_resolver, addressesToCache)
-    {
+    constructor(address _owner, address _resolver) public Owned(_owner) Pausable() MixinResolver(_resolver) {
         liquidationDeadline = now + 92 days; // Time before loans can be liquidated
     }
 
@@ -165,6 +151,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     }
 
     // ========== PUBLIC VIEWS ==========
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](5);
+        addresses[0] = CONTRACT_SYSTEMSTATUS;
+        addresses[1] = CONTRACT_SYNTHSETH;
+        addresses[2] = CONTRACT_SYNTHSUSD;
+        addresses[3] = CONTRACT_DEPOT;
+        addresses[4] = CONTRACT_EXRATES;
+    }
 
     function getContractInfo()
         external
@@ -313,14 +308,15 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
         loanID = _incrementTotalLoansCounter();
 
         // Create Loan storage object
-        SynthLoanStruct memory synthLoan = SynthLoanStruct({
-            account: msg.sender,
-            collateralAmount: msg.value,
-            loanAmount: loanAmount,
-            timeCreated: now,
-            loanID: loanID,
-            timeClosed: 0
-        });
+        SynthLoanStruct memory synthLoan =
+            SynthLoanStruct({
+                account: msg.sender,
+                collateralAmount: msg.value,
+                loanAmount: loanAmount,
+                timeCreated: now,
+                loanID: loanID,
+                timeClosed: 0
+            });
 
         // Record loan in mapping to account in an array of the accounts open loans
         accountsSynthLoans[msg.sender].push(synthLoan);
@@ -440,23 +436,23 @@ contract EtherCollateral is Owned, Pausable, ReentrancyGuard, MixinResolver, IEt
     /* ========== INTERNAL VIEWS ========== */
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function synthsETH() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSETH, "Missing SynthsETH address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSETH));
     }
 
     function synthsUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD, "Missing SynthsUSD address"));
+        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
     function depot() internal view returns (IDepot) {
-        return IDepot(requireAndGetAddress(CONTRACT_DEPOT, "Missing Depot address"));
+        return IDepot(requireAndGetAddress(CONTRACT_DEPOT));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates address"));
+        return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
     /* ========== MODIFIERS ========== */

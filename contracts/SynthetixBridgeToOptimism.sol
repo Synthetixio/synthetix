@@ -1,42 +1,38 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 import "./interfaces/ISynthetixBridgeToOptimism.sol";
 
 // Internal references
 import "./interfaces/ISynthetix.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IRewardEscrowV2.sol";
+import "./interfaces/ISynthetixBridgeToBase.sol";
 
 // solhint-disable indent
 import "@eth-optimism/contracts/build/contracts/iOVM/bridge/iOVM_BaseCrossDomainMessenger.sol";
 
-
-contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOptimism {
-    uint32 private constant CROSS_DOMAIN_MESSAGE_GAS_LIMIT = 3e6; //TODO: from constant to an updateable value
-
+contract SynthetixBridgeToOptimism is Owned, MixinSystemSettings, ISynthetixBridgeToOptimism {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_SYNTHETIX = "Synthetix";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
+    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_OVM_SYNTHETIXBRIDGETOBASE = "ovm:SynthetixBridgeToBase";
 
-    bytes32[24] private addressesToCache = [
-        CONTRACT_EXT_MESSENGER,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_ISSUER,
-        CONTRACT_REWARDSDISTRIBUTION,
-        CONTRACT_OVM_SYNTHETIXBRIDGETOBASE
-    ];
+    uint8 private constant MAX_ENTRIES_MIGRATED_PER_MESSAGE = 26;
 
     bool public activated;
 
     // ========== CONSTRUCTOR ==========
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {
         activated = true;
     }
 
@@ -44,41 +40,53 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
     // ========== INTERNALS ============
 
     function messenger() internal view returns (iOVM_BaseCrossDomainMessenger) {
-        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER, "Missing Messenger address"));
+        return iOVM_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function synthetixERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function rewardsDistribution() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address");
+        return requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION);
+    }
+
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
     function synthetixBridgeToBase() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_OVM_SYNTHETIXBRIDGETOBASE, "Missing Bridge address");
+        return requireAndGetAddress(CONTRACT_OVM_SYNTHETIXBRIDGETOBASE);
     }
 
     function isActive() internal view {
         require(activated, "Function deactivated");
     }
 
-    function _rewardDeposit(uint amount) internal {
-        // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDepositForRewards(uint256)", amount);
+    function hasZeroDebt() internal view {
+        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit or migrate with debt");
+    }
 
-        // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
+    /* ========== VIEWS ========== */
 
-        emit RewardDeposit(msg.sender, amount);
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](6);
+        newAddresses[0] = CONTRACT_EXT_MESSENGER;
+        newAddresses[1] = CONTRACT_SYNTHETIX;
+        newAddresses[2] = CONTRACT_ISSUER;
+        newAddresses[3] = CONTRACT_REWARDSDISTRIBUTION;
+        newAddresses[4] = CONTRACT_OVM_SYNTHETIXBRIDGETOBASE;
+        newAddresses[5] = CONTRACT_REWARDESCROW;
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     // ========== MODIFIERS ============
@@ -88,39 +96,33 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         _;
     }
 
+    modifier requireZeroDebt() {
+        hasZeroDebt();
+        _;
+    }
+
     // ========== PUBLIC FUNCTIONS =========
 
-    // invoked by user on L1
-    function deposit(uint amount) external requireActive {
-        require(issuer().debtBalanceOf(msg.sender, "sUSD") == 0, "Cannot deposit with debt");
+    function initiateDeposit(uint256 depositAmount) external requireActive requireZeroDebt {
+        _initiateDeposit(depositAmount);
+    }
 
-        // now remove their reward escrow
-        // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
-        // uint escrowSummary = rewardEscrow().burnForMigration(msg.sender);
-
-        // move the SNX into this contract
-        synthetixERC20().transferFrom(msg.sender, address(this), amount);
-
-        // create message payload for L2
-        bytes memory messageData = abi.encodeWithSignature("mintSecondaryFromDeposit(address,uint256)", msg.sender, amount);
-
-        // relay the message to this contract on L2 via L1 Messenger
-        messenger().sendMessage(synthetixBridgeToBase(), messageData, CROSS_DOMAIN_MESSAGE_GAS_LIMIT);
-
-        emit Deposit(msg.sender, amount);
+    function initiateEscrowMigration(uint256[][] memory entryIDs) public requireActive requireZeroDebt {
+        _initiateEscrowMigration(entryIDs);
     }
 
     // invoked by a generous user on L1
-    function rewardDeposit(uint amount) external requireActive {
+    function initiateRewardDeposit(uint amount) external requireActive {
         // move the SNX into this contract
         synthetixERC20().transferFrom(msg.sender, address(this), amount);
-        _rewardDeposit(amount);
+
+        _initiateRewardDeposit(amount);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger on L1 after L2 waiting period elapses
-    function completeWithdrawal(address account, uint amount) external requireActive {
+    function completeWithdrawal(address account, uint256 amount) external requireActive {
         // ensure function only callable from L2 Bridge via messenger (aka relayer)
         require(msg.sender == address(messenger()), "Only the relayer can call this");
         require(messenger().xDomainMessageSender() == synthetixBridgeToBase(), "Only the L2 bridge can invoke");
@@ -139,7 +141,7 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
 
         IERC20 ERC20Synthetix = synthetixERC20();
         // get the current contract balance and transfer it to the new SynthetixL1ToL2Bridge contract
-        uint contractBalance = ERC20Synthetix.balanceOf(address(this));
+        uint256 contractBalance = ERC20Synthetix.balanceOf(address(this));
         ERC20Synthetix.transfer(newBridge, contractBalance);
 
         emit BridgeMigrated(address(this), newBridge, contractBalance);
@@ -150,13 +152,98 @@ contract SynthetixBridgeToOptimism is Owned, MixinResolver, ISynthetixBridgeToOp
         require(msg.sender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
         // to be here means I've been given an amount of SNX to distribute onto L2
-        _rewardDeposit(amount);
+        _initiateRewardDeposit(amount);
+    }
+
+    function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] memory entryIDs)
+        public
+        requireActive
+        requireZeroDebt
+    {
+        if (entryIDs.length > 0) {
+            _initiateEscrowMigration(entryIDs);
+        }
+
+        if (depositAmount > 0) {
+            _initiateDeposit(depositAmount);
+        }
+    }
+
+    // ========== PRIVATE/INTERNAL FUNCTIONS =========
+
+    function _initiateRewardDeposit(uint256 _amount) internal {
+        // create message payload for L2
+        ISynthetixBridgeToBase bridgeToBase;
+        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.completeRewardDeposit.selector, _amount);
+
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(
+            synthetixBridgeToBase(),
+            messageData,
+            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Reward))
+        );
+
+        emit RewardDeposit(msg.sender, _amount);
+    }
+
+    function _initiateDeposit(uint256 _depositAmount) private {
+        // Transfer SNX to L2
+        // First, move the SNX into this contract
+        synthetixERC20().transferFrom(msg.sender, address(this), _depositAmount);
+        // create message payload for L2
+        ISynthetixBridgeToBase bridgeToBase;
+        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.completeDeposit.selector, msg.sender, _depositAmount);
+
+        // relay the message to this contract on L2 via L1 Messenger
+        messenger().sendMessage(
+            synthetixBridgeToBase(),
+            messageData,
+            uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Deposit))
+        );
+        emit Deposit(msg.sender, _depositAmount);
+    }
+
+    function _initiateEscrowMigration(uint256[][] memory _entryIDs) private {
+        // loop through the entryID array
+        for (uint256 i = 0; i < _entryIDs.length; i++) {
+            // Cannot send more than MAX_ENTRIES_MIGRATED_PER_MESSAGE entries due to ovm gas restrictions
+            require(_entryIDs[i].length <= MAX_ENTRIES_MIGRATED_PER_MESSAGE, "Exceeds max entries per migration");
+            // Burn their reward escrow first
+            // Note: escrowSummary would lose the fidelity of the weekly escrows, so this may not be sufficient
+            uint256 escrowedAccountBalance;
+            VestingEntries.VestingEntry[] memory vestingEntries;
+            (escrowedAccountBalance, vestingEntries) = rewardEscrowV2().burnForMigration(msg.sender, _entryIDs[i]);
+            // if there is an escrow amount to be migrated
+            if (escrowedAccountBalance > 0) {
+                // create message payload for L2
+                ISynthetixBridgeToBase bridgeToBase;
+                bytes memory messageData =
+                    abi.encodeWithSelector(
+                        bridgeToBase.completeEscrowMigration.selector,
+                        msg.sender,
+                        escrowedAccountBalance,
+                        vestingEntries
+                    );
+                // relay the message to this contract on L2 via L1 Messenger
+                messenger().sendMessage(
+                    synthetixBridgeToBase(),
+                    messageData,
+                    uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Escrow))
+                );
+                emit ExportedVestingEntries(msg.sender, escrowedAccountBalance, vestingEntries);
+            }
+        }
     }
 
     // ========== EVENTS ==========
 
-    event BridgeMigrated(address oldBridge, address newBridge, uint amount);
-    event Deposit(address indexed account, uint amount);
-    event RewardDeposit(address indexed account, uint amount);
-    event WithdrawalCompleted(address indexed account, uint amount);
+    event BridgeMigrated(address oldBridge, address newBridge, uint256 amount);
+    event Deposit(address indexed account, uint256 amount);
+    event ExportedVestingEntries(
+        address indexed account,
+        uint256 escrowedAccountBalance,
+        VestingEntries.VestingEntry[] vestingEntries
+    );
+    event RewardDeposit(address indexed account, uint256 amount);
+    event WithdrawalCompleted(address indexed account, uint256 amount);
 }

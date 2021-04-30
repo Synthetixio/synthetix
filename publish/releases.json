@@ -70,7 +70,160 @@
 		"name": "Adhara",
 		"version": {
 			"major": 2,
-			"minor": 33
+			"minor": 34
+		},
+		"sources": ["Exchanger"],
+		"sips": [98, 99]
+	},
+	{
+		"name": "Shaula",
+		"version": {
+			"major": 2,
+			"minor": 35
+		},
+		"sources": [
+			"AddressResolver",
+			"BinaryOptionMarketFactory",
+			"BinaryOptionMarketManager",
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralManager",
+			"CollateralManagerState",
+			"CollateralStateErc20",
+			"CollateralStateEth",
+			"CollateralStateShort",
+			"CollateralShort",
+			"DebtCache",
+			"ExchangeRates",
+			"Exchanger",
+			"FeePool",
+			"Issuer",
+			"Liquidations",
+			"RewardEscrowV2",
+			"SystemSettings",
+			"Synthetix",
+			"TradingRewards",
+			"Synth(s|i).+"
+		],
+		"sips": [97, 100, 103]
+	},
+	{
+		"name": "Castor",
+		"version": {
+			"major": 2,
+			"minor": 36
+		},
+		"sources": [
+			"CollateralErc20",
+			"CollateralEth",
+			"CollateralStateErc20",
+			"CollateralStateEth",
+			"CollateralStateShort",
+			"CollateralShort",
+			"FeePool",
+			"Issuer",
+			"RewardEscrowV2",
+			"Synthetix",
+			"SynthetixBridgeToOptimism",
+			"SystemSettings"
+		],
+		"sips": [60, 102, 105]
+	},
+	{
+		"name": "Gacrux",
+		"version": {
+			"major": 2,
+			"minor": 37
+		},
+		"ovm": true,
+		"sources": ["FeePool", "FeePoolState", "SynthetixState"],
+		"sips": [106]
+	},
+	{
+		"name": "Bellatrix",
+		"version": {
+			"major": 2,
+			"minor": 38
+		},
+		"sources": ["Synthetix", "SystemStatus"],
+		"sips": [109]
+	},
+	{
+		"name": "Elnath",
+		"version": {
+			"major": 2,
+			"minor": 39
+		},
+		"sources": [],
+		"sips": [110]
+	},
+	{
+		"name": "L2 Phase 1 OVM (Kovan)",
+		"version": {
+			"major": 2,
+			"minor": 40
+		},
+		"ovm": true,
+		"sources": ["Synthetix", "Exchanger", "SystemStatus"],
+		"sips": [109, 117, 118]
+	},
+	{
+		"name": "Miaplacidus",
+		"version": {
+			"major": 2,
+			"minor": 41
+		},
+		"sources": [],
+		"sips": [113]
+	},
+	{
+		"name": "Alnilam",
+		"version": {
+			"major": 2,
+			"minor": 42
+		},
+		"sources": ["Exchanger", "VirtualSynthMastercopy"],
+		"sips": [107, 114, 126, 127]
+	},
+	{
+		"name": "Regora",
+		"version": {
+			"major": 2,
+			"minor": 43
+		},
+		"sources": [],
+		"sips": [115, 128]
+	},
+	{
+		"name": "Alnair",
+		"version": {
+			"major": 2,
+			"minor": 44
+		},
+		"sources": ["SynthetixBridgeToOptimism", "SynthetixBridgeEscrow"],
+		"sips": [116]
+	},
+	{
+		"name": "Alnair (Optimism)",
+		"version": {
+			"major": 2,
+			"minor": 44
+		},
+		"ovm": true,
+		"sources": [
+			"SynthetixBridgeToBase",
+			"Synthetix",
+			"Exchanger",
+			"DebtCache",
+			"SystemStatus"
+		],
+		"sips": [116, 117, 118]
+	},
+	{
+		"name": "Alioth",
+		"version": {
+			"major": 2,
+			"minor": 45
 		},
 		"sources": [
 			"FuturesMarketBTC",

@@ -21,14 +21,14 @@ import "./FeePoolEternalStorage.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixState.sol";
-import "./interfaces/IRewardEscrow.sol";
+import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
-
+import "./interfaces/ICollateralManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/feepool
-contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSettings, IFeePool {
+contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePool {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -68,24 +68,11 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
+    bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
-
-    bytes32[24] private addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_SYNTHETIX,
-        CONTRACT_FEEPOOLSTATE,
-        CONTRACT_FEEPOOLETERNALSTORAGE,
-        CONTRACT_EXCHANGER,
-        CONTRACT_ISSUER,
-        CONTRACT_SYNTHETIXSTATE,
-        CONTRACT_REWARDESCROW,
-        CONTRACT_DELEGATEAPPROVALS,
-        CONTRACT_ETH_COLLATERAL_SUSD,
-        CONTRACT_REWARDSDISTRIBUTION
-    ];
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
@@ -95,68 +82,77 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         address payable _proxy,
         address _owner,
         address _resolver
-    )
-        public
-        Owned(_owner)
-        Proxyable(_proxy)
-        LimitedSetup(3 weeks)
-        MixinResolver(_resolver, addressesToCache)
-        MixinSystemSettings()
-    {
+    ) public Owned(_owner) Proxyable(_proxy) LimitedSetup(3 weeks) MixinSystemSettings(_resolver) {
         // Set our initial fee period
         _recentFeePeriodsStorage(0).feePeriodId = 1;
         _recentFeePeriodsStorage(0).startTime = uint64(now);
     }
 
     /* ========== VIEWS ========== */
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](12);
+        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[1] = CONTRACT_SYNTHETIX;
+        newAddresses[2] = CONTRACT_FEEPOOLSTATE;
+        newAddresses[3] = CONTRACT_FEEPOOLETERNALSTORAGE;
+        newAddresses[4] = CONTRACT_EXCHANGER;
+        newAddresses[5] = CONTRACT_ISSUER;
+        newAddresses[6] = CONTRACT_SYNTHETIXSTATE;
+        newAddresses[7] = CONTRACT_REWARDESCROW_V2;
+        newAddresses[8] = CONTRACT_DELEGATEAPPROVALS;
+        newAddresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
+        newAddresses[10] = CONTRACT_REWARDSDISTRIBUTION;
+        newAddresses[11] = CONTRACT_COLLATERALMANAGER;
+        addresses = combineArrays(existingAddresses, newAddresses);
+    }
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function synthetix() internal view returns (ISynthetix) {
-        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX, "Missing Synthetix address"));
+        return ISynthetix(requireAndGetAddress(CONTRACT_SYNTHETIX));
     }
 
     function feePoolState() internal view returns (FeePoolState) {
-        return FeePoolState(requireAndGetAddress(CONTRACT_FEEPOOLSTATE, "Missing FeePoolState address"));
+        return FeePoolState(requireAndGetAddress(CONTRACT_FEEPOOLSTATE));
     }
 
     function feePoolEternalStorage() internal view returns (FeePoolEternalStorage) {
-        return
-            FeePoolEternalStorage(
-                requireAndGetAddress(CONTRACT_FEEPOOLETERNALSTORAGE, "Missing FeePoolEternalStorage address")
-            );
+        return FeePoolEternalStorage(requireAndGetAddress(CONTRACT_FEEPOOLETERNALSTORAGE));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return
-            IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD, "Missing EtherCollateralsUSD address"));
+        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD));
+    }
+
+    function collateralManager() internal view returns (ICollateralManager) {
+        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function synthetixState() internal view returns (ISynthetixState) {
-        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE, "Missing SynthetixState address"));
+        return ISynthetixState(requireAndGetAddress(CONTRACT_SYNTHETIXSTATE));
     }
 
-    function rewardEscrow() internal view returns (IRewardEscrow) {
-        return IRewardEscrow(requireAndGetAddress(CONTRACT_REWARDESCROW, "Missing RewardEscrow address"));
+    function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
+        return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW_V2));
     }
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
-        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS, "Missing DelegateApprovals address"));
+        return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
     }
 
     function rewardsDistribution() internal view returns (IRewardsDistribution) {
-        return
-            IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION, "Missing RewardsDistribution address"));
+        return IRewardsDistribution(requireAndGetAddress(CONTRACT_REWARDSDISTRIBUTION));
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -214,7 +210,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         address account,
         uint debtRatio,
         uint debtEntryIndex
-    ) external onlyIssuer {
+    ) external onlyIssuerAndSynthetixState {
         feePoolState().appendAccountIssuanceRecord(
             account,
             debtRatio,
@@ -376,19 +372,6 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
     }
 
     /**
-     * @notice Owner can escrow SNX. Owner to send the tokens to the RewardEscrow
-     * @param account Address to escrow tokens for
-     * @param quantity Amount of tokens to escrow
-     */
-    function appendVestingEntry(address account, uint quantity) public optionalProxy_onlyOwner {
-        // Transfer SNX from messageSender to the Reward Escrow
-        IERC20(address(synthetix())).transferFrom(messageSender, address(rewardEscrow()), quantity);
-
-        // Create Vesting Entry
-        rewardEscrow().appendVestingEntry(account, quantity);
-    }
-
-    /**
      * @notice Record the fee payment in our recentFeePeriods.
      * @param sUSDAmount The amount of fees priced in sUSD.
      */
@@ -440,9 +423,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         // until we've exhausted the amount.
         // The condition checks for overflow because we're going to 0 with an unsigned int.
         for (uint i = FEE_PERIOD_LENGTH - 1; i < FEE_PERIOD_LENGTH; i--) {
-            uint toDistribute = _recentFeePeriodsStorage(i).rewardsToDistribute.sub(
-                _recentFeePeriodsStorage(i).rewardsClaimed
-            );
+            uint toDistribute =
+                _recentFeePeriodsStorage(i).rewardsToDistribute.sub(_recentFeePeriodsStorage(i).rewardsClaimed);
 
             if (toDistribute > 0) {
                 // Take the smaller of the amount left to claim in the period and the amount we need to allocate
@@ -492,9 +474,12 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
      * @param snxAmount The amount of SNX.
      */
     function _payRewards(address account, uint snxAmount) internal notFeeAddress(account) {
+        /* Escrow the tokens for 1 year. */
+        uint escrowDuration = 52 weeks;
+
         // Record vesting entry for claiming address and amount
         // SNX already minted to rewardEscrow balance
-        rewardEscrow().appendVestingEntry(account, snxAmount);
+        rewardEscrowV2().appendVestingEntry(account, snxAmount, escrowDuration);
     }
 
     /**
@@ -662,9 +647,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         // This is a high precision integer.
         uint feesFromPeriod = _recentFeePeriodsStorage(period).feesToDistribute.multiplyDecimal(debtOwnershipForPeriod);
 
-        uint rewardsFromPeriod = _recentFeePeriodsStorage(period).rewardsToDistribute.multiplyDecimal(
-            debtOwnershipForPeriod
-        );
+        uint rewardsFromPeriod =
+            _recentFeePeriodsStorage(period).rewardsToDistribute.multiplyDecimal(debtOwnershipForPeriod);
 
         return (feesFromPeriod.preciseDecimalToDecimal(), rewardsFromPeriod.preciseDecimalToDecimal());
     }
@@ -677,10 +661,11 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         // Figure out their global debt percentage delta at end of fee Period.
         // This is a high precision integer.
         ISynthetixState _synthetixState = synthetixState();
-        uint feePeriodDebtOwnership = _synthetixState
-            .debtLedger(closingDebtIndex)
-            .divideDecimalRoundPrecise(_synthetixState.debtLedger(debtEntryIndex))
-            .multiplyDecimalRoundPrecise(ownershipPercentage);
+        uint feePeriodDebtOwnership =
+            _synthetixState
+                .debtLedger(closingDebtIndex)
+                .divideDecimalRoundPrecise(_synthetixState.debtLedger(debtEntryIndex))
+                .multiplyDecimalRoundPrecise(ownershipPercentage);
 
         return feePeriodDebtOwnership;
     }
@@ -735,13 +720,16 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
         bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
+        bool isCollateral = collateralManager().hasCollateral(msg.sender);
 
-        require(isExchanger || isSynth || isEtherCollateralsUSD, "Only Internal Contracts");
+        require(isExchanger || isSynth || isEtherCollateralsUSD || isCollateral, "Only Internal Contracts");
         _;
     }
 
-    modifier onlyIssuer {
-        require(msg.sender == address(issuer()), "FeePool: Only Issuer Authorised");
+    modifier onlyIssuerAndSynthetixState {
+        bool isIssuer = msg.sender == address(issuer());
+        bool isSynthetixState = msg.sender == address(synthetixState());
+        require(isIssuer || isSynthetixState, "Issuer and SynthetixState only");
         _;
     }
 
@@ -763,9 +751,8 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinResolver, MixinSystemSe
         uint debtEntryIndex,
         uint feePeriodStartingDebtIndex
     );
-    bytes32 private constant ISSUANCEDEBTRATIOENTRY_SIG = keccak256(
-        "IssuanceDebtRatioEntry(address,uint256,uint256,uint256)"
-    );
+    bytes32 private constant ISSUANCEDEBTRATIOENTRY_SIG =
+        keccak256("IssuanceDebtRatioEntry(address,uint256,uint256,uint256)");
 
     function emitIssuanceDebtRatioEntry(
         address account,

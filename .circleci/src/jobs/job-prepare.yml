@@ -1,15 +1,15 @@
 # Bootstraps dependencies
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
+# set custom delimiter to avoid checksum parsing
+{{=<% %>=}}
 steps:
   - checkout
   - restore_cache:
       keys:
-        - 'v2-dependencies-{{ checksum "package-lock.json" }}'
+        - v4-dependencies-{{ checksum "package-lock.json" }}
   - run: npm install
   - save_cache:
-      key: 'v2-dependencies-{{ checksum "package-lock.json" }}'
+      key: v4-dependencies-{{ checksum "package-lock.json" }}
       paths:
         - node_modules
   - persist_to_workspace:

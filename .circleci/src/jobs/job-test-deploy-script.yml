@@ -1,7 +1,5 @@
 # Validates that the deploy command is working as expected
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
 resource_class: large
 steps:
   - checkout

@@ -1,6 +1,5 @@
 # Runs all static analysis checks
-docker:
-  - image: trailofbits/eth-security-toolbox
+{{> job-header.yml}}
 steps:
   - checkout
   - attach_workspace:

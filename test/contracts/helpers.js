@@ -1,4 +1,4 @@
-const { artifacts, web3 } = require('@nomiclabs/buidler');
+const { artifacts, web3 } = require('hardhat');
 
 const abiDecoder = require('abi-decoder');
 const { smockit } = require('@eth-optimism/smock');
@@ -60,11 +60,23 @@ module.exports = {
 		}
 	},
 
+	buildMinimalProxyCode(baseAddress, { includePrefix = true } = {}) {
+		// See EIP-1167: https://eips.ethereum.org/EIPS/eip-1167#specification
+		// Assumes the non-optimized version of the proxy
+		const sanitizedBaseAddress = baseAddress.replace(/^0x/, '').toLowerCase();
+		const code = `363d3d373d3d3d363d73${sanitizedBaseAddress}5af43d82803e903d91602b57fd5bf3`;
+		return includePrefix ? `0x${code}` : code;
+	},
+
 	timeIsClose({ actual, expected, variance = 1 }) {
 		assert.ok(
 			Math.abs(Number(actual) - Number(expected)) <= variance,
 			`Time is not within variance of ${variance}. Actual: ${Number(actual)}, Expected: ${expected}`
 		);
+	},
+
+	trimUtf8EscapeChars(input) {
+		return web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
 	},
 
 	async updateRatesWithDefaults({ exchangeRates, oracle, debtCache }) {
@@ -119,7 +131,7 @@ module.exports = {
 			from: owner,
 		});
 		// now have the synth resync its cache
-		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await synthContract.rebuildCache();
 
 		await synthContract.issue(user, amount, {
 			from: owner,
@@ -129,7 +141,7 @@ module.exports = {
 		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [issuer.address], {
 			from: owner,
 		});
-		await synthContract.setResolverAndSyncCache(addressResolver.address, { from: owner });
+		await synthContract.rebuildCache();
 	},
 
 	async setExchangeWaitingPeriod({ owner, systemSettings, secs }) {
@@ -156,27 +168,33 @@ module.exports = {
 		expected = [],
 		ignoreParents = [],
 	}) {
-		const removeSignatureProp = abiEntry => {
+		const removeExcessParams = abiEntry => {
 			// Clone to not mutate anything processed by truffle
 			const clone = JSON.parse(JSON.stringify(abiEntry));
 			// remove the signature in the cases where it's in the parent ABI but not the subclass
 			delete clone.signature;
+			// remove input and output named params
+			(clone.inputs || []).map(input => {
+				delete input.name;
+				return input;
+			});
+			(clone.outputs || []).map(input => {
+				delete input.name;
+				return input;
+			});
 			return clone;
 		};
 
 		const combinedParentsABI = ignoreParents
-			.reduce(
-				(memo, parent) => memo.concat(artifacts.require(parent, { ignoreLegacy: true }).abi),
-				[]
-			)
-			.map(removeSignatureProp);
+			.reduce((memo, parent) => memo.concat(artifacts.require(parent).abi), [])
+			.map(removeExcessParams);
 
 		const fncs = abi
 			.filter(
 				({ type, stateMutability }) =>
 					type === 'function' && stateMutability !== 'view' && stateMutability !== 'pure'
 			)
-			.map(removeSignatureProp)
+			.map(removeExcessParams)
 			.filter(
 				entry =>
 					!combinedParentsABI.find(
@@ -226,6 +244,12 @@ module.exports = {
 			} else {
 				await systemStatus.resumeExchange({ from: owner });
 			}
+		} else if (section === 'SynthExchange') {
+			if (suspend) {
+				await systemStatus.suspendSynthExchange(synth, reason, { from: owner });
+			} else {
+				await systemStatus.resumeSynthExchange(synth, { from: owner });
+			}
 		} else if (section === 'Synth') {
 			if (suspend) {
 				await systemStatus.suspendSynth(synth, reason, { from: owner });
@@ -237,8 +261,7 @@ module.exports = {
 		}
 	},
 
-	async prepareSmocks({ contracts, accounts = [] }) {
-		const mocks = {};
+	async prepareSmocks({ accounts = [], contracts, mocks = {} }) {
 		for (const [i, contract] of Object.entries(contracts).concat([
 			[contracts.length, 'AddressResolver'],
 		])) {
@@ -255,5 +278,9 @@ module.exports = {
 		resolver.smocked.getAddress.will.return.with(returnMockFromResolver);
 
 		return { mocks, resolver };
+	},
+
+	getEventByName({ tx, name }) {
+		return tx.logs.find(({ event }) => event === name);
 	},
 };

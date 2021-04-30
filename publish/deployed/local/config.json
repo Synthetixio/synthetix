@@ -2,6 +2,9 @@
 	"SystemSettings": {
 		"deploy": true
 	},
+	"SynthetixBridgeToOptimism": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},
@@ -15,6 +18,30 @@
 		"deploy": true
 	},
 	"BinaryOptionMarketData": {
+		"deploy": true
+	},
+	"CollateralManager": {
+		"deploy": true
+	},
+	"CollateralManagerState": {
+		"deploy": true
+	},
+	"CollateralEth": {
+		"deploy": true
+	},
+	"CollateralErc20": {
+		"deploy": true
+	},
+	"CollateralShort": {
+		"deploy": true
+	},
+	"CollateralStateErc20": {
+		"deploy": true
+	},
+	"CollateralStateEth": {
+		"deploy": true
+	},
+	"CollateralStateShort": {
 		"deploy": true
 	},
 	"DebtCache": {
@@ -33,6 +60,9 @@
 		"deploy": true
 	},
 	"Exchanger": {
+		"deploy": true
+	},
+	"VirtualSynthMastercopy": {
 		"deploy": true
 	},
 	"ExchangeState": {
@@ -81,6 +111,9 @@
 		"deploy": true
 	},
 	"RewardEscrow": {
+		"deploy": true
+	},
+	"RewardEscrowV2": {
 		"deploy": true
 	},
 	"RewardsDistribution": {
@@ -414,6 +447,9 @@
 		"deploy": true
 	},
 	"SynthsNIKKEI": {
+		"deploy": true
+	},
+	"MockToken": {
 		"deploy": true
 	}
 }

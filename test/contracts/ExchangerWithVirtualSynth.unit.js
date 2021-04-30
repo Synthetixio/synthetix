@@ -1,22 +1,31 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert } = require('./common');
 
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const {
+	onlyGivenAddressCanInvoke,
+	ensureOnlyExpectedMutativeFunctions,
+	getEventByName,
+	buildMinimalProxyCode,
+} = require('./helpers');
 
 const { toBytes32 } = require('../..');
 
-const ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+let ExchangerWithVirtualSynth;
 
 contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 	const [, owner] = accounts;
 
+	before(async () => {
+		ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+	});
+
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: ExchangerWithVirtualSynth.abi,
-			ignoreParents: ['MixinResolver'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'exchange',
 				'exchangeOnBehalf',
@@ -30,7 +39,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 		});
 	});
 
-	describe('when a contract is instantiated @cov-skip', () => {
+	describe('when a contract is instantiated', () => {
 		// ensure all of the behaviors are bound to "this" for sharing test state
 		const behaviors = require('./ExchangerWithVirtualSynth.behaviors').call(this, { accounts });
 
@@ -69,7 +78,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 										() => {
 											behaviors.whenMockedEffectiveRateAsEqual(() => {
 												behaviors.whenMockedLastNRates(() => {
-													behaviors.whenMockedASynthToIssueAmdBurn(() => {
+													behaviors.whenMockedASynthToIssueAndBurn(() => {
 														behaviors.whenMockedExchangeStatePersistance(() => {
 															it('it reverts trying to create a virtual synth with no supply', async () => {
 																await assert.revert(
@@ -119,7 +128,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 								() => {
 									behaviors.whenMockedEffectiveRateAsEqual(() => {
 										behaviors.whenMockedLastNRates(() => {
-											behaviors.whenMockedASynthToIssueAmdBurn(() => {
+											behaviors.whenMockedASynthToIssueAndBurn(() => {
 												behaviors.whenMockedExchangeStatePersistance(() => {
 													describe('when invoked', () => {
 														let txn;
@@ -143,13 +152,14 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																recipient: owner,
 															});
 														});
-														describe('when interrogating the Virtual Synths construction params', () => {
+														describe('when interrogating the Virtual Synths', () => {
 															let vSynth;
 															beforeEach(async () => {
-																const { vSynth: vSynthAddress } = txn.logs.find(
-																	({ event }) => event === 'VirtualSynthCreated'
-																).args;
-																vSynth = await artifacts.require('VirtualSynth').at(vSynthAddress);
+																const VirtualSynth = artifacts.require('VirtualSynth');
+																vSynth = await VirtualSynth.at(
+																	getEventByName({ tx: txn, name: 'VirtualSynthCreated' }).args
+																		.vSynth
+																);
 															});
 															it('the vSynth has the correct synth', async () => {
 																assert.equal(
@@ -170,6 +180,13 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 																	vSynth.address
 																);
 																assert.equal(this.mocks.synth.smocked.issue.calls[0][1], amount);
+															});
+															it('the vSynth is an ERC-1167 minimal proxy instead of a full Virtual Synth', async () => {
+																const vSynthCode = await web3.eth.getCode(vSynth.address);
+																assert.equal(
+																	vSynthCode,
+																	buildMinimalProxyCode(this.mocks.VirtualSynthMastercopy.address)
+																);
 															});
 														});
 													});

@@ -1,13 +1,15 @@
 'use strict';
 
-const { contract } = require('@nomiclabs/buidler');
+const { contract } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_BYTES32 },
+} = require('../..');
 const { toUnit, currentTime } = require('../utils')();
 const { setExchangeFeeRateForSynths } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
-const ZERO_BYTES32 = '0x' + '0'.repeat(64);
 
 contract('SynthUtil', accounts => {
 	const [, ownerAccount, oracle, account2] = accounts;
@@ -39,6 +41,8 @@ contract('SynthUtil', accounts => {
 				'SystemSettings',
 				'DebtCache',
 				'Issuer',
+				'CollateralManager',
+				'RewardEscrowV2', // required for issuer._collateral to read collateral
 			],
 		}));
 	});

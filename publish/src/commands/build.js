@@ -33,12 +33,18 @@ const build = async ({
 	showWarnings,
 	showContractSize,
 	useOvm,
+	cleanBuild,
 } = {}) => {
 	console.log(gray(`Starting build${useOvm ? ' using OVM' : ''}...`));
+
+	if (cleanBuild && fs.existsSync(buildPath)) {
+		fs.rmdirSync(buildPath, { recursive: true });
+	}
 
 	if (!fs.existsSync(buildPath)) {
 		fs.mkdirSync(buildPath);
 	}
+
 	// Flatten all the contracts.
 	// Start with the libraries, then copy our own contracts on top to ensure
 	// if there's a naming clash our code wins.
@@ -123,7 +129,7 @@ const build = async ({
 		if (prevSizeIfAny) {
 			previousSizes.push(prevSizeIfAny);
 		}
-		let runs = optimizerRuns; // default
+		let runs = parseInt(optimizerRuns); // default, use ParseInt: runs setting must be an unsigned number.
 		if (typeof overrides[contract] === 'object') {
 			runs = overrides[contract].runs;
 		}
@@ -216,6 +222,7 @@ module.exports = {
 			.command('build')
 			.description('Build (flatten and compile) solidity files')
 			.option('-b, --build-path <value>', 'Build path for built files', DEFAULTS.buildPath)
+			.option('-c, --clean-build', 'Delete previously existing files', false)
 			.option(
 				'-k, --skip-unchanged',
 				'Skip any contracts that seem as though they have not changed (infers from flattened file and does not strictly check bytecode. ⚠⚠⚠ DO NOT USE FOR PRODUCTION BUILDS.'

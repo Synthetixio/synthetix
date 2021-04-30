@@ -2,10 +2,11 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-
 import "./interfaces/IAddressResolver.sol";
-import "./interfaces/IIssuer.sol";
 
+// Internal references
+import "./interfaces/IIssuer.sol";
+import "./MixinResolver.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/addressresolver
 contract AddressResolver is Owned, IAddressResolver {
@@ -13,17 +14,37 @@ contract AddressResolver is Owned, IAddressResolver {
 
     constructor(address _owner) public Owned(_owner) {}
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    /* ========== RESTRICTED FUNCTIONS ========== */
 
     function importAddresses(bytes32[] calldata names, address[] calldata destinations) external onlyOwner {
         require(names.length == destinations.length, "Input lengths must match");
 
         for (uint i = 0; i < names.length; i++) {
-            repository[names[i]] = destinations[i];
+            bytes32 name = names[i];
+            address destination = destinations[i];
+            repository[name] = destination;
+            emit AddressImported(name, destination);
+        }
+    }
+
+    /* ========= PUBLIC FUNCTIONS ========== */
+
+    function rebuildCaches(MixinResolver[] calldata destinations) external {
+        for (uint i = 0; i < destinations.length; i++) {
+            destinations[i].rebuildCache();
         }
     }
 
     /* ========== VIEWS ========== */
+
+    function areAddressesImported(bytes32[] calldata names, address[] calldata destinations) external view returns (bool) {
+        for (uint i = 0; i < names.length; i++) {
+            if (repository[names[i]] != destinations[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     function getAddress(bytes32 name) external view returns (address) {
         return repository[name];
@@ -40,4 +61,8 @@ contract AddressResolver is Owned, IAddressResolver {
         require(address(issuer) != address(0), "Cannot find Issuer address");
         return address(issuer.synths(key));
     }
+
+    /* ========== EVENTS ========== */
+
+    event AddressImported(bytes32 name, address destination);
 }

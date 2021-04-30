@@ -1,7 +1,5 @@
 # Validates deployment json data against on-chain data
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
 steps:
   - checkout
   - attach_workspace:

@@ -3,7 +3,6 @@ pragma solidity >=0.4.24;
 import "./ISynth.sol";
 import "./IVirtualSynth.sol";
 
-
 // https://docs.synthetix.io/contracts/source/interfaces/isynthetix
 interface ISynthetix {
     // Views
@@ -108,6 +107,7 @@ interface ISynthetix {
             uint numEntries
         );
 
+    // Liquidations
     function liquidateDelinquentAccount(address account, uint susdAmount) external returns (bool);
 
     // Restricted Functions

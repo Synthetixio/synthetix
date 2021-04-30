@@ -3,10 +3,18 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Synth.sol";
 
+// Internal references
+import "./interfaces/ICollateralManager.sol";
+import "./interfaces/IEtherCollateralsUSD.sol";
+import "./interfaces/IEtherCollateral.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
 contract MultiCollateralSynth is Synth {
-    bytes32 public multiCollateralKey;
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
+    bytes32 private constant CONTRACT_ETH_COLLATERAL = "EtherCollateral";
+    bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -18,18 +26,30 @@ contract MultiCollateralSynth is Synth {
         address _owner,
         bytes32 _currencyKey,
         uint _totalSupply,
-        address _resolver,
-        bytes32 _multiCollateralKey
-    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {
-        multiCollateralKey = _multiCollateralKey;
-
-        appendToAddressCache(multiCollateralKey);
-    }
+        address _resolver
+    ) public Synth(_proxy, _tokenState, _tokenName, _tokenSymbol, _owner, _currencyKey, _totalSupply, _resolver) {}
 
     /* ========== VIEWS ======================= */
 
-    function multiCollateral() internal view returns (address) {
-        return requireAndGetAddress(multiCollateralKey, "Resolver is missing multiCollateral address");
+    function collateralManager() internal view returns (ICollateralManager) {
+        return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
+    }
+
+    function etherCollateral() internal view returns (IEtherCollateral) {
+        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETH_COLLATERAL));
+    }
+
+    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
+        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD));
+    }
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](3);
+        newAddresses[0] = CONTRACT_COLLATERALMANAGER;
+        newAddresses[1] = CONTRACT_ETH_COLLATERAL;
+        newAddresses[2] = CONTRACT_ETH_COLLATERAL_SUSD;
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */

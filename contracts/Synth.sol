@@ -13,7 +13,6 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/synth
 contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== STATE VARIABLES ========== */
@@ -34,14 +33,6 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
 
-    bytes32[24] internal addressesToCache = [
-        CONTRACT_SYSTEMSTATUS,
-        CONTRACT_EXCHANGER,
-        CONTRACT_ISSUER,
-        CONTRACT_FEEPOOL,
-        CONTRACT_FUTURESMARKETMANAGER
-    ];
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -56,7 +47,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     )
         public
         ExternStateToken(_proxy, _tokenState, _tokenName, _tokenSymbol, _totalSupply, DECIMALS, _owner)
-        MixinResolver(_resolver, addressesToCache)
+        MixinResolver(_resolver)
     {
         require(_proxy != address(0), "_proxy cannot be 0");
         require(_owner != address(0), "_owner cannot be 0");
@@ -184,23 +175,23 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     /* ========== VIEWS ========== */
 
     function systemStatus() internal view returns (ISystemStatus) {
-        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS, "Missing SystemStatus address"));
+        return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
     function feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL, "Missing FeePool address"));
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER, "Missing Exchanger address"));
+        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
     }
 
     function issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER, "Missing Issuer address"));
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function futuresMarketManager() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER, "Missing FuturesMarketManager");
+        return requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER);
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {

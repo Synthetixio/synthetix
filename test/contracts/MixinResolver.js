@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract } = require('@nomiclabs/buidler');
+const { artifacts, contract } = require('hardhat');
 
 const { assert } = require('./common');
 
@@ -8,12 +8,9 @@ const MixinResolver = artifacts.require('MixinResolver');
 const TestableMixinResolver = artifacts.require('TestableMixinResolver');
 const AddressResolver = artifacts.require('AddressResolver');
 
-const { onlyGivenAddressCanInvoke, ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../..');
+const { toBytes32 } = require('../..');
 
 contract('MixinResolver', async accounts => {
 	const [deployerAccount, owner, account1, account2, account3] = accounts;
@@ -29,7 +26,7 @@ contract('MixinResolver', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: MixinResolver.abi,
 			ignoreParents: ['Owned'],
-			expected: ['setResolverAndSyncCache'],
+			expected: ['rebuildCache'],
 		});
 	});
 
@@ -59,27 +56,14 @@ contract('MixinResolver', async accounts => {
 			const actual = await instance.resolver();
 			assert.equal(actual, resolver.address);
 		});
-		it('getResolverAddressesRequired() view', async () => {
-			const actual = await instance.getResolverAddressesRequired();
+		it('resolverAddressesRequired() view', async () => {
+			const actual = await instance.resolverAddressesRequired();
 			assert.deepEqual(actual, addressesToCache.map(toBytes32));
 		});
 
-		describe('setResolverAndSyncCache()', () => {
-			it('should disallow non owners to call', async () => {
-				await onlyGivenAddressCanInvoke({
-					accounts,
-					fnc: instance.setResolverAndSyncCache,
-					args: [resolver.address],
-					skipPassCheck: true,
-					address: owner,
-					reason: 'Only the contract owner may perform this action',
-				});
-			});
-			it('when invoked by the owner without all the addresses it needs preset', async () => {
-				await assert.revert(
-					instance.setResolverAndSyncCache(resolver.address, { from: owner }),
-					'Resolver missing target'
-				);
+		describe('rebuildCache()', () => {
+			it('when invoked without all the addresses it needs preset', async () => {
+				await assert.revert(instance.rebuildCache(), 'Resolver missing target');
 			});
 			describe('when the given address resolver has all the required keys', () => {
 				beforeEach(async () => {
@@ -90,19 +74,14 @@ contract('MixinResolver', async accounts => {
 					);
 				});
 				it('then when invoked by the owner it succeeds', async () => {
-					await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+					await instance.rebuildCache();
 				});
 			});
 		});
 
 		describe('isResolverCached()', () => {
-			it('false if the resolver is different', async () => {
-				const actual = await instance.isResolverCached(ZERO_ADDRESS);
-				assert.ok(!actual);
-			});
-
-			it('false when given resolver is same but not addresses cached', async () => {
-				const actual = await instance.isResolverCached(resolver.address);
+			it('false when not all addresses cached', async () => {
+				const actual = await instance.isResolverCached();
 				assert.ok(!actual);
 			});
 			describe('when the given address resolver has all the required keys', () => {
@@ -114,15 +93,15 @@ contract('MixinResolver', async accounts => {
 					);
 				});
 				it('still false when given resolver not cached', async () => {
-					const actual = await instance.isResolverCached(resolver.address);
+					const actual = await instance.isResolverCached();
 					assert.ok(!actual);
 				});
-				describe('when setResolverAndSyncCache() invoked', () => {
+				describe('when rebuildCache() invoked', () => {
 					beforeEach(async () => {
-						await instance.setResolverAndSyncCache(resolver.address, { from: owner });
+						await instance.rebuildCache();
 					});
 					it('then true as everything synced', async () => {
-						const actual = await instance.isResolverCached(resolver.address);
+						const actual = await instance.isResolverCached();
 						assert.ok(actual);
 					});
 				});

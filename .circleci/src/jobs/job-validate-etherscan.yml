@@ -1,7 +1,5 @@
 # Validates that sources have been verified in etherscan
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
 parameters:
   network:
     type: string

@@ -7,7 +7,6 @@ import "./MixinResolver.sol";
 // Internal references
 import "./BinaryOptionMarket.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarketfactory
 contract BinaryOptionMarketFactory is Owned, MixinResolver {
     /* ========== STATE VARIABLES ========== */
@@ -16,18 +15,21 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
 
     bytes32 internal constant CONTRACT_BINARYOPTIONMARKETMANAGER = "BinaryOptionMarketManager";
 
-    bytes32[24] internal addressesToCache = [CONTRACT_BINARYOPTIONMARKETMANAGER];
-
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver, addressesToCache) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_BINARYOPTIONMARKETMANAGER;
+    }
 
     /* ---------- Related Contracts ---------- */
 
     function _manager() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_BINARYOPTIONMARKETMANAGER, "Missing BinaryOptionMarketManager address");
+        return requireAndGetAddress(CONTRACT_BINARYOPTIONMARKETMANAGER);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -49,6 +51,7 @@ contract BinaryOptionMarketFactory is Owned, MixinResolver {
             new BinaryOptionMarket(
                 manager,
                 creator,
+                address(resolver),
                 creatorLimits,
                 oracleKey,
                 strikePrice,

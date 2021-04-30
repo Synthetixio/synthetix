@@ -1,5 +1,6 @@
 const { connectContract } = require('./connectContract');
 const { toBytes32 } = require('../../..');
+const { gray } = require('chalk');
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const MOCK_ADDRESS = '0x0000000000000000000000000000000000000001';
@@ -11,10 +12,10 @@ async function mockAddressIfNeeded({ alias, AddressResolver }) {
 	}
 }
 
-async function syncCacheIfNeeded({ contract, resolver }) {
-	const isCached = await contract.isResolverCached(resolver);
+async function syncCacheIfNeeded({ contract }) {
+	const isCached = await contract.isResolverCached();
 	if (!isCached) {
-		await contract.setResolverAndSyncCache(resolver);
+		await contract.rebuildCache();
 	}
 }
 
@@ -29,7 +30,7 @@ async function mockOptimismBridge({ network, deploymentPath }) {
 		return;
 	}
 
-	console.log('Mocking Optimism bridge...');
+	console.log(gray('    > Mocking Optimism bridge...'));
 
 	const AddressResolver = await connectContract({
 		network,
@@ -41,7 +42,7 @@ async function mockOptimismBridge({ network, deploymentPath }) {
 	await mockAddressIfNeeded({ alias: 'base:SynthetixBridgeToOptimism', AddressResolver });
 	await mockAddressIfNeeded({ alias: 'ext:Messenger', AddressResolver });
 
-	await syncCacheIfNeeded({ contract: SynthetixBridgeToBase, resolver: AddressResolver.address });
+	await syncCacheIfNeeded({ contract: SynthetixBridgeToBase });
 }
 
 module.exports = {

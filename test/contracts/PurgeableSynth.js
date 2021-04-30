@@ -1,9 +1,11 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('@nomiclabs/buidler');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
+const TokenState = artifacts.require('TokenState');
+const Proxy = artifacts.require('Proxy');
 const PurgeableSynth = artifacts.require('PurgeableSynth');
 
 const { currentTime, fastForward, toUnit } = require('../utils')();
@@ -27,9 +29,6 @@ contract('PurgeableSynth', accounts => {
 	const synthKeys = [sUSD, sAUD, iETH];
 	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
-	let TokenState;
-	let Proxy;
-
 	let exchangeRates,
 		exchanger,
 		systemSettings,
@@ -43,10 +42,6 @@ contract('PurgeableSynth', accounts => {
 		issuer;
 
 	before(async () => {
-		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
-		TokenState = artifacts.require('TokenState');
-		Proxy = artifacts.require('Proxy');
-
 		PurgeableSynth.link(await artifacts.require('SafeDecimalMath').new());
 
 		({
@@ -61,7 +56,6 @@ contract('PurgeableSynth', accounts => {
 			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
-			mocks: { FuturesMarketManager: true },
 			synths: ['sUSD', 'sAUD'],
 			contracts: [
 				'ExchangeRates',
@@ -73,6 +67,8 @@ contract('PurgeableSynth', accounts => {
 				'Synthetix',
 				'SystemStatus',
 				'SystemSettings',
+				'CollateralManager',
+				'FuturesMarketManager',
 			],
 		}));
 
@@ -140,12 +136,10 @@ contract('PurgeableSynth', accounts => {
 		});
 
 		it('ensure the list of resolver addresses are as expected', async () => {
-			const actual = await iETHContract.getResolverAddressesRequired();
+			const actual = await iETHContract.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'FuturesMarketManager', 'ExchangeRates']
-					.concat(new Array(18).fill(''))
-					.map(toBytes32)
+				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'FuturesMarketManager', 'ExchangeRates'].map(toBytes32)
 			);
 		});
 
@@ -456,9 +450,7 @@ contract('PurgeableSynth', accounts => {
 							describe('and it is added to Synthetix', () => {
 								beforeEach(async () => {
 									await issuer.addSynth(this.replacement.address, { from: owner });
-									await this.replacement.setResolverAndSyncCache(addressResolver.address, {
-										from: owner,
-									});
+									await this.replacement.rebuildCache();
 								});
 
 								describe('and the old sAUD TokenState and Proxy is connected to the replacement synth', () => {

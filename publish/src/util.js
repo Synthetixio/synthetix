@@ -15,13 +15,21 @@ const {
 		OWNER_ACTIONS_FILENAME,
 		SYNTHS_FILENAME,
 		STAKING_REWARDS_FILENAME,
+		SHORTING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 		FEEDS_FILENAME,
 	},
 	wrap,
 } = require('../..');
 
-const { getPathToNetwork, getSynths, getStakingRewards, getVersions, getFeeds } = wrap({
+const {
+	getPathToNetwork,
+	getSynths,
+	getStakingRewards,
+	getVersions,
+	getFeeds,
+	getShortingRewards,
+} = wrap({
 	path,
 	fs,
 });
@@ -59,6 +67,12 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	console.log(gray(`Loading the list of staking rewards to deploy on ${network.toUpperCase()}...`));
 	const stakingRewardsFile = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
 	const stakingRewards = getStakingRewards({ network, deploymentPath });
+
+	console.log(
+		gray(`Loading the list of shorting rewards to deploy on ${network.toUpperCase()}...`)
+	);
+	const shortingRewardsFile = path.join(deploymentPath, SHORTING_REWARDS_FILENAME);
+	const shortingRewards = getShortingRewards({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of contracts to deploy on ${network.toUpperCase()}...`));
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
@@ -105,6 +119,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		versionsFile,
 		feeds,
 		feedsFile,
+		shortingRewards,
+		shortingRewardsFile,
 	};
 };
 
@@ -191,6 +207,7 @@ const performTransactionalStep = async ({
 	dryRun,
 	encodeABI,
 	nonceManager,
+	publiclyCallable,
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
@@ -207,14 +224,15 @@ const performTransactionalStep = async ({
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
-			return;
+			return { noop: true };
 		}
 	}
 	// otherwise check the owner
 	const owner = await target.methods.owner().call();
-	if (owner === account) {
+	if (owner === account || publiclyCallable) {
 		// perform action
 		let hash;
+		let gasUsed = 0;
 		if (dryRun) {
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
@@ -230,7 +248,9 @@ const performTransactionalStep = async ({
 			}
 
 			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
+
 			hash = txn.transactionHash;
+			gasUsed = txn.gasUsed;
 
 			if (nonceManager) {
 				nonceManager.incrementNonce();
@@ -238,11 +258,20 @@ const performTransactionalStep = async ({
 		}
 
 		console.log(
-			green(`${dryRun ? '[DRY RUN] ' : ''}Successfully completed ${action} in hash: ${hash}`)
+			green(
+				`${
+					dryRun ? '[DRY RUN] ' : ''
+				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
+					2
+				)}m `
+			)
 		);
 
-		return hash;
+		return { mined: true, hash };
+	} else {
+		console.log(gray(`  > Account ${account} is not owner ${owner}`));
 	}
+
 	let data;
 	if (ownerActions && ownerActionsFile) {
 		// append to owner actions if supplied
@@ -268,14 +297,14 @@ const performTransactionalStep = async ({
 		} else {
 			appendOwnerAction(ownerAction);
 		}
-		return true;
+		return { pending: true };
 	} else {
 		// otherwise wait for owner in real time
 		try {
 			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
 			if (encodeABI) {
 				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
-				return true;
+				return { pending: true };
 			}
 
 			await confirmAction(
@@ -286,9 +315,10 @@ const performTransactionalStep = async ({
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
 			);
 
-			return true;
+			return { pending: true };
 		} catch (err) {
 			console.log(gray('Cancelled'));
+			return {};
 		}
 	}
 };

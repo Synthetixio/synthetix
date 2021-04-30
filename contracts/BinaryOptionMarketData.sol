@@ -6,7 +6,6 @@ import "./BinaryOption.sol";
 import "./BinaryOptionMarket.sol";
 import "./BinaryOptionMarketManager.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarketdata
 contract BinaryOptionMarketData {
     struct OptionValues {
@@ -63,14 +62,15 @@ contract BinaryOptionMarketData {
         (bytes32 key, uint strikePrice, uint finalPrice) = market.oracleDetails();
         (uint poolFee, uint creatorFee, uint refundFee) = market.fees();
 
-        MarketParameters memory data = MarketParameters(
-            market.creator(),
-            BinaryOptionMarket.Options(long, short),
-            BinaryOptionMarket.Times(biddingEndDate, maturityDate, expiryDate),
-            BinaryOptionMarket.OracleDetails(key, strikePrice, finalPrice),
-            BinaryOptionMarketManager.Fees(poolFee, creatorFee, refundFee),
-            BinaryOptionMarketManager.CreatorLimits(0, 0)
-        );
+        MarketParameters memory data =
+            MarketParameters(
+                market.creator(),
+                BinaryOptionMarket.Options(long, short),
+                BinaryOptionMarket.Times(biddingEndDate, maturityDate, expiryDate),
+                BinaryOptionMarket.OracleDetails(key, strikePrice, finalPrice),
+                BinaryOptionMarketManager.Fees(poolFee, creatorFee, refundFee),
+                BinaryOptionMarketManager.CreatorLimits(0, 0)
+            );
 
         // Stack too deep otherwise.
         (uint capitalRequirement, uint skewLimit) = market.creatorLimits();

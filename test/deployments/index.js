@@ -111,7 +111,7 @@ describe('deployments', () => {
 										);
 										const tokenName = await tokenContract.methods.name().call();
 
-										if (token === 'Synthetix') {
+										if (token === 'Synthetix' || token === 'ProxyERC20') {
 											assert.strictEqual(tokenName, 'Synthetix Network Token');
 										} else if (token.includes('Proxy')) {
 											const synthType = token.slice(5);
@@ -200,13 +200,13 @@ describe('deployments', () => {
 
 							// Note: instead of manually managing this list, it would be better to read this
 							// on-chain for each environment when a contract had the MixinResolver function
-							// `getResolverAddressesRequired()` and compile and check these. The problem is then
+							// `resolverAddressesRequired()` and compile and check these. The problem is then
 							// that would omit the deps from Depot and EtherCollateral which were not
 							// redeployed in Hadar (v2.21)
 							[
 								'BinaryOptionMarketFactory',
 								'BinaryOptionMarketManager',
-								// 'DebtCache', // to be added once SIP-91 is implemented
+								'DebtCache',
 								'DelegateApprovals',
 								'Depot',
 								'EtherCollateral',
@@ -231,8 +231,12 @@ describe('deployments', () => {
 								'SystemStatus',
 							].forEach(name => {
 								it(`has correct address for ${name}`, async () => {
-									const actual = await resolver.methods.getAddress(toBytes32(name)).call();
-									assert.strictEqual(actual, targets[name].address);
+									if (!targets[name]) {
+										console.log(`Skipping ${name} in ${network} as it isnt found`);
+									} else {
+										const actual = await resolver.methods.getAddress(toBytes32(name)).call();
+										assert.strictEqual(actual, targets[name].address);
+									}
 								});
 							});
 						});
@@ -261,12 +265,18 @@ describe('deployments', () => {
 							});
 
 							it(`${target} isResolverCached is true`, async () => {
+								// not every contract with a resolver will actually be a MixinResolver, so
+								// only check those with the MixinResolver.isResolverCached function
 								if ('isResolverCached' in Contract.methods) {
-									assert.ok(await Contract.methods.isResolverCached(foundResolver).call());
-									// Depot is the only contract not currently updated to the latest MixinResolver so it
-									// doesn't expose the is cached predicate
-								} else if (target !== 'Depot') {
-									throw Error(`${target} is missing isResolverCached() function`);
+									// prior to Shaula (v2.35.x), contracts with isResolverCached took the old resolver as an argument
+									const usesLegacy = !!Contract.options.jsonInterface.find(
+										({ name }) => name === 'isResolverCached'
+									).inputs.length;
+									assert.ok(
+										await Contract.methods
+											.isResolverCached(...[].concat(usesLegacy ? foundResolver : []))
+											.call()
+									);
 								}
 							});
 						});

@@ -1,13 +1,11 @@
 # Runs all unit and spec tests
-working_directory: ~/repo
-docker:
-  - image: circleci/node:12.18
+{{> job-header.yml}}
 resource_class: large
 steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npx buidler compile --showsize --optimizer
+  - run: npx hardhat compile --showsize --optimizer
   - run:
       name: Test and output gas used
       command: |
