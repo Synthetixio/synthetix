@@ -164,7 +164,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Deposit))
         );
 
-        emit DepositInitiated(msg.sender, _to, _depositAmount);
+        emit iOVM_L1TokenGateway.DepositInitiated(msg.sender, _to, _depositAmount);
     }
 
     function _migrateEscrow(uint256[][] memory _entryIDs) private {
@@ -204,8 +204,6 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
     }
 
     // ========== EVENTS ==========
-
-    event DepositInitiated(address indexed from, address to, uint256 amount);
 
     event ExportedVestingEntries(
         address indexed account,

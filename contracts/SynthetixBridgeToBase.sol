@@ -95,7 +95,7 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         // now tell Synthetix to mint these tokens, deposited in L1, into the specified account for L2
         synthetix().mintSecondary(to, amount);
 
-        emit DepositFinalized(to, amount);
+        emit iOVM_L2DepositedToken.DepositFinalized(to, amount);
     }
 
     // invoked by Messenger on L2
@@ -112,8 +112,6 @@ contract SynthetixBridgeToBase is BaseSynthetixBridge, ISynthetixBridgeToBase, i
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] vestingEntries
     );
-
-    event DepositFinalized(address indexed to, uint256 amount);
 
     event MintedSecondaryRewards(uint256 amount);
 }

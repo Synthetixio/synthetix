@@ -274,8 +274,8 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 					it('should emit a DepositFinalized event', async () => {
 						assert.eventEqual(finalizeDepositTx, 'DepositFinalized', {
-							to: user1,
-							amount: finalizeDepositAmount,
+							_to: user1,
+							_amount: finalizeDepositAmount,
 						});
 					});
 
