@@ -27,7 +27,7 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 	const config = JSON.parse(fs.readFileSync(configFile));
 
 	// Pick the latest release from the list
-	const release = releases.slice(-1)[0];
+	const release = releases.reverse().find(release => (useOvm ? release.ovm : !release.ovm));
 	console.log(gray(`Preparing release for ${release.name} on network ${network}...`));
 
 	// Sweep releases.sources and,
@@ -71,6 +71,7 @@ module.exports = {
 				} catch (err) {
 					// show pretty errors for CLI users
 					console.error(red(err));
+					console.log(err.stack);
 					process.exitCode = 1;
 				}
 			}),
