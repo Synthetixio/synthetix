@@ -218,7 +218,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         // Less sETH is issued in the previous step to save gas.
         remitFee(feeAmountEth);
 
-        emit Minted(msg.sender, amount.sub(feeAmountEth), feeAmountEth);
+        emit Minted(msg.sender, amount.sub(feeAmountEth), feeAmountEth, amount);
     }
 
     function _burn(uint amount) internal {
@@ -246,7 +246,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         // Transfer `amount - fees` WETH to user.
         _weth.transfer(msg.sender, principal);
 
-        emit Burned(msg.sender, principal, feeAmountEth);
+        emit Burned(msg.sender, principal, feeAmountEth, amount);
     }
 
     function remitFee(uint feeAmountEth) internal {
@@ -262,6 +262,6 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
     }
 
     /* ========== EVENTS ========== */
-    event Minted(address indexed account, uint amount, uint fee);
-    event Burned(address indexed account, uint amount, uint fee);
+    event Minted(address indexed account, uint principal, uint fee, uint amountIn);
+    event Burned(address indexed account, uint principal, uint fee, uint amountIn);
 }
