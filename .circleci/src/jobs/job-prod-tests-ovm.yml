@@ -8,9 +8,14 @@ steps:
   - run:
       name: Prepare docker containers
       command: |
-        git clone git@github.com:ethereum-optimism/optimism-integration.git
-        cd optimism-integration
-        docker-compose pull
+        git clone git@github.com:ethereum-optimism/optimism.git
+        cd optimism
+        yarn
+        cd ops
+        export COMPOSE_DOCKER_CLI_BUILD=1
+        export DOCKER_BUILDKIT=1
+        docker-compose build
+        docker-compose up -d
   - run:
       name: Start chains
       background: true
