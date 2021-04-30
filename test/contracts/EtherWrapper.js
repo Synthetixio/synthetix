@@ -19,7 +19,7 @@ const { toBN } = require('web3-utils');
 
 contract('EtherWrapper', async accounts => {
 	const synths = ['sUSD', 'sETH', 'ETH', 'SNX'];
-	const [sETH, ETH] = ['sETH', 'ETH'].map(toBytes32);
+	const [sETH, ETH, sUSD] = ['sETH', 'ETH', 'sUSD'].map(toBytes32);
 
 	const ONE = toBN('1');
 
@@ -150,6 +150,61 @@ contract('EtherWrapper', async accounts => {
 			});
 			it('burnFeeRate of 50 bps', async () => {
 				assert.bnEqual(await etherWrapper.burnFeeRate(), FIFTY_BIPS);
+			});
+			describe('totalIssuedSynths', async () => {
+				it('sETH = 0', async () => {
+					assert.bnEqual(await etherWrapper.totalIssuedSynths(sETH), toBN('0'));
+				});
+				it('sUSD = 0', async () => {
+					assert.bnEqual(await etherWrapper.totalIssuedSynths(sUSD), toBN('0'));
+				});
+			});
+		});
+	});
+
+	describe('totalIssuedSynths', async () => {
+		describe('when mint(1 sETH) is called', async () => {
+			const mintAmount = toUnit('1.0');
+
+			beforeEach(async () => {
+				await weth.deposit({ from: account1, value: mintAmount });
+				await weth.approve(etherWrapper.address, mintAmount, { from: account1 });
+				await etherWrapper.mint(mintAmount, { from: account1 });
+			});
+
+			it('total issued sETH = 1.0', async () => {
+				assert.bnEqual(await etherWrapper.totalIssuedSynths(sETH), toUnit('1.0'));
+			});
+			it('fees escrowed = 0.005', async () => {
+				assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.005'));
+			});
+
+			describe('then burn(`reserves` sETH) is called', async () => {
+				const burnAmount = toUnit('1.0');
+
+				beforeEach(async () => {
+					const { burnFee } = await calculateBurnFees(burnAmount);
+					const amountIn = burnAmount.add(burnFee);
+					await sETHSynth.issue(account1, amountIn);
+					await sETHSynth.approve(etherWrapper.address, amountIn, { from: account1 });
+					await etherWrapper.burn(amountIn, { from: account1 });
+				});
+
+				it('total issued sETH = 0', async () => {
+					assert.bnEqual(await etherWrapper.totalIssuedSynths(sETH), toUnit('0'));
+				});
+				it('fees escrowed = 0.01', async () => {
+					assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.01'));
+				});
+
+				// describe('then distributeFees is called', async () => {
+				// 	beforeEach(async () => {
+				// 		// await feePool.closeCurrentFeePeriod({ from: account1 });
+				// 		// await etherWrapper.distributeFees()
+				// 	})
+
+				// 	it('')
+				// })
 			});
 		});
 	});
@@ -445,22 +500,6 @@ contract('EtherWrapper', async accounts => {
 				it('is left with 0 reserves remaining', async () => {
 					assert.equal(await etherWrapper.getReserves(), '0');
 				});
-			});
-		});
-	});
-
-	describe('totalIssuedSynths', async () => {
-		describe('when mint is called', async () => {
-			const amount = toUnit('1');
-
-			beforeEach(async () => {
-				await weth.deposit({ from: account1, value: amount });
-				await weth.approve(etherWrapper.address, amount, { from: account1 });
-				await etherWrapper.mint(amount, { from: account1 });
-			});
-
-			it('it increases the totalIssuedSynths by the amount of sETH issued', async () => {
-				assert.bnEqual(await etherWrapper.totalIssuedSynths(), amount);
 			});
 		});
 	});
