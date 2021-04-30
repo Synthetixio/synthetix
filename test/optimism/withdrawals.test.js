@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 const { assert } = require('../contracts/common');
-const { assertRevertOptimism } = require('./utils/revertOptimism');
+// const { assertRevertOptimism } = require('./utils/revertOptimism');
 const { connectContract } = require('./utils/connectContract');
 
 const itCanPerformWithdrawals = ({ ctx }) => {
@@ -10,7 +10,8 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 		let user1L2;
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1, SynthetixBridgeEscrowL1;
-		let SynthetixL2, SynthetixBridgeToBaseL2, SystemStatusL2;
+		let SynthetixL2, SynthetixBridgeToBaseL2;
+		// let SystemStatusL2;
 		let depositReceipt;
 		// --------------------------
 		// Setup
@@ -44,11 +45,11 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
-			SystemStatusL2 = connectContract({
-				contract: 'SystemStatus',
-				useOvm: true,
-				provider: ctx.providerL2,
-			});
+			// SystemStatusL2 = connectContract({
+			// 	contract: 'SystemStatus',
+			// 	useOvm: true,
+			// 	provider: ctx.providerL2,
+			// });
 		});
 
 		before('make a deposit', async () => {
@@ -70,6 +71,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 		before("Approve the bridge to transfer on escrow's behalf", async () => {
 			SynthetixBridgeEscrowL1 = SynthetixBridgeEscrowL1.connect(ctx.ownerL1);
 			await SynthetixBridgeEscrowL1.approveBridge(
+				SynthetixL1.address,
 				SynthetixBridgeToOptimismL1.address,
 				amountToWithdraw
 			);
@@ -198,8 +200,8 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 							it('emitted a WithdrawalFinalized event', async () => {
 								assert.exists(withdrawalFinalizedEvent);
-								assert.bnEqual(withdrawalFinalizedEvent.args.amount, amountToWithdraw);
-								assert.equal(withdrawalFinalizedEvent.args.account, user1L2.address);
+								assert.bnEqual(withdrawalFinalizedEvent.args._amount, amountToWithdraw);
+								assert.equal(withdrawalFinalizedEvent.args._to, user1L2.address);
 							});
 
 							it('shows that the users L1 balance increased', async () => {
