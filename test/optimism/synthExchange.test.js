@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { toBytes32, getUsers } = require('../..');
-const { assertRevertOptimism } = require('./utils/revertOptimism');
+// const { assertRevertOptimism } = require('./utils/revertOptimism');
 
 const itCanPerformSynthExchange = ({ ctx }) => {
 	describe('[SYNTEXCHANGE] when exchanging synths on L2', () => {
@@ -336,8 +336,8 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 
 							it('emitted a DepositFinalized event', async () => {
 								assert.exists(depositFinalizedEvent);
-								assert.bnEqual(depositFinalizedEvent.args.amount, amountToDeposit);
-								assert.equal(depositFinalizedEvent.args.to, user1L1.address);
+								assert.bnEqual(depositFinalizedEvent.args._amount, amountToDeposit);
+								assert.equal(depositFinalizedEvent.args._to, user1L1.address);
 							});
 
 							it('shows that the users L2 SNX balance increased', async () => {
