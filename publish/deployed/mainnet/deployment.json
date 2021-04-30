@@ -2361,6 +2361,24 @@
 			"timestamp": "2021-04-28T01:28:50.921Z",
 			"txn": "",
 			"network": "mainnet"
+		},
+		"StakingRewardssCOINBalancer": {
+			"name": "StakingRewardssCOINBalancer",
+			"address": "0x1C1D97f6338759AB814a5A717aE359573Ab5D5d4",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x1C1D97f6338759AB814a5A717aE359573Ab5D5d4",
+			"timestamp": "2021-04-29T14:25:10.862Z",
+			"txn": "",
+			"network": "mainnet"
+		},
+		"StakingRewardssMSFTBalancer": {
+			"name": "StakingRewardssMSFTBalancer",
+			"address": "0x9D003Cc298E7Ea141A809C241C0a703176DA3ba3",
+			"source": "StakingRewards",
+			"link": "https://etherscan.io/address/0x9D003Cc298E7Ea141A809C241C0a703176DA3ba3",
+			"timestamp": "2021-04-29T14:26:25.602Z",
+			"txn": "",
+			"network": "mainnet"
 		}
 	},
 	"sources": {
