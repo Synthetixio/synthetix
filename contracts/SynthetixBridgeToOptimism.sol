@@ -89,7 +89,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         // move the SNX into the deposit escrow
         synthetixERC20().transferFrom(msg.sender, synthetixBridgeEscrow(), amount);
 
-        _depositReward(amount);
+        _depositReward(msg.sender, amount);
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
@@ -115,7 +115,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         synthetixERC20().transfer(synthetixBridgeEscrow(), amount);
 
         // to be here means I've been given an amount of SNX to distribute onto L2
-        _depositReward(amount);
+        _depositReward(msg.sender, amount);
     }
 
     function depositAndMigrateEscrow(uint256 depositAmount, uint256[][] memory entryIDs)
@@ -134,10 +134,10 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
 
     // ========== PRIVATE/INTERNAL FUNCTIONS =========
 
-    function _depositReward(uint256 _amount) internal {
+    function _depositReward(address _from, uint256 _amount) internal {
         // create message payload for L2
         ISynthetixBridgeToBase bridgeToBase;
-        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeRewardDeposit.selector, _amount);
+        bytes memory messageData = abi.encodeWithSelector(bridgeToBase.finalizeRewardDeposit.selector, _from, _amount);
 
         // relay the message to this contract on L2 via L1 Messenger
         messenger().sendMessage(
@@ -146,7 +146,7 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Reward))
         );
 
-        emit RewardDeposit(msg.sender, _amount);
+        emit RewardDepositInitiated(_from, _amount);
     }
 
     function _initiateDeposit(address _to, uint256 _depositAmount) private {
@@ -211,5 +211,5 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         VestingEntries.VestingEntry[] vestingEntries
     );
 
-    event RewardDeposit(address indexed account, uint256 amount);
+    event RewardDepositInitiated(address indexed account, uint256 amount);
 }
