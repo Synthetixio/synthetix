@@ -1235,7 +1235,7 @@ const deploy = async ({
 		await deployer.deployContract({
 			name: 'SynthetixBridgeEscrow',
 			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
+			args: [account],
 		});
 	}
 
