@@ -177,13 +177,13 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         uint reserves = getReserves();
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
 
-        // maxBurn = reserves(1 + burnFeeRate)
-        uint maxBurnAmount = reserves.multiplyDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
+        // principal = [amount / (1 + burnFeeRate)]
+        uint principal = amountIn.divideDecimal(SafeDecimalMath.unit().add(burnFeeRate()));
 
-        if (amount < maxBurnAmount) {
-            _burn(amount);
+        if (principal < reserves) {
+            _burn(principal);
         } else {
-            _burn(maxBurnAmount);
+            _burn(reserves);
         }
     }
 
@@ -221,15 +221,10 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         emit Minted(msg.sender, amount.sub(feeAmountEth), feeAmountEth, amount);
     }
 
-    function _burn(uint amount) internal {
-        require(amount <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
-        require(amount <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
-
+    function _burn(uint principal) internal {
         // for burn, amount is inclusive of the fee.
-        // principal = [amount / (1 + burnFeeRate)]
-        uint principal = amount.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
-        // fee = principal * burnFeeRate
         uint feeAmountEth = calculateBurnFee(principal);
+        uint amountIn = principal.add(feeAmountEth);
 
         // Burn `amount` sETH from user.
         synthsETH().burn(msg.sender, amount);
