@@ -19,11 +19,12 @@ import "./interfaces/IERC20.sol";
 
 // Remaining Functionality
 //     Consider not exposing signs of short vs long positions
-//     Rename marketSize, marketSkew -> size, skew
+//     Rename marketSize, marketSkew, marketDebt -> size, skew, debt
 //     Consider just reverting if things need to be liquidated rather than just triggering it except by the
 //         liquidatePosition function
 //     Consider eliminated the fundingIndex param everywhere if we're always computing up to the current time.
 //     Move the minimum initial margin into a global setting within SystemSettings, and then set a maximum liquidation fee that is the current minimum initial margin (otherwise we could set a value that will immediately liquidate every position)
+//     Remove proportional skew from public interface
 
 /* Notes:
  *
@@ -397,24 +398,27 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         // Hence, expanding the definition of remainingMargin the exact price
         // at which a position can first be liquidated is:
         //     remainingMargin = liquidationFee
-        //     margin + profitLoss + funding      = liquidationFee
-        //     (price - lastPrice) * positionSize = liquidationFee - (margin + funding)
-        //     price                              = lastPrice + (liquidationFee - (margin + funding)) / positionSize
+        //     margin + profitLoss + funding             = liquidationFee
+        //     price - lastPrice + netFundingPerUnit     = (liquidationFee - margin) / positionSize
+        //     price                                     = lastPrice + (liquidationFee - margin) / positionSize - netFundingPerUnit
 
-        int size = position.size;
+        int positionSize = position.size;
 
-        if (size == 0) {
+        if (positionSize == 0) {
             return 0;
         }
 
-        int marginPlusFunding = int(position.margin);
+        int result =
+            int(position.lastPrice).add(int(_liquidationFee()).sub(int(position.margin)).divideDecimalRound(positionSize));
+
         if (includeFunding) {
-            marginPlusFunding = marginPlusFunding.add(_accruedFunding(position, fundingIndex, currentPrice));
+            result = result.sub(
+                _netFundingPerUnit(position.fundingIndex, fundingIndex, fundingSequence.length, currentPrice)
+            );
         }
 
-        int lastPrice = int(position.lastPrice);
-        int liquidationFee = int(_liquidationFee());
-        return uint(lastPrice.add(liquidationFee.sub(marginPlusFunding).divideDecimalRound(size)));
+        // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
+        return uint(_max(0, result));
     }
 
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
