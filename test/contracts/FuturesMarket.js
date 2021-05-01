@@ -6,7 +6,35 @@ const { toBN } = web3.utils;
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { getDecodedLogs, decodedEventEqual } = require('./helpers');
+const {
+	getDecodedLogs,
+	decodedEventEqual,
+	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
+} = require('./helpers');
+
+/*
+async function logPosition(account) {
+	const position = await futuresMarket.positions(account);
+	const remainingMargin = (await futuresMarket.remainingMargin(account))[0];
+	const currentLeverage = (await futuresMarket.currentLeverage(account))[0];
+	const profitLoss = (await futuresMarket.profitLoss(account))[0];
+	const funding = (await futuresMarket.accruedFunding(account))[0];
+	const liquidationPrice = (await futuresMarket.liquidationPrice(account, true))[0];
+
+	console.log(`Position: ${account}`);
+	console.log(`Initial Margin: ${fromUnit(position.margin)}`);
+	console.log(`Profit/Loss: ${fromUnit(profitLoss)}`);
+	console.log(`Funding: ${fromUnit(funding)}`);
+	console.log(`Remaining Margin: ${fromUnit(remainingMargin)}`);
+	console.log(`Size: ${fromUnit(position.size)}`);
+	console.log(`Current Leverage: ${fromUnit(currentLeverage)}`);
+	console.log(`Liquidation Price: ${fromUnit(liquidationPrice)}`);
+	console.log(`Last Price: ${fromUnit(position.lastPrice)}`);
+	console.log(`Funding Index: ${position.fundingIndex}`);
+	console.log();
+}
+ */
 
 contract('FuturesMarket', accounts => {
 	let systemSettings,
@@ -118,7 +146,28 @@ contract('FuturesMarket', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
+	// TODO: Check that onlyOwner functions are indeed onlyOwner using `onlyGivenAddressCanInvoke`
+
 	describe('Basic parameters', () => {
+		it.skip('Only expected functions are mutative', async () => {
+			/*
+			ensureOnlyExpectedMutativeFunctions({
+				abi: market.abi,
+				ignoreParents: ['Owned', 'MixinResolver'],
+				expected: [
+					'bid',
+					'refund',
+					'resolve',
+					'claimOptions',
+					'exerciseOptions',
+					'expire',
+					'cancel',
+				],
+			});
+			*/
+			assert.isTrue(false);
+		});
+
 		it('static parameters are set properly at construction', async () => {
 			const parameters = await futuresMarket.parameters();
 			assert.equal(await futuresMarket.baseAsset(), baseAsset);
@@ -1397,6 +1446,10 @@ contract('FuturesMarket', accounts => {
 			assert.isTrue(false);
 		});
 
+		it.skip('Enough pending liquidation value can cause market debt to fall to zero, corrected by liquidating', async () => {
+			assert.isTrue(false);
+		});
+
 		it('Market debt is reported as invalid when price is stale', async () => {
 			assert.isFalse((await futuresMarket.marketDebt())[1]);
 			await fastForward(7 * 24 * 60 * 60);
@@ -1498,8 +1551,8 @@ contract('FuturesMarket', accounts => {
 				await exchangeRates.updateRates([baseAsset], [toUnit('250')], await currentTime(), {
 					from: oracle,
 				});
-				await futuresMarket.confirmOrder(trader);
-				await futuresMarket.confirmOrder(trader2);
+				await futuresMarket.confirmOrder(trader); // 30 units
+				await futuresMarket.confirmOrder(trader2); // -10 units
 
 				const preLPrice1 = (await futuresMarket.liquidationPrice(trader, true))[0];
 				const preLPrice2 = (await futuresMarket.liquidationPrice(trader2, true))[0];
@@ -1507,17 +1560,17 @@ contract('FuturesMarket', accounts => {
 				// One day of funding
 				await fastForward(24 * 60 * 60);
 
-				// Trader must pay (1500 * 5) / 20 = 375 funding
-				// liquidation price = 250 + (20 - (1500 - 375)) / 30 = 213.166...
+				// trader 1 pays 30 * -0.05 = -1.5 base units of funding
+				// liquidation price = (20 - 1500 + 30 * 250) / (30 - 1.5) = 211.228...
 				let lPrice = await futuresMarket.liquidationPrice(trader, true);
-				assert.bnClose(lPrice[0], toUnit(213.167), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(211.228), toUnit(0.001));
 				lPrice = await futuresMarket.liquidationPrice(trader, false);
 				assert.bnClose(lPrice[0], preLPrice1, toUnit(0.001));
 
-				// trader2 receives (500 * 5) / 20 = 125 funding
-				// liquidation price = 250 + (20 - (500 + 125)) / -10 = 310.5
+				// trader2 receives -10 * -0.05 = 0.5 base units of funding
+				// liquidation price = (20 - 500 - 10 * 250) / (-10 + 0.5) = 313.684...
 				lPrice = await futuresMarket.liquidationPrice(trader2, true);
-				assert.bnClose(lPrice[0], toUnit(310.5), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(313.684), toUnit(0.001));
 				lPrice = await futuresMarket.liquidationPrice(trader2, false);
 				assert.bnClose(lPrice[0], preLPrice2, toUnit(0.001));
 			});
@@ -1532,16 +1585,30 @@ contract('FuturesMarket', accounts => {
 				await exchangeRates.updateRates([baseAsset], [toUnit('250')], await currentTime(), {
 					from: oracle,
 				});
-				await futuresMarket.confirmOrder(trader);
-				await futuresMarket.confirmOrder(trader2);
+				await futuresMarket.confirmOrder(trader); // 30 units
+				await futuresMarket.confirmOrder(trader2); // -20 units
 
 				assert.isFalse((await futuresMarket.liquidationPrice(trader, true))[1]);
 
 				await fastForward(60 * 60 * 24 * 7); // Stale the price
 
-				const lPrice = await futuresMarket.liquidationPrice(trader, true);
-				assert.bnClose(lPrice[0], toUnit(235.667), toUnit(0.001));
+				// funding rate = -10/50 * 0.1 = -0.02
+				// trader 1 pays 30 * 7 * -0.02 = -4.2 units of funding
+				// Remaining margin = (20 - 1500 + 30 * 250) / (30 - 4.2) = 233.333...
+				let lPrice = await futuresMarket.liquidationPrice(trader, true);
+				assert.bnClose(lPrice[0], toUnit(233.333), toUnit(0.001));
 				assert.isTrue(lPrice[1]);
+
+				// trader 2 receives -20 * 7 * -0.02 = 2.8 units of funding
+				// Remaining margin = (20 - 1000 - 20 * 250) / (-20 + 2.8) = 347.674...
+				lPrice = await futuresMarket.liquidationPrice(trader2, true);
+				assert.bnClose(lPrice[0], toUnit(347.674), toUnit(0.001));
+				assert.isTrue(lPrice[1]);
+			});
+
+			it.skip('Liquidation price is accurate with funding with intervening funding sequence updates', async () => {
+				// TODO: confirm order -> a bunch of trades from other traders happen over a time period -> check the liquidation price given that most of the accrued funding is not unrecorded
+				assert.isTrue(false);
 			});
 		});
 
@@ -1582,82 +1649,128 @@ contract('FuturesMarket', accounts => {
 			});
 		});
 
-		it('Cannot liquidate nonexistent positions', async () => {
-			await assert.revert(futuresMarket.liquidatePosition(trader), 'Position cannot be liquidated');
-		});
+		describe('liquidatePosition', () => {
+			beforeEach(async () => {
+				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.submitOrder(toUnit('10'), { from: trader });
 
-		it('Can liquidate a position with less than the liquidation fee margin remaining', async () => {
-			await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
-			await futuresMarket.submitOrder(toUnit('10'), { from: trader });
+				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader2 });
+				await futuresMarket.submitOrder(toUnit('5'), { from: trader2 });
 
-			await futuresMarket.modifyMargin(toUnit('1000'), { from: trader2 });
-			await futuresMarket.submitOrder(toUnit('10'), { from: trader2 });
+				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader3 });
+				await futuresMarket.submitOrder(toUnit('-5'), { from: trader3 });
 
-			await futuresMarket.modifyMargin(toUnit('1000'), { from: trader3 });
-			await futuresMarket.submitOrder(toUnit('-10'), { from: trader3 });
-
-			let price = toUnit(250);
-			await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
-				from: oracle,
-			});
-			await futuresMarket.confirmOrder(trader);
-			await futuresMarket.confirmOrder(trader2);
-			await futuresMarket.confirmOrder(trader3);
-
-			price = (await futuresMarket.liquidationPrice(trader, true)).price;
-			await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
-				from: oracle,
+				await exchangeRates.updateRates([baseAsset], [toUnit(250)], await currentTime(), {
+					from: oracle,
+				});
+				await futuresMarket.confirmOrder(trader);
+				await futuresMarket.confirmOrder(trader2);
+				await futuresMarket.confirmOrder(trader3);
 			});
 
-			const positionSize = (await futuresMarket.positions(trader)).size;
-
-			const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
-
-			// TODO: Position is wiped out.
-			const position = await futuresMarket.positions(trader, { from: noBalance });
-			assert.bnEqual(position.margin, toUnit(0));
-			assert.bnEqual(position.size, toUnit(0));
-			assert.bnEqual(position.lastPrice, toUnit(0));
-			assert.bnEqual(position.fundingIndex, 0);
-
-			assert.bnEqual(await sUSD.balanceOf(noBalance), liquidationFee);
-
-			// TODO: Overall market size, skew etc. reduced
-			// const entry
-			// entrymargin minus notional skew
-			// market size
-			// market skew
-
-			// TODO: Ensure liquidation price is accurate here.
-			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
-
-			assert.equal(decodedLogs.length, 2);
-			decodedEventEqual({
-				event: 'Issued',
-				emittedFrom: sUSD.address,
-				args: [noBalance, liquidationFee],
-				log: decodedLogs[0],
+			it('Cannot liquidate nonexistent positions', async () => {
+				await assert.revert(
+					futuresMarket.liquidatePosition(noBalance),
+					'Position cannot be liquidated'
+				);
 			});
-			decodedEventEqual({
-				event: 'PositionLiquidated',
-				emittedFrom: proxyFuturesMarket.address,
-				args: [trader, noBalance, positionSize, price],
-				log: decodedLogs[1],
-				bnCloseVariance: toUnit('0.001'),
+
+			it('Liquidation properly affects the overall market parameters (long case)', async () => {
+				await fastForward(24 * 60 * 60); // wait one day to accrue a bit of funding
+
+				const size = await futuresMarket.marketSize();
+				const sizes = await futuresMarket.marketSizes();
+				const skew = await futuresMarket.marketSkew();
+				const marketDebt = await futuresMarket.marketDebt();
+				const entryDebtCorrection = await futuresMarket.entryDebtCorrection();
+				const fundingLastRecomputed = await futuresMarket.fundingLastRecomputed();
+				const fundingSequenceLength = await futuresMarket.fundingSequenceLength();
+				const currentFundingRate = await futuresMarket.currentFundingRate();
+				const unrecordedFunding = await futuresMarket.unrecordedFunding();
+				const positionSize = (await futuresMarket.positions(trader)).size;
+
+				const price = (await futuresMarket.liquidationPrice(trader, true)).price;
+				await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
+					from: oracle,
+				});
+				await futuresMarket.liquidatePosition(trader, { from: noBalance });
+
+				assert.equal(await futuresMarket.marketSize(), size.sub(positionSize.abs()));
+
+				// TODO: Overall market size, skew etc. reduced
+
+				// const entry
+				// entrymargin minus notional skew
+				// market size
+				// market skew
+				assert.isTrue(false);
 			});
-			assert.isTrue(false);
-		});
 
-		it.skip('Can liquidate a position with zero margin remaining', async () => {
-			assert.isTrue(false);
-		});
+			it.skip('Liquidation properly affects the overall market parameters (short case)', async () => {
+				assert.isTrue(false);
+			});
 
-		it.skip('Liquidation cancels any outstanding orders', async () => {
-			assert.isTrue(false);
-		});
+			it('Can liquidate a position with less than the liquidation fee margin remaining (long case)', async () => {
+				const price = (await futuresMarket.liquidationPrice(trader, true)).price;
+				console.log(fromUnit(price));
+				await exchangeRates.updateRates([baseAsset], [price], await currentTime(), {
+					from: oracle,
+				});
 
-		it.skip('Liquidation fee is remitted to the liquidator', async () => {
-			assert.isTrue(false);
+				const positionSize = (await futuresMarket.positions(trader)).size;
+
+				const tx = await futuresMarket.liquidatePosition(trader, { from: noBalance });
+
+				// TODO: Position is wiped out.
+				const position = await futuresMarket.positions(trader, { from: noBalance });
+				assert.bnEqual(position.margin, toUnit(0));
+				assert.bnEqual(position.size, toUnit(0));
+				assert.bnEqual(position.lastPrice, toUnit(0));
+				assert.bnEqual(position.fundingIndex, 0);
+
+				assert.bnEqual(await sUSD.balanceOf(noBalance), liquidationFee);
+
+				// TODO: Ensure liquidation price is accurate here.
+				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
+
+				assert.equal(decodedLogs.length, 2);
+				decodedEventEqual({
+					event: 'Issued',
+					emittedFrom: sUSD.address,
+					args: [noBalance, liquidationFee],
+					log: decodedLogs[0],
+				});
+				decodedEventEqual({
+					event: 'PositionLiquidated',
+					emittedFrom: proxyFuturesMarket.address,
+					args: [trader, noBalance, positionSize, price],
+					log: decodedLogs[1],
+					bnCloseVariance: toUnit('0.001'),
+				});
+				assert.isTrue(false);
+			});
+
+			it.skip('Can liquidate a position with less than the liquidation fee margin remaining (short case)', async () => {
+				assert.isTrue(false);
+			});
+
+			it.skip('Can liquidate a position with zero margin remaining (long case)', async () => {
+				// The liquidation price will be reported different than the actual price.
+				assert.isTrue(false);
+			});
+
+			it.skip('Can liquidate a position with zero margin remaining (short case)', async () => {
+				// The liquidation price will be reported different than the actual price.
+				assert.isTrue(false);
+			});
+
+			it.skip('Liquidation cancels any outstanding orders', async () => {
+				assert.isTrue(false);
+			});
+
+			it.skip('Liquidation fee is remitted to the liquidator', async () => {
+				assert.isTrue(false);
+			});
 		});
 	});
 });

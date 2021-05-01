@@ -19,10 +19,10 @@ import "./interfaces/IERC20.sol";
 
 // Remaining Functionality
 //     Consider not exposing signs of short vs long positions
-//     Rename marketSize, marketSkew, marketDebt -> size, skew, debt
-//     Consider just reverting if things need to be liquidated rather than just triggering it except by the
+//     Rename marketSize, marketSkew, marketDebt, profitLoss, accruedFunding -> size, skew, debt, profit, funding
+//     Consider reverting if things need to be liquidated rather than triggering it except by the
 //         liquidatePosition function
-//     Consider eliminated the fundingIndex param everywhere if we're always computing up to the current time.
+//     Consider eliminating the fundingIndex param everywhere if we're always computing up to the current time.
 //     Move the minimum initial margin into a global setting within SystemSettings, and then set a maximum liquidation fee that is the current minimum initial margin (otherwise we could set a value that will immediately liquidate every position)
 //     Remove proportional skew from public interface
 
@@ -397,10 +397,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         //     remainingMargin <= liquidationFee
         // Hence, expanding the definition of remainingMargin the exact price
         // at which a position can first be liquidated is:
-        //     remainingMargin = liquidationFee
-        //     margin + profitLoss + funding             = liquidationFee
-        //     price - lastPrice + netFundingPerUnit     = (liquidationFee - margin) / positionSize
-        //     price                                     = lastPrice + (liquidationFee - margin) / positionSize - netFundingPerUnit
+        //     margin + profitLoss + funding  =  liquidationFee
+        //     price                          =  lastPrice + (liquidationFee - margin) / positionSize - netFundingPerUnit
+        // This is straightforward if we neglect the funding term.
 
         int positionSize = position.size;
 
@@ -412,9 +411,24 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             int(position.lastPrice).add(int(_liquidationFee()).sub(int(position.margin)).divideDecimalRound(positionSize));
 
         if (includeFunding) {
-            result = result.sub(
-                _netFundingPerUnit(position.fundingIndex, fundingIndex, fundingSequence.length, currentPrice)
-            );
+            // If we pay attention to funding, we have to expanding netFundingPerUnit and solve again for the price:
+            //     price         =  (lastPrice + (liquidationFee - margin) / positionSize - netAccrued) / (1 + netUnrecorded)
+            // Where, if fundingIndex == sequenceLength:
+            //     netAccrued    =  fundingSequence[fundingSequenceLength - 1] - fundingSequence[position.fundingIndex]
+            //     netUnrecorded =  currentFundingRate * (block.timestamp - fundingLastRecomputed)
+            // And otherwise:
+            //     netAccrued    =  fundingSequence[fundingIndex] - fundingSequence[position.fundingIndex]
+            //     netUnrecorded =  0
+
+            uint sequenceLength = fundingSequence.length;
+            int denominator = _UNIT;
+            if (fundingIndex == sequenceLength) {
+                fundingIndex = sequenceLength.sub(1);
+                denominator = _UNIT.add(_unrecordedFunding(currentPrice).divideDecimalRound(int(currentPrice)));
+            }
+            result = result
+                .sub(_netFundingPerUnit(position.fundingIndex, fundingIndex, sequenceLength, currentPrice))
+                .divideDecimalRound(denominator);
         }
 
         // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
@@ -735,6 +749,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function cancelOrder() external optionalProxy {
         address sender = messageSender;
+        // TODO: Canceling an order probably doesn't need to recompute funding and liquidat the order. Sanity check this.
         uint price = _assetPriceRequireNotInvalid(_exchangeRates());
         uint fundingIndex = _recomputeFunding(price);
         bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
@@ -752,6 +767,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         address sender
     ) internal {
         require(_abs(leverage) <= parameters.maxLeverage, "Max leverage exceeded");
+        // TODO: If you're about to be liquidated, just block instead of actually liquidating.
         bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
 
         // The order is not submitted if the user's existing position needed to be liquidated.
@@ -823,6 +839,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         require(price != 0, "Zero entry price. Cancel order and try again.");
 
         uint fundingIndex = _recomputeFunding(price);
+        // TODO: Just block here if an existing position can be liquidated -- confirmation keepers should not receive liquidation fees.
         bool liquidated = _liquidateIfNeeded(account, price, fundingIndex);
 
         // If the account needed to be liquidated, then the order was cancelled and it doesn't need to be confirmed.
