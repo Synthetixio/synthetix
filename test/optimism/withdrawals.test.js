@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 const { assert } = require('../contracts/common');
-// const { assertRevertOptimism } = require('./utils/revertOptimism');
+const { assertRevertOptimism } = require('./utils/revertOptimism');
 const { connectContract } = require('./utils/connectContract');
 
 const itCanPerformWithdrawals = ({ ctx }) => {
@@ -11,8 +11,9 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1, SynthetixBridgeEscrowL1;
 		let SynthetixL2, SynthetixBridgeToBaseL2;
-		// let SystemStatusL2;
+		let SystemStatusL2;
 		let depositReceipt;
+
 		// --------------------------
 		// Setup
 		// --------------------------
@@ -45,11 +46,11 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
-			// SystemStatusL2 = connectContract({
-			// 	contract: 'SystemStatus',
-			// 	useOvm: true,
-			// 	provider: ctx.providerL2,
-			// });
+			SystemStatusL2 = connectContract({
+				contract: 'SystemStatus',
+				useOvm: true,
+				provider: ctx.providerL2,
+			});
 		});
 
 		before('make a deposit', async () => {
@@ -70,11 +71,15 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 		before("Approve the bridge to transfer on escrow's behalf", async () => {
 			SynthetixBridgeEscrowL1 = SynthetixBridgeEscrowL1.connect(ctx.ownerL1);
-			await SynthetixBridgeEscrowL1.approveBridge(
-				SynthetixL1.address,
-				SynthetixBridgeToOptimismL1.address,
-				amountToWithdraw
-			);
+
+			const allowance = await SynthetixL1.allowance(SynthetixBridgeEscrowL1.address, SynthetixBridgeToOptimismL1.address);
+			if (allowance.toString() === '0') {
+				await SynthetixBridgeEscrowL1.approveBridge(
+					SynthetixL1.address,
+					SynthetixBridgeToOptimismL1.address,
+					amountToWithdraw
+				);
+			}
 		});
 
 		// --------------------------
@@ -98,8 +103,11 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 				before('ensure that the user has the expected SNX balance', async () => {
 					SynthetixL2 = SynthetixL2.connect(ctx.ownerL2);
 
-					const tx = await SynthetixL2.transfer(user1L2.address, amountToWithdraw);
-					await tx.wait();
+					const balance = await SynthetixL2.balanceOf(user1L2.address);
+					if (balance.lt(amountToWithdraw)) {
+						const tx = await SynthetixL2.transfer(user1L2.address, amountToWithdraw);
+						await tx.wait();
+					}
 				});
 
 				it('shows the user has SNX', async () => {
@@ -118,33 +126,31 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					// Suspended
 					// --------------------------
 
-					// describe('when the system is suspended in L2', () => {
-					// 	before('suspend the system', async () => {
-					// 		SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
+					describe.only('when the system is suspended in L2', () => {
+						before('suspend the system', async () => {
+							SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
 
-					// 		const tx = await SystemStatusL2.suspendSystem(1);
-					// 		await tx.wait();
-					// 	});
+							const tx = await SystemStatusL2.suspendSystem(1);
+							await tx.wait();
+						});
 
-					// 	after('resume the system', async () => {
-					// 		SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
+						after('resume the system', async () => {
+							SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
 
-					// 		const tx = await SystemStatusL2.resumeSystem();
-					// 		await tx.wait();
-					// 	});
+							const tx = await SystemStatusL2.resumeSystem();
+							await tx.wait();
+						});
 
-					// 	it('reverts when the user attempts to initiate a withdrawal', async () => {
-					// 		SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
+						it('reverts when the user attempts to initiate a withdrawal', async () => {
+							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
 
-					// 		const tx = await SynthetixBridgeToBaseL2.withdraw(1);
-
-					// 		await assertRevertOptimism({
-					// 			tx,
-					// 			reason: 'Synthetix is suspended',
-					// 			provider: ctx.providerL2,
-					// 		});
-					// 	});
-					// });
+							await assertRevertOptimism({
+								tx: SynthetixBridgeToBaseL2.withdraw(1),
+								reason: 'Synthetix is suspended',
+								provider: ctx.providerL2,
+							});
+						});
+					});
 
 					// --------------------------
 					// Not suspended

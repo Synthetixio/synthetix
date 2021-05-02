@@ -20,7 +20,6 @@ async function getOptimismRevertReason({ tx, provider }) {
 		const code = (await provider.call(tx)).substr(138);
 		const hex = `0x${code}`;
 
-		// Try to parse the revert reason bytes.
 		let reason;
 		if (code.length === '64') {
 			reason = ethers.utils.parseBytes32String(hex);
@@ -37,10 +36,18 @@ async function getOptimismRevertReason({ tx, provider }) {
 async function assertRevertOptimism({ tx, reason, provider }) {
 	let receipt;
 	let revertReason;
+
 	try {
-		receipt = await tx.wait();
+		const response = await tx;
+
+		receipt = await response.wait();
 	} catch (error) {
-		revertReason = await getOptimismRevertReason({ tx, provider });
+		const txRequest = {
+			to: await error.tx.to,
+			data: await error.tx.data,
+		};
+
+		revertReason = await getOptimismRevertReason({ tx: txRequest, provider });
 	}
 
 	if (receipt) {
