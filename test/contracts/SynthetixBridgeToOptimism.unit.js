@@ -28,6 +28,7 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 				'depositTo',
 				'depositReward',
 				'finalizeWithdrawal',
+				'forwardTokensToEscrow',
 				'migrateEscrow',
 				'notifyRewardAmount',
 			],
