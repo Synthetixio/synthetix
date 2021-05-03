@@ -69,10 +69,10 @@ describe('Layer 2 production tests', () => {
 		});
 	});
 
-	// after('exit', async () => {
-	// 	// TODO: Optimism watchers leave the process open, so we explicitely kill it
-	// 	process.exit(0);
-	// });
+	after('exit', async () => {
+		// TODO: Optimism watchers leave the process open, so we explicitely kill it
+		process.exit(0);
+	});
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
 		before('connect to contracts', async () => {
@@ -170,13 +170,13 @@ describe('Layer 2 production tests', () => {
 		// Specific properties
 		// --------------------------
 
-		// itCanPerformDeposits({ ctx: this });
-		// itCanPerformDepositsTo({ ctx: this });
+		itCanPerformDeposits({ ctx: this });
+		itCanPerformDepositsTo({ ctx: this });
 		itCanPerformWithdrawals({ ctx: this });
-		// itCanPerformWithdrawalsTo({ ctx: this });
-		// itCanPerformRewardDeposits({ ctx: this });
-		// itCanPerformEscrowMigration({ ctx: this });
-		// itCanPerformDepositAndEscrowMigration({ ctx: this });
-		// itCanPerformSynthExchange({ ctx: this });
+		itCanPerformWithdrawalsTo({ ctx: this });
+		itCanPerformRewardDeposits({ ctx: this });
+		itCanPerformEscrowMigration({ ctx: this });
+		itCanPerformDepositAndEscrowMigration({ ctx: this });
+		itCanPerformSynthExchange({ ctx: this });
 	});
 });

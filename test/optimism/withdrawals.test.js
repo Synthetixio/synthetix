@@ -11,7 +11,6 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1, SynthetixBridgeEscrowL1;
 		let SynthetixL2, SynthetixBridgeToBaseL2;
-		let SystemStatusL2;
 		let depositReceipt;
 
 		// --------------------------
@@ -46,11 +45,6 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
-			SystemStatusL2 = connectContract({
-				contract: 'SystemStatus',
-				useOvm: true,
-				provider: ctx.providerL2,
-			});
 		});
 
 		before('make a deposit', async () => {
@@ -72,7 +66,10 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 		before("Approve the bridge to transfer on escrow's behalf", async () => {
 			SynthetixBridgeEscrowL1 = SynthetixBridgeEscrowL1.connect(ctx.ownerL1);
 
-			const allowance = await SynthetixL1.allowance(SynthetixBridgeEscrowL1.address, SynthetixBridgeToOptimismL1.address);
+			const allowance = await SynthetixL1.allowance(
+				SynthetixBridgeEscrowL1.address,
+				SynthetixBridgeToOptimismL1.address
+			);
 			if (allowance.toString() === '0') {
 				await SynthetixBridgeEscrowL1.approveBridge(
 					SynthetixL1.address,
@@ -102,12 +99,8 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 				before('ensure that the user has the expected SNX balance', async () => {
 					SynthetixL2 = SynthetixL2.connect(ctx.ownerL2);
-
-					const balance = await SynthetixL2.balanceOf(user1L2.address);
-					if (balance.lt(amountToWithdraw)) {
-						const tx = await SynthetixL2.transfer(user1L2.address, amountToWithdraw);
-						await tx.wait();
-					}
+					const tx = await SynthetixL2.transfer(user1L2.address, amountToWithdraw);
+					await tx.wait();
 				});
 
 				it('shows the user has SNX', async () => {
@@ -126,27 +119,26 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					// Suspended
 					// --------------------------
 
-					describe.only('when the system is suspended in L2', () => {
+					describe('when initiation is suspended L2', () => {
 						before('suspend the system', async () => {
-							SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
+							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(ctx.ownerL2);
 
-							const tx = await SystemStatusL2.suspendSystem(1);
+							const tx = await SynthetixBridgeToBaseL2.suspendInitiation();
 							await tx.wait();
 						});
 
 						after('resume the system', async () => {
-							SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
+							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(ctx.ownerL2);
 
-							const tx = await SystemStatusL2.resumeSystem();
+							const tx = await SynthetixBridgeToBaseL2.resumeInitiation();
 							await tx.wait();
 						});
 
 						it('reverts when the user attempts to initiate a withdrawal', async () => {
 							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
-
 							await assertRevertOptimism({
-								tx: SynthetixBridgeToBaseL2.withdraw(1),
-								reason: 'Synthetix is suspended',
+								tx: SynthetixBridgeToBaseL2.withdraw(amountToWithdraw),
+								reason: 'Initiation deactivated',
 								provider: ctx.providerL2,
 							});
 						});
