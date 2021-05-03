@@ -92,6 +92,12 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         _depositReward(msg.sender, amount);
     }
 
+    // forward any accidental tokens sent here to the escrow
+    function forwardTokensToEscrow(address token) external {
+        IERC20 erc20 = IERC20(token);
+        erc20.transfer(synthetixBridgeEscrow(), erc20.balanceOf(address(this)));
+    }
+
     // ========= RESTRICTED FUNCTIONS ==============
 
     // invoked by Messenger on L1 after L2 waiting period elapses
