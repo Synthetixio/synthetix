@@ -1,7 +1,7 @@
 const { contract, web3 } = require('hardhat');
 const { setupAllContracts } = require('./setup');
 const { assert } = require('./common');
-const { toBN, toWei } = web3.utils;
+const { toBN } = web3.utils;
 const {
 	defaults: {
 		CROSS_DOMAIN_DEPOSIT_GAS_LIMIT,
@@ -270,15 +270,15 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 		});
 
 		describe('forwardTokensToEscrow', () => {
-			describe('when 1000 Synthetix accidentally transferred to the bridge', () => {
+			describe('when some SNX tokens are accidentally transferred to the bridge', () => {
+				const amount = toBN('999');
+				let initialAmount;
 				before(async () => {
-					await synthetix.transfer(synthetixBridgeToOptimism.address, toWei('999'), {
+					initialAmount = await synthetix.balanceOf(synthetixBridgeEscrow.address);
+					await synthetix.transfer(synthetixBridgeToOptimism.address, amount, {
 						from: owner,
 					});
-					assert.bnEqual(
-						await synthetix.balanceOf(synthetixBridgeToOptimism.address),
-						toWei('999')
-					);
+					assert.bnEqual(await synthetix.balanceOf(synthetixBridgeToOptimism.address), amount);
 				});
 				describe('when anyone invokeds forwardTokensToEscrow', () => {
 					before(async () => {
@@ -288,7 +288,10 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 					});
 					it('then the tokens are sent from the bridge to the escrow', async () => {
 						assert.equal(await synthetix.balanceOf(synthetixBridgeToOptimism.address), '0');
-						assert.bnEqual(await synthetix.balanceOf(synthetixBridgeEscrow.address), toWei('999'));
+						assert.bnEqual(
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
+							initialAmount.add(amount)
+						);
 					});
 				});
 			});
