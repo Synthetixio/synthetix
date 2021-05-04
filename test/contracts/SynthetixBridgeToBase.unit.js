@@ -154,6 +154,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
 						await assert.revert(instance.withdraw('1'), 'Not enough transferable SNX');
 					});
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
+
+						await assert.revert(instance.withdrawTo(randomAddress, '1'), 'Initiation deactivated');
+					});
 				});
 
 				describe('when invoked by a user', () => {
@@ -200,6 +205,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 							instance.withdrawTo(randomAddress, '1'),
 							'Not enough transferable SNX'
 						);
+					});
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
+
+						await assert.revert(instance.withdrawTo(randomAddress, '1'), 'Initiation deactivated');
 					});
 				});
 

@@ -81,7 +81,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 
 						await assert.revert(
 							instance.suspendInitiation({ from: owner }),
-							'initiation suspended'
+							'Initiation suspended'
 						);
 					});
 				});
@@ -119,7 +119,7 @@ contract('BaseSynthetixBridge (unit tests)', accounts => {
 					it('reverts when initiation is not suspended', async () => {
 						await assert.revert(
 							instance.resumeInitiation({ from: owner }),
-							'initiation not suspended'
+							'Initiation not suspended'
 						);
 					});
 				});
