@@ -13,12 +13,13 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthetixBridgeToBase.abi,
-			ignoreParents: ['Owned', 'MixinResolver'],
+			ignoreParents: ['BaseSynthetixBridge'],
 			expected: [
-				'completeDeposit',
-				'completeEscrowMigration',
-				'completeRewardDeposit',
-				'initiateWithdrawal',
+				'finalizeDeposit',
+				'finalizeEscrowMigration',
+				'finalizeRewardDeposit',
+				'withdraw',
+				'withdrawTo',
 			],
 		});
 	});
@@ -36,7 +37,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 		let rewardEscrow;
 		let flexibleStorage;
 		beforeEach(async () => {
-			messenger = await smockit(artifacts.require('iOVM_BaseCrossDomainMessenger').abi, {
+			messenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, {
 				address: smockedMessenger,
 			});
 
@@ -46,7 +47,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 			mintableSynthetix = await smockit(artifacts.require('MintableSynthetix').abi);
 			flexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi);
-			// now add to address resolver
+
 			resolver = await artifacts.require('AddressResolver').new(owner);
 			await resolver.importAddresses(
 				[
@@ -87,13 +88,18 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				await instance.rebuildCache();
 			});
 
+			it('should set constructor params on deployment', async () => {
+				assert.equal(await instance.owner(), owner);
+				assert.equal(await instance.resolver(), resolver.address);
+			});
+
 			describe('importVestingEntries', async () => {
 				const emptyArray = [];
 
 				describe('failure modes', () => {
 					it('should only allow the relayer (aka messenger) to call importVestingEntries()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: instance.completeEscrowMigration,
+							fnc: instance.finalizeEscrowMigration,
 							args: [user1, escrowedAmount, emptyArray],
 							accounts,
 							address: smockedMessenger,
@@ -105,7 +111,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.completeEscrowMigration(user1, escrowedAmount, emptyArray, {
+							instance.finalizeEscrowMigration(user1, escrowedAmount, emptyArray, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -116,7 +122,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				describe('when invoked by the messenger (aka relayer)', async () => {
 					let importVestingEntriesTx;
 					beforeEach('importVestingEntries is called', async () => {
-						importVestingEntriesTx = await instance.completeEscrowMigration(
+						importVestingEntriesTx = await instance.finalizeEscrowMigration(
 							user1,
 							escrowedAmount,
 							emptyArray,
@@ -142,11 +148,16 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 			});
 
-			describe('initiateWithdrawal', () => {
+			describe('withdraw', () => {
 				describe('failure modes', () => {
-					it('does not work when user has less trasferable snx than the withdrawal amount', async () => {
+					it('does not work when the user has less trasferable snx than the withdrawal amount', async () => {
 						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
-						await assert.revert(instance.initiateWithdrawal('1'), 'Not enough transferable SNX');
+						await assert.revert(instance.withdraw('1'), 'Not enough transferable SNX');
+					});
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
+
+						await assert.revert(instance.withdrawTo(randomAddress, '1'), 'Initiation deactivated');
 					});
 				});
 
@@ -155,7 +166,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 					const amount = 100;
 					const gasLimit = 3e6;
 					beforeEach('user tries to withdraw 100 tokens', async () => {
-						withdrawalTx = await instance.initiateWithdrawal(amount, { from: user1 });
+						withdrawalTx = await instance.withdraw(amount, { from: user1 });
 					});
 
 					it('then SNX is burned via mintableSyntetix.burnSecondary', async () => {
@@ -168,7 +179,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
 						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToOptimism);
 						const expectedData = getDataOfEncodedFncCall({
-							fnc: 'completeWithdrawal',
+							fnc: 'finalizeWithdrawal',
 							args: [user1, amount],
 						});
 
@@ -178,18 +189,71 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 
 					it('and a WithdrawalInitiated event is emitted', async () => {
 						assert.eventEqual(withdrawalTx, 'WithdrawalInitiated', {
-							account: user1,
-							amount: amount,
+							_from: user1,
+							_to: user1,
+							_amount: amount,
 						});
 					});
 				});
 			});
 
-			describe('completeDeposit', async () => {
+			describe('withdrawTo', () => {
 				describe('failure modes', () => {
-					it('should only allow the relayer (aka messenger) to call completeDeposit()', async () => {
+					it('does not work when the user has less trasferable snx than the withdrawal amount', async () => {
+						mintableSynthetix.smocked.transferableSynthetix.will.return.with(() => '0');
+						await assert.revert(
+							instance.withdrawTo(randomAddress, '1'),
+							'Not enough transferable SNX'
+						);
+					});
+					it('does not work when initiation has been suspended', async () => {
+						await instance.suspendInitiation({ from: owner });
+
+						await assert.revert(instance.withdrawTo(randomAddress, '1'), 'Initiation deactivated');
+					});
+				});
+
+				describe('when invoked by a user', () => {
+					let withdrawalTx;
+					const amount = 100;
+					const gasLimit = 3e6;
+					beforeEach('user tries to withdraw 100 tokens to a different address', async () => {
+						withdrawalTx = await instance.withdrawTo(randomAddress, amount, { from: user1 });
+					});
+
+					it('then SNX is burned via mintableSyntetix.burnSecondary to the specified address', async () => {
+						assert.equal(mintableSynthetix.smocked.burnSecondary.calls.length, 1);
+						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][0], user1);
+						assert.equal(mintableSynthetix.smocked.burnSecondary.calls[0][1].toString(), amount);
+					});
+
+					it('the message is relayed', async () => {
+						assert.equal(messenger.smocked.sendMessage.calls.length, 1);
+						assert.equal(messenger.smocked.sendMessage.calls[0][0], snxBridgeToOptimism);
+						const expectedData = getDataOfEncodedFncCall({
+							fnc: 'finalizeWithdrawal',
+							args: [randomAddress, amount],
+						});
+
+						assert.equal(messenger.smocked.sendMessage.calls[0][1], expectedData);
+						assert.equal(messenger.smocked.sendMessage.calls[0][2], gasLimit.toString());
+					});
+
+					it('and a WithdrawalInitiated event is emitted', async () => {
+						assert.eventEqual(withdrawalTx, 'WithdrawalInitiated', {
+							_from: user1,
+							_to: randomAddress,
+							_amount: amount,
+						});
+					});
+				});
+			});
+
+			describe('finalizeDeposit', async () => {
+				describe('failure modes', () => {
+					it('should only allow the relayer (aka messenger) to call finalizeDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: instance.completeDeposit,
+							fnc: instance.finalizeDeposit,
 							args: [user1, 100],
 							accounts,
 							address: smockedMessenger,
@@ -197,11 +261,11 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						});
 					});
 
-					it('should only allow the L1 bridge to invoke completeDeposit() via the messenger', async () => {
+					it('should only allow the L1 bridge to invoke finalizeDeposit() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.completeDeposit(user1, 100, {
+							instance.finalizeDeposit(user1, 100, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -210,18 +274,18 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 
 				describe('when invoked by the messenger (aka relayer)', async () => {
-					let completeDepositTx;
-					const completeDepositAmount = 100;
-					beforeEach('completeDeposit is called', async () => {
-						completeDepositTx = await instance.completeDeposit(user1, completeDepositAmount, {
+					let finalizeDepositTx;
+					const finalizeDepositAmount = 100;
+					beforeEach('finalizeDeposit is called', async () => {
+						finalizeDepositTx = await instance.finalizeDeposit(user1, finalizeDepositAmount, {
 							from: smockedMessenger,
 						});
 					});
 
-					it('should emit a MintedSecondary event', async () => {
-						assert.eventEqual(completeDepositTx, 'MintedSecondary', {
-							account: user1,
-							amount: completeDepositAmount,
+					it('should emit a DepositFinalized event', async () => {
+						assert.eventEqual(finalizeDepositTx, 'DepositFinalized', {
+							_to: user1,
+							_amount: finalizeDepositAmount,
 						});
 					});
 
@@ -230,29 +294,29 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.equal(mintableSynthetix.smocked.mintSecondary.calls[0][0], user1);
 						assert.equal(
 							mintableSynthetix.smocked.mintSecondary.calls[0][1].toString(),
-							completeDepositAmount
+							finalizeDepositAmount
 						);
 					});
 				});
 			});
 
-			describe('completeRewardDeposit', async () => {
+			describe('finalizeRewardDeposit', async () => {
 				describe('failure modes', () => {
-					it('should only allow the relayer (aka messenger) to call completeRewardDeposit()', async () => {
+					it('should only allow the relayer (aka messenger) to call finalizeRewardDeposit()', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: instance.completeRewardDeposit,
-							args: [100],
+							fnc: instance.finalizeRewardDeposit,
+							args: [user1, 100],
 							accounts,
 							address: smockedMessenger,
 							reason: 'Only the relayer can call this',
 						});
 					});
 
-					it('should only allow the L1 bridge to invoke completeRewardDeposit() via the messenger', async () => {
+					it('should only allow the L1 bridge to invoke finalizeRewardDeposit() via the messenger', async () => {
 						// 'smock' the messenger to return a random msg sender
 						messenger.smocked.xDomainMessageSender.will.return.with(() => randomAddress);
 						await assert.revert(
-							instance.completeRewardDeposit(100, {
+							instance.finalizeRewardDeposit(user1, 100, {
 								from: smockedMessenger,
 							}),
 							'Only the L1 bridge can invoke'
@@ -261,20 +325,21 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 				});
 
 				describe('when invoked by the bridge on the other layer', async () => {
-					let completeRewardDepositTx;
-					const completeRewardDepositAmount = 100;
-					beforeEach('completeRewardDeposit is called', async () => {
-						completeRewardDepositTx = await instance.completeRewardDeposit(
-							completeRewardDepositAmount,
+					let finalizeRewardDepositTx;
+					const finalizeRewardDepositAmount = 100;
+					beforeEach('finalizeRewardDeposit is called', async () => {
+						finalizeRewardDepositTx = await instance.finalizeRewardDeposit(
+							user1,
+							finalizeRewardDepositAmount,
 							{
 								from: smockedMessenger,
 							}
 						);
 					});
 
-					it('should emit a MintedSecondaryRewards event', async () => {
-						assert.eventEqual(completeRewardDepositTx, 'MintedSecondaryRewards', {
-							amount: completeRewardDepositAmount,
+					it('should emit a RewardDepositFinalized event', async () => {
+						assert.eventEqual(finalizeRewardDepositTx, 'RewardDepositFinalized', {
+							amount: finalizeRewardDepositAmount,
 						});
 					});
 
@@ -282,7 +347,7 @@ contract('SynthetixBridgeToBase (unit tests)', accounts => {
 						assert.equal(mintableSynthetix.smocked.mintSecondaryRewards.calls.length, 1);
 						assert.equal(
 							mintableSynthetix.smocked.mintSecondaryRewards.calls[0][0].toString(),
-							completeRewardDepositAmount
+							finalizeRewardDepositAmount
 						);
 					});
 				});

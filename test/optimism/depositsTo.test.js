@@ -3,16 +3,18 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { takeSnapshot, restoreSnapshot } = require('./utils/rpc');
 
-const itCanPerformDeposits = ({ ctx }) => {
-	describe('[DEPOSIT] when migrating SNX from L1 to L2', () => {
+const itCanPerformDepositsTo = ({ ctx }) => {
+	describe('[DEPOSIT TO] when migrating SNX from L1 to a separate address on L2', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		let user1L1;
 
-		let SynthetixL1, SynthetixBridgeToOptimismL1, SystemStatusL1, SynthetixBridgeEscrowL1;
+		let SynthetixL1, SynthetixBridgeToOptimismL1, SynthetixBridgeEscrowL1, SystemStatusL1;
 		let SynthetixL2, SynthetixBridgeToBaseL2;
 
 		let snapshotId;
+
+		const randomAddress = ethers.Wallet.createRandom().address;
 
 		// --------------------------
 		// Setup
@@ -97,7 +99,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 					SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 					await assert.revert(
-						SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
+						SynthetixBridgeToOptimismL1.depositTo(randomAddress, amountToDeposit),
 						'subtraction overflow'
 					);
 				});
@@ -113,7 +115,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 
 					const tx = await SynthetixL1.approve(
 						SynthetixBridgeToOptimismL1.address,
-						amountToDeposit
+						ethers.utils.parseEther('100000000')
 					);
 					await tx.wait();
 				});
@@ -142,7 +144,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 						SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 						await assert.revert(
-							SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
+							SynthetixBridgeToOptimismL1.depositTo(randomAddress, amountToDeposit),
 							'Cannot deposit or migrate with debt'
 						);
 					});
@@ -153,6 +155,8 @@ const itCanPerformDeposits = ({ ctx }) => {
 				// --------------------------
 
 				describe('when a user doesnt have debt in L1', () => {
+					let depositReceipt;
+
 					// --------------------------
 					// Suspended
 					// --------------------------
@@ -170,36 +174,12 @@ const itCanPerformDeposits = ({ ctx }) => {
 							await SystemStatusL1.resumeSystem();
 						});
 
-						it('reverts when the user attempts to initiate a deposit', async () => {
+						it('reverts when the user attempts to deposit to a an different account', async () => {
 							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
 							await assert.revert(
-								SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
+								SynthetixBridgeToOptimismL1.depositTo(randomAddress, amountToDeposit),
 								'Synthetix is suspended'
-							);
-						});
-					});
-
-					describe('when initiation is suspended on L1', () => {
-						before('suspend initiation on L1', async () => {
-							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
-
-							const tx = await SynthetixBridgeToOptimismL1.suspendInitiation();
-							await tx.wait();
-						});
-
-						after('resume initiation on L1', async () => {
-							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
-
-							const tx = await SynthetixBridgeToOptimismL1.resumeInitiation();
-							await tx.wait();
-						});
-
-						it('reverts when the user attempts to initiate a withdrawal', async () => {
-							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L1);
-							await assert.revert(
-								SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
-								'Initiation deactivated'
 							);
 						});
 					});
@@ -212,99 +192,90 @@ const itCanPerformDeposits = ({ ctx }) => {
 						let user1BalanceL2;
 						let escrowBalanceL1;
 						let depositFinalizedEvent;
+						let randomAddressBalanceL2;
 
 						before('record current values', async () => {
 							escrowBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address);
 							user1BalanceL1 = await SynthetixL1.balanceOf(user1L1.address);
 							user1BalanceL2 = await SynthetixL2.balanceOf(user1L1.address);
+							randomAddressBalanceL2 = await SynthetixL2.balanceOf(randomAddress);
 						});
 
 						// --------------------------
 						// Deposit
 						// --------------------------
-						describe('initiation is suspended on L2', () => {
-							let depositReceipt;
-							// suspending initation should not affect deposits
-							before('suspend initiation on L2', async () => {
-								SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(ctx.ownerL2);
-								const tx = await SynthetixBridgeToBaseL2.suspendInitiation();
-								await tx.wait();
-							});
 
-							// always resume afterwards so we keep a clean state
-							after('suspend initiation on L2', async () => {
-								SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(ctx.ownerL2);
-								const tx = await SynthetixBridgeToBaseL2.resumeInitiation();
-								await tx.wait();
-							});
+						const eventListener = (from, value, event) => {
+							if (event && event.event === 'DepositFinalized') {
+								depositFinalizedEvent = event;
+							}
+						};
 
-							const eventListener = (from, value, event) => {
-								if (event && event.event === 'DepositFinalized') {
-									depositFinalizedEvent = event;
-								}
-							};
+						before('listen to events on l2', async () => {
+							SynthetixBridgeToBaseL2.on('DepositFinalized', eventListener);
+						});
 
-							before('listen to events on l2', async () => {
-								SynthetixBridgeToBaseL2.on('DepositFinalized', eventListener);
-							});
+						before('depositTo', async () => {
+							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 
-							before('deposit', async () => {
-								SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
+							const tx = await SynthetixBridgeToOptimismL1.depositTo(
+								randomAddress,
+								amountToDeposit
+							);
+							depositReceipt = await tx.wait();
+						});
 
-								const tx = await SynthetixBridgeToOptimismL1.deposit(amountToDeposit);
-								depositReceipt = await tx.wait();
-							});
+						it('emitted a DepositInitiated event', async () => {
+							const event = depositReceipt.events.find(e => e.event === 'DepositInitiated');
+							assert.exists(event);
 
-							it('emitted a DepositInitiated event', async () => {
-								const event = depositReceipt.events.find(e => e.event === 'DepositInitiated');
-								assert.exists(event);
-								assert.equal(event.args._from, user1L1.address);
-								assert.equal(event.args._to, user1L1.address);
-								assert.bnEqual(event.args._amount, amountToDeposit);
-							});
+							assert.equal(event.args._from, user1L1.address);
+							assert.equal(event.args._to, randomAddress);
+							assert.bnEqual(event.args._amount, amountToDeposit);
+						});
 
-							it('shows that the users new balance L1 is reduced', async () => {
-								assert.bnEqual(
-									await SynthetixL1.balanceOf(user1L1.address),
-									user1BalanceL1.sub(amountToDeposit)
+						it('shows that the users new balance L1 is reduced', async () => {
+							assert.bnEqual(
+								await SynthetixL1.balanceOf(user1L1.address),
+								user1BalanceL1.sub(amountToDeposit)
+							);
+						});
+
+						it('shows that the bridge escrow received the SNX', async () => {
+							assert.bnEqual(
+								await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address),
+								escrowBalanceL1.add(amountToDeposit)
+							);
+						});
+
+						// --------------------------
+						// Wait...
+						// --------------------------
+
+						describe('when waiting for the tx to complete on L2', () => {
+							before('listen for completion', async () => {
+								const [transactionHashL2] = await ctx.watcher.getMessageHashesFromL1Tx(
+									depositReceipt.transactionHash
 								);
+								await ctx.watcher.getL2TransactionReceipt(transactionHashL2);
 							});
 
-							it('shows that the bridge escrow received the SNX', async () => {
+							before('stop listening to events on L2', async () => {
+								SynthetixBridgeToBaseL2.off('DepositFinalized', eventListener);
+							});
+
+							it('emitted a DepositFinalized event', async () => {
+								assert.exists(depositFinalizedEvent);
+								assert.bnEqual(depositFinalizedEvent.args._amount, amountToDeposit);
+								assert.equal(depositFinalizedEvent.args._to, randomAddress);
+							});
+
+							it('shows that the L2 balances are updated', async () => {
+								assert.bnEqual(await SynthetixL2.balanceOf(user1L1.address), user1BalanceL2);
 								assert.bnEqual(
-									await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address),
-									escrowBalanceL1.add(amountToDeposit)
+									await SynthetixL2.balanceOf(randomAddress),
+									randomAddressBalanceL2.add(amountToDeposit)
 								);
-							});
-
-							// --------------------------
-							// Wait...
-							// --------------------------
-
-							describe('when waiting for the tx to complete on L2', () => {
-								before('listen for completion', async () => {
-									const [transactionHashL2] = await ctx.watcher.getMessageHashesFromL1Tx(
-										depositReceipt.transactionHash
-									);
-									await ctx.watcher.getL2TransactionReceipt(transactionHashL2);
-								});
-
-								before('stop listening to events on L2', async () => {
-									SynthetixBridgeToBaseL2.off('DepositFinalized', eventListener);
-								});
-
-								it('emitted a DepositFinalized event', async () => {
-									assert.exists(depositFinalizedEvent);
-									assert.bnEqual(depositFinalizedEvent.args._amount, amountToDeposit);
-									assert.equal(depositFinalizedEvent.args._to, user1L1.address);
-								});
-
-								it('shows that the users L2 balance increased', async () => {
-									assert.bnEqual(
-										await SynthetixL2.balanceOf(user1L1.address),
-										user1BalanceL2.add(amountToDeposit)
-									);
-								});
 							});
 						});
 					});
@@ -315,5 +286,5 @@ const itCanPerformDeposits = ({ ctx }) => {
 };
 
 module.exports = {
-	itCanPerformDeposits,
+	itCanPerformDepositsTo,
 };
