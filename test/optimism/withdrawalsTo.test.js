@@ -67,17 +67,18 @@ const itCanPerformWithdrawalsTo = ({ ctx }) => {
 
 		before("Approve the bridge to transfer on escrow's behalf", async () => {
 			SynthetixBridgeEscrowL1 = SynthetixBridgeEscrowL1.connect(ctx.ownerL1);
-			// approve first to 0 in case there is already an existing approval
-			await SynthetixBridgeEscrowL1.approveBridge(
-				SynthetixL1.address,
-				SynthetixBridgeToOptimismL1.address,
-				'0'
+
+			const allowance = await SynthetixL1.allowance(
+				SynthetixBridgeEscrowL1.address,
+				SynthetixBridgeToOptimismL1.address
 			);
-			await SynthetixBridgeEscrowL1.approveBridge(
-				SynthetixL1.address,
-				SynthetixBridgeToOptimismL1.address,
-				amountToWithdraw
-			);
+			if (allowance.toString() === '0') {
+				await SynthetixBridgeEscrowL1.approveBridge(
+					SynthetixL1.address,
+					SynthetixBridgeToOptimismL1.address,
+					amountToWithdraw
+				);
+			}
 		});
 
 		// --------------------------

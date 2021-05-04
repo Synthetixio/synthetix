@@ -150,9 +150,9 @@ describe('Layer 2 production tests', () => {
 			await tweakSettings({ provider: this.providerL2, owner: this.ownerL2, useOvm: true });
 		});
 
-		// // --------------------------
-		// // General properties
-		// // --------------------------
+		// --------------------------
+		// General properties
+		// --------------------------
 
 		describe('[GENERAL] properties', () => {
 			it('shows the expected owners', async () => {
