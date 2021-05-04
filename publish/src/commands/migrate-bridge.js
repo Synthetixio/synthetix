@@ -31,6 +31,8 @@ const migrateBridge = async ({ network, useFork, gasPrice, useMigrator }) => {
 	await _nominate({ migrator, oldBridge, newEscrow, getSource, signer });
 
 	await _execute({ signer, migrator, txParams });
+
+	await _validate({ snx, newEscrow, oldBridge, signer, getSource });
 };
 
 async function _connect({ network, useFork, gasPrice }) {
@@ -188,6 +190,27 @@ async function _execute({ signer, migrator, txParams }) {
 	console.log(chalk.gray(tx.hash));
 	const receipt = await tx.wait();
 	console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
+}
+
+async function _validate({ snx, newEscrow, oldBridge, signer, getSource }) {
+	const snxContract = new ethers.Contract(
+		snx,
+		getSource({ contract: 'ProxyERC20' }).abi // We only care about the Owned interface here, so the new ABI will do
+	);
+	console.log(`Old bridge SNX balance: ${await snxContract.balanceOf(oldBridge)}`);
+	console.log(`New escrow SNX balance: ${await snxContract.balanceOf(newEscrow)}`);
+
+	const oldBridgeContract = new ethers.Contract(
+		oldBridge,
+		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi // We only care about the Owned interface here, so the new ABI will do
+	);
+	console.log(`Old bridge owner: ${await oldBridgeContract.owner()}`);
+
+	const newEscrowContract = new ethers.Contract(
+		newEscrow,
+		getSource({ contract: 'SynthetixBridgeEscrow' }).abi
+	);
+	console.log(`New escrow owner: ${await newEscrowContract.owner()}`);
 }
 
 module.exports = {

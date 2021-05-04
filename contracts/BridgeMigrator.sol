@@ -60,6 +60,7 @@ contract BridgeMigrator {
     // ----------------------------------------
 
     function execute() public {
+        require(migratedBalance == 0, "Already migrated");
         require(msg.sender == deployer, "Only deployer may execute");
 
         _takeOwnership();
