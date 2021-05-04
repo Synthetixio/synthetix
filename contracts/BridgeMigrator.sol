@@ -33,20 +33,21 @@ contract BridgeMigrator {
     constructor(
         address _newBridge,
         address _newEscrow,
-    ) public Owned(_owner) {
+        string memory _network
+    ) public {
         newBridge = _newBridge;
         newEscrow = _newEscrow;
 
-        if (_network == "mainnet") {
+        if (keccak256(abi.encodePacked(_network)) == keccak256(abi.encodePacked("mainnet"))) {
             oldBridge = 0x045e507925d2e05D114534D0810a1abD94aca8d6;
             pdao      = 0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
             deployer  = 0xDe910777C787903F78C89e7a0bf7F4C435cBB1Fe;
-            snx       = 0x97767D7D04Fd0dB0A1a2478DCd4BA85290556B48;
-        } else if (network == "kovan") {
+            snx       = IERC20(0x97767D7D04Fd0dB0A1a2478DCd4BA85290556B48);
+        } else if (keccak256(abi.encodePacked(_network)) == keccak256(abi.encodePacked("kovan"))) {
             oldBridge = 0xE8Bf8fe5ce9e15D30F478E1647A57CB6B0271228;
             pdao      = 0x73570075092502472E4b61A7058Df1A4a1DB12f2;
             deployer  = 0x73570075092502472E4b61A7058Df1A4a1DB12f2;
-            snx       = 0x07aCC2B253218535c21a3E57BcB81eB13345a34A;
+            snx       = IERC20(0x07aCC2B253218535c21a3E57BcB81eB13345a34A);
         } else {
             revert("Unsupported network");
         }
@@ -65,6 +66,10 @@ contract BridgeMigrator {
         _migrateSNX();
         // TODO: Validate oldBridge to be deactivated
         _validateBalancesAfter();
+        _relinquishOwnership();
+    }
+
+    function restoreOwnership() public {
         _relinquishOwnership();
     }
 
