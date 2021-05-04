@@ -13,16 +13,11 @@ let snx, oldBridge, newBridge, newEscrow;
 let txParams;
 let migrator;
 
-const migrateBridge = async ({
-	network,
-	useFork,
-	gasPrice,
-	deployedMigrator,
-}) => {
+const migrateBridge = async ({ network, useFork, gasPrice, useMigrator }) => {
 	await _connect({ network, useFork, gasPrice });
 	_identify({ network });
 
-	await _deploy({ network, deployedMigrator });
+	await _deploy({ network, useMigrator });
 	await _verify();
 
 	await _nominate();
@@ -31,15 +26,23 @@ const migrateBridge = async ({
 };
 
 async function _nominate() {
-	await confirmAction(chalk.yellow(`Please nominate SynthetixBridgeToOptimism (${oldBridge}) ownership to ${migrator.options.address}. When done, press "y" to continue.`));
+	await confirmAction(
+		chalk.yellow(
+			`Please nominate SynthetixBridgeToOptimism (${oldBridge}) ownership to ${migrator.address}. When done, press "y" to continue.`
+		)
+	);
 
-	await confirmAction(chalk.yellow(`Please nominate SynthetixBridgeEscrow (${newEscrow}) ownership to ${migrator.options.address}. When done, press "y" to continue.`));
+	await confirmAction(
+		chalk.yellow(
+			`Please nominate SynthetixBridgeEscrow (${newEscrow}) ownership to ${migrator.address}. When done, press "y" to continue.`
+		)
+	);
 }
 
 async function _execute() {
-	await confirmAction(chalk.yellow.bold('Execute the migration? (type "y" to continue)'));
+	await confirmAction(chalk.yellow.inverse('Execute the migration? (type "y" to continue)'));
 
-	console.log(chalk.gray.bold('Executing the migration...'));
+	console.log(chalk.gray.bold('Executing...'));
 
 	const tx = await migrator.execute(txParams);
 	console.log(chalk.gray(tx.hash));
@@ -48,50 +51,46 @@ async function _execute() {
 }
 
 async function _verify() {
-	console.log(chalk.gray('Validating contract parameters...'))
+	console.log(chalk.gray('Validating contract parameters...'));
 
 	const _snx = await migrator.snx();
 	const _oldBridge = await migrator.oldBridge();
 	const _newBridge = await migrator.newBridge();
 	const _newEscrow = await migrator.newEscrow();
-	console.log(`Contract's snx: ${_snx}`)
-	console.log(`Contract's old bridge: ${_oldBridge}`)
-	console.log(`Contract's new bridge: ${_newBridge}`)
-	console.log(`Contract's new escrow: ${_newEscrow}`)
 
 	assert(_snx === snx, 'Unexpected snx address');
 	assert(_oldBridge === oldBridge, 'Unexpected old bridge address');
 	assert(_newBridge === newBridge, 'Unexpected new bridge address');
 	assert(_newEscrow === newEscrow, 'Unexpected new escrow address');
+
+	console.log(chalk.gray(`Contract's snx: ${_snx} OK ✓`));
+	console.log(chalk.gray(`Contract's old bridge: ${_oldBridge} OK ✓`));
+	console.log(chalk.gray(`Contract's new bridge: ${_newBridge} OK ✓`));
+	console.log(chalk.gray(`Contract's new escrow: ${_newEscrow} OK ✓`));
 }
 
-async function _deploy({ network, deployedMigrator }) {
+async function _deploy({ network, useMigrator }) {
 	const artifacts = JSON.parse(
 		fs.readFileSync('build/artifacts/contracts/BridgeMigrator.sol/BridgeMigrator.json')
 	);
 
-	if (!deployedMigrator) {
+	if (!useMigrator) {
 		await confirmAction(chalk.yellow('Type "y" to deploy the migrator contract'));
 
-		console.log(chalk.gray('Deploying BridgeMigrator...'))
+		console.log(chalk.gray('Deploying BridgeMigrator...'));
 
 		const Migrator = new ethers.ContractFactory(artifacts.abi, artifacts.bytecode, signer);
-		migrator = await Migrator.deploy(
-			newBridge,
-			newEscrow,
-			network,
-		  txParams
-		);
+		migrator = await Migrator.deploy(newBridge, newEscrow, network, txParams);
 
 		const tx = migrator.deployTransaction;
 		console.log(chalk.gray(tx.hash));
 		const receipt = await migrator.deployTransaction.wait();
 		console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
 	} else {
-		migrator = new ethers.Contract(deployedMigrator, artifacts.abi, signer);
+		migrator = new ethers.Contract(useMigrator, artifacts.abi, signer);
 	}
 
-	console.log(chalk.gray(`Migrator: ${migrator.address}`))
+	console.log(chalk.gray(`Migrator: ${migrator.address}`));
 }
 
 function _identify({ network }) {
@@ -123,7 +122,7 @@ function _identify({ network }) {
 
 async function _connect({ network, useFork, gasPrice }) {
 	ensureNetwork(network);
-	console.log(chalk.gray(`Network: ${network}${ useFork ? '(FORKED)' : '' }`));
+	console.log(chalk.gray(`Network: ${network}${useFork ? '(FORKED)' : ''}`));
 
 	if (useFork && network !== 'mainnet') {
 		throw new Error('Command can only run on a fork if network is mainnet');
@@ -133,7 +132,7 @@ async function _connect({ network, useFork, gasPrice }) {
 		network,
 		useFork,
 	});
-	console.log(chalk.gray(`Provider: ${providerUrl}`))
+	console.log(chalk.gray(`Provider: ${providerUrl}`));
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 	signer = new ethers.Wallet(privateKey, provider);
@@ -146,7 +145,7 @@ async function _connect({ network, useFork, gasPrice }) {
 		gasLimit: 8000000,
 	};
 	console.log(chalk.gray(`Gas price: ${gasPrice} gwei (${txParams.gasPrice.toString()} wei)`));
-	console.log(chalk.gray(`Gas limit: ${txParams.gas}`));
+	console.log(chalk.gray(`Gas limit: ${txParams.gasLimit}`));
 }
 
 module.exports = {
@@ -159,8 +158,13 @@ module.exports = {
 			)
 			.option('--network <value>', 'The target network', network => network.toLowerCase())
 			.option('--use-fork', 'Run the migration on a fork of mainnet', false)
-			.option('--gas-price <value>', 'Gas price in GWEI to use in all transactions', parseFloat, 100)
-			.option('--deployed-migrator <value>', 'Use already deployed migrator contract')
+			.option(
+				'--gas-price <value>',
+				'Gas price in GWEI to use in all transactions',
+				parseFloat,
+				100
+			)
+			.option('--use-migrator <value>', 'Use already deployed migrator contract')
 			.action(async (...args) => {
 				try {
 					await migrateBridge(...args);
