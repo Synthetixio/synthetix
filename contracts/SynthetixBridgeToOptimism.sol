@@ -7,12 +7,14 @@ import "./interfaces/ISynthetixBridgeToOptimism.sol";
 import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
 
 // Internal references
-import "./interfaces/IERC20.sol";
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
 
 contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOptimism, iOVM_L1TokenGateway {
+    using SafeERC20 for IERC20;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
@@ -90,6 +92,12 @@ contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOpt
         synthetixERC20().transferFrom(msg.sender, synthetixBridgeEscrow(), amount);
 
         _depositReward(msg.sender, amount);
+    }
+
+    // forward any accidental tokens sent here to the escrow
+    function forwardTokensToEscrow(address token) external {
+        IERC20 erc20 = IERC20(token);
+        erc20.safeTransfer(synthetixBridgeEscrow(), erc20.balanceOf(address(this)));
     }
 
     // ========= RESTRICTED FUNCTIONS ==============
