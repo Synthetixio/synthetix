@@ -61,7 +61,7 @@ function _identify({ network }) {
 	console.log(chalk.gray(`Deployer: ${deployer}`));
 	console.log(chalk.gray(`pDAO: ${pdao}`));
 
-	snx = getTarget({ network, contract: 'Synthetix' }).address;
+	snx = getTarget({ network, contract: 'ProxyERC20' }).address;
 	newBridge = getTarget({ network, contract: 'SynthetixBridgeToOptimism' }).address;
 	newEscrow = getTarget({ network, contract: 'SynthetixBridgeEscrow' }).address;
 	console.log(chalk.gray(`Synthetix: ${snx}`));
