@@ -50,10 +50,16 @@ async function _connect({ network, useFork, gasPrice }) {
 	console.log(chalk.gray(`Provider: ${providerUrl}`));
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-	const signer = new ethers.Wallet(privateKey, provider);
-	console.log(chalk.gray(`Signer: ${await signer.getAddress()}`));
 
 	const { getUsers, getTarget, getSource } = wrap({ network, fs, path });
+
+	let signer;
+	if (useFork) {
+		signer = provider.getSigner(getUsers({ network }).find(u => u.name === 'deployer').address);
+	} else {
+		signer = new ethers.Wallet(privateKey, provider);
+	}
+	console.log(chalk.gray(`Signer: ${await signer.getAddress()}`));
 
 	const txParams = {
 		gasPrice: ethers.utils.parseUnits(`${gasPrice}`, 'gwei'),
