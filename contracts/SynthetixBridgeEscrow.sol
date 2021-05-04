@@ -3,11 +3,12 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
+import "./interfaces/ISynthetixBridgeEscrow.sol";
 
 // External references.
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
 
-contract SynthetixBridgeEscrow is Owned {
+contract SynthetixBridgeEscrow is Owned, ISynthetixBridgeEscrow {
     using SafeERC20 for IERC20;
 
     constructor(address _owner) public Owned(_owner) {}
