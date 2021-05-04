@@ -80,7 +80,7 @@ contract BridgeMigrator {
     // ----------------------------------------
 
     function _takeOwnership() internal {
-        require(IOwned(oldBridge).owner() == pdao, "Unexpected old bridge owner");
+        require(IOwned(oldBridge).owner() == deployer || IOwned(oldBridge).owner() == pdao, "Unexpected old bridge owner");
         require(IOwned(newEscrow).owner() == deployer || IOwned(newEscrow).owner() == pdao, "Unexpected new escrow owner");
 
         IOwned(oldBridge).acceptOwnership();
@@ -122,10 +122,10 @@ contract BridgeMigrator {
     }
 
     function _relinquishOwnership() internal {
-        IOwned(oldBridge).nominateNewOwner(pdao);
-        IOwned(newEscrow).nominateNewOwner(pdao);
+        IOwned(oldBridge).nominateNewOwner(deployer);
+        IOwned(newEscrow).nominateNewOwner(deployer);
 
-        require(IOwned(oldBridge).nominatedOwner() == pdao, "Failed to relinquish old bridge ownership");
-        require(IOwned(newEscrow).nominatedOwner() == pdao, "Failed to relinquish new escrow ownership");
+        require(IOwned(oldBridge).nominatedOwner() == deployer, "Failed to relinquish old bridge ownership");
+        require(IOwned(newEscrow).nominatedOwner() == deployer, "Failed to relinquish new escrow ownership");
     }
 }
