@@ -12,27 +12,52 @@ const migrateBridge = async ({ network, useFork, gasPrice, useMigrator }) => {
 		useFork,
 		gasPrice,
 	});
-	const { snx, deployer, newBridge, newEscrow, oldBridge } = _identify({
+	const {
+		deployer,
+		snxContract,
+		oldBridgeContract,
+		newBridgeContract,
+		newEscrowContract,
+	} = _identify({
 		network,
+		signer,
 		getUsers,
+		getSource,
 		getTarget,
 	});
 
-	const { migrator } = await _deploy({
+	const { migratorContract } = await _deploy({
 		network,
 		useMigrator,
 		signer,
-		newBridge,
-		newEscrow,
+		newBridgeContract,
+		newEscrowContract,
 		txParams,
 	});
-	await _verify({ migrator, snx, oldBridge, newBridge, newEscrow });
+	await _verify({
+		migratorContract,
+		snxContract,
+		oldBridgeContract,
+		newBridgeContract,
+		newEscrowContract,
+	});
 
-	await _nominate({ migrator, oldBridge, newEscrow, getSource, signer, deployer });
+	await _nominate({
+		migratorContract,
+		deployer,
+		oldBridgeContract,
+		newEscrowContract,
+	});
 
-	await _execute({ signer, migrator, txParams, oldBridge, newEscrow, getSource });
+	await _execute({
+		signer,
+		migratorContract,
+		txParams,
+		oldBridgeContract,
+		newEscrowContract,
+	});
 
-	await _validate({ snx, newEscrow, oldBridge, signer, getSource });
+	await _validate({ snxContract, newEscrowContract, oldBridgeContract });
 };
 
 async function _connect({ network, useFork, gasPrice }) {
@@ -77,7 +102,7 @@ async function _connect({ network, useFork, gasPrice }) {
 	};
 }
 
-function _identify({ network, getUsers, getTarget }) {
+function _identify({ network, getUsers, getSource, getTarget, signer }) {
 	const users = getUsers({ network });
 
 	const deployer = users.find(u => u.name === 'deployer').address;
@@ -104,56 +129,95 @@ function _identify({ network, getUsers, getTarget }) {
 
 	assert(newBridge !== oldBridge, 'Bridge addresses must be different');
 
+	const oldBridgeContract = new ethers.Contract(
+		oldBridge,
+		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi, // We only care about the Owned interface here, so the new ABI will do
+		signer
+	);
+
+	const newBridgeContract = new ethers.Contract(
+		newBridge,
+		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi,
+		signer
+	);
+
+	const newEscrowContract = new ethers.Contract(
+		newEscrow,
+		getSource({ contract: 'SynthetixBridgeEscrow' }).abi,
+		signer
+	);
+
+	const snxContract = new ethers.Contract(snx, getSource({ contract: 'ProxyERC20' }).abi, signer);
+
 	return {
 		snx,
 		deployer,
-		newBridge,
-		oldBridge,
-		newEscrow,
+		oldBridgeContract,
+		newBridgeContract,
+		newEscrowContract,
+		snxContract,
 	};
 }
 
-async function _deploy({ network, useMigrator, newBridge, newEscrow, txParams, signer }) {
+async function _deploy({
+	network,
+	useMigrator,
+	newBridgeContract,
+	newEscrowContract,
+	txParams,
+	signer,
+}) {
 	const artifacts = JSON.parse(
 		fs.readFileSync('build/artifacts/contracts/BridgeMigrator.sol/BridgeMigrator.json')
 	);
 
-	let migrator;
+	let migratorContract;
 	if (!useMigrator) {
 		await confirmAction(chalk.yellow('Type "y" to deploy the migrator contract'));
 
 		console.log(chalk.gray('Deploying BridgeMigrator...'));
 
 		const Migrator = new ethers.ContractFactory(artifacts.abi, artifacts.bytecode, signer);
-		migrator = await Migrator.deploy(newBridge, newEscrow, network, txParams);
+		migratorContract = await Migrator.deploy(
+			newBridgeContract.address,
+			newEscrowContract.address,
+			network,
+			txParams
+		);
 
-		const tx = migrator.deployTransaction;
+		const tx = migratorContract.deployTransaction;
 		console.log(chalk.gray(tx.hash));
-		const receipt = await migrator.deployTransaction.wait();
+		const receipt = await migratorContract.deployTransaction.wait();
 		console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
 	} else {
-		migrator = new ethers.Contract(useMigrator, artifacts.abi, signer);
+		migratorContract = new ethers.Contract(useMigrator, artifacts.abi, signer);
 	}
 
-	console.log(chalk.gray(`Migrator: ${migrator.address}`));
+	console.log(chalk.gray(`Migrator: ${migratorContract.address}`));
 
 	return {
-		migrator,
+		migratorContract,
 	};
 }
 
-async function _verify({ migrator, snx, oldBridge, newBridge, newEscrow }) {
+async function _verify({
+	migratorContract,
+	snxContract,
+	oldBridgeContract,
+	newBridgeContract,
+	newEscrowContract,
+}) {
 	console.log(chalk.gray('Validating contract parameters...'));
 
-	const _snx = await migrator.snx();
-	const _oldBridge = await migrator.oldBridge();
-	const _newBridge = await migrator.newBridge();
-	const _newEscrow = await migrator.newEscrow();
+	const _snx = await migratorContract.snx();
+	const _oldBridge = await migratorContract.oldBridge();
+	const _newBridge = await migratorContract.newBridge();
+	const _newEscrow = await migratorContract.newEscrow();
 
-	assert(_snx === snx, 'Unexpected snx address');
-	assert(_oldBridge === oldBridge, 'Unexpected old bridge address');
-	assert(_newBridge === newBridge, 'Unexpected new bridge address');
-	assert(_newEscrow === newEscrow, 'Unexpected new escrow address');
+	assert(_snx === snxContract.address, 'Unexpected snx address');
+	assert(_oldBridge === oldBridgeContract.address, 'Unexpected old bridge address');
+	assert(_newBridge === newBridgeContract.address, 'Unexpected new bridge address');
+	assert(_newEscrow === newEscrowContract.address, 'Unexpected new escrow address');
 
 	console.log(chalk.gray(`Contract's snx: ${_snx} OK ✓`));
 	console.log(chalk.gray(`Contract's old bridge: ${_oldBridge} OK ✓`));
@@ -161,111 +225,88 @@ async function _verify({ migrator, snx, oldBridge, newBridge, newEscrow }) {
 	console.log(chalk.gray(`Contract's new escrow: ${_newEscrow} OK ✓`));
 }
 
-async function _nominate({ oldBridge, newEscrow, migrator, signer, getSource, deployer }) {
-	const oldBridgeContract = new ethers.Contract(
-		oldBridge,
-		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi, // We only care about the Owned interface here, so the new ABI will do
-		signer
-	);
-
+async function _nominate({ migratorContract, deployer, oldBridgeContract, newEscrowContract }) {
 	const oldBridgeNominatedOwner = await oldBridgeContract.nominatedOwner();
-	console.log(`Old bridge nominatedOwner: ${oldBridgeNominatedOwner}`);
-	if (oldBridgeNominatedOwner !== migrator.address) {
+	console.log(chalk.gray(`Old bridge nominatedOwner: ${oldBridgeNominatedOwner}`));
+	if (oldBridgeNominatedOwner !== migratorContract.address) {
 		const oldBridgeOwner = await oldBridgeContract.owner();
-		console.log(`Old bridge owner: ${oldBridgeOwner}`);
+		console.log(chalk.gray(`Old bridge owner: ${oldBridgeOwner}`));
 		if (oldBridgeOwner === deployer) {
-			console.log(`Nominating new owner on SynthetixBridgeToOptimism (${oldBridge})...`);
-			const tx = await oldBridgeContract.nominateNewOwner(migrator.address);
+			console.log(
+				chalk.gray(
+					`Nominating new owner on SynthetixBridgeToOptimism (${oldBridgeContract.address})...`
+				)
+			);
+			const tx = await oldBridgeContract.nominateNewOwner(migratorContract.address);
 			console.log(chalk.gray(tx.hash));
 			const receipt = await tx.wait();
 			console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
 		} else {
 			await confirmAction(
 				chalk.yellow(
-					`Please nominate SynthetixBridgeToOptimism (${oldBridge}) ownership to ${migrator.address}\nWhen done, press "y" to continue.`
+					`Please nominate SynthetixBridgeToOptimism (${oldBridgeContract.address}) ownership to ${migratorContract.address}\nWhen done, press "y" to continue.`
 				)
 			);
 		}
 	}
 
-	const newEscrowContract = new ethers.Contract(
-		newEscrow,
-		getSource({ contract: 'SynthetixBridgeEscrow' }).abi,
-		signer
-	);
-
 	const newEscrowNominatedOwner = await newEscrowContract.nominatedOwner();
-	console.log(`New escrow nominatedOwner: ${newEscrowNominatedOwner}`);
-	if (newEscrowNominatedOwner !== migrator.address) {
+	console.log(chalk.gray(`New escrow nominatedOwner: ${newEscrowNominatedOwner}`));
+	if (newEscrowNominatedOwner !== migratorContract.address) {
 		const newEscrowOwner = await newEscrowContract.owner();
-		console.log(`New escrow owner: ${newEscrowOwner}`);
+		console.log(chalk.gray(`New escrow owner: ${newEscrowOwner}`));
 		if (newEscrowOwner === deployer) {
-			console.log(`Nominating new owner on SynthetixBridgeEscrow (${newEscrow})...`);
-			const tx = await newEscrowContract.nominateNewOwner(migrator.address);
+			console.log(
+				chalk.gray(
+					`Nominating new owner on SynthetixBridgeEscrow (${newEscrowContract.address})...`
+				)
+			);
+			const tx = await newEscrowContract.nominateNewOwner(migratorContract.address);
 			console.log(chalk.gray(tx.hash));
 			const receipt = await tx.wait();
 			console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
 		} else {
 			await confirmAction(
 				chalk.yellow(
-					`Please nominate SynthetixBridgeEscrow (${newEscrow}) ownership to ${migrator.address}\nWhen done, press "y" to continue.`
+					`Please nominate SynthetixBridgeEscrow (${newEscrowContract.address}) ownership to ${migratorContract.address}\nWhen done, press "y" to continue.`
 				)
 			);
 		}
 	}
 }
 
-async function _execute({ signer, migrator, txParams, oldBridge, newEscrow, getSource }) {
+async function _execute({ migratorContract, txParams, oldBridgeContract, newEscrowContract }) {
 	await confirmAction(chalk.yellow.inverse('Execute the migration? (type "y" to continue)'));
 
 	console.log(chalk.gray.bold('Executing...'));
 
 	let tx, receipt;
 
-	tx = await migrator.execute(txParams);
+	tx = await migratorContract.execute(txParams);
 	console.log(chalk.gray(tx.hash));
 	receipt = await tx.wait();
 	console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
 
-	const oldBridgeContract = new ethers.Contract(
-		oldBridge,
-		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi, // We only care about the Owned interface here, so the new ABI will do
-		signer
-	);
 	tx = await oldBridgeContract.acceptOwnership();
 	console.log(chalk.gray(tx.hash));
 	receipt = await tx.wait();
 	console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
 
-	const newEscrowContract = new ethers.Contract(
-		newEscrow,
-		getSource({ contract: 'SynthetixBridgeEscrow' }).abi,
-		signer
-	);
 	tx = await newEscrowContract.acceptOwnership();
 	console.log(chalk.gray(tx.hash));
 	receipt = await tx.wait();
 	console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
 }
 
-async function _validate({ snx, newEscrow, oldBridge, signer, getSource }) {
-	const snxContract = new ethers.Contract(snx, getSource({ contract: 'ProxyERC20' }).abi, signer);
-	console.log(`Old bridge SNX balance: ${await snxContract.balanceOf(oldBridge)}`);
-	console.log(`New escrow SNX balance: ${await snxContract.balanceOf(newEscrow)}`);
-
-	const oldBridgeContract = new ethers.Contract(
-		oldBridge,
-		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi, // We only care about the Owned interface here, so the new ABI will do
-		signer
+async function _validate({ snxContract, newEscrowContract, oldBridgeContract }) {
+	console.log(
+		chalk.gray(`Old bridge SNX balance: ${await snxContract.balanceOf(oldBridgeContract.address)}`)
 	);
-	console.log(`Old bridge owner: ${await oldBridgeContract.owner()}`);
-
-	const newEscrowContract = new ethers.Contract(
-		newEscrow,
-		getSource({ contract: 'SynthetixBridgeEscrow' }).abi,
-		signer
+	console.log(
+		chalk.gray(`New escrow SNX balance: ${await snxContract.balanceOf(newEscrowContract.address)}`)
 	);
-	console.log(`New escrow owner: ${await newEscrowContract.owner()}`);
+	console.log(chalk.gray(`Old bridge owner: ${await oldBridgeContract.owner()}`));
+	console.log(chalk.gray(`New escrow owner: ${await newEscrowContract.owner()}`));
 }
 
 module.exports = {

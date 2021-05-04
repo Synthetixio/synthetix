@@ -15,7 +15,7 @@ interface IOwned {
 }
 
 interface IOldSynthetixBridgeToOptimism {
-    function active() external view returns (bool);
+    function activated() external view returns (bool);
 
     function migrateBridge(address newBridge) external;
 }
@@ -98,22 +98,21 @@ contract BridgeMigrator {
     }
 
     function _provideAllowance() internal {
-        require(snx.allowance(newEscrow, newBridge) == 0, "Unexpected initial new bridge allowance");
-
+        ISynthetixBridgeEscrow(newEscrow).approveBridge(address(snx), newBridge, 0);
         ISynthetixBridgeEscrow(newEscrow).approveBridge(address(snx), newBridge, uint256(-1));
         require(snx.allowance(newEscrow, newBridge) == uint256(-1), "Unexpected final new bridge allowance");
     }
 
     function _validateStateBefore() internal {
-        require(IOldSynthetixBridgeToOptimism(oldBridge).active() == true, "Unexpected initial old bridge state");
+        require(IOldSynthetixBridgeToOptimism(oldBridge).activated() == true, "Unexpected initial old bridge state");
     }
 
     function _migrateSNX() internal {
-        IOldSynthetixBridgeToOptimism(oldBridge).migrateBridge(newBridge);
+        IOldSynthetixBridgeToOptimism(oldBridge).migrateBridge(newEscrow);
     }
 
     function _validateStateAfter() internal {
-        require(IOldSynthetixBridgeToOptimism(oldBridge).active() == false, "Unexpected final old bridge state");
+        require(IOldSynthetixBridgeToOptimism(oldBridge).activated() == false, "Unexpected final old bridge state");
     }
 
     function _validateBalancesAfter() internal {
