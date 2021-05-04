@@ -29,7 +29,7 @@ contract('DebtCache', async accounts => {
 
 	const [deployerAccount, owner, oracle, account1, account2] = accounts;
 
-	describe.only('_issuedSynthValues bug', async () => {
+	describe('_issuedSynthValues bug', async () => {
 		let ceth,
 			state,
 			managerState,
@@ -52,8 +52,8 @@ contract('DebtCache', async accounts => {
 		let CollateralManagerState;
 		const sBTC = toBytes32('sBTC');
 
-		let oneETH = toUnit('1.0');
-		let twoETH = toUnit('2.0');
+		const oneETH = toUnit('1.0');
+		const twoETH = toUnit('2.0');
 
 		beforeEach(async () => {
 			// // set minimumStakeTime on issue and burning to 0
@@ -252,17 +252,18 @@ contract('DebtCache', async accounts => {
 				await logInfo();
 
 				// 2. Mint sETH via ETH.
-				let tx = await ceth.open(oneETH, sETH, {
+				const tx = await ceth.open(oneETH, sETH, {
 					value: twoETH,
 					from: account1,
 				});
-				let debtCall1 = await debtCache.currentDebt();
+				const debtCall1 = await debtCache.currentDebt();
 
 				// 2a. Check currentSynthDebts and currentDebt.
 				await logInfo();
 
 				// 3. Swap sETH into sAUD.
-				let sETHBalance = await sETHSynth.balanceOf(account1);
+				const sETHBalance = await sETHSynth.balanceOf(account1);
+				console.log(`seth balance - `, sETHBalance.toString());
 				await synthetix.exchange(sETH, '5', sAUD, { from: account1 });
 
 				// 3a. Check currentSynthDebts and currentDebt.
@@ -271,7 +272,7 @@ contract('DebtCache', async accounts => {
 				// 4.
 				// collateralIssued for sETH > sETH supply, so supply is set to 0.
 				// the debt should be increased from (2a).
-				let debtCall2 = await debtCache.currentDebt();
+				const debtCall2 = await debtCache.currentDebt();
 
 				assert.bnEqual(debtCall1.debt, debtCall2.debt);
 			});
