@@ -268,5 +268,33 @@ contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 				});
 			});
 		});
+
+		describe('forwardTokensToEscrow', () => {
+			describe('when some SNX tokens are accidentally transferred to the bridge', () => {
+				const amount = toBN('999');
+				let initialAmount;
+				before(async () => {
+					initialAmount = await synthetix.balanceOf(synthetixBridgeEscrow.address);
+					await synthetix.transfer(synthetixBridgeToOptimism.address, amount, {
+						from: owner,
+					});
+					assert.bnEqual(await synthetix.balanceOf(synthetixBridgeToOptimism.address), amount);
+				});
+				describe('when anyone invokeds forwardTokensToEscrow', () => {
+					before(async () => {
+						await synthetixBridgeToOptimism.forwardTokensToEscrow(synthetix.address, {
+							from: randomAddress,
+						});
+					});
+					it('then the tokens are sent from the bridge to the escrow', async () => {
+						assert.equal(await synthetix.balanceOf(synthetixBridgeToOptimism.address), '0');
+						assert.bnEqual(
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
+							initialAmount.add(amount)
+						);
+					});
+				});
+			});
+		});
 	});
 });
