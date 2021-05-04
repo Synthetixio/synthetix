@@ -12,6 +12,7 @@ const migrateBridge = async ({ network, useFork, gasPrice, useMigrator }) => {
 		useFork,
 		gasPrice,
 	});
+
 	const {
 		deployer,
 		snxContract,
@@ -34,6 +35,7 @@ const migrateBridge = async ({ network, useFork, gasPrice, useMigrator }) => {
 		newEscrowContract,
 		txParams,
 	});
+
 	await _verify({
 		migratorContract,
 		snxContract,
@@ -226,76 +228,37 @@ async function _verify({
 }
 
 async function _nominate({ migratorContract, deployer, oldBridgeContract, newEscrowContract }) {
-	const oldBridgeNominatedOwner = await oldBridgeContract.nominatedOwner();
-	console.log(chalk.gray(`Old bridge nominatedOwner: ${oldBridgeNominatedOwner}`));
-	if (oldBridgeNominatedOwner !== migratorContract.address) {
-		const oldBridgeOwner = await oldBridgeContract.owner();
-		console.log(chalk.gray(`Old bridge owner: ${oldBridgeOwner}`));
-		if (oldBridgeOwner === deployer) {
-			console.log(
-				chalk.gray(
-					`Nominating new owner on SynthetixBridgeToOptimism (${oldBridgeContract.address})...`
-				)
-			);
-			const tx = await oldBridgeContract.nominateNewOwner(migratorContract.address);
-			console.log(chalk.gray(tx.hash));
-			const receipt = await tx.wait();
-			console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
-		} else {
-			await confirmAction(
-				chalk.yellow(
-					`Please nominate SynthetixBridgeToOptimism (${oldBridgeContract.address}) ownership to ${migratorContract.address}\nWhen done, press "y" to continue.`
-				)
-			);
+	async function __nominateContract({ name, contract }) {
+		const nominatedOwner = await contract.nominatedOwner();
+		console.log(chalk.gray(`${name} nominatedOwner: ${nominatedOwner}`));
+		if (nominatedOwner !== migratorContract.address) {
+			const owner = await contract.owner();
+			console.log(chalk.gray(`${name} owner: ${owner}`));
+			if (owner === deployer) {
+				console.log(chalk.gray(`Nominating new owner on ${name} (${contract.address})...`));
+
+				await _runTx(contract.nominateNewOwner(migratorContract.address));
+			} else {
+				await confirmAction(
+					chalk.yellow(
+						`Please nominate ${name} (${contract.address}) ownership to ${migratorContract.address}\nWhen done, press "y" to continue.`
+					)
+				);
+			}
 		}
 	}
 
-	const newEscrowNominatedOwner = await newEscrowContract.nominatedOwner();
-	console.log(chalk.gray(`New escrow nominatedOwner: ${newEscrowNominatedOwner}`));
-	if (newEscrowNominatedOwner !== migratorContract.address) {
-		const newEscrowOwner = await newEscrowContract.owner();
-		console.log(chalk.gray(`New escrow owner: ${newEscrowOwner}`));
-		if (newEscrowOwner === deployer) {
-			console.log(
-				chalk.gray(
-					`Nominating new owner on SynthetixBridgeEscrow (${newEscrowContract.address})...`
-				)
-			);
-			const tx = await newEscrowContract.nominateNewOwner(migratorContract.address);
-			console.log(chalk.gray(tx.hash));
-			const receipt = await tx.wait();
-			console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
-		} else {
-			await confirmAction(
-				chalk.yellow(
-					`Please nominate SynthetixBridgeEscrow (${newEscrowContract.address}) ownership to ${migratorContract.address}\nWhen done, press "y" to continue.`
-				)
-			);
-		}
-	}
+	await __nominateContract({ name: 'Old bridge', contract: oldBridgeContract });
+	await __nominateContract({ name: 'New escrow', contract: newEscrowContract });
 }
 
 async function _execute({ migratorContract, txParams, oldBridgeContract, newEscrowContract }) {
 	await confirmAction(chalk.yellow.inverse('Execute the migration? (type "y" to continue)'));
-
 	console.log(chalk.gray.bold('Executing...'));
 
-	let tx, receipt;
-
-	tx = await migratorContract.execute(txParams);
-	console.log(chalk.gray(tx.hash));
-	receipt = await tx.wait();
-	console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
-
-	tx = await oldBridgeContract.acceptOwnership();
-	console.log(chalk.gray(tx.hash));
-	receipt = await tx.wait();
-	console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
-
-	tx = await newEscrowContract.acceptOwnership();
-	console.log(chalk.gray(tx.hash));
-	receipt = await tx.wait();
-	console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
+	await _runTx(migratorContract.execute(txParams));
+	await _runTx(oldBridgeContract.acceptOwnership());
+	await _runTx(newEscrowContract.acceptOwnership());
 }
 
 async function _validate({ snxContract, newEscrowContract, oldBridgeContract }) {
@@ -307,6 +270,13 @@ async function _validate({ snxContract, newEscrowContract, oldBridgeContract }) 
 	);
 	console.log(chalk.gray(`Old bridge owner: ${await oldBridgeContract.owner()}`));
 	console.log(chalk.gray(`New escrow owner: ${await newEscrowContract.owner()}`));
+}
+
+async function _runTx(request) {
+	const tx = await request;
+	console.log(chalk.gray(tx.hash));
+	const receipt = await tx.wait();
+	console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
 }
 
 module.exports = {
