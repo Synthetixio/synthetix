@@ -4,7 +4,7 @@ const { assertRevertOptimism } = require('./utils/revertOptimism');
 const { connectContract } = require('./utils/connectContract');
 
 const itCanPerformWithdrawalsTo = ({ ctx }) => {
-	describe('[WITHDRAW TO] when migrating SNX from L2 to another account on L1', () => {
+	describe('[WITHDRAW TO] when withdrawing SNX from L2 to another account on L1', () => {
 		const amountToWithdraw = ethers.utils.parseEther('100');
 
 		let user1L2;

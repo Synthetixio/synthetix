@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { toBytes32, getUsers } = require('../..');
-// const { assertRevertOptimism } = require('./utils/revertOptimism');
+const { assertRevertOptimism } = require('./utils/revertOptimism');
 
 const itCanPerformSynthExchange = ({ ctx }) => {
 	describe('[SYNTEXCHANGE] when exchanging synths on L2', () => {
@@ -39,18 +39,15 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 							throw new Error(`Transaction reverted, even though it was not supposed to.`);
 						}
 					});
+				} else {
+					it('settling reverts', async () => {
+						await assertRevertOptimism({
+							tx: SynthetixL2.settle(synth),
+							reason: 'Cannot settle during waiting',
+							provider: ctx.providerL2,
+						});
+					});
 				}
-				// else {
-				// 	it('settling reverts', async () => {
-				// 		const tx = await SynthetixL2.settle(synth);
-
-				// 		await assertRevertOptimism({
-				// 			tx,
-				// 			reason: 'Cannot settle during waiting',
-				// 			provider: ctx.providerL2,
-				// 		});
-				// 	});
-				// }
 			});
 		};
 
