@@ -2,18 +2,62 @@ const chalk = require('chalk');
 const fs = require('fs');
 const path = require('path');
 const Web3 = require('web3');
-const { ensureNetwork, loadConnections } = require('../util');
+const assert = require('assert');
+const { ensureNetwork, loadConnections, confirmAction } = require('../util');
 const { wrap } = require('../../..');
 
 let web3;
 let deployer, pdao;
 let getTarget, getUsers;
-let snx, newBridge, newEscrow;
+let snx, oldBridge, newBridge, newEscrow;
+let txParams;
+let migrator;
 
-const migrateBridge = async ({ network, useFork }) => {
-	_connect({ network, useFork });
+const migrateBridge = async ({
+	network,
+	useFork,
+	gasPrice
+}) => {
+	_connect({ network, useFork, gasPrice });
 	_identify({ network });
+
+	await confirmAction('Deploy migrator?');
+
+	await _deploy();
+	await _verify();
+
+	await confirmAction('Execute migration?');
+
+	await _execute();
 };
+
+async function _execute() {
+	const receipt = await migrator.methods.execute().send(txParams);
+}
+
+async function _verify() {
+	assert(snx === await migrator.methods.snx().call());
+	assert(oldBridge === await migrator.methods.oldBridge().call());
+	assert(newBridge === await migrator.methods.newBridge().call());
+	assert(newEscrow === await migrator.methods.newEscrow().call());
+}
+
+async function _deploy() {
+	const artifacts = JSON.parse(
+		fs.readFileSync('build/artifacts/contracts/BridgeMigrator.sol/BridgeMigrator.json')
+	);
+
+	const Migrator = new web3.eth.Contract(artifacts.abi);
+
+	migrator = await Migrator.deploy({
+		data: artifacts.bytecode,
+		arguments: [
+			newBridge,
+			newEscrow,
+		]
+	})
+		.send(txParams);
+}
 
 function _identify({ network }) {
 	const users = getUsers({ network });
@@ -24,9 +68,23 @@ function _identify({ network }) {
 	snx = getTarget({ network, contract: 'Synthetix' }).address;
 	newBridge = getTarget({ network, contract: 'SynthetixBridgeToOptimism' }).address;
 	newEscrow = getTarget({ network, contract: 'SynthetixBridgeEscrow' }).address;
+
+	if (network === 'mainnet') {
+		oldBridge = '0x045e507925d2e05D114534D0810a1abD94aca8d6';
+	} else if (network === 'kovan') {
+		oldBridge = '0xE8Bf8fe5ce9e15D30F478E1647A57CB6B0271228':
+	} else {
+		throw new Error('Unsupported network');
+	}
+
+	txParams = {
+		from: deployer,
+		gasPrice: Web3.utils.toWei(gasPrice.toString(), 'gwei'),
+		gas: 8000000,
+	};
 }
 
-function _connect({ network, useFork }) {
+function _connect({ network, useFork, gasPrice }) {
 	ensureNetwork(network);
 
 	if (useFork && network !== 'mainnet') {
@@ -41,13 +99,6 @@ function _connect({ network, useFork }) {
 	web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 
 	({ getUsers, getTarget } = wrap({ network, fs, path }));
-
-	if (useFork) {
-		account = getUsers({ network, user: 'deployer' }).address;
-	} else {
-		web3.eth.accounts.wallet.add(privateKey);
-		account = web3.eth.accounts.wallet[0].address;
-	}
 }
 
 module.exports = {
@@ -60,6 +111,7 @@ module.exports = {
 			)
 			.option('--network <value>', 'The target network', network => network.toLowerCase(), 'kovan')
 			.option('--use-fork', 'Run the migration on a fork of mainnet', false)
+			.option('--gas-price <value>', 'Gas price in GWEI to use in all transactions', parseFloat, 1)
 			.action(async (...args) => {
 				try {
 					await migrateBridge(...args);
