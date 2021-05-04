@@ -9,6 +9,15 @@
 			"txn": "",
 			"network": "kovan"
 		},
+		"SynthetixBridgeEscrow": {
+			"name": "Depot",
+			"address": "0xF92e70301E26AaDeCCEc5016b7D0167DAF416d72",
+			"source": "Depot",
+			"link": "https://kovan.etherscan.io/address/0xF92e70301E26AaDeCCEc5016b7D0167DAF416d72",
+			"timestamp": "2020-02-19T16:51:40.000Z",
+			"txn": "https://kovan.etherscan.io/tx/0xc06330ac3bd2d143982ae239bd30b40e5f587f2b26be2289cacbf964e8c8fc57",
+			"network": "kovan"
+		},
 		"Depot": {
 			"name": "Depot",
 			"address": "0xF92e70301E26AaDeCCEc5016b7D0167DAF416d72",
@@ -1505,7 +1514,7 @@
 		},
 		"SynthetixBridgeToOptimism": {
 			"name": "SynthetixBridgeToOptimism",
-			"address": "0xE8Bf8fe5ce9e15D30F478E1647A57CB6B0271228",
+			"address": "0x64ac15AB583fFfA6a7401B83E3aA5cf4Ad1aA92A",
 			"source": "SynthetixBridgeToOptimism",
 			"link": "https://kovan.etherscan.io/address/0xE8Bf8fe5ce9e15D30F478E1647A57CB6B0271228",
 			"timestamp": "2021-01-14T16:56:40.000Z",
