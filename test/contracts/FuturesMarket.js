@@ -1,7 +1,7 @@
 const { contract, web3 } = require('hardhat');
 
 const { toBytes32 } = require('../..');
-const { currentTime, fastForward, toUnit, fromUnit, multiplyDecimalRound } = require('../utils')();
+const { currentTime, fastForward, toUnit, multiplyDecimalRound } = require('../utils')();
 const { toBN } = web3.utils;
 
 const { setupAllContracts } = require('./setup');
