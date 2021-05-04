@@ -446,12 +446,6 @@ contract('SynthetixBridgeToOptimism (unit tests)', accounts => {
 
 			describe('notifyRewardAmount', () => {
 				describe('failure modes', () => {
-					it('does not work when initiation has been suspended', async () => {
-						await instance.suspendInitiation({ from: owner });
-
-						await assert.revert(instance.notifyRewardAmount('1'), 'Initiation deactivated');
-					});
-
 					it('does not work when not invoked by the rewardDistribution address', async () => {
 						await onlyGivenAddressCanInvoke({
 							fnc: instance.notifyRewardAmount,
