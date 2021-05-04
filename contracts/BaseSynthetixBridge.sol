@@ -65,13 +65,13 @@ contract BaseSynthetixBridge is Owned, MixinSystemSettings, IBaseSynthetixBridge
     // ========= RESTRICTED FUNCTIONS ==============
 
     function suspendInitiation() external onlyOwner {
-        require(initiationActive, "initiation suspended");
+        require(initiationActive, "Initiation suspended");
         initiationActive = false;
         emit InitiationSuspended();
     }
 
     function resumeInitiation() external onlyOwner {
-        require(!initiationActive, "initiation not suspended");
+        require(!initiationActive, "Initiation not suspended");
         initiationActive = true;
         emit InitiationResumed();
     }

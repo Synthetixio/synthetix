@@ -1,18 +1,18 @@
 const ethers = require('ethers');
 const { assert } = require('../contracts/common');
-// const { assertRevertOptimism } = require('./utils/revertOptimism');
+const { assertRevertOptimism } = require('./utils/revertOptimism');
 const { connectContract } = require('./utils/connectContract');
 
 const itCanPerformWithdrawals = ({ ctx }) => {
-	describe('[WITHDRAW] when migrating SNX from L2 to L1', () => {
-		const amountToWithdraw = ethers.utils.parseEther('100');
+	describe('[WITHDRAW] when withdrawing SNX from L2 to L1', () => {
+		const amountToWithdraw = ethers.utils.parseEther('10');
 
 		let user1L2;
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1, SynthetixBridgeEscrowL1;
 		let SynthetixL2, SynthetixBridgeToBaseL2;
-		// let SystemStatusL2;
 		let depositReceipt;
+
 		// --------------------------
 		// Setup
 		// --------------------------
@@ -45,11 +45,6 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 				useOvm: true,
 				provider: ctx.providerL2,
 			});
-			// SystemStatusL2 = connectContract({
-			// 	contract: 'SystemStatus',
-			// 	useOvm: true,
-			// 	provider: ctx.providerL2,
-			// });
 		});
 
 		before('make a deposit', async () => {
@@ -70,11 +65,18 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 		before("Approve the bridge to transfer on escrow's behalf", async () => {
 			SynthetixBridgeEscrowL1 = SynthetixBridgeEscrowL1.connect(ctx.ownerL1);
-			await SynthetixBridgeEscrowL1.approveBridge(
-				SynthetixL1.address,
-				SynthetixBridgeToOptimismL1.address,
-				amountToWithdraw
+
+			const allowance = await SynthetixL1.allowance(
+				SynthetixBridgeEscrowL1.address,
+				SynthetixBridgeToOptimismL1.address
 			);
+			if (allowance.toString() === '0') {
+				await SynthetixBridgeEscrowL1.approveBridge(
+					SynthetixL1.address,
+					SynthetixBridgeToOptimismL1.address,
+					amountToWithdraw
+				);
+			}
 		});
 
 		// --------------------------
@@ -97,7 +99,6 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 				before('ensure that the user has the expected SNX balance', async () => {
 					SynthetixL2 = SynthetixL2.connect(ctx.ownerL2);
-
 					const tx = await SynthetixL2.transfer(user1L2.address, amountToWithdraw);
 					await tx.wait();
 				});
@@ -118,104 +119,125 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					// Suspended
 					// --------------------------
 
-					// describe('when the system is suspended in L2', () => {
-					// 	before('suspend the system', async () => {
-					// 		SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
+					describe('when initiation is suspended on L2', () => {
+						before('suspend initiations on L2', async () => {
+							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(ctx.ownerL2);
+							const tx = await SynthetixBridgeToBaseL2.suspendInitiation();
+							await tx.wait();
+						});
 
-					// 		const tx = await SystemStatusL2.suspendSystem(1);
-					// 		await tx.wait();
-					// 	});
+						after('resume initiations on L2', async () => {
+							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(ctx.ownerL2);
+							const tx = await SynthetixBridgeToBaseL2.resumeInitiation();
+							await tx.wait();
+						});
 
-					// 	after('resume the system', async () => {
-					// 		SystemStatusL2 = SystemStatusL2.connect(ctx.ownerL2);
-
-					// 		const tx = await SystemStatusL2.resumeSystem();
-					// 		await tx.wait();
-					// 	});
-
-					// 	it('reverts when the user attempts to initiate a withdrawal', async () => {
-					// 		SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
-
-					// 		const tx = await SynthetixBridgeToBaseL2.withdraw(1);
-
-					// 		await assertRevertOptimism({
-					// 			tx,
-					// 			reason: 'Synthetix is suspended',
-					// 			provider: ctx.providerL2,
-					// 		});
-					// 	});
-					// });
+						it('reverts when the user attempts to initiate a withdrawal', async () => {
+							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
+							await assertRevertOptimism({
+								tx: SynthetixBridgeToBaseL2.withdraw(amountToWithdraw),
+								reason: 'Initiation deactivated',
+								provider: ctx.providerL2,
+							});
+						});
+					});
 
 					// --------------------------
 					// Not suspended
 					// --------------------------
 
-					describe('when a user initiates a withdrawal on L2', () => {
-						let user1BalanceL1;
-						let escrowBalanceL1;
-						let withdrawalReceipt;
-						let withdrawalFinalizedEvent;
-
-						const eventListener = (from, value, event) => {
-							if (event && event.event === 'WithdrawalFinalized') {
-								withdrawalFinalizedEvent = event;
-							}
-						};
-
-						before('listen to events on l1', async () => {
-							SynthetixBridgeToOptimismL1.on('WithdrawalFinalized', eventListener);
+					describe('before a user initiates a withdrawal on L2', () => {
+						it('inititation is active on both layers', async () => {
+							assert.equal(await SynthetixBridgeToOptimismL1.initiationActive(), true);
+							assert.equal(await SynthetixBridgeToBaseL2.initiationActive(), true);
 						});
 
-						before('record current values', async () => {
-							user1BalanceL1 = await SynthetixL1.balanceOf(user1L2.address);
-							escrowBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address);
-							user1BalanceL2 = await SynthetixL2.balanceOf(user1L2.address);
-						});
+						describe('when a user initiates a withdrawal on L2', () => {
+							let user1BalanceL1;
+							let escrowBalanceL1;
+							let withdrawalReceipt;
+							let withdrawalFinalizedEvent;
 
-						before('initiate withdrawal', async () => {
-							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
-
-							const tx = await SynthetixBridgeToBaseL2.withdraw(amountToWithdraw);
-							withdrawalReceipt = await tx.wait();
-						});
-
-						it('reduces the users balance', async () => {
-							assert.bnEqual(
-								await SynthetixL2.balanceOf(user1L2.address),
-								user1BalanceL2.sub(amountToWithdraw)
-							);
-						});
-
-						describe('when waiting for the tx to complete on L1', () => {
-							before('listen for completion', async () => {
-								const [transactionHashL1] = await ctx.watcher.getMessageHashesFromL2Tx(
-									withdrawalReceipt.transactionHash
-								);
-								await ctx.watcher.getL1TransactionReceipt(transactionHashL1);
+							// suspending initation should not affect withdrawals
+							before('suspend initiation on L1', async () => {
+								SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
+								const tx = await SynthetixBridgeToOptimismL1.suspendInitiation();
+								await tx.wait();
 							});
 
-							before('stop listening to events on L1', async () => {
-								SynthetixBridgeToOptimismL1.off('WithdrawalFinalized', eventListener);
+							// always resume afterwards so we keep a clean state
+							after('resume initiation on L1', async () => {
+								SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
+								const tx = await SynthetixBridgeToOptimismL1.resumeInitiation();
+								await tx.wait();
 							});
 
-							it('emitted a WithdrawalFinalized event', async () => {
-								assert.exists(withdrawalFinalizedEvent);
-								assert.bnEqual(withdrawalFinalizedEvent.args._amount, amountToWithdraw);
-								assert.equal(withdrawalFinalizedEvent.args._to, user1L2.address);
+							const eventListener = (from, value, event) => {
+								if (event && event.event === 'WithdrawalFinalized') {
+									withdrawalFinalizedEvent = event;
+								}
+							};
+
+							before('listen to events on l1', async () => {
+								SynthetixBridgeToOptimismL1.on('WithdrawalFinalized', eventListener);
 							});
 
-							it('shows that the users L1 balance increased', async () => {
+							before('record current values', async () => {
+								user1BalanceL1 = await SynthetixL1.balanceOf(user1L2.address);
+								escrowBalanceL1 = await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address);
+								user1BalanceL2 = await SynthetixL2.balanceOf(user1L2.address);
+							});
+
+							before('initiate withdrawal', async () => {
+								SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L2);
+
+								const tx = await SynthetixBridgeToBaseL2.withdraw(amountToWithdraw);
+								withdrawalReceipt = await tx.wait();
+							});
+
+							it('reduces the users balance', async () => {
 								assert.bnEqual(
-									await SynthetixL1.balanceOf(user1L2.address),
-									user1BalanceL1.add(amountToWithdraw)
+									await SynthetixL2.balanceOf(user1L2.address),
+									user1BalanceL2.sub(amountToWithdraw)
 								);
 							});
 
-							it('shows that the escrow balance decreased', async () => {
-								assert.bnEqual(
-									await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address),
-									escrowBalanceL1.sub(amountToWithdraw)
-								);
+							it('inititation is deactivated on L1', async () => {
+								assert.equal(await SynthetixBridgeToBaseL2.initiationActive(), true);
+								assert.equal(await SynthetixBridgeToOptimismL1.initiationActive(), false);
+							});
+
+							describe('when waiting for the tx to complete on L1', () => {
+								before('listen for completion', async () => {
+									const [transactionHashL1] = await ctx.watcher.getMessageHashesFromL2Tx(
+										withdrawalReceipt.transactionHash
+									);
+									await ctx.watcher.getL1TransactionReceipt(transactionHashL1);
+								});
+
+								before('stop listening to events on L1', async () => {
+									SynthetixBridgeToOptimismL1.off('WithdrawalFinalized', eventListener);
+								});
+
+								it('emitted a WithdrawalFinalized event', async () => {
+									assert.exists(withdrawalFinalizedEvent);
+									assert.bnEqual(withdrawalFinalizedEvent.args._amount, amountToWithdraw);
+									assert.equal(withdrawalFinalizedEvent.args._to, user1L2.address);
+								});
+
+								it('shows that the users L1 balance increased', async () => {
+									assert.bnEqual(
+										await SynthetixL1.balanceOf(user1L2.address),
+										user1BalanceL1.add(amountToWithdraw)
+									);
+								});
+
+								it('shows that the escrow balance decreased', async () => {
+									assert.bnEqual(
+										await SynthetixL1.balanceOf(SynthetixBridgeEscrowL1.address),
+										escrowBalanceL1.sub(amountToWithdraw)
+									);
+								});
 							});
 						});
 					});
