@@ -63,7 +63,7 @@ async function _connect({ network, useFork, gasPrice }) {
 
 	const txParams = {
 		gasPrice: ethers.utils.parseUnits(`${gasPrice}`, 'gwei'),
-		gasLimit: 8000000,
+		gasLimit: 12000000,
 	};
 	console.log(chalk.gray(`Gas price: ${gasPrice} gwei (${txParams.gasPrice.toString()} wei)`));
 	console.log(chalk.gray(`Gas limit: ${txParams.gasLimit}`));
@@ -105,6 +105,7 @@ function _identify({ network, getUsers, getTarget }) {
 	assert(newBridge !== oldBridge, 'Bridge addresses must be different');
 
 	return {
+		snx,
 		newBridge,
 		oldBridge,
 		newEscrow,
@@ -162,26 +163,28 @@ async function _verify({ migrator, snx, oldBridge, newBridge, newEscrow }) {
 async function _nominate({ oldBridge, newEscrow, migrator, signer, getSource }) {
 	const oldBridgeContract = new ethers.Contract(
 		oldBridge,
-		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi // We only care about the Owned interface here, so the new ABI will do
-	);
-
-	const newEscrowContract = new ethers.Contract(
-		newEscrow,
-		getSource({ contract: 'SynthetixBridgeEscrow' }).abi
+		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi, // We only care about the Owned interface here, so the new ABI will do
+		signer
 	);
 
 	if ((await oldBridgeContract.nominatedOwner()) !== migrator.address) {
 		await confirmAction(
 			chalk.yellow(
-				`Please nominate SynthetixBridgeToOptimism (${oldBridge}) ownership to ${migrator.address}. When done, press "y" to continue.`
+				`Please nominate SynthetixBridgeToOptimism (${oldBridge}) ownership to ${migrator.address}\nWhen done, press "y" to continue.`
 			)
 		);
 	}
 
+	const newEscrowContract = new ethers.Contract(
+		newEscrow,
+		getSource({ contract: 'SynthetixBridgeEscrow' }).abi,
+		signer
+	);
+
 	if ((await newEscrowContract.nominatedOwner()) !== migrator.address) {
 		await confirmAction(
 			chalk.yellow(
-				`Please nominate SynthetixBridgeEscrow (${newEscrow}) ownership to ${migrator.address}. When done, press "y" to continue.`
+				`Please nominate SynthetixBridgeEscrow (${newEscrow}) ownership to ${migrator.address}\nWhen done, press "y" to continue.`
 			)
 		);
 	}
@@ -199,22 +202,21 @@ async function _execute({ signer, migrator, txParams }) {
 }
 
 async function _validate({ snx, newEscrow, oldBridge, signer, getSource }) {
-	const snxContract = new ethers.Contract(
-		snx,
-		getSource({ contract: 'ProxyERC20' }).abi // We only care about the Owned interface here, so the new ABI will do
-	);
+	const snxContract = new ethers.Contract(snx, getSource({ contract: 'ProxyERC20' }).abi, signer);
 	console.log(`Old bridge SNX balance: ${await snxContract.balanceOf(oldBridge)}`);
 	console.log(`New escrow SNX balance: ${await snxContract.balanceOf(newEscrow)}`);
 
 	const oldBridgeContract = new ethers.Contract(
 		oldBridge,
-		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi // We only care about the Owned interface here, so the new ABI will do
+		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi, // We only care about the Owned interface here, so the new ABI will do
+		signer
 	);
 	console.log(`Old bridge owner: ${await oldBridgeContract.owner()}`);
 
 	const newEscrowContract = new ethers.Contract(
 		newEscrow,
-		getSource({ contract: 'SynthetixBridgeEscrow' }).abi
+		getSource({ contract: 'SynthetixBridgeEscrow' }).abi,
+		signer
 	);
 	console.log(`New escrow owner: ${await newEscrowContract.owner()}`);
 }

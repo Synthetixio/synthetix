@@ -81,7 +81,7 @@ contract BridgeMigrator {
 
     function _takeOwnership() internal {
         require(IOwned(oldBridge).owner() == pdao, "Unexpected old bridge owner");
-        require(IOwned(newEscrow).owner() == deployer, "Unexpected new escrow owner");
+        require(IOwned(newEscrow).owner() == deployer || IOwned(newEscrow).owner() == pdao, "Unexpected new escrow owner");
 
         IOwned(oldBridge).acceptOwnership();
         IOwned(newEscrow).acceptOwnership();
