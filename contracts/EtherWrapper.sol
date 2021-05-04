@@ -13,6 +13,7 @@ import "./Pausable.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IFeePool.sol";
+import "./interfaces/IEtherWrapperRewards.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 
@@ -217,8 +218,8 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
     }
 
     // Set the wrapper rewards contract
-    function setWrapperRewards(IEtherWrapperRewards _wrapperRewards) external onlyOwner {
-        wrapperRewards = _wrapperRewards;
+    function setWrapperRewards(address _wrapperRewards) external onlyOwner {
+        wrapperRewards = IEtherWrapperRewards(_wrapperRewards);
     }
 
     // ========== RESTRICTED ==========

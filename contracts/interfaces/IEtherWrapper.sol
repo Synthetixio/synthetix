@@ -6,6 +6,8 @@ import "./IWETH.sol";
 contract IEtherWrapper {
     function mint(uint amount) external;
 
+    function mintWithTracking(uint amount, address minter) external;
+
     function burn(uint amount) external;
 
     function capacity() external view returns (uint);
