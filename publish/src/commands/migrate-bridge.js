@@ -231,10 +231,10 @@ async function _nominate({ migratorContract, deployer, oldBridgeContract, newEsc
 	async function __nominateContract({ name, contract }) {
 		const nominatedOwner = await contract.nominatedOwner();
 		console.log(chalk.gray(`${name} nominatedOwner: ${nominatedOwner}`));
-		if (nominatedOwner !== migratorContract.address) {
+		if (nominatedOwner.toLowerCase() !== migratorContract.address.toLowerCase()) {
 			const owner = await contract.owner();
 			console.log(chalk.gray(`${name} owner: ${owner}`));
-			if (owner === deployer) {
+			if (owner.toLowerCase() === deployer.toLowerCase()) {
 				console.log(chalk.gray(`Nominating new owner on ${name} (${contract.address})...`));
 
 				await _runTx(contract.nominateNewOwner(migratorContract.address));
