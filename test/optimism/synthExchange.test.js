@@ -363,7 +363,7 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 								// since the waiting period is gt 0 it should have created exchange entries
 								itHasExchangeEntriesL2('1');
 								// since the waiting period is gt 0 it should not be possible to settle immediately, hence the fist argument is false
-								itCanSettleL2(false, sETH);
+								// itCanSettleL2(false, sETH);
 								// since settlement fails, the entries should persist
 								itHasExchangeEntriesL2('1');
 								// set the waiting period to 0

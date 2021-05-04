@@ -159,7 +159,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 							let withdrawalFinalizedEvent;
 
 							// suspending initation should not affect withdrawals
-							before('suspend initiatio on L1', async () => {
+							before('suspend initiation on L1', async () => {
 								SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
 								const tx = await SynthetixBridgeToOptimismL1.suspendInitiation();
 								await tx.wait();
