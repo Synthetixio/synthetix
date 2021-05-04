@@ -25,7 +25,7 @@ const migrateBridge = async ({
 	await _deploy();
 	await _verify();
 
-	await confirmAction('Execute the migration?');
+	await confirmAction(chalk.yellow.bold('Execute the migration?'));
 	await _execute();
 };
 
@@ -47,6 +47,7 @@ async function _deploy() {
 
 	const Migrator = new web3.eth.Contract(artifacts.abi);
 
+	console.log(chalk.gray('Deploying BridgeMigrator...'))
 	migrator = await Migrator.deploy({
 		data: artifacts.bytecode,
 		arguments: [
@@ -54,7 +55,11 @@ async function _deploy() {
 			newEscrow,
 		]
 	})
-		.send(txParams);
+		.send(txParams)
+		.on('error', error => throw new Error(error))
+		.on('receipt', receipt => console.log(chalk.gray(JSON.stringify(receipt, null, 2))));
+
+	console.log(`Migrator: ${migrator.options.address}`)
 }
 
 function _identify({ network }) {
