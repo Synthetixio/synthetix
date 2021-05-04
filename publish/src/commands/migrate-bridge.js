@@ -6,23 +6,27 @@ const assert = require('assert');
 const { ensureNetwork, loadConnections, confirmAction } = require('../util');
 const { wrap } = require('../../..');
 
-let signer;
-let deployer, pdao;
-let getTarget, getUsers;
-let snx, oldBridge, newBridge, newEscrow;
-let txParams;
-let migrator;
-
 const migrateBridge = async ({ network, useFork, gasPrice, useMigrator }) => {
-	await _connect({ network, useFork, gasPrice });
-	_identify({ network });
+	const { signer, getUsers, getTarget, txParams } = await _connect({ network, useFork, gasPrice });
+	const { snx, newBridge, newEscrow, oldBridge } = _identify({
+		network,
+		getUsers,
+		getTarget,
+	});
 
-	await _deploy({ network, useMigrator });
-	await _verify();
+	const { migrator } = await _deploy({
+		network,
+		useMigrator,
+		signer,
+		newBridge,
+		newEscrow,
+		txParams,
+	});
+	await _verify({ migrator, snx, oldBridge, newBridge, newEscrow });
 
-	await _nominate();
+	await _nominate({ migrator, oldBridge, newEscrow });
 
-	await _execute();
+	await _execute({ signer, migrator, txParams });
 };
 
 async function _connect({ network, useFork, gasPrice }) {
@@ -40,34 +44,42 @@ async function _connect({ network, useFork, gasPrice }) {
 	console.log(chalk.gray(`Provider: ${providerUrl}`));
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-	signer = new ethers.Wallet(privateKey, provider);
+	const signer = new ethers.Wallet(privateKey, provider);
 	console.log(chalk.gray(`Signer: ${await signer.getAddress()}`));
 
-	({ getUsers, getTarget } = wrap({ network, fs, path }));
+	const { getUsers, getTarget } = wrap({ network, fs, path });
 
-	txParams = {
+	const txParams = {
 		gasPrice: ethers.utils.parseUnits(`${gasPrice}`, 'gwei'),
 		gasLimit: 8000000,
 	};
 	console.log(chalk.gray(`Gas price: ${gasPrice} gwei (${txParams.gasPrice.toString()} wei)`));
 	console.log(chalk.gray(`Gas limit: ${txParams.gasLimit}`));
+
+	return {
+		signer,
+		getUsers,
+		getTarget,
+		txParams,
+	};
 }
 
-function _identify({ network }) {
+function _identify({ network, getUsers, getTarget }) {
 	const users = getUsers({ network });
 
-	deployer = users.find(u => u.name === 'deployer').address;
-	pdao = users.find(u => u.name === 'owner').address;
+	const deployer = users.find(u => u.name === 'deployer').address;
+	const pdao = users.find(u => u.name === 'owner').address;
 	console.log(chalk.gray(`Deployer: ${deployer}`));
 	console.log(chalk.gray(`pDAO: ${pdao}`));
 
-	snx = getTarget({ network, contract: 'ProxyERC20' }).address;
-	newBridge = getTarget({ network, contract: 'SynthetixBridgeToOptimism' }).address;
-	newEscrow = getTarget({ network, contract: 'SynthetixBridgeEscrow' }).address;
+	const snx = getTarget({ network, contract: 'ProxyERC20' }).address;
+	const newBridge = getTarget({ network, contract: 'SynthetixBridgeToOptimism' }).address;
+	const newEscrow = getTarget({ network, contract: 'SynthetixBridgeEscrow' }).address;
 	console.log(chalk.gray(`Synthetix: ${snx}`));
 	console.log(chalk.gray(`New bridge: ${newBridge}`));
 	console.log(chalk.gray(`New escrow: ${newEscrow}`));
 
+	let oldBridge;
 	if (network === 'mainnet') {
 		oldBridge = '0x045e507925d2e05D114534D0810a1abD94aca8d6';
 	} else if (network === 'kovan') {
@@ -78,13 +90,20 @@ function _identify({ network }) {
 	console.log(chalk.gray(`Old bridge: ${oldBridge}`));
 
 	assert(newBridge !== oldBridge, 'Bridge addresses must be different');
+
+	return {
+		newBridge,
+		oldBridge,
+		newEscrow,
+	};
 }
 
-async function _deploy({ network, useMigrator }) {
+async function _deploy({ network, useMigrator, newBridge, newEscrow, txParams, signer }) {
 	const artifacts = JSON.parse(
 		fs.readFileSync('build/artifacts/contracts/BridgeMigrator.sol/BridgeMigrator.json')
 	);
 
+	let migrator;
 	if (!useMigrator) {
 		await confirmAction(chalk.yellow('Type "y" to deploy the migrator contract'));
 
@@ -102,9 +121,13 @@ async function _deploy({ network, useMigrator }) {
 	}
 
 	console.log(chalk.gray(`Migrator: ${migrator.address}`));
+
+	return {
+		migrator,
+	};
 }
 
-async function _verify() {
+async function _verify({ migrator, snx, oldBridge, newBridge, newEscrow }) {
 	console.log(chalk.gray('Validating contract parameters...'));
 
 	const _snx = await migrator.snx();
@@ -123,7 +146,7 @@ async function _verify() {
 	console.log(chalk.gray(`Contract's new escrow: ${_newEscrow} OK ✓`));
 }
 
-async function _nominate() {
+async function _nominate({ oldBridge, newEscrow, migrator }) {
 	await confirmAction(
 		chalk.yellow(
 			`Please nominate SynthetixBridgeToOptimism (${oldBridge}) ownership to ${migrator.address}. When done, press "y" to continue.`
@@ -137,7 +160,7 @@ async function _nominate() {
 	);
 }
 
-async function _execute() {
+async function _execute({ signer, migrator, txParams }) {
 	await confirmAction(chalk.yellow.inverse('Execute the migration? (type "y" to continue)'));
 
 	console.log(chalk.gray.bold('Executing...'));
