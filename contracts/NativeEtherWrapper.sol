@@ -78,7 +78,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
 
         // Convert WETH to ETH and send to msg.sender.
         weth.withdraw(weth.balanceOf(address(this)));
-        msg.sender.transfer(address(this).balance);
+        msg.sender.call.value(address(this).balance)("");
 
         emit Burned(msg.sender, amount);
     }
