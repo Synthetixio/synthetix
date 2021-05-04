@@ -46,6 +46,9 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
     // ========== STATE VARIABLES ==========
     IWETH internal _weth;
 
+    // EtherWrapper rewards
+    IEtherWrapperRewards public wrapperRewards;
+
     // sETH debt is tracked in two separate variables, in order to account
     // properly the points at which it is repaid and converted into sUSD debt.
     uint public sETHIssued = 0;
@@ -154,20 +157,26 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // Transfers `amountIn` WETH to mint `amountIn - fees` sETH.
-    // `amountIn` is inclusive of fees, calculable via `calculateMintFee`.
-    function mint(uint amountIn) external notPaused {
+    function mintWithTracking(uint amountIn, address minter) public notPaused {
         require(amountIn <= _weth.allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amountIn <= _weth.balanceOf(msg.sender), "Balance is too low");
 
         uint currentCapacity = capacity();
         require(currentCapacity > 0, "Contract has no spare capacity to mint");
 
-        if (amountIn < currentCapacity) {
-            _mint(amountIn);
-        } else {
-            _mint(currentCapacity);
+        amountIn = amountIn < currentCapacity ? amountIn : currentCapacity;
+        _mint(amountIn);
+
+        // Enrol minter in rewards for amount minted
+        if (address(wrapperRewards) != address(0)) {
+            wrapperRewards.enrol(minter, amountIn);
         }
+    }
+
+    // Transfers `amountIn` WETH to mint `amountIn - fees` sETH.
+    // `amountIn` is inclusive of fees, calculable via `calculateMintFee`.
+    function mint(uint amountIn) external notPaused {
+        mintWithTracking(amountIn, msg.sender);
     }
 
     // Burns `amountIn` sETH for `amountIn - fees` WETH.
@@ -205,6 +214,11 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
         // Tell the fee pool about this
         feePool().recordFeePaid(amount_sUSD);
+    }
+
+    // Set the wrapper rewards contract
+    function setWrapperRewards(IEtherWrapperRewards _wrapperRewards) external onlyOwner {
+        wrapperRewards = _wrapperRewards;
     }
 
     // ========== RESTRICTED ==========

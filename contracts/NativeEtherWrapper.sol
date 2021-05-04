@@ -55,7 +55,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         weth().approve(address(etherWrapper()), amount);
 
         // Now call mint.
-        etherWrapper().mint(amount);
+        etherWrapper().mintWithTracking(amount, msg.sender);
 
         // Transfer the sETH to msg.sender.
         synthsETH().transfer(msg.sender, synthsETH().balanceOf(address(this)));
