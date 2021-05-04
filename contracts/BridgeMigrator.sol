@@ -72,10 +72,6 @@ contract BridgeMigrator {
         _relinquishOwnership();
     }
 
-    function restoreOwnership() public {
-        _relinquishOwnership();
-    }
-
     // ----------------------------------------
     // INTERNAL
     // ----------------------------------------
