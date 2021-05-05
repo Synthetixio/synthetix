@@ -48,9 +48,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 		});
 
 		before('make a deposit', async () => {
-			// Make a deposit so that
-			// 1. There is SNX in the bridge for withdrawals,
-			// 2. Counter a known bug in Optimism, where "now" is always 0 unless a message has been relayed
+			let tx;
 
 			SynthetixL1 = SynthetixL1.connect(ctx.ownerL1);
 			await SynthetixL1.approve(
@@ -59,7 +57,12 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			);
 
 			SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
-			const tx = await SynthetixBridgeToOptimismL1.deposit(amountToWithdraw);
+			if ((await SynthetixBridgeToOptimismL1.initiationActive()) === false) {
+				tx = await SynthetixBridgeToOptimismL1.resumeInitiation();
+				await tx.wait();
+			}
+
+			tx = await SynthetixBridgeToOptimismL1.deposit(amountToWithdraw);
 			depositReceipt = await tx.wait();
 		});
 
@@ -193,10 +196,34 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 							describe('when waiting for the tx to complete on L1', () => {
 								before('listen for completion', async () => {
-									const [transactionHashL1] = await ctx.watcher.getMessageHashesFromL2Tx(
+									const [messageHashL1] = await ctx.watcher.getMessageHashesFromL2Tx(
 										withdrawalReceipt.transactionHash
 									);
-									await ctx.watcher.getL1TransactionReceipt(transactionHashL1);
+									console.log(messageHashL1);
+
+									const blockNumber = await ctx.providerL1.getBlockNumber();
+									const block = await ctx.providerL1.getBlock(blockNumber);
+									console.log('Latest L1 block:', JSON.stringify(block, null, 2));
+
+									const txs = await Promise.all(
+										block.transactions.map(txHash => ctx.providerL1.getTransaction(txHash))
+									);
+									console.log('Txs in L1 block:', JSON.stringify(txs, null, 2));
+
+									const tx = txs.find(tx => {
+										// TODO: Actually compare the message hash, for now just returning the first tx
+										return true;
+										// const messageHash = ethers.utils.keccak256(tx.data);
+										// console.log(messageHash);
+
+										// return messageHash === messageHashL1;
+									});
+
+									const receipt = await ctx.providerL1.getTransactionReceipt(tx.hash);
+									console.log('L1 receipt:', receipt);
+
+									// TODO: Hangs here!
+									await ctx.watcher.getL1TransactionReceipt(messageHashL1);
 								});
 
 								before('stop listening to events on L1', async () => {
