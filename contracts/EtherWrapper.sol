@@ -46,10 +46,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
     // ========== STATE VARIABLES ==========
     IWETH internal _weth;
 
-    // sETH debt is tracked in two separate variables, in order to account
-    // properly the points at which it is repaid and converted into sUSD debt.
     uint public sETHIssued = 0;
-    uint public sETHBurnt = 0;
     uint public sUSDIssued = 0;
     uint public feesEscrowed = 0;
 
@@ -120,7 +117,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         // The sETH is always backed 1:1 with WETH.
         // The sUSD fees are backed by sETH that is withheld during minting and burning.
         if (currencyKey == sETH) {
-            return sETHIssued > sETHBurnt ? sETHIssued.sub(sETHBurnt) : 0;
+            return sETHIssued;
         }
         if (currencyKey == sUSD) {
             return sUSDIssued;
@@ -186,7 +183,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         }
     }
 
-    function claimFees(uint amount) external {
+    function distributeFees(uint amount) external {
         require(amount <= feesEscrowed, "amount to distribute too large");
 
         // Normalize fee to sUSD
@@ -195,9 +192,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
         // Burn sETH.
         synthsETH().burn(address(this), amount);
-        // TODO(liamz): Jacko should we be accounting for this burnt sETH as part of
-        // the sETH issued by the contract? I'm unsure.
-        sETHBurnt = sETHBurnt.add(amount);
+        sETHIssued = amount > sETHIssued ? 0 : sETHIssued.sub(amount);
 
         // Issue sUSD to the fee pool
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), amount_sUSD);
@@ -205,6 +200,8 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
         // Tell the fee pool about this
         feePool().recordFeePaid(amount_sUSD);
+
+        feesEscrowed = feesEscrowed.sub(amount);
     }
 
     // ========== RESTRICTED ==========
@@ -234,7 +231,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         feesEscrowed = feesEscrowed.add(feeAmountEth);
 
         // Add sETH debt.
-        sETHIssued = sETHIssued.add(principal).add(feeAmountEth);
+        sETHIssued = sETHIssued.add(amountIn);
 
         emit Minted(msg.sender, principal, feeAmountEth, amountIn);
     }
@@ -247,14 +244,14 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         require(amountIn <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amountIn <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
 
-        // Burn `principal` sETH from user.
-        synthsETH().burn(msg.sender, principal);
+        // Burn `amountIn` sETH from user.
+        synthsETH().burn(msg.sender, amountIn);
         // sETH debt is repaid by burning.
-        // sETHIssued = sETHIssued.sub(principal);
-        sETHBurnt = sETHBurnt.add(principal);
+        sETHIssued = sETHIssued < amountIn ? 0 : sETHIssued.sub(amountIn);
 
         // Escrow fee.
-        IERC20(address(synthsETH())).transferFrom(msg.sender, address(this), feeAmountEth);
+        synthsETH().issue(address(this), feeAmountEth);
+        sETHIssued = sETHIssued.add(feeAmountEth);
         feesEscrowed = feesEscrowed.add(feeAmountEth);
 
         // Transfer `amount - fees` WETH to user.

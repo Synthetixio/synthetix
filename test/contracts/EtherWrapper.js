@@ -57,12 +57,6 @@ contract('EtherWrapper', async accounts => {
 	};
 
 	before(async () => {
-		// [{ token: synthetix }, { token: sUSDSynth }, { token: sETHSynth }] = await Promise.all([
-		// 	mockToken({ accounts, name: 'Synthetix', symbol: 'SNX' }),
-		// 	mockToken({ accounts, synth: 'sUSD', name: 'Synthetic USD', symbol: 'sUSD' }),
-		// 	mockToken({ accounts, synth: 'sETH', name: 'Synthetic ETH', symbol: 'sETH' }),
-		// ]);
-
 		({
 			SystemSettings: systemSettings,
 			AddressResolver: addressResolver,
@@ -110,7 +104,7 @@ contract('EtherWrapper', async accounts => {
 			abi: etherWrapper.abi,
 			hasFallback: true,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'MixinSystemSettings'],
-			expected: ['mint', 'burn'],
+			expected: ['mint', 'burn', 'distributeFees'],
 		});
 	});
 
@@ -179,7 +173,7 @@ contract('EtherWrapper', async accounts => {
 				assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.005'));
 			});
 
-			describe('then burn(`reserves` sETH) is called', async () => {
+			describe('then burn(`reserves + fees` WETH) is called', async () => {
 				const burnAmount = toUnit('1.0');
 
 				beforeEach(async () => {
@@ -190,21 +184,28 @@ contract('EtherWrapper', async accounts => {
 					await etherWrapper.burn(amountIn, { from: account1 });
 				});
 
-				it('total issued sETH = 0', async () => {
-					assert.bnEqual(await etherWrapper.totalIssuedSynths(sETH), toUnit('0'));
+				it('total issued sETH = 0.0', async () => {
+					assert.bnEqual(await etherWrapper.totalIssuedSynths(sETH), toUnit('0.0'));
 				});
 				it('fees escrowed = 0.01', async () => {
 					assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.01'));
 				});
 
-				// describe('then distributeFees is called', async () => {
-				// 	beforeEach(async () => {
-				// 		// await feePool.closeCurrentFeePeriod({ from: account1 });
-				// 		// await etherWrapper.distributeFees()
-				// 	})
+				describe('then distributeFees is called', async () => {
+					beforeEach(async () => {
+						// await feePool.closeCurrentFeePeriod({ from: account1 });
+						await etherWrapper.distributeFees();
+					});
 
-				// 	it('')
-				// })
+					it('total issued sUSD = $15', async () => {
+						// 1500*0.01 = 15
+						assert.bnEqual(await etherWrapper.totalIssuedSynths(sUSD), toUnit('15.0'));
+					});
+
+					it('fees escrowed = 0.0', async () => {
+						assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.0'));
+					});
+				});
 			});
 		});
 	});
@@ -503,4 +504,6 @@ contract('EtherWrapper', async accounts => {
 			});
 		});
 	});
+
+	describe('distributeFees', async () => {});
 });
