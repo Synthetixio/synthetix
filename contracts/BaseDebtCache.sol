@@ -178,12 +178,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         }
 
         // 1. Subtract the USD value of all shorts.
+        uint excludedDebt = 0;
         (uint susdValue, bool shortInvalid) = collateralManager().totalShort();
         isInvalid = isInvalid || shortInvalid;
-        total = total.sub(susdValue);
-
-        uint totalCollateralManagerBackedDebt;
-        uint totalEtherCollateralBackedDebt;
+        excludedDebt = excludedDebt.add(susdValue);
 
         // 2. Subtract the USD debt of the CollateralManager and v1 Collateral contracts.
         for (uint i = 0; i < numValues; i++) {
@@ -191,26 +189,21 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
             if (collateralManager().isSynthManaged(key)) {
                 uint collateralIssued = collateralManager().long(key);
-                totalCollateralManagerBackedDebt += collateralIssued.multiplyDecimalRound(rates[i]);
+                excludedDebt = excludedDebt.add(collateralIssued.multiplyDecimalRound(rates[i]));
             }
 
             if (key == sUSD) {
                 IEtherCollateral etherCollateralContract = IEtherCollateral(address(etherCollateralsUSD()));
-                totalEtherCollateralBackedDebt = totalEtherCollateralBackedDebt.add(
-                    etherCollateralContract.totalIssuedSynths()
-                );
+                excludedDebt = excludedDebt.add(etherCollateralContract.totalIssuedSynths().multiplyDecimalRound(rates[i]));
             }
 
             if (key == sETH) {
                 IEtherCollateral etherCollateralContract = etherCollateral();
-                totalEtherCollateralBackedDebt = totalEtherCollateralBackedDebt.add(
-                    etherCollateralContract.totalIssuedSynths()
-                );
+                excludedDebt = excludedDebt.add(etherCollateralContract.totalIssuedSynths().multiplyDecimalRound(rates[i]));
             }
         }
 
-        total = total.sub(totalCollateralManagerBackedDebt);
-        total = total.sub(totalEtherCollateralBackedDebt);
+        total = total.sub(excludedDebt);
 
         return (total, isInvalid);
     }
