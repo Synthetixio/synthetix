@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.42.1",
+	"version": "2.44.0-alpha",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -22,7 +22,7 @@
 		"test:prod": "hardhat test:prod --network localhost --optimizer",
 		"test:prod:gas": "hardhat test:prod --gas --network localhost --optimizer --gas-output-file test-gas-used-prod.log",
 		"test:prod:ovm": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism --timeout 900000\"",
-		"test:deployments": "mocha test/deployments -- --timeout 15000",
+		"test:deployments": "mocha test/deployments -- --timeout 60000",
 		"test:etherscan": "node test/etherscan",
 		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 240000\""
 	},
@@ -129,7 +129,7 @@
 	},
 	"dependencies": {
 		"@chainlink/contracts-0.0.10": "npm:@chainlink/contracts@0.0.10",
-		"@eth-optimism/contracts": "0.0.2-alpha.7",
+		"@eth-optimism/contracts": "0.2.8",
 		"@eth-optimism/watcher": "0.0.1-alpha.8",
 		"abi-decoder": "2.3.0",
 		"commander": "5.1.0",

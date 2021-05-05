@@ -180,7 +180,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 
 					describe('when the user has no outstanding debt on L1', () => {
 						describe('when the user migrates their escrow', () => {
-							let initiateEscrowMigrationReceipt, initiateEscrowMigrationReceiptExtra;
+							let migrateEscrowReceipt, migrateEscrowReceiptExtra;
 							let user1BalanceL2;
 							let totalSupplyL2;
 							let rewardEscrowBalanceL2;
@@ -206,18 +206,18 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 								rewardEscrowBalanceL2 = await SynthetixL2.balanceOf(RewardEscrowV2L2.address);
 							});
 
-							before('initiateEscrowMigration', async () => {
+							before('migrateEscrow', async () => {
 								SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 								// first test migrating a few entries using random extra invalid Ids!
 								const randomEntries = [extraEntries, [0, 100, 3, 2]];
-								let tx = await SynthetixBridgeToOptimismL1.initiateEscrowMigration(userEntryBatch);
-								initiateEscrowMigrationReceipt = await tx.wait();
-								tx = await SynthetixBridgeToOptimismL1.initiateEscrowMigration(randomEntries);
-								initiateEscrowMigrationReceiptExtra = await tx.wait();
+								let tx = await SynthetixBridgeToOptimismL1.migrateEscrow(userEntryBatch);
+								migrateEscrowReceipt = await tx.wait();
+								tx = await SynthetixBridgeToOptimismL1.migrateEscrow(randomEntries);
+								migrateEscrowReceiptExtra = await tx.wait();
 							});
 
 							it('emitted three ExportedVestingEntries events', async () => {
-								let events = initiateEscrowMigrationReceipt.events.filter(
+								let events = migrateEscrowReceipt.events.filter(
 									e => e.event === 'ExportedVestingEntries'
 								);
 								assert.equal(events.length, 2);
@@ -226,7 +226,7 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 								assert.equal(events[1].args.account, user1L1.address);
 								assert.bnEqual(events[1].args.escrowedAccountBalance, batchEscrowAmounts[1]);
 
-								events = initiateEscrowMigrationReceiptExtra.events.filter(
+								events = migrateEscrowReceiptExtra.events.filter(
 									e => e.event === 'ExportedVestingEntries'
 								);
 								assert.equal(events.length, 1);
@@ -260,13 +260,13 @@ const itCanPerformEscrowMigration = ({ ctx }) => {
 							describe('when waiting for the tx to complete on L2', () => {
 								before('listen for completion', async () => {
 									const [messageHashL2ImportEntries] = await ctx.watcher.getMessageHashesFromL1Tx(
-										initiateEscrowMigrationReceipt.transactionHash
+										migrateEscrowReceipt.transactionHash
 									);
 									await ctx.watcher.getL2TransactionReceipt(messageHashL2ImportEntries);
 									const [
 										messageHashL2ImportEntriesExtra,
 									] = await ctx.watcher.getMessageHashesFromL1Tx(
-										initiateEscrowMigrationReceiptExtra.transactionHash
+										migrateEscrowReceiptExtra.transactionHash
 									);
 									await ctx.watcher.getL2TransactionReceipt(messageHashL2ImportEntriesExtra);
 								});

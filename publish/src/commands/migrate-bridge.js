@@ -1,255 +1,306 @@
+const chalk = require('chalk');
 const fs = require('fs');
 const path = require('path');
-const Web3 = require('web3');
-const { gray, red, yellow } = require('chalk');
+const ethers = require('ethers');
+const assert = require('assert');
+const { ensureNetwork, loadConnections, confirmAction } = require('../util');
 const { wrap } = require('../../..');
-const {
-	ensureNetwork,
-	confirmAction,
-	ensureDeploymentPath,
-	getDeploymentPathForNetwork,
-	loadConnections,
-} = require('../util');
 
-const migrateBridge = async ({
-	network,
-	deploymentPath,
-	privateKey,
-	useFork,
-	gasPrice,
-	gasLimit,
-}) => {
-	let web3, account, getSource, getTarget;
-
-	({ deploymentPath, privateKey, web3, account, getSource, getTarget } = bootstrapConnection({
+const migrateBridge = async ({ network, useFork, gasPrice, useMigrator }) => {
+	const { signer, getUsers, getTarget, getSource, txParams } = await _connect({
 		network,
-		deploymentPath,
-		privateKey,
 		useFork,
-	}));
-
-	console.log(yellow('Configuration...'));
-	console.log(gray(`  > Nework: ${deploymentPath}`));
-	console.log(gray(`  > Deployment path: ${deploymentPath}`));
-
-	// -----------------------------------
-	// Get the old bridge address from versions.js
-	// -----------------------------------
-
-	const { getVersions } = wrap({ network, fs, path });
-
-	const bridgeVersions = getVersions({ network, deploymentPath, byContract: true })
-		.SynthetixBridgeToOptimism;
-	if (bridgeVersions.length < 2) {
-		throw new Error(
-			red(
-				'❌ At least two bridge versions are needed for a migration. Please make sure to deploy new versions before migrating, and that they are registered versions'
-			)
-		);
-	}
-
-	const oldBridgeAddress = bridgeVersions[bridgeVersions.length - 1].address;
-
-	// -----------------------------------
-	// Get the new bridge address from deployment.js
-	// -----------------------------------
-
-	const newBridgeAddress = getTarget({ deploymentPath, contract: 'SynthetixBridgeToOptimism' });
-
-	// -----------------------------------
-	// Ultra-paranoid validation
-	// -----------------------------------
-
-	console.log(yellow('Validations...'));
-
-	// Valid address
-	if (!web3.utils.isAddress(newBridgeAddress.toLowerCase())) {
-		throw new Error(red(`New bridge address ${newBridgeAddress} is invalid`));
-	}
-	console.log(gray(`  ✅ New bridge address is a valid address`));
-
-	// Is contract
-	const code = await web3.eth.getCode(newBridgeAddress);
-	if (code === '0x') {
-		throw new Error(red(`❌ New bridge address ${newBridgeAddress} is not a contract`));
-	}
-	console.log(gray(`  ✅ New bridge address is a contract`));
-
-	// Not same address
-	const oldBridge = getContract({
-		contract: 'SynthetixBridgeToOptimism',
-		deploymentPath,
-		getTarget,
-		getSource,
-		address: oldBridgeAddress,
-		web3,
+		gasPrice,
 	});
-	const newBridge = getContract({
-		contract: 'SynthetixBridgeToOptimism',
-		deploymentPath,
-		getTarget,
+
+	const {
+		deployer,
+		snxContract,
+		oldBridgeContract,
+		newBridgeContract,
+		newEscrowContract,
+	} = _identify({
+		network,
+		signer,
+		getUsers,
 		getSource,
-		address: newBridgeAddress,
-		web3,
-	});
-	if (newBridge.options.address === oldBridge.options.address) {
-		throw new Error(red(`❌ New bridge address is the same as the old bridge address`));
-	}
-	console.log(gray(`  ✅ New bridge address is different than the old bridge address`));
-
-	// Same owner
-	const oldOwner = await oldBridge.methods.owner().call();
-	const newOwner = await newBridge.methods.owner().call();
-	if (newOwner !== oldOwner) {
-		throw new Error(red(`❌ New bridge does not have the same owner as the old bridge`));
-	}
-	console.log(gray(`  ✅ New bridge address owner is the same owner: ${newOwner}`));
-
-	// Correct contract address
-	if (newBridgeAddress !== newBridge.options.address) {
-		throw new Error(
-			red(
-				`❌ Something is wrong, newBridgeAddress is ${newBridgeAddress}, and newBridge.options.address is ${newBridge.options.address}`
-			)
-		);
-	}
-
-	// New bridge should not have SNX balance
-	// but old bridge should have a positive balance
-	const snx = getContract({
-		contract: 'Synthetix',
-		deploymentPath,
 		getTarget,
-		getSource,
-		web3,
 	});
-	const newBalance = web3.utils.fromWei(
-		await snx.methods.balanceOf(newBridgeAddress).call(),
-		'ether'
-	);
-	if (newBalance > 0) {
-		throw new Error(
-			red(`❌ New bridge already has a positive SNX balance of ${newBalance.toString()} SNX`)
-		);
-	}
-	const oldBalance = web3.utils.fromWei(
-		await snx.methods.balanceOf(oldBridgeAddress).call(),
-		'ether'
-	);
-	if (oldBalance === 0) {
-		throw new Error(red("❌ Old bridge's balance is zero"));
-	}
 
-	// -----------------------------------
-	// Confirmation
-	// -----------------------------------
+	const { migratorContract } = await _deploy({
+		network,
+		useMigrator,
+		signer,
+		newBridgeContract,
+		newEscrowContract,
+		txParams,
+	});
 
-	console.log(yellow('Tx params...'));
+	await _verify({
+		migratorContract,
+		snxContract,
+		oldBridgeContract,
+		newBridgeContract,
+		newEscrowContract,
+	});
 
-	// Bridge addresses
-	console.log(yellow(`  > New bridge: ${newBridgeAddress}`));
-	console.log(yellow(`  > Old bridge: ${oldBridgeAddress}`));
+	await _nominate({
+		migratorContract,
+		deployer,
+		oldBridgeContract,
+		newEscrowContract,
+	});
 
-	// Tx params
-	const params = {
-		gasPrice: web3.utils.toWei(gasPrice.toString(), 'gwei'),
-		gas: gasLimit,
-		from: account,
-	};
-	console.log(gray(`  > Gas price to use: ${gasPrice} gwei (${params.gasPrice} wei)`));
-	console.log(gray(`  > Gas limit to use: ${gasLimit} wei`));
+	await _execute({
+		signer,
+		migratorContract,
+		txParams,
+		oldBridgeContract,
+		newEscrowContract,
+	});
 
-	// Account
-	console.log(gray(`  > Sender account: ${account}`));
-
-	// Confirmation
-	try {
-		await confirmAction(
-			yellow("⚠⚠⚠ WARNING: You're about to perform the SNX migration. Are you sure?")
-		);
-	} catch (err) {}
-
-	// -----------------------------------
-	// Ok, let's migrate...
-	// -----------------------------------
-
-	const tx = await oldBridge.methods.migrateBridge(newBridge.options.address).send(params);
-	console.log(tx);
+	await _validate({ snxContract, newEscrowContract, oldBridgeContract });
 };
 
-const bootstrapConnection = ({ network, deploymentPath, privateKey, useFork }) => {
+async function _connect({ network, useFork, gasPrice }) {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
-	ensureDeploymentPath(deploymentPath);
+	console.log(chalk.gray(`Network: ${network}${useFork ? '(FORKED)' : ''}`));
 
-	const { providerUrl, privateKey: envPrivateKey } = loadConnections({
+	if (useFork && network !== 'mainnet') {
+		throw new Error('Command can only run on a fork if network is mainnet');
+	}
+
+	const { providerUrl, privateKey } = loadConnections({
 		network,
 		useFork,
 	});
+	console.log(chalk.gray(`Provider: ${providerUrl}`));
 
-	// allow local deployments to use the private key passed as a CLI option
-	if (network === 'local' || !privateKey) {
-		privateKey = envPrivateKey;
-	}
-
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 	const { getUsers, getTarget, getSource } = wrap({ network, fs, path });
 
-	let account;
-	if (useFork) {
-		account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+	let signer;
+	if (useFork && !privateKey) {
+		signer = provider.getSigner(getUsers({ network }).find(u => u.name === 'deployer').address);
 	} else {
-		web3.eth.accounts.wallet.add(privateKey);
-		account = web3.eth.accounts.wallet[0].address;
+		signer = new ethers.Wallet(privateKey, provider);
 	}
+	console.log(chalk.gray(`Signer: ${await signer.getAddress()}`));
+
+	const txParams = {
+		gasPrice: ethers.utils.parseUnits(`${gasPrice}`, 'gwei'),
+		gasLimit: 12000000,
+	};
+	console.log(chalk.gray(`Gas price: ${gasPrice} gwei (${txParams.gasPrice.toString()} wei)`));
+	console.log(chalk.gray(`Gas limit: ${txParams.gasLimit}`));
 
 	return {
-		deploymentPath,
-		providerUrl,
-		privateKey,
-		web3,
-		account,
+		signer,
+		getUsers,
 		getTarget,
 		getSource,
-		getUsers,
+		txParams,
 	};
-};
+}
 
-const getContract = ({ contract, deploymentPath, getTarget, getSource, web3, address }) => {
-	if (!address) {
-		const target = getTarget({ deploymentPath, contract });
-		if (!target) {
-			throw new Error(`Unable to find deployed target for ${contract} in ${deploymentPath}`);
+function _identify({ network, getUsers, getSource, getTarget, signer }) {
+	const users = getUsers({ network });
+
+	const deployer = users.find(u => u.name === 'deployer').address;
+	const pdao = users.find(u => u.name === 'owner').address;
+	console.log(chalk.gray(`Deployer: ${deployer}`));
+	console.log(chalk.gray(`pDAO: ${pdao}`));
+
+	const snx = getTarget({ network, contract: 'ProxyERC20' }).address;
+	const newBridge = getTarget({ network, contract: 'SynthetixBridgeToOptimism' }).address;
+	const newEscrow = getTarget({ network, contract: 'SynthetixBridgeEscrow' }).address;
+	console.log(chalk.gray(`Synthetix: ${snx}`));
+	console.log(chalk.gray(`New bridge: ${newBridge}`));
+	console.log(chalk.gray(`New escrow: ${newEscrow}`));
+
+	let oldBridge;
+	if (network === 'mainnet') {
+		oldBridge = '0x045e507925d2e05D114534D0810a1abD94aca8d6';
+	} else if (network === 'kovan') {
+		oldBridge = '0xE8Bf8fe5ce9e15D30F478E1647A57CB6B0271228';
+	} else {
+		throw new Error('Unsupported network');
+	}
+	console.log(chalk.gray(`Old bridge: ${oldBridge}`));
+
+	assert(newBridge !== oldBridge, 'Bridge addresses must be different');
+
+	const oldBridgeContract = new ethers.Contract(
+		oldBridge,
+		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi, // We only care about the Owned interface here, so the new ABI will do
+		signer
+	);
+
+	const newBridgeContract = new ethers.Contract(
+		newBridge,
+		getSource({ contract: 'SynthetixBridgeToOptimism' }).abi,
+		signer
+	);
+
+	const newEscrowContract = new ethers.Contract(
+		newEscrow,
+		getSource({ contract: 'SynthetixBridgeEscrow' }).abi,
+		signer
+	);
+
+	const snxContract = new ethers.Contract(snx, getSource({ contract: 'ProxyERC20' }).abi, signer);
+
+	return {
+		snx,
+		deployer,
+		oldBridgeContract,
+		newBridgeContract,
+		newEscrowContract,
+		snxContract,
+	};
+}
+
+async function _deploy({
+	network,
+	useMigrator,
+	newBridgeContract,
+	newEscrowContract,
+	txParams,
+	signer,
+}) {
+	const artifacts = JSON.parse(
+		fs.readFileSync('build/artifacts/contracts/BridgeMigrator.sol/BridgeMigrator.json')
+	);
+
+	let migratorContract;
+	if (!useMigrator) {
+		await confirmAction(chalk.yellow('Type "y" to deploy the migrator contract'));
+
+		console.log(chalk.gray('Deploying BridgeMigrator...'));
+
+		const Migrator = new ethers.ContractFactory(artifacts.abi, artifacts.bytecode, signer);
+		migratorContract = await Migrator.deploy(
+			newBridgeContract.address,
+			newEscrowContract.address,
+			network,
+			txParams
+		);
+
+		const tx = migratorContract.deployTransaction;
+		console.log(chalk.gray(tx.hash));
+		const receipt = await migratorContract.deployTransaction.wait();
+		console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
+	} else {
+		migratorContract = new ethers.Contract(useMigrator, artifacts.abi, signer);
+	}
+
+	console.log(chalk.gray(`Migrator: ${migratorContract.address}`));
+
+	return {
+		migratorContract,
+	};
+}
+
+async function _verify({
+	migratorContract,
+	snxContract,
+	oldBridgeContract,
+	newBridgeContract,
+	newEscrowContract,
+}) {
+	console.log(chalk.gray('Validating contract parameters...'));
+
+	const _snx = await migratorContract.snx();
+	const _oldBridge = await migratorContract.oldBridge();
+	const _newBridge = await migratorContract.newBridge();
+	const _newEscrow = await migratorContract.newEscrow();
+
+	assert(_snx === snxContract.address, 'Unexpected snx address');
+	assert(_oldBridge === oldBridgeContract.address, 'Unexpected old bridge address');
+	assert(_newBridge === newBridgeContract.address, 'Unexpected new bridge address');
+	assert(_newEscrow === newEscrowContract.address, 'Unexpected new escrow address');
+
+	console.log(chalk.gray(`Contract's snx: ${_snx} OK ✓`));
+	console.log(chalk.gray(`Contract's old bridge: ${_oldBridge} OK ✓`));
+	console.log(chalk.gray(`Contract's new bridge: ${_newBridge} OK ✓`));
+	console.log(chalk.gray(`Contract's new escrow: ${_newEscrow} OK ✓`));
+}
+
+async function _nominate({ migratorContract, deployer, oldBridgeContract, newEscrowContract }) {
+	async function __nominateContract({ name, contract }) {
+		const nominatedOwner = await contract.nominatedOwner();
+		console.log(chalk.gray(`${name} nominatedOwner: ${nominatedOwner}`));
+		if (nominatedOwner !== migratorContract.address) {
+			const owner = await contract.owner();
+			console.log(chalk.gray(`${name} owner: ${owner}`));
+			if (owner === deployer) {
+				console.log(chalk.gray(`Nominating new owner on ${name} (${contract.address})...`));
+
+				await _runTx(contract.nominateNewOwner(migratorContract.address));
+			} else {
+				await confirmAction(
+					chalk.yellow(
+						`Please nominate ${name} (${contract.address}) ownership to ${migratorContract.address}\nWhen done, press "y" to continue.`
+					)
+				);
+			}
 		}
-
-		address = target.address;
 	}
 
-	const source = getSource({ deploymentPath, contract });
-	if (!source) {
-		throw new Error(`Unable to find source for ${contract}`);
-	}
+	await __nominateContract({ name: 'Old bridge', contract: oldBridgeContract });
+	await __nominateContract({ name: 'New escrow', contract: newEscrowContract });
+}
 
-	return new web3.eth.Contract(source.abi, address);
-};
+async function _execute({ migratorContract, txParams, oldBridgeContract, newEscrowContract }) {
+	await confirmAction(chalk.yellow.inverse('Execute the migration? (type "y" to continue)'));
+	console.log(chalk.gray.bold('Executing...'));
+
+	await _runTx(migratorContract.execute(txParams));
+	await _runTx(oldBridgeContract.acceptOwnership());
+	await _runTx(newEscrowContract.acceptOwnership());
+}
+
+async function _validate({ snxContract, newEscrowContract, oldBridgeContract }) {
+	console.log(
+		chalk.gray(`Old bridge SNX balance: ${await snxContract.balanceOf(oldBridgeContract.address)}`)
+	);
+	console.log(
+		chalk.gray(`New escrow SNX balance: ${await snxContract.balanceOf(newEscrowContract.address)}`)
+	);
+	console.log(chalk.gray(`Old bridge owner: ${await oldBridgeContract.owner()}`));
+	console.log(chalk.gray(`New escrow owner: ${await newEscrowContract.owner()}`));
+}
+
+async function _runTx(request) {
+	const tx = await request;
+	console.log(chalk.gray(tx.hash));
+	const receipt = await tx.wait();
+	console.log(chalk.gray(`Gas used: ${receipt.gasUsed.toString()}`));
+}
 
 module.exports = {
 	migrateBridge,
 	cmd: program =>
 		program
 			.command('migrate-bridge')
-			.description('Migrates snx from an L2 deposit contract into another')
-			.option('--network <value>', 'The name of the target network', 'goerli')
-			.option('--deployment-path <value>', 'The path of the deployment to target')
-			.option('--private-key <value>', 'Optional private key for signing transactions')
-			.option('--use-fork', 'Wether to use a fork for the migration', false)
-			.option('-g, --gas-price <value>', 'Gas price to set when signing transactions', 1)
-			.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
+			.description(
+				'Migrates a SynthetixBridgeToOptimism (v1) to a SynthetixBridgeToOptimism + SynthetixBridgeEscrow (v2) via a BridgeMigrator contract.'
+			)
+			.option('--network <value>', 'The target network', network => network.toLowerCase())
+			.option('--use-fork', 'Run the migration on a fork of mainnet', false)
+			.option(
+				'--gas-price <value>',
+				'Gas price in GWEI to use in all transactions',
+				parseFloat,
+				100
+			)
+			.option('--use-migrator <value>', 'Use already deployed migrator contract')
 			.action(async (...args) => {
 				try {
 					await migrateBridge(...args);
 				} catch (err) {
+					console.error(chalk.red(err));
 					console.log(err.stack);
 					process.exitCode = 1;
 				}

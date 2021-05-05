@@ -366,5 +366,19 @@
 		"sign": "",
 		"exchange": "NASDAQ",
 		"description": "Amazon"
+	},
+	"COIN": {
+		"asset": "COIN",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Coinbase"
+	},
+	"MSFT": {
+		"asset": "MSFT",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Microsoft"
 	}
 }

@@ -523,5 +523,8 @@
 	},
 	"NativeEtherWrapper": {
 		"deploy": true
+	},
+	"SynthetixBridgeEscrow": {
+		"deploy": false
 	}
 }
