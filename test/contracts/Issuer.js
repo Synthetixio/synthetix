@@ -2629,8 +2629,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						const amount = toUnit('10');
 
-						// mint sETH on EtherWrapper
-						await etherWrapper.mint(amount, { from: account1 });
+						await etherWrapper.setTotalIssuedSynths(sETH, amount, { from: account1 });
 
 						// totalSupply of synths should exclude EtherWrapper issued sETH
 						assert.bnEqual(
@@ -2649,8 +2648,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						assert.bnEqual(debtBefore, toUnit('0'));
 
 						const amount = toUnit('10');
-						// mint sETH on EtherWrapper
-						await etherWrapper.mint(amount, { from: account1 });
+						await etherWrapper.setTotalIssuedSynths(sETH, amount, { from: account1 });
 
 						// totalSupply of synths should exclude EtherWrapper issued sETH
 						assert.bnEqual(

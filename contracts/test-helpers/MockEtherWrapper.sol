@@ -6,15 +6,15 @@ contract MockEtherWrapper {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    uint public totalIssuedSynths;
+    mapping(bytes32 => uint) private _totalIssuedSynths;
 
     constructor() public {}
 
-    function mint(uint amount) external {
-        totalIssuedSynths = totalIssuedSynths.add(amount);
+    function totalIssuedSynths(bytes32 currencyKey) external view returns (uint) {
+        return _totalIssuedSynths[currencyKey];
     }
 
-    function burn(uint amount) external {
-        totalIssuedSynths = totalIssuedSynths.sub(amount);
+    function setTotalIssuedSynths(bytes32 currencyKey, uint value) external {
+        _totalIssuedSynths[currencyKey] = value;
     }
 }

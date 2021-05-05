@@ -215,14 +215,16 @@ contract('EtherWrapper', async accounts => {
 			let amount;
 			let initialCapacity;
 			let mintFee;
-			let expectedFeesUSD;
 			let mintTx;
+			let feesEscrowed;
 
 			beforeEach(async () => {
 				initialCapacity = await etherWrapper.capacity();
 				amount = initialCapacity.sub(toUnit('1.0'));
 
-				({ mintFee, expectedFeesUSD } = await calculateMintFees(amount));
+				({ mintFee } = await calculateMintFees(amount));
+
+				feesEscrowed = await etherWrapper.feesEscrowed();
 
 				await weth.deposit({ from: account1, value: amount });
 				await weth.approve(etherWrapper.address, amount, { from: account1 });
@@ -245,8 +247,8 @@ contract('EtherWrapper', async accounts => {
 			it('mints amount(1-mintFeeRate) sETH into the user’s wallet', async () => {
 				assert.bnEqual(await sETHSynth.balanceOf(account1), amount.sub(mintFee));
 			});
-			it('sends amount*mintFeeRate worth of sETH to the fee pool as sUSD', async () => {
-				assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
+			it('escrows `amount * mintFeeRate` worth of sETH as fees', async () => {
+				assert.bnEqual(await etherWrapper.feesEscrowed(), feesEscrowed.add(mintFee));
 			});
 			it('has a capacity of (capacity - amount) after', async () => {
 				assert.bnEqual(await etherWrapper.capacity(), initialCapacity.sub(amount));
@@ -270,8 +272,8 @@ contract('EtherWrapper', async accounts => {
 			let amount;
 			let initialCapacity;
 			let mintFee;
-			let expectedFeesUSD;
 			let mintTx;
+			let feesEscrowed;
 
 			beforeEach(async () => {
 				initialCapacity = await etherWrapper.capacity();
@@ -279,7 +281,9 @@ contract('EtherWrapper', async accounts => {
 
 				// Calculate the mint fees on the capacity amount,
 				// as this will be the ETH accepted by the contract.
-				({ mintFee, expectedFeesUSD } = await calculateMintFees(initialCapacity));
+				({ mintFee } = await calculateMintFees(initialCapacity));
+
+				feesEscrowed = await etherWrapper.feesEscrowed();
 
 				await weth.deposit({ from: account1, value: amount });
 				await weth.approve(etherWrapper.address, amount, { from: account1 });
@@ -302,8 +306,8 @@ contract('EtherWrapper', async accounts => {
 			it('mints capacity(1-mintFeeRate) sETH into the user’s wallet', async () => {
 				assert.bnEqual(await sETHSynth.balanceOf(account1), initialCapacity.sub(mintFee));
 			});
-			it('sends capacity*mintFeeRate worth of sETH to the fee pool as sUSD', async () => {
-				assert.bnEqual(await sUSDSynth.balanceOf(FEE_ADDRESS), expectedFeesUSD);
+			it('escrows `capacity * mintFeeRate` worth of sETH as fees', async () => {
+				assert.bnEqual(await etherWrapper.feesEscrowed(), feesEscrowed.add(mintFee));
 			});
 			it('has a capacity of 0 after', async () => {
 				assert.bnEqual(await etherWrapper.capacity(), toBN('0'));
@@ -352,13 +356,14 @@ contract('EtherWrapper', async accounts => {
 				const principal = toUnit('1.0');
 				let amount;
 				let burnFee;
-				let expectedFeesUSD;
 				let initialCapacity;
+				let feesEscrowed;
 
 				beforeEach(async () => {
 					initialCapacity = await etherWrapper.capacity();
+					feesEscrowed = await etherWrapper.feesEscrowed();
 
-					({ burnFee, expectedFeesUSD } = await calculateBurnFees(principal));
+					({ burnFee } = await calculateBurnFees(principal));
 					amount = principal.add(burnFee);
 					await sETHSynth.issue(account1, amount);
 					await sETHSynth.approve(etherWrapper.address, amount, { from: account1 });
@@ -395,21 +400,8 @@ contract('EtherWrapper', async accounts => {
 							.find(({ name }) => name === 'Transfer'),
 					});
 				});
-				it('sends `amount * burnFeeRate` fees as sUSD to the fee pool', async () => {
-					const logs = await getDecodedLogs({
-						hash: burnTx.tx,
-						contracts: [sUSDSynth],
-					});
-
-					decodedEventEqual({
-						event: 'Issued',
-						emittedFrom: sUSDSynth.address,
-						args: [FEE_ADDRESS, expectedFeesUSD],
-						log: logs
-							.reverse()
-							.filter(l => !!l)
-							.find(({ name }) => name === 'Issued'),
-					});
+				it('escrows `amount * burnFeeRate` worth of sETH as fees', async () => {
+					assert.bnEqual(await etherWrapper.feesEscrowed(), feesEscrowed.add(burnFee));
 				});
 				it('increases capacity by `amount - fees` WETH', async () => {
 					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(amount.sub(burnFee)));
@@ -436,13 +428,14 @@ contract('EtherWrapper', async accounts => {
 				let reserves;
 				let amount;
 				let burnFee;
-				let expectedFeesUSD;
+				let feesEscrowed;
 
 				beforeEach(async () => {
 					reserves = await etherWrapper.getReserves();
-					({ burnFee, expectedFeesUSD } = await calculateBurnFees(reserves));
+					({ burnFee } = await calculateBurnFees(reserves));
 
 					amount = reserves.add(burnFee).add(toBN('100000000'));
+					feesEscrowed = await etherWrapper.feesEscrowed();
 
 					await sETHSynth.issue(account1, amount);
 					await sETHSynth.approve(etherWrapper.address, amount, { from: account1 });
@@ -479,21 +472,8 @@ contract('EtherWrapper', async accounts => {
 							.find(({ name }) => name === 'Transfer'),
 					});
 				});
-				it('sends `reserves * burnFeeRate` fees as sUSD to the fee pool', async () => {
-					const logs = await getDecodedLogs({
-						hash: burnTx.tx,
-						contracts: [sUSDSynth],
-					});
-
-					decodedEventEqual({
-						event: 'Issued',
-						emittedFrom: sUSDSynth.address,
-						args: [FEE_ADDRESS, expectedFeesUSD],
-						log: logs
-							.reverse()
-							.filter(l => !!l)
-							.find(({ name }) => name === 'Issued'),
-					});
+				it('escrows `amount * burnFeeRate` worth of sETH as fees', async () => {
+					assert.bnEqual(await etherWrapper.feesEscrowed(), feesEscrowed.add(burnFee));
 				});
 				it('has a max capacity after', async () => {
 					assert.bnEqual(await etherWrapper.capacity(), await etherWrapper.maxETH());
@@ -505,13 +485,13 @@ contract('EtherWrapper', async accounts => {
 		});
 	});
 
-	describe.only('distributeFees', async () => {
+	describe('distributeFees', async () => {
 		let tx;
 		let feesEscrowed;
 		let sETHIssued;
 
 		before(async () => {
-			let amount = toUnit('10');
+			const amount = toUnit('10');
 			await weth.deposit({ from: account1, value: amount });
 			await weth.approve(etherWrapper.address, amount, { from: account1 });
 			await etherWrapper.mint(amount, { from: account1 });
