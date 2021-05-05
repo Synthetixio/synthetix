@@ -76,6 +76,18 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 					SynthetixBridgeToOptimismL1.address,
 					amountToWithdraw
 				);
+			} else {
+				// set it to zero first, otherwise safeApprove will revert
+				await SynthetixBridgeEscrowL1.approveBridge(
+					SynthetixL1.address,
+					SynthetixBridgeToOptimismL1.address,
+					'0'
+				);
+				await SynthetixBridgeEscrowL1.approveBridge(
+					SynthetixL1.address,
+					SynthetixBridgeToOptimismL1.address,
+					amountToWithdraw
+				);
 			}
 		});
 
