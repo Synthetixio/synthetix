@@ -4,7 +4,7 @@ const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, toUnit } = require('../utils')();
+const { currentTime, toUnit, multiplyDecimal } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
@@ -505,5 +505,57 @@ contract('EtherWrapper', async accounts => {
 		});
 	});
 
-	describe('distributeFees', async () => {});
+	describe.only('distributeFees', async () => {
+		let tx;
+		let feesEscrowed;
+		let sETHIssued;
+
+		before(async () => {
+			let amount = toUnit('10');
+			await weth.deposit({ from: account1, value: amount });
+			await weth.approve(etherWrapper.address, amount, { from: account1 });
+			await etherWrapper.mint(amount, { from: account1 });
+
+			feesEscrowed = await etherWrapper.feesEscrowed();
+			sETHIssued = await etherWrapper.sETHIssued();
+			tx = await etherWrapper.distributeFees();
+		});
+
+		it('burns `feesEscrowed` sETH', async () => {
+			const logs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sETHSynth],
+			});
+
+			decodedEventEqual({
+				event: 'Burned',
+				emittedFrom: sETHSynth.address,
+				args: [etherWrapper.address, feesEscrowed],
+				log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
+			});
+		});
+		it('issues sUSD to the feepool', async () => {
+			const logs = await getDecodedLogs({
+				hash: tx.tx,
+				contracts: [sUSDSynth],
+			});
+			const rate = await exchangeRates.rateForCurrency(sETH);
+
+			decodedEventEqual({
+				event: 'Issued',
+				emittedFrom: sUSDSynth.address,
+				args: [FEE_ADDRESS, multiplyDecimal(feesEscrowed, rate)],
+				log: logs
+					.reverse()
+					.filter(l => !!l)
+					.find(({ name }) => name === 'Issued'),
+			});
+		});
+		it('sETHIssued is reduced by `feesEscrowed`', async () => {
+			assert.bnEqual(await etherWrapper.sETHIssued(), sETHIssued.sub(feesEscrowed));
+		});
+		it('feesEscrowed = 0', async () => {
+			assert.bnEqual(await etherWrapper.feesEscrowed(), toBN(0));
+		});
+	});
 });

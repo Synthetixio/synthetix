@@ -183,25 +183,24 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         }
     }
 
-    function distributeFees(uint amount) external {
-        require(amount <= feesEscrowed, "amount to distribute too large");
-
+    function distributeFees() external {
         // Normalize fee to sUSD
         require(!exchangeRates().rateIsInvalid(ETH), "Currency rate is invalid");
-        uint amount_sUSD = exchangeRates().effectiveValue(ETH, amount, sUSD);
+        uint amountSUSD = exchangeRates().effectiveValue(ETH, feesEscrowed, sUSD);
 
         // Burn sETH.
-        synthsETH().burn(address(this), amount);
-        sETHIssued = amount > sETHIssued ? 0 : sETHIssued.sub(amount);
+        synthsETH().burn(address(this), feesEscrowed);
+        // Pay down as much sETH debt as we burn. Any other debt is taken on by the stakers.
+        sETHIssued = sETHIssued < feesEscrowed ? 0 : sETHIssued.sub(feesEscrowed);
 
         // Issue sUSD to the fee pool
-        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), amount_sUSD);
-        sUSDIssued = sUSDIssued.add(amount_sUSD);
+        issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), amountSUSD);
+        sUSDIssued = sUSDIssued.add(amountSUSD);
 
         // Tell the fee pool about this
-        feePool().recordFeePaid(amount_sUSD);
+        feePool().recordFeePaid(amountSUSD);
 
-        feesEscrowed = feesEscrowed.sub(amount);
+        feesEscrowed = 0;
     }
 
     // ========== RESTRICTED ==========
@@ -247,11 +246,13 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         // Burn `amountIn` sETH from user.
         synthsETH().burn(msg.sender, amountIn);
         // sETH debt is repaid by burning.
-        sETHIssued = sETHIssued < amountIn ? 0 : sETHIssued.sub(amountIn);
+        sETHIssued = sETHIssued < principal ? 0 : sETHIssued.sub(principal);
 
+        // We use burn/issue instead of burning the principal and transferring the fee.
+        // This saves an approval and is cheaper.
         // Escrow fee.
         synthsETH().issue(address(this), feeAmountEth);
-        sETHIssued = sETHIssued.add(feeAmountEth);
+        // We don't update sETHIssued, as only the principal was subtracted earlier.
         feesEscrowed = feesEscrowed.add(feeAmountEth);
 
         // Transfer `amount - fees` WETH to user.
