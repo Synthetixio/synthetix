@@ -162,17 +162,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
                 supply = supply.sub(etherCollateralSupply);
             }
 
-            if (key == sETH) {
-                // Subtract sETH minted by EtherWrapper.
-                uint etherWrapperSupply = etherWrapper().totalIssuedSynths(sETH);
-                supply = supply.sub(etherWrapperSupply);
-            }
-
-            if (key == sUSD) {
-                // Subtract sUSD minted by EtherWrapper.
-                supply = supply.sub(etherWrapper().totalIssuedSynths(sUSD));
-            }
-
             values[i] = supply.multiplyDecimalRound(rates[i]);
         }
         return values;
@@ -218,10 +207,15 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
         // subtract the USD value of all shorts.
         (uint susdValue, bool shortInvalid) = collateralManager().totalShort();
-
         total = total.sub(susdValue);
-
         isInvalid = isInvalid || shortInvalid;
+
+        // Subtract sETH and sUSD issued by EtherWrapper.
+        (uint sETHRate, bool sETHRateInvalid) = exchangeRates().rateAndInvalid(sETH);
+        isInvalid = isInvalid || sETHRateInvalid;
+
+        total = total.sub(etherWrapper().totalIssuedSynths(sETH).multiplyDecimalRound(sETHRate));
+        total = total.sub(etherWrapper().totalIssuedSynths(sUSD));
 
         return (total, isInvalid);
     }
