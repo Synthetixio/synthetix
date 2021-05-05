@@ -11,10 +11,14 @@ const {
 	},
 } = require('../../');
 
-contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
-	const [, owner, newBridge] = accounts;
+contract('SynthetixBridgeToOptimism (spec tests) @ovm-skip', accounts => {
+	const [, owner, randomAddress] = accounts;
 
-	let synthetix, synthetixBridgeToOptimism, systemSettings;
+	let synthetix,
+		synthetixBridgeToOptimism,
+		synthetixBridgeEscrow,
+		systemSettings,
+		rewardsDistribution;
 
 	describe('when deploying the system', () => {
 		before('deploy all contracts', async () => {
@@ -22,9 +26,16 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 				Synthetix: synthetix,
 				SynthetixBridgeToOptimism: synthetixBridgeToOptimism,
 				SystemSettings: systemSettings,
+				SynthetixBridgeEscrow: synthetixBridgeEscrow,
+				RewardsDistribution: rewardsDistribution,
 			} = await setupAllContracts({
 				accounts,
-				contracts: ['Synthetix', 'Issuer', 'SynthetixBridgeToOptimism'],
+				contracts: [
+					'Synthetix',
+					'SynthetixBridgeToOptimism',
+					'SystemSettings',
+					'RewardsDistribution',
+				],
 			}));
 		});
 
@@ -47,17 +58,17 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 			);
 		});
 
-		describe('initiateEscrowMigration', () => {
+		describe('migrateEscrow', () => {
 			it('reverts when an entriesId subarray contains an empty array', async () => {
 				const entryIdsEmpty = [[1, 2, 3], []];
 				await assert.revert(
-					synthetixBridgeToOptimism.initiateEscrowMigration(entryIdsEmpty),
+					synthetixBridgeToOptimism.migrateEscrow(entryIdsEmpty),
 					'Entry IDs required'
 				);
 			});
 		});
 
-		describe('initiateEscrowMigration', () => {
+		describe('migrateEscrow', () => {
 			it('reverts when an entriesId subarray contains an empty array', async () => {
 				const entryIdsEmpty = [[], [1, 2, 3]];
 				await assert.revert(
@@ -67,13 +78,13 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 			});
 		});
 
-		describe('initiateDeposit', () => {
+		describe('deposit', () => {
 			const amountToDeposit = 1;
 
 			describe('when a user has not provided allowance to the bridge contract', () => {
 				it('the deposit should fail', async () => {
 					await assert.revert(
-						synthetixBridgeToOptimism.initiateDeposit(amountToDeposit, { from: owner }),
+						synthetixBridgeToOptimism.deposit(amountToDeposit, { from: owner }),
 						'SafeMath: subtraction overflow'
 					);
 				});
@@ -94,7 +105,7 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 					});
 
 					before('perform a deposit', async () => {
-						await synthetixBridgeToOptimism.initiateDeposit(amountToDeposit, {
+						await synthetixBridgeToOptimism.deposit(amountToDeposit, {
 							from: owner,
 						});
 					});
@@ -105,9 +116,9 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 						assert.bnEqual(userBalanceBefore.sub(toBN(amountToDeposit)), userBalanceAfter);
 					});
 
-					it("increases the contract's balance", async () => {
+					it("increases the escrow's balance", async () => {
 						assert.bnEqual(
-							await synthetix.balanceOf(synthetixBridgeToOptimism.address),
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
 							amountToDeposit
 						);
 					});
@@ -115,9 +126,59 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 			});
 		});
 
-		describe('initiateRewardDeposit', () => {
+		describe('depositTo', () => {
+			const amountToDeposit = toBN(1);
+
+			describe('when a user has not provided allowance to the bridge contract', () => {
+				it('the deposit should fail', async () => {
+					await assert.revert(
+						synthetixBridgeToOptimism.depositTo(randomAddress, amountToDeposit, { from: owner }),
+						'SafeMath: subtraction overflow'
+					);
+				});
+			});
+
 			describe('when a user has provided allowance to the bridge contract', () => {
-				const amountToDeposit = 1;
+				before('approve SynthetixBridgeToOptimism', async () => {
+					await synthetix.approve(synthetixBridgeToOptimism.address, amountToDeposit, {
+						from: owner,
+					});
+				});
+
+				describe('when performing a deposit', () => {
+					let userBalanceBefore;
+					let contractBalanceBefore;
+
+					before('record balances before', async () => {
+						userBalanceBefore = await synthetix.balanceOf(owner);
+						contractBalanceBefore = await synthetix.balanceOf(synthetixBridgeEscrow.address);
+					});
+
+					before('perform a deposit to a separate address', async () => {
+						await synthetixBridgeToOptimism.depositTo(randomAddress, amountToDeposit, {
+							from: owner,
+						});
+					});
+
+					it('reduces the user balance', async () => {
+						const userBalanceAfter = await synthetix.balanceOf(owner);
+
+						assert.bnEqual(userBalanceBefore.sub(toBN(amountToDeposit)), userBalanceAfter);
+					});
+
+					it("increases the escrow's balance", async () => {
+						assert.bnEqual(
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
+							contractBalanceBefore.add(amountToDeposit)
+						);
+					});
+				});
+			});
+		});
+
+		describe('depositReward', () => {
+			describe('when a user has provided allowance to the bridge contract', () => {
+				const amountToDeposit = toBN(1);
 
 				before('approve SynthetixBridgeToOptimism', async () => {
 					await synthetix.approve(synthetixBridgeToOptimism.address, amountToDeposit, {
@@ -127,13 +188,15 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 
 				describe('when performing a deposit', () => {
 					let userBalanceBefore;
+					let contractBalanceBefore;
 
 					before('record balance before', async () => {
 						userBalanceBefore = await synthetix.balanceOf(owner);
+						contractBalanceBefore = await synthetix.balanceOf(synthetixBridgeEscrow.address);
 					});
 
-					before('perform a initiateRewardDeposit', async () => {
-						await synthetixBridgeToOptimism.initiateRewardDeposit(amountToDeposit, {
+					before('perform a depositReward', async () => {
+						await synthetixBridgeToOptimism.depositReward(amountToDeposit, {
 							from: owner,
 						});
 					});
@@ -144,33 +207,92 @@ contract('SynthetixBridgeToOptimism (spec tests)', accounts => {
 						assert.bnEqual(userBalanceBefore.sub(toBN(amountToDeposit)), userBalanceAfter);
 					});
 
-					it("increases the contract's balance", async () => {
+					it("increases the escrow's balance", async () => {
 						assert.bnEqual(
-							await synthetix.balanceOf(synthetixBridgeToOptimism.address),
-							amountToDeposit * 2
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
+							contractBalanceBefore.add(amountToDeposit)
 						);
 					});
 				});
 			});
 		});
 
-		describe('migrateBridge', () => {
-			describe('when the owner migrates the bridge', () => {
-				let bridgeBalance;
-
-				before('record balance', async () => {
-					bridgeBalance = await synthetix.balanceOf(synthetixBridgeToOptimism.address);
+		describe('notifyReward', () => {
+			describe('the owner has added SynthetixBridgeToOptimism to rewards distributins list', () => {
+				const amountToDistribute = toBN(1000);
+				before('addRewardDistribution', async () => {
+					await rewardsDistribution.addRewardDistribution(
+						synthetixBridgeToOptimism.address,
+						amountToDistribute,
+						{
+							from: owner,
+						}
+					);
 				});
 
-				before('migrate the bridge', async () => {
-					await synthetixBridgeToOptimism.migrateBridge(newBridge, {
-						from: owner,
+				describe('distributing the rewards', () => {
+					let bridgeBalanceBefore;
+					let escrowBalanceBefore;
+
+					before('record balance before', async () => {
+						bridgeBalanceBefore = await synthetix.balanceOf(synthetixBridgeToOptimism.address);
+						escrowBalanceBefore = await synthetix.balanceOf(synthetixBridgeEscrow.address);
+					});
+
+					before('transfer amount to be distributed and distributeRewards', async () => {
+						// first pawn the authority contract
+						await rewardsDistribution.setAuthority(owner, {
+							from: owner,
+						});
+						await synthetix.transfer(rewardsDistribution.address, amountToDistribute, {
+							from: owner,
+						});
+						await rewardsDistribution.distributeRewards(amountToDistribute, {
+							from: owner,
+						});
+					});
+
+					it('the balance of the bridge remains intact', async () => {
+						assert.bnEqual(
+							await synthetix.balanceOf(synthetixBridgeToOptimism.address),
+							bridgeBalanceBefore
+						);
+					});
+
+					it("increases the escrow's balance", async () => {
+						assert.bnEqual(
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
+							escrowBalanceBefore.add(amountToDistribute)
+						);
 					});
 				});
+			});
+		});
 
-				it('transfers the whoel balacne to the new bridge', async () => {
-					assert.bnEqual(await synthetix.balanceOf(synthetixBridgeToOptimism.address), 0);
-					assert.bnEqual(await synthetix.balanceOf(newBridge), bridgeBalance);
+		describe('forwardTokensToEscrow', () => {
+			describe('when some SNX tokens are accidentally transferred to the bridge', () => {
+				const amount = toBN('999');
+				let initialAmount;
+				before(async () => {
+					initialAmount = await synthetix.balanceOf(synthetixBridgeEscrow.address);
+					await synthetix.transfer(synthetixBridgeToOptimism.address, amount, {
+						from: owner,
+					});
+					assert.bnEqual(await synthetix.balanceOf(synthetixBridgeToOptimism.address), amount);
+				});
+				describe('when anyone invokeds forwardTokensToEscrow', () => {
+					before(async () => {
+						await synthetixBridgeToOptimism.forwardTokensToEscrow(synthetix.address, {
+							from: randomAddress,
+						});
+					});
+					it('then the tokens are sent from the bridge to the escrow', async () => {
+						assert.equal(await synthetix.balanceOf(synthetixBridgeToOptimism.address), '0');
+						assert.bnEqual(
+							await synthetix.balanceOf(synthetixBridgeEscrow.address),
+							initialAmount.add(amount)
+						);
+					});
 				});
 			});
 		});
