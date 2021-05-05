@@ -75,6 +75,7 @@
 	},
 	"devDependencies": {
 		"@codechecks/client": "0.1.10",
+		"@eth-optimism/contracts": "0.2.8",
 		"@eth-optimism/plugins": "0.0.16",
 		"@eth-optimism/smock": "0.2.1-alpha.0",
 		"@eth-optimism/solc": "0.5.16-alpha.7",
@@ -129,7 +130,6 @@
 	},
 	"dependencies": {
 		"@chainlink/contracts-0.0.10": "npm:@chainlink/contracts@0.0.10",
-		"@eth-optimism/contracts": "0.2.8",
 		"@eth-optimism/watcher": "0.0.1-alpha.8",
 		"abi-decoder": "2.3.0",
 		"commander": "5.1.0",
