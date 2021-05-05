@@ -78,18 +78,16 @@ contract NativeEtherWrapper is Owned, MixinResolver {
 
         // Convert WETH to ETH and send to msg.sender.
         weth.withdraw(weth.balanceOf(address(this)));
+        // solhint-disable avoid-low-level-calls
         msg.sender.call.value(address(this).balance)("");
 
         emit Burned(msg.sender, amount);
     }
 
     function() external payable {
-        if (msg.sender == address(weth())) {
-            // Allow the WETH contract to send us ETH during
-            // our call to WETH.deposit.
-        } else {
-            revert("Fallback disabled.");
-        }
+        // Allow the WETH contract to send us ETH during
+        // our call to WETH.deposit. The gas stipend it gives
+        // is 2300 gas, so it's not possible to do much else here.
     }
 
     /* ========== EVENTS ========== */
