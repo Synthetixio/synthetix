@@ -18,7 +18,6 @@ import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
-import "./interfaces/IEtherWrapper.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
@@ -44,7 +43,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
-    bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -52,7 +50,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](8);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -60,7 +58,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         newAddresses[4] = CONTRACT_ETHERCOLLATERAL;
         newAddresses[5] = CONTRACT_ETHERCOLLATERAL_SUSD;
         newAddresses[6] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[7] = CONTRACT_ETHER_WRAPPER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -90,10 +87,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function collateralManager() internal view returns (ICollateralManager) {
         return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
-    }
-
-    function etherWrapper() internal view returns (IEtherWrapper) {
-        return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
     }
 
     function debtSnapshotStaleTime() external view returns (uint) {
@@ -133,55 +126,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         ISynth[] memory synths = issuer().getSynths(currencyKeys);
 
         for (uint i = 0; i < numValues; i++) {
-            bytes32 key = currencyKeys[i];
             address synthAddress = address(synths[i]);
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
-
-            // Steps to repro:
-            // 1. Mint sUSD via SNX.
-            // 1a. Check currentSynthDebts and currentDebt.
-            // 2. Mint sETH via ETH.
-            // 2a. Check currentSynthDebts and currentDebt.
-            // 3. Swap sETH into sAUD.
-            // 3a. Check currentSynthDebts and currentDebt.
-            // collateralIssued for sETH > sETH supply, so supply is set to 0.
-            // the debt should be increased from (2a).
-
-            // if (collateralManager().isSynthManaged(key)) {
-            //     uint collateralIssued = collateralManager().long(key);
-
-            //     // this is an edge case --
-            //     // if a synth other than sUSD is only issued by non SNX collateral
-            //     // the long value will exceed the supply if there was a minting fee,
-            //     // so we check explicitly and 0 it out to prevent
-            //     // a safesub overflow.
-
-            //     if (collateralIssued > supply) {
-            //         supply = 0;
-            //     } else {
-            //         supply = supply.sub(collateralIssued);
-            //     }
-            // }
-
-            bool isSUSD = key == sUSD;
-            if (isSUSD || key == sETH) {
-                IEtherCollateral etherCollateralContract =
-                    isSUSD ? IEtherCollateral(address(etherCollateralsUSD())) : etherCollateral();
-                uint etherCollateralSupply = etherCollateralContract.totalIssuedSynths();
-                supply = supply.sub(etherCollateralSupply);
-            }
-
-            // if (key == sETH) {
-            //     // Subtract sETH minted by EtherWrapper.
-            //     uint etherWrapperSupply = etherWrapper().totalIssuedSynths(sETH);
-            //     supply = supply.sub(etherWrapperSupply);
-            // }
-
-            // if (key == sUSD) {
-            //     // Subtract sUSD minted by EtherWrapper.
-            //     supply = supply.sub(etherWrapper().totalIssuedSynths(sUSD));
-            // }
 
             values[i] = supply.multiplyDecimalRound(rates[i]);
         }
@@ -219,41 +166,51 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     }
 
     function _currentDebt() internal view returns (uint debt, bool anyRateIsInvalid) {
-        (uint[] memory values, bool isInvalid) = _currentSynthDebts(issuer().availableCurrencyKeys());
+        bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
+        (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+
+        // Sum all issued synth values based on their supply.
+        uint[] memory values = _issuedSynthValues(currencyKeys, rates);
         uint numValues = values.length;
         uint total;
         for (uint i; i < numValues; i++) {
             total = total.add(values[i]);
         }
 
-        // subtract the USD value of all shorts.
+        // 1. Subtract the USD value of all shorts.
         (uint susdValue, bool shortInvalid) = collateralManager().totalShort();
+        isInvalid = isInvalid || shortInvalid;
         total = total.sub(susdValue);
 
-        uint totalCollateralManagerBackedDebt = 0;
-        bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
-        (uint[] memory rates, ) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        ISynth[] memory synths = issuer().getSynths(currencyKeys);
-        
+        uint totalCollateralManagerBackedDebt;
+        uint totalEtherCollateralBackedDebt;
+
+        // 2. Subtract the USD debt of the CollateralManager and v1 Collateral contracts.
         for (uint i = 0; i < numValues; i++) {
             bytes32 key = currencyKeys[i];
-            address synthAddress = address(synths[i]);
 
             if (collateralManager().isSynthManaged(key)) {
                 uint collateralIssued = collateralManager().long(key);
-
-                // this is an edge case --
-                // if a synth other than sUSD is only issued by non SNX collateral
-                // the long value will exceed the supply if there was a minting fee,
-                // so we check explicitly and 0 it out to prevent
-                // a safesub overflow.
                 totalCollateralManagerBackedDebt += collateralIssued.multiplyDecimalRound(rates[i]);
             }
-        }
-        total = total.sub(totalCollateralManagerBackedDebt);
-        
 
-        isInvalid = isInvalid || shortInvalid;
+            if (key == sUSD) {
+                IEtherCollateral etherCollateralContract = IEtherCollateral(address(etherCollateralsUSD()));
+                totalEtherCollateralBackedDebt = totalEtherCollateralBackedDebt.add(
+                    etherCollateralContract.totalIssuedSynths()
+                );
+            }
+
+            if (key == sETH) {
+                IEtherCollateral etherCollateralContract = etherCollateral();
+                totalEtherCollateralBackedDebt = totalEtherCollateralBackedDebt.add(
+                    etherCollateralContract.totalIssuedSynths()
+                );
+            }
+        }
+
+        total = total.sub(totalCollateralManagerBackedDebt);
+        total = total.sub(totalEtherCollateralBackedDebt);
 
         return (total, isInvalid);
     }

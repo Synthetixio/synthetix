@@ -1,33 +1,22 @@
 'use strict';
 
-const { contract } = require('hardhat');
+const { artifacts, contract } = require('hardhat');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert } = require('./common');
 
-const { setupAllContracts, setupContract, mockToken } = require('./setup');
+const { setupAllContracts, setupContract } = require('./setup');
 
 const { currentTime, toUnit, fastForward } = require('../utils')();
 
 const {
-	setExchangeFeeRateForSynths,
-	getDecodedLogs,
-	decodedEventEqual,
-	onlyGivenAddressCanInvoke,
-	ensureOnlyExpectedMutativeFunctions,
-	setStatus,
-} = require('./helpers');
-
-const {
 	toBytes32,
-	defaults: { DEBT_SNAPSHOT_STALE_TIME },
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
 contract('DebtCache', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH'].map(toBytes32);
-	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
+	const [sAUD, sETH] = ['sAUD', 'sETH'].map(toBytes32);
 
-	const [deployerAccount, owner, oracle, account1, account2] = accounts;
+	const [deployerAccount, owner, oracle, account1] = accounts;
 
 	describe('_issuedSynthValues bug', async () => {
 		let ceth,
@@ -41,11 +30,8 @@ contract('DebtCache', async accounts => {
 			feePool,
 			exchangeRates,
 			addressResolver,
-			sUSDSynth,
 			sETHSynth,
-			systemStatus,
-			debtCache,
-			FEE_ADDRESS;
+			debtCache;
 
 		let CollateralManager;
 		let CollateralState;
@@ -100,9 +86,7 @@ contract('DebtCache', async accounts => {
 			({
 				Synthetix: synthetix,
 				SystemSettings: systemSettings,
-				SystemStatus: systemStatus,
 				ExchangeRates: exchangeRates,
-				SynthsUSD: sUSDSynth,
 				SynthsETH: sETHSynth,
 				FeePool: feePool,
 				AddressResolver: addressResolver,
@@ -144,8 +128,6 @@ contract('DebtCache', async accounts => {
 			);
 
 			await managerState.setAssociatedContract(manager.address, { from: owner });
-
-			FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 			state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
@@ -230,13 +212,11 @@ contract('DebtCache', async accounts => {
 
 		async function logInfo() {
 			const synths = ['sUSD', 'sETH', 'sAUD'];
-			const { debtValues, anyRateInvalid } = await debtCache.currentSynthDebts(
-				synths.map(toBytes32)
-			);
+			const { debtValues } = await debtCache.currentSynthDebts(synths.map(toBytes32));
 			console.log(
 				synths.map((synth, i) => `${synth} debt = ${debtValues[i].toString()}`).join('\n')
 			);
-			const { debt, _ } = await debtCache.currentDebt();
+			const { debt } = await debtCache.currentDebt();
 			console.log(`currentDebt: ${debt.toString()}`);
 			console.log('');
 		}
@@ -252,7 +232,7 @@ contract('DebtCache', async accounts => {
 				await logInfo();
 
 				// 2. Mint sETH via ETH.
-				const tx = await ceth.open(oneETH, sETH, {
+				await ceth.open(oneETH, sETH, {
 					value: twoETH,
 					from: account1,
 				});
@@ -261,7 +241,7 @@ contract('DebtCache', async accounts => {
 				// 2a. Check currentSynthDebts and currentDebt.
 				await logInfo();
 
-				// 3. Swap sETH into sAUD.
+				// 3. Swap some sETH into sAUD.
 				const sETHBalance = await sETHSynth.balanceOf(account1);
 				console.log(`seth balance - `, sETHBalance.toString());
 				await synthetix.exchange(sETH, '5', sAUD, { from: account1 });
@@ -269,9 +249,10 @@ contract('DebtCache', async accounts => {
 				// 3a. Check currentSynthDebts and currentDebt.
 				await logInfo();
 
-				// 4.
-				// collateralIssued for sETH > sETH supply, so supply is set to 0.
-				// the debt should be increased from (2a).
+				// 4. Produce the bug.
+				// sAUD totalSupply has increased, but the debt backed by CollateralManager
+				// is only subtracted from the sETH supply.
+				// Thus, the debt should be increased from (2a).
 				const debtCall2 = await debtCache.currentDebt();
 
 				assert.bnEqual(debtCall1.debt, debtCall2.debt);
