@@ -1,9 +1,10 @@
 const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
+const { wait } = require('./utils/rpc');
 
 const itCanPerformRewardDeposits = ({ ctx }) => {
-	describe('[REWARDS] when migrating SNX rewards from L1 to L2', () => {
+	describe('[DEPOSIT REWARDS]', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		let SynthetixL1, SynthetixBridgeToOptimismL1, SystemStatusL1, SynthetixBridgeEscrowL1;
@@ -175,7 +176,10 @@ const itCanPerformRewardDeposits = ({ ctx }) => {
 						const [transactionHashL2] = await ctx.watcher.getMessageHashesFromL1Tx(
 							rewardDepositReceipt.transactionHash
 						);
+
 						await ctx.watcher.getL2TransactionReceipt(transactionHashL2);
+
+						await wait({ seconds: 10 });
 					});
 
 					before('stop listening to events on L2', async () => {

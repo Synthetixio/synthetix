@@ -10,8 +10,9 @@ task('test:prod:ovm', 'run optimism production tests against a running ops insta
 		hre.config.paths.tests = './test/optimism/';
 		hre.config.providerUrl = taskArguments.providerUrl;
 
-		const timeout = 1 * 60 * 1000;
+		const timeout = 5 * 60 * 1000;
 		hre.config.mocha.timeout = timeout;
+		hre.config.mocha.bail = true;
 		hre.config.networks.localhost.timeout = timeout;
 
 		taskArguments.maxMemory = true;
