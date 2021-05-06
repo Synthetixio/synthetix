@@ -32,8 +32,10 @@ describe('Layer 2 production tests', () => {
 	// --------------------------
 
 	before('set up providers', () => {
-		this.providerL1 = new ethers.providers.JsonRpcProvider('http://localhost:9545');
-		this.providerL2 = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+		this.providerUrl = config.providerUrl;
+
+		this.providerL1 = new ethers.providers.JsonRpcProvider(`${this.providerUrl}:9545`);
+		this.providerL2 = new ethers.providers.JsonRpcProvider(`${this.providerUrl}:8545`);
 
 		this.providerL2.getGasPrice = () => ethers.BigNumber.from('0');
 	});
@@ -54,7 +56,7 @@ describe('Layer 2 production tests', () => {
 	});
 
 	before('set up watchers', async () => {
-		const response = await axios.get('http://localhost:8080/addresses.json');
+		const response = await axios.get(`${this.providerUrl}:8080/addresses.json`);
 		const addresses = response.data;
 
 		this.watcher = new Watcher({
@@ -68,11 +70,6 @@ describe('Layer 2 production tests', () => {
 			},
 		});
 	});
-
-	// after('exit', async () => {
-	// 	// TODO: Optimism watchers leave the process open, so we explicitely kill it
-	// 	process.exit(0);
-	// });
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
 		before('connect to contracts', async () => {
@@ -170,13 +167,13 @@ describe('Layer 2 production tests', () => {
 		// Specific properties
 		// --------------------------
 
-		// itCanPerformDeposits({ ctx: this });
-		// itCanPerformDepositsTo({ ctx: this });
+		itCanPerformDeposits({ ctx: this });
+		itCanPerformDepositsTo({ ctx: this });
 		itCanPerformWithdrawals({ ctx: this });
-		// itCanPerformWithdrawalsTo({ ctx: this });
-		// itCanPerformRewardDeposits({ ctx: this });
-		// itCanPerformEscrowMigration({ ctx: this });
-		// itCanPerformDepositAndEscrowMigration({ ctx: this });
-		// itCanPerformSynthExchange({ ctx: this });
+		itCanPerformWithdrawalsTo({ ctx: this });
+		itCanPerformRewardDeposits({ ctx: this });
+		itCanPerformEscrowMigration({ ctx: this });
+		itCanPerformDepositAndEscrowMigration({ ctx: this });
+		itCanPerformSynthExchange({ ctx: this });
 	});
 });

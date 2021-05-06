@@ -199,30 +199,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 									const [messageHashL1] = await ctx.watcher.getMessageHashesFromL2Tx(
 										withdrawalReceipt.transactionHash
 									);
-									console.log(messageHashL1);
 
-									const blockNumber = await ctx.providerL1.getBlockNumber();
-									const block = await ctx.providerL1.getBlock(blockNumber);
-									console.log('Latest L1 block:', JSON.stringify(block, null, 2));
-
-									const txs = await Promise.all(
-										block.transactions.map(txHash => ctx.providerL1.getTransaction(txHash))
-									);
-									console.log('Txs in L1 block:', JSON.stringify(txs, null, 2));
-
-									const tx = txs.find(tx => {
-										// TODO: Actually compare the message hash, for now just returning the first tx
-										return true;
-										// const messageHash = ethers.utils.keccak256(tx.data);
-										// console.log(messageHash);
-
-										// return messageHash === messageHashL1;
-									});
-
-									const receipt = await ctx.providerL1.getTransactionReceipt(tx.hash);
-									console.log('L1 receipt:', receipt);
-
-									// TODO: Hangs here!
 									await ctx.watcher.getL1TransactionReceipt(messageHashL1);
 								});
 
