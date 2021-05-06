@@ -827,6 +827,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         _submitOrder(0, price, fundingIndex, messageSender);
     }
 
+    // TODO: Do we really need this function?
     function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid(_exchangeRates());
         uint fundingIndex = _recomputeFunding(price);

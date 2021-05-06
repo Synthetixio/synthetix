@@ -59,7 +59,6 @@ contract('FuturesMarket', accounts => {
 		await market.confirmOrder(account);
 	}
 
-	/*
 	async function submitAndConfirmOrder({ market, account, fillPrice, leverage }) {
 		await market.submitOrder(leverage, { from: account });
 		await confirmOrder({
@@ -68,7 +67,6 @@ contract('FuturesMarket', accounts => {
 			fillPrice,
 		});
 	}
-	 */
 
 	async function modifyMarginSubmitAndConfirmOrder({
 		market,
@@ -1289,16 +1287,130 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 		});
 
-		it.skip('Altering the max funding has a proportional effect', async () => {
-			// TODO: Try when it's 0%, +-50%, +-100%
-			assert.isTrue(false);
+		it('Various skew rates', async () => {
+			// Market is balanced
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('250'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('3'),
+			});
+
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: toUnit('250'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('-3'),
+			});
+
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+
+			// Market is 50% skewed
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('250'),
+				leverage: toUnit('9'),
+			});
+
+			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('-0.05'), toUnit('0.01'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('250'),
+				leverage: toUnit('1'),
+			});
+
+			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('0.05'), toUnit('0.01'));
+
+			// Market is 100% skewed
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('250'),
+				leverage: toUnit('0'),
+			});
+
+			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('0.1'), toUnit('0.01'));
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('250'),
+				leverage: toUnit('1'),
+			});
+
+			await submitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: toUnit('250'),
+				leverage: toUnit('0'),
+			});
+
+			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('-0.1'), toUnit('0.01'));
 		});
 
-		it.skip('Altering the max funding rate skew has a proportional effect', async () => {
-			// TODO: Try clamping at +- max
-			// TODO: Try when it's 0%, +-50% , +-100%
-			// TODO: Try 0
-			assert.isTrue(false);
+		it('Altering the max funding has a proportional effect', async () => {
+			// 0, +-50%, +-100%
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
+
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('250'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('3'),
+			});
+
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: toUnit('250'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('-1'),
+			});
+
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('-0.05'));
+
+			await futuresMarket.setMaxFundingRate(toUnit('0.2'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('-0.1'));
+			await futuresMarket.setMaxFundingRate(toUnit('0'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
+		});
+
+		it('Altering the max funding rate skew has a proportional effect', async () => {
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('250'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('-3'),
+			});
+
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader2,
+				fillPrice: toUnit('250'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('1'),
+			});
+
+			await futuresMarket.setMaxFundingRateSkew(toUnit('0.5'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
+
+			await futuresMarket.setMaxFundingRateSkew(toUnit('0.75'), { from: owner });
+			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('0.2').div(toBN(3)));
+
+			await futuresMarket.setMaxFundingRateSkew(toUnit('0.25'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
+
+			await futuresMarket.setMaxFundingRateSkew(toUnit('0'), { from: owner });
+			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
 		});
 
 		for (const leverage of ['1', '-1'].map(toUnit)) {
@@ -1319,8 +1431,59 @@ contract('FuturesMarket', accounts => {
 					assert.bnEqual(await futuresMarket.currentFundingRate(), expected);
 				});
 
-				// TODO: Loop for other funding rate levels.
-				// TODO: Change funding rate parameters and see if the numbers are still accurate
+				it('Different skew rates induce proportional funding levels', async () => {
+					// TODO: This seems to fail on a 0.3 max funding rate skew. Fix this!
+					assert.isTrue(false);
+					await modifyMarginSubmitAndConfirmOrder({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: toUnit('100'),
+						marginDelta: toUnit('1000'),
+						leverage,
+					});
+					await futuresMarket.modifyMargin(toUnit('1000'), { from: trader2 });
+
+					const points = 10;
+
+					for (const maxFRSkew of ['1', '0.5', '0.3'].map(toUnit)) {
+						await futuresMarket.setMaxFundingRateSkew(maxFRSkew, { from: owner });
+
+						for (const maxFR of ['0.1', '0.2', '0.05'].map(toUnit)) {
+							await futuresMarket.setMaxFundingRate(maxFR, { from: owner });
+
+							for (let i = 1; i <= points; i++) {
+								await submitAndConfirmOrder({
+									market: futuresMarket,
+									account: trader2,
+									fillPrice: toUnit('100'),
+									leverage: leverage
+										.neg()
+										.mul(toBN(i))
+										.div(toBN(points))
+										.mul(maxFRSkew)
+										.div(toUnit(1)),
+								});
+
+								const expected = maxFR
+									.mul(toBN(points - i))
+									.div(toBN(points + i))
+									.mul(leverage.div(leverage.abs()))
+									.neg();
+
+								/*console.log();
+								console.log(fromUnit(await futuresMarket.currentFundingRate()));
+								console.log(fromUnit(expected));
+								console.log();*/
+
+								assert.bnClose(
+									await futuresMarket.currentFundingRate(),
+									expected,
+									toUnit('0.0001')
+								);
+							}
+						}
+					}
+				});
 			});
 		}
 
