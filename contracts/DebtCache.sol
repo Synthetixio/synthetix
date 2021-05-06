@@ -17,10 +17,11 @@ contract DebtCache is BaseDebtCache {
 
     function takeDebtSnapshot() external requireSystemActiveIfNotOwner {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
-        (uint[] memory values, bool isInvalid) = _currentSynthDebts(currencyKeys);
+        (uint[] memory values, uint excludedDebt, bool isInvalid) = _currentSynthDebts(currencyKeys);
 
         // Subtract the USD value of all shorts.
         (uint shortValue, ) = collateralManager().totalShort();
+        // TODO:
 
         uint numValues = values.length;
         uint snxCollateralDebt;
@@ -82,7 +83,7 @@ contract DebtCache is BaseDebtCache {
         // Update the cached values for each synth, saving the sums as we go.
         uint cachedSum;
         uint currentSum;
-        uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
+        (uint[] memory currentValues, uint excludedDebt) = _issuedSynthValues(currencyKeys, currentRates);
         for (uint i = 0; i < numKeys; i++) {
             bytes32 key = currencyKeys[i];
             uint currentSynthDebt = currentValues[i];

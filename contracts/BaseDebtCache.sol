@@ -120,34 +120,60 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cacheStale(_cacheTimestamp);
     }
 
-    function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates) internal view returns (uint[] memory) {
+    function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates)
+        internal
+        view
+        returns (uint[] memory values, uint excludedDebt)
+    {
         uint numValues = currencyKeys.length;
-        uint[] memory values = new uint[](numValues);
+        values = new uint[](numValues);
         ISynth[] memory synths = issuer().getSynths(currencyKeys);
 
         for (uint i = 0; i < numValues; i++) {
             address synthAddress = address(synths[i]);
+            bytes32 key = currencyKeys[i];
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
 
             values[i] = supply.multiplyDecimalRound(rates[i]);
+
+            // Calculate excluded debt.
+            if (collateralManager().isSynthManaged(key)) {
+                uint collateralIssued = collateralManager().long(key);
+                excludedDebt = excludedDebt.add(collateralIssued.multiplyDecimalRound(rates[i]));
+            }
+
+            if (key == sUSD || key == sETH) {
+                IEtherCollateral etherCollateralContract =
+                    key == sUSD ? IEtherCollateral(address(etherCollateralsUSD())) : etherCollateral();
+                excludedDebt = excludedDebt.add(etherCollateralContract.totalIssuedSynths().multiplyDecimalRound(rates[i]));
+            }
         }
-        return values;
+        return (values, excludedDebt);
     }
 
     function _currentSynthDebts(bytes32[] memory currencyKeys)
         internal
         view
-        returns (uint[] memory snxIssuedDebts, bool anyRateIsInvalid)
+        returns (
+            uint[] memory snxIssuedDebts,
+            uint excludedDebt,
+            bool anyRateIsInvalid
+        )
     {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        return (_issuedSynthValues(currencyKeys, rates), isInvalid);
+        (uint[] memory values, uint excludedDebt) = _issuedSynthValues(currencyKeys, rates);
+        return (values, excludedDebt, isInvalid);
     }
 
     function currentSynthDebts(bytes32[] calldata currencyKeys)
         external
         view
-        returns (uint[] memory debtValues, bool anyRateIsInvalid)
+        returns (
+            uint[] memory snxIssuedDebts,
+            uint excludedDebt,
+            bool anyRateIsInvalid
+        )
     {
         return _currentSynthDebts(currencyKeys);
     }
@@ -165,45 +191,29 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cachedSynthDebts(currencyKeys);
     }
 
+    function totalNonSnxBackedDebt() external view returns (uint excludedDebt) {
+        bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
+        (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+        (uint[] memory values, uint excludedDebt) = _issuedSynthValues(currencyKeys, rates);
+        return excludedDebt;
+    }
+
     function _currentDebt() internal view returns (uint debt, bool anyRateIsInvalid) {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
 
         // Sum all issued synth values based on their supply.
-        uint[] memory values = _issuedSynthValues(currencyKeys, rates);
+        (uint[] memory values, uint excludedDebt) = _issuedSynthValues(currencyKeys, rates);
         uint numValues = values.length;
         uint total;
         for (uint i; i < numValues; i++) {
             total = total.add(values[i]);
         }
-
-        // 1. Subtract the USD value of all shorts.
-        uint excludedDebt = 0;
-        (uint susdValue, bool shortInvalid) = collateralManager().totalShort();
-        isInvalid = isInvalid || shortInvalid;
-        excludedDebt = excludedDebt.add(susdValue);
-
-        // 2. Subtract the USD debt of the CollateralManager and v1 Collateral contracts.
-        for (uint i = 0; i < numValues; i++) {
-            bytes32 key = currencyKeys[i];
-
-            if (collateralManager().isSynthManaged(key)) {
-                uint collateralIssued = collateralManager().long(key);
-                excludedDebt = excludedDebt.add(collateralIssued.multiplyDecimalRound(rates[i]));
-            }
-
-            if (key == sUSD) {
-                IEtherCollateral etherCollateralContract = IEtherCollateral(address(etherCollateralsUSD()));
-                excludedDebt = excludedDebt.add(etherCollateralContract.totalIssuedSynths().multiplyDecimalRound(rates[i]));
-            }
-
-            if (key == sETH) {
-                IEtherCollateral etherCollateralContract = etherCollateral();
-                excludedDebt = excludedDebt.add(etherCollateralContract.totalIssuedSynths().multiplyDecimalRound(rates[i]));
-            }
-        }
-
         total = total.sub(excludedDebt);
+
+        // TODO: consider moving this up into _issuedSynthValues.
+        (uint shortValue, ) = collateralManager().totalShort();
+        total = total.sub(shortValue);
 
         return (total, isInvalid);
     }
