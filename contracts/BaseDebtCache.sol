@@ -138,17 +138,23 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
             values[i] = supply.multiplyDecimalRound(rates[i]);
 
             // Calculate excluded debt.
+            // 1. MultiCollateral debt.
             if (collateralManager().isSynthManaged(key)) {
                 uint collateralIssued = collateralManager().long(key);
                 excludedDebt = excludedDebt.add(collateralIssued.multiplyDecimalRound(rates[i]));
             }
-
+            // 2. EtherCollateral (sUSD and ETH) debt.
             if (key == sUSD || key == sETH) {
                 IEtherCollateral etherCollateralContract =
                     key == sUSD ? IEtherCollateral(address(etherCollateralsUSD())) : etherCollateral();
                 excludedDebt = excludedDebt.add(etherCollateralContract.totalIssuedSynths().multiplyDecimalRound(rates[i]));
             }
         }
+
+        // 3. Short debt.
+        (uint shortValue, ) = collateralManager().totalShort();
+        excludedDebt = excludedDebt.sub(shortValue);
+
         return (values, excludedDebt);
     }
 
@@ -210,10 +216,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
             total = total.add(values[i]);
         }
         total = total.sub(excludedDebt);
-
-        // TODO: consider moving this up into _issuedSynthValues.
-        (uint shortValue, ) = collateralManager().totalShort();
-        total = total.sub(shortValue);
 
         return (total, isInvalid);
     }
