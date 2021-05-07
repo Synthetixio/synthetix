@@ -186,17 +186,19 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         IExchangeRates exRates = exchangeRates();
 
-        // Add total issued synths from non snx collateral back into the total if not excluded
+        // Include the non-SNX backed debt if excludeCollateral is not set (default = true).
         if (!excludeCollateral) {
-            // Get the sUSD equivalent amount of all the MC issued synths.
+            // Calculate excluded debt.
+            // 1. MultiCollateral debt.
             (uint nonSnxDebt, bool invalid) = collateralManager().totalLong();
             debt = debt.add(nonSnxDebt);
             anyRateIsInvalid = anyRateIsInvalid || invalid;
 
-            // Now add the ether collateral stuff as we are still supporting it.
+            // 2. EtherCollateral (sUSD and ETH) debt.
+            // 2a. sUSD.
             debt = debt.add(etherCollateralsUSD().totalIssuedSynths());
 
-            // Add ether collateral sETH
+            // 2b. sETH.
             (uint ethRate, bool ethRateInvalid) = exRates.rateAndInvalid(sETH);
             uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
             debt = debt.add(ethIssuedDebt);
