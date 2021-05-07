@@ -6,7 +6,6 @@ import "./FuturesMarket.sol";
 import "./FuturesMarketManager.sol";
 import "./interfaces/IAddressResolver.sol";
 
-
 contract FuturesMarketData {
     /* ========== TYPES ========== */
 
@@ -184,7 +183,7 @@ contract FuturesMarketData {
                 address(market),
                 market.baseAsset(),
                 parameters.exchangeFee,
-                MarketLimits(parameters.maxLeverage, parameters.maxMarketDebt, parameters.minInitialMargin),
+                MarketLimits(parameters.maxLeverage, parameters.maxMarketValue, parameters.minInitialMargin),
                 _fundingParameters(parameters),
                 MarketSizeDetails(
                     market.marketSize(),
@@ -227,13 +226,13 @@ contract FuturesMarketData {
     }
 
     function _order(FuturesMarket market, address account) internal view returns (FuturesMarket.Order memory) {
-        (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId) = market
-            .orders(account);
+        (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId) = market.orders(account);
         return FuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId);
     }
 
     function _positionDetails(FuturesMarket market, address account) internal view returns (PositionData memory) {
-        (uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) = market.positions(account);
+        (uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
+            market.positions(account);
         (uint liquidationPrice, ) = market.liquidationPrice(account, true);
         return
             PositionData(

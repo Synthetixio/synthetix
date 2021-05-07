@@ -49,6 +49,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     using SignedSafeDecimalMath for int;
 
     int private constant _UNIT = int(10**uint(18));
+    // TODO: Move this into a market setting?
+    uint private constant _MAX_MARKET_VALUE_PLAY_FACTOR = (2 * uint(_UNIT)) / 100;
 
     /* ========== TYPES ========== */
 
@@ -75,7 +77,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     struct Parameters {
         uint exchangeFee;
         uint maxLeverage;
-        uint maxMarketDebt;
+        uint maxMarketValue;
         uint minInitialMargin;
         uint maxFundingRate;
         uint maxFundingRateSkew;
@@ -126,7 +128,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     bytes32 internal constant PARAMETER_EXCHANGEFEE = "exchangeFee";
     bytes32 internal constant PARAMETER_MAXLEVERAGE = "maxLeverage";
-    bytes32 internal constant PARAMETER_MAXMARKETDEBT = "maxMarketDebt";
+    bytes32 internal constant PARAMETER_MAXMARKETVALUE = "maxMarketValue";
     bytes32 internal constant PARAMETER_MININITIALMARGIN = "minInitialMargin";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATE = "maxFundingRate";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATESKEW = "maxFundingRateSkew";
@@ -141,7 +143,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         bytes32 _baseAsset,
         uint _exchangeFee,
         uint _maxLeverage,
-        uint _maxMarketDebt,
+        uint _maxMarketValue,
         uint _minInitialMargin,
         uint[3] memory _fundingParameters
     ) public Owned(_owner) Proxyable(_proxy) MixinSystemSettings(_resolver) {
@@ -149,7 +151,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         parameters.exchangeFee = _exchangeFee;
         parameters.maxLeverage = _maxLeverage;
-        parameters.maxMarketDebt = _maxMarketDebt;
+        parameters.maxMarketValue = _maxMarketValue;
         parameters.minInitialMargin = _minInitialMargin;
         parameters.maxFundingRate = _fundingParameters[0];
         parameters.maxFundingRateSkew = _fundingParameters[1];
@@ -219,10 +221,34 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     // Total number of base units on each side of the market
-    function marketSizes() external view returns (uint short, uint long) {
+    function _marketSizes() internal view returns (uint long, uint short) {
         int size = int(marketSize);
         int skew = marketSkew;
         return (_abs(size.add(skew).div(2)), _abs(size.sub(skew).div(2)));
+    }
+
+    function marketSizes() external view returns (uint long, uint short) {
+        return _marketSizes();
+    }
+
+    function _maxOrderSizes(uint price) internal view returns (uint, uint) {
+        (uint long, uint short) = _marketSizes();
+        int sizeLimit = int(parameters.maxMarketValue).divideDecimalRound(int(price));
+        return (uint(sizeLimit.sub(_min(int(long), sizeLimit))), uint(sizeLimit.sub(_min(int(short), sizeLimit))));
+    }
+
+    function maxOrderSizes()
+        external
+        view
+        returns (
+            uint long,
+            uint short,
+            bool invalid
+        )
+    {
+        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        (uint longSize, uint shortSize) = _maxOrderSizes(price);
+        return (longSize, shortSize, isInvalid);
     }
 
     // The total market debt is equivalent to the sum of remaining margins in all open positions
@@ -589,9 +615,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         emitParameterUpdated(PARAMETER_MAXLEVERAGE, maxLeverage);
     }
 
-    function setMaxMarketDebt(uint maxMarketDebt) external optionalProxy_onlyOwner {
-        parameters.maxMarketDebt = maxMarketDebt;
-        emitParameterUpdated(PARAMETER_MAXMARKETDEBT, maxMarketDebt);
+    function setMaxMarketValue(uint maxMarketValue) external optionalProxy_onlyOwner {
+        parameters.maxMarketValue = maxMarketValue;
+        emitParameterUpdated(PARAMETER_MAXMARKETVALUE, maxMarketValue);
     }
 
     function setMinInitialMargin(uint minInitialMargin) external optionalProxy_onlyOwner {
@@ -763,6 +789,52 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         }
     }
 
+    function _checkMargin(
+        Position storage position,
+        uint price,
+        uint margin,
+        int leverage,
+        bool sameSide
+    ) internal view {
+        int currentLeverage_ = _currentLeverage(position, price, margin);
+
+        // We don't check the margin requirement if leverage is decreasing
+        if (sameSide && _abs(currentLeverage_) <= _abs(leverage)) {
+            require(parameters.minInitialMargin <= margin, "Insufficient margin");
+        }
+    }
+
+    function _checkOrderSize(
+        int size,
+        int newSize,
+        bool sameSide,
+        uint play
+    ) internal view {
+        // Allow users to reduce an order no matter the market conditions.
+        if (sameSide && newSize <= size) {
+            return;
+        }
+
+        // Either the user is flipping sides, or they are increasing an order on the same side they're already on;
+        // we check that the side of the market their order is on would not break the limit.
+
+        int newSkew = marketSkew.sub(size).add(newSize);
+        int newMarketSize = int(marketSize).sub(_signedAbs(size)).add(_signedAbs(newSize));
+
+        int newSideSize;
+        if (0 < newSize) {
+            // long case
+            newSideSize = newMarketSize.add(newSkew);
+        } else {
+            // short case
+            newSideSize = newMarketSize.sub(newSkew);
+        }
+
+        // We'll allow an extra little bit of value over and above the stated max to allow for
+        // rounding errors, price movements, multiple orders etc.
+        require(_abs(newSideSize.div(2)) <= parameters.maxMarketValue.add(play), "Max market size exceeded");
+    }
+
     function _submitOrder(
         int leverage,
         uint price,
@@ -775,19 +847,24 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         // The order is not submitted if the user's existing position needed to be liquidated.
         if (!liquidated) {
-            // TODO: Check the max market size and deny the order if it would exceed that limit.
-            // TODO: allow the user to decrease their position without closing it if the debt exceeds the cap
-            // uint debt = _marketDebt(price);
-            // require(debt <= parameters.maxMarketDebt, "Max market debt exceeded");
-
             Position storage position = positions[sender];
             uint margin = _remainingMargin(position, fundingIndex, price);
-            int currentLeverage_ = _currentLeverage(position, price, margin);
+            int size = position.size;
+            bool sameSide = _sameSide(leverage, size);
 
-            // We don't check the margin requirement if leverage is decreasing
-            if (_sameSide(leverage, currentLeverage_) && _abs(currentLeverage_) <= _abs(leverage)) {
-                require(parameters.minInitialMargin <= margin, "Insufficient margin");
-            }
+            // Check that the user has sufficient margin
+            _checkMargin(position, price, margin, leverage, sameSide);
+
+            // Check that the order isn't too large for the market
+            // Note that this in principle allows several orders to be placed at once
+            // that collectively violate the maximum, but this is checked again when
+            // the orders are confirmed.
+            _checkOrderSize(
+                size,
+                int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price)),
+                sameSide,
+                100 * uint(_UNIT) // a bit of extra value in case of rounding errors
+            );
 
             // Cancel any open order
             Order storage order = orders[sender];
@@ -796,7 +873,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             }
 
             // Compute the fee owed and check their sUSD balance is sufficient to cover it.
-            uint fee = _orderFee(margin, leverage, positions[sender].size, price);
+            uint fee = _orderFee(margin, leverage, size, price);
             if (0 < fee) {
                 require(fee <= _sUSD().balanceOf(sender), "Insufficient balance");
                 _manager().burnSUSD(sender, fee);
@@ -861,10 +938,19 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         // We weren't liquidated, so we realise the margin to compute the new position size.
         uint margin = _realiseMargin(position, fundingIndex, price, 0);
-        int newSize = int(margin).multiplyDecimalRound(int(order.leverage)).divideDecimalRound(int(price));
-
-        // Update the market size and skew
+        int newSize = int(margin).multiplyDecimalRound(order.leverage).divideDecimalRound(int(price));
         int positionSize = position.size;
+
+        // Before continuing, check that their order is actually allowed given the market size limit.
+        // Give an extra percentage of play in case of multiple orders were submitted simultaneously or the price moved.
+        _checkOrderSize(
+            positionSize,
+            newSize,
+            _sameSide(positionSize, newSize),
+            uint(int(parameters.maxMarketValue).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
+        );
+
+        // Update the market size and skew, checking that the maximums are not exceeded
         marketSkew = marketSkew.add(newSize).sub(positionSize);
         marketSize = marketSize.add(_abs(newSize)).sub(_abs(positionSize));
 
