@@ -19,10 +19,6 @@ contract DebtCache is BaseDebtCache {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
         (uint[] memory values, uint excludedDebt, bool isInvalid) = _currentSynthDebts(currencyKeys);
 
-        // Subtract the USD value of all shorts.
-        (uint shortValue, ) = collateralManager().totalShort();
-        // TODO:
-
         uint numValues = values.length;
         uint snxCollateralDebt;
         for (uint i; i < numValues; i++) {
@@ -30,7 +26,7 @@ contract DebtCache is BaseDebtCache {
             snxCollateralDebt = snxCollateralDebt.add(value);
             _cachedSynthDebt[currencyKeys[i]] = value;
         }
-        _cachedDebt = snxCollateralDebt.sub(shortValue);
+        _cachedDebt = snxCollateralDebt.sub(excludedDebt);
         _cacheTimestamp = block.timestamp;
         emit DebtCacheUpdated(snxCollateralDebt);
         emit DebtCacheSnapshotTaken(block.timestamp);
@@ -91,6 +87,7 @@ contract DebtCache is BaseDebtCache {
             currentSum = currentSum.add(currentSynthDebt);
             _cachedSynthDebt[key] = currentSynthDebt;
         }
+        currentSum = currentSum.sub(excludedDebt);
 
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {
