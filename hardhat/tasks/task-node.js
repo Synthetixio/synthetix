@@ -20,6 +20,10 @@ task('node', 'Run a node')
 			taskArguments.fork =
 				process.env.PROVIDER_URL_MAINNET || process.env.PROVIDER_URL.replace('network', 'mainnet');
 
+			// Fork from network state on May-06-2021.
+			// https://etherscan.io/block/12382982
+			taskArguments.forkBlockNumber = 12382982;
+
 			console.log(yellow('Forking Mainnet...'));
 		}
 
