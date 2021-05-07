@@ -8,6 +8,7 @@ import "./interfaces/IDebtCache.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
+import "./Bytes32SetLib.sol";
 
 // Internal references
 import "./interfaces/IIssuer.sol";
@@ -23,6 +24,7 @@ import "./interfaces/ICollateralManager.sol";
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
+    using Bytes32SetLib for Bytes32SetLib.Bytes32Set;
 
     uint internal _cachedDebt;
     mapping(bytes32 => uint) internal _cachedSynthDebt;
@@ -120,6 +122,16 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cacheStale(_cacheTimestamp);
     }
 
+    function _collateralManagerDebt() internal view returns (uint excludedDebt) {
+        bytes32[] memory managedSynths = collateralManager().managedSynths();
+        // TODO: account for exchangeRates isInvalid
+        (uint[] memory rates, ) = exchangeRates().ratesAndInvalidForCurrencies(managedSynths);
+        for (uint i = 0; i < managedSynths.length; i++) {
+            uint issuedSynths = collateralManager().long(managedSynths[i]);
+            excludedDebt = excludedDebt.add(issuedSynths.multiplyDecimalRound(rates[i]));
+        }
+    }
+
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates)
         internal
         view
@@ -138,18 +150,17 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
             values[i] = supply.multiplyDecimalRound(rates[i]);
 
             // Calculate excluded debt.
-            // 1. MultiCollateral debt.
-            if (collateralManager().isSynthManaged(key)) {
-                uint issuedSynths = collateralManager().long(key);
-                excludedDebt = excludedDebt.add(issuedSynths.multiplyDecimalRound(rates[i]));
-            }
-            // 2. EtherCollateral (sUSD and ETH) debt.
+            // 1. EtherCollateral (sUSD and ETH) debt.
             if (key == sUSD || key == sETH) {
                 IEtherCollateral etherCollateralContract =
                     key == sUSD ? IEtherCollateral(address(etherCollateralsUSD())) : etherCollateral();
                 excludedDebt = excludedDebt.add(etherCollateralContract.totalIssuedSynths().multiplyDecimalRound(rates[i]));
             }
         }
+
+        // 2. MultiCollateral debt.
+        // Slightly cheaper - 3.45m gas.
+        excludedDebt = excludedDebt.add(_collateralManagerDebt());
 
         // 3. Short debt.
         (uint shortValue, ) = collateralManager().totalShort();

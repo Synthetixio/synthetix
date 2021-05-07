@@ -6,6 +6,8 @@ interface ICollateralManager {
 
     function isSynthManaged(bytes32 currencyKey) external view returns (bool);
 
+    function managedSynths() external view returns (bytes32[] memory keys);
+
     // State information
     function long(bytes32 synth) external view returns (uint amount);
 

@@ -126,6 +126,24 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         return synthsByKey[currencyKey] != bytes32(0);
     }
 
+    function managedSynths() external view returns (bytes32[] memory keys) {
+        bytes32[] memory shortAddresses;
+        uint length = _shortableSynths.elements.length;
+
+        if (length > 0) {
+            shortAddresses = new bytes32[](length * 2);
+
+            for (uint i = 0; i < length; i++) {
+                shortAddresses[i] = _shortableSynths.elements[i];
+                shortAddresses[i + length] = synthToInverseSynth[_shortableSynths.elements[i]];
+            }
+        }
+
+        bytes32[] memory synthAddresses = combineArrays(shortAddresses, _synths.elements);
+
+        keys = synthAddresses;
+    }
+
     /* ---------- Related Contracts ---------- */
 
     function _issuer() internal view returns (IIssuer) {
