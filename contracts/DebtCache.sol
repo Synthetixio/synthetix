@@ -26,7 +26,7 @@ contract DebtCache is BaseDebtCache {
             snxCollateralDebt = snxCollateralDebt.add(value);
             _cachedSynthDebt[currencyKeys[i]] = value;
         }
-        _cachedDebt = snxCollateralDebt.sub(excludedDebt);
+        _cachedDebt = snxCollateralDebt < excludedDebt ? 0 : snxCollateralDebt.sub(excludedDebt);
         _cacheTimestamp = block.timestamp;
         emit DebtCacheUpdated(snxCollateralDebt);
         emit DebtCacheSnapshotTaken(block.timestamp);
@@ -87,7 +87,7 @@ contract DebtCache is BaseDebtCache {
             currentSum = currentSum.add(currentSynthDebt);
             _cachedSynthDebt[key] = currentSynthDebt;
         }
-        currentSum = currentSum.sub(excludedDebt);
+        currentSum = currentSum < excludedDebt ? 0 : currentSum.sub(excludedDebt);
 
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {

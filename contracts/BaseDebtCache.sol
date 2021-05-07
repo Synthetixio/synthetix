@@ -215,7 +215,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         for (uint i; i < numValues; i++) {
             total = total.add(values[i]);
         }
-        total = total.sub(excludedDebt);
+        total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
         return (total, isInvalid);
     }
