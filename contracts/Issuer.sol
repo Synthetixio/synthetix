@@ -203,6 +203,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
             debt = debt.add(ethIssuedDebt);
             anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
+
+            // 3. Short debt.
+            (uint shortValue, ) = collateralManager().totalShort();
+            debt = debt.add(shortValue);
         }
 
         if (currencyKey == sUSD) {
