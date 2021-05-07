@@ -1,5 +1,6 @@
 const ethers = require('ethers');
 const axios = require('axios');
+const { config } = require('hardhat');
 const { Watcher } = require('@eth-optimism/watcher');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
@@ -151,7 +152,7 @@ describe('Layer 2 production tests', () => {
 		// General properties
 		// --------------------------
 
-		describe('[GENERAL] properties', () => {
+		describe('[GENERAL]', () => {
 			it('shows the expected owners', async () => {
 				assert.equal(await SynthetixL1.owner(), this.ownerAddress);
 				assert.equal(await SynthetixL2.owner(), this.ownerAddress);

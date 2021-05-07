@@ -12,7 +12,7 @@ task('test:prod:ovm', 'run optimism production tests against a running ops insta
 
 		const timeout = 5 * 60 * 1000;
 		hre.config.mocha.timeout = timeout;
-		hre.config.mocha.bail = true;
+		hre.config.mocha.bail = false;
 		hre.config.networks.localhost.timeout = timeout;
 
 		taskArguments.maxMemory = true;
