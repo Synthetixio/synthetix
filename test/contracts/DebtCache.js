@@ -211,7 +211,7 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(debts[2], toUnit(50));
 				assert.bnEqual(debts[3], toUnit(200));
 
-				assert.isFalse(result[1]);
+				assert.isFalse(result[2]);
 			});
 		});
 

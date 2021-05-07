@@ -176,7 +176,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         external
         view
         returns (
-            uint[] memory snxIssuedDebts,
+            uint[] memory debtValues,
             uint excludedDebt,
             bool anyRateIsInvalid
         )
