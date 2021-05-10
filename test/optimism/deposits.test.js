@@ -196,7 +196,7 @@ const itCanPerformDeposits = ({ ctx }) => {
 						});
 
 						it('reverts when the user attempts to initiate a withdrawal', async () => {
-							SynthetixBridgeToBaseL2 = SynthetixBridgeToBaseL2.connect(user1L1);
+							SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(user1L1);
 							await assert.revert(
 								SynthetixBridgeToOptimismL1.deposit(amountToDeposit),
 								'Initiation deactivated'

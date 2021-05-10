@@ -1227,16 +1227,32 @@ const deploy = async ({
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
-		await deployer.deployContract({
+		const SynthetixBridgeToOptimism = await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
-		await deployer.deployContract({
+		const SynthetixBridgeEscrow = await deployer.deployContract({
 			name: 'SynthetixBridgeEscrow',
 			deps: ['AddressResolver'],
 			args: [account],
 		});
+
+		const allowance = await proxyERC20Synthetix.methods
+			.allowance(addressOf(SynthetixBridgeEscrow), addressOf(SynthetixBridgeToOptimism))
+			.call();
+		if (allowance.toString() === '0') {
+			await runStep({
+				contract: `SynthetixBridgeEscrow`,
+				target: SynthetixBridgeEscrow,
+				write: 'approveBridge',
+				writeArg: [
+					addressOf(proxyERC20Synthetix),
+					addressOf(SynthetixBridgeToOptimism),
+					w3utils.toWei('100000000'),
+				],
+			});
+		}
 	}
 
 	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];

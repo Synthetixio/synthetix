@@ -65,22 +65,6 @@ const itCanPerformWithdrawalsTo = ({ ctx }) => {
 			depositReceipt = await tx.wait();
 		});
 
-		before("Approve the bridge to transfer on escrow's behalf", async () => {
-			SynthetixBridgeEscrowL1 = SynthetixBridgeEscrowL1.connect(ctx.ownerL1);
-
-			const allowance = await SynthetixL1.allowance(
-				SynthetixBridgeEscrowL1.address,
-				SynthetixBridgeToOptimismL1.address
-			);
-			if (allowance.toString() === '0') {
-				await SynthetixBridgeEscrowL1.approveBridge(
-					SynthetixL1.address,
-					SynthetixBridgeToOptimismL1.address,
-					amountToWithdraw
-				);
-			}
-		});
-
 		// --------------------------
 		// Get SNX
 		// --------------------------
