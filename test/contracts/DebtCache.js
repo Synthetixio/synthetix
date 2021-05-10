@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract } = require('hardhat');
+const { contract, artifacts } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -20,13 +20,14 @@ const {
 const {
 	toBytes32,
 	defaults: { DEBT_SNAPSHOT_STALE_TIME },
+	constants: { ZERO_ADDRESS },
 } = require('../..');
 
 contract('DebtCache', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH'].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
-	const [, owner, oracle, account1, account2] = accounts;
+	const [deployerAccount, owner, oracle, account1, account2] = accounts;
 
 	let synthetix,
 		systemStatus,
@@ -42,7 +43,110 @@ contract('DebtCache', async accounts => {
 		issuer,
 		synths,
 		addressResolver,
-		exchanger;
+		exchanger,
+		// MultiCollateral tests.
+		ceth,
+		managerState,
+		manager;
+
+	const deployCollateral = async ({
+		state,
+		owner,
+		manager,
+		resolver,
+		collatKey,
+		minColat,
+		minSize,
+	}) => {
+		return setupContract({
+			accounts,
+			contract: 'CollateralEth',
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
+		});
+	};
+
+	const setupMultiCollateral = async () => {
+		const CollateralManager = artifacts.require(`CollateralManager`);
+		const CollateralState = artifacts.require(`CollateralState`);
+		const CollateralManagerState = artifacts.require('CollateralManagerState');
+
+		synths = ['sUSD', 'sETH', 'sAUD'];
+
+		// Deploy CollateralManagerState.
+		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, {
+			from: deployerAccount,
+		});
+
+		const maxDebt = toUnit(10000000);
+
+		// Deploy CollateralManager.
+		manager = await CollateralManager.new(
+			managerState.address,
+			owner,
+			addressResolver.address,
+			maxDebt,
+			0,
+			0,
+			{
+				from: deployerAccount,
+			}
+		);
+
+		await managerState.setAssociatedContract(manager.address, { from: owner });
+
+		const cethState = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+
+		// Deploy ETH Collateral.
+		ceth = await deployCollateral({
+			state: cethState.address,
+			owner: owner,
+			manager: manager.address,
+			resolver: addressResolver.address,
+			collatKey: sETH,
+			minColat: toUnit('1.3'),
+			minSize: toUnit('2'),
+		});
+
+		await cethState.setAssociatedContract(ceth.address, { from: owner });
+
+		await addressResolver.importAddresses(
+			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
+			[ceth.address, manager.address],
+			{
+				from: owner,
+			}
+		);
+
+		await ceth.rebuildCache();
+		await manager.rebuildCache();
+		await debtCache.rebuildCache();
+		await feePool.rebuildCache();
+		await issuer.rebuildCache();
+
+		await manager.addCollaterals([ceth.address], { from: owner });
+
+		await ceth.addSynths(
+			['SynthsUSD', 'SynthsETH'].map(toBytes32),
+			['sUSD', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
+
+		await manager.addSynths(
+			['SynthsUSD', 'SynthsETH'].map(toBytes32),
+			['sUSD', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
+		// rebuild the cache to add the synths we need.
+		await manager.rebuildCache();
+
+		// Set fees to 0.
+		await ceth.setIssueFeeRate(toUnit('0'), { from: owner });
+		await systemSettings.setExchangeFeeRateForSynths(
+			synths.map(toBytes32),
+			synths.map(s => toUnit('0')),
+			{ from: owner }
+		);
+	};
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
@@ -212,6 +316,31 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(debts[3], toUnit(200));
 
 				assert.isFalse(result[2]);
+			});
+
+			describe('After non-SNX debt is created', async () => {
+				before(async () => {
+					await setupMultiCollateral();
+				});
+				it('it is excluded from the current debt', async () => {
+					// Issue some debt to avoid a division-by-zero in `getBorrowRate` where
+					// we compute the utilisation.
+					await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+					await synthetix.issueSynths(toUnit('10'), { from: account1 });
+
+					const debtCall1 = await debtCache.currentDebt();
+
+					// Open a non-SNX loan using ether as collateral.
+					const oneETH = toUnit('1.0');
+					const twoETH = toUnit('2.0');
+					await ceth.open(oneETH, sETH, {
+						value: twoETH,
+						from: account1,
+					});
+					const debtCall2 = await debtCache.currentDebt();
+
+					assert.bnEqual(debtCall1.debt, debtCall2.debt);
+				});
 			});
 		});
 
@@ -937,6 +1066,14 @@ contract('DebtCache', async accounts => {
 					assert.isUndefined(logs.find(({ name } = {}) => name === 'DebtCacheValidityChanged'));
 				});
 			});
+		});
+
+		describe('totalNonSnxBackedDebt', async () => {
+			describe('when MultiCollateral loans are opened', async () => {
+				it('increases', async () => {});
+			});
+			describe('when EtherCollateral (sUSD and ETH) loans are opened', async () => {});
+			describe('when shorts are opened', async () => {});
 		});
 	});
 });
