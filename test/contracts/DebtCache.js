@@ -60,8 +60,6 @@ contract('DebtCache', async accounts => {
 		etherCollateralsUSD,
 		// MultiCollateral tests.
 		ceth,
-		managerState,
-		manager,
 		// Short tests.
 		short;
 
@@ -89,14 +87,14 @@ contract('DebtCache', async accounts => {
 		synths = ['sUSD', 'sETH', 'sAUD'];
 
 		// Deploy CollateralManagerState.
-		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, {
+		const managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, {
 			from: deployerAccount,
 		});
 
 		const maxDebt = toUnit(10000000);
 
 		// Deploy CollateralManager.
-		manager = await CollateralManager.new(
+		const manager = await CollateralManager.new(
 			managerState.address,
 			owner,
 			addressResolver.address,
@@ -177,11 +175,13 @@ contract('DebtCache', async accounts => {
 		const CollateralState = artifacts.require(`CollateralState`);
 		const CollateralManagerState = artifacts.require('CollateralManagerState');
 
-		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+		const managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, {
+			from: deployerAccount,
+		});
 
 		const maxDebt = toUnit(10000000);
 
-		manager = await CollateralManager.new(
+		const manager = await CollateralManager.new(
 			managerState.address,
 			owner,
 			addressResolver.address,
