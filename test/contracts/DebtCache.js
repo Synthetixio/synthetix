@@ -47,6 +47,8 @@ contract('DebtCache', async accounts => {
 		synths,
 		addressResolver,
 		exchanger,
+		// EtherCollateral tests.
+		etherCollateral,
 		// MultiCollateral tests.
 		ceth,
 		managerState,
@@ -169,6 +171,7 @@ contract('DebtCache', async accounts => {
 			Issuer: issuer,
 			AddressResolver: addressResolver,
 			Exchanger: exchanger,
+			EtherCollateral: etherCollateral,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -188,6 +191,7 @@ contract('DebtCache', async accounts => {
 				'FlexibleStorage',
 				'CollateralManager',
 				'RewardEscrowV2', // necessary for issuer._collateral()
+				'EtherCollateral',
 			],
 		}));
 	});
@@ -1070,21 +1074,23 @@ contract('DebtCache', async accounts => {
 		});
 
 		describe('totalNonSnxBackedDebt', async () => {
+			let totalNonSnxBackedDebt;
+
 			beforeEach(async () => {
 				// Issue some debt to avoid a division-by-zero in `getBorrowRate` where
 				// we compute the utilisation.
 				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 				await synthetix.issueSynths(toUnit('10'), { from: account1 });
+
+				totalNonSnxBackedDebt = await debtCache.totalNonSnxBackedDebt();
 			});
 
 			describe('when MultiCollateral loans are opened', async () => {
-				let totalNonSnxBackedDebt;
 				let rate;
 
 				beforeEach(async () => {
 					await setupMultiCollateral();
 
-					totalNonSnxBackedDebt = await debtCache.totalNonSnxBackedDebt();
 					({ rate } = await exchangeRates.rateAndInvalid(sETH));
 
 					await ceth.open(oneETH, sETH, {
@@ -1099,7 +1105,45 @@ contract('DebtCache', async accounts => {
 					);
 				});
 			});
-			describe('when EtherCollateral (sUSD and ETH) loans are opened', async () => {});
+			describe('when EtherCollateral loans are opened', async () => {
+				let rate;
+
+				beforeEach(async () => {
+					({ rate } = await exchangeRates.rateAndInvalid(sETH));
+
+					// Collateralization is 100%, meaning we mint the full value in
+					// sETH.
+					await etherCollateral.setCollateralizationRatio(toUnit('100'), {
+						from: owner,
+					});
+					await etherCollateral.openLoan({
+						value: oneETH,
+						from: account1,
+					});
+				});
+				it('increases', async () => {
+					assert.bnEqual(
+						totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
+						await debtCache.totalNonSnxBackedDebt()
+					);
+				});
+			});
+			describe.skip('when EtherCollateralsUSD loans are opened', async () => {
+				// let rate;
+				// beforeEach(async () => {
+				// 	({ rate } = await exchangeRates.rateAndInvalid(sETH));
+				// 	await etherCollateral.openLoan({
+				// 		value: oneETH,
+				// 		from: account1,
+				// 	});
+				// });
+				// it('increases', async () => {
+				// 	assert.bnEqual(
+				// 		totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
+				// 		await debtCache.totalNonSnxBackedDebt()
+				// 	);
+				// });
+			});
 			describe('when shorts are opened', async () => {});
 		});
 	});
