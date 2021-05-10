@@ -1165,7 +1165,7 @@ contract('DebtCache', async accounts => {
 					});
 				});
 
-				it('increases', async () => {
+				it('increases non-SNX debt', async () => {
 					assert.bnEqual(
 						totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
 						await debtCache.totalNonSnxBackedDebt()
@@ -1173,6 +1173,23 @@ contract('DebtCache', async accounts => {
 				});
 				it('is excluded from currentDebt', async () => {
 					assert.bnEqual(currentDebt, await debtCache.currentDebt());
+				});
+
+				describe('after the synths are exchanged into other synths', async () => {
+					beforeEach(async () => {
+						// Swap some sETH into synthetic dollarydoos.
+						await synthetix.exchange(sETH, '5', sAUD, { from: account1 });
+					});
+
+					it('non-SNX debt is unchanged', async () => {
+						assert.bnEqual(
+							totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
+							await debtCache.totalNonSnxBackedDebt()
+						);
+					});
+					it('currentDebt is unchanged', async () => {
+						assert.bnEqual(currentDebt, await debtCache.currentDebt());
+					});
 				});
 			});
 
@@ -1191,7 +1208,7 @@ contract('DebtCache', async accounts => {
 					});
 				});
 
-				it('increases', async () => {
+				it('increases non-SNX debt', async () => {
 					assert.bnEqual(
 						totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
 						await debtCache.totalNonSnxBackedDebt()
@@ -1222,7 +1239,7 @@ contract('DebtCache', async accounts => {
 					});
 				});
 
-				it('increases', async () => {
+				it('increases non-SNX debt', async () => {
 					assert.bnEqual(
 						totalNonSnxBackedDebt.add(amount),
 						await debtCache.totalNonSnxBackedDebt()
@@ -1251,7 +1268,7 @@ contract('DebtCache', async accounts => {
 					await short.open(amount, oneETH, sETH, { from: account1 });
 				});
 
-				it('increases', async () => {
+				it('increases non-SNX debt', async () => {
 					assert.bnEqual(totalNonSnxBackedDebt.add(rate), await debtCache.totalNonSnxBackedDebt());
 				});
 				it('is excluded from currentDebt', async () => {
