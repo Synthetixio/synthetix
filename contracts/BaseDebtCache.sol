@@ -150,15 +150,24 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
                 uint issuedSynths = collateralManager().long(key);
                 excludedDebt = excludedDebt.add(issuedSynths.multiplyDecimalRound(rates[i]));
             }
-            // 2. EtherCollateral (sUSD and ETH) debt.
+
             if (key == sUSD || key == sETH) {
+                // 2. EtherCollateral (sUSD and ETH) debt.
                 IEtherCollateral etherCollateralContract =
                     key == sUSD ? IEtherCollateral(address(etherCollateralsUSD())) : etherCollateral();
                 excludedDebt = excludedDebt.add(etherCollateralContract.totalIssuedSynths().multiplyDecimalRound(rates[i]));
+
+                // 3. EtherWrapper
+                // Subtract sETH and sUSD issued by EtherWrapper.
+                excludedDebt = excludedDebt.add(
+                    key == sUSD
+                        ? etherWrapper().totalIssuedSynths(sUSD)
+                        : etherWrapper().totalIssuedSynths(sETH).multiplyDecimalRound(sETHRate)
+                );
             }
         }
 
-        // 3. Short debt.
+        // 4. Short debt.
         (uint shortValue, ) = collateralManager().totalShort();
         excludedDebt = excludedDebt.add(shortValue);
 
@@ -224,13 +233,6 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
             total = total.add(values[i]);
         }
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
-
-        // Subtract sETH and sUSD issued by EtherWrapper.
-        (uint sETHRate, bool sETHRateInvalid) = exchangeRates().rateAndInvalid(sETH);
-        isInvalid = isInvalid || sETHRateInvalid;
-
-        total = total.sub(etherWrapper().totalIssuedSynths(sETH).multiplyDecimalRound(sETHRate));
-        total = total.sub(etherWrapper().totalIssuedSynths(sUSD));
 
         return (total, isInvalid);
     }
