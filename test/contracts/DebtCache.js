@@ -24,9 +24,15 @@ const {
 } = require('../..');
 
 contract('DebtCache', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sETH, ETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH', 'ETH'].map(
-		toBytes32
-	);
+	const [sUSD, sAUD, sEUR, SNX, sETH, ETH, iETH] = [
+		'sUSD',
+		'sAUD',
+		'sEUR',
+		'SNX',
+		'sETH',
+		'ETH',
+		'iETH',
+	].map(toBytes32);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
 	const [deployerAccount, owner, oracle, account1, account2] = accounts;
@@ -55,7 +61,9 @@ contract('DebtCache', async accounts => {
 		// MultiCollateral tests.
 		ceth,
 		managerState,
-		manager;
+		manager,
+		// Short tests.
+		short;
 
 	const deployCollateral = async ({
 		state,
@@ -156,10 +164,84 @@ contract('DebtCache', async accounts => {
 		);
 	};
 
+	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
+		return setupContract({
+			accounts,
+			contract: 'CollateralShort',
+			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
+		});
+	};
+
+	const setupShort = async () => {
+		const CollateralManager = artifacts.require(`CollateralManager`);
+		const CollateralState = artifacts.require(`CollateralState`);
+		const CollateralManagerState = artifacts.require('CollateralManagerState');
+
+		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+
+		const maxDebt = toUnit(10000000);
+
+		manager = await CollateralManager.new(
+			managerState.address,
+			owner,
+			addressResolver.address,
+			maxDebt,
+			// 5% / 31536000 (seconds in common year)
+			1585489599,
+			0,
+			{
+				from: deployerAccount,
+			}
+		);
+
+		await managerState.setAssociatedContract(manager.address, { from: owner });
+
+		const state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+
+		short = await deployShort({
+			state: state.address,
+			owner: owner,
+			manager: manager.address,
+			resolver: addressResolver.address,
+			collatKey: sUSD,
+			minColat: toUnit(1.2),
+			minSize: toUnit(0.1),
+		});
+
+		await state.setAssociatedContract(short.address, { from: owner });
+
+		await addressResolver.importAddresses(
+			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
+			[short.address, manager.address],
+			{
+				from: owner,
+			}
+		);
+
+		await feePool.rebuildCache();
+		await manager.rebuildCache();
+		await issuer.rebuildCache();
+		await debtCache.rebuildCache();
+
+		await manager.addCollaterals([short.address], { from: owner });
+
+		await short.addSynths(['SynthsETH'].map(toBytes32), ['sETH'].map(toBytes32), { from: owner });
+
+		await manager.addShortableSynths(
+			[[toBytes32('SynthsETH'), toBytes32('SynthiETH')]],
+			['sETH'].map(toBytes32),
+			{
+				from: owner,
+			}
+		);
+
+		await sUSDContract.approve(short.address, toUnit(100000), { from: account1 });
+	};
+
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
 	before(async () => {
-		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH'];
+		synths = ['sUSD', 'sAUD', 'sEUR', 'sETH', 'iETH'];
 		({
 			Synthetix: synthetix,
 			SystemStatus: systemStatus,
@@ -207,8 +289,8 @@ contract('DebtCache', async accounts => {
 		timestamp = await currentTime();
 
 		await exchangeRates.updateRates(
-			[sAUD, sEUR, SNX, sETH],
-			['0.5', '1.25', '0.1', '200'].map(toUnit),
+			[sAUD, sEUR, SNX, sETH, ETH, iETH],
+			['0.5', '1.25', '0.1', '200', '200', '200'].map(toUnit),
 			timestamp,
 			{ from: oracle }
 		);
@@ -1103,6 +1185,7 @@ contract('DebtCache', async accounts => {
 						from: account1,
 					});
 				});
+
 				it('increases', async () => {
 					assert.bnEqual(
 						totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
@@ -1125,6 +1208,7 @@ contract('DebtCache', async accounts => {
 						from: account1,
 					});
 				});
+
 				it('increases', async () => {
 					assert.bnEqual(
 						totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
@@ -1152,6 +1236,7 @@ contract('DebtCache', async accounts => {
 						from: account1,
 					});
 				});
+
 				it('increases', async () => {
 					assert.bnEqual(
 						totalNonSnxBackedDebt.add(amount),
@@ -1159,7 +1244,29 @@ contract('DebtCache', async accounts => {
 					);
 				});
 			});
-			describe('when shorts are opened', async () => {});
+
+			describe('when shorts are opened', async () => {
+				let rate;
+				let amount;
+
+				beforeEach(async () => {
+					await setupShort();
+					await short.setMinCratio(toUnit(1.5), { from: owner });
+					await short.setIssueFeeRate(toUnit('0'), { from: owner });
+
+					({ rate } = await exchangeRates.rateAndInvalid(sETH));
+
+					// Take out a short position on sETH.
+					// sUSD collateral = 1.5 * rate_eth
+					amount = multiplyDecimalRound(rate, toUnit('1.5'));
+					await sUSDContract.issue(account1, amount, { from: owner });
+					await short.open(amount, oneETH, sETH, { from: account1 });
+				});
+
+				it('increases', async () => {
+					assert.bnEqual(totalNonSnxBackedDebt.add(rate), await debtCache.totalNonSnxBackedDebt());
+				});
+			});
 		});
 	});
 });
