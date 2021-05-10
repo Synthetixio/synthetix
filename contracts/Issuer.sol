@@ -176,6 +176,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return currencyKeys;
     }
 
+    // Returns the total value of the debt pool in currency specified by `currencyKey`.
+    // To return only the SNX-backed debt, set `excludeCollateral` to true.
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeCollateral)
         internal
         view
@@ -186,7 +188,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         IExchangeRates exRates = exchangeRates();
 
-        // Include the non-SNX backed debt if excludeCollateral is not set (default = true).
+        // Add total issued synths from non snx collateral back into the total if not excluded
         if (!excludeCollateral) {
             // Calculate excluded debt.
             // 1. MultiCollateral debt.
