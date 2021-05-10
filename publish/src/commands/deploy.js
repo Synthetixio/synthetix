@@ -10,8 +10,8 @@ const checkAggregatorPrices = require('../check-aggregator-prices');
 const pLimit = require('p-limit');
 
 const {
-	ensureNetwork,
 	ensureDeploymentPath,
+	ensureNetwork,
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
@@ -68,6 +68,7 @@ const deploy = async ({
 	ignoreSafetyChecks,
 	ignoreCustomParameters,
 	concurrency,
+	specifyContracts,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -94,6 +95,24 @@ const deploy = async ({
 		deploymentPath,
 		network,
 	});
+
+	// Mark contracts for deployment specified via an argument
+	if (specifyContracts) {
+		// Ignore config.json
+		Object.keys(config).map(name => {
+			config[name].deploy = false;
+		});
+		// Add specified contracts
+		specifyContracts.split(',').map(name => {
+			if (!config[name]) {
+				config[name] = {
+					deploy: true,
+				};
+			} else {
+				config[name].deploy = true;
+			}
+		});
+	}
 
 	if (freshDeploy) {
 		deployment.targets = {};
@@ -1188,14 +1207,14 @@ const deploy = async ({
 			args: [],
 		});
 		await deployer.deployContract({
-			name: 'SynthetixBridgeToBase',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-		await deployer.deployContract({
 			name: 'CollateralManager',
 			source: 'EmptyCollateralManager',
 			args: [],
+		});
+		await deployer.deployContract({
+			name: 'SynthetixBridgeToBase',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	} else {
 		await deployer.deployContract({
@@ -1208,11 +1227,32 @@ const deploy = async ({
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
-		await deployer.deployContract({
+		const SynthetixBridgeToOptimism = await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
+		const SynthetixBridgeEscrow = await deployer.deployContract({
+			name: 'SynthetixBridgeEscrow',
+			deps: ['AddressResolver'],
+			args: [account],
+		});
+
+		const allowance = await proxyERC20Synthetix.methods
+			.allowance(addressOf(SynthetixBridgeEscrow), addressOf(SynthetixBridgeToOptimism))
+			.call();
+		if (allowance.toString() === '0') {
+			await runStep({
+				contract: `SynthetixBridgeEscrow`,
+				target: SynthetixBridgeEscrow,
+				write: 'approveBridge',
+				writeArg: [
+					addressOf(proxyERC20Synthetix),
+					addressOf(SynthetixBridgeToOptimism),
+					w3utils.toWei('100000000'),
+				],
+			});
+		}
 	}
 
 	// ----------------
@@ -2549,6 +2589,10 @@ module.exports = {
 			.option(
 				'-u, --force-update-inverse-synths-on-testnet',
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
+			)
+			.option(
+				'-x, --specify-contracts <value>',
+				'Ignore config.json  and specify contracts to be deployed (Comma separated list)'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
