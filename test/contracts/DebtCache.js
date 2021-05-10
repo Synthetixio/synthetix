@@ -24,7 +24,9 @@ const {
 } = require('../..');
 
 contract('DebtCache', async accounts => {
-	const [sUSD, sAUD, sEUR, SNX, sETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH'].map(toBytes32);
+	const [sUSD, sAUD, sEUR, SNX, sETH, ETH] = ['sUSD', 'sAUD', 'sEUR', 'SNX', 'sETH', 'ETH'].map(
+		toBytes32
+	);
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
 	const [deployerAccount, owner, oracle, account1, account2] = accounts;
@@ -49,6 +51,7 @@ contract('DebtCache', async accounts => {
 		exchanger,
 		// EtherCollateral tests.
 		etherCollateral,
+		etherCollateralsUSD,
 		// MultiCollateral tests.
 		ceth,
 		managerState,
@@ -172,6 +175,7 @@ contract('DebtCache', async accounts => {
 			AddressResolver: addressResolver,
 			Exchanger: exchanger,
 			EtherCollateral: etherCollateral,
+			EtherCollateralsUSD: etherCollateralsUSD,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -192,6 +196,7 @@ contract('DebtCache', async accounts => {
 				'CollateralManager',
 				'RewardEscrowV2', // necessary for issuer._collateral()
 				'EtherCollateral',
+				'EtherCollateralsUSD',
 			],
 		}));
 	});
@@ -1105,6 +1110,7 @@ contract('DebtCache', async accounts => {
 					);
 				});
 			});
+
 			describe('when EtherCollateral loans are opened', async () => {
 				let rate;
 
@@ -1113,9 +1119,7 @@ contract('DebtCache', async accounts => {
 
 					// Collateralization is 100%, meaning we mint the full value in
 					// sETH.
-					await etherCollateral.setCollateralizationRatio(toUnit('100'), {
-						from: owner,
-					});
+					await etherCollateral.setCollateralizationRatio(toUnit('100'), { from: owner });
 					await etherCollateral.openLoan({
 						value: oneETH,
 						from: account1,
@@ -1128,21 +1132,32 @@ contract('DebtCache', async accounts => {
 					);
 				});
 			});
-			describe.skip('when EtherCollateralsUSD loans are opened', async () => {
-				// let rate;
-				// beforeEach(async () => {
-				// 	({ rate } = await exchangeRates.rateAndInvalid(sETH));
-				// 	await etherCollateral.openLoan({
-				// 		value: oneETH,
-				// 		from: account1,
-				// 	});
-				// });
-				// it('increases', async () => {
-				// 	assert.bnEqual(
-				// 		totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
-				// 		await debtCache.totalNonSnxBackedDebt()
-				// 	);
-				// });
+
+			describe('when EtherCollateralsUSD loans are opened', async () => {
+				let rate;
+				const amount = toUnit('1');
+
+				beforeEach(async () => {
+					// ETH rate must be updated.
+					await exchangeRates.updateRates([ETH], ['200'].map(toUnit), timestamp, { from: oracle });
+
+					({ rate } = await exchangeRates.rateAndInvalid(ETH));
+
+					// Collateralization is 100%, meaning we mint the full value in
+					// sETH.
+					await etherCollateralsUSD.setCollateralizationRatio(toUnit('100'), { from: owner });
+					await etherCollateralsUSD.setIssueFeeRate(toUnit('0'), { from: owner });
+					await etherCollateralsUSD.openLoan(amount, {
+						value: rate,
+						from: account1,
+					});
+				});
+				it('increases', async () => {
+					assert.bnEqual(
+						totalNonSnxBackedDebt.add(amount),
+						await debtCache.totalNonSnxBackedDebt()
+					);
+				});
 			});
 			describe('when shorts are opened', async () => {});
 		});
