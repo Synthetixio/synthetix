@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts, setupContract, mockToken } = require('./setup');
 
-const { currentTime, toUnit, fastForward } = require('../utils')();
+const { currentTime, toUnit, fastForward, multiplyDecimalRound } = require('../utils')();
 
 const {
 	setExchangeFeeRateForSynths,
@@ -28,6 +28,9 @@ contract('DebtCache', async accounts => {
 	const synthKeys = [sUSD, sAUD, sEUR, sETH, SNX];
 
 	const [deployerAccount, owner, oracle, account1, account2] = accounts;
+
+	const oneETH = toUnit('1.0');
+	const twoETH = toUnit('2.0');
 
 	let synthetix,
 		systemStatus,
@@ -319,7 +322,7 @@ contract('DebtCache', async accounts => {
 			});
 
 			describe('After non-SNX debt is created', async () => {
-				before(async () => {
+				beforeEach(async () => {
 					await setupMultiCollateral();
 				});
 				it('it is excluded from the current debt', async () => {
@@ -331,8 +334,6 @@ contract('DebtCache', async accounts => {
 					const debtCall1 = await debtCache.currentDebt();
 
 					// Open a non-SNX loan using ether as collateral.
-					const oneETH = toUnit('1.0');
-					const twoETH = toUnit('2.0');
 					await ceth.open(oneETH, sETH, {
 						value: twoETH,
 						from: account1,
@@ -1069,8 +1070,34 @@ contract('DebtCache', async accounts => {
 		});
 
 		describe('totalNonSnxBackedDebt', async () => {
+			beforeEach(async () => {
+				// Issue some debt to avoid a division-by-zero in `getBorrowRate` where
+				// we compute the utilisation.
+				await synthetix.transfer(account1, toUnit('1000'), { from: owner });
+				await synthetix.issueSynths(toUnit('10'), { from: account1 });
+			});
+
 			describe('when MultiCollateral loans are opened', async () => {
-				it('increases', async () => {});
+				let totalNonSnxBackedDebt;
+				let rate;
+
+				beforeEach(async () => {
+					await setupMultiCollateral();
+
+					totalNonSnxBackedDebt = await debtCache.totalNonSnxBackedDebt();
+					({ rate } = await exchangeRates.rateAndInvalid(sETH));
+
+					await ceth.open(oneETH, sETH, {
+						value: twoETH,
+						from: account1,
+					});
+				});
+				it('increases', async () => {
+					assert.bnEqual(
+						totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
+						await debtCache.totalNonSnxBackedDebt()
+					);
+				});
 			});
 			describe('when EtherCollateral (sUSD and ETH) loans are opened', async () => {});
 			describe('when shorts are opened', async () => {});
