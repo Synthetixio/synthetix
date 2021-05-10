@@ -183,6 +183,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return currencyKeys;
     }
 
+    // Returns the total value of the debt pool in currency specified by `currencyKey`.
+    // To return only the SNX-backed debt, set `excludeCollateral` to true.
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeCollateral)
         internal
         view
@@ -195,15 +197,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Add total issued synths from non snx collateral back into the total if not excluded
         if (!excludeCollateral) {
-            // Get the sUSD equivalent amount of all the MC issued synths.
+            // Calculate excluded debt.
+            // 1. MultiCollateral debt.
             (uint nonSnxDebt, bool invalid) = collateralManager().totalLong();
             debt = debt.add(nonSnxDebt);
             anyRateIsInvalid = anyRateIsInvalid || invalid;
 
-            // Now add the ether collateral stuff as we are still supporting it.
+            // 2. EtherCollateral (sUSD and ETH) debt.
+            // 2a. sUSD.
             debt = debt.add(etherCollateralsUSD().totalIssuedSynths());
 
-            // Add ether collateral sETH
+            // 2b. sETH.
             (uint ethRate, bool ethRateInvalid) = exRates.rateAndInvalid(sETH);
             uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
             debt = debt.add(ethIssuedDebt);
@@ -213,6 +217,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             debt = debt.add(etherWrapper().totalIssuedSynths(sETH).multiplyDecimalRound(ethRate));
             // Add ether wrapper sUSD.
             debt = debt.add(etherWrapper().totalIssuedSynths(sUSD));
+
+            // 3. Short debt.
+            (uint shortValue, ) = collateralManager().totalShort();
+            debt = debt.add(shortValue);
         }
 
         if (currencyKey == sUSD) {
