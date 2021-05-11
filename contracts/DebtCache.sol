@@ -7,6 +7,8 @@ import "./BaseDebtCache.sol";
 contract DebtCache is BaseDebtCache {
     constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
+    bytes32 internal constant EXCLUDED_DEBT_KEY = "EXCLUDED_DEBT";
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // This function exists in case a synth is ever somehow removed without its snapshot being updated.
@@ -26,6 +28,7 @@ contract DebtCache is BaseDebtCache {
             snxCollateralDebt = snxCollateralDebt.add(value);
             _cachedSynthDebt[currencyKeys[i]] = value;
         }
+        _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
         _cachedDebt = snxCollateralDebt < excludedDebt ? 0 : snxCollateralDebt.sub(excludedDebt);
         _cacheTimestamp = block.timestamp;
         emit DebtCacheUpdated(snxCollateralDebt);
@@ -79,7 +82,7 @@ contract DebtCache is BaseDebtCache {
         // Update the cached values for each synth, saving the sums as we go.
         uint cachedSum;
         uint currentSum;
-        (uint[] memory currentValues, uint excludedDebt) = _issuedSynthValues(currencyKeys, currentRates);
+        uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
         for (uint i = 0; i < numKeys; i++) {
             bytes32 key = currencyKeys[i];
             uint currentSynthDebt = currentValues[i];
@@ -87,7 +90,13 @@ contract DebtCache is BaseDebtCache {
             currentSum = currentSum.add(currentSynthDebt);
             _cachedSynthDebt[key] = currentSynthDebt;
         }
-        currentSum = currentSum < excludedDebt ? 0 : currentSum.sub(excludedDebt);
+
+        // Always update the cached value of the excluded debt -- it's computed anyway.
+        (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
+        anyRateIsInvalid = anyRateIsInvalid && anyNonSnxDebtRateIsInvalid;
+        cachedSum = cachedSum.sub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
+        currentSum = currentSum.sub(excludedDebt);
+        _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
 
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {
