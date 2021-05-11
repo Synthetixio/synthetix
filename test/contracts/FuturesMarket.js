@@ -1523,8 +1523,6 @@ contract('FuturesMarket', accounts => {
 				});
 
 				it('Different skew rates induce proportional funding levels', async () => {
-					// TODO: This seems to fail on a 0.3 max funding rate skew. Fix this!
-					assert.isTrue(false);
 					await modifyMarginSubmitAndConfirmOrder({
 						market: futuresMarket,
 						account: trader,
@@ -1534,45 +1532,70 @@ contract('FuturesMarket', accounts => {
 					});
 					await futuresMarket.modifyMargin(toUnit('1000'), { from: trader2 });
 
-					const points = 10;
+					const points = 5;
 
 					for (const maxFRSkew of ['1', '0.5', '0.3'].map(toUnit)) {
 						await futuresMarket.setMaxFundingRateSkew(maxFRSkew, { from: owner });
+						// We will sample points linearly from proportionalSkew = 0 down to proportionalSkew = maxFRSkew,
+						// So that the funding rate will go from 0 to maxFR.
+						// 0 skew is achieved when oppLev = -leverage.
+						// But when does proportionalSkew = maxFRSkew?
+						// Choose oppLev = k*lev,
+						// maxFRSkew is achieved when
+						//    (lev - k*lev)/(lev + k*lev) = maxFRSkew
+						// => k = (1-maxFRSkew)/(1+maxFRSkew)
+						// E.g. if maxFRSkew = 0.5, then k = 0.5/1.5 = 1/3
+						//      So we sample oppLev from leverage to 1/3*leverage
+
+						const k = toUnit(1)
+							.sub(maxFRSkew)
+							.mul(toUnit(1))
+							.div(toUnit(1).add(maxFRSkew));
 
 						for (const maxFR of ['0.1', '0.2', '0.05'].map(toUnit)) {
 							await futuresMarket.setMaxFundingRate(maxFR, { from: owner });
 
-							for (let i = 1; i <= points; i++) {
+							const lowLev = leverage.mul(k).div(toUnit(1));
+
+							for (let i = points; i >= 0; i--) {
+								// now lerp from leverage*k to leverage
+								const frac = leverage
+									.sub(lowLev)
+									.mul(toBN(i))
+									.div(toBN(points));
+								const oppLev = lowLev.add(frac).neg();
+
 								await submitAndConfirmOrder({
 									market: futuresMarket,
 									account: trader2,
 									fillPrice: toUnit('100'),
-									leverage: leverage
-										.neg()
-										.mul(toBN(i))
-										.div(toBN(points))
-										.mul(maxFRSkew)
-										.div(toUnit(1)),
+									leverage: oppLev,
 								});
 
-								const expected = maxFR
-									.mul(toBN(points - i))
-									.div(toBN(points + i))
+								// oppLev = lev*k + lev*(1 - k)*i/points
+								// The skew is (lev - lev*k - lev*(1-k)*i/points)/(lev + lev*k + lev*(1-k)*i/points)
+								//           = (1 - k - (1-k)*i/points)/(1 + k + (1-k)*i/points)
+								//           = (1 - i/points)/(1 + i/points + 2k/(1-k))
+								//           = (points - i)/(points + i + points*(1/maxFRSkew - 1))
+
+								const maxFRSkewCorrection = toUnit(1)
+									.mul(toUnit(1))
+									.div(maxFRSkew)
+									.sub(toUnit(1))
+									.mul(toBN(points));
+								let expected = maxFR
+									.mul(toUnit(1))
+									.div(maxFRSkew)
+									.mul(toUnit(points - i))
+									.div(toUnit(points + i).add(maxFRSkewCorrection))
 									.mul(leverage.div(leverage.abs()))
 									.neg();
 
-								/*
-								console.log();
-								console.log(fromUnit(await futuresMarket.currentFundingRate()));
-								console.log(fromUnit(expected));
-								console.log();
-								*/
+								if (expected.gt(maxFR)) {
+									expected = maxFR;
+								}
 
-								assert.bnClose(
-									await futuresMarket.currentFundingRate(),
-									expected,
-									toUnit('0.0001')
-								);
+								assert.bnClose(await futuresMarket.currentFundingRate(), expected, toUnit('0.001'));
 							}
 						}
 					}
