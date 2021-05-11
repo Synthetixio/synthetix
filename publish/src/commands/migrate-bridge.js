@@ -45,6 +45,7 @@ const migrateBridge = async ({ network, useFork, gasPrice, useMigrator }) => {
 	});
 
 	await _nominate({
+		txParams,
 		migratorContract,
 		deployer,
 		oldBridgeContract,
@@ -227,7 +228,13 @@ async function _verify({
 	console.log(chalk.gray(`Contract's new escrow: ${_newEscrow} OK ✓`));
 }
 
-async function _nominate({ migratorContract, deployer, oldBridgeContract, newEscrowContract }) {
+async function _nominate({
+	txParams,
+	migratorContract,
+	deployer,
+	oldBridgeContract,
+	newEscrowContract,
+}) {
 	async function __nominateContract({ name, contract }) {
 		const nominatedOwner = await contract.nominatedOwner();
 		console.log(chalk.gray(`${name} nominatedOwner: ${nominatedOwner}`));
@@ -237,7 +244,7 @@ async function _nominate({ migratorContract, deployer, oldBridgeContract, newEsc
 			if (owner.toLowerCase() === deployer.toLowerCase()) {
 				console.log(chalk.gray(`Nominating new owner on ${name} (${contract.address})...`));
 
-				await _runTx(contract.nominateNewOwner(migratorContract.address));
+				await _runTx(contract.nominateNewOwner(migratorContract.address, txParams));
 			} else {
 				await confirmAction(
 					chalk.yellow(
@@ -257,8 +264,8 @@ async function _execute({ migratorContract, txParams, oldBridgeContract, newEscr
 	console.log(chalk.gray.bold('Executing...'));
 
 	await _runTx(migratorContract.execute(txParams));
-	await _runTx(oldBridgeContract.acceptOwnership());
-	await _runTx(newEscrowContract.acceptOwnership());
+	await _runTx(oldBridgeContract.acceptOwnership(txParams));
+	await _runTx(newEscrowContract.acceptOwnership(txParams));
 }
 
 async function _validate({ snxContract, newEscrowContract, oldBridgeContract }) {
