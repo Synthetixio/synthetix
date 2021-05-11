@@ -2999,8 +2999,9 @@
 			},
 			"SynthetixBridgeToOptimism": {
 				"address": "0x045e507925d2e05D114534D0810a1abD94aca8d6",
-				"status": "current",
-				"keccak256": "0x072ba93f033853347432cd3d6f47d4a4d54cd106185de9382cde9977636a00a7"
+				"status": "replaced",
+				"keccak256": "0x072ba93f033853347432cd3d6f47d4a4d54cd106185de9382cde9977636a00a7",
+				"replaced_in": "v2.44.0"
 			}
 		}
 	},
@@ -3526,6 +3527,26 @@
 				"address": "0x9D003Cc298E7Ea141A809C241C0a703176DA3ba3",
 				"status": "current",
 				"keccak256": "0x0c1b57cb46f37ca9ffd36bbc5cd02433219539106c33a9937724e682f6fc3516"
+			}
+		}
+	},
+	"v2.44.0": {
+		"tag": "v2.44.0",
+		"fulltag": "v2.44.0",
+		"release": "Alnair",
+		"network": "mainnet",
+		"date": "2021-05-10T17:06:47-06:00",
+		"commit": "94677e58bd520b16b8abaa9ca7cbf505b44d1d25",
+		"contracts": {
+			"SynthetixBridgeToOptimism": {
+				"address": "0xCd9D4988C0AE61887B075bA77f08cbFAd2b65068",
+				"status": "current",
+				"keccak256": "0x1b2c09f527d84cd2ab5fb24e0e8360773ab6acc86093d94b055d25603dd89af7"
+			},
+			"SynthetixBridgeEscrow": {
+				"address": "0x5Fd79D46EBA7F351fe49BFF9E87cdeA6c821eF9f",
+				"status": "current",
+				"keccak256": "0xb2c7f7c807bc4783ed66f959cb3335f1b77727bf4d074e3319992842eca64235"
 			}
 		}
 	}
