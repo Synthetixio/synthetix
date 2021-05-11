@@ -6,7 +6,7 @@
 		"network": "mainnet",
 		"date": "2019-03-11T18:17:52-04:00",
 		"commit": "eeb271f4fdd2e615f9dba90503f42b2cb9f9716e",
-		"block": 6834810,
+		"block": 5873222,
 		"contracts": {
 			"Depot": {
 				"address": "0x172E09691DfBbC035E37c73B62095caa16Ee2388",
