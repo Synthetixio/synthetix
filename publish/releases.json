@@ -195,24 +195,6 @@
 		"sips": [115, 128]
 	},
 	{
-		"name": "Alioth",
-		"version": {
-			"major": 2,
-			"minor": 45
-		},
-		"sources": [
-			"FeePool",
-			"SynthsUSD",
-			"SynthsETH",
-			"SystemSettings",
-			"EtherWrapper",
-			"NativeEtherWrapper",
-			"Issuer",
-			"DebtCache"
-		],
-		"sips": [112]
-	},
-	{
 		"name": "Alnair",
 		"version": {
 			"major": 2,
@@ -243,7 +225,18 @@
 			"major": 2,
 			"minor": 45
 		},
-		"sources": ["DebtCache", "Issuer"],
-		"sips": [136]
+		"sources": [
+			"DebtCache",
+			"Issuer",
+			"FeePool",
+			"SynthsUSD",
+			"SynthsETH",
+			"SystemSettings",
+			"EtherWrapper",
+			"NativeEtherWrapper",
+			"Issuer",
+			"DebtCache"
+		],
+		"sips": [112, 136]
 	}
 ]
