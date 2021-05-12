@@ -201,23 +201,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         }
     }
 
-    function totalLongAndShort() public view returns (uint susdValue, bool anyRateIsInvalid) {
-        bytes32[] memory synths = _shortableSynths.elements;
-
-        if (synths.length > 0) {
-            for (uint i = 0; i < synths.length; i++) {
-                bytes32 synth = _synth(synths[i]).currencyKey();
-                (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
-                uint shortAmount = state.short(synth).multiplyDecimal(rate);
-                uint longAmount = state.long(synth).multiplyDecimal(rate);
-                susdValue = susdValue.add(shortAmount).add(longAmount);
-                if (invalid) {
-                    anyRateIsInvalid = true;
-                }
-            }
-        }
-    }
-
     function getBorrowRate() external view returns (uint borrowRate, bool anyRateIsInvalid) {
         // get the snx backed debt.
         uint snxDebt = _issuer().totalIssuedSynths(sUSD, true);

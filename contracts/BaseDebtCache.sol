@@ -193,10 +193,11 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         excludedDebt = excludedDebt.add(etherCollateral().totalIssuedSynths().multiplyDecimalRound(sETHRate)); // Ether-backed sETH
 
         // 2. MultiCollateral long debt + short debt.
-        (uint longAndShortValue, bool anyTotalLongShortRateIsInvalid) = collateralManager().totalLongAndShort();
-        excludedDebt = excludedDebt.add(longAndShortValue);
+        (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
+        (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
+        excludedDebt = excludedDebt.add(longValue).add(shortValue);
 
-        return (excludedDebt, sETHRateIsInvalid || anyTotalLongShortRateIsInvalid);
+        return (excludedDebt, sETHRateIsInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid);
     }
 
     function _currentDebt() internal view returns (uint debt, bool anyRateIsInvalid) {

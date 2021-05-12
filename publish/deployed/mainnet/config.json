@@ -537,7 +537,7 @@
 		"deploy": false
 	},
 	"CollateralManager": {
-		"deploy": true
+		"deploy": false
 	},
 	"CollateralManagerState": {
 		"deploy": false

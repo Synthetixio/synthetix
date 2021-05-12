@@ -29,10 +29,6 @@ contract EmptyCollateralManager is ICollateralManager {
         return (0, false);
     }
 
-    function totalLongAndShort() external view returns (uint susdValue, bool anyRateIsInvalid) {
-        return (0, false);
-    }
-
     function getBorrowRate() external view returns (uint borrowRate, bool anyRateIsInvalid) {
         return (0, false);
     }
