@@ -93,7 +93,7 @@ contract DebtCache is BaseDebtCache {
 
         // Always update the cached value of the excluded debt -- it's computed anyway.
         (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
-        anyRateIsInvalid = anyRateIsInvalid && anyNonSnxDebtRateIsInvalid;
+        anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
         cachedSum = cachedSum.sub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
         currentSum = currentSum.sub(excludedDebt);
         _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
