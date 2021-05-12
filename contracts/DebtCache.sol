@@ -83,7 +83,7 @@ contract DebtCache is BaseDebtCache {
         // Update the cached values for each synth, saving the sums as we go.
         uint cachedSum;
         uint currentSum;
-        uint excludedDebtSum;
+        uint excludedDebtSum = _cachedSynthDebt[EXCLUDED_DEBT_KEY];
         uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
 
         for (uint i = 0; i < numKeys; i++) {
