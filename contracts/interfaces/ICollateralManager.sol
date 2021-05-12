@@ -15,6 +15,8 @@ interface ICollateralManager {
 
     function totalShort() external view returns (uint susdValue, bool anyRateIsInvalid);
 
+    function totalLongAndShort() external view returns (uint susdValue, bool anyRateIsInvalid);
+
     function getBorrowRate() external view returns (uint borrowRate, bool anyRateIsInvalid);
 
     function getShortRate(bytes32 synth) external view returns (uint shortRate, bool rateIsInvalid);
