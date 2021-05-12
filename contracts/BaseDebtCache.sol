@@ -130,7 +130,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates)
         internal
         view
-        returns (uint[] memory values, uint excludedDebt)
+        returns (uint[] memory values)
     {
         uint numValues = currencyKeys.length;
         values = new uint[](numValues);
@@ -138,40 +138,12 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
         for (uint i = 0; i < numValues; i++) {
             address synthAddress = address(synths[i]);
-            bytes32 key = currencyKeys[i];
             require(synthAddress != address(0), "Synth does not exist");
             uint supply = IERC20(synthAddress).totalSupply();
-
             values[i] = supply.multiplyDecimalRound(rates[i]);
-
-            // Calculate excluded debt.
-            // 1. MultiCollateral debt.
-            if (collateralManager().isSynthManaged(key)) {
-                uint issuedSynths = collateralManager().long(key);
-                excludedDebt = excludedDebt.add(issuedSynths.multiplyDecimalRound(rates[i]));
-            }
-
-            if (key == sUSD || key == sETH) {
-                // 2. EtherCollateral (sUSD and ETH) debt.
-                IEtherCollateral etherCollateralContract =
-                    key == sUSD ? IEtherCollateral(address(etherCollateralsUSD())) : etherCollateral();
-                excludedDebt = excludedDebt.add(etherCollateralContract.totalIssuedSynths().multiplyDecimalRound(rates[i]));
-
-                // 3. EtherWrapper
-                // Subtract sETH and sUSD issued by EtherWrapper.
-                excludedDebt = excludedDebt.add(
-                    key == sUSD
-                        ? etherWrapper().totalIssuedSynths(sUSD)
-                        : etherWrapper().totalIssuedSynths(sETH).multiplyDecimalRound(sETHRate)
-                );
-            }
         }
 
-        // 4. Short debt.
-        (uint shortValue, ) = collateralManager().totalShort();
-        excludedDebt = excludedDebt.add(shortValue);
-
-        return (values, excludedDebt);
+        return (values);
     }
 
     function _currentSynthDebts(bytes32[] memory currencyKeys)
@@ -179,13 +151,14 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         view
         returns (
             uint[] memory snxIssuedDebts,
-            uint excludedDebt,
+            uint _excludedDebt,
             bool anyRateIsInvalid
         )
     {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        (uint[] memory values, uint excludedDebt) = _issuedSynthValues(currencyKeys, rates);
-        return (values, excludedDebt, isInvalid);
+        uint[] memory values = _issuedSynthValues(currencyKeys, rates);
+        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt();
+        return (values, excludedDebt, isInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentSynthDebts(bytes32[] calldata currencyKeys)
@@ -214,11 +187,38 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     }
 
     // Returns the total sUSD debt backed by non-SNX collateral.
-    function totalNonSnxBackedDebt() external view returns (uint excludedDebt) {
-        bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
-        (uint[] memory rates, ) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        (, uint excludedDebt) = _issuedSynthValues(currencyKeys, rates);
-        return excludedDebt;
+    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid) {
+        return _totalNonSnxBackedDebt();
+    }
+
+    function _totalNonSnxBackedDebt() internal view returns (uint excludedDebt, bool isInvalid) {
+        // Calculate excluded debt.
+        // 1. Ether Collateral.
+        if (resolver.getAddress(CONTRACT_ETHERCOLLATERAL_SUSD) != address(0)) {
+            excludedDebt = etherCollateralsUSD().totalIssuedSynths(); // Ether-backed sUSD
+        }
+
+        if (address(issuer().synths(sETH)) != address(0) && resolver.getAddress(CONTRACT_ETHERCOLLATERAL) != address(0)) {
+            (uint sETHRate, bool sETHRateIsInvalid) = exchangeRates().rateAndInvalid(sETH);
+            isInvalid = sETHRateIsInvalid;
+            excludedDebt = excludedDebt.add(etherCollateral().totalIssuedSynths().multiplyDecimalRound(sETHRate)); // Ether-backed sETH
+        }
+
+        // 2. MultiCollateral long debt + short debt.
+        if (resolver.getAddress(CONTRACT_COLLATERALMANAGER) != address(0)) {
+            (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
+            (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
+            isInvalid = isInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
+            excludedDebt = excludedDebt.add(longValue).add(shortValue);
+        }
+
+        // 3. EtherWrapper.
+        if (resolver.getAddress(CONTRACT_ETHER_WRAPPER) != address(0)) {
+            // Subtract sETH and sUSD issued by EtherWrapper.
+            excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
+        }
+
+        return (excludedDebt, isInvalid);
     }
 
     function _currentDebt() internal view returns (uint debt, bool anyRateIsInvalid) {
@@ -226,7 +226,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
 
         // Sum all issued synth values based on their supply.
-        (uint[] memory values, uint excludedDebt) = _issuedSynthValues(currencyKeys, rates);
+        uint[] memory values = _issuedSynthValues(currencyKeys, rates);
+        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt();
+
         uint numValues = values.length;
         uint total;
         for (uint i; i < numValues; i++) {
@@ -234,7 +236,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         }
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
-        return (total, isInvalid);
+        return (total, isInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {

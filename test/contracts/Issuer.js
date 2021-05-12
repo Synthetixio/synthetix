@@ -2575,6 +2575,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 							await synthetix.totalIssuedSynthsExcludeEtherCollateral(sETH)
 						);
 
+						// Excluded debt is only computed after debt snapshots.
+						await debtCache.takeDebtSnapshot();
+
 						// totalIssuedSynths after includes amount issued
 						assert.bnEqual(
 							await synthetix.totalIssuedSynths(sETH),

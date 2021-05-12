@@ -490,8 +490,8 @@ contract('DebtCache', async accounts => {
 
 				// Revalidate the cache once rates are no longer stale
 				await exchangeRates.updateRates(
-					[sAUD, sEUR, sETH],
-					['0.5', '2', '100'].map(toUnit),
+					[sAUD, sEUR, SNX, sETH, ETH, iETH],
+					['0.5', '2', '100', '200', '200', '200'].map(toUnit),
 					await currentTime(),
 					{ from: oracle }
 				);
@@ -1142,13 +1142,18 @@ contract('DebtCache', async accounts => {
 		let totalNonSnxBackedDebt;
 		let currentDebt;
 
+		const getTotalNonSnxBackedDebt = async () => {
+			const { excludedDebt } = await debtCache.totalNonSnxBackedDebt();
+			return excludedDebt;
+		};
+
 		beforeEach(async () => {
 			// Issue some debt to avoid a division-by-zero in `getBorrowRate` where
 			// we compute the utilisation.
 			await synthetix.transfer(account1, toUnit('1000'), { from: owner });
 			await synthetix.issueSynths(toUnit('10'), { from: account1 });
 
-			totalNonSnxBackedDebt = await debtCache.totalNonSnxBackedDebt();
+			totalNonSnxBackedDebt = await getTotalNonSnxBackedDebt();
 			currentDebt = await debtCache.currentDebt();
 		});
 
@@ -1169,7 +1174,7 @@ contract('DebtCache', async accounts => {
 			it('increases non-SNX debt', async () => {
 				assert.bnEqual(
 					totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
-					await debtCache.totalNonSnxBackedDebt()
+					await getTotalNonSnxBackedDebt()
 				);
 			});
 			it('is excluded from currentDebt', async () => {
@@ -1185,7 +1190,7 @@ contract('DebtCache', async accounts => {
 				it('non-SNX debt is unchanged', async () => {
 					assert.bnEqual(
 						totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
-						await debtCache.totalNonSnxBackedDebt()
+						await getTotalNonSnxBackedDebt()
 					);
 				});
 				it('currentDebt is unchanged', async () => {
@@ -1212,7 +1217,7 @@ contract('DebtCache', async accounts => {
 			it('increases non-SNX debt', async () => {
 				assert.bnEqual(
 					totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
-					await debtCache.totalNonSnxBackedDebt()
+					await getTotalNonSnxBackedDebt()
 				);
 			});
 			it('is excluded from currentDebt', async () => {
@@ -1241,7 +1246,7 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('increases non-SNX debt', async () => {
-				assert.bnEqual(totalNonSnxBackedDebt.add(amount), await debtCache.totalNonSnxBackedDebt());
+				assert.bnEqual(totalNonSnxBackedDebt.add(amount), await getTotalNonSnxBackedDebt());
 			});
 			it('is excluded from currentDebt', async () => {
 				assert.bnEqual(currentDebt, await debtCache.currentDebt());
@@ -1270,7 +1275,7 @@ contract('DebtCache', async accounts => {
 			});
 
 			it('increases non-SNX debt', async () => {
-				assert.bnEqual(totalNonSnxBackedDebt.add(rate), await debtCache.totalNonSnxBackedDebt());
+				assert.bnEqual(totalNonSnxBackedDebt.add(rate), await getTotalNonSnxBackedDebt());
 			});
 			it('is excluded from currentDebt', async () => {
 				assert.bnEqual(currentDebt, await debtCache.currentDebt());

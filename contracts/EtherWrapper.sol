@@ -109,20 +109,14 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         return _weth.balanceOf(address(this));
     }
 
-    function totalIssuedSynths(bytes32 currencyKey) public view returns (uint) {
+    function totalIssuedSynths() public view returns (uint) {
         // This contract issues two different synths:
         // 1. sETH
         // 2. sUSD
         //
         // The sETH is always backed 1:1 with WETH.
         // The sUSD fees are backed by sETH that is withheld during minting and burning.
-        if (currencyKey == sETH) {
-            return sETHIssued;
-        }
-        if (currencyKey == sUSD) {
-            return sUSDIssued;
-        }
-        return 0;
+        return exchangeRates().effectiveValue(sETH, sETHIssued, sUSD).add(sUSDIssued);
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {

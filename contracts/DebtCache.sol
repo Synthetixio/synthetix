@@ -7,6 +7,8 @@ import "./BaseDebtCache.sol";
 contract DebtCache is BaseDebtCache {
     constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
+    bytes32 internal constant EXCLUDED_DEBT_KEY = "EXCLUDED_DEBT";
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     // This function exists in case a synth is ever somehow removed without its snapshot being updated.
@@ -26,6 +28,7 @@ contract DebtCache is BaseDebtCache {
             snxCollateralDebt = snxCollateralDebt.add(value);
             _cachedSynthDebt[currencyKeys[i]] = value;
         }
+        _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
         _cachedDebt = snxCollateralDebt < excludedDebt ? 0 : snxCollateralDebt.sub(excludedDebt);
         _cacheTimestamp = block.timestamp;
         emit DebtCacheUpdated(snxCollateralDebt);
@@ -37,7 +40,7 @@ contract DebtCache is BaseDebtCache {
 
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        _updateCachedSynthDebtsWithRates(currencyKeys, rates, anyRateInvalid);
+        _updateCachedSynthDebtsWithRates(currencyKeys, rates, anyRateInvalid, false);
     }
 
     function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
@@ -45,14 +48,14 @@ contract DebtCache is BaseDebtCache {
         synthKeyArray[0] = currencyKey;
         uint[] memory synthRateArray = new uint[](1);
         synthRateArray[0] = currencyRate;
-        _updateCachedSynthDebtsWithRates(synthKeyArray, synthRateArray, false);
+        _updateCachedSynthDebtsWithRates(synthKeyArray, synthRateArray, false, false);
     }
 
     function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
         external
         onlyIssuerOrExchanger
     {
-        _updateCachedSynthDebtsWithRates(currencyKeys, currencyRates, false);
+        _updateCachedSynthDebtsWithRates(currencyKeys, currencyRates, false, false);
     }
 
     function updateDebtCacheValidity(bool currentlyInvalid) external onlyIssuer {
@@ -71,7 +74,8 @@ contract DebtCache is BaseDebtCache {
     function _updateCachedSynthDebtsWithRates(
         bytes32[] memory currencyKeys,
         uint[] memory currentRates,
-        bool anyRateIsInvalid
+        bool anyRateIsInvalid,
+        bool recomputeExcludedDebt
     ) internal {
         uint numKeys = currencyKeys.length;
         require(numKeys == currentRates.length, "Input array lengths differ");
@@ -79,7 +83,9 @@ contract DebtCache is BaseDebtCache {
         // Update the cached values for each synth, saving the sums as we go.
         uint cachedSum;
         uint currentSum;
-        (uint[] memory currentValues, uint excludedDebt) = _issuedSynthValues(currencyKeys, currentRates);
+        uint excludedDebtSum;
+        uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
+
         for (uint i = 0; i < numKeys; i++) {
             bytes32 key = currencyKeys[i];
             uint currentSynthDebt = currentValues[i];
@@ -87,7 +93,17 @@ contract DebtCache is BaseDebtCache {
             currentSum = currentSum.add(currentSynthDebt);
             _cachedSynthDebt[key] = currentSynthDebt;
         }
-        currentSum = currentSum < excludedDebt ? 0 : currentSum.sub(excludedDebt);
+
+        // Always update the cached value of the excluded debt -- it's computed anyway.
+        if (recomputeExcludedDebt) {
+            (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
+            anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
+            excludedDebtSum = excludedDebt;
+        }
+
+        cachedSum = cachedSum.sub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
+        currentSum = currentSum.sub(excludedDebtSum);
+        _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebtSum;
 
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {

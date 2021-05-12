@@ -24,6 +24,8 @@ interface IDebtCache {
 
     function cachedSynthDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory debtValues);
 
+    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid);
+
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid);
 
     function cacheInfo()

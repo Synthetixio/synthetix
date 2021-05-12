@@ -19,7 +19,7 @@ const { toBN } = require('web3-utils');
 
 contract('EtherWrapper', async accounts => {
 	const synths = ['sUSD', 'sETH', 'ETH', 'SNX'];
-	const [sETH, ETH, sUSD] = ['sETH', 'ETH', 'sUSD'].map(toBytes32);
+	const [sETH, ETH] = ['sETH', 'ETH'].map(toBytes32);
 
 	const ONE = toBN('1');
 
@@ -147,10 +147,10 @@ contract('EtherWrapper', async accounts => {
 			});
 			describe('totalIssuedSynths', async () => {
 				it('sETH = 0', async () => {
-					assert.bnEqual(await etherWrapper.totalIssuedSynths(sETH), toBN('0'));
+					assert.bnEqual(await etherWrapper.sETHIssued(), toBN('0'));
 				});
 				it('sUSD = 0', async () => {
-					assert.bnEqual(await etherWrapper.totalIssuedSynths(sUSD), toBN('0'));
+					assert.bnEqual(await etherWrapper.sUSDIssued(), toBN('0'));
 				});
 			});
 		});
@@ -167,7 +167,7 @@ contract('EtherWrapper', async accounts => {
 			});
 
 			it('total issued sETH = 1.0', async () => {
-				assert.bnEqual(await etherWrapper.totalIssuedSynths(sETH), toUnit('1.0'));
+				assert.bnEqual(await etherWrapper.sETHIssued(), toUnit('1.0'));
 			});
 			it('fees escrowed = 0.005', async () => {
 				assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.005'));
@@ -185,7 +185,7 @@ contract('EtherWrapper', async accounts => {
 				});
 
 				it('total issued sETH = 0.0', async () => {
-					assert.bnEqual(await etherWrapper.totalIssuedSynths(sETH), toUnit('0.0'));
+					assert.bnEqual(await etherWrapper.sETHIssued(), toUnit('0.0'));
 				});
 				it('fees escrowed = 0.01', async () => {
 					assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.01'));
@@ -199,7 +199,7 @@ contract('EtherWrapper', async accounts => {
 
 					it('total issued sUSD = $15', async () => {
 						// 1500*0.01 = 15
-						assert.bnEqual(await etherWrapper.totalIssuedSynths(sUSD), toUnit('15.0'));
+						assert.bnEqual(await etherWrapper.sUSDIssued(), toUnit('15.0'));
 					});
 
 					it('fees escrowed = 0.0', async () => {
