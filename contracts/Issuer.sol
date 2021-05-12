@@ -36,6 +36,8 @@ interface IIssuerInternalDebtCache {
 
     function updateDebtCacheValidity(bool currentlyInvalid) external;
 
+    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid);
+
     function cacheInfo()
         external
         view
@@ -190,25 +192,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Add total issued synths from non snx collateral back into the total if not excluded
         if (!excludeCollateral) {
-            // Calculate excluded debt.
-            // 1. MultiCollateral debt.
-            (uint nonSnxDebt, bool invalid) = collateralManager().totalLong();
+            (uint nonSnxDebt, bool invalid) = debtCache().totalNonSnxBackedDebt();
             debt = debt.add(nonSnxDebt);
             anyRateIsInvalid = anyRateIsInvalid || invalid;
-
-            // 2. EtherCollateral (sUSD and ETH) debt.
-            // 2a. sUSD.
-            debt = debt.add(etherCollateralsUSD().totalIssuedSynths());
-
-            // 2b. sETH.
-            (uint ethRate, bool ethRateInvalid) = exRates.rateAndInvalid(sETH);
-            uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
-            debt = debt.add(ethIssuedDebt);
-            anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
-
-            // 3. Short debt.
-            (uint shortValue, ) = collateralManager().totalShort();
-            debt = debt.add(shortValue);
         }
 
         if (currencyKey == sUSD) {
