@@ -8,7 +8,6 @@ import "../interfaces/ISynthetix.sol";
 import "../interfaces/IFeePool.sol";
 import "../interfaces/IERC20.sol";
 
-
 contract TokenExchanger is Owned {
     address public integrationProxy;
     address public synthetix;

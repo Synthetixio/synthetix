@@ -6,26 +6,32 @@ steps:
   - attach_workspace:
       at: .
   - run:
-      name: Prepare docker containers
-      command: |
-        git clone git@github.com:ethereum-optimism/optimism-integration.git
-        cd optimism-integration
-        docker-compose pull
-  - run:
-      name: Start chains
-      background: true
-      command: |
-        cd optimism-integration
-        ./up.sh
-  - cmd-wait-for-port:
-        port: 8545
-  - cmd-wait-for-port:
-        port: 9545
-  - run:
-      name: Deploy OVM Synthetix instances
-      command: |
-        node publish deploy-ovm-pair
-  - run:
-      name: Run OVM production tests
-      command: |
-        npm run test:prod:ovm
+      echo Disabled until ops tool is fixed by Optimism
+  # - run:
+#       name: Build docker containers
+#       command: |
+#         git clone git@github.com:ethereum-optimism/optimism.git
+#         cd optimism
+#         yarn
+#         cd ops
+#         export COMPOSE_DOCKER_CLI_BUILD=1
+#         export DOCKER_BUILDKIT=1
+#         docker-compose build
+#   - run:
+#       name: Start chains
+#       background: true
+#       command: |
+#         cd optimism/ops
+#         docker-compose up -d
+#   - cmd-wait-for-port:
+#         port: 8545
+#   - cmd-wait-for-port:
+#         port: 9545
+#   - run:
+#       name: Deploy OVM Synthetix instances
+#       command: |
+#         node publish deploy-ovm-pair
+#   - run:
+#       name: Run OVM production tests
+#       command: |
+#         npm run test:prod:ovm

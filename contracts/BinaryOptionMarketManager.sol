@@ -18,7 +18,6 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarketmanager
 contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOptionMarketManager {
     /* ========== LIBRARIES ========== */
@@ -262,16 +261,17 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
         // Fees being in range are checked in the setters.
         // The market itself validates the capital and skew requirements.
 
-        BinaryOptionMarket market = _factory().createMarket(
-            msg.sender,
-            [creatorLimits.capitalRequirement, creatorLimits.skewLimit],
-            oracleKey,
-            strikePrice,
-            refundsEnabled,
-            [biddingEnd, maturity, expiry],
-            bids,
-            [fees.poolFee, fees.creatorFee, fees.refundFee]
-        );
+        BinaryOptionMarket market =
+            _factory().createMarket(
+                msg.sender,
+                [creatorLimits.capitalRequirement, creatorLimits.skewLimit],
+                oracleKey,
+                strikePrice,
+                refundsEnabled,
+                [biddingEnd, maturity, expiry],
+                bids,
+                [fees.poolFee, fees.creatorFee, fees.refundFee]
+            );
         market.rebuildCache();
         _activeMarkets.add(address(market));
 
@@ -325,10 +325,8 @@ contract BinaryOptionMarketManager is Owned, Pausable, MixinResolver, IBinaryOpt
 
             if (!success) {
                 // handle legacy markets that used an old cache rebuilding logic
-                bytes memory payloadForLegacyCache = abi.encodeWithSignature(
-                    "setResolverAndSyncCache(address)",
-                    address(resolver)
-                );
+                bytes memory payloadForLegacyCache =
+                    abi.encodeWithSignature("setResolverAndSyncCache(address)", address(resolver));
 
                 // solhint-disable avoid-low-level-calls
                 (bool legacySuccess, ) = market.call(payloadForLegacyCache);

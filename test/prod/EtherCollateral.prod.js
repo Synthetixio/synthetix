@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { wrap } = require('../..');
-const { contract, config } = require('hardhat');
+const { contract, config, network: baseNetwork } = require('hardhat');
 const { web3 } = require('hardhat');
 const { assert } = require('../contracts/common');
 const { toUnit } = require('../utils')();
@@ -68,7 +68,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 		await ensureAccountHasEther({
 			amount: toUnit('1'),
-			account: owner,
+			account: user1,
 			fromAccount: accounts[7],
 			network,
 			deploymentPath,
@@ -126,7 +126,7 @@ contract('EtherCollateral (prod tests)', accounts => {
 
 		describe('closing a loan', () => {
 			before(async () => {
-				if (network === 'local') {
+				if (baseNetwork.name === 'localhost') {
 					const amount = toUnit('1000');
 
 					const balance = await SynthsUSD.balanceOf(Depot.address);

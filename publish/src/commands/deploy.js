@@ -10,8 +10,8 @@ const checkAggregatorPrices = require('../check-aggregator-prices');
 const pLimit = require('p-limit');
 
 const {
-	ensureNetwork,
 	ensureDeploymentPath,
+	ensureNetwork,
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
@@ -68,6 +68,7 @@ const deploy = async ({
 	ignoreSafetyChecks,
 	ignoreCustomParameters,
 	concurrency,
+	specifyContracts,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -94,6 +95,29 @@ const deploy = async ({
 		deploymentPath,
 		network,
 	});
+
+	// Mark contracts for deployment specified via an argument
+	if (specifyContracts) {
+		// Ignore config.json
+		Object.keys(config).map(name => {
+			config[name].deploy = false;
+		});
+		// Add specified contracts
+		specifyContracts.split(',').map(name => {
+			if (!config[name]) {
+				config[name] = {
+					deploy: true,
+				};
+			} else {
+				config[name].deploy = true;
+			}
+		});
+	}
+
+	if (freshDeploy) {
+		deployment.targets = {};
+		deployment.sources = {};
+	}
 
 	if (!ignoreSafetyChecks) {
 		// Using Goerli without manageNonces?
@@ -767,17 +791,30 @@ const deploy = async ({
 
 	const debtCache = await deployer.deployContract({
 		name: 'DebtCache',
-		source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
-	const exchanger = await deployer.deployContract({
-		name: 'Exchanger',
-		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
-	});
+	let exchanger;
+	if (useOvm) {
+		exchanger = await deployer.deployContract({
+			name: 'Exchanger',
+			source: 'Exchanger',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+	} else {
+		exchanger = await deployer.deployContract({
+			name: 'Exchanger',
+			source: 'ExchangerWithVirtualSynth',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+
+		await deployer.deployContract({
+			name: 'VirtualSynthMastercopy',
+		});
+	}
 
 	const exchangeState = await deployer.deployContract({
 		name: 'ExchangeState',
@@ -1172,14 +1209,14 @@ const deploy = async ({
 			args: [],
 		});
 		await deployer.deployContract({
-			name: 'SynthetixBridgeToBase',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-		await deployer.deployContract({
 			name: 'CollateralManager',
 			source: 'EmptyCollateralManager',
 			args: [],
+		});
+		await deployer.deployContract({
+			name: 'SynthetixBridgeToBase',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	} else {
 		await deployer.deployContract({
@@ -1192,11 +1229,32 @@ const deploy = async ({
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
-		await deployer.deployContract({
+		const SynthetixBridgeToOptimism = await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
+		const SynthetixBridgeEscrow = await deployer.deployContract({
+			name: 'SynthetixBridgeEscrow',
+			deps: ['AddressResolver'],
+			args: [account],
+		});
+
+		const allowance = await proxyERC20Synthetix.methods
+			.allowance(addressOf(SynthetixBridgeEscrow), addressOf(SynthetixBridgeToOptimism))
+			.call();
+		if (allowance.toString() === '0') {
+			await runStep({
+				contract: `SynthetixBridgeEscrow`,
+				target: SynthetixBridgeEscrow,
+				write: 'approveBridge',
+				writeArg: [
+					addressOf(proxyERC20Synthetix),
+					addressOf(SynthetixBridgeToOptimism),
+					w3utils.toWei('100000000'),
+				],
+			});
+		}
 	}
 
 	// ----------------
@@ -2245,7 +2303,7 @@ const deploy = async ({
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'maxDebt',
-			expected: input => input === collateralManagerDefaults['MAX_DEBT'],
+			expected: input => input !== '0', // only change if zero
 			write: 'setMaxDebt',
 			writeArg: [collateralManagerDefaults['MAX_DEBT']],
 		});
@@ -2254,7 +2312,7 @@ const deploy = async ({
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'baseBorrowRate',
-			expected: input => input === collateralManagerDefaults['BASE_BORROW_RATE'],
+			expected: input => input !== '0', // only change if zero
 			write: 'setBaseBorrowRate',
 			writeArg: [collateralManagerDefaults['BASE_BORROW_RATE']],
 		});
@@ -2263,7 +2321,7 @@ const deploy = async ({
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'baseShortRate',
-			expected: input => input === collateralManagerDefaults['BASE_SHORT_RATE'],
+			expected: input => input !== '0', // only change if zero
 			write: 'setBaseShortRate',
 			writeArg: [collateralManagerDefaults['BASE_SHORT_RATE']],
 		});
@@ -2315,7 +2373,7 @@ const deploy = async ({
 			contract: 'CollateralShort',
 			target: collateralShort,
 			read: 'interactionDelay',
-			expected: input => input === collateralShortInteractionDelay,
+			expected: input => input !== '0', // only change if zero
 			write: 'setInteractionDelay',
 			writeArg: collateralShortInteractionDelay,
 		});
@@ -2356,7 +2414,7 @@ const deploy = async ({
 		if (force || validityChanged) {
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
-				gasLimit: useOvm ? 3.5e6 : 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths on L1
+				gasLimit: useOvm ? 3.5e6 : 3.0e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths on L1
 				contract: 'DebtCache',
 				target: debtCache,
 				write: 'takeDebtSnapshot',
@@ -2535,6 +2593,10 @@ module.exports = {
 			.option(
 				'-u, --force-update-inverse-synths-on-testnet',
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
+			)
+			.option(
+				'-x, --specify-contracts <value>',
+				'Ignore config.json  and specify contracts to be deployed (Comma separated list)'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')

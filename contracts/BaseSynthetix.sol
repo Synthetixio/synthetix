@@ -16,7 +16,6 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IVirtualSynth.sol";
 
-
 contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     // ========== STATE VARIABLES ==========
 
@@ -151,10 +150,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         (uint initialDebtOwnership, ) = synthetixState().issuanceData(account);
 
         if (initialDebtOwnership > 0) {
-            (uint transferable, bool anyRateIsInvalid) = issuer().transferableSynthetixAndAnyRateIsInvalid(
-                account,
-                tokenState.balanceOf(account)
-            );
+            (uint transferable, bool anyRateIsInvalid) =
+                issuer().transferableSynthetixAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
             require(value <= transferable, "Cannot transfer staked or escrowed SNX");
             require(!anyRateIsInvalid, "A synth or SNX rate is invalid");
         }
@@ -383,9 +380,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint256 toAmount,
         address toAddress
     );
-    bytes32 internal constant SYNTHEXCHANGE_SIG = keccak256(
-        "SynthExchange(address,bytes32,uint256,bytes32,uint256,address)"
-    );
+    bytes32 internal constant SYNTHEXCHANGE_SIG =
+        keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
 
     function emitSynthExchange(
         address account,

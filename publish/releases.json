@@ -175,5 +175,48 @@
 		},
 		"sources": [],
 		"sips": [113]
+	},
+	{
+		"name": "Alnilam",
+		"version": {
+			"major": 2,
+			"minor": 42
+		},
+		"sources": ["Exchanger", "VirtualSynthMastercopy"],
+		"sips": [107, 114, 126, 127]
+	},
+	{
+		"name": "Regora",
+		"version": {
+			"major": 2,
+			"minor": 43
+		},
+		"sources": [],
+		"sips": [115, 128]
+	},
+	{
+		"name": "Alnair",
+		"version": {
+			"major": 2,
+			"minor": 44
+		},
+		"sources": ["SynthetixBridgeToOptimism", "SynthetixBridgeEscrow"],
+		"sips": [116]
+	},
+	{
+		"name": "Alnair (Optimism)",
+		"version": {
+			"major": 2,
+			"minor": 44
+		},
+		"ovm": true,
+		"sources": [
+			"SynthetixBridgeToBase",
+			"Synthetix",
+			"Exchanger",
+			"DebtCache",
+			"SystemStatus"
+		],
+		"sips": [116, 117, 118]
 	}
 ]

@@ -140,8 +140,6 @@ const setupContract = async ({
 
 	const defaultArgs = {
 		GenericMock: [],
-		SynthetixBridgeToOptimism: [owner, tryGetAddressOf('AddressResolver')],
-		SynthetixBridgeToBase: [owner, tryGetAddressOf('AddressResolver')],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
 		SystemStatus: [owner],
@@ -186,6 +184,9 @@ const setupContract = async ({
 			SUPPLY_100M,
 			tryGetAddressOf('AddressResolver'),
 		],
+		SynthetixBridgeToOptimism: [owner, tryGetAddressOf('AddressResolver')],
+		SynthetixBridgeToBase: [owner, tryGetAddressOf('AddressResolver')],
+		SynthetixBridgeEscrow: [owner],
 		RewardsDistribution: [
 			owner,
 			tryGetAddressOf('Synthetix'),
@@ -653,7 +654,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'Exchanger',
 			source: 'ExchangerWithVirtualSynth',
-			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
+			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: [
 				'AddressResolver',
 				'TradingRewards',
@@ -735,13 +736,23 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'SynthetixBridgeToOptimism',
-			mocks: ['ext:Messenger', 'ovm:SynthetixBridgeToBase'],
-			deps: ['AddressResolver', 'Issuer', 'RewardEscrowV2'],
+			mocks: [
+				'ext:Messenger',
+				'ovm:SynthetixBridgeToBase',
+				'SynthetixBridgeEscrow',
+				'RewardsDistribution',
+			],
+			deps: ['AddressResolver', 'Issuer', 'RewardEscrowV2', 'Synthetix'],
 		},
 		{
 			contract: 'SynthetixBridgeToBase',
 			mocks: ['ext:Messenger', 'base:SynthetixBridgeToOptimism', 'RewardEscrowV2'],
-			deps: ['AddressResolver', 'Issuer'],
+			deps: ['AddressResolver', 'Synthetix'],
+		},
+		{
+			contract: 'SynthetixBridgeEscrow',
+			mocks: [],
+			deps: [],
 		},
 		{ contract: 'TradingRewards', deps: ['AddressResolver', 'Synthetix'] },
 		{

@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 // Internal references
 import "./ExchangeRates.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/exchangerateswithoutinvpricing
 contract ExchangeRatesWithoutInvPricing is ExchangeRates {
     constructor(

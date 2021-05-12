@@ -3897,6 +3897,8 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	describe('When using Synthetix', () => {
 		before(async () => {
+			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
+
 			({
 				Exchanger: exchanger,
 				Synthetix: synthetix,
@@ -3934,6 +3936,10 @@ contract('Exchanger (spec tests)', async accounts => {
 					'FlexibleStorage',
 					'CollateralManager',
 				],
+				mocks: {
+					// Use a real VirtualSynthMastercopy so the spec tests can interrogate deployed vSynths
+					VirtualSynthMastercopy: await VirtualSynthMastercopy.new(),
+				},
 			}));
 
 			// Send a price update to guarantee we're not stale.

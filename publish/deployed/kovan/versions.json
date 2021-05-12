@@ -6099,8 +6099,9 @@
 			},
 			"Exchanger": {
 				"address": "0xF49528689234d46724383669BD8658bfB47f8575",
-				"status": "current",
-				"keccak256": "0x75f42148eab0a11f6640709db8d7f63588bacf10e82f95c439e8125a3c986383"
+				"status": "replaced",
+				"keccak256": "0x75f42148eab0a11f6640709db8d7f63588bacf10e82f95c439e8125a3c986383",
+				"replaced_in": "v2.42.0"
 			},
 			"Issuer": {
 				"address": "0x9Fe11221CC742B05b541A31862b46D8FB57eacB4",
@@ -6399,8 +6400,9 @@
 			},
 			"SynthetixBridgeToOptimism": {
 				"address": "0xE8Bf8fe5ce9e15D30F478E1647A57CB6B0271228",
-				"status": "current",
-				"keccak256": "0x072ba93f033853347432cd3d6f47d4a4d54cd106185de9382cde9977636a00a7"
+				"status": "replaced",
+				"keccak256": "0x072ba93f033853347432cd3d6f47d4a4d54cd106185de9382cde9977636a00a7",
+				"replaced_in": "v2.44.0-alpha"
 			}
 		}
 	},
@@ -6481,6 +6483,46 @@
 				"address": "0xF7631453c32b8278a5c8bbcC9Fe4c3072d6c25B6",
 				"status": "current",
 				"keccak256": "0xf4ea326028b47508046125b31813d6dd139e2a4d64ada6009eefaa67cba461c7"
+			}
+		}
+	},
+	"v2.42.0": {
+		"tag": "v2.42.0",
+		"fulltag": "v2.42.0",
+		"release": "Alnilam",
+		"network": "kovan",
+		"date": "2021-04-22T09:54:09+10:00",
+		"commit": "9b513710a77fc0a43ce7d2689e273cc2a3dc8a08",
+		"contracts": {
+			"Exchanger": {
+				"address": "0xf1D0Ee19af243bcbC140A2259290B490E4df92A9",
+				"status": "current",
+				"keccak256": "0x207bf8d21a4651525f8c2b0d90885d64a4c5f51c06ac5c20d842438a8950c5b9"
+			},
+			"VirtualSynthMastercopy": {
+				"address": "0x1f6b96d2e7a5D70777D2A9c52215044FB3f40D37",
+				"status": "current",
+				"keccak256": "0xac5507c03171e54910218c5da4876e475e129a808af8b3050b81b3990ea73089"
+			}
+		}
+	},
+	"v2.44.0-alpha": {
+		"tag": "v2.44.0-alpha",
+		"fulltag": "v2.44.0-alpha",
+		"release": "“Alnair”",
+		"network": "kovan",
+		"date": "2021-05-04T19:50:37-03:00",
+		"commit": "6260b446842735148a86f9de7007c4ee689c2e14",
+		"contracts": {
+			"SynthetixBridgeToOptimism": {
+				"address": "0xD134Db47DDF5A6feB245452af17cCAf92ee53D3c",
+				"status": "current",
+				"keccak256": "0x1b2c09f527d84cd2ab5fb24e0e8360773ab6acc86093d94b055d25603dd89af7"
+			},
+			"SynthetixBridgeEscrow": {
+				"address": "0xFdB31235cDFe68bfFD1d687AC3A2b31E80eacf0d",
+				"status": "current",
+				"keccak256": "0xb2c7f7c807bc4783ed66f959cb3335f1b77727bf4d074e3319992842eca64235"
 			}
 		}
 	}

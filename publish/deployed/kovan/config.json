@@ -514,5 +514,11 @@
 	},
 	"SynthsKRW": {
 		"deploy": false
+	},
+	"VirtualSynthMastercopy": {
+		"deploy": false
+	},
+	"SynthetixBridgeEscrow": {
+		"deploy": false
 	}
 }

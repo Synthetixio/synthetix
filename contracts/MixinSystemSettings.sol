@@ -5,7 +5,6 @@ import "./MixinResolver.sol";
 // Internal references
 import "./interfaces/IFlexibleStorage.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/mixinsystemsettings
 contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_CONTRACT_NAME = "SystemSettings";
