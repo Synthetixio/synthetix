@@ -1,10 +1,15 @@
 pragma solidity ^0.5.16;
 
+// Libraries
+import "./SafeDecimalMath.sol";
+
 // Inheritance
 import "./BaseDebtCache.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract DebtCache is BaseDebtCache {
+    using SafeDecimalMath for uint;
+
     constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
     bytes32 internal constant EXCLUDED_DEBT_KEY = "EXCLUDED_DEBT";
@@ -29,7 +34,7 @@ contract DebtCache is BaseDebtCache {
             _cachedSynthDebt[currencyKeys[i]] = value;
         }
         _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
-        _cachedDebt = snxCollateralDebt < excludedDebt ? 0 : snxCollateralDebt.sub(excludedDebt);
+        _cachedDebt = snxCollateralDebt.floorsub(excludedDebt);
         _cacheTimestamp = block.timestamp;
         emit DebtCacheUpdated(snxCollateralDebt);
         emit DebtCacheSnapshotTaken(block.timestamp);
@@ -83,7 +88,7 @@ contract DebtCache is BaseDebtCache {
         // Update the cached values for each synth, saving the sums as we go.
         uint cachedSum;
         uint currentSum;
-        uint excludedDebtSum;
+        uint excludedDebtSum = _cachedSynthDebt[EXCLUDED_DEBT_KEY];
         uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
 
         for (uint i = 0; i < numKeys; i++) {
@@ -101,8 +106,8 @@ contract DebtCache is BaseDebtCache {
             excludedDebtSum = excludedDebt;
         }
 
-        cachedSum = cachedSum.sub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
-        currentSum = currentSum.sub(excludedDebtSum);
+        cachedSum = cachedSum.floorsub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
+        currentSum = currentSum.floorsub(excludedDebtSum);
         _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebtSum;
 
         // Compute the difference and apply it to the snapshot
