@@ -1567,6 +1567,38 @@ const deploy = async ({
 
 	console.log(gray('Addresses are correctly set up, continuing...'));
 
+	// Legacy contracts.
+	if (network === 'mainnet') {
+		// v2.35.2 contracts.
+		const CollateralEth = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
+		const CollateralErc20REN = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
+		const CollateralShort = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
+
+		const legacyContracts = Object.entries({
+			CollateralEth,
+			CollateralErc20REN,
+			CollateralShort,
+		}).map(([name, address]) => {
+			const contract = new deployer.web3.eth.Contract(
+				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
+				address
+			);
+			return [`legacy:${name}`, contract];
+		});
+
+		await Promise.all(
+			legacyContracts.map(async ([name, contract]) => {
+				await runStep({
+					gasLimit: 7e6,
+					contract: name,
+					target: contract,
+					publiclyCallable: true, // does not require owner
+					write: 'rebuildCache',
+				});
+			})
+		);
+	}
+
 	const filterTargetsWith = ({ prop }) =>
 		Object.entries(deployer.deployedContracts).filter(([, target]) =>
 			target.options.jsonInterface.find(({ name }) => name === prop)
