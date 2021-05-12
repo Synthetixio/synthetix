@@ -1592,6 +1592,8 @@ const deploy = async ({
 					gasLimit: 7e6,
 					contract: name,
 					target: contract,
+					read: 'isResolverCached',
+					expected: input => input,
 					publiclyCallable: true, // does not require owner
 					write: 'rebuildCache',
 				});
