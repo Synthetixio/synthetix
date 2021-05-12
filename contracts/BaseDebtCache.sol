@@ -185,19 +185,27 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     }
 
     function _totalNonSnxBackedDebt() internal view returns (uint excludedDebt, bool isInvalid) {
-        (uint sETHRate, bool sETHRateIsInvalid) = exchangeRates().rateAndInvalid(sETH);
-
         // Calculate excluded debt.
         // 1. Ether Collateral.
-        excludedDebt = etherCollateralsUSD().totalIssuedSynths(); // Ether-backed sUSD
-        excludedDebt = excludedDebt.add(etherCollateral().totalIssuedSynths().multiplyDecimalRound(sETHRate)); // Ether-backed sETH
+        if (resolver.getAddress(CONTRACT_ETHERCOLLATERAL_SUSD) != address(0)) {
+            excludedDebt = etherCollateralsUSD().totalIssuedSynths(); // Ether-backed sUSD
+        }
+
+        if (address(issuer().synths(sETH)) != address(0) && resolver.getAddress(CONTRACT_ETHERCOLLATERAL) != address(0)) {
+            (uint sETHRate, bool sETHRateIsInvalid) = exchangeRates().rateAndInvalid(sETH);
+            isInvalid = sETHRateIsInvalid;
+            excludedDebt = excludedDebt.add(etherCollateral().totalIssuedSynths().multiplyDecimalRound(sETHRate)); // Ether-backed sETH
+        }
 
         // 2. MultiCollateral long debt + short debt.
-        (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
-        (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
-        excludedDebt = excludedDebt.add(longValue).add(shortValue);
+        if (resolver.getAddress(CONTRACT_COLLATERALMANAGER) != address(0)) {
+            (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
+            (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
+            isInvalid = isInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
+            excludedDebt = excludedDebt.add(longValue).add(shortValue);
+        }
 
-        return (excludedDebt, sETHRateIsInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid);
+        return (excludedDebt, isInvalid);
     }
 
     function _currentDebt() internal view returns (uint debt, bool anyRateIsInvalid) {
