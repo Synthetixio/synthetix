@@ -490,8 +490,8 @@ contract('DebtCache', async accounts => {
 
 				// Revalidate the cache once rates are no longer stale
 				await exchangeRates.updateRates(
-					[sAUD, sEUR, sETH],
-					['0.5', '2', '100'].map(toUnit),
+					[sAUD, sEUR, SNX, sETH, ETH, iETH],
+					['0.5', '2', '100', '200', '200', '200'].map(toUnit),
 					await currentTime(),
 					{ from: oracle }
 				);
