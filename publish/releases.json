@@ -218,5 +218,14 @@
 			"SystemStatus"
 		],
 		"sips": [116, 117, 118]
+	},
+	{
+		"name": "Alioth",
+		"version": {
+			"major": 2,
+			"minor": 45
+		},
+		"sources": ["DebtCache", "Issuer"],
+		"sips": [136]
 	}
 ]
