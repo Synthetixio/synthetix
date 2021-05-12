@@ -83,7 +83,9 @@ contract DebtCache is BaseDebtCache {
         // Update the cached values for each synth, saving the sums as we go.
         uint cachedSum;
         uint currentSum;
+        uint excludedDebtSum;
         uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
+
         for (uint i = 0; i < numKeys; i++) {
             bytes32 key = currencyKeys[i];
             uint currentSynthDebt = currentValues[i];
@@ -96,10 +98,12 @@ contract DebtCache is BaseDebtCache {
         if (recomputeExcludedDebt) {
             (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
             anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
-            cachedSum = cachedSum.sub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
-            currentSum = currentSum.sub(excludedDebt);
-            _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
+            excludedDebtSum = excludedDebt;
         }
+
+        cachedSum = cachedSum.sub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
+        currentSum = currentSum.sub(excludedDebtSum);
+        _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebtSum;
 
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {
