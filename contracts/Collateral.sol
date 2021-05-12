@@ -149,7 +149,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ---------- Public Views ---------- */
 
     function collateralRatio(uint id, address account) public view returns (uint cratio) {
-        return CollateralUtil.getCollateralRatio(id, account);
+        Loan memory loan = state.getLoan(account, id);
+        return CollateralUtil.getCollateralRatio(loan, collateralKey);
     }
 
     // The maximum number of synths issuable for this amount of collateral

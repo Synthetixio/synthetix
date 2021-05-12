@@ -7,9 +7,6 @@ import "./interfaces/IAddressResolver.sol";
 import "./interfaces/ICollateralLoan.sol";
 import "./interfaces/IExchangeRates.sol";
 
-// Internal references
-import "./CollateralState.sol";
-
 import "./SafeDecimalMath.sol";
 
 contract CollateralUtil is ICollateralLoan {
@@ -21,34 +18,17 @@ contract CollateralUtil is ICollateralLoan {
 
     IAddressResolver public addressResolverProxy;
 
-    // Stores loans
-    CollateralState public state;
-
-    // The synth corresponding to the collateral.
-    bytes32 public collateralKey;
-
-    address public collateral;
-
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(addressResolverProxy.requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates contract"));
     }
 
-    constructor(
-        CollateralState _state,
-        address _resolver,
-        address _collateral,
-        bytes32 _collateralKey
-    ) public {
-        state = _state;
+    constructor(address _resolver) public {
         addressResolverProxy = IAddressResolver(_resolver);
-        collateral = _collateral;
-        collateralKey = _collateralKey;
     }
 
     /* ========== VIEW FUNCS ========== */
 
-    function getCollateralRatio(uint id, address account) public view returns (uint cratio) {
-        Loan memory loan = state.getLoan(account, id);
+    function getCollateralRatio(Loan memory loan, bytes32 collateralKey) public view returns (uint cratio) {
         uint cvalue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
         uint dvalue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
         return cvalue.divideDecimal(dvalue);
@@ -103,39 +83,5 @@ contract CollateralUtil is ICollateralLoan {
         collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
 
         return collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
-    }
-
-    /* ========== GETTERS FOR LOAN PROPERTIES ========== */
-
-    function getAmount(uint id, address account) public view returns (uint amount) {
-        return state.getLoan(account, id).amount;
-    }
-
-    function getCollateral(uint id, address account) public view returns (uint collateral) {
-        return state.getLoan(account, id).collateral;
-    }
-
-    function getAccount(uint id) external view returns (address account) {
-        return state.getLoan(account, id).account;
-    }
-
-    function getCurrency(uint id, address account) external view returns (bytes32 currency) {
-        return state.getLoan(account, id).currency;
-    }
-
-    function getAccruedInterest(uint id, address account) external view returns (uint accruedInterest) {
-        return state.getLoan(account, id).accruedInterest;
-    }
-
-    function getInterestIndex(uint id, address account) external view returns (uint interestIndex) {
-        return state.getLoan(account, id).interestIndex;
-    }
-
-    function getLastInteraction(uint id, address account) external view returns (uint lastInteraction) {
-        return state.getLoan(account, id).lastInteraction;
-    }
-
-    function isLoanShort(uint id, address account) external view returns (bool short) {
-        return state.getLoan(account, id).short;
     }
 }
