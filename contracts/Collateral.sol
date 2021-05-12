@@ -144,6 +144,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return ICollateralManager(manager);
     }
 
+    // TODO create ICollateralUtil
+
     /* ---------- Public Views ---------- */
 
     function collateralRatio(uint id, address account) public view returns (uint cratio) {
@@ -166,11 +168,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
      */
 
     function liquidationAmount(Loan memory loan) public view returns (uint amount) {
-        return CollateralUtil.liquidationAmount(loan, minCratio);
+        uint liquidationPenalty = getLiquidationPenalty();
+        return CollateralUtil.liquidationAmount(loan, minCratio, liquidationPenalty);
     }
 
     function collateralRedeemed(bytes32 currency, uint amount) public view returns (uint collateral) {
-        return CollateralUtil.collateralRedeemed(currency, amount);
+        uint liquidationPenalty = getLiquidationPenalty();
+        return CollateralUtil.collateralRedeemed(currency, amount, liquidationPenalty);
     }
 
     function areSynthsAndCurrenciesSet(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys)
@@ -178,7 +182,21 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         view
         returns (bool)
     {
-        return CollateralUtil.areSynthsAndCurrenciesSet(_synthNamesInResolver, _synthKeys, synths);
+        if (synths.length != _synthNamesInResolver.length) {
+            return false;
+        }
+
+        for (uint i = 0; i < _synthNamesInResolver.length; i++) {
+            bytes32 synthName = _synthNamesInResolver[i];
+            if (synths[i] != synthName) {
+                return false;
+            }
+            if (synthsByKey[_synthKeys[i]] != synths[i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /* ---------- UTILITIES ---------- */
@@ -725,6 +743,20 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             _feePool().recordFeePaid(amount);
         }
     }
+
+    // ========== STUBS ===========
+
+    function depositAndDrawInternal(
+        uint id,
+        uint drawAmount,
+        uint depositAmount
+    ) internal {}
+
+    function repayAndWithdrawInternal(
+        uint id,
+        uint repayAmount,
+        uint withdrawAmount
+    ) internal {}
 
     // ========== MODIFIERS ==========
 

@@ -1,7 +1,8 @@
 pragma solidity ^0.5.16;
 
+pragma experimental ABIEncoderV2;
+
 // Inheritance
-import "./MixinSystemSettings.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/ICollateralLoan.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -50,7 +51,7 @@ contract CollateralUtil is ICollateralLoan {
         Loan memory loan = state.getLoan(account, id);
         uint cvalue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
         uint dvalue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
-        cratio = cvalue.divideDecimal(dvalue);
+        return cvalue.divideDecimal(dvalue);
     }
 
     function collateralizationInfo(uint id, address account)
@@ -73,11 +74,15 @@ contract CollateralUtil is ICollateralLoan {
         bytes32 currency,
         uint minCratio
     ) public view returns (uint max) {
-        max = issuanceRatio(minCratio).multiplyDecimal(_exchangeRates().effectiveValue(collateralKey, amount, currency));
+        uint ratio = SafeDecimalMath.unit().divideDecimalRound(minCratio);
+        return ratio.multiplyDecimal(_exchangeRates().effectiveValue(collateralKey, amount, currency));
     }
 
-    function liquidationAmount(Loan memory loan, uint minCratio) public view returns (uint amount) {
-        uint liquidationPenalty = getLiquidationPenalty();
+    function liquidationAmount(
+        Loan memory loan,
+        uint minCratio,
+        uint liquidationPenalty
+    ) public view returns (uint amount) {
         uint debtValue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
         uint collateralValue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
         uint unit = SafeDecimalMath.unit();
@@ -90,33 +95,14 @@ contract CollateralUtil is ICollateralLoan {
         return _exchangeRates().effectiveValue(sUSD, sUSDamount, loan.currency);
     }
 
-    function collateralRedeemed(bytes32 currency, uint amount) public view returns (uint collateral) {
-        uint liquidationPenalty = getLiquidationPenalty();
+    function collateralRedeemed(
+        bytes32 currency,
+        uint amount,
+        uint liquidationPenalty
+    ) public view returns (uint collateral) {
         collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
 
-        collateral = collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
-    }
-
-    function areSynthsAndCurrenciesSet(
-        bytes32[] calldata _synthNamesInResolver,
-        bytes32[] calldata _synthKeys,
-        bytes32[] synths
-    ) external view returns (bool) {
-        if (synths.length != _synthNamesInResolver.length) {
-            return false;
-        }
-
-        for (uint i = 0; i < _synthNamesInResolver.length; i++) {
-            bytes32 synthName = _synthNamesInResolver[i];
-            if (synths[i] != synthName) {
-                return false;
-            }
-            if (synthsByKey[_synthKeys[i]] != synths[i]) {
-                return false;
-            }
-        }
-
-        return true;
+        return collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
     }
 
     /* ========== GETTERS FOR LOAN PROPERTIES ========== */
@@ -151,9 +137,5 @@ contract CollateralUtil is ICollateralLoan {
 
     function isLoanShort(uint id, address account) external view returns (bool short) {
         return state.getLoan(account, id).short;
-    }
-
-    function issuanceRatio(uint minCratio) internal view returns (uint ratio) {
-        ratio = SafeDecimalMath.unit().divideDecimalRound(minCratio);
     }
 }
