@@ -45,7 +45,7 @@
 		"deploy": false
 	},
 	"DebtCache": {
-		"deploy": true
+		"deploy": false
 	},
 	"Depot": {
 		"deploy": false
@@ -69,7 +69,7 @@
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": true
+		"deploy": false
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -81,7 +81,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": true
+		"deploy": false
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -108,7 +108,7 @@
 		"deploy": false
 	},
 	"SystemSettings": {
-		"deploy": true
+		"deploy": false
 	},
 	"SystemStatus": {
 		"deploy": false
@@ -120,7 +120,7 @@
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthsEUR": {
 		"deploy": false
@@ -225,7 +225,7 @@
 		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesBNB": {
 		"deploy": false
