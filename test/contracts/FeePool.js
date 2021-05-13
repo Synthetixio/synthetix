@@ -613,7 +613,7 @@ contract('FeePool', async accounts => {
 					proxy: feePoolProxy,
 					target: feePool,
 					fncName: 'closeCurrentFeePeriod',
-					user: owner,
+					from: owner,
 					args: [],
 				});
 

@@ -7,29 +7,71 @@
 		"asset": "ETH",
 		"feed": "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e"
 	},
-	"COMP": {"asset": "COMP"},
-	"KNC": {"asset": "KNC"},
-	"REN": {"asset": "REN"},
-	"BTC": {"asset": "BTC", "feed": "0xECe365B379E1dD183B20fc5f022230C044d51404"},
-	"BNB": {"asset": "BNB", "feed": "0xcf0f51ca2cDAecb464eeE4227f5295F2384F84ED"},
-	"TRX": {"asset": "TRX", "feed": "0xb29f616a0d54FF292e997922fFf46012a63E2FAe"},
-	"XTZ": {"asset": "XTZ", "feed": "0xf57FCa8B932c43dFe560d3274262b2597BCD2e5A"},
-	"XRP": {"asset": "XRP", "feed": "0xc3E76f41CAbA4aB38F00c7255d4df663DA02A024"},
-	"LTC": {"asset": "LTC", "feed": "0x4d38a35C2D87976F334c2d2379b535F1D461D9B4"},
+	"COMP": { "asset": "COMP" },
+	"KNC": { "asset": "KNC" },
+	"REN": { "asset": "REN" },
+	"BTC": {
+		"asset": "BTC",
+		"feed": "0xECe365B379E1dD183B20fc5f022230C044d51404"
+	},
+	"BNB": {
+		"asset": "BNB",
+		"feed": "0xcf0f51ca2cDAecb464eeE4227f5295F2384F84ED"
+	},
+	"TRX": {
+		"asset": "TRX",
+		"feed": "0xb29f616a0d54FF292e997922fFf46012a63E2FAe"
+	},
+	"XTZ": {
+		"asset": "XTZ",
+		"feed": "0xf57FCa8B932c43dFe560d3274262b2597BCD2e5A"
+	},
+	"XRP": {
+		"asset": "XRP",
+		"feed": "0xc3E76f41CAbA4aB38F00c7255d4df663DA02A024"
+	},
+	"LTC": {
+		"asset": "LTC",
+		"feed": "0x4d38a35C2D87976F334c2d2379b535F1D461D9B4"
+	},
 	"LINK": {
 		"asset": "LINK",
 		"feed": "0xd8bD0a1cB028a31AA859A21A3758685a95dE4623"
 	},
-	"CEX": {"asset": "CEX", "feed": "0x1a602D4928faF0A153A520f58B332f9CAFF320f7"},
+	"CEX": {
+		"asset": "CEX",
+		"feed": "0x1a602D4928faF0A153A520f58B332f9CAFF320f7"
+	},
 	"DEFI": {
 		"asset": "DEFI",
 		"feed": "0x0630521aC362bc7A19a4eE44b57cE72Ea34AD01c"
 	},
-	"EUR": {"asset": "EUR", "feed": "0x78F9e60608bF48a1155b4B2A5e31F32318a1d85F"},
-	"JPY": {"asset": "JPY", "feed": "0x3Ae2F46a2D84e3D5590ee6Ee5116B80caF77DeCA"},
-	"AUD": {"asset": "AUD", "feed": "0x21c095d2aDa464A294956eA058077F14F66535af"},
-	"GBP": {"asset": "GBP", "feed": "0x7B17A813eEC55515Fb8F49F2ef51502bC54DD40F"},
-	"CHF": {"asset": "CHF", "feed": "0x5e601CF5EF284Bcd12decBDa189479413284E1d2"},
-	"XAU": {"asset": "XAU", "feed": "0x81570059A0cb83888f1459Ec66Aad1Ac16730243"},
-	"XAG": {"asset": "XAG", "feed": "0x9c1946428f4f159dB4889aA6B218833f467e1BfD"}
+	"EUR": {
+		"asset": "EUR",
+		"feed": "0x78F9e60608bF48a1155b4B2A5e31F32318a1d85F"
+	},
+	"JPY": {
+		"asset": "JPY",
+		"feed": "0x3Ae2F46a2D84e3D5590ee6Ee5116B80caF77DeCA"
+	},
+	"AUD": {
+		"asset": "AUD",
+		"feed": "0x21c095d2aDa464A294956eA058077F14F66535af"
+	},
+	"GBP": {
+		"asset": "GBP",
+		"feed": "0x7B17A813eEC55515Fb8F49F2ef51502bC54DD40F"
+	},
+	"CHF": {
+		"asset": "CHF",
+		"feed": "0x5e601CF5EF284Bcd12decBDa189479413284E1d2"
+	},
+	"XAU": {
+		"asset": "XAU",
+		"feed": "0x81570059A0cb83888f1459Ec66Aad1Ac16730243"
+	},
+	"XAG": {
+		"asset": "XAG",
+		"feed": "0x9c1946428f4f159dB4889aA6B218833f467e1BfD"
+	}
 }

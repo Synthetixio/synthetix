@@ -153,7 +153,7 @@ describe('publish scripts', () => {
 			console.log('Skipping build as everything up to date');
 		}
 
-		gasLimit = 5000000;
+		gasLimit = 8000000;
 		[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 		web3.eth.accounts.wallet.add(accounts.deployer.private);
 		gasPrice = web3.utils.toWei('5', 'gwei');
@@ -1584,6 +1584,8 @@ describe('publish scripts', () => {
 									// address here we should look up all required contracts and ignore any that have
 									// ':' in it
 									.filter(([contract]) => !/^SynthetixBridge/.test(contract))
+									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checked
+									.filter(([contract]) => !/^VirtualSynthMastercopy/.test(contract))
 									.filter(([, { source }]) =>
 										sources[source].abi.find(({ name }) => name === 'resolver')
 									)

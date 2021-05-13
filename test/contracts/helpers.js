@@ -33,6 +33,7 @@ module.exports = {
 		assert.equal(log.address, emittedFrom);
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
+
 			if (type === 'address') {
 				assert.equal(web3.utils.toChecksumAddress(value), web3.utils.toChecksumAddress(arg));
 			} else if (/^u?int/.test(type)) {
@@ -60,11 +61,23 @@ module.exports = {
 		}
 	},
 
+	buildMinimalProxyCode(baseAddress, { includePrefix = true } = {}) {
+		// See EIP-1167: https://eips.ethereum.org/EIPS/eip-1167#specification
+		// Assumes the non-optimized version of the proxy
+		const sanitizedBaseAddress = baseAddress.replace(/^0x/, '').toLowerCase();
+		const code = `363d3d373d3d3d363d73${sanitizedBaseAddress}5af43d82803e903d91602b57fd5bf3`;
+		return includePrefix ? `0x${code}` : code;
+	},
+
 	timeIsClose({ actual, expected, variance = 1 }) {
 		assert.ok(
 			Math.abs(Number(actual) - Number(expected)) <= variance,
 			`Time is not within variance of ${variance}. Actual: ${Number(actual)}, Expected: ${expected}`
 		);
+	},
+
+	trimUtf8EscapeChars(input) {
+		return web3.utils.hexToAscii(web3.utils.utf8ToHex(input));
 	},
 
 	async updateRatesWithDefaults({ exchangeRates, oracle, debtCache }) {
@@ -249,8 +262,7 @@ module.exports = {
 		}
 	},
 
-	async prepareSmocks({ contracts, accounts = [] }) {
-		const mocks = {};
+	async prepareSmocks({ accounts = [], contracts, mocks = {} }) {
 		for (const [i, contract] of Object.entries(contracts).concat([
 			[contracts.length, 'AddressResolver'],
 		])) {

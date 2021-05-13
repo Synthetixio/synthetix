@@ -325,5 +325,60 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "1inch"
+	},
+	"RUNE": {
+		"asset": "RUNE",
+		"category": "crypto",
+		"sign": "",
+		"description": "THORChain"
+	},
+	"AAPL": {
+		"asset": "AAPL",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Apple"
+	},
+	"FB": {
+		"asset": "FB",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Facebook"
+	},
+	"GOOG": {
+		"asset": "GOOG",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Alphabet"
+	},
+	"NFLX": {
+		"asset": "NFLX",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Netflix"
+	},
+	"AMZN": {
+		"asset": "AMZN",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Amazon"
+	},
+	"COIN": {
+		"asset": "COIN",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Coinbase"
+	},
+	"MSFT": {
+		"asset": "MSFT",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Microsoft"
 	}
 }
