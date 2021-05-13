@@ -34,7 +34,7 @@ contract CollateralUtil is ICollateralLoan {
         return cvalue.divideDecimal(dvalue);
     }
 
-    function collateralizationInfo(uint id, address account)
+    function collateralizationInfo(Loan calldata loan, bytes32 collateralKey)
         external
         view
         returns (
@@ -43,26 +43,26 @@ contract CollateralUtil is ICollateralLoan {
             uint
         )
     {
-        uint cratio = getCollateralRatio(id, account);
-        uint amount = getAmount(id, account);
-        uint collateral = getCollateral(id, account);
-        return (cratio, amount, collateral);
+        uint cratio = getCollateralRatio(loan, collateralKey);
+        return (cratio, loan.amount, loan.collateral);
     }
 
     function maxLoan(
         uint amount,
         bytes32 currency,
-        uint minCratio
-    ) public view returns (uint max) {
+        uint minCratio,
+        bytes32 collateralKey
+    ) external view returns (uint max) {
         uint ratio = SafeDecimalMath.unit().divideDecimalRound(minCratio);
         return ratio.multiplyDecimal(_exchangeRates().effectiveValue(collateralKey, amount, currency));
     }
 
     function liquidationAmount(
-        Loan memory loan,
+        Loan calldata loan,
         uint minCratio,
-        uint liquidationPenalty
-    ) public view returns (uint amount) {
+        uint liquidationPenalty,
+        bytes32 collateralKey
+    ) external view returns (uint amount) {
         uint debtValue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
         uint collateralValue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
         uint unit = SafeDecimalMath.unit();
@@ -78,8 +78,9 @@ contract CollateralUtil is ICollateralLoan {
     function collateralRedeemed(
         bytes32 currency,
         uint amount,
-        uint liquidationPenalty
-    ) public view returns (uint collateral) {
+        uint liquidationPenalty,
+        bytes32 collateralKey
+    ) external view returns (uint collateral) {
         collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
 
         return collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));

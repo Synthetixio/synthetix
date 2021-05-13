@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ICollateralLoan.sol";
+import "./interfaces/ICollateralUtil.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -22,7 +23,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IShortingRewards.sol";
 
-contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
+contract Collateral is ICollateralLoan, ICollateralUtil, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -155,7 +156,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     // The maximum number of synths issuable for this amount of collateral
     function maxLoan(uint amount, bytes32 currency) public view returns (uint max) {
-        return CollateralUtil.maxLoan(amount, currency, minCratio);
+        return CollateralUtil.maxLoan(amount, currency, minCratio, collateralKey);
     }
 
     /**
@@ -170,12 +171,12 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function liquidationAmount(Loan memory loan) public view returns (uint amount) {
         uint liquidationPenalty = getLiquidationPenalty();
-        return CollateralUtil.liquidationAmount(loan, minCratio, liquidationPenalty);
+        return CollateralUtil.liquidationAmount(loan, minCratio, liquidationPenalty, collateralKey);
     }
 
     function collateralRedeemed(bytes32 currency, uint amount) public view returns (uint collateral) {
         uint liquidationPenalty = getLiquidationPenalty();
-        return CollateralUtil.collateralRedeemed(currency, amount, liquidationPenalty);
+        return CollateralUtil.collateralRedeemed(currency, amount, liquidationPenalty, collateralKey);
     }
 
     function areSynthsAndCurrenciesSet(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys)
