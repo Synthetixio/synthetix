@@ -493,9 +493,7 @@ contract('EtherWrapper', async accounts => {
 					await weth.approve(etherWrapper.address, amount, { from: account1 });
 					await etherWrapper.mint(amount, { from: account1 });
 
-					// ({ burnFee } = await calculateBurnFees(principal));
-					// amount = principal.add(burnFee);
-					burnAmount = toUnit('9.0');
+					burnAmount = toUnit('0.9');
 					await sETHSynth.issue(account1, burnAmount);
 					await sETHSynth.approve(etherWrapper.address, burnAmount, { from: account1 });
 					burnTx = await etherWrapper.burn(burnAmount, { from: account1 });
@@ -511,6 +509,7 @@ contract('EtherWrapper', async accounts => {
 						emittedFrom: sETHSynth.address,
 						args: [account1, burnAmount],
 						log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
+						bnCloseVariance: 0
 					});
 				});
 			});
