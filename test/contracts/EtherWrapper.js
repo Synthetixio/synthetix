@@ -332,7 +332,7 @@ contract('EtherWrapper', async accounts => {
 		});
 	});
 
-	describe.only('burn', async () => {
+	describe('burn', async () => {
 		describe('when the contract has 0 WETH', async () => {
 			it('reverts', async () => {
 				await assert.revert(
@@ -488,7 +488,7 @@ contract('EtherWrapper', async accounts => {
 				let burnTx;
 
 				before(async () => {
-					const amount = toUnit('10');
+					const amount = toUnit('1.2');
 					await weth.deposit({ from: account1, value: amount });
 					await weth.approve(etherWrapper.address, amount, { from: account1 });
 					await etherWrapper.mint(amount, { from: account1 });
@@ -509,7 +509,7 @@ contract('EtherWrapper', async accounts => {
 						emittedFrom: sETHSynth.address,
 						args: [account1, burnAmount],
 						log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
-						bnCloseVariance: 0
+						bnCloseVariance: 0,
 					});
 				});
 			});
