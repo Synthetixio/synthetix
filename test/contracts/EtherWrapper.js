@@ -88,6 +88,10 @@ contract('EtherWrapper', async accounts => {
 			],
 		}));
 
+		// set defaults for test - 50bps mint and burn fees
+		await systemSettings.setEtherWrapperMintFeeRate(toUnit('0.005'), { from: owner });
+		await systemSettings.setEtherWrapperBurnFeeRate(toUnit('0.005'), { from: owner });
+
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 		timestamp = await currentTime();
 
