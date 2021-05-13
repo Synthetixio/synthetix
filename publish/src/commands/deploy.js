@@ -1264,6 +1264,7 @@ const deploy = async ({
 		// our own.
 		const weth = await deployer.deployContract({
 			name: useOvm ? 'MockWETH' : 'WETH',
+			force: true,
 		});
 		WETH_ADDRESS = weth.options.address;
 	}
