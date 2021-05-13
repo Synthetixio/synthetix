@@ -1,7 +1,7 @@
 // @unsupported: ovm
 pragma solidity ^0.5.16;
 
-import "./interfaces/IWETH.sol";
+import "../interfaces/IWETH.sol";
 
 contract WETH is IWETH {
     string public name = "Wrapped Ether";

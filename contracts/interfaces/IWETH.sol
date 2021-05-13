@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 
 interface IWETH {
-    
     // ERC20 Optional Views
     function name() external view returns (string memory);
 
@@ -29,10 +28,8 @@ interface IWETH {
 
     // WETH-specific functions.
     function deposit() external payable;
-    
+
     function withdraw(uint amount) external;
-    
-    function() external payable;
 
     // Events
     event Transfer(address indexed from, address indexed to, uint value);

@@ -23,7 +23,6 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 import "./interfaces/ICollateralManager.sol";
-import "./interfaces/IEtherWrapper.sol";
 
 interface IRewardEscrowV2 {
     // Views
@@ -86,14 +85,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
-    bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](14);
+        bytes32[] memory newAddresses = new bytes32[](13);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -107,7 +105,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[10] = CONTRACT_LIQUIDATIONS;
         newAddresses[11] = CONTRACT_DEBTCACHE;
         newAddresses[12] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[13] = CONTRACT_ETHER_WRAPPER;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -161,10 +158,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function debtCache() internal view returns (IIssuerInternalDebtCache) {
         return IIssuerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
-    }
-
-    function etherWrapper() internal view returns (IEtherWrapper) {
-        return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
     }
 
     function issuanceRatio() external view returns (uint) {
