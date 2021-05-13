@@ -187,23 +187,21 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     function _totalNonSnxBackedDebt() internal view returns (uint excludedDebt, bool isInvalid) {
         // Calculate excluded debt.
         // 1. Ether Collateral.
-        if (resolver.getAddress(CONTRACT_ETHERCOLLATERAL_SUSD) != address(0)) {
-            excludedDebt = etherCollateralsUSD().totalIssuedSynths(); // Ether-backed sUSD
-        }
+        excludedDebt = excludedDebt.add(etherCollateralsUSD().totalIssuedSynths()); // Ether-backed sUSD
 
-        if (address(issuer().synths(sETH)) != address(0) && resolver.getAddress(CONTRACT_ETHERCOLLATERAL) != address(0)) {
+        uint etherCollateralTotalIssuedSynths = etherCollateral().totalIssuedSynths();
+        // We check the supply > 0 as on L2, we may not yet have up-to-date rates for sETH.
+        if (etherCollateralTotalIssuedSynths > 0) {
             (uint sETHRate, bool sETHRateIsInvalid) = exchangeRates().rateAndInvalid(sETH);
-            isInvalid = sETHRateIsInvalid;
-            excludedDebt = excludedDebt.add(etherCollateral().totalIssuedSynths().multiplyDecimalRound(sETHRate)); // Ether-backed sETH
+            isInvalid = isInvalid || sETHRateIsInvalid;
+            excludedDebt = excludedDebt.add(etherCollateralTotalIssuedSynths.multiplyDecimalRound(sETHRate)); // Ether-backed sETH
         }
 
         // 2. MultiCollateral long debt + short debt.
-        if (resolver.getAddress(CONTRACT_COLLATERALMANAGER) != address(0)) {
-            (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
-            (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
-            isInvalid = isInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
-            excludedDebt = excludedDebt.add(longValue).add(shortValue);
-        }
+        (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
+        (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
+        isInvalid = isInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
+        excludedDebt = excludedDebt.add(longValue).add(shortValue);
 
         return (excludedDebt, isInvalid);
     }
