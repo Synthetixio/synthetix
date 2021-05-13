@@ -211,10 +211,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         excludedDebt = excludedDebt.add(longValue).add(shortValue);
 
         // 3. EtherWrapper.
-        if (resolver.getAddress(CONTRACT_ETHER_WRAPPER) != address(0)) {
-            // Subtract sETH and sUSD issued by EtherWrapper.
-            excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
-        }
+        // Subtract sETH and sUSD issued by EtherWrapper.
+        excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
 
         return (excludedDebt, isInvalid);
     }
