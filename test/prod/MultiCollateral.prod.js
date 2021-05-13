@@ -134,8 +134,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 		});
 	});
 
-	// TODO: disabled while debtLimit is reached.
-	xdescribe('when using multiple types of loans', () => {
+	describe('when using multiple types of loans', () => {
 		itCorrectlyManagesLoansWith({
 			type: 'CollateralEth',
 			collateralCurrency: 'ETH',
