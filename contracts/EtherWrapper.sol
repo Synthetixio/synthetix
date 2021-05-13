@@ -166,13 +166,12 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         require(reserves > 0, "Contract cannot burn sETH for WETH, WETH balance is zero");
 
         // principal = [amountIn / (1 + burnFeeRate)]
-        uint principal = amountIn.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
-        uint feeAmountEth = amountIn.sub(principal);
+        uint principal = amountIn.divideDecimal(SafeDecimalMath.unit().add(burnFeeRate()));
 
         if (principal < reserves) {
-            _burn(principal, feeAmountEth);
+            _burn(principal);
         } else {
-            _burn(reserves, feeAmountEth);
+            _burn(reserves);
         }
     }
 
@@ -228,8 +227,9 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
         emit Minted(msg.sender, principal, feeAmountEth, amountIn);
     }
 
-    function _burn(uint principal, uint feeAmountEth) internal {
+    function _burn(uint principal) internal {
         // for burn, amount is inclusive of the fee.
+        uint feeAmountEth = calculateBurnFee(principal);
         uint amountIn = principal.add(feeAmountEth);
 
         require(amountIn <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
