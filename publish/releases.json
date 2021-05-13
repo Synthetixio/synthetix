@@ -218,5 +218,23 @@
 			"SystemStatus"
 		],
 		"sips": [116, 117, 118]
+	},
+	{
+		"name": "Alioth",
+		"version": {
+			"major": 2,
+			"minor": 45
+		},
+		"sources": [
+			"DebtCache",
+			"EtherWrapper",
+			"FeePool",
+			"Issuer",
+			"NativeEtherWrapper",
+			"SynthsETH",
+			"SynthsUSD",
+			"SystemSettings"
+		],
+		"sips": [112, 136]
 	}
 ]
