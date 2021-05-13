@@ -227,15 +227,12 @@
 		},
 		"sources": [
 			"DebtCache",
-			"Issuer",
-			"FeePool",
-			"SynthsUSD",
-			"SynthsETH",
-			"SystemSettings",
 			"EtherWrapper",
+			"FeePool",
 			"NativeEtherWrapper",
-			"Issuer",
-			"DebtCache"
+			"SynthsETH",
+			"SynthsUSD",
+			"SystemSettings"
 		],
 		"sips": [112, 136]
 	}
