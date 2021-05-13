@@ -787,5 +787,11 @@
 	},
 	"SynthetixBridgeEscrow": {
 		"deploy": false
+	},
+	"EtherWrapper": {
+		"deploy": false
+	},
+	"NativeEtherWrapper": {
+		"deploy": false
 	}
 }
