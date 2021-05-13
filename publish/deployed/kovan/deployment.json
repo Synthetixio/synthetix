@@ -1604,10 +1604,10 @@
 		},
 		"EtherWrapper": {
 			"name": "EtherWrapper",
-			"address": "0x6D574Ce9f9F691cd30042BE656322AA2DAE82A74",
+			"address": "0xD511a29AFF50503cCaF476EF9ebdd18Cbab1422c",
 			"source": "EtherWrapper",
-			"link": "https://kovan.etherscan.io/address/0x6D574Ce9f9F691cd30042BE656322AA2DAE82A74",
-			"timestamp": "2021-05-13T04:52:39.521Z",
+			"link": "https://kovan.etherscan.io/address/0xD511a29AFF50503cCaF476EF9ebdd18Cbab1422c",
+			"timestamp": "2021-05-13T07:57:28.134Z",
 			"txn": "",
 			"network": "kovan"
 		},
