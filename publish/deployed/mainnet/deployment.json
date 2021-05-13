@@ -228,8 +228,8 @@
 			"address": "0x4D8dBD193d89b7B506BE5dC9Db75B91dA00D6a1d",
 			"source": "MultiCollateralSynth",
 			"link": "https://etherscan.io/address/0x4D8dBD193d89b7B506BE5dC9Db75B91dA00D6a1d",
-			"timestamp": "2021-05-13T11:04:30.110Z",
-			"txn": "",
+			"timestamp": "2021-05-13T11:04:11.000Z",
+			"txn": "https://etherscan.io/tx/0x4742d6c07a8ed7fc49398bd3b80092ae44480be796a86689c4a189ac8ce0ae8c",
 			"network": "mainnet"
 		},
 		"SynthsXAG": {
@@ -937,8 +937,8 @@
 			"address": "0xB774711F0BC1306ce892ef8C02D0476dCccB46B7",
 			"source": "Issuer",
 			"link": "https://etherscan.io/address/0xB774711F0BC1306ce892ef8C02D0476dCccB46B7",
-			"timestamp": "2021-05-13T11:03:37.368Z",
-			"txn": "",
+			"timestamp": "2021-05-13T11:03:20.000Z",
+			"txn": "https://etherscan.io/tx/0x7ad506cd65d0da2fbe3278231199d0d88b03749fdc487e70204a88108609ee71",
 			"network": "mainnet"
 		},
 		"EtherCollateral": {
@@ -1450,8 +1450,8 @@
 			"address": "0xD3C8d372bFCd36c2B452639a7ED6ef7dbFDC56F8",
 			"source": "SystemSettings",
 			"link": "https://etherscan.io/address/0xD3C8d372bFCd36c2B452639a7ED6ef7dbFDC56F8",
-			"timestamp": "2021-05-13T11:02:57.841Z",
-			"txn": "",
+			"timestamp": "2021-05-13T11:02:44.000Z",
+			"txn": "https://etherscan.io/tx/0x14ab197678e33bdfa8fe9204f0f6deb0546d013341739da4bcebda97e175bb5d",
 			"network": "mainnet"
 		},
 		"TradingRewards": {
@@ -2394,8 +2394,8 @@
 			"address": "0xC1AAE9d18bBe386B102435a8632C8063d31e747C",
 			"source": "EtherWrapper",
 			"link": "https://etherscan.io/address/0xC1AAE9d18bBe386B102435a8632C8063d31e747C",
-			"timestamp": "2021-05-13T11:08:37.183Z",
-			"txn": "",
+			"timestamp": "2021-05-13T11:08:22.000Z",
+			"txn": "https://etherscan.io/tx/0xcac2d9311b429ff942b8a259d49ef46e1f90caf035513eb382f1b865c1f48d78",
 			"network": "mainnet"
 		},
 		"NativeEtherWrapper": {
@@ -2403,8 +2403,8 @@
 			"address": "0x7A3d898b717e50a96fd8b232E9d15F0A547A7eeb",
 			"source": "NativeEtherWrapper",
 			"link": "https://etherscan.io/address/0x7A3d898b717e50a96fd8b232E9d15F0A547A7eeb",
-			"timestamp": "2021-05-13T11:09:28.011Z",
-			"txn": "",
+			"timestamp": "2021-05-13T11:09:14.000Z",
+			"txn": "https://etherscan.io/tx/0x4e628023d059a6811addf1cf4f6377fe258ce669aef5c1b392ba04553b403f44",
 			"network": "mainnet"
 		}
 	},
