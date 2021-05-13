@@ -454,5 +454,11 @@
 	},
 	"MockToken": {
 		"deploy": true
+	},
+	"EtherWrapper": {
+		"deploy": true
+	},
+	"NativeEtherWrapper": {
+		"deploy": true
 	}
 }
