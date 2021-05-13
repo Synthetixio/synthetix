@@ -229,8 +229,7 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
     function _burn(uint principal, uint amountIn) internal {
         // for burn, amount is inclusive of the fee.
-        uint feeAmountEth = calculateBurnFee(principal);
-        // uint amountIn = principal.add(feeAmountEth);
+        uint feeAmountEth = amountIn.sub(principal);
 
         require(amountIn <= IERC20(address(synthsETH())).allowance(msg.sender, address(this)), "Allowance not high enough");
         require(amountIn <= IERC20(address(synthsETH())).balanceOf(msg.sender), "Balance is too low");
