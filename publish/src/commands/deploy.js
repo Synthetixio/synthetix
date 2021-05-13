@@ -1589,7 +1589,7 @@ const deploy = async ({
 
 		await Promise.all(
 			legacyContracts.map(async ([name, contract]) => {
-				await runStep({
+				return runStep({
 					gasLimit: 7e6,
 					contract: name,
 					target: contract,
