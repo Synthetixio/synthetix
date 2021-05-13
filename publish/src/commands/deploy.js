@@ -1256,11 +1256,8 @@ const deploy = async ({
 	}
 
 	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
-	if (!WETH_ADDRESS) {
-		if (network !== 'local') {
-			throw new Error('WETH address is not known');
-		}
 
+	if (network === 'local') {
 		// On local, deploy a mock WETH token.
 		// OVM already has a deployment of WETH, however since we use
 		// Hardhat for the local-ovm environment, we must deploy
@@ -1268,8 +1265,11 @@ const deploy = async ({
 		const weth = await deployer.deployContract({
 			name: useOvm ? 'MockWETH' : 'WETH',
 		});
-
 		WETH_ADDRESS = weth.options.address;
+	}
+
+	if (!WETH_ADDRESS) {
+		throw new Error('WETH address is not known');
 	}
 
 	await deployer.deployContract({
