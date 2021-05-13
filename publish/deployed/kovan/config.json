@@ -518,12 +518,6 @@
 	"VirtualSynthMastercopy": {
 		"deploy": false
 	},
-	"EtherWrapper": {
-		"deploy": true
-	},
-	"NativeEtherWrapper": {
-		"deploy": true
-	},
 	"SynthetixBridgeEscrow": {
 		"deploy": false
 	}
