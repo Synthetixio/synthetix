@@ -238,6 +238,7 @@ const setupContract = async ({
 			0,
 			0,
 		],
+		CollateralUtil: [tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -534,6 +535,12 @@ const setupContract = async ({
 				]);
 			}
 		},
+
+		async CollateralUtil() {
+			await cache['AddressResolver'].setAssociatedContract(instance.address, {
+				from: owner,
+			});
+		},
 	};
 
 	// now run any postDeploy tasks (connecting contracts together)
@@ -782,6 +789,10 @@ const setupAllContracts = async ({
 		{
 			contract: 'CollateralManager',
 			deps: ['AddressResolver', 'SystemStatus', 'Issuer', 'ExchangeRates', 'DebtCache'],
+		},
+		{
+			contract: 'CollateralUtil',
+			deps: ['AddressResolver'],
 		},
 	];
 
