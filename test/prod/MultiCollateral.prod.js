@@ -87,6 +87,7 @@ contract('MultiCollateral (prod tests)', accounts => {
 				{ contractName: 'DebtCache' },
 				{ contractName: 'ReadProxyAddressResolver' },
 				{ contractName: 'SynthsUSD', abiName: 'Synth' },
+				{ contractName: 'Issuer' },
 			],
 		}));
 

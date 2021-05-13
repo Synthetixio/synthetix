@@ -225,7 +225,16 @@
 			"major": 2,
 			"minor": 45
 		},
-		"sources": ["DebtCache", "Issuer"],
-		"sips": [136]
+		"sources": [
+			"DebtCache",
+			"EtherWrapper",
+			"FeePool",
+			"Issuer",
+			"NativeEtherWrapper",
+			"SynthsETH",
+			"SynthsUSD",
+			"SystemSettings"
+		],
+		"sips": [112, 136]
 	}
 ]
