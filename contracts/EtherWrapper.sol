@@ -177,8 +177,8 @@ contract EtherWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IE
 
     function distributeFees() external {
         // Normalize fee to sUSD
-        require(!exchangeRates().rateIsInvalid(ETH), "Currency rate is invalid");
-        uint amountSUSD = exchangeRates().effectiveValue(ETH, feesEscrowed, sUSD);
+        require(!exchangeRates().rateIsInvalid(sETH), "Currency rate is invalid");
+        uint amountSUSD = exchangeRates().effectiveValue(sETH, feesEscrowed, sUSD);
 
         // Burn sETH.
         synthsETH().burn(address(this), feesEscrowed);
