@@ -2546,8 +2546,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 							{ from: owner }
 						);
 
-						// ensure Issuer has the latest EtherCollateral
+						// ensure Issuer and DebtCache has the latest EtherCollateral
 						await issuer.rebuildCache();
+						await debtCache.rebuildCache();
 
 						// Give some SNX to account1
 						await synthetix.transfer(account1, toUnit('1000'), { from: owner });
