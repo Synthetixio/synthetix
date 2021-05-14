@@ -23,7 +23,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IShortingRewards.sol";
 
-contract Collateral is ICollateralLoan, ICollateralUtil, Owned, MixinSystemSettings {
+contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -145,18 +145,20 @@ contract Collateral is ICollateralLoan, ICollateralUtil, Owned, MixinSystemSetti
         return ICollateralManager(manager);
     }
 
-    // TODO create ICollateralUtil
+    function _collateralUtil() internal view returns (ICollateralUtil) {
+        return ICollateralUtil(requireAndGetAddress(CONTRACT_COLLATERALUTIL));
+    }
 
     /* ---------- Public Views ---------- */
 
     function collateralRatio(uint id, address account) public view returns (uint cratio) {
         Loan memory loan = state.getLoan(account, id);
-        return CollateralUtil.getCollateralRatio(loan, collateralKey);
+        return _collateralUtil().getCollateralRatio(loan, collateralKey);
     }
 
     // The maximum number of synths issuable for this amount of collateral
     function maxLoan(uint amount, bytes32 currency) public view returns (uint max) {
-        return CollateralUtil.maxLoan(amount, currency, minCratio, collateralKey);
+        return _collateralUtil().maxLoan(amount, currency, minCratio, collateralKey);
     }
 
     /**
@@ -171,12 +173,12 @@ contract Collateral is ICollateralLoan, ICollateralUtil, Owned, MixinSystemSetti
 
     function liquidationAmount(Loan memory loan) public view returns (uint amount) {
         uint liquidationPenalty = getLiquidationPenalty();
-        return CollateralUtil.liquidationAmount(loan, minCratio, liquidationPenalty, collateralKey);
+        return _collateralUtil().liquidationAmount(loan, minCratio, liquidationPenalty, collateralKey);
     }
 
     function collateralRedeemed(bytes32 currency, uint amount) public view returns (uint collateral) {
         uint liquidationPenalty = getLiquidationPenalty();
-        return CollateralUtil.collateralRedeemed(currency, amount, liquidationPenalty, collateralKey);
+        return _collateralUtil().collateralRedeemed(currency, amount, liquidationPenalty, collateralKey);
     }
 
     function areSynthsAndCurrenciesSet(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys)
@@ -505,7 +507,7 @@ contract Collateral is ICollateralLoan, ICollateralUtil, Owned, MixinSystemSetti
         loan.lastInteraction = block.timestamp;
 
         // 6. Check that the new amount does not put them under the minimum c ratio.
-        require(collateralRatio(loan) > minCratio, "Cratio too low");
+        require(_collateralUtil().getCollateralRatio(loan, collateralKey) > minCratio, "Cratio too low");
 
         // 7. Store the loan.
         state.updateLoan(loan);
@@ -541,7 +543,8 @@ contract Collateral is ICollateralLoan, ICollateralUtil, Owned, MixinSystemSetti
         _checkSynthBalance(msg.sender, loan.currency, payment);
 
         // 6. Check they are eligible for liquidation.
-        require(collateralRatio(loan) < minCratio, "Cratio above liquidation ratio");
+
+        require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio, "Cratio above liquidation ratio");
 
         // 7. Determine how much needs to be liquidated to fix their c ratio.
         uint liqAmount = liquidationAmount(loan);
@@ -636,7 +639,7 @@ contract Collateral is ICollateralLoan, ICollateralUtil, Owned, MixinSystemSetti
         loan.amount = loan.amount.add(amount);
 
         // 5. If it is below the minimum, don't allow this draw.
-        require(collateralRatio(loan) > minCratio, "Cannot draw this much");
+        require(_collateralUtil().getCollateralRatio(loan, collateralKey) > minCratio, "Cannot draw this much");
 
         // 6. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
@@ -697,8 +700,8 @@ contract Collateral is ICollateralLoan, ICollateralUtil, Owned, MixinSystemSetti
 
         // 7. Update rates with the lastest cumulative rate. This also updates the time.
         loan.short
-            ? _manager().updateShortRates(loan.currency, latestCumulative)
-            : _manager().updateBorrowRates(latestCumulative);
+            ? _manager().updateShortRatesCollateral(loan.currency, latestCumulative)
+            : _manager().updateBorrowRatesCollateral(latestCumulative);
 
         // 8. Update loan
         loanAfter.accruedInterest = loan.accruedInterest.add(interest);

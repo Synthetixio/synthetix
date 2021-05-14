@@ -239,6 +239,15 @@ const setupContract = async ({
 			0,
 		],
 		CollateralUtil: [tryGetAddressOf('AddressResolver')],
+		Collateral: [
+			tryGetAddressOf('CollateralState'),
+			tryGetAddressOf('CollateralManager'),
+			tryGetAddressOf('AddressResolver'),
+			'sUSD',
+			1.2,
+			100,
+		],
+		CollateralState: [owner, tryGetAddressOf('Collateral')],
 	};
 
 	let instance;
@@ -541,6 +550,20 @@ const setupContract = async ({
 				from: owner,
 			});
 		},
+
+		async Collateral() {
+			await Promise.all([
+				cache['CollateralState'].setAssociatedContract(instance.address, { from: owner }),
+				cache['CollateralManager'].setAssociatedContract(instance.address, { from: owner }),
+				cache['AddressResolver'].setAssociatedContract(instance.address, { from: owner }),
+			]);
+		},
+
+		async CollateralState() {
+			await cache['Collateral'].setAssociatedContract(instance.address, {
+				from: owner,
+			});
+		},
 	};
 
 	// now run any postDeploy tasks (connecting contracts together)
@@ -793,6 +816,14 @@ const setupAllContracts = async ({
 		{
 			contract: 'CollateralUtil',
 			deps: ['AddressResolver'],
+		},
+		{
+			contract: 'CollateralState',
+			deps: [], // TODO should this include CollateralState?
+		},
+		{
+			contract: 'Collateral',
+			deps: ['CollateralState', 'CollateralManager', 'AddressResolver'],
 		},
 	];
 

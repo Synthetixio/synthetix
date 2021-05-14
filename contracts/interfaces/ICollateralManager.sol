@@ -81,4 +81,8 @@ interface ICollateralManager {
         bytes32 currency,
         bool isShort
     ) external returns (uint difference, uint index);
+
+    function updateBorrowRatesCollateral(uint rate) external;
+
+    function updateShortRatesCollateral(bytes32 currency, uint rate) external;
 }

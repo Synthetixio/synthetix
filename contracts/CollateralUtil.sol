@@ -28,23 +28,10 @@ contract CollateralUtil is ICollateralLoan {
 
     /* ========== VIEW FUNCS ========== */
 
-    function getCollateralRatio(Loan memory loan, bytes32 collateralKey) public view returns (uint cratio) {
+    function getCollateralRatio(Loan calldata loan, bytes32 collateralKey) external view returns (uint cratio) {
         uint cvalue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
         uint dvalue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
         return cvalue.divideDecimal(dvalue);
-    }
-
-    function collateralizationInfo(Loan calldata loan, bytes32 collateralKey)
-        external
-        view
-        returns (
-            uint,
-            uint,
-            uint
-        )
-    {
-        uint cratio = getCollateralRatio(loan, collateralKey);
-        return (cratio, loan.amount, loan.collateral);
     }
 
     function maxLoan(

@@ -5,18 +5,10 @@ pragma experimental ABIEncoderV2;
 import "./ICollateralLoan.sol";
 
 interface ICollateralUtil {
-    // TODO import Loan struct into this interface
-
-    function getCollateralRatio(Loan calldata loan, bytes32 collateralKey) external view returns (uint cratio);
-
-    function collateralizationInfo(Loan calldata loan, bytes32 collateralKey)
+    function getCollateralRatio(ICollateralLoan.Loan calldata loan, bytes32 collateralKey)
         external
         view
-        returns (
-            uint,
-            uint,
-            uint
-        );
+        returns (uint cratio);
 
     function maxLoan(
         uint amount,
@@ -26,7 +18,7 @@ interface ICollateralUtil {
     ) external view returns (uint max);
 
     function liquidationAmount(
-        Loan calldata loan,
+        ICollateralLoan.Loan calldata loan,
         uint minCratio,
         uint liquidationPenalty,
         bytes32 collateralKey
