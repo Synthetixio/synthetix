@@ -1,6 +1,21 @@
-const { task } = require('hardhat/config');
+const Mocha = require('mocha');
+const { task, subtask } = require('hardhat/config');
+const { TASK_TEST_RUN_MOCHA_TESTS } = require('hardhat/builtin-tasks/task-names');
 const { gray, yellow } = require('chalk');
 const optimizeIfRequired = require('../util/optimizeIfRequired');
+
+// Override builtin "test:run-mocha-tests" subtask so we can use the local mocha
+// installation, which is up to date and allows us to run parallel tests.
+subtask(TASK_TEST_RUN_MOCHA_TESTS).setAction(async ({ testFiles }, { config }) => {
+	const mocha = new Mocha(config.mocha);
+	testFiles.forEach(file => mocha.addFile(file));
+
+	const testFailures = await new Promise(resolve => {
+		mocha.run(resolve);
+	});
+
+	return testFailures;
+});
 
 task('test')
 	.addFlag('optimizer', 'Compile with the optimizer')
