@@ -236,5 +236,14 @@
 			"SystemSettings"
 		],
 		"sips": [112, 136]
+	},
+	{
+		"name": "TBD",
+		"version": {
+			"major": 2,
+			"minor": 46
+		},
+		"ovm": true,
+		"sources": ["DebtCache"]
 	}
 ]
