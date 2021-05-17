@@ -161,6 +161,7 @@ jobs:
           name: Start chains
           background: true
           command: |
+            cd optimism/ops
             docker-compose up -d
       - cmd-wait-for-port:
           port: 8545
