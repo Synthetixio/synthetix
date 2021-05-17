@@ -244,6 +244,7 @@
 			"minor": 46
 		},
 		"ovm": true,
-		"sources": ["DebtCache"]
+		"sources": ["DebtCache"],
+		"sips": []
 	}
 ]
