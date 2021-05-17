@@ -1285,7 +1285,8 @@ const deploy = async ({
 	const deployedFuturesMarkets = [];
 
 	// TODO: Perform this programmatically per-market
-	const exchangeFee = w3utils.toWei('0.003');
+	const takerFee = w3utils.toWei('0.003');
+	const makerFee = w3utils.toWei('0.001');
 	const maxLeverage = w3utils.toWei('10');
 	const maxMarketDebt = w3utils.toWei('100000');
 	const minInitialMargin = w3utils.toWei('100');
@@ -1313,7 +1314,8 @@ const deploy = async ({
 				account,
 				addressOf(readProxyForResolver),
 				toBytes32('s' + asset),
-				exchangeFee,
+				takerFee,
+				makerFee,
 				maxLeverage,
 				maxMarketDebt,
 				minInitialMargin,
@@ -2280,12 +2282,12 @@ const deploy = async ({
 		});
 
 		await runStep({
-				contract: 'SystemSettings',
-				target: systemSettings,
-				read: 'futuresLiquidationFee',
-				expected: input => input !== '0', // only change if zero
-				write: 'setFuturesLiquidationFee',
-				writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE'),
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'futuresLiquidationFee',
+			expected: input => input !== '0', // only change if zero
+			write: 'setFuturesLiquidationFee',
+			writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE'),
 		});
 
 		const aggregatorWarningFlags = (await getDeployParameter('AGGREGATOR_WARNING_FLAGS'))[network];

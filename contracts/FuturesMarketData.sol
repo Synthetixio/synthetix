@@ -18,18 +18,18 @@ contract FuturesMarketData {
         int marketSkew;
         uint marketDebt;
         int currentFundingRate;
-        uint exchangeFee;
+        FeeRates feeRates;
     }
 
     struct MarketLimits {
         uint maxLeverage;
-        uint maxMarketDebt;
+        uint maxMarketValue;
         uint minInitialMargin;
     }
 
     struct Sides {
-        uint short;
         uint long;
+        uint short;
     }
 
     struct MarketSizeDetails {
@@ -53,6 +53,11 @@ contract FuturesMarketData {
         uint maxFundingRateDelta;
     }
 
+    struct FeeRates {
+        uint takerFee;
+        uint makerFee;
+    }
+
     struct FundingDetails {
         int currentFundingRate;
         int unrecordedFunding;
@@ -62,7 +67,7 @@ contract FuturesMarketData {
     struct MarketData {
         address market;
         bytes32 baseAsset;
-        uint exchangeFee;
+        FuturesMarketData.FeeRates feeRates;
         FuturesMarketData.MarketLimits limits;
         FuturesMarketData.FundingParameters fundingParameters;
         FuturesMarketData.MarketSizeDetails marketSizeDetails;
@@ -101,9 +106,10 @@ contract FuturesMarketData {
 
     function _getParameters(FuturesMarket market) internal view returns (FuturesMarket.Parameters memory) {
         (
-            uint exchangeFee,
+            uint takerFee,
+            uint makerFee,
             uint maxLeverage,
-            uint maxMarketDebt,
+            uint maxMarketValue,
             uint minInitialMargin,
             uint maxFundingRate,
             uint maxFundingRateSkew,
@@ -111,9 +117,10 @@ contract FuturesMarketData {
         ) = market.parameters();
         return
             FuturesMarket.Parameters(
-                exchangeFee,
+                takerFee,
+                makerFee,
                 maxLeverage,
-                maxMarketDebt,
+                maxMarketValue,
                 minInitialMargin,
                 maxFundingRate,
                 maxFundingRateSkew,
@@ -140,7 +147,7 @@ contract FuturesMarketData {
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                parameters.exchangeFee
+                FeeRates(parameters.takerFee, parameters.makerFee)
             );
         }
 
@@ -168,8 +175,8 @@ contract FuturesMarketData {
     }
 
     function _marketSizes(FuturesMarket market) internal view returns (Sides memory) {
-        (uint short, uint long) = market.marketSizes();
-        return Sides(short, long);
+        (uint long, uint short) = market.marketSizes();
+        return Sides(long, short);
     }
 
     function _marketDetails(FuturesMarket market) internal view returns (MarketData memory) {
@@ -182,7 +189,7 @@ contract FuturesMarketData {
             MarketData(
                 address(market),
                 market.baseAsset(),
-                parameters.exchangeFee,
+                FeeRates(parameters.takerFee, parameters.makerFee),
                 MarketLimits(parameters.maxLeverage, parameters.maxMarketValue, parameters.minInitialMargin),
                 _fundingParameters(parameters),
                 MarketSizeDetails(

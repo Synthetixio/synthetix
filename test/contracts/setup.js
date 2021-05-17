@@ -249,7 +249,8 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset
-			toWei('0.003'), // 0.3% exchange fee
+			toWei('0.003'), // 0.3% taker fee
+			toWei('0.001'), // 0.1% maker fee
 			toWei('10'), // 10x max leverage
 			toWei('100000'), // 100000 max market debt
 			toWei('100'), // 100 sUSD minimum initial margin
