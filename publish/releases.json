@@ -226,6 +226,24 @@
 			"minor": 45
 		},
 		"sources": [
+			"DebtCache",
+			"EtherWrapper",
+			"FeePool",
+			"Issuer",
+			"NativeEtherWrapper",
+			"SynthsETH",
+			"SynthsUSD",
+			"SystemSettings"
+		],
+		"sips": [112, 136]
+	},
+	{
+		"name": "Unreleased",
+		"version": {
+			"major": 2,
+			"minor": 46
+		},
+		"sources": [
 			"FuturesMarketBTC",
 			"FuturesMarketETH",
 			"FuturesMarketLINK",
