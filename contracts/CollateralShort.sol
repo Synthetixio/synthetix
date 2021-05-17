@@ -7,14 +7,13 @@ import "./Collateral.sol";
 
 contract CollateralShort is Collateral {
     constructor(
-        CollateralState _state,
         address _owner,
         address _manager,
         address _resolver,
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    ) public Collateral(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
+    ) public Collateral(_owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
 
     function open(
         uint collateral,

@@ -11,7 +11,6 @@ import "./interfaces/ICollateralLoan.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./CollateralState.sol";
 import "./CollateralUtil.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/ISystemStatus.sol";
@@ -36,8 +35,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     // The synth corresponding to the collateral.
     bytes32 public collateralKey;
 
-    // Stores loans
-    CollateralState public state;
+    // Stores loans open
+    mapping(uint => Loan) public loans;
 
     address public manager;
 
@@ -79,7 +78,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        CollateralState _state,
         address _owner,
         address _manager,
         address _resolver,
@@ -88,7 +86,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint _minCollateral
     ) public Owned(_owner) MixinSystemSettings(_resolver) {
         manager = _manager;
-        state = _state;
         collateralKey = _collateralKey;
         minCratio = _minCratio;
         minCollateral = _minCollateral;
@@ -142,8 +139,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- Public Views ---------- */
 
-    function collateralRatio(uint id, address account) public view returns (uint cratio) {
-        Loan memory loan = state.getLoan(account, id);
+    function collateralRatio(uint id) public view returns (uint cratio) {
+        Loan memory loan = loans[id];
         return _collateralUtil().getCollateralRatio(loan, collateralKey);
     }
 
@@ -262,9 +259,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 3. Collateral >= minimum collateral size.
         require(collateral >= minCollateral);
 
-        // 4. Cap the number of loans so that the array doesn't get too big.
-        require(state.getNumLoans(msg.sender) < maxLoansPerAccount);
-
         // 5. Check we haven't hit the debt cap for non snx collateral.
         (bool canIssue, bool anyRateIsInvalid) = _manager().exceedsDebtLimit(amount, currency);
 
@@ -300,7 +294,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         accrueInterest(loan);
 
         // 12. Save the loan to storage
-        state.createLoan(loan);
+        _createLoan(loan);
 
         // 13. Pay the minting fees to the fee pool
         _payFees(issueFee, currency);
@@ -327,7 +321,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. Get the loan.
-        Loan memory loan = state.getLoan(borrower, id);
+        Loan memory loan = loans[id];
+
+        require(loan.account == borrower, "Not loan creator");
 
         // 3. Accrue interest on the loan.
         accrueInterest(loan);
@@ -360,7 +356,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 10. Record loan as closed.
         loan.interestIndex = 0;
-        state.updateLoan(loan);
+        _updateLoan(loan);
 
         // 11. Emit the event
         emit LoanClosed(borrower, id);
@@ -399,7 +395,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 7. Record loan as closed
         // loan.interestIndex = 0;
-        state.updateLoan(loan);
+        _updateLoan(loan);
 
         // 8. Emit the event.
         emit LoanClosedByLiquidation(borrower, loan.id, liquidator, amount, collateral);
@@ -417,7 +413,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(payment > 0);
 
         // 2. Get the loan.
-        Loan memory loan = state.getLoan(borrower, id);
+        Loan memory loan = loans[id];
 
         // 4. Accrue interest.
         accrueInterest(loan);
@@ -453,7 +449,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
 
         // 15. Store the loan.
-        state.updateLoan(loan);
+        _updateLoan(loan);
 
         // 16. Emit the event
         emit LoanPartiallyLiquidated(borrower, id, msg.sender, amountToLiquidate, collateralLiquidated);
@@ -468,7 +464,10 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 2. Get loan
-        Loan memory loan = state.getLoan(msg.sender, id);
+        Loan memory loan = loans[id];
+
+        // 3. Check loan owned by msg.sender
+        require(loan.account == msg.sender, "Not loan creator");
 
         // 4. Accrue interest.
         accrueInterest(loan);
@@ -489,7 +488,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(_collateralUtil().getCollateralRatio(loan, collateralKey) > minCratio);
 
         // 9. Store the loan
-        state.updateLoan(loan);
+        _updateLoan(loan);
 
         // 10. Emit the event.
         emit LoanRepayAndWithdraw(msg.sender, id, repayAmount, loan.amount);
@@ -504,7 +503,10 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. Get loan.
-        Loan memory loan = state.getLoan(msg.sender, id);
+        Loan memory loan = loans[id];
+
+        // 2. Check loan owned by msg.sender
+        require(loan.account == msg.sender, "Not loan creator");
 
         // 3. Accrue interest.
         accrueInterest(loan);
@@ -542,7 +544,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         }
 
         // 11. Store the loan
-        state.updateLoan(loan);
+        _updateLoan(loan);
 
         // 12. Emit the event.
         emit LoanDepositAndDraw(msg.sender, id, amount, collateral);
@@ -558,7 +560,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 8. Update loan
         loan.accruedInterest = loan.accruedInterest.add(interest);
         loan.interestIndex = newIndex;
-        state.updateLoan(loan);
+        _updateLoan(loan);
     }
 
     // Works out the amount of interest and principal after a repayment is made.
@@ -597,6 +599,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             _synthsUSD().issue(_feePool().FEE_ADDRESS(), amount);
             _feePool().recordFeePaid(amount);
         }
+    }
+
+    function _createLoan(Loan memory loan) internal {
+        loans[loan.id] = loan;
+    }
+
+    function _updateLoan(Loan memory loan) internal {
+        loans[loan.id] = loan;
     }
 
     // ========== MODIFIERS ==========

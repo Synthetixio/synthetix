@@ -7,22 +7,18 @@ import "./Collateral.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/ICollateralEth.sol";
 
-// Internal references
-import "./CollateralState.sol";
-
 // This contract handles the payable aspects of eth loans.
 contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
     mapping(address => uint) public pendingWithdrawals;
 
     constructor(
-        CollateralState _state,
         address _owner,
         address _manager,
         address _resolver,
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    ) public Collateral(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
+    ) public Collateral(_owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
 
     // function open(uint amount, bytes32 currency) external payable {
     //     openInternal(msg.value, amount, currency, false);
