@@ -6,10 +6,11 @@ pragma experimental ABIEncoderV2;
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/ICollateralLoan.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./MixinSystemSettings.sol";
 
 import "./SafeDecimalMath.sol";
 
-contract CollateralUtil is ICollateralLoan {
+contract CollateralUtil is ICollateralLoan, MixinSystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -22,7 +23,7 @@ contract CollateralUtil is ICollateralLoan {
         return IExchangeRates(addressResolverProxy.requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates contract"));
     }
 
-    constructor(address _resolver) public {
+    constructor(address _resolver) public MixinSystemSettings(_resolver) {
         addressResolverProxy = IAddressResolver(_resolver);
     }
 
@@ -44,12 +45,21 @@ contract CollateralUtil is ICollateralLoan {
         return ratio.multiplyDecimal(_exchangeRates().effectiveValue(collateralKey, amount, currency));
     }
 
+    /**
+     * r = target issuance ratio
+     * D = debt value in sUSD
+     * V = collateral value in sUSD
+     * P = liquidation penalty
+     * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     * Note: if you pass a loan in here that is not eligible for liquidation it will revert.
+     * We check the ratio first in liquidateInternal and only pass eligible loans in.
+     */
     function liquidationAmount(
         Loan calldata loan,
         uint minCratio,
-        uint liquidationPenalty,
         bytes32 collateralKey
     ) external view returns (uint amount) {
+        uint liquidationPenalty = getLiquidationPenalty();
         uint debtValue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
         uint collateralValue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
         uint unit = SafeDecimalMath.unit();
@@ -65,11 +75,10 @@ contract CollateralUtil is ICollateralLoan {
     function collateralRedeemed(
         bytes32 currency,
         uint amount,
-        uint liquidationPenalty,
         bytes32 collateralKey
     ) external view returns (uint collateral) {
+        uint liquidationPenalty = getLiquidationPenalty();
         collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
-
         return collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
     }
 }

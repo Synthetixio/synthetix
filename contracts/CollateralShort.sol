@@ -32,25 +32,34 @@ contract CollateralShort is Collateral {
         IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
     }
 
-    function depositAndDraw(
+    function deposit(
+        address borrower,
         uint id,
-        uint drawAmount,
-        uint depositAmount
-    ) external {
-        // Transfer from will throw if they didn't set the allowance
-        IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), depositAmount);
+        uint amount
+    ) external returns (uint short, uint collateral) {
+        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance not high enough");
 
-        depositAndDrawInternal(id, drawAmount, depositAmount);
+        IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), amount);
+
+        depositInternal(borrower, id, amount);
     }
 
-    function repayAndWithdraw(
-        uint id,
-        uint repayAmount,
-        uint withdrawAmount
-    ) external {
-        repayAndWithdrawInternal(id, repayAmount, withdrawAmount);
+    function withdraw(uint id, uint amount) external returns (uint short, uint collateral) {
+        (short, collateral) = withdrawInternal(id, amount);
 
-        IERC20(address(_synthsUSD())).transfer(msg.sender, withdrawAmount);
+        IERC20(address(_synthsUSD())).transfer(msg.sender, amount);
+    }
+
+    function repay(
+        address borrower,
+        uint id,
+        uint amount
+    ) external returns (uint short, uint collateral) {
+        (short, collateral) = repayInternal(borrower, msg.sender, id, amount);
+    }
+
+    function draw(uint id, uint amount) external returns (uint short, uint collateral) {
+        (short, collateral) = drawInternal(id, amount);
     }
 
     function liquidate(

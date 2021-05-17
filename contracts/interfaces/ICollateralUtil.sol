@@ -20,14 +20,12 @@ interface ICollateralUtil {
     function liquidationAmount(
         ICollateralLoan.Loan calldata loan,
         uint minCratio,
-        uint liquidationPenalty,
         bytes32 collateralKey
     ) external view returns (uint amount);
 
     function collateralRedeemed(
         bytes32 currency,
         uint amount,
-        uint liquidationPenalty,
         bytes32 collateralKey
     ) external view returns (uint collateral);
 }

@@ -72,11 +72,11 @@ contract('CollateralShort', async accounts => {
 		});
 	};
 
-	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
+	const deployShort = async ({ owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
+			args: [owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
@@ -128,7 +128,6 @@ contract('CollateralShort', async accounts => {
 		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
 		short = await deployShort({
-			state: state.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -136,8 +135,6 @@ contract('CollateralShort', async accounts => {
 			minColat: toUnit(1.2),
 			minSize: toUnit(0.1),
 		});
-
-		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
@@ -194,7 +191,6 @@ contract('CollateralShort', async accounts => {
 	});
 
 	it('should set constructor params on deployment', async () => {
-		assert.equal(await short.state(), state.address);
 		assert.equal(await short.owner(), owner);
 		assert.equal(await short.resolver(), addressResolver.address);
 		assert.equal(await short.collateralKey(), sUSD);
