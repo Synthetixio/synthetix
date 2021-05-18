@@ -1325,6 +1325,23 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.fee, toBN(0));
 			assert.bnNotEqual(order.roundId, toBN(0));
 		});
+
+		it('Cannot close a position if it is liquidating', async () => {
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('200'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('10'),
+			});
+
+			await setPrice(baseAsset, toUnit('100'));
+
+			await assert.revert(
+				futuresMarket.closePosition({ from: trader }),
+				'Position can be liquidated'
+			);
+		});
 	});
 
 	describe('Profit & Loss, margin, leverage', () => {
