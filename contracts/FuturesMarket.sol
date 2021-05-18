@@ -670,20 +670,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return sequenceLength;
     }
 
-    function _liquidateIfNeeded(
-        address account,
-        uint price,
-        uint fundingIndex
-    ) internal returns (bool liquidated) {
-        uint liquidationFee = _liquidationFee();
-        if (_canLiquidate(positions[account], liquidationFee, fundingIndex)) {
-            _liquidatePosition(account, account, fundingIndex, price, liquidationFee);
-            return true;
-        }
-
-        return false;
-    }
-
     function _positionDebtCorrection(Position memory position) internal view returns (int) {
         return
             int(position.margin).sub(
