@@ -139,7 +139,14 @@ contract('PurgeableSynth', accounts => {
 			const actual = await iETHContract.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'FuturesMarketManager', 'ExchangeRates'].map(toBytes32)
+				[
+					'SystemStatus',
+					'Exchanger',
+					'Issuer',
+					'FeePool',
+					'FuturesMarketManager',
+					'ExchangeRates',
+				].map(toBytes32)
 			);
 		});
 
