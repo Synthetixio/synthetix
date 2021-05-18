@@ -296,7 +296,7 @@ const deploy = async ({
 
 	const { account } = deployer;
 
-	nonceManager.web3 = deployer.web3;
+	nonceManager.web3 = deployer.provider.web3;
 	nonceManager.account = account;
 
 	let currentSynthetixSupply;
@@ -413,14 +413,14 @@ const deploy = async ({
 	}
 
 	const deployerBalance = parseInt(
-		w3utils.fromWei(await deployer.web3.eth.getBalance(account), 'ether'),
+		w3utils.fromWei(await deployer.provider.web3.eth.getBalance(account), 'ether'),
 		10
 	);
 	if (useFork) {
 		// Make sure the pwned account has ETH when using a fork
-		const accounts = await deployer.web3.eth.getAccounts();
+		const accounts = await deployer.provider.web3.eth.getAccounts();
 
-		await deployer.web3.eth.sendTransaction({
+		await deployer.provider.web3.eth.sendTransaction({
 			from: accounts[0],
 			to: account,
 			value: w3utils.toWei('10', 'ether'),
@@ -1580,7 +1580,7 @@ const deploy = async ({
 			CollateralErc20REN,
 			CollateralShort,
 		}).map(([name, address]) => {
-			const contract = new deployer.web3.eth.Contract(
+			const contract = new deployer.provider.web3.eth.Contract(
 				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
 				address
 			);
@@ -1727,7 +1727,10 @@ const deploy = async ({
 				// wrap them in a contract via the deployer
 				const markets = marketAddresses.map(
 					binaryOptionMarket =>
-						new deployer.web3.eth.Contract(compiled['BinaryOptionMarket'].abi, binaryOptionMarket)
+						new deployer.provider.web3.eth.Contract(
+							compiled['BinaryOptionMarket'].abi,
+							binaryOptionMarket
+						)
 				);
 
 				binaryOptionMarkets = binaryOptionMarkets.concat(markets);
@@ -1775,7 +1778,7 @@ const deploy = async ({
 					},
 				];
 
-				const oldBinaryOptionMarket = new deployer.web3.eth.Contract(
+				const oldBinaryOptionMarket = new deployer.provider.web3.eth.Contract(
 					oldBinaryOptionMarketABI,
 					addressOf(market)
 				);
