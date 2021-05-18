@@ -847,55 +847,53 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         address sender
     ) internal {
         require(_abs(leverage) <= parameters.maxLeverage, "Max leverage exceeded");
-        // TODO: If you're about to be liquidated, just block instead of actually liquidating.
-        bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
+        Position storage position = positions[sender];
 
         // The order is not submitted if the user's existing position needed to be liquidated.
-        if (!liquidated) {
-            Position storage position = positions[sender];
-            uint margin = _remainingMargin(position, fundingIndex, price);
-            int size = position.size;
-            bool sameSide = _sameSide(leverage, size);
+        require(!_canLiquidate(position, _liquidationFee(), fundingIndex), "Position can be liquidated");
 
-            // Check that the user has sufficient margin
-            _checkMargin(position, price, margin, leverage, sameSide);
+        uint margin = _remainingMargin(position, fundingIndex, price);
+        int size = position.size;
+        bool sameSide = _sameSide(leverage, size);
 
-            // Check that the order isn't too large for the market
-            // Note that this in principle allows several orders to be placed at once
-            // that collectively violate the maximum, but this is checked again when
-            // the orders are confirmed.
-            _checkOrderSize(
-                size,
-                int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price)),
-                sameSide,
-                100 * uint(_UNIT) // a bit of extra value in case of rounding errors
-            );
+        // Check that the user has sufficient margin
+        _checkMargin(position, price, margin, leverage, sameSide);
 
-            // Cancel any open order
-            Order storage order = orders[sender];
-            if (_orderPending(order)) {
-                _cancelOrder(sender);
-            }
+        // Check that the order isn't too large for the market
+        // Note that this in principle allows several orders to be placed at once
+        // that collectively violate the maximum, but this is checked again when
+        // the orders are confirmed.
+        _checkOrderSize(
+            size,
+            int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price)),
+            sameSide,
+            100 * uint(_UNIT) // a bit of extra value in case of rounding errors
+        );
 
-            // TODO: Charge this out of margin (also update cancelOrder, and compute this before _checkMargin)
-            // Compute the fee owed and check their sUSD balance is sufficient to cover it.
-            uint fee = _orderFee(margin, leverage, size, price);
-            if (0 < fee) {
-                require(fee <= _sUSD().balanceOf(sender), "Insufficient balance");
-                _manager().burnSUSD(sender, fee);
-            }
-
-            // Lodge the order, which can be confirmed at the next price update
-            uint roundId = _currentRoundId(_exchangeRates());
-            uint id = _nextOrderId;
-            _nextOrderId += 1;
-
-            order.id = id;
-            order.leverage = leverage;
-            order.fee = fee;
-            order.roundId = roundId;
-            emitOrderSubmitted(id, sender, leverage, fee, roundId);
+        // Cancel any open order
+        Order storage order = orders[sender];
+        if (_orderPending(order)) {
+            _cancelOrder(sender);
         }
+
+        // TODO: Charge this out of margin (also update _cancelOrder, and compute this before _checkMargin)
+        // Compute the fee owed and check their sUSD balance is sufficient to cover it.
+        uint fee = _orderFee(margin, leverage, size, price);
+        if (0 < fee) {
+            require(fee <= _sUSD().balanceOf(sender), "Insufficient balance");
+            _manager().burnSUSD(sender, fee);
+        }
+
+        // Lodge the order, which can be confirmed at the next price update
+        uint roundId = _currentRoundId(_exchangeRates());
+        uint id = _nextOrderId;
+        _nextOrderId += 1;
+
+        order.id = id;
+        order.leverage = leverage;
+        order.fee = fee;
+        order.roundId = roundId;
+        emitOrderSubmitted(id, sender, leverage, fee, roundId);
     }
 
     function submitOrder(int leverage) external optionalProxy {

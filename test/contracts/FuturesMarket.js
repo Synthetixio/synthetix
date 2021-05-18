@@ -1041,6 +1041,23 @@ contract('FuturesMarket', accounts => {
 				});
 			}
 		});
+
+		it('Cannot submit an order if an existing position needs to be liquidated', async () => {
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('100'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('10'),
+			});
+
+			await setPrice(baseAsset, toUnit('50'));
+			assert.isTrue(await futuresMarket.canLiquidate(trader));
+			await assert.revert(
+				futuresMarket.submitOrder(toUnit('5'), { from: trader }),
+				'Position can be liquidated'
+			);
+		});
 	});
 
 	describe('Cancelling orders', () => {
