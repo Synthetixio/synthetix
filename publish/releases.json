@@ -244,7 +244,7 @@
 			"minor": 46
 		},
 		"ovm": true,
-		"sources": ["DebtCache"],
-		"sips": []
+		"sources": ["DebtCache", "Issuer", "EtherWrapper"],
+		"sips": [136]
 	}
 ]

@@ -1275,6 +1275,7 @@ const deploy = async ({
 
 	await deployer.deployContract({
 		name: 'EtherWrapper',
+		source: useOvm ? 'EmptyEtherCollateral' : 'EtherWrapper',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
 	});
