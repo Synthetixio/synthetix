@@ -580,10 +580,12 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         IExchangeRates exRates = _exchangeRates();
         (uint price, bool invalid) = _assetPrice(exRates);
         Order storage order = orders[account];
-        if (invalid || price == 0 || !_orderPending(order) || _currentRoundId(exRates) <= order.roundId) {
-            return false;
-        }
-        return true;
+        return
+            !invalid &&
+            price != 0 &&
+            _orderPending(order) &&
+            order.roundId < _currentRoundId(exRates) &&
+            !_canLiquidate(positions[account], _liquidationFee(), fundingSequence.length);
     }
 
     /* ---------- Utilities ---------- */
@@ -924,13 +926,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         require(price != 0, "Zero entry price. Cancel order and try again.");
 
         uint fundingIndex = _recomputeFunding(price);
-        // TODO: Just block here if an existing position can be liquidated -- confirmation keepers should not receive liquidation fees.
-        bool liquidated = _liquidateIfNeeded(account, price, fundingIndex);
-
-        // If the account needed to be liquidated, then the order was cancelled and it doesn't need to be confirmed.
-        if (liquidated) {
-            return;
-        }
 
         require(_orderPending(orders[account]), "No pending order");
         Order memory order = orders[account];
@@ -939,6 +934,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         require(order.roundId < _currentRoundId(_exchangeRates()), "Awaiting next price");
 
         Position storage position = positions[account];
+
+        // You can't outrun an impending liquidation by closing your position quickly, for example.
+        require(!_canLiquidate(position, _liquidationFee(), fundingIndex), "Position can be liquidated");
 
         // We weren't liquidated, so we realise the margin to compute the new position size.
         uint margin = _realiseMargin(position, fundingIndex, price, 0);

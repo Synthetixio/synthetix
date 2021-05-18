@@ -1132,6 +1132,7 @@ contract('FuturesMarket', accounts => {
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 
+			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
 			const tx = await futuresMarket.confirmOrder(trader);
 
 			const size = toUnit('50');
@@ -1182,10 +1183,12 @@ contract('FuturesMarket', accounts => {
 			const leverage = toUnit('10');
 			await futuresMarket.submitOrder(leverage, { from: trader });
 
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Awaiting next price');
 		});
 
 		it('cannot confirm an order if none is pending', async () => {
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'No pending order');
 		});
 
@@ -1198,9 +1201,30 @@ contract('FuturesMarket', accounts => {
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 
+			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Price is invalid');
+		});
+
+		it('Cannot confirm an order if an existing position is liquidating', async () => {
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('200'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('10'),
+			});
+
+			// User realises the price is going to crash and tries to outrun their liquidation
+			await futuresMarket.submitOrder(toUnit('0'), { from: trader });
+			await setPrice(baseAsset, toUnit('100'));
+
+			// But it fails!
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Position can be liquidated');
 		});
 
 		it.skip('Can confirm a set of multiple orders on both sides of the market', async () => {
