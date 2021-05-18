@@ -791,16 +791,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function cancelOrder() external optionalProxy {
-        address sender = messageSender;
-        // TODO: Canceling an order probably doesn't need to recompute funding and liquidate the order. Sanity check this.
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
-        uint fundingIndex = _recomputeFunding(price);
-        bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
-
-        // Liquidations cancel pending orders.
-        if (!liquidated) {
-            _cancelOrder(sender);
-        }
+        _cancelOrder(messageSender);
     }
 
     function _checkMargin(

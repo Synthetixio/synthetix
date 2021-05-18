@@ -1084,6 +1084,24 @@ contract('FuturesMarket', accounts => {
 		it('cannot cancel an order if no pending order exists', async () => {
 			await assert.revert(futuresMarket.cancelOrder({ from: trader }), 'No pending order');
 		});
+
+		it('Can still cancel an order, even if an existing position needs to be liquidated', async () => {
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('100'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('10'),
+			});
+
+			await futuresMarket.submitOrder(toUnit('5'), { from: trader });
+			await setPrice(baseAsset, toUnit('50'));
+			assert.isTrue(await futuresMarket.canLiquidate(trader));
+
+			assert.isTrue(await futuresMarket.orderPending(trader));
+			await futuresMarket.cancelOrder({ from: trader });
+			assert.isFalse(await futuresMarket.orderPending(trader));
+		});
 	});
 
 	describe('Confirming orders', () => {
