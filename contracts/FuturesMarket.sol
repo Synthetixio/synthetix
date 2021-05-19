@@ -640,20 +640,20 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         emitParameterUpdated(PARAMETER_MININITIALMARGIN, minInitialMargin);
     }
 
-    // TODO: Setting this parameter should record funding first.
     function setMaxFundingRate(uint maxFundingRate) external optionalProxy_onlyOwner {
+        _recomputeFunding(_assetPriceRequireNotInvalid(_exchangeRates()));
         parameters.maxFundingRate = maxFundingRate;
         emitParameterUpdated(PARAMETER_MAXFUNDINGRATE, maxFundingRate);
     }
 
-    // TODO: Setting this parameter should record funding first.
     function setMaxFundingRateSkew(uint maxFundingRateSkew) external optionalProxy_onlyOwner {
+        _recomputeFunding(_assetPriceRequireNotInvalid(_exchangeRates()));
         parameters.maxFundingRateSkew = maxFundingRateSkew;
         emitParameterUpdated(PARAMETER_MAXFUNDINGRATESKEW, maxFundingRateSkew);
     }
 
-    // TODO: Setting this parameter should record funding first.
     function setMaxFundingRateDelta(uint maxFundingRateDelta) external optionalProxy_onlyOwner {
+        _recomputeFunding(_assetPriceRequireNotInvalid(_exchangeRates()));
         parameters.maxFundingRateDelta = maxFundingRateDelta;
         emitParameterUpdated(PARAMETER_MAXFUNDINGRATEDELTA, maxFundingRateDelta);
     }
