@@ -2,9 +2,10 @@ const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { assertRevertOptimism } = require('./utils/revertOptimism');
 const { connectContract } = require('./utils/connectContract');
+const { wait } = require('./utils/rpc');
 
 const itCanPerformWithdrawalsTo = ({ ctx }) => {
-	describe('[WITHDRAW TO] when withdrawing SNX from L2 to another account on L1', () => {
+	describe('[WITHDRAW TO]', () => {
 		const amountToWithdraw = ethers.utils.parseEther('100');
 
 		let user1L2;
@@ -187,7 +188,10 @@ const itCanPerformWithdrawalsTo = ({ ctx }) => {
 								const [transactionHashL1] = await ctx.watcher.getMessageHashesFromL2Tx(
 									withdrawalReceipt.transactionHash
 								);
+
 								await ctx.watcher.getL1TransactionReceipt(transactionHashL1);
+
+								await wait({ seconds: 10 });
 							});
 
 							before('stop listening to events on L1', async () => {

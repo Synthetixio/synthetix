@@ -2,9 +2,10 @@ const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { assertRevertOptimism } = require('./utils/revertOptimism');
 const { connectContract } = require('./utils/connectContract');
+const { wait } = require('./utils/rpc');
 
 const itCanPerformWithdrawals = ({ ctx }) => {
-	describe('[WITHDRAW] when withdrawing SNX from L2 to L1', () => {
+	describe('[WITHDRAW]', () => {
 		const amountToWithdraw = ethers.utils.parseEther('10');
 
 		let user1L2;
@@ -48,9 +49,7 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 		});
 
 		before('make a deposit', async () => {
-			// Make a deposit so that
-			// 1. There is SNX in the bridge for withdrawals,
-			// 2. Counter a known bug in Optimism, where "now" is always 0 unless a message has been relayed
+			let tx;
 
 			SynthetixL1 = SynthetixL1.connect(ctx.ownerL1);
 			await SynthetixL1.approve(
@@ -59,7 +58,12 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 			);
 
 			SynthetixBridgeToOptimismL1 = SynthetixBridgeToOptimismL1.connect(ctx.ownerL1);
-			const tx = await SynthetixBridgeToOptimismL1.deposit(amountToWithdraw);
+			if ((await SynthetixBridgeToOptimismL1.initiationActive()) === false) {
+				tx = await SynthetixBridgeToOptimismL1.resumeInitiation();
+				await tx.wait();
+			}
+
+			tx = await SynthetixBridgeToOptimismL1.deposit(amountToWithdraw);
 			depositReceipt = await tx.wait();
 		});
 
@@ -193,10 +197,13 @@ const itCanPerformWithdrawals = ({ ctx }) => {
 
 							describe('when waiting for the tx to complete on L1', () => {
 								before('listen for completion', async () => {
-									const [transactionHashL1] = await ctx.watcher.getMessageHashesFromL2Tx(
+									const [messageHashL1] = await ctx.watcher.getMessageHashesFromL2Tx(
 										withdrawalReceipt.transactionHash
 									);
-									await ctx.watcher.getL1TransactionReceipt(transactionHashL1);
+
+									await ctx.watcher.getL1TransactionReceipt(messageHashL1);
+
+									await wait({ seconds: 10 });
 								});
 
 								before('stop listening to events on L1', async () => {
