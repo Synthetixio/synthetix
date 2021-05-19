@@ -3244,6 +3244,38 @@ contract('Exchange Rates', async accounts => {
 				},
 			});
 
+			// Given P_TWAP of 0.0099, P_CL of 0.01, and CL_BUFFER of 200bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '0.0099',
+					pCl: '0.01',
+				},
+				settings: {
+					clBuffer: '200', // bps
+				},
+				expected: {
+					amountOut: toUnit('9.8'),
+					rateTypes: 'pClBuf',
+				},
+			});
+
+			// Given P_TWAP of 0.0099, P_CL of 0.01, and CL_BUFFER of 0bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '0.0099',
+					pCl: '0.01',
+				},
+				settings: {
+					clBuffer: '0', // bps
+				},
+				expected: {
+					amountOut: toUnit('9.9'),
+					rateTypes: 'pTwap',
+				},
+			});
+
 			// P_TWAP of 0.01, P_SPOT of 0.01, P_CL of 0.01, and CL_BUFFER of 0bps
 			itGivesTheCorrectRates({
 				inputs: { amountIn, srcToken, destToken },
@@ -3295,6 +3327,54 @@ contract('Exchange Rates', async accounts => {
 				expected: {
 					amountOut: toUnit('985.05'),
 					rateTypes: 'pClBuf',
+				},
+			});
+
+			// P_TWAP of 100, P_CL of 100, and CL_BUFFER of 50bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '100',
+					pCl: '100',
+				},
+				settings: {
+					clBuffer: '50', // bps
+				},
+				expected: {
+					amountOut: toUnit('995'),
+					rateTypes: 'pClBuf',
+				},
+			});
+
+			// P_TWAP of 99, P_CL of 100, and CL_BUFFER of 200bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '99',
+					pCl: '100',
+				},
+				settings: {
+					clBuffer: '200', // bps
+				},
+				expected: {
+					amountOut: toUnit('980'),
+					rateTypes: 'pClBuf',
+				},
+			});
+
+			// P_TWAP of 99, P_CL of 100, and CL_BUFFER of 0bps
+			itGivesTheCorrectRates({
+				inputs: { amountIn, srcToken, destToken },
+				rates: {
+					pTwap: '99',
+					pCl: '100',
+				},
+				settings: {
+					clBuffer: '0', // bps
+				},
+				expected: {
+					amountOut: toUnit('990'),
+					rateTypes: 'pTwap',
 				},
 			});
 
