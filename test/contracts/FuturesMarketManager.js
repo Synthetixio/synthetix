@@ -94,10 +94,7 @@ contract('FuturesMarketManager', accounts => {
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(3));
 			assert.equal((await futuresMarketManager.markets(2, 1))[0], m.address);
 
-			assert.equal(
-				(await futuresMarketManager.marketsForAssets([toBytes32('sLINK')]))[0],
-				m.address
-			);
+			assert.equal(await futuresMarketManager.marketForAsset(toBytes32('sLINK')), m.address);
 		});
 
 		it('Adding multiple markets', async () => {
@@ -154,10 +151,7 @@ contract('FuturesMarketManager', accounts => {
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
 			assert.deepEqual(markets, [addresses[1]]);
 
-			assert.equal(
-				(await futuresMarketManager.marketsForAssets([currencyKeys[0]]))[0],
-				ZERO_ADDRESS
-			);
+			assert.equal(await futuresMarketManager.marketForAsset(currencyKeys[0]), ZERO_ADDRESS);
 		});
 
 		it('Removing multiple markets', async () => {
