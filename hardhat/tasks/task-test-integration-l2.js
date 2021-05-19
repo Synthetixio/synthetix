@@ -2,7 +2,8 @@ const { task } = require('hardhat/config');
 const { compileInstance, deployInstance } = require('../../test/integration/utils/deploy');
 
 task('test:integration:l2', 'run isolated layer 2 production tests')
-	.addFlag('deploy', 'Deploy an l2 instance before running tests')
+	.addFlag('compile', 'Compile an l2 instance before running the tests')
+	.addFlag('deploy', 'Deploy an l2 instance before running the tests')
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/l2/';
 
@@ -16,9 +17,12 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 
 		taskArguments.maxMemory = true;
 
+		if (taskArguments.compile) {
+			await compileInstance({ useOvm: true });
+		}
+
 		if (taskArguments.deploy) {
-			await compileInstance({ useOvm: false });
-			await deployInstance({ useOvm: false, providerUrl, providerPort });
+			await deployInstance({ useOvm: true, providerUrl, providerPort });
 		}
 
 		await hre.run('test', taskArguments);

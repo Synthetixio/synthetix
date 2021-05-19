@@ -7,6 +7,10 @@ const commands = {
 	connectBridge: require('../../../publish/src/commands/connect-bridge').connectBridge,
 };
 
+const {
+	constants: { OVM_MAX_GAS_LIMIT },
+} = require('../../../.');
+
 async function compileInstance({ useOvm }) {
 	await commands.build({
 		useOvm,
@@ -24,11 +28,11 @@ async function deployInstance({ useOvm, providerUrl, providerPort }) {
 		freshDeploy: true,
 		yes: true,
 		providerUrl: `${providerUrl}:${providerPort}`,
-		gasPrice: '1',
-		useOvm: false,
+		gasPrice: useOvm ? '0' : '1',
+		useOvm,
 		privateKey,
 		methodCallGasLimit: '3500000',
-		contractDeploymentGasLimit: '9500000',
+		contractDeploymentGasLimit: useOvm ? OVM_MAX_GAS_LIMIT : '9500000',
 		ignoreCustomParameters: false,
 	});
 }
