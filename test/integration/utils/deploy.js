@@ -1,4 +1,3 @@
-const hre = require('hardhat');
 const axios = require('axios');
 const { getPrivateKey } = require('./wallets');
 
@@ -16,7 +15,7 @@ async function compileInstance({ useOvm }) {
 	});
 }
 
-async function deployInstance({ useOvm }) {
+async function deployInstance({ useOvm, providerUrl, providerPort }) {
 	const privateKey = getPrivateKey({ index: 0 });
 
 	await commands.deploy({
@@ -24,7 +23,7 @@ async function deployInstance({ useOvm }) {
 		network: 'local',
 		freshDeploy: true,
 		yes: true,
-		providerUrl: `${hre.config.providerUrl}:${hre.config.providerPort}`,
+		providerUrl: `${providerUrl}:${providerPort}`,
 		gasPrice: '1',
 		useOvm: false,
 		privateKey,
@@ -34,16 +33,16 @@ async function deployInstance({ useOvm }) {
 	});
 }
 
-async function connectInstances() {
+async function connectInstances({ providerUrl, providerPortL1, providerPortL2 }) {
 	const privateKey = getPrivateKey({ index: 0 });
 
-	const { l1Messenger, l2Messenger } = await _getMessengers();
+	const { l1Messenger, l2Messenger } = await _getMessengers({ providerUrl });
 
 	await commands.connectBridge({
 		l1Network: 'local',
 		l2Network: 'local',
-		l1ProviderUrl: `${hre.config.providerUrl}:${hre.config.providerPortL1}`,
-		l2ProviderUrl: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
+		l1ProviderUrl: `${providerUrl}:${providerPortL1}`,
+		l2ProviderUrl: `${providerUrl}:${providerPortL2}`,
 		l1Messenger,
 		l2Messenger,
 		l1PrivateKey: privateKey,
@@ -54,8 +53,8 @@ async function connectInstances() {
 	});
 }
 
-async function _getMessengers() {
-	const response = await axios.get(`${hre.config.providerUrl}:8080/addresses.json`);
+async function _getMessengers({ providerUrl }) {
+	const response = await axios.get(`${providerUrl}:8080/addresses.json`);
 	const addresses = response.data;
 
 	return {
