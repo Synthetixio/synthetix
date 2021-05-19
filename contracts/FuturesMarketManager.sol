@@ -105,9 +105,10 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
         uint numOfMarkets = marketsToRemove.length;
         for (uint i; i < numOfMarkets; i++) {
             address market = marketsToRemove[i];
+            require(market != address(0), "Unknown market");
 
             bytes32 key = IFuturesMarket(market).baseAsset();
-            require(marketForAsset[key] != address(0), "No market exists for this asset");
+            require(marketForAsset[key] != address(0), "Unknown market");
             delete marketForAsset[key];
             _markets.remove(market);
             emitMarketRemoved(market, key);
