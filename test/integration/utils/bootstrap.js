@@ -3,6 +3,7 @@ const ethers = require('ethers');
 const { loadWallets } = require('./wallets');
 const { connectContracts } = require('./contracts');
 const { simulateExchangeRates } = require('./rates');
+const { takeDebtSnapshot } = require('./cache');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -16,6 +17,7 @@ function bootstrapL1({ ctx }) {
 		connectContracts({ ctx });
 
 		await simulateExchangeRates({ ctx });
+		await takeDebtSnapshot({ ctx });
 	});
 }
 
@@ -32,6 +34,7 @@ async function bootstrapL2({ ctx }) {
 		connectContracts({ ctx });
 
 		await simulateExchangeRates({ ctx });
+		await takeDebtSnapshot({ ctx });
 	});
 }
 
@@ -56,6 +59,9 @@ async function bootstrapDual({ ctx }) {
 
 		await simulateExchangeRates({ ctx: ctx.l1 });
 		await simulateExchangeRates({ ctx: ctx.l2 });
+
+		await takeDebtSnapshot({ ctx: ctx.l1 });
+		await takeDebtSnapshot({ ctx: ctx.l2 });
 	});
 }
 
