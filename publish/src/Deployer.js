@@ -2,7 +2,7 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
-// const Ethers = require('ethers');
+const ethers = require('ethers');
 const RLP = require('rlp');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
@@ -51,16 +51,21 @@ class Deployer {
 		// Configure Web3 so we can sign transactions and connect to the network.
 		this.provider = { web3: {}, ethers: {} };
 		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-		this.provider.ethers.ro = null;
+		this.provider.ethers.ro = ethers.getDefaultProvider(providerUrl);
 		this.provider.ethers.transactional = null;
 
 		if (useFork || (!privateKey && network === 'local')) {
 			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+
+			this.provider.ethers.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		} else {
 			this.provider.web3.eth.accounts.wallet.add(privateKey);
 			this.provider.web3.eth.defaultAccount = this.provider.web3.eth.accounts.wallet[0].address;
+
+			this.provider.ethers.wallet = new ethers.Wallet(privateKey);
+			this.provider.ethers.defaultAccount = this.provider.ethers.wallet.address;
 		}
-		this.account = this.provider.web3.eth.defaultAccount;
+		this.account = this.provider.ethers.defaultAccount;
 		this.deployedContracts = {};
 		this._dryRunCounter = 0;
 
@@ -74,7 +79,7 @@ class Deployer {
 	async evaluateNextDeployedContractAddress() {
 		const nonce = await this.provider.web3.eth.getTransactionCount(this.account);
 		const rlpEncoded = RLP.encode([this.account, nonce]);
-		const hashed = this.provider.web3.utils.sha3(rlpEncoded);
+		const hashed = ethers.utils.id(rlpEncoded); // ethers sha3 is implemented with id()
 
 		return `0x${hashed.slice(12).substring(14)}`;
 	}
@@ -120,7 +125,7 @@ class Deployer {
 			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 			value: 0,
 			gas: 1000000,
-			gasPrice: this.provider.web3.utils.toWei(this.gasPrice, 'gwei'),
+			gasPrice: ethers.utils.parseUnits(this.gasPrice, 'gwei').toString(),
 		});
 
 		if (this.nonceManager) {
@@ -132,7 +137,7 @@ class Deployer {
 		const params = {
 			from: this.account,
 			gas: type === 'method-call' ? this.methodCallGasLimit : this.contractDeploymentGasLimit,
-			gasPrice: this.provider.web3.utils.toWei(this.gasPrice, 'gwei'),
+			gasPrice: ethers.utils.parseUnits(this.gasPrice, 'gwei').toString(),
 		};
 
 		if (this.nonceManager) {
