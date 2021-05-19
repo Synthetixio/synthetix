@@ -136,5 +136,8 @@
 	},
 	"CollateralManager": {
 		"deploy": true
+	},
+	"CollateralShort": {
+		"deploy": true
 	}
 }

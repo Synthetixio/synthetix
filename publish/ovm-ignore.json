@@ -11,5 +11,7 @@
 	"MockBinaryOptionMarket",
 	"MockBinaryOptionMarketManager",
 	"TestableBinaryOptionMarket",
-	"Synthetix"
+	"Synthetix",
+	"CollateralEth",
+	"CollateralErc20"
 ]
