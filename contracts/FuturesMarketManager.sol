@@ -14,6 +14,7 @@ import "./AddressSetLib.sol";
 import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/ISynth.sol";
 
+// TODO: Does this really need to be proxyable?
 contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarketManager {
     using SafeMath for uint;
     using AddressSetLib for AddressSetLib.AddressSet;
@@ -144,10 +145,6 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     }
 
     /* ========== EVENTS ========== */
-
-    function addressToBytes32(address input) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(input)));
-    }
 
     event MarketAdded(address market, bytes32 indexed asset);
     bytes32 internal constant MARKETADDED_SIG = keccak256("MarketAdded(address,bytes32)");
