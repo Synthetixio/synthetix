@@ -1814,6 +1814,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						);
 
 						const { fee } = await exchanger.getAmountsForExchange(amountIssued, sUSD, sAUD);
+						const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
 
 						const sAUDBalance = await sAUDContract.balanceOf(account1);
 
@@ -1832,7 +1833,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							trackingCode,
 							toCurrencyKey: toBytes32('sAUD'),
 							toAmount: sAUDBalance,
-							fee,
+							fee: usdFeeAmount,
 						});
 					});
 
@@ -2184,7 +2185,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									trackingCode,
 									toCurrencyKey: toBytes32('sAUD'),
 									toAmount: sAUDBalance,
-									fee,
+									fee: usdFeeAmount,
 								});
 							});
 						});
