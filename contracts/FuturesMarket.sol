@@ -540,10 +540,11 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         }
 
         int skew = marketSkew;
+        int takerFee = int(parameters.takerFee);
         if (_sameSide(newNotional, skew)) {
             // If the order is submitted on the same side as the skew, increasing it.
             // The taker fee is charged on the increase.
-            return _abs(notionalDiff.multiplyDecimalRound(int(parameters.takerFee)));
+            return _abs(notionalDiff.multiplyDecimalRound(takerFee));
         }
 
         // Otherwise if the order is opposite to the skew,
@@ -559,7 +560,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         // The order is sufficient to flip the skew, charge/rebate the difference in fees
         // between maker and taker on the new skew value.
         if (_sameSide(newNotional, postSkewNotional)) {
-            fee = fee.add(postSkewNotional.multiplyDecimalRound(int(parameters.takerFee).sub(makerFee)));
+            fee = fee.add(postSkewNotional.multiplyDecimalRound(takerFee.sub(makerFee)));
         }
 
         return _abs(fee);
