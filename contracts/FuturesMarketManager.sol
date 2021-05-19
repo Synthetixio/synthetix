@@ -156,9 +156,9 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     }
 
     event MarketRemoved(address market, bytes32 indexed asset);
-    bytes32 internal constant MARKETREMOVED_SIG = keccak256("MarketAdded(address,bytes32)");
+    bytes32 internal constant MARKETREMOVED_SIG = keccak256("MarketRemoved(address,bytes32)");
 
     function emitMarketRemoved(address market, bytes32 asset) internal {
-        proxy._emit(abi.encode(market), 2, MARKETADDED_SIG, asset, 0, 0);
+        proxy._emit(abi.encode(market), 2, MARKETREMOVED_SIG, asset, 0, 0);
     }
 }
