@@ -3,9 +3,9 @@ pragma solidity >=0.4.24;
 // https://docs.synthetix.io/contracts/source/interfaces/isystemsettings
 interface ISystemSettings {
     // Views
-    function priceDeviationThresholdFactor() external view returns (uint);
-
     function waitingPeriodSecs() external view returns (uint);
+
+    function priceDeviationThresholdFactor() external view returns (uint);
 
     function issuanceRatio() external view returns (uint);
 
@@ -24,4 +24,22 @@ interface ISystemSettings {
     function exchangeFeeRate(bytes32 currencyKey) external view returns (uint);
 
     function minimumStakeTime() external view returns (uint);
+
+    function debtSnapshotStaleTime() external view returns (uint);
+
+    function aggregatorWarningFlags() external view returns (address);
+
+    function tradingRewardsEnabled() external view returns (bool);
+
+    // function crossDomainMessageGasLimit(CrossDomainMessageGasLimits gasLimitType) external view returns (uint);
+
+    function atomicMaxVolumePerBlock() external view returns (uint);
+
+    function atomicTwapPriceWindow() external view returns (uint);
+
+    function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address);
+
+    function atomicExchangeFeeRate(bytes32 currencyKey) external view returns (uint);
+
+    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint);
 }
