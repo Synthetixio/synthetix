@@ -832,7 +832,7 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setAtomicTwapPriceWindow', () => {
-		const priceWindow = 2;
+		const priceWindow = 3600; // 1 hour
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setAtomicTwapPriceWindow,

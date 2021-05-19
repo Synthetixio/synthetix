@@ -44,9 +44,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // Atomic block volume limit is encoded as uint192.
     uint public constant MAX_ATOMIC_VOLUME_PER_BLOCK = uint192(-1);
 
-    // TWAP window must be more than 30min and not exceed 1 day.
-    uint public constant MIN_ATOMIC_TWAP_PRICE_WINDOW = 1;
-    uint public constant MAX_ATOMIC_TWAP_PRICE_WINDOW = 48;
+    // TWAP window must be between 30min and 1 day.
+    uint public constant MIN_ATOMIC_TWAP_PRICE_WINDOW = 1800;
+    uint public constant MAX_ATOMIC_TWAP_PRICE_WINDOW = 86400;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -142,7 +142,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP-120 Atomic exchanges
-    // time window (in 30min periods) for TWAP prices when considered for atomic exchanges
+    // time window (in seconds) for TWAP prices when considered for atomic exchanges
     function atomicTwapPriceWindow() external view returns (uint) {
         return getAtomicTwapPriceWindow();
     }

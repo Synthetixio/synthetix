@@ -2904,7 +2904,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					beforeEach(async () => {
 						// DexTwapAggregator
 						const dexTwapAggregator = await MockDexTwapAggregator.new();
-						await dexTwapAggregator.setAssetToAssetRates(ethOnDex, ethOnDex, ethOnDex);
+						await dexTwapAggregator.setAssetToAssetRate(ethOnDex);
 						await exchangeRates.setDexTwapAggregator(dexTwapAggregator.address, { from: owner });
 
 						// Synth equivalents (needs ability to read into decimals)

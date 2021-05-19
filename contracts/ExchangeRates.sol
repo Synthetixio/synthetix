@@ -1,5 +1,4 @@
 pragma solidity ^0.5.16;
-pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -400,7 +399,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         // Normalize decimals in case equivalent asset uses different decimals from internal unit
         uint sourceAmountInEquivalent = (sourceAmount * 10**uint(sourceEquivalent.decimals())) / SafeDecimalMath.unit();
         // TODO: add sanity check here to make sure the price window isn't 0?
-        IDexTwapAggregator.QuoteParams memory dexTwapQuote =
+        uint twapValueInEquivalent =
             dexTwapAggregator.assetToAsset(
                 address(sourceEquivalent),
                 sourceAmountInEquivalent,
@@ -408,10 +407,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
                 getAtomicTwapPriceWindow()
             );
         // Similar to source amount, normalize decimals back to internal unit for output amount
-        uint pAggValue = (dexTwapQuote.quoteOut * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());
+        uint pTwapValue = (twapValueInEquivalent * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());
 
-        // Final value is minimum of P_CLBUF and P_AGG
-        value = Math.min(pClbufValue, pAggValue);
+        // Final value is minimum output between P_CLBUF and P_TWAP
+        value = Math.min(pClbufValue, pTwapValue);
     }
 
     function rateForCurrency(bytes32 currencyKey) external view returns (uint) {
