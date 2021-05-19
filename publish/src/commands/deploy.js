@@ -2,7 +2,7 @@
 
 const path = require('path');
 const { gray, green, yellow, redBright, red } = require('chalk');
-const w3utils = require('web3-utils');
+const ethers = require('ethers');
 const Deployer = require('../Deployer');
 const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
@@ -76,7 +76,7 @@ const deploy = async ({
 
 	// OVM uses a gas price of 0 (unless --gas explicitely defined).
 	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
-		gasPrice = w3utils.toBN('0');
+		gasPrice = ethers.constants.Zero;
 	}
 
 	const limitPromise = pLimit(concurrency);
@@ -311,16 +311,16 @@ const deploy = async ({
 		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
 
 		// inflationSupplyToDate = total supply - 100m
-		const inflationSupplyToDate = w3utils
-			.toBN(currentSynthetixSupply)
-			.sub(w3utils.toBN(w3utils.toWei((100e6).toString())));
+		const inflationSupplyToDate = ethers.utils
+			.parseUnits(currentSynthetixSupply, 'wei')
+			.sub(ethers.utils.parseUnits(100e6).toString());
 
 		// current weekly inflation 75m / 52
-		const weeklyInflation = w3utils.toBN(w3utils.toWei((75e6 / 52).toString()));
+		const weeklyInflation = ethers.utils.parseUnits((75e6 / 52).toString()).toString();
 		currentWeekOfInflation = inflationSupplyToDate.div(weeklyInflation);
 
 		// Check result is > 0 else set to 0 for currentWeek
-		currentWeekOfInflation = currentWeekOfInflation.gt(w3utils.toBN('0'))
+		currentWeekOfInflation = currentWeekOfInflation.gt(ethers.constants.Zero)
 			? currentWeekOfInflation.toNumber()
 			: 0;
 
@@ -386,7 +386,7 @@ const deploy = async ({
 	}
 
 	for (const address of [account, oracleExrates]) {
-		if (!w3utils.isAddress(address)) {
+		if (!ethers.utils.isAddress(address)) {
 			console.error(red('Invalid address detected (please check your inputs):', address));
 			process.exitCode = 1;
 			return;
@@ -413,7 +413,7 @@ const deploy = async ({
 	}
 
 	const deployerBalance = parseInt(
-		w3utils.fromWei(await deployer.provider.web3.eth.getBalance(account), 'ether'),
+		ethers.utils.formatUnits(await deployer.provider.web3.eth.getBalance(account), 'ether'),
 		10
 	);
 	if (useFork) {
@@ -423,7 +423,7 @@ const deploy = async ({
 		await deployer.provider.web3.eth.sendTransaction({
 			from: accounts[0],
 			to: account,
-			value: w3utils.toWei('10', 'ether'),
+			value: ethers.utils.parseUnits('10', 'ether').toString(),
 		});
 	} else if (deployerBalance < 5) {
 		console.log(
@@ -467,7 +467,9 @@ const deploy = async ({
 			? green('✅ YES\n\t\t\t\t') + newSynthsToAdd.join(', ')
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
-		'Synthetix totalSupply': `${Math.round(w3utils.fromWei(currentSynthetixSupply) / 1e6)}m`,
+		'Synthetix totalSupply': `${Math.round(
+			ethers.utils.formatUnits(currentSynthetixSupply) / 1e6
+		)}m`,
 		'ExchangeRates Oracle': oracleExrates,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
@@ -1171,7 +1173,7 @@ const deploy = async ({
 		const { feed } = feeds[asset] || {};
 
 		// now setup price aggregator if any for the synth
-		if (w3utils.isAddress(feed) && exchangeRates) {
+		if (ethers.utils.isAddress(feed) && exchangeRates) {
 			await runStep({
 				contract: `ExchangeRates`,
 				target: exchangeRates,
@@ -1249,7 +1251,7 @@ const deploy = async ({
 				writeArg: [
 					addressOf(proxyERC20Synthetix),
 					addressOf(SynthetixBridgeToOptimism),
-					w3utils.toWei('100000000'),
+					ethers.utils.parseUnits('100000000').toString(),
 				],
 			});
 		}
@@ -1303,11 +1305,11 @@ const deploy = async ({
 	const maxOraclePriceAge = 120 * 60; // Price updates are accepted from up to two hours before maturity to allow for delayed chainlink heartbeats.
 	const expiryDuration = 26 * 7 * day; // Six months to exercise options before the market is destructible.
 	const maxTimeToMaturity = 730 * day; // Markets may not be deployed more than two years in the future.
-	const creatorCapitalRequirement = w3utils.toWei('1000'); // 1000 sUSD is required to create a new market.
-	const creatorSkewLimit = w3utils.toWei('0.05'); // Market creators must leave 5% or more of their position on either side.
-	const poolFee = w3utils.toWei('0.008'); // 0.8% of the market's value goes to the pool in the end.
-	const creatorFee = w3utils.toWei('0.002'); // 0.2% of the market's value goes to the creator.
-	const refundFee = w3utils.toWei('0.05'); // 5% of a bid stays in the pot if it is refunded.
+	const creatorCapitalRequirement = ethers.utils.parseUnits('1000').toString(); // 1000 sUSD is required to create a new market.
+	const creatorSkewLimit = ethers.utils.parseUnits('0.05').toString(); // Market creators must leave 5% or more of their position on either side.
+	const poolFee = ethers.utils.parseUnits('0.008').toString(); // 0.8% of the market's value goes to the pool in the end.
+	const creatorFee = ethers.utils.parseUnits('0.002').toString(); // 0.2% of the market's value goes to the creator.
+	const refundFee = ethers.utils.parseUnits('0.05').toString(); // 5% of a bid stays in the pot if it is refunded.
 	const binaryOptionMarketManager = await deployer.deployContract({
 		name: 'BinaryOptionMarketManager',
 		args: [
@@ -1347,7 +1349,7 @@ const deploy = async ({
 	// Setup remaining price feeds (that aren't synths)
 
 	for (const { asset, feed } of standaloneFeeds) {
-		if (w3utils.isAddress(feed) && exchangeRates) {
+		if (ethers.utils.isAddress(feed) && exchangeRates) {
 			await runStep({
 				contract: `ExchangeRates`,
 				target: exchangeRates,
@@ -1908,9 +1910,9 @@ const deploy = async ({
 					write: 'setInversePricing',
 					writeArg: [
 						toBytes32(currencyKey),
-						w3utils.toWei(entryPoint.toString()),
-						w3utils.toWei(upperLimit.toString()),
-						w3utils.toWei(lowerLimit.toString()),
+						ethers.utils.parseUnits(entryPoint.toString()).toString(),
+						ethers.utils.parseUnits(upperLimit.toString()).toString(),
+						ethers.utils.parseUnits(lowerLimit.toString()).toString(),
 						freezeAtUpperLimit,
 						freezeAtLowerLimit,
 					],
@@ -1952,9 +1954,9 @@ const deploy = async ({
 				if (
 					oldExrates.options.address !== exchangeRates.options.address &&
 					JSON.stringify(inversePricingOnCurrentExRates) === JSON.stringify(oldInversePricing) &&
-					+w3utils.fromWei(inversePricingOnCurrentExRates.entryPoint) === entryPoint &&
-					+w3utils.fromWei(inversePricingOnCurrentExRates.upperLimit) === upperLimit &&
-					+w3utils.fromWei(inversePricingOnCurrentExRates.lowerLimit) === lowerLimit
+					+ethers.utils.formatUnits(inversePricingOnCurrentExRates.entryPoint) === entryPoint &&
+					+ethers.utils.formatUnits(inversePricingOnCurrentExRates.upperLimit) === upperLimit &&
+					+ethers.utils.formatUnits(inversePricingOnCurrentExRates.lowerLimit) === lowerLimit
 				) {
 					console.log(
 						gray(
@@ -1964,13 +1966,15 @@ const deploy = async ({
 				}
 				// When there's an inverted synth with matching parameters
 				else if (
-					entryPoint === +w3utils.fromWei(oldEntryPoint) &&
-					upperLimit === +w3utils.fromWei(oldUpperLimit) &&
-					lowerLimit === +w3utils.fromWei(oldLowerLimit)
+					entryPoint === +ethers.utils.formatUnits(oldEntryPoint) &&
+					upperLimit === +ethers.utils.formatUnits(oldUpperLimit) &&
+					lowerLimit === +ethers.utils.formatUnits(oldLowerLimit)
 				) {
 					if (oldExrates.options.address !== addressOf(exchangeRates)) {
-						const freezeAtUpperLimit = +w3utils.fromWei(currentRateForCurrency) === upperLimit;
-						const freezeAtLowerLimit = +w3utils.fromWei(currentRateForCurrency) === lowerLimit;
+						const freezeAtUpperLimit =
+							+ethers.utils.formatUnits(currentRateForCurrency) === upperLimit;
+						const freezeAtLowerLimit =
+							+ethers.utils.formatUnits(currentRateForCurrency) === lowerLimit;
 						console.log(
 							gray(
 								`Detected an existing inverted synth for ${currencyKey} with identical parameters and a newer ExchangeRates. ` +
@@ -2047,27 +2051,27 @@ const deploy = async ({
 
 		// override individual currencyKey / synths exchange rates
 		const synthExchangeRateOverride = {
-			sETH: w3utils.toWei('0.0025'),
-			iETH: w3utils.toWei('0.004'),
-			sBTC: w3utils.toWei('0.003'),
-			iBTC: w3utils.toWei('0.003'),
-			iBNB: w3utils.toWei('0.021'),
-			sXTZ: w3utils.toWei('0.0085'),
-			iXTZ: w3utils.toWei('0.0085'),
-			sEOS: w3utils.toWei('0.0085'),
-			iEOS: w3utils.toWei('0.009'),
-			sETC: w3utils.toWei('0.0085'),
-			sLINK: w3utils.toWei('0.0085'),
-			sDASH: w3utils.toWei('0.009'),
-			iDASH: w3utils.toWei('0.009'),
-			sXRP: w3utils.toWei('0.009'),
+			sETH: ethers.utils.parseUnits('0.0025').toString(),
+			iETH: ethers.utils.parseUnits('0.004').toString(),
+			sBTC: ethers.utils.parseUnits('0.003').toString(),
+			iBTC: ethers.utils.parseUnits('0.003').toString(),
+			iBNB: ethers.utils.parseUnits('0.021').toString(),
+			sXTZ: ethers.utils.parseUnits('0.0085').toString(),
+			iXTZ: ethers.utils.parseUnits('0.0085').toString(),
+			sEOS: ethers.utils.parseUnits('0.0085').toString(),
+			iEOS: ethers.utils.parseUnits('0.009').toString(),
+			sETC: ethers.utils.parseUnits('0.0085').toString(),
+			sLINK: ethers.utils.parseUnits('0.0085').toString(),
+			sDASH: ethers.utils.parseUnits('0.009').toString(),
+			iDASH: ethers.utils.parseUnits('0.009').toString(),
+			sXRP: ethers.utils.parseUnits('0.009').toString(),
 		};
 
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
-						currentRate: w3utils.fromWei(synthRates[i] || '0'),
+						currentRate: ethers.utils.parseUnits(synthRates[i] || '0').toString(),
 						targetRate:
 							synth.name in synthExchangeRateOverride
 								? synthExchangeRateOverride[synth.name]
@@ -2087,7 +2091,8 @@ const deploy = async ({
 					synthsRatesToUpdate
 						.map(
 							({ name, targetRate, currentRate }) =>
-								`\t${name} from ${currentRate * 100}% to ${w3utils.fromWei(targetRate) * 100}%`
+								`\t${name} from ${currentRate * 100}% to ${ethers.utils.formatUnits(targetRate) *
+									100}%`
 						)
 						.join('\n')
 				)
@@ -2547,8 +2552,8 @@ const deploy = async ({
 				);
 				return true;
 			} else {
-				const cachedDebtEther = w3utils.fromWei(cacheInfo.debt);
-				const currentDebtEther = w3utils.fromWei(currentDebt.debt);
+				const cachedDebtEther = ethers.utils.formatUnits(cacheInfo.debt);
+				const currentDebtEther = ethers.utils.formatUnits(currentDebt.debt);
 				const deviation =
 					(Number(currentDebtEther) - Number(cachedDebtEther)) / Number(cachedDebtEther);
 				const maxDeviation = DEFAULTS.debtSnapshotMaxDeviation;
