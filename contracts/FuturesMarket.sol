@@ -208,7 +208,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function _assetPriceRequireNotInvalid(IExchangeRates exchangeRates) internal view returns (uint) {
         (uint price, bool invalid) = _assetPrice(exchangeRates);
-        require(!invalid, "Price is invalid");
+        require(!invalid, "Invalid price");
         return price;
     }
 
@@ -474,14 +474,15 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     function _canLiquidate(
         Position storage position,
         uint liquidationFee,
-        uint fundingIndex
+        uint fundingIndex,
+        uint price,
+        bool invalid
     ) internal view returns (bool) {
         // No liquidating empty positions.
         if (position.size == 0) {
             return false;
         }
 
-        (uint price, bool invalid) = _assetPrice(_exchangeRates());
         // No liquidating when the current price is invalid.
         if (invalid) {
             return false;
@@ -491,7 +492,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function canLiquidate(address account) external view returns (bool) {
-        return _canLiquidate(positions[account], _liquidationFee(), fundingSequence.length);
+        (uint price, bool invalid) = _assetPrice(_exchangeRates());
+        return _canLiquidate(positions[account], _liquidationFee(), fundingSequence.length, price, invalid);
     }
 
     function _currentLeverage(
@@ -585,7 +587,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             price != 0 &&
             _orderPending(order) &&
             order.roundId < _currentRoundId(exRates) &&
-            !_canLiquidate(positions[account], _liquidationFee(), fundingSequence.length);
+            !_canLiquidate(positions[account], _liquidationFee(), fundingSequence.length, price, invalid);
     }
 
     /* ---------- Utilities ---------- */
@@ -838,7 +840,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         Position storage position = positions[sender];
 
         // The order is not submitted if the user's existing position needed to be liquidated.
-        require(!_canLiquidate(position, _liquidationFee(), fundingIndex), "Position can be liquidated");
+        // We know that the price is not invalid now that we're in this function
+        require(!_canLiquidate(position, _liquidationFee(), fundingIndex, price, false), "Position can be liquidated");
 
         uint margin = _remainingMargin(position, fundingIndex, price);
         int size = position.size;
@@ -908,8 +911,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     // TODO: Ensure that this is fine if the position is swapping sides
     // TODO: Check that everything is fine if a position already exists.
     function confirmOrder(address account) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
-        require(price != 0, "Zero entry price. Cancel order and try again.");
+        (uint price, bool invalid) = _assetPrice(_exchangeRates());
+        require(!(invalid || price == 0), "Invalid price");
 
         uint fundingIndex = _recomputeFunding(price);
 
@@ -922,7 +925,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         Position storage position = positions[account];
 
         // You can't outrun an impending liquidation by closing your position quickly, for example.
-        require(!_canLiquidate(position, _liquidationFee(), fundingIndex), "Position can be liquidated");
+        require(!_canLiquidate(position, _liquidationFee(), fundingIndex, price, invalid), "Position can be liquidated");
 
         // We weren't liquidated, so we realise the margin to compute the new position size.
         uint margin = _realiseMargin(position, fundingIndex, price, 0);
@@ -1009,11 +1012,14 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function liquidatePosition(address account) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        (uint price, bool invalid) = _assetPrice(_exchangeRates());
         uint fundingIndex = _recomputeFunding(price);
 
         uint liquidationFee = _liquidationFee();
-        require(_canLiquidate(positions[account], liquidationFee, fundingIndex), "Position cannot be liquidated");
+        require(
+            _canLiquidate(positions[account], liquidationFee, fundingIndex, price, invalid),
+            "Position cannot be liquidated"
+        );
 
         // If there are any pending orders, the liquidation will cancel them.
         if (_orderPending(orders[account])) {

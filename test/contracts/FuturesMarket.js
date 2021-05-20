@@ -1206,7 +1206,7 @@ contract('FuturesMarket', accounts => {
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
-			await assert.revert(futuresMarket.confirmOrder(trader), 'Price is invalid');
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
 		});
 
 		it('Cannot confirm an order if an existing position is liquidating', async () => {
