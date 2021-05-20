@@ -30,7 +30,8 @@ interface ISynthetixInternal {
     function emitExchangeTracking(
         bytes32 trackingCode,
         bytes32 toCurrencyKey,
-        uint256 toAmount
+        uint256 toAmount,
+        uint256 fee
     ) external;
 
     function emitSynthExchange(
@@ -377,7 +378,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         _processTradingRewards(fee, originator);
 
-        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
     }
 
     function exchangeOnBehalfWithTracking(
@@ -403,7 +404,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         _processTradingRewards(fee, originator);
 
-        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
     }
 
     function exchangeWithVirtual(
@@ -427,16 +428,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         _processTradingRewards(fee, destinationAddress);
 
         if (trackingCode != bytes32(0)) {
-            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived);
+            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
         }
     }
 
     function _emitTrackingEvent(
         bytes32 trackingCode,
         bytes32 toCurrencyKey,
-        uint256 toAmount
+        uint256 toAmount,
+        uint256 fee
     ) internal {
-        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, toCurrencyKey, toAmount);
+        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, toCurrencyKey, toAmount, fee);
     }
 
     function _processTradingRewards(uint fee, address originator) internal {
