@@ -5,6 +5,7 @@ const program = require('commander');
 require('pretty-error').start();
 require('dotenv').config();
 
+require('./src/commands/accept-ownership').cmd(program);
 require('./src/commands/build').cmd(program);
 require('./src/commands/connect-bridge').cmd(program);
 require('./src/commands/deploy-ovm-pair').cmd(program);
@@ -15,6 +16,7 @@ require('./src/commands/import-fee-periods').cmd(program);
 require('./src/commands/migrate-binary-option-markets').cmd(program);
 require('./src/commands/nominate').cmd(program);
 require('./src/commands/owner').cmd(program);
+require('./src/commands/owner-multisig').cmd(program);
 require('./src/commands/persist-tokens').cmd(program);
 require('./src/commands/prepare-deploy-detect-diff').cmd(program);
 require('./src/commands/prepare-deploy').cmd(program);
