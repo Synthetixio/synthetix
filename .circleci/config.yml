@@ -210,6 +210,22 @@ jobs:
       - store_artifacts:
           path: test/publish/test-log.html
           destination: test-log.html
+  job-unit-tests-coverage-report:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp/coverage
+      - run:
+          name: Upload coverage
+          command: |
+            cp -R /tmp/coverage/coverage-*.json .
+            bash <(curl -s https://codecov.io/bash)
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
@@ -218,12 +234,28 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
     resource_class: large
+    parallelism: 8
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
-      - run: bash <(curl -s https://codecov.io/bash)
+      - run:
+          name: Create shared coverage outputs folder
+          command: mkdir -p /tmp/coverage
+      - run:
+          name: Coverage
+          command: |
+            TEST_FILES="{$(circleci tests glob "test/contracts/*.js" | \
+              circleci tests split --split-by=timings | xargs | sed -e 's/ /,/g')}"
+            npm run coverage -- --testfiles "$TEST_FILES"
+      - run:
+          name: Save coverage
+          command: |
+            cp coverage.json /tmp/coverage/coverage-$CIRCLE_NODE_INDEX.json
+      - persist_to_workspace:
+          root: /tmp/coverage
+          paths:
+            - coverage-*.json
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
@@ -248,6 +280,7 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
     resource_class: large
+    parallelism: 8
     steps:
       - checkout
       - attach_workspace:
@@ -257,7 +290,9 @@ jobs:
           name: Test and output gas used
           command: |
             set +e
-            npm test
+            circleci tests glob 'test/contracts/*.js' |
+            circleci tests split |
+            xargs npm test
             EXIT_CODE=$?
             cat test-gas-used.log
             printf "\\n"
@@ -308,6 +343,10 @@ workflows:
       - job-unit-tests-coverage:
           requires:
             - job-prepare
+      - job-unit-tests-coverage-report:
+          requires:
+            - job-prepare
+            - job-unit-tests-coverage
       - job-unit-tests-gas-report:
           requires:
             - job-prepare
