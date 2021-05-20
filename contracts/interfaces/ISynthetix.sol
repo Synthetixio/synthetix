@@ -73,6 +73,14 @@ interface ISynthetix {
         bytes32 trackingCode
     ) external returns (uint amountReceived);
 
+    function exchangeWithTrackingForInitiator(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address originator,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived);
+
     function exchangeOnBehalfWithTracking(
         address exchangeForAddress,
         bytes32 sourceCurrencyKey,
