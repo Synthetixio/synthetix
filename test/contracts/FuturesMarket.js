@@ -12,30 +12,11 @@ const { toBN } = web3.utils;
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { getDecodedLogs, decodedEventEqual } = require('./helpers');
-
-/*
-async function logPosition(account) {
-	const position = await futuresMarket.positions(account);
-	const remainingMargin = (await futuresMarket.remainingMargin(account))[0];
-	const currentLeverage = (await futuresMarket.currentLeverage(account))[0];
-	const profitLoss = (await futuresMarket.profitLoss(account))[0];
-	const funding = (await futuresMarket.accruedFunding(account))[0];
-	const liquidationPrice = (await futuresMarket.liquidationPrice(account, true))[0];
-
-	console.log(`Position: ${account}`);
-	console.log(`Initial Margin: ${fromUnit(position.margin)}`);
-	console.log(`Profit/Loss: ${fromUnit(profitLoss)}`);
-	console.log(`Funding: ${fromUnit(funding)}`);
-	console.log(`Remaining Margin: ${fromUnit(remainingMargin)}`);
-	console.log(`Size: ${fromUnit(position.size)}`);
-	console.log(`Current Leverage: ${fromUnit(currentLeverage)}`);
-	console.log(`Liquidation Price: ${fromUnit(liquidationPrice)}`);
-	console.log(`Last Price: ${fromUnit(position.lastPrice)}`);
-	console.log(`Funding Index: ${position.fundingIndex}`);
-	console.log();
-}
- */
+const {
+	getDecodedLogs,
+	decodedEventEqual,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('./helpers');
 
 contract('FuturesMarket', accounts => {
 	let systemSettings, proxyFuturesMarket, futuresMarket, exchangeRates, oracle, sUSD, feePool;
@@ -143,23 +124,29 @@ contract('FuturesMarket', accounts => {
 	// TODO: Check that onlyOwner functions are indeed onlyOwner using `onlyGivenAddressCanInvoke`
 
 	describe('Basic parameters', () => {
-		it.skip('Only expected functions are mutative', async () => {
-			/*
+		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: market.abi,
-				ignoreParents: ['Owned', 'MixinResolver'],
+				abi: futuresMarket.abi,
+				ignoreParents: ['Owned', 'Proxyable', 'MixinSystemSettings'],
 				expected: [
-					'bid',
-					'refund',
-					'resolve',
-					'claimOptions',
-					'exerciseOptions',
-					'expire',
-					'cancel',
+					'setTakerFee',
+					'setMakerFee',
+					'setMaxLeverage',
+					'setMaxMarketValue',
+					'setMinInitialMargin',
+					'setMaxFundingRate',
+					'setMaxFundingRateSkew',
+					'setMaxFundingRateDelta',
+					'modifyMargin',
+					'withdrawAllMargin',
+					'submitOrder',
+					'cancelOrder',
+					'closePosition',
+					'modifyMarginAndSubmitOrder',
+					'confirmOrder',
+					'liquidatePosition',
 				],
 			});
-			*/
-			assert.isTrue(false);
 		});
 
 		it('static parameters are set properly at construction', async () => {
