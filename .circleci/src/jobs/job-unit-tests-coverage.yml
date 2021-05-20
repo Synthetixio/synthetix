@@ -5,5 +5,5 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
+  - run: npm run coverage
   - run: bash <(curl -s https://codecov.io/bash)
