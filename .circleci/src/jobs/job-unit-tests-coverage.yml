@@ -1,9 +1,26 @@
 # Measures unit and spec test coverage
 {{> job-header.yml}}
 resource_class: large
+parallelism: 8
 steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npm run coverage
-  - run: bash <(curl -s https://codecov.io/bash)
+  - run:
+      name: Create shared coverage outputs folder
+      command: mkdir -p /tmp/coverage
+  - run:
+      name: Coverage
+      command: |
+        TEST_FILES="{$(circleci tests glob "test/contracts/*.js" | \
+          circleci tests split --split-by=timings | xargs | sed -e 's/ /,/g')}"
+        npm run coverage -- --testfiles "$TEST_FILES"
+  - run:
+      name: Save coverage
+      command: |
+        cp coverage.json /tmp/coverage/coverage-$CIRCLE_NODE_INDEX.json
+        chmod -R 777 /tmp/coverage/coverage-$CIRCLE_NODE_INDEX.json
+  - persist_to_workspace:
+      root: /tmp/coverage
+      paths:
+        - coverage-*.json
