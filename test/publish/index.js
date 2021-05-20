@@ -153,7 +153,7 @@ describe('publish scripts', () => {
 			console.log('Skipping build as everything up to date');
 		}
 
-		gasLimit = 5000000;
+		gasLimit = 8000000;
 		[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 		web3.eth.accounts.wallet.add(accounts.deployer.private);
 		gasPrice = web3.utils.toWei('5', 'gwei');

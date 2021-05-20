@@ -88,6 +88,7 @@ contract('TradingRewards', accounts => {
 					'AddressResolver',
 					'ExchangeRates',
 					'SystemSettings',
+					'CollateralManager',
 				],
 			}));
 		});

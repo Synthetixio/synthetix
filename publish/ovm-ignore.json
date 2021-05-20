@@ -13,5 +13,7 @@
 	"TestableBinaryOptionMarket",
 	"Synthetix",
 	"CollateralEth",
-	"CollateralErc20"
+	"CollateralErc20",
+	"NativeEtherWrapper",
+	"WETH"
 ]

@@ -5,6 +5,9 @@
 	"SynthetixBridgeToOptimism": {
 		"deploy": true
 	},
+	"SynthetixBridgeEscrow": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},
@@ -450,6 +453,12 @@
 		"deploy": true
 	},
 	"MockToken": {
+		"deploy": true
+	},
+	"EtherWrapper": {
+		"deploy": true
+	},
+	"NativeEtherWrapper": {
 		"deploy": true
 	}
 }

@@ -1,12 +1,15 @@
 const ethers = require('ethers');
 const axios = require('axios');
+const { config } = require('hardhat');
 const { Watcher } = require('@eth-optimism/watcher');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { toBytes32 } = require('../..');
 const { itCanPerformDeposits } = require('./deposits.test');
+const { itCanPerformDepositsTo } = require('./depositsTo.test');
 const { itCanPerformRewardDeposits } = require('./rewards.test');
 const { itCanPerformWithdrawals } = require('./withdrawals.test');
+const { itCanPerformWithdrawalsTo } = require('./withdrawalsTo.test');
 const { itCanPerformEscrowMigration } = require('./migrateEscrow.test');
 const { itCanPerformDepositAndEscrowMigration } = require('./depositAndMigrateEscrow.test');
 const { itCanPerformSynthExchange } = require('./synthExchange.test');
@@ -30,16 +33,20 @@ describe('Layer 2 production tests', () => {
 	// --------------------------
 
 	before('set up providers', () => {
-		this.providerL1 = new ethers.providers.JsonRpcProvider('http://localhost:9545');
-		this.providerL2 = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+		this.providerUrl = config.providerUrl;
+
+		this.providerL1 = new ethers.providers.JsonRpcProvider(`${this.providerUrl}:9545`);
+		this.providerL2 = new ethers.providers.JsonRpcProvider(`${this.providerUrl}:8545`);
+
+		this.providerL2.getGasPrice = () => ethers.BigNumber.from('0');
 	});
 
 	before('set up signers', () => {
 		// See publish/src/commands/deploy-ovm-pair.js
-		this.ownerAddress = '0x640e7cc27b750144ED08bA09515F3416A988B6a3';
-		this.ownerPrivateKey = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
-		this.user1Address = '0x5eEaBfDD0F31CeBf32f8Abf22DA451fE46eAc131';
-		this.user1PrivateKey = '0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c';
+		this.ownerAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+		this.ownerPrivateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+		this.user1Address = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
+		this.user1PrivateKey = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d';
 
 		// These are set up in L1 but not in L2,
 		// that's why we get signers in L1, and create signers in L2.
@@ -50,7 +57,7 @@ describe('Layer 2 production tests', () => {
 	});
 
 	before('set up watchers', async () => {
-		const response = await axios.get('http://localhost:8080/addresses.json');
+		const response = await axios.get(`${this.providerUrl}:8080/addresses.json`);
 		const addresses = response.data;
 
 		this.watcher = new Watcher({
@@ -63,11 +70,6 @@ describe('Layer 2 production tests', () => {
 				messengerAddress: '0x4200000000000000000000000000000000000007',
 			},
 		});
-	});
-
-	after('exit', async () => {
-		// TODO: Optimism watchers leave the process open, so we explicitely kill it
-		process.exit(0);
 	});
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
@@ -97,7 +99,6 @@ describe('Layer 2 production tests', () => {
 				});
 				let DebtCache = connectContract({
 					contract: 'DebtCache',
-					source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
 					provider,
 					useOvm,
 				});
@@ -151,7 +152,7 @@ describe('Layer 2 production tests', () => {
 		// General properties
 		// --------------------------
 
-		describe('[GENERAL] properties', () => {
+		describe('[GENERAL]', () => {
 			it('shows the expected owners', async () => {
 				assert.equal(await SynthetixL1.owner(), this.ownerAddress);
 				assert.equal(await SynthetixL2.owner(), this.ownerAddress);
@@ -168,7 +169,9 @@ describe('Layer 2 production tests', () => {
 		// --------------------------
 
 		itCanPerformDeposits({ ctx: this });
+		itCanPerformDepositsTo({ ctx: this });
 		itCanPerformWithdrawals({ ctx: this });
+		itCanPerformWithdrawalsTo({ ctx: this });
 		itCanPerformRewardDeposits({ ctx: this });
 		itCanPerformEscrowMigration({ ctx: this });
 		itCanPerformDepositAndEscrowMigration({ ctx: this });

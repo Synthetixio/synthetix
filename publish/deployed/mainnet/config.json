@@ -110,6 +110,12 @@
 	"StakingRewardssGOOGBalancer": {
 		"deploy": false
 	},
+	"StakingRewardssCOINBalancer": {
+		"deploy": false
+	},
+	"StakingRewardssMSFTBalancer": {
+		"deploy": false
+	},
 	"DappMaintenance": {
 		"deploy": false
 	},
@@ -759,6 +765,33 @@
 		"deploy": false
 	},
 	"VirtualSynthMastercopy": {
+		"deploy": false
+	},
+	"TokenStatesCOIN": {
+		"deploy": false
+	},
+	"ProxysCOIN": {
+		"deploy": false
+	},
+	"SynthsCOIN": {
+		"deploy": false
+	},
+	"TokenStatesMSFT": {
+		"deploy": false
+	},
+	"ProxysMSFT": {
+		"deploy": false
+	},
+	"SynthsMSFT": {
+		"deploy": false
+	},
+	"SynthetixBridgeEscrow": {
+		"deploy": false
+	},
+	"EtherWrapper": {
+		"deploy": false
+	},
+	"NativeEtherWrapper": {
 		"deploy": false
 	}
 }

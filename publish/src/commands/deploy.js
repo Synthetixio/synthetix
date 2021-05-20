@@ -10,8 +10,8 @@ const checkAggregatorPrices = require('../check-aggregator-prices');
 const pLimit = require('p-limit');
 
 const {
-	ensureNetwork,
 	ensureDeploymentPath,
+	ensureNetwork,
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
@@ -68,6 +68,7 @@ const deploy = async ({
 	ignoreSafetyChecks,
 	ignoreCustomParameters,
 	concurrency,
+	specifyContracts,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -94,6 +95,29 @@ const deploy = async ({
 		deploymentPath,
 		network,
 	});
+
+	// Mark contracts for deployment specified via an argument
+	if (specifyContracts) {
+		// Ignore config.json
+		Object.keys(config).map(name => {
+			config[name].deploy = false;
+		});
+		// Add specified contracts
+		specifyContracts.split(',').map(name => {
+			if (!config[name]) {
+				config[name] = {
+					deploy: true,
+				};
+			} else {
+				config[name].deploy = true;
+			}
+		});
+	}
+
+	if (freshDeploy) {
+		deployment.targets = {};
+		deployment.sources = {};
+	}
 
 	if (!ignoreSafetyChecks) {
 		// Using Goerli without manageNonces?
@@ -767,7 +791,6 @@ const deploy = async ({
 
 	const debtCache = await deployer.deployContract({
 		name: 'DebtCache',
-		source: useOvm ? 'RealtimeDebtCache' : 'DebtCache',
 		deps: ['AddressResolver'],
 		args: [account, addressOf(readProxyForResolver)],
 	});
@@ -1184,14 +1207,14 @@ const deploy = async ({
 			args: [],
 		});
 		await deployer.deployContract({
-			name: 'SynthetixBridgeToBase',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-		await deployer.deployContract({
 			name: 'CollateralManager',
 			source: 'EmptyCollateralManager',
 			args: [],
+		});
+		await deployer.deployContract({
+			name: 'SynthetixBridgeToBase',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	} else {
 		await deployer.deployContract({
@@ -1204,8 +1227,61 @@ const deploy = async ({
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
-		await deployer.deployContract({
+		const SynthetixBridgeToOptimism = await deployer.deployContract({
 			name: 'SynthetixBridgeToOptimism',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(readProxyForResolver)],
+		});
+		const SynthetixBridgeEscrow = await deployer.deployContract({
+			name: 'SynthetixBridgeEscrow',
+			deps: ['AddressResolver'],
+			args: [account],
+		});
+
+		const allowance = await proxyERC20Synthetix.methods
+			.allowance(addressOf(SynthetixBridgeEscrow), addressOf(SynthetixBridgeToOptimism))
+			.call();
+		if (allowance.toString() === '0') {
+			await runStep({
+				contract: `SynthetixBridgeEscrow`,
+				target: SynthetixBridgeEscrow,
+				write: 'approveBridge',
+				writeArg: [
+					addressOf(proxyERC20Synthetix),
+					addressOf(SynthetixBridgeToOptimism),
+					w3utils.toWei('100000000'),
+				],
+			});
+		}
+	}
+
+	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
+
+	if (network === 'local') {
+		// On local, deploy a mock WETH token.
+		// OVM already has a deployment of WETH, however since we use
+		// Hardhat for the local-ovm environment, we must deploy
+		// our own.
+		const weth = await deployer.deployContract({
+			name: useOvm ? 'MockWETH' : 'WETH',
+			force: true,
+		});
+		WETH_ADDRESS = weth.options.address;
+	}
+
+	if (!WETH_ADDRESS) {
+		throw new Error('WETH address is not known');
+	}
+
+	await deployer.deployContract({
+		name: 'EtherWrapper',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
+	});
+
+	if (!useOvm) {
+		await deployer.deployContract({
+			name: 'NativeEtherWrapper',
 			deps: ['AddressResolver'],
 			args: [account, addressOf(readProxyForResolver)],
 		});
@@ -1439,6 +1515,40 @@ const deploy = async ({
 	}
 
 	console.log(gray('Addresses are correctly set up, continuing...'));
+
+	// Legacy contracts.
+	if (network === 'mainnet') {
+		// v2.35.2 contracts.
+		const CollateralEth = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
+		const CollateralErc20REN = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
+		const CollateralShort = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
+
+		const legacyContracts = Object.entries({
+			CollateralEth,
+			CollateralErc20REN,
+			CollateralShort,
+		}).map(([name, address]) => {
+			const contract = new deployer.web3.eth.Contract(
+				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
+				address
+			);
+			return [`legacy:${name}`, contract];
+		});
+
+		await Promise.all(
+			legacyContracts.map(async ([name, contract]) => {
+				return runStep({
+					gasLimit: 7e6,
+					contract: name,
+					target: contract,
+					read: 'isResolverCached',
+					expected: input => input,
+					publiclyCallable: true, // does not require owner
+					write: 'rebuildCache',
+				});
+			})
+		);
+	}
 
 	const filterTargetsWith = ({ prop }) =>
 		Object.entries(deployer.deployedContracts).filter(([, target]) =>
@@ -2103,6 +2213,31 @@ const deploy = async ({
 				writeArg: aggregatorWarningFlags,
 			});
 		}
+
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'etherWrapperMaxETH',
+			expected: input => input !== '0', // only change if zero
+			write: 'setEtherWrapperMaxETH',
+			writeArg: await getDeployParameter('ETHER_WRAPPER_MAX_ETH'),
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'etherWrapperMintFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setEtherWrapperMintFeeRate',
+			writeArg: await getDeployParameter('ETHER_WRAPPER_MINT_FEE_RATE'),
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'etherWrapperBurnFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setEtherWrapperBurnFeeRate',
+			writeArg: await getDeployParameter('ETHER_WRAPPER_BURN_FEE_RATE'),
+		});
 	}
 
 	console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
@@ -2327,7 +2462,7 @@ const deploy = async ({
 		if (force || validityChanged) {
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
-				gasLimit: useOvm ? 3.5e6 : 2.5e6, // About 1.7 million gas is required to refresh the snapshot with ~40 synths on L1
+				gasLimit: useOvm ? 4.0e6 : 5.0e6, // About 3.34 million gas is required to refresh the snapshot with ~40 synths on L1
 				contract: 'DebtCache',
 				target: debtCache,
 				write: 'takeDebtSnapshot',
@@ -2506,6 +2641,10 @@ module.exports = {
 			.option(
 				'-u, --force-update-inverse-synths-on-testnet',
 				'Allow inverse synth pricing to be updated on testnet regardless of total supply'
+			)
+			.option(
+				'-x, --specify-contracts <value>',
+				'Ignore config.json  and specify contracts to be deployed (Comma separated list)'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')

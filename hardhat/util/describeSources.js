@@ -174,19 +174,20 @@ function _processFunctions({ source, nodes }) {
 	for (const node of nodes) {
 		const isConstructor = node.name.length === 0;
 		const name = isConstructor ? 'constructor' : node.name;
-		const mutability = node.stateMutability === 'nonpayable' ? '' : ` ${node.stateMutability}`;
+		const stateMutability = node.stateMutability === 'nonpayable' ? '' : `${node.stateMutability}`;
 
 		functions.push({
 			name,
 			signature: `${name}${_processParameterList({
 				parameters: node.parameters.parameters,
-			})}${mutability}`,
+			})}${stateMutability ? ' ' + stateMutability : ''}`,
 			returns: _processParameterList({ parameters: node.returnParameters.parameters }),
 			modifiers: isConstructor ? [] : node.modifiers.map(modifier => modifier.modifierName.name),
 			visibility: node.visibility,
 			lineNumber: _getLineNumber({ source, node }),
 			requires: _processRequires({ source, body: node.body }),
 			events: _processEmits({ body: node.body }),
+			stateMutability,
 		});
 	}
 
