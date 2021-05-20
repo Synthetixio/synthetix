@@ -5,10 +5,7 @@ steps:
   - attach_workspace:
       at: /tmp/coverage
   - run:
-      name: Combine coverage reports
+      name: Upload coverage
       command: |
         cp -R /tmp/coverage/coverage-*.json .
-        npx istanbul-combine-updated coverage-*.json
-  - run:
-      name: Upload coverage
-      command: bash <(curl -s https://codecov.io/bash)
+        bash <(curl -s https://codecov.io/bash)

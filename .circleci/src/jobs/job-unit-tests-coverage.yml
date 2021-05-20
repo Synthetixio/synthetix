@@ -19,7 +19,6 @@ steps:
       name: Save coverage
       command: |
         cp coverage.json /tmp/coverage/coverage-$CIRCLE_NODE_INDEX.json
-        chmod -R 777 /tmp/coverage/coverage-$CIRCLE_NODE_INDEX.json
   - persist_to_workspace:
       root: /tmp/coverage
       paths:
