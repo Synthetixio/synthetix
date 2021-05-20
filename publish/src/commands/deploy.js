@@ -196,14 +196,14 @@ const deploy = async ({
 
 		let effectiveValue = defaultParam;
 
-		const param = (params || []).find(p => p.name === name);
+		const param = params[name];
 
 		if (param) {
 			if (!yes) {
 				try {
 					await confirmAction(
 						yellow(
-							`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.json. Specified value is ${param.value} and default is ${defaultParam}.` +
+							`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.js. Specified value is ${param.value} and default is ${defaultParam}.` +
 								'\nDo you want to use the specified value (default otherwise)? (y/n) '
 						)
 					);
@@ -1204,11 +1204,6 @@ const deploy = async ({
 		await deployer.deployContract({
 			name: 'EtherCollateralsUSD',
 			source: 'EmptyEtherCollateral',
-			args: [],
-		});
-		await deployer.deployContract({
-			name: 'CollateralManager',
-			source: 'EmptyCollateralManager',
 			args: [],
 		});
 		await deployer.deployContract({
@@ -2593,7 +2588,7 @@ module.exports = {
 			)
 			.option(
 				'--ignore-custom-parameters',
-				'Ignores deployment parameters specified in params.json',
+				'Ignores deployment parameters specified in params.js',
 				false
 			)
 			.option(
