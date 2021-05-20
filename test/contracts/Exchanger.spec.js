@@ -3063,13 +3063,20 @@ contract('Exchanger (spec tests)', async accounts => {
 										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
 									});
 
-									describe('when the owner invokes resetLastExchangeRate([sEUR])', () => {
+									describe('when the owner invokes resetLastExchangeRate([sEUR, sETH])', () => {
 										beforeEach(async () => {
-											await exchanger.resetLastExchangeRate([sEUR], { from: owner });
+											await exchanger.resetLastExchangeRate([sEUR, sETH], { from: owner });
 										});
 
 										it('then the sEUR last exchange rate is updated to the current price', async () => {
 											assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('10'));
+										});
+
+										it('and the sETH rate has not changed', async () => {
+											assert.bnEqual(
+												await exchanger.lastExchangeRate(sETH),
+												toUnit((baseRate * 1.1).toString())
+											);
 										});
 									});
 								});
