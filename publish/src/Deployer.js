@@ -3,7 +3,6 @@
 const linker = require('solc/linker');
 const Web3 = require('web3');
 const ethers = require('ethers');
-const RLP = require('rlp');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
 const { stringify, getEtherscanLinkPrefix } = require('./util');
@@ -78,8 +77,8 @@ class Deployer {
 
 	async evaluateNextDeployedContractAddress() {
 		const nonce = await this.provider.web3.eth.getTransactionCount(this.account);
-		const rlpEncoded = RLP.encode([this.account, nonce]);
-		const hashed = ethers.utils.id(rlpEncoded); // ethers sha3 is implemented with id()
+		const rlpEncoded = ethers.utils.RLP.encode([this.account, ethers.utils.hexlify(nonce)]);
+		const hashed = ethers.utils.keccak256(rlpEncoded); // const hashed = this.web3.utils.sha3(rlpEncoded);
 
 		return `0x${hashed.slice(12).substring(14)}`;
 	}
@@ -125,7 +124,7 @@ class Deployer {
 			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 			value: 0,
 			gas: 1000000,
-			gasPrice: ethers.utils.parseUnits(this.gasPrice, 'gwei').toString(),
+			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		});
 
 		if (this.nonceManager) {
@@ -137,7 +136,7 @@ class Deployer {
 		const params = {
 			from: this.account,
 			gas: type === 'method-call' ? this.methodCallGasLimit : this.contractDeploymentGasLimit,
-			gasPrice: ethers.utils.parseUnits(this.gasPrice, 'gwei').toString(),
+			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		};
 
 		if (this.nonceManager) {
