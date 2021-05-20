@@ -136,7 +136,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     /* ========== MODIFIERS ========== */
 
     function _requireIsMarket() internal view {
-        require(_markets.contains(messageSender) || _markets.contains(msg.sender), "Sender is not a market");
+        require(_markets.contains(messageSender) || _markets.contains(msg.sender), "Permitted only for markets");
     }
 
     modifier onlyMarkets() {

@@ -290,14 +290,14 @@ contract('FuturesMarketManager', accounts => {
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Sender is not a market',
+				reason: 'Permitted only for markets',
 			});
 			await onlyGivenAddressCanInvoke({
 				fnc: futuresMarketManager.burnSUSD,
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
-				reason: 'Sender is not a market',
+				reason: 'Permitted only for markets',
 			});
 		});
 	});
