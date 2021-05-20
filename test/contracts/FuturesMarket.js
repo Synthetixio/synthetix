@@ -12,30 +12,11 @@ const { toBN } = web3.utils;
 
 const { setupAllContracts } = require('./setup');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
-const { getDecodedLogs, decodedEventEqual } = require('./helpers');
-
-/*
-async function logPosition(account) {
-	const position = await futuresMarket.positions(account);
-	const remainingMargin = (await futuresMarket.remainingMargin(account))[0];
-	const currentLeverage = (await futuresMarket.currentLeverage(account))[0];
-	const profitLoss = (await futuresMarket.profitLoss(account))[0];
-	const funding = (await futuresMarket.accruedFunding(account))[0];
-	const liquidationPrice = (await futuresMarket.liquidationPrice(account, true))[0];
-
-	console.log(`Position: ${account}`);
-	console.log(`Initial Margin: ${fromUnit(position.margin)}`);
-	console.log(`Profit/Loss: ${fromUnit(profitLoss)}`);
-	console.log(`Funding: ${fromUnit(funding)}`);
-	console.log(`Remaining Margin: ${fromUnit(remainingMargin)}`);
-	console.log(`Size: ${fromUnit(position.size)}`);
-	console.log(`Current Leverage: ${fromUnit(currentLeverage)}`);
-	console.log(`Liquidation Price: ${fromUnit(liquidationPrice)}`);
-	console.log(`Last Price: ${fromUnit(position.lastPrice)}`);
-	console.log(`Funding Index: ${position.fundingIndex}`);
-	console.log();
-}
- */
+const {
+	getDecodedLogs,
+	decodedEventEqual,
+	ensureOnlyExpectedMutativeFunctions,
+} = require('./helpers');
 
 contract('FuturesMarket', accounts => {
 	let systemSettings, proxyFuturesMarket, futuresMarket, exchangeRates, oracle, sUSD, feePool;
@@ -143,23 +124,29 @@ contract('FuturesMarket', accounts => {
 	// TODO: Check that onlyOwner functions are indeed onlyOwner using `onlyGivenAddressCanInvoke`
 
 	describe('Basic parameters', () => {
-		it.skip('Only expected functions are mutative', async () => {
-			/*
+		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: market.abi,
-				ignoreParents: ['Owned', 'MixinResolver'],
+				abi: futuresMarket.abi,
+				ignoreParents: ['Owned', 'Proxyable', 'MixinSystemSettings'],
 				expected: [
-					'bid',
-					'refund',
-					'resolve',
-					'claimOptions',
-					'exerciseOptions',
-					'expire',
-					'cancel',
+					'setTakerFee',
+					'setMakerFee',
+					'setMaxLeverage',
+					'setMaxMarketValue',
+					'setMinInitialMargin',
+					'setMaxFundingRate',
+					'setMaxFundingRateSkew',
+					'setMaxFundingRateDelta',
+					'modifyMargin',
+					'withdrawAllMargin',
+					'submitOrder',
+					'cancelOrder',
+					'closePosition',
+					'modifyMarginAndSubmitOrder',
+					'confirmOrder',
+					'liquidatePosition',
 				],
 			});
-			*/
-			assert.isTrue(false);
 		});
 
 		it('static parameters are set properly at construction', async () => {
@@ -1041,6 +1028,23 @@ contract('FuturesMarket', accounts => {
 				});
 			}
 		});
+
+		it('Cannot submit an order if an existing position needs to be liquidated', async () => {
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('100'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('10'),
+			});
+
+			await setPrice(baseAsset, toUnit('50'));
+			assert.isTrue(await futuresMarket.canLiquidate(trader));
+			await assert.revert(
+				futuresMarket.submitOrder(toUnit('5'), { from: trader }),
+				'Position can be liquidated'
+			);
+		});
 	});
 
 	describe('Cancelling orders', () => {
@@ -1084,6 +1088,24 @@ contract('FuturesMarket', accounts => {
 		it('cannot cancel an order if no pending order exists', async () => {
 			await assert.revert(futuresMarket.cancelOrder({ from: trader }), 'No pending order');
 		});
+
+		it('Can still cancel an order, even if an existing position needs to be liquidated', async () => {
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('100'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('10'),
+			});
+
+			await futuresMarket.submitOrder(toUnit('5'), { from: trader });
+			await setPrice(baseAsset, toUnit('50'));
+			assert.isTrue(await futuresMarket.canLiquidate(trader));
+
+			assert.isTrue(await futuresMarket.orderPending(trader));
+			await futuresMarket.cancelOrder({ from: trader });
+			assert.isFalse(await futuresMarket.orderPending(trader));
+		});
 	});
 
 	describe('Confirming orders', () => {
@@ -1097,6 +1119,7 @@ contract('FuturesMarket', accounts => {
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 
+			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
 			const tx = await futuresMarket.confirmOrder(trader);
 
 			const size = toUnit('50');
@@ -1147,10 +1170,12 @@ contract('FuturesMarket', accounts => {
 			const leverage = toUnit('10');
 			await futuresMarket.submitOrder(leverage, { from: trader });
 
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Awaiting next price');
 		});
 
 		it('cannot confirm an order if none is pending', async () => {
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'No pending order');
 		});
 
@@ -1163,9 +1188,30 @@ contract('FuturesMarket', accounts => {
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 
+			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
-			await assert.revert(futuresMarket.confirmOrder(trader), 'Price is invalid');
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
+		});
+
+		it('Cannot confirm an order if an existing position is liquidating', async () => {
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('200'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('10'),
+			});
+
+			// User realises the price is going to crash and tries to outrun their liquidation
+			await futuresMarket.submitOrder(toUnit('0'), { from: trader });
+			await setPrice(baseAsset, toUnit('100'));
+
+			// But it fails!
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Position can be liquidated');
 		});
 
 		it.skip('Can confirm a set of multiple orders on both sides of the market', async () => {
@@ -1265,6 +1311,23 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toBN(0));
 			assert.bnEqual(order.fee, toBN(0));
 			assert.bnNotEqual(order.roundId, toBN(0));
+		});
+
+		it('Cannot close a position if it is liquidating', async () => {
+			await modifyMarginSubmitAndConfirmOrder({
+				market: futuresMarket,
+				account: trader,
+				fillPrice: toUnit('200'),
+				marginDelta: toUnit('1000'),
+				leverage: toUnit('10'),
+			});
+
+			await setPrice(baseAsset, toUnit('100'));
+
+			await assert.revert(
+				futuresMarket.closePosition({ from: trader }),
+				'Position can be liquidated'
+			);
 		});
 	});
 
