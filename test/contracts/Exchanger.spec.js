@@ -2935,6 +2935,18 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 			};
 
+			describe('resetLastExchangeRate() SIP-139', () => {
+				it('cannot be invoked by any user', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: exchanger.resetLastExchangeRate,
+						args: [[sEUR, sAUD]],
+						accounts,
+						address: owner,
+						reason: 'Only the contract owner may perform this action',
+					});
+				});
+			});
+
 			describe(`when the price of sETH is ${baseRate}`, () => {
 				updateRate({ target: sETH, rate: baseRate });
 
@@ -3049,6 +3061,16 @@ contract('Exchanger (spec tests)', async accounts => {
 									});
 									it('and the dest side has not persisted the rate', async () => {
 										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
+									});
+
+									describe('when the owner invokes resetLastExchangeRate([sEUR])', () => {
+										beforeEach(async () => {
+											await exchanger.resetLastExchangeRate([sEUR], { from: owner });
+										});
+
+										it('then the sEUR last exchange rate is updated to the current price', async () => {
+											assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('10'));
+										});
 									});
 								});
 							});
