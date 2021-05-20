@@ -327,15 +327,9 @@ contract('FuturesMarketManager', accounts => {
 			assert.bnEqual((await futuresMarketManager.totalDebt())[0], individualDebt.mul(toBN(3)));
 			await markets[0].setMarketDebt(toUnit('2500'));
 			await markets[1].setMarketDebt(toUnit('200'));
-			assert.bnEqual(
-				(await futuresMarketManager.totalDebt())[0],
-				individualDebt.div(toBN(10)).mul(toBN(37))
-			);
+			assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('3700'));
 			await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
-			assert.bnEqual(
-				(await futuresMarketManager.totalDebt())[0],
-				individualDebt.div(toBN(10)).mul(toBN(27))
-			);
+			assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('2700'));
 			const market = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
@@ -344,10 +338,7 @@ contract('FuturesMarketManager', accounts => {
 			});
 			await futuresMarketManager.addMarkets([market.address], { from: owner });
 
-			assert.bnEqual(
-				(await futuresMarketManager.totalDebt())[0],
-				individualDebt.div(toBN(10)).mul(toBN(67))
-			);
+			assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('6700'));
 		});
 
 		it('Aggregated debt validity updates properly with the individual markets', async () => {
