@@ -13,7 +13,7 @@ const params = {
 	COLLATERAL_SHORT: {
 		SYNTHS: ['sETH'],
 		MIN_CRATIO: w3utils.toWei('1.2'),
-		MIN_COLLATERAL: w3utils.toWei('1000'),
+		MIN_COLLATERAL: w3utils.toWei('1000'), // 1000 sUSD
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
 		INTERACTION_DELAY: '0', // 0 secs
 	},
