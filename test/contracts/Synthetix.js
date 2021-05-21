@@ -26,7 +26,7 @@ const {
 contract('Synthetix', async accounts => {
 	const [sAUD, sEUR] = ['sAUD', 'sEUR'].map(toBytes32);
 
-	const [, owner, account1, account2] = accounts;
+	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
 		exchangeRates,
@@ -105,6 +105,7 @@ contract('Synthetix', async accounts => {
 		beforeEach(async () => {
 			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
 			smockExchanger.smocked.exchangeWithVirtual.will.return.with(() => ['1', account1]);
+			smockExchanger.smocked.exchangeWithTracking.will.return.with(() => ['1']);
 			await addressResolver.importAddresses(
 				['Exchanger'].map(toBytes32),
 				[smockExchanger.address],
@@ -138,27 +139,15 @@ contract('Synthetix', async accounts => {
 				currencyKey2,
 				account2,
 				trackingCode,
-				{ from: account2 }
+				{ from: account3 }
 			);
-			assert.equal(smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][0], msgSender);
-			assert.equal(
-				smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][1],
-				currencyKey1
-			);
-			assert.equal(
-				smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][2].toString(),
-				amount1
-			);
-			assert.equal(
-				smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][3],
-				currencyKey2
-			);
-			assert.equal(smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][4], account2);
-			assert.equal(smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][5], account2);
-			assert.equal(
-				smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][6],
-				trackingCode
-			);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][0], account3);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][1], currencyKey1);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][2].toString(), amount1);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][3], currencyKey2);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][4], account3); // destination address (tx.origin)
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][5], account2);
+			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][6], trackingCode);
 		});
 	});
 
