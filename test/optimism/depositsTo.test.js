@@ -2,9 +2,10 @@ const ethers = require('ethers');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { takeSnapshot, restoreSnapshot } = require('./utils/rpc');
+const { wait } = require('./utils/rpc');
 
 const itCanPerformDepositsTo = ({ ctx }) => {
-	describe('[DEPOSIT TO] when migrating SNX from L1 to a separate address on L2', () => {
+	describe('[DEPOSIT TO]', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		let user1L1;
@@ -257,7 +258,10 @@ const itCanPerformDepositsTo = ({ ctx }) => {
 								const [transactionHashL2] = await ctx.watcher.getMessageHashesFromL1Tx(
 									depositReceipt.transactionHash
 								);
+
 								await ctx.watcher.getL2TransactionReceipt(transactionHashL2);
+
+								await wait({ seconds: 10 });
 							});
 
 							before('stop listening to events on L2', async () => {

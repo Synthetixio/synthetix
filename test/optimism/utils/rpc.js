@@ -1,4 +1,4 @@
-async function wait(seconds) {
+async function wait({ seconds }) {
 	return new Promise(resolve => {
 		setTimeout(() => {
 			resolve();
