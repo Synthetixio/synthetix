@@ -24,7 +24,7 @@ const {
 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sAUD, sEUR] = ['sAUD', 'sEUR'].map(toBytes32);
+	const [sAUD, sEUR, sUSD, sETH] = ['sAUD', 'sEUR', 'sUSD', 'sETH'].map(toBytes32);
 
 	const [, owner, account1, account2, account3] = accounts;
 
@@ -442,7 +442,7 @@ contract('Synthetix', async accounts => {
 					// Barrie has no sETH to start
 					assert.equal(await sETHContract.balanceOf(account3), '0');
 
-					txn = await contractExample.exchange(amountOfsUSD, { from: account3 });
+					txn = await contractExample.exchange(sUSD, amountOfsUSD, sETH, { from: account3 });
 				});
 				it('then Barrie has the synths in her account', async () => {
 					assert.bnGt(await sETHContract.balanceOf(account3), toUnit('0.01'));
@@ -457,9 +457,9 @@ contract('Synthetix', async accounts => {
 						'SynthExchange',
 						{
 							account: contractExample.address,
-							fromCurrencyKey: toBytes32('sUSD'),
+							fromCurrencyKey: sUSD,
 							fromAmount: amountOfsUSD,
-							toCurrencyKey: toBytes32('sETH'),
+							toCurrencyKey: sETH,
 							toAddress: account3,
 						}
 					);

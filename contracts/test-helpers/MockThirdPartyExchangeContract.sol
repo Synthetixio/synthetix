@@ -10,9 +10,13 @@ contract MockThirdPartyExchangeContract {
         resolver = _resolver;
     }
 
-    function exchange(uint amount) external {
+    function exchange(
+        bytes32 src,
+        uint amount,
+        bytes32 dest
+    ) external {
         ISynthetix synthetix = ISynthetix(resolver.getAddress("Synthetix"));
 
-        synthetix.exchangeWithTrackingForInitiator("sUSD", amount, "sETH", address(this), "TRACKING_CODE");
+        synthetix.exchangeWithTrackingForInitiator(src, amount, dest, address(this), "TRACKING_CODE");
     }
 }
