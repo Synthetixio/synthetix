@@ -10,11 +10,7 @@ const {
 	constants: { OVM_MAX_GAS_LIMIT },
 } = require('../../../.');
 
-const deployOvmPair = async ({ providerUrl, l1ProviderPort, l2ProviderPort, dataProviderPort }) => {
-	const l1ProviderUrl = `${providerUrl}:${l1ProviderPort}`;
-	const l2ProviderUrl = `${providerUrl}:${l2ProviderPort}`;
-	const dataProviderUrl = `${providerUrl}:${dataProviderPort}`;
-
+const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl, dataProviderUrl }) => {
 	// These private keys are used in the Optimism ops tool for layer 1
 	// Account #0: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266  (10000 ETH)
 	// Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
@@ -78,10 +74,9 @@ module.exports = {
 			.description(
 				'Deploys a pair of L1 and L2 instances on local running chains started with `optimism-integration`, and connects them together. To be used exclusively for local testing.'
 			)
-			.option('--provider-url <value>', 'The base provider url to use', 'http://localhost')
-			.option('--l1-provider-port <value>', 'The L1 provider port to use', '9545')
-			.option('--l2-provider-port <value>', 'The L2 provider port to use', '8545')
-			.option('--data-provider-port <value>', 'The data provider to use', '8080')
+			.option('--l1-provider-url <value>', 'The L1 provider to use', 'http://localhost:9545')
+			.option('--l2-provider-url <value>', 'The L2 provider to use', 'http://localhost:8545')
+			.option('--data-provider-url <value>', 'The data provider to use', 'http://localhost:8080')
 			.action(async (...args) => {
 				try {
 					await deployOvmPair(...args);
