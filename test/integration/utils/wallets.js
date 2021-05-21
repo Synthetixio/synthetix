@@ -10,6 +10,7 @@ function loadWallets({ ctx }) {
 	}
 
 	ctx.owner = ctx.wallets[0];
+	ctx.user = ctx.wallets[1];
 }
 
 function getPrivateKey({ index }) {
