@@ -1,0 +1,3 @@
+requires:
+  - job-prepare
+  - job-unit-tests-coverage
