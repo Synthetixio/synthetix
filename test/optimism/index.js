@@ -1,5 +1,6 @@
 const ethers = require('ethers');
 const axios = require('axios');
+const { config } = require('hardhat');
 const { Watcher } = require('@eth-optimism/watcher');
 const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
@@ -32,8 +33,10 @@ describe('Layer 2 production tests', () => {
 	// --------------------------
 
 	before('set up providers', () => {
-		this.providerL1 = new ethers.providers.JsonRpcProvider('http://localhost:9545');
-		this.providerL2 = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+		this.providerUrl = config.providerUrl;
+
+		this.providerL1 = new ethers.providers.JsonRpcProvider(`${this.providerUrl}:9545`);
+		this.providerL2 = new ethers.providers.JsonRpcProvider(`${this.providerUrl}:8545`);
 
 		this.providerL2.getGasPrice = () => ethers.BigNumber.from('0');
 	});
@@ -54,7 +57,7 @@ describe('Layer 2 production tests', () => {
 	});
 
 	before('set up watchers', async () => {
-		const response = await axios.get('http://localhost:8080/addresses.json');
+		const response = await axios.get(`${this.providerUrl}:8080/addresses.json`);
 		const addresses = response.data;
 
 		this.watcher = new Watcher({
@@ -67,11 +70,6 @@ describe('Layer 2 production tests', () => {
 				messengerAddress: '0x4200000000000000000000000000000000000007',
 			},
 		});
-	});
-
-	after('exit', async () => {
-		// TODO: Optimism watchers leave the process open, so we explicitely kill it
-		process.exit(0);
 	});
 
 	describe('when instances have been deployed in local L1 and L2 chains', () => {
@@ -154,7 +152,7 @@ describe('Layer 2 production tests', () => {
 		// General properties
 		// --------------------------
 
-		describe('[GENERAL] properties', () => {
+		describe('[GENERAL]', () => {
 			it('shows the expected owners', async () => {
 				assert.equal(await SynthetixL1.owner(), this.ownerAddress);
 				assert.equal(await SynthetixL2.owner(), this.ownerAddress);
