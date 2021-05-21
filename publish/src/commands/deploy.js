@@ -313,7 +313,7 @@ const deploy = async ({
 		// inflationSupplyToDate = total supply - 100m
 		const inflationSupplyToDate = ethers.utils
 			.parseUnits(currentSynthetixSupply, 'wei')
-			.sub(ethers.utils.parseUnits(100e6).toString());
+			.sub(ethers.utils.parseUnits((100e6).toString(), 'wei'));
 
 		// current weekly inflation 75m / 52
 		const weeklyInflation = ethers.utils.parseUnits((75e6 / 52).toString()).toString();
