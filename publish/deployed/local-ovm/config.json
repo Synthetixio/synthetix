@@ -139,8 +139,5 @@
 	},
 	"EtherWrapper": {
 		"deploy": true
-	},
-	"NativeEtherWrapper": {
-		"deploy": true
 	}
 }
