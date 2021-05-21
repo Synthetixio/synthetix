@@ -56,6 +56,11 @@ module.exports = {
 			blockGasLimit: 12e6,
 			url: 'http://localhost:8545',
 		},
+		localhostOVM: {
+			gas: 0,
+			blockGasLimit: 9e6,
+			url: 'http://localhost:8545',
+		},
 	},
 	gasReporter: {
 		enabled: false,
