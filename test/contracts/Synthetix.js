@@ -36,7 +36,9 @@ contract('Synthetix', async accounts => {
 		rewardEscrowV2,
 		oracle,
 		addressResolver,
-		systemStatus;
+		systemStatus,
+		sUSDContract,
+		sETHContract;
 
 	before(async () => {
 		({
@@ -48,6 +50,8 @@ contract('Synthetix', async accounts => {
 			RewardEscrow: rewardEscrow,
 			RewardEscrowV2: rewardEscrowV2,
 			SupplySchedule: supplySchedule,
+			SynthsUSD: sUSDContract,
+			SynthsETH: sETHContract,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
@@ -407,6 +411,60 @@ contract('Synthetix', async accounts => {
 
 			// rewardEscrow should have 0 balance
 			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), 0);
+		});
+	});
+
+	describe('Using a contract to invoke exchangeWithTrackingForInitiator', () => {
+		describe('when a third party contract is setup to exchange synths', () => {
+			let contractExample;
+			let amountOfsUSD;
+			beforeEach(async () => {
+				amountOfsUSD = toUnit('100');
+
+				const MockThirdPartyExchangeContract = artifacts.require('MockThirdPartyExchangeContract');
+
+				// create a contract
+				contractExample = await MockThirdPartyExchangeContract.new(addressResolver.address);
+
+				// ensure rates are set
+				await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
+
+				// issue sUSD from the owner
+				await synthetix.issueSynths(amountOfsUSD, { from: owner });
+
+				// transfer the sUSD to the contract
+				await sUSDContract.transfer(contractExample.address, toUnit('100'), { from: owner });
+			});
+
+			describe('when Barrie invokes the exchange function on the contract', () => {
+				let txn;
+				beforeEach(async () => {
+					// Barrie has no sETH to start
+					assert.equal(await sETHContract.balanceOf(account3), '0');
+
+					txn = await contractExample.exchange(amountOfsUSD, { from: account3 });
+				});
+				it('then Barrie has the synths in her account', async () => {
+					assert.bnGt(await sETHContract.balanceOf(account3), toUnit('0.01'));
+				});
+				it('and the contract has none', async () => {
+					assert.equal(await sETHContract.balanceOf(contractExample.address), '0');
+				});
+				it('and the event emitted indicates that Barrie was the destinationAddress', async () => {
+					const logs = artifacts.require('Synthetix').decodeLogs(txn.receipt.rawLogs);
+					assert.eventEqual(
+						logs.find(log => log.event === 'SynthExchange'),
+						'SynthExchange',
+						{
+							account: contractExample.address,
+							fromCurrencyKey: toBytes32('sUSD'),
+							fromAmount: amountOfsUSD,
+							toCurrencyKey: toBytes32('sETH'),
+							toAddress: account3,
+						}
+					);
+				});
+			});
 		});
 	});
 });
