@@ -217,29 +217,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             );
     }
 
-    // SIP-140 The initiating user of this exchange will receive the proceeds of the exchange
-    // Note: this function may have unintended consequences if not understood correctly. Please
-    // read SIP-140 for more information on the use-case
-    function exchangeWithTrackingForInitiator(
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address originator,
-        bytes32 trackingCode
-    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeWithTracking(
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                // solhint-disable avoid-tx-origin
-                tx.origin,
-                originator,
-                trackingCode
-            );
-    }
-
     function exchangeOnBehalfWithTracking(
         address exchangeForAddress,
         bytes32 sourceCurrencyKey,
@@ -313,6 +290,16 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     function burnSynthsToTargetOnBehalf(address burnForAddress) external issuanceActive optionalProxy {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
+    }
+
+    function exchangeWithTrackingForInitiator(
+        bytes32,
+        uint,
+        bytes32,
+        address,
+        bytes32
+    ) external returns (uint amountReceived) {
+        _notImplemented();
     }
 
     function exchangeWithVirtual(
