@@ -130,6 +130,36 @@ contract('Synthetix', async accounts => {
 			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][4], msgSender);
 			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][5], trackingCode);
 		});
+
+		it('exchangeWithTrackingForInitiator is called with the right arguments ', async () => {
+			await synthetix.exchangeWithTrackingForInitiator(
+				currencyKey1,
+				amount1,
+				currencyKey2,
+				account2,
+				trackingCode,
+				{ from: account2 }
+			);
+			assert.equal(smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][0], msgSender);
+			assert.equal(
+				smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][1],
+				currencyKey1
+			);
+			assert.equal(
+				smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][2].toString(),
+				amount1
+			);
+			assert.equal(
+				smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][3],
+				currencyKey2
+			);
+			assert.equal(smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][4], account2);
+			assert.equal(smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][5], account2);
+			assert.equal(
+				smockExchanger.smocked.exchangeWithTrackingForInitiator.calls[0][6],
+				trackingCode
+			);
+		});
 	});
 
 	describe('mint() - inflationary supply minting', async () => {
