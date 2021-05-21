@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 
-describe('Deposits integration tests (layer 1 and layer 2) - [DEPOSITS]', () => {
+describe('deposit() integration tests', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
@@ -18,7 +18,7 @@ describe('Deposits integration tests (layer 1 and layer 2) - [DEPOSITS]', () => 
 	before('target contracts and users', () => {
 		({ Synthetix, SynthetixBridgeToOptimism, SynthetixBridgeEscrow } = ctx.l1.contracts);
 
-		owner = ctx.l1.owner;
+		[owner] = ctx.l1.users;
 	});
 
 	describe('when the owner deposits SNX', () => {
@@ -59,9 +59,9 @@ describe('Deposits integration tests (layer 1 and layer 2) - [DEPOSITS]', () => 
 
 		describe('when the deposit gets picked up in L2', () => {
 			before('target contracts and users', () => {
-				({ Synthetix, SynthetixBridgeToBase } = ctx.l2.contracts);
+				({ Synthetix } = ctx.l2.contracts);
 
-				owner = ctx.l2.owner;
+				[owner] = ctx.l2.users;
 			});
 
 			before('record balances', async () => {

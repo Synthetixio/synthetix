@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { getPrivateKey } = require('./wallets');
+const { getPrivateKey } = require('./users');
 
 const commands = {
 	build: require('../../../publish/src/commands/build').build,

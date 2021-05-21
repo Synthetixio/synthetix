@@ -1,7 +1,7 @@
 const hre = require('hardhat');
 const ethers = require('ethers');
 const axios = require('axios');
-const { loadWallets } = require('./wallets');
+const { loadUsers } = require('./users');
 const { Watcher } = require('@eth-optimism/watcher');
 const { connectContracts } = require('./contracts');
 const { simulateExchangeRates } = require('./rates');
@@ -17,7 +17,7 @@ function bootstrapL1({ ctx }) {
 		);
 
 		// Accounts
-		loadWallets({ ctx });
+		loadUsers({ ctx });
 
 		// Contracts
 		connectContracts({ ctx });
@@ -39,7 +39,7 @@ function bootstrapL2({ ctx }) {
 		ctx.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
 		// Accounts
-		loadWallets({ ctx });
+		loadUsers({ ctx });
 
 		// Contracts
 		connectContracts({ ctx });
@@ -79,8 +79,8 @@ function bootstrapDual({ ctx }) {
 		});
 
 		// Accounts
-		loadWallets({ ctx: ctx.l1 });
-		loadWallets({ ctx: ctx.l2 });
+		loadUsers({ ctx: ctx.l1 });
+		loadUsers({ ctx: ctx.l2 });
 
 		// Contracts
 		connectContracts({ ctx: ctx.l1 });
