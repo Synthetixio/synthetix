@@ -15,10 +15,12 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../../');
 const BN = require('bn.js');
+const { toBN } = require('web3-utils');
 
 contract('SystemSettings', async accounts => {
 	const [, owner] = accounts;
-	const oneWeek = web3.utils.toBN(7 * 24 * 60 * 60);
+	const oneWeek = toBN(7 * 24 * 60 * 60);
+	const ONE = toBN('1');
 
 	let systemSettings;
 
@@ -49,6 +51,9 @@ contract('SystemSettings', async accounts => {
 				'setTradingRewardsEnabled',
 				'setDebtSnapshotStaleTime',
 				'setCrossDomainMessageGasLimit',
+				'setEtherWrapperMaxETH',
+				'setEtherWrapperMintFeeRate',
+				'setEtherWrapperBurnFeeRate',
 				'setAtomicMaxVolumePerBlock',
 				'setAtomicTwapPriceWindow',
 				'setAtomicEquivalentForDexPricing',
@@ -784,6 +789,105 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
+	describe('setEtherWrapperMaxETH()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setEtherWrapperMaxETH,
+				args: [owner],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			const newValue = toUnit('6000');
+			beforeEach(async () => {
+				txn = await systemSettings.setEtherWrapperMaxETH(newValue, { from: owner });
+			});
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.etherWrapperMaxETH(), newValue);
+			});
+
+			it('and emits an EtherWrapperMaxETHUpdated event', async () => {
+				assert.eventEqual(txn, 'EtherWrapperMaxETHUpdated', [newValue]);
+			});
+		});
+	});
+
+	describe('setEtherWrapperMintFeeRate()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setEtherWrapperMintFeeRate,
+				args: [1],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_MINT_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_MINT_FEE_RATE()).add(ONE);
+			await assert.revert(
+				systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner }),
+				'rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+
+			const newValue = toUnit('0.06');
+			beforeEach(async () => {
+				txn = await systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner });
+			});
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.etherWrapperMintFeeRate(), newValue);
+			});
+
+			it('and emits an EtherWrapperMintFeeRateUpdated event', async () => {
+				assert.eventEqual(txn, 'EtherWrapperMintFeeRateUpdated', [newValue]);
+			});
+		});
+	});
+
+	describe('setEtherWrapperBurnFeeRate()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setEtherWrapperBurnFeeRate,
+				args: [1],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_BURN_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_BURN_FEE_RATE()).add(ONE);
+			await assert.revert(
+				systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner }),
+				'rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE'
+			);
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+
+			const newValue = toUnit('0.06');
+			beforeEach(async () => {
+				txn = await systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner });
+			});
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.etherWrapperBurnFeeRate(), newValue);
+			});
+
+			it('and emits an EtherWrapperBurnFeeRateUpdated event', async () => {
+				assert.eventEqual(txn, 'EtherWrapperBurnFeeRateUpdated', [newValue]);
+			});
+		});
+	});
+
 	describe('setAtomicMaxVolumePerBlock', () => {
 		const limit = toUnit('1000000');
 		it('can only be invoked by owner', async () => {
@@ -795,7 +899,6 @@ contract('SystemSettings', async accounts => {
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
-
 		it('should revert if limit exceeds uint192', async () => {
 			const aboveUint192 = new BN(2).pow(new BN(192));
 			await assert.revert(

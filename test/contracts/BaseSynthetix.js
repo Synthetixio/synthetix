@@ -213,7 +213,7 @@ contract('BaseSynthetix', async accounts => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.emitExchangeTracking,
 				accounts,
-				args: [trackingCode, currencyKey1, account1],
+				args: [trackingCode, currencyKey1, amount1, amount2],
 				reason: 'Only Exchanger can invoke this',
 			});
 		});
@@ -267,9 +267,13 @@ contract('BaseSynthetix', async accounts => {
 					account2,
 					{ from: exchanger }
 				);
-				tx4 = await baseSynthetix.emitExchangeTracking(trackingCode, currencyKey1, amount1, {
-					from: exchanger,
-				});
+				tx4 = await baseSynthetix.emitExchangeTracking(
+					trackingCode,
+					currencyKey1,
+					amount1,
+					amount2,
+					{ from: exchanger }
+				);
 			});
 
 			it('the corresponding events are emitted', async () => {
@@ -296,6 +300,7 @@ contract('BaseSynthetix', async accounts => {
 						trackingCode: trackingCode,
 						toCurrencyKey: currencyKey1,
 						toAmount: amount1,
+						fee: amount2,
 					});
 				});
 			});

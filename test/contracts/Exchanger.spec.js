@@ -1815,6 +1815,9 @@ contract('Exchanger (spec tests)', async accounts => {
 							}
 						);
 
+						const { fee } = await exchanger.getAmountsForExchange(amountIssued, sUSD, sAUD);
+						const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
+
 						const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 						const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
@@ -1832,6 +1835,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							trackingCode,
 							toCurrencyKey: toBytes32('sAUD'),
 							toAmount: sAUDBalance,
+							fee: usdFeeAmount,
 						});
 					});
 
@@ -2183,6 +2187,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									trackingCode,
 									toCurrencyKey: toBytes32('sAUD'),
 									toAmount: sAUDBalance,
+									fee: usdFeeAmount,
 								});
 							});
 						});
@@ -2989,11 +2994,12 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 
 						it('emits an ExchangeTracking event with the correct code', async () => {
+							const usdFeeAmount = await exchangeRates.effectiveValue(sETH, amountFee, sUSD);
 							decodedEventEqual({
 								log: logs.find(({ name }) => name === 'ExchangeTracking'),
 								event: 'ExchangeTracking',
 								emittedFrom: await synthetix.proxy(),
-								args: [atomicTrackingCode, sETH, amountReceived],
+								args: [atomicTrackingCode, sETH, amountReceived, usdFeeAmount],
 								bnCloseVariance: '0',
 							});
 						});
