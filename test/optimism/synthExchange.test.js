@@ -3,9 +3,10 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 const { toBytes32, getUsers } = require('../..');
 const { assertRevertOptimism } = require('./utils/revertOptimism');
+const { wait } = require('./utils/rpc');
 
 const itCanPerformSynthExchange = ({ ctx }) => {
-	describe('[SYNTEXCHANGE] when exchanging synths on L2', () => {
+	describe('[EXCHANGE SYNTHS]', () => {
 		const amountToDeposit = ethers.utils.parseEther('100');
 
 		const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
@@ -324,7 +325,10 @@ const itCanPerformSynthExchange = ({ ctx }) => {
 								const [transactionHashL2] = await ctx.watcher.getMessageHashesFromL1Tx(
 									depositReceipt.transactionHash
 								);
+
 								await ctx.watcher.getL2TransactionReceipt(transactionHashL2);
+
+								await wait({ seconds: 10 });
 							});
 
 							before('stop listening to events on L2', async () => {
