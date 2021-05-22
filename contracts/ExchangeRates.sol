@@ -365,7 +365,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     // SIP-120 Atomic exchanges
     // Note that the returned systemValue, systemSourceRate, and systemDestinationRate are based on
-    // the current Chainlink rate, which may not the real rate of value / sourceAmount.
+    // the current system rate, which may not be the atomic rate derived from value / sourceAmount
     function effectiveAtomicValueAndRates(
         bytes32 sourceCurrencyKey,
         uint sourceAmount,

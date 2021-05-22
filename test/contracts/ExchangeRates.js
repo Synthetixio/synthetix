@@ -2961,6 +2961,7 @@ contract('Exchange Rates', async accounts => {
 	});
 
 	// Atomic rates
+
 	describe('setDexTwapAggregator()', () => {
 		it("only the owner should be able to change the dex twap aggregator's address", async () => {
 			await onlyGivenAddressCanInvoke({
@@ -3059,8 +3060,7 @@ contract('Exchange Rates', async accounts => {
 				const pClIn8 = convertToDecimals(pClRaw, 8);
 				const pClIn18 = toUnit(pClRaw);
 
-				// Note that the chainlink rate is a bit awkward to specify.
-				// For simplicity, the given pCl rate is priced on the dest token.
+				// For simplicity and to align it with pTwap, the given pCl rate is priced on the dest token.
 				// Internally, however, the CL aggregators are expected to be priced in USD and with 8 decimals.
 				// So if the source token is USD, we need to inverse the given CL rate for the CL aggregator.
 				const pClInUsdIn8 = srcToken === sUSD ? divideDecimal(unitIn8, pClIn8, unitIn8) : pClIn8;
@@ -3131,7 +3131,7 @@ contract('Exchange Rates', async accounts => {
 
 		beforeEach('set initial configuration', async () => {
 			await ethAggregator.setDecimals('8');
-			await ethAggregator.setLatestAnswer(convertToDecimals(1, 8), await currentTime());
+			await ethAggregator.setLatestAnswer(convertToDecimals(1, 8), await currentTime()); // this will be overwritten by the appropriate rate as needed
 			await instance.addAggregator(sETH, ethAggregator.address, {
 				from: owner,
 			});
