@@ -6,6 +6,7 @@ const { Watcher } = require('@eth-optimism/watcher');
 const { connectContracts } = require('./contracts');
 const { simulateExchangeRates } = require('./rates');
 const { takeDebtSnapshot } = require('./cache');
+const { deposit } = require('./bridge');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -91,6 +92,14 @@ function bootstrapDual({ ctx }) {
 		await simulateExchangeRates({ ctx: ctx.l2 });
 		await takeDebtSnapshot({ ctx: ctx.l1 });
 		await takeDebtSnapshot({ ctx: ctx.l2 });
+
+		// Ensure owner has SNX on L2
+		const amount = ethers.utils.parseEther('1000000');
+		const balance = await ctx.l2.contracts.Synthetix.balanceOf(ctx.l2.owner.address);
+		if (balance.lt(amount)) {
+			const delta = amount.sub(balance);
+			await deposit({ ctx, from: ctx.l1.owner, to: ctx.l1.owner, amount: delta });
+		}
 	});
 }
 

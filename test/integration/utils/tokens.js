@@ -1,33 +1,35 @@
-let _associatedContract;
-
-async function ensureBalance({ ctx, tokenName, user, balance }) {
-	const token = ctx.contracts[tokenName];
-
+async function ensureBalance({ ctx, symbol, user, balance }) {
+	const token = _getTokenFromSymbol({ ctx, symbol });
 	const currentBalance = await token.balanceOf(user.address);
+
 	if (currentBalance.lt(balance)) {
 		const amount = balance.sub(currentBalance);
+		console.log('NEEDS', amount.toString());
 
-		await _printTokens({ ctx, tokenName, user, amount });
+		await _getTokens({ ctx, token, symbol, user, amount });
 	}
 }
 
-async function _printTokens({ ctx, tokenName, user, amount }) {
-	let tokenState = ctx.contracts[`TokenState${tokenName}`];
-	tokenState = tokenState.connect(ctx.owner);
+function _getTokenFromSymbol({ ctx, symbol }) {
+	if (symbol === 'SNX') {
+		return ctx.contracts.Synthetix;
+	} else {
+		throw new Error(`TODO: ${symbol} needs implementation.`);
+	}
+}
 
-	const associatedContract = await tokenState.associatedContract();
+async function _getTokens({ ctx, token, symbol, user, amount }) {
+	if (symbol === 'SNX') {
+		await _getSNX({ ctx, token, user, amount });
+	} else {
+		// TODO: will need to get SNX and then exchange
+	}
+}
 
-	let tx;
+async function _getSNX({ ctx, token, user, amount }) {
+	token = token.connect(ctx.owner);
 
-	tx = await tokenState.setAssociatedContract(ctx.owner.address);
-	await tx.wait();
-
-	try {
-		tx = await tokenState.setBalanceOf(user.address, amount);
-		await tx.wait();
-	} catch(err) {}
-
-	tx = await tokenState.setAssociatedContract(associatedContract);
+	const tx = await token.transfer(user.address, amount);
 	await tx.wait();
 }
 
