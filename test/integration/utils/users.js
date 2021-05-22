@@ -10,6 +10,7 @@ function loadUsers({ ctx }) {
 	}
 
 	ctx.owner = ctx.users[0];
+	ctx.user = ctx.users[1];
 }
 
 function getPrivateKey({ index }) {
