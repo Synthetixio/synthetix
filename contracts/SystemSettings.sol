@@ -356,7 +356,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setAtomicEquivalentForDexPricing(bytes32 _currencyKey, address _equivalent) external onlyOwner {
-        // TODO: sanity check with the Keep3r oracle for compatibility?
         flexibleStorage().setAddressValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_ATOMIC_EQUIVALENT_FOR_DEX_PRICING, _currencyKey)),

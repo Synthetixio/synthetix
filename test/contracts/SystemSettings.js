@@ -837,7 +837,6 @@ contract('SystemSettings', async accounts => {
 
 		describe('when successfully invoked', () => {
 			let txn;
-
 			const newValue = toUnit('0.06');
 			beforeEach(async () => {
 				txn = await systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner });
@@ -873,7 +872,6 @@ contract('SystemSettings', async accounts => {
 
 		describe('when successfully invoked', () => {
 			let txn;
-
 			const newValue = toUnit('0.06');
 			beforeEach(async () => {
 				txn = await systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner });
@@ -899,8 +897,9 @@ contract('SystemSettings', async accounts => {
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
+
 		it('should revert if limit exceeds uint192', async () => {
-			const aboveUint192 = new BN(2).pow(new BN(192));
+			const aboveUint192 = toBN(2).pow(toBN(192));
 			await assert.revert(
 				systemSettings.setAtomicMaxVolumePerBlock(aboveUint192, { from: owner }),
 				'Atomic max volume exceed maximum uint192'
@@ -922,7 +921,7 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('allows to be changed', async () => {
-				const newLimit = limit.mul(new BN(2));
+				const newLimit = limit.mul(toBN(2));
 				await systemSettings.setAtomicMaxVolumePerBlock(newLimit, { from: owner });
 				assert.bnEqual(await systemSettings.atomicMaxVolumePerBlock(), newLimit);
 			});
@@ -935,7 +934,7 @@ contract('SystemSettings', async accounts => {
 	});
 
 	describe('setAtomicTwapPriceWindow', () => {
-		const priceWindow = 3600; // 1 hour
+		const priceWindow = toBN(3600); // 1 hour
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setAtomicTwapPriceWindow,
@@ -949,7 +948,7 @@ contract('SystemSettings', async accounts => {
 		it('should revert if window is below minimum', async () => {
 			const minimum = await systemSettings.MIN_ATOMIC_TWAP_PRICE_WINDOW();
 			await assert.revert(
-				systemSettings.setAtomicTwapPriceWindow(minimum.sub(new BN(1)), { from: owner }),
+				systemSettings.setAtomicTwapPriceWindow(minimum.sub(toBN(1)), { from: owner }),
 				'Atomic twap window under minimum 30 min'
 			);
 		});
@@ -957,7 +956,7 @@ contract('SystemSettings', async accounts => {
 		it('should revert if window is above maximum', async () => {
 			const maximum = await systemSettings.MAX_ATOMIC_TWAP_PRICE_WINDOW();
 			await assert.revert(
-				systemSettings.setAtomicTwapPriceWindow(maximum.add(new BN(1)), { from: owner }),
+				systemSettings.setAtomicTwapPriceWindow(maximum.add(toBN(1)), { from: owner }),
 				'Atomic twap window exceed maximum 1 day'
 			);
 		});
@@ -977,7 +976,7 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('allows to be changed', async () => {
-				const newPriceWindow = priceWindow + 1;
+				const newPriceWindow = priceWindow.add(toBN(1));
 				await systemSettings.setAtomicTwapPriceWindow(newPriceWindow, { from: owner });
 				assert.bnEqual(await systemSettings.atomicTwapPriceWindow(), newPriceWindow);
 			});
@@ -1047,7 +1046,7 @@ contract('SystemSettings', async accounts => {
 		it('should revert if fee is above maximum', async () => {
 			const maximum = await systemSettings.MAX_EXCHANGE_FEE_RATE();
 			await assert.revert(
-				systemSettings.setAtomicExchangeFeeRate(sETH, maximum.add(new BN(1)), { from: owner }),
+				systemSettings.setAtomicExchangeFeeRate(sETH, maximum.add(toBN(1)), { from: owner }),
 				'MAX_EXCHANGE_FEE_RATE exceeded'
 			);
 		});
@@ -1110,7 +1109,7 @@ contract('SystemSettings', async accounts => {
 			});
 
 			it('allows to be changed', async () => {
-				const newBuffer = buffer.div(new BN(2));
+				const newBuffer = buffer.div(toBN(2));
 				await systemSettings.setAtomicPriceBuffer(sETH, newBuffer, { from: owner });
 				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), newBuffer);
 			});
