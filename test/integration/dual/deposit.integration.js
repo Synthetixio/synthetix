@@ -1,6 +1,7 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
+const { finalizationOnL2 } = require('../utils/watchers');
 
 describe('deposit() integration tests', () => {
 	const ctx = this;
@@ -69,10 +70,7 @@ describe('deposit() integration tests', () => {
 			});
 
 			before('wait for deposit finalization', async () => {
-				const [depositMessageHash] = await ctx.watcher.getMessageHashesFromL1Tx(
-					depositReceipt.transactionHash
-				);
-				await ctx.watcher.getL2TransactionReceipt(depositMessageHash);
+				await finalizationOnL2({ ctx, transactionHash: depositReceipt.transactionHash });
 			});
 
 			it('increases the owner balance', async () => {
