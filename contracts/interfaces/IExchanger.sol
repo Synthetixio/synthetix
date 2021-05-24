@@ -105,5 +105,7 @@ interface IExchanger {
 
     function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external;
 
+    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external;
+
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external;
 }

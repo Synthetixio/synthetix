@@ -1813,6 +1813,9 @@ contract('Exchanger (spec tests)', async accounts => {
 							}
 						);
 
+						const { fee } = await exchanger.getAmountsForExchange(amountIssued, sUSD, sAUD);
+						const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
+
 						const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 						const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
@@ -1830,6 +1833,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							trackingCode,
 							toCurrencyKey: toBytes32('sAUD'),
 							toAmount: sAUDBalance,
+							fee: usdFeeAmount,
 						});
 					});
 
@@ -2181,6 +2185,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									trackingCode,
 									toCurrencyKey: toBytes32('sAUD'),
 									toAmount: sAUDBalance,
+									fee: usdFeeAmount,
 								});
 							});
 						});
@@ -2930,6 +2935,24 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 			};
 
+			describe('resetLastExchangeRate() SIP-139', () => {
+				it('cannot be invoked by any user', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: exchanger.resetLastExchangeRate,
+						args: [[sEUR, sAUD]],
+						accounts,
+						address: owner,
+						reason: 'Only the contract owner may perform this action',
+					});
+				});
+				it('when invoked without valid exchange rates, it reverts', async () => {
+					await assert.revert(
+						exchanger.resetLastExchangeRate([sEUR, sAUD, toBytes32('sUNKNOWN')], { from: owner }),
+						'Rates for given synths not valid'
+					);
+				});
+			});
+
 			describe(`when the price of sETH is ${baseRate}`, () => {
 				updateRate({ target: sETH, rate: baseRate });
 
@@ -3044,6 +3067,23 @@ contract('Exchanger (spec tests)', async accounts => {
 									});
 									it('and the dest side has not persisted the rate', async () => {
 										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
+									});
+
+									describe('when the owner invokes resetLastExchangeRate([sEUR, sETH])', () => {
+										beforeEach(async () => {
+											await exchanger.resetLastExchangeRate([sEUR, sETH], { from: owner });
+										});
+
+										it('then the sEUR last exchange rate is updated to the current price', async () => {
+											assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('10'));
+										});
+
+										it('and the sETH rate has not changed', async () => {
+											assert.bnEqual(
+												await exchanger.lastExchangeRate(sETH),
+												toUnit((baseRate * 1.1).toString())
+											);
+										});
 									});
 								});
 							});
