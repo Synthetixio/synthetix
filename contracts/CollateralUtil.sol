@@ -4,13 +4,14 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./interfaces/IAddressResolver.sol";
+import "./interfaces/ICollateralUtil.sol";
 import "./interfaces/ICollateralLoan.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./MixinSystemSettings.sol";
 
 import "./SafeDecimalMath.sol";
 
-contract CollateralUtil is ICollateralLoan, MixinSystemSettings {
+contract CollateralUtil is ICollateralUtil, ICollateralLoan, MixinSystemSettings {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 

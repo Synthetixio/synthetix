@@ -11,7 +11,7 @@ import "./interfaces/ICollateralLoan.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./CollateralUtil.sol";
+import "./interfaces/ICollateralUtil.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
@@ -19,7 +19,6 @@ import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IShortingRewards.sol";
-import "./interfaces/ICollateralUtil.sol";
 
 contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
@@ -306,7 +305,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     function closeInternal(address borrower, uint id) internal rateIsValid returns (uint amount, uint collateral) {
-        Loan storage loan = _getLoan(id, borrower);
+        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         (amount, collateral) = _closeLoan(borrower, borrower, loan);
 
@@ -386,7 +385,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     function withdrawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
-        Loan storage loan = _getLoan(id, msg.sender);
+        Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
         // 4. Subtract the collateral.
         loan.collateral = loan.collateral.sub(amount);
@@ -405,7 +404,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint id,
         uint payment
     ) internal rateIsValid returns (uint collateralLiquidated) {
-        Loan storage loan = _getLoan(id, borrower);
+        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 1. Check the payment amount.
         require(payment > 0);
@@ -452,12 +451,12 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint id,
         uint payment
     ) internal rateIsValid returns (uint, uint) {
-        Loan storage loan = _getLoan(id, borrower);
+        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 3. Check loan is open and last interaction time.
         // TODO: why is there an interaction delay required for repaying?
         //   The user already owns the eth and is burning it, how do frontrunners win here?
-        // require(loan.lastInteraction.add(interactionDelay) <= block.timestamp);
+        require(loan.lastInteraction.add(interactionDelay) <= block.timestamp);
 
         // 6. Process the payment.
         require(payment > 0);
@@ -476,7 +475,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     function drawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
-        Loan storage loan = _getLoan(id, msg.sender);
+        Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
         // 2. Check last interaction time.
         require(loan.lastInteraction.add(interactionDelay) <= block.timestamp);
@@ -568,7 +567,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         }
     }
 
-    function _getLoan(uint id, address owner) internal returns (Loan storage loan) {
+    function _getLoanAndAccrueInterest(uint id, address owner) internal returns (Loan storage loan) {
         loan = loans[id];
         _systemStatus().requireIssuanceActive();
         require(loan.account == owner);
