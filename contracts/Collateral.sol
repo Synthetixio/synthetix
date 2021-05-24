@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinSystemSettings.sol";
+import "./MixinResolver.sol";
 import "./interfaces/ICollateralLoan.sol";
 
 // Libraries
@@ -20,7 +20,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IShortingRewards.sol";
 
-contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
+contract Collateral is ICollateralLoan, Owned, MixinResolver {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -75,17 +75,15 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver) public Owned(msg.sender) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     function initialize(
-        address _owner,
         ICollateralManager _manager,
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
     ) external onlyOwner {
         require(!initialized);
-        owner = _owner;
         manager = _manager;
         collateralKey = _collateralKey;
         minCratio = _minCratio;
@@ -96,8 +94,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
+        bytes32[] memory existingAddresses = MixinResolver.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_FEEPOOL;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYSTEMSTATUS;
@@ -202,32 +200,32 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- SETTERS ---------- */
 
-    function setMinCratio(uint _minCratio) external onlyOwner {
-        require(_minCratio > SafeDecimalMath.unit());
-        minCratio = _minCratio;
-        emit MinCratioRatioUpdated(minCratio);
-    }
+    // function setMinCratio(uint _minCratio) external onlyOwner {
+    //     require(_minCratio > SafeDecimalMath.unit());
+    //     minCratio = _minCratio;
+    //     emit MinCratioRatioUpdated(minCratio);
+    // }
 
-    function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
-        issueFeeRate = _issueFeeRate;
-        emit IssueFeeRateUpdated(issueFeeRate);
-    }
+    // function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
+    //     issueFeeRate = _issueFeeRate;
+    //     emit IssueFeeRateUpdated(issueFeeRate);
+    // }
 
-    function setInteractionDelay(uint _interactionDelay) external onlyOwner {
-        require(_interactionDelay <= SafeDecimalMath.unit() * 3600);
-        interactionDelay = _interactionDelay;
-        emit InteractionDelayUpdated(interactionDelay);
-    }
+    // function setInteractionDelay(uint _interactionDelay) external onlyOwner {
+    //     require(_interactionDelay <= SafeDecimalMath.unit() * 3600);
+    //     interactionDelay = _interactionDelay;
+    //     emit InteractionDelayUpdated(interactionDelay);
+    // }
 
-    function setManager(ICollateralManager _newManager) external onlyOwner {
-        manager = _newManager;
-        emit ManagerUpdated(manager);
-    }
+    // function setManager(ICollateralManager _newManager) external onlyOwner {
+    //     manager = _newManager;
+    //     emit ManagerUpdated(manager);
+    // }
 
-    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
-        canOpenLoans = _canOpenLoans;
-        emit CanOpenLoansUpdated(canOpenLoans);
-    }
+    // function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
+    //     canOpenLoans = _canOpenLoans;
+    //     emit CanOpenLoansUpdated(canOpenLoans);
+    // }
 
     /* ---------- LOAN INTERACTIONS ---------- */
 

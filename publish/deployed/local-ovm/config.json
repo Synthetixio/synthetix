@@ -134,6 +134,9 @@
 	"SynthetixBridgeToBase": {
 		"deploy": true
 	},
+	"CollateralUtil": {
+		"deploy": true
+	},
 	"CollateralManager": {
 		"deploy": true
 	},

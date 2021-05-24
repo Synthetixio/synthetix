@@ -1364,6 +1364,12 @@ const deploy = async ({
 
 	console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
 
+	// Deploy CollateralUtil
+	await deployer.deployContract({
+		name: 'CollateralUtil',
+		args: [addressOf(readProxyForResolver)],
+	});
+
 	const managerState = await deployer.deployContract({
 		name: 'CollateralManagerState',
 		args: [account, account],
@@ -1443,13 +1449,22 @@ const deploy = async ({
 		args: [addressOf(readProxyForResolver)],
 	});
 
-	await collateralShort.initialize(
-		account,
-		addressOf(collateralManager),
-		toBytes32('sUSD'),
-		(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
-		(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL']
-	);
+	// setup collateralshort
+	if (!collateralShort) {
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'initialized',
+			expected: input => input === true,
+			write: 'initialize',
+			writeArg: [
+				addressOf(collateralManager),
+				toBytes32('sUSD'),
+				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
+				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
+			],
+		});
+	}
 
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
