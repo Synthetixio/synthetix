@@ -292,6 +292,16 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
+    function exchangeWithTrackingForInitiator(
+        bytes32,
+        uint,
+        bytes32,
+        address,
+        bytes32
+    ) external returns (uint amountReceived) {
+        _notImplemented();
+    }
+
     function exchangeWithVirtual(
         bytes32,
         uint,
