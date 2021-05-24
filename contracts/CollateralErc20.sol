@@ -25,9 +25,10 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         uint _minCollateral,
         address _underlyingContract,
         uint _underlyingDecimals
-    ) public Collateral(_owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {
-        underlyingContract = _underlyingContract;
+    ) public Collateral(_resolver) {
+        initialize(_owner, _manager, _collateralKey, _minCratio, _minCollateral);
 
+        underlyingContract = _underlyingContract;
         underlyingContractDecimals = _underlyingDecimals;
     }
 

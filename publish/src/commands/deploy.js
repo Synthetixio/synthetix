@@ -1440,15 +1440,16 @@ const deploy = async ({
 
 	const collateralShort = await deployer.deployContract({
 		name: 'CollateralShort',
-		args: [
-			account,
-			addressOf(collateralManager),
-			addressOf(readProxyForResolver),
-			toBytes32('sUSD'),
-			(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
-			(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
-		],
+		args: [addressOf(readProxyForResolver)],
 	});
+
+	await collateralShort.initialize(
+		account,
+		addressOf(collateralManager),
+		toBytes32('sUSD'),
+		(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
+		(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL']
+	);
 
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
