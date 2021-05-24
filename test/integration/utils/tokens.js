@@ -4,7 +4,6 @@ async function ensureBalance({ ctx, symbol, user, balance }) {
 
 	if (currentBalance.lt(balance)) {
 		const amount = balance.sub(currentBalance);
-		console.log('NEEDS', amount.toString());
 
 		await _getTokens({ ctx, token, symbol, user, amount });
 	}
