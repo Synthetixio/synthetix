@@ -6,14 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./Collateral.sol";
 
 contract CollateralShort is Collateral {
-    constructor(
-        address _owner,
-        address _manager,
-        address _resolver,
-        bytes32 _collateralKey,
-        uint _minCratio,
-        uint _minCollateral
-    ) public Collateral(_owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
+    constructor(address _resolver) public Collateral(_resolver) {}
 
     function open(
         uint collateral,
@@ -26,8 +19,8 @@ contract CollateralShort is Collateral {
         id = openInternal(collateral, amount, currency, true);
     }
 
-    function close(uint id) external {
-        uint collateral = closeInternal(msg.sender, id);
+    function close(uint id) external returns (uint amount, uint collateral) {
+        (amount, collateral) = closeInternal(msg.sender, id);
 
         IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
     }
@@ -41,7 +34,7 @@ contract CollateralShort is Collateral {
 
         IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), amount);
 
-        depositInternal(borrower, id, amount);
+        (short, collateral) = depositInternal(borrower, id, amount);
     }
 
     function withdraw(uint id, uint amount) external returns (uint short, uint collateral) {
