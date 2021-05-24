@@ -1,10 +1,10 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
-const { ensureBalance } = require('../utils/tokens');
+const { ensureBalance } = require('../utils/balances');
 const { finalizationOnL1 } = require('../utils/watchers');
 
-describe('withdraw() integration tests', () => {
+describe('withdraw() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 

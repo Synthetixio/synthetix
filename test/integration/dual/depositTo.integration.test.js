@@ -4,7 +4,7 @@ const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL2 } = require('../utils/watchers');
 const { approveIfNeeded } = require('../utils/approve');
 
-describe('depositTo() integration tests', () => {
+describe('depositTo() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
