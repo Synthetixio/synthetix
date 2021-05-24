@@ -2945,6 +2945,12 @@ contract('Exchanger (spec tests)', async accounts => {
 						reason: 'Only the contract owner may perform this action',
 					});
 				});
+				it('when invoked without valid exchange rates, it reverts', async () => {
+					await assert.revert(
+						exchanger.resetLastExchangeRate([sEUR, sAUD, toBytes32('sUNKNOWN')], { from: owner }),
+						'Rates for given synths not valid'
+					);
+				});
 			});
 
 			describe(`when the price of sETH is ${baseRate}`, () => {

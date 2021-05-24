@@ -7,7 +7,6 @@ const {
 
 task('test:integration:dual', 'run integrated layer 1 and layer 2 production tests')
 	.addFlag('deploy', 'Deploy l1 and l2 instances before running the tests')
-	.addFlag('connect', 'Connect already deployed l1 and l2 instances before running the tests')
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/dual/';
 
@@ -28,9 +27,7 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 
 			await compileInstance({ useOvm: true });
 			await deployInstance({ useOvm: true, providerUrl, providerPort: providerPortL2 });
-		}
 
-		if (taskArguments.connect) {
 			await connectInstances({ providerUrl, providerPortL1, providerPortL2 });
 		}
 
