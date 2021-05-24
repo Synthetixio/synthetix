@@ -18,8 +18,8 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    ) public Collateral(_resolver) {
-        initialize(_owner, _manager, _collateralKey, _minCratio, _minCollateral);
+    ) public Collateral(_owner, _resolver) {
+        initialize(_manager, _collateralKey, _minCratio, _minCollateral);
     }
 
     // function open(uint amount, bytes32 currency) external payable {

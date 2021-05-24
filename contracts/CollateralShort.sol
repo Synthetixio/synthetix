@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./Collateral.sol";
 
 contract CollateralShort is Collateral {
-    constructor(address _resolver) public Collateral(_resolver) {}
+    constructor(address _owner, address _resolver) public Collateral(_owner, _resolver) {}
 
     function open(
         uint collateral,

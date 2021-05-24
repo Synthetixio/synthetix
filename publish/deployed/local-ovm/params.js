@@ -19,4 +19,4 @@ const params = {
 	},
 };
 
-exports.default = params;
+module.exports = params;

@@ -61,7 +61,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
 
     bool public canOpenLoans = true;
 
-    bool internal initialized = false;
+    bool public initialized = false;
 
     uint public interactionDelay = 0;
 
@@ -217,10 +217,10 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
     //     emit InteractionDelayUpdated(interactionDelay);
     // }
 
-    // function setManager(ICollateralManager _newManager) external onlyOwner {
-    //     manager = _newManager;
-    //     emit ManagerUpdated(manager);
-    // }
+    function setManager(ICollateralManager _newManager) external onlyOwner {
+        manager = _newManager;
+        emit ManagerUpdated(manager);
+    }
 
     // function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
     //     canOpenLoans = _canOpenLoans;

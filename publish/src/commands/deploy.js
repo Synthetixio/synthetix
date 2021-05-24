@@ -197,24 +197,23 @@ const deploy = async ({
 		let effectiveValue = defaultParam;
 
 		const param = params[name];
-
 		if (param) {
 			if (!yes) {
 				try {
 					await confirmAction(
 						yellow(
-							`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.js. Specified value is ${param.value} and default is ${defaultParam}.` +
+							`⚠⚠⚠ WARNING: Found an entry for ${name} in params.js. Specified value is ${param} and default is ${defaultParam}.` +
 								'\nDo you want to use the specified value (default otherwise)? (y/n) '
 						)
 					);
 
-					effectiveValue = param.value;
+					effectiveValue = param;
 				} catch (err) {
 					console.error(err);
 				}
 			} else {
 				// yes = true
-				effectiveValue = param.value;
+				effectiveValue = param;
 			}
 		}
 
@@ -1446,11 +1445,11 @@ const deploy = async ({
 
 	const collateralShort = await deployer.deployContract({
 		name: 'CollateralShort',
-		args: [addressOf(readProxyForResolver)],
+		args: [account, addressOf(readProxyForResolver)],
 	});
 
 	// setup collateralshort
-	if (!collateralShort) {
+	if (collateralShort) {
 		await runStep({
 			contract: 'CollateralShort',
 			target: collateralShort,
@@ -1530,14 +1529,14 @@ const deploy = async ({
 	// Legacy contracts.
 	if (network === 'mainnet') {
 		// v2.35.2 contracts.
-		const CollateralEth = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
-		const CollateralErc20REN = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
-		const CollateralShort = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
+		const legacyCollateralEth = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
+		const legacyCollateralErc20REN = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
+		const legacyCollateralShort = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
 
 		const legacyContracts = Object.entries({
-			CollateralEth,
-			CollateralErc20REN,
-			CollateralShort,
+			legacyCollateralEth,
+			legacyCollateralErc20REN,
+			legacyCollateralShort,
 		}).map(([name, address]) => {
 			const contract = new deployer.web3.eth.Contract(
 				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
@@ -2256,7 +2255,7 @@ const deploy = async ({
 		.filter(contract => contract !== undefined)
 		.map(addressOf);
 
-	if (!collateralManager) {
+	if (collateralManager) {
 		await runStep({
 			contract: 'CollateralManager',
 			target: collateralManager,
@@ -2268,7 +2267,7 @@ const deploy = async ({
 		});
 	}
 
-	if (!collateralEth && !collateralManager) {
+	if (collateralEth && collateralManager) {
 		await runStep({
 			contract: 'CollateralEth',
 			target: collateralEth,
@@ -2298,7 +2297,7 @@ const deploy = async ({
 	}
 
 	// Setup any CollateralErc20
-	if (!collateralErc20 && !collateralManager) {
+	if (collateralErc20 && collateralManager) {
 		await runStep({
 			contract: 'CollateralErc20',
 			target: collateralErc20,
@@ -2328,7 +2327,7 @@ const deploy = async ({
 	}
 
 	// Setup CollateralShort
-	if (!collateralShort && !collateralManager) {
+	if (collateralShort && collateralManager) {
 		await runStep({
 			contract: 'CollateralShort',
 			target: collateralShort,
@@ -2357,7 +2356,7 @@ const deploy = async ({
 		});
 	}
 
-	if (!collateralManager) {
+	if (collateralManager) {
 		await runStep({
 			contract: 'CollateralManager',
 			target: collateralManager,
@@ -2425,7 +2424,7 @@ const deploy = async ({
 		});
 	}
 
-	if (!collateralShort) {
+	if (collateralShort) {
 		const collateralShortInteractionDelay = (await getDeployParameter('COLLATERAL_SHORT'))[
 			'INTERACTION_DELAY'
 		];
@@ -2449,7 +2448,7 @@ const deploy = async ({
 		});
 	}
 
-	if (!collateralEth) {
+	if (collateralEth) {
 		await runStep({
 			contract: 'CollateralEth',
 			target: collateralEth,
@@ -2460,7 +2459,7 @@ const deploy = async ({
 		});
 	}
 
-	if (!collateralErc20) {
+	if (collateralErc20) {
 		await runStep({
 			contract: 'CollateralErc20',
 			target: collateralErc20,
