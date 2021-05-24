@@ -4,24 +4,25 @@ const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL2 } = require('../utils/watchers');
 const { approveIfNeeded } = require('../utils/approve');
 
-describe('deposit() integration tests', () => {
+describe('depositTo() integration tests', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
 	const amountToDeposit = ethers.utils.parseEther('10');
 
-	let owner;
+	let owner, user;
 	let Synthetix, SynthetixBridgeToOptimism, SynthetixBridgeEscrow;
 
-	let ownerBalance, escrowBalance;
+	let ownerBalance, beneficiaryBalance, escrowBalance;
 
 	let depositReceipt;
 
-	describe('when the owner deposits SNX', () => {
+	describe('when the owner deposits SNX for a user', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeToOptimism, SynthetixBridgeEscrow } = ctx.l1.contracts);
 
 			owner = ctx.l1.owner;
+			user = ctx.l1.user;
 		});
 
 		before('record balances', async () => {
@@ -41,7 +42,7 @@ describe('deposit() integration tests', () => {
 		before('make the deposit', async () => {
 			SynthetixBridgeToOptimism = SynthetixBridgeToOptimism.connect(owner);
 
-			const tx = await SynthetixBridgeToOptimism.deposit(amountToDeposit);
+			const tx = await SynthetixBridgeToOptimism.depositTo(user.address, amountToDeposit);
 			depositReceipt = await tx.wait();
 		});
 
@@ -65,15 +66,18 @@ describe('deposit() integration tests', () => {
 			});
 
 			before('record balances', async () => {
-				ownerBalance = await Synthetix.balanceOf(owner.address);
+				beneficiaryBalance = await Synthetix.balanceOf(user.address);
 			});
 
 			before('wait for deposit finalization', async () => {
 				await finalizationOnL2({ ctx, transactionHash: depositReceipt.transactionHash });
 			});
 
-			it('increases the owner balance', async () => {
-				assert.bnEqual(await Synthetix.balanceOf(owner.address), ownerBalance.add(amountToDeposit));
+			it('increases the beneficiary balance', async () => {
+				assert.bnEqual(
+					await Synthetix.balanceOf(user.address),
+					beneficiaryBalance.add(amountToDeposit)
+				);
 			});
 		});
 	});

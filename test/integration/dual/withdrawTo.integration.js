@@ -4,24 +4,25 @@ const { bootstrapDual } = require('../utils/bootstrap');
 const { ensureBalance } = require('../utils/tokens');
 const { finalizationOnL1 } = require('../utils/watchers');
 
-describe('withdraw() integration tests', () => {
+describe('withdrawTo() integration tests', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
 	const amountToWithdraw = ethers.utils.parseEther('10');
 
-	let owner;
+	let owner, user;
 	let Synthetix, SynthetixBridgeToBase;
 
-	let ownerBalance;
+	let ownerBalance, beneficiaryBalance;
 
 	let withdrawalReceipt;
 
-	describe('when the owner withdraws SNX', () => {
+	describe('when the owner withdraws SNX for a user', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeToBase } = ctx.l2.contracts);
 
 			owner = ctx.l2.owner;
+			user = ctx.l2.user;
 		});
 
 		before('ensure the owner has SNX on L2', async () => {
@@ -35,8 +36,7 @@ describe('withdraw() integration tests', () => {
 		before('make the withdrawal', async () => {
 			SynthetixBridgeToBase = SynthetixBridgeToBase.connect(owner);
 
-			const tx = await SynthetixBridgeToBase.withdraw(amountToWithdraw);
-
+			const tx = await SynthetixBridgeToBase.withdrawTo(user.address, amountToWithdraw);
 			withdrawalReceipt = await tx.wait();
 		});
 
@@ -51,20 +51,21 @@ describe('withdraw() integration tests', () => {
 				({ Synthetix } = ctx.l1.contracts);
 
 				owner = ctx.l1.owner;
+				user = ctx.l1.user;
 			});
 
 			before('record balances', async () => {
-				ownerBalance = await Synthetix.balanceOf(owner.address);
+				beneficiaryBalance = await Synthetix.balanceOf(user.address);
 			});
 
 			before('wait for withdrawal finalization', async () => {
 				await finalizationOnL1({ ctx, transactionHash: withdrawalReceipt.transactionHash });
 			});
 
-			it('increases the owner balance', async () => {
+			it('increases the user balance', async () => {
 				assert.bnEqual(
-					await Synthetix.balanceOf(owner.address),
-					ownerBalance.add(amountToWithdraw)
+					await Synthetix.balanceOf(user.address),
+					beneficiaryBalance.add(amountToWithdraw)
 				);
 			});
 		});
