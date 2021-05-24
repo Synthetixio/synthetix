@@ -32,6 +32,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 				'exchangeOnBehalfWithTracking',
 				'exchangeWithTracking',
 				'exchangeWithVirtual',
+				'resetLastExchangeRate',
 				'settle',
 				'suspendSynthWithInvalidRate',
 				'setLastExchangeRateForSynth',

@@ -244,16 +244,16 @@
 			"minor": 46
 		},
 		"sources": ["Exchanger", "Synthetix"],
-		"sips": [138, 140]
+		"sips": [138, 139, 140]
 	},
 	{
-		"name": "Alnitak",
+		"name": "Alnitak (Optimism)",
 		"version": {
 			"major": 2,
 			"minor": 46
 		},
 		"ovm": true,
 		"sources": ["Exchanger", "MintableSynthetix"],
-		"sips": [138, 140]
+		"sips": [138, 139, 140]
 	}
 ]
