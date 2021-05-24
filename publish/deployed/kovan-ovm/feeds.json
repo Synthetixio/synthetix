@@ -1,26 +1,26 @@
 {
 	"SNX": {
 		"asset": "SNX",
-		"feed": "0xd9E9047ED2d6e2130395a2Fe08033e756CC7e288"
+		"feed": "0x0172b563FFC53F97cEc5F4872aB96a9a9B38F4B1"
 	},
 	"ETH": {
 		"asset": "ETH",
-		"feed": "0xCb7895bDC70A1a1Dce69b689FD7e43A627475A06"
+		"feed": "0x3c1467a003ed7F7171dFA0eb86c9c6214ECF081B"
 	},
 	"BTC": {
 		"asset": "BTC",
-		"feed": "0x81AE7F8fF54070C52f0eB4EB5b8890e1506AA4f4"
+		"feed": "0xF56f6C47e39293E1A763E56175Bc8386FDFE6162"
 	},
 	"LINK": {
 		"asset": "LINK",
-		"feed": "0xb37aA79EBc31B93864Bff2d5390b385bE482897b"
+		"feed": "0x48f58B356F99de5645f3E3C1C1277d06C887f63c"
 	},
 	"UNI": {
 		"asset": "UNI",
-		"feed": "0xbac904786e476632e75fC6214C797fA80cce9311"
+		"feed": "0x49cD60b326b6D12f1780af2000cf284940d6714b"
 	},
 	"AAVE": {
 		"asset": "AAVE",
-		"feed": "0xc051eCEaFd546e0Eb915a97F4D0643BEd7F98a11"
+		"feed": "0x261b1145474e94769A1a65bC3972088DaAe443Da"
 	}
 }
