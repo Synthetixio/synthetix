@@ -292,6 +292,16 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
     }
 
+    function exchangeWithTrackingForInitiator(
+        bytes32,
+        uint,
+        bytes32,
+        address,
+        bytes32
+    ) external returns (uint amountReceived) {
+        _notImplemented();
+    }
+
     function exchangeWithVirtual(
         bytes32,
         uint,
@@ -393,15 +403,16 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         );
     }
 
-    event ExchangeTracking(bytes32 indexed trackingCode, bytes32 toCurrencyKey, uint256 toAmount);
-    bytes32 internal constant EXCHANGE_TRACKING_SIG = keccak256("ExchangeTracking(bytes32,bytes32,uint256)");
+    event ExchangeTracking(bytes32 indexed trackingCode, bytes32 toCurrencyKey, uint256 toAmount, uint256 fee);
+    bytes32 internal constant EXCHANGE_TRACKING_SIG = keccak256("ExchangeTracking(bytes32,bytes32,uint256,uint256)");
 
     function emitExchangeTracking(
         bytes32 trackingCode,
         bytes32 toCurrencyKey,
-        uint256 toAmount
+        uint256 toAmount,
+        uint256 fee
     ) external onlyExchanger {
-        proxy._emit(abi.encode(toCurrencyKey, toAmount), 2, EXCHANGE_TRACKING_SIG, trackingCode, 0, 0);
+        proxy._emit(abi.encode(toCurrencyKey, toAmount, fee), 2, EXCHANGE_TRACKING_SIG, trackingCode, 0, 0);
     }
 
     event ExchangeReclaim(address indexed account, bytes32 currencyKey, uint amount);

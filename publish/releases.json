@@ -238,13 +238,29 @@
 		"sips": [112, 136]
 	},
 	{
-		"name": "TBD",
+		"name": "Alnitak",
+		"version": {
+			"major": 2,
+			"minor": 46
+		},
+		"sources": ["Exchanger", "Synthetix"],
+		"sips": [138, 139, 140]
+	},
+	{
+		"name": "Alnitak (Optimism)",
 		"version": {
 			"major": 2,
 			"minor": 46
 		},
 		"ovm": true,
-		"sources": ["DebtCache", "Issuer", "EtherWrapper"],
-		"sips": [136]
+		"sources": [
+			"DebtCache",
+			"EtherWrapper",
+			"Exchanger",
+			"Issuer",
+			"Synthetix",
+			"SystemSettings"
+		],
+		"sips": [136, 138, 139, 140]
 	}
 ]
