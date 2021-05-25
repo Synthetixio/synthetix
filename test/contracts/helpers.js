@@ -33,6 +33,7 @@ module.exports = {
 		assert.equal(log.address, emittedFrom);
 		args.forEach((arg, i) => {
 			const { type, value } = log.events[i];
+
 			if (type === 'address') {
 				assert.equal(web3.utils.toChecksumAddress(value), web3.utils.toChecksumAddress(arg));
 			} else if (/^u?int/.test(type)) {

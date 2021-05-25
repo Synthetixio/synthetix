@@ -11,19 +11,12 @@ const {
 } = require('../../../.');
 
 const deployOvmPair = async ({ l1ProviderUrl, l2ProviderUrl, dataProviderUrl }) => {
-	// This private key is #4 displayed when starting optimism-integration.
-	// When used on a fresh L2 chain, it passes all safety checks.
-	// Account #0: 0x023ffdc1530468eb8c8eebc3e38380b5bc19cc5d (10000 ETH)
-	// Private Key: 0x754fde3f5e60ef2c7649061e06957c29017fe21032a8017132c0078e37f6193a
-	// Account #1: 0x0e0e05cf14349469ee3b45dc2fce50e11b9449b8 (10000 ETH)
-	// Private Key: 0xd2ab07f7c10ac88d5f86f1b4c1035d5195e81f27dbe62ad65e59cbf88205629b
-	// Account #2: 0x432c38a44381668eda4a3152209abbfae065b44d (10000 ETH)
-	// Private Key: 0x23d9aeeaa08ab710a57972eb56fc711d9ab13afdecc92c89586e0150bfa380a6
-	// Account #3: 0x5eeabfdd0f31cebf32f8abf22da451fe46eac131 (10000 ETH)
-	// Private Key: 0x5b1c2653250e5c580dcb4e51c2944455e144c57ebd6a0645bd359d2e69ca0f0c
-	// Account #4: 0x640e7cc27b750144ed08ba09515f3416a988b6a3 (10000 ETH)
-	// Private Key: 0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7
-	const privateKey = '0xea8b000efb33c49d819e8d6452f681eed55cdf7de47d655887fc0e318906f2e7';
+	// These private keys are used in the Optimism ops tool for layer 1
+	// Account #0: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266  (10000 ETH)
+	// Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+	// Account #1: 0x70997970c51812dc3a010c7d01b50e0d17dc79c8  (10000 ETH)
+	// Private Key: 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+	const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
 	await deployInstance({ useOvm: false, privateKey, l1ProviderUrl, l2ProviderUrl });
 	await deployInstance({ useOvm: true, privateKey, l1ProviderUrl, l2ProviderUrl });
@@ -49,8 +42,8 @@ const deployInstance = async ({ useOvm, privateKey, l1ProviderUrl, l2ProviderUrl
 	await commands.build({ useOvm, optimizerRuns: useOvm ? 1 : 200, testHelpers: true });
 
 	await commands.deploy({
-		network: 'local',
 		concurrency: 1,
+		network: 'local',
 		freshDeploy: true,
 		yes: true,
 		providerUrl: useOvm ? l2ProviderUrl : l1ProviderUrl,

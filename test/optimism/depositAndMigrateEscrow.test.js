@@ -3,7 +3,7 @@ const { assert } = require('../contracts/common');
 const { connectContract } = require('./utils/connectContract');
 
 const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
-	describe('[DEPOSIT_AND_ESCROW_MIGRATION] when depositing and migrating L1 rewardEscrowV2 entries to L2', () => {
+	describe('[DEPOSIT AND MIGRATE ESCROW]', () => {
 		const SECOND = 1000;
 		const MINUTE = SECOND * 60;
 		const HOUR = MINUTE * 60;
@@ -181,12 +181,12 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 								});
 
 								describe('when the user deposits SNX along with the migration', () => {
-									const mintedSecondaryEvents = [];
+									const depositFinalizedEvents = [];
 									const importedVestingEntriesEvents = [];
 
-									const mintedSecondaryEventListener = (account, amount, event) => {
-										if (event && event.event === 'MintedSecondary') {
-											mintedSecondaryEvents.push(event);
+									const depositFinalizedEventListener = (account, amount, event) => {
+										if (event && event.event === 'DepositFinalized') {
+											depositFinalizedEvents.push(event);
 										}
 									};
 
@@ -201,7 +201,7 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 											'ImportedVestingEntries',
 											importedVestingEntriesEventListener
 										);
-										SynthetixBridgeToBaseL2.on('MintedSecondary', mintedSecondaryEventListener);
+										SynthetixBridgeToBaseL2.on('DepositFinalized', depositFinalizedEventListener);
 									});
 
 									before('depositAndMigrateEscrow', async () => {
@@ -213,11 +213,13 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 										depositAndMigrateReceipt = await tx.wait();
 									});
 
-									it('emitted a Deposit event', async () => {
-										const event = depositAndMigrateReceipt.events.find(e => e.event === 'Deposit');
+									it('emitted a DepositInitiated event', async () => {
+										const event = depositAndMigrateReceipt.events.find(
+											e => e.event === 'DepositInitiated'
+										);
 										assert.exists(event);
-										assert.bnEqual(event.args.amount, depositAmount);
-										assert.equal(event.args.account, user1L1.address);
+										assert.bnEqual(event.args._amount, depositAmount);
+										assert.equal(event.args._from, user1L1.address);
 									});
 
 									it('emitted two ExportedVestingEntries events', async () => {
@@ -267,7 +269,10 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 												'ImportedVestingEntries',
 												importedVestingEntriesEventListener
 											);
-											SynthetixBridgeToBaseL2.off('MintedSecondary', mintedSecondaryEventListener);
+											SynthetixBridgeToBaseL2.off(
+												'DepositFinalized',
+												depositFinalizedEventListener
+											);
 										});
 
 										it('emitted two ImportedVestingEntries events', async () => {
@@ -284,10 +289,10 @@ const itCanPerformDepositAndEscrowMigration = ({ ctx }) => {
 											);
 										});
 
-										it('emitted one MintedSecondary event', async () => {
-											assert.equal(mintedSecondaryEvents.length, 1);
-											assert.equal(mintedSecondaryEvents[0].args.account, user1L1.address);
-											assert.bnEqual(mintedSecondaryEvents[0].args.amount, depositAmount);
+										it('emitted one DepositFinalized event', async () => {
+											assert.equal(depositFinalizedEvents.length, 1);
+											assert.equal(depositFinalizedEvents[0].args._to, user1L1.address);
+											assert.bnEqual(depositFinalizedEvents[0].args._amount, depositAmount);
 										});
 
 										it('should update the L2 escrow state', async () => {

@@ -7,8 +7,16 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts, mockToken } = require('./setup');
 
 const MockEtherCollateral = artifacts.require('MockEtherCollateral');
+const MockEtherWrapper = artifacts.require('MockEtherWrapper');
 
-const { currentTime, multiplyDecimal, divideDecimal, toUnit, fastForward } = require('../utils')();
+const {
+	currentTime,
+	multiplyDecimal,
+	divideDecimalRound,
+	divideDecimal,
+	toUnit,
+	fastForward,
+} = require('../utils')();
 
 const {
 	setExchangeWaitingPeriod,
@@ -2546,8 +2554,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 							{ from: owner }
 						);
 
-						// ensure Issuer has the latest EtherCollateral
+						// ensure Issuer and DebtCache has the latest EtherCollateral
 						await issuer.rebuildCache();
+						await debtCache.rebuildCache();
 
 						// Give some SNX to account1
 						await synthetix.transfer(account1, toUnit('1000'), { from: owner });
@@ -2597,6 +2606,51 @@ contract('Issuer (via Synthetix)', async accounts => {
 							toUnit('10')
 						);
 						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), debtBefore);
+					});
+				});
+			});
+
+			describe('when EtherWrapper is set', async () => {
+				it('should have zero totalIssuedSynths', async () => {
+					assert.bnEqual(
+						await synthetix.totalIssuedSynths(sUSD),
+						await synthetix.totalIssuedSynthsExcludeEtherCollateral(sUSD)
+					);
+				});
+				describe('depositing WETH on the EtherWrapper to issue sETH', async () => {
+					let etherWrapper;
+					beforeEach(async () => {
+						// mock etherWrapper
+						etherWrapper = await MockEtherWrapper.new({ from: owner });
+						await addressResolver.importAddresses(
+							[toBytes32('EtherWrapper')],
+							[etherWrapper.address],
+							{ from: owner }
+						);
+
+						// ensure DebtCache has the latest EtherWrapper
+						await debtCache.rebuildCache();
+					});
+
+					it('should be able to exclude sETH issued by EtherWrapper from totalIssuedSynths', async () => {
+						const totalSupplyBefore = await synthetix.totalIssuedSynths(sETH);
+
+						const amount = toUnit('10');
+
+						await etherWrapper.setTotalIssuedSynths(amount, { from: account1 });
+
+						// totalSupply of synths should exclude EtherWrapper issued sETH
+						assert.bnEqual(
+							totalSupplyBefore,
+							await synthetix.totalIssuedSynthsExcludeEtherCollateral(sETH)
+						);
+
+						// totalIssuedSynths after includes amount issued
+						const { rate } = await exchangeRates.rateAndInvalid(sETH);
+						assert.bnEqual(
+							await synthetix.totalIssuedSynths(sETH),
+							totalSupplyBefore.add(divideDecimalRound(amount, rate))
+						);
 					});
 				});
 			});

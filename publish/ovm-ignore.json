@@ -11,5 +11,7 @@
 	"MockBinaryOptionMarket",
 	"MockBinaryOptionMarketManager",
 	"TestableBinaryOptionMarket",
-	"Synthetix"
+	"Synthetix",
+	"NativeEtherWrapper",
+	"WETH"
 ]

@@ -257,7 +257,7 @@ class Deployer {
 					});
 					if (!this.checkBytesAreSafeForOVM(encodedParameters)) {
 						throw new Error(
-							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. ${encodedParameters}`
+							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. Encoded parameters: ${encodedParameters} - parameters: ${args}`
 						);
 					}
 				}
@@ -280,7 +280,7 @@ class Deployer {
 			// Deployment in OVM could result in empty bytecode if
 			// the contract's constructor parameters are unsafe.
 			// This check is probably redundant given the previous check, but just in case...
-			if (this.useOvm) {
+			if (this.useOvm && !dryRun) {
 				const code = await this.web3.eth.getCode(deployedContract.options.address);
 
 				if (code.length === 2) {
