@@ -3,6 +3,7 @@ const path = require('path');
 const Web3 = require('web3');
 const { gray, red, yellow } = require('chalk');
 const { wrap, toBytes32 } = require('../../..');
+const { confirmAction } = require('../util');
 const {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -32,7 +33,7 @@ const connectBridge = async ({
 	// Setup L1 instance
 	// ---------------------------------
 
-	console.log(gray('> Setting up L1 instance...'));
+	console.log(gray('* Setting up L1 instance...'));
 	const {
 		AddressResolver: AddressResolverL1,
 		SynthetixBridge: SynthetixBridgeToOptimism,
@@ -51,7 +52,7 @@ const connectBridge = async ({
 	// Setup L2 instance
 	// ---------------------------------
 
-	console.log(gray('> Setting up L2 instance...'));
+	console.log(gray('* Setting up L2 instance...'));
 	const {
 		AddressResolver: AddressResolverL2,
 		SynthetixBridge: SynthetixBridgeToBase,
@@ -70,7 +71,7 @@ const connectBridge = async ({
 	// Connect L1 instance
 	// ---------------------------------
 
-	console.log(gray('> Connecting bridge on L1...'));
+	console.log(gray('* Connecting bridge on L1...'));
 	await connectLayer({
 		account: accountL1,
 		gasPrice: l1GasPrice,
@@ -86,7 +87,7 @@ const connectBridge = async ({
 	// Connect L2 instance
 	// ---------------------------------
 
-	console.log(gray('> Connecting bridge on L2...'));
+	console.log(gray('* Connecting bridge on L2...'));
 	await connectLayer({
 		account: accountL2,
 		gasPrice: l2GasPrice,
@@ -118,12 +119,12 @@ const connectLayer = async ({
 	for (let i = 0; i < names.length; i++) {
 		const name = names[i];
 		const address = addresses[i];
-		console.log(gray(`  > Checking if ${name} is already set to ${address}`));
+		console.log(gray(`  * Checking if ${name} is already set to ${address}`));
 
 		const readAddress = await AddressResolver.methods.getAddress(toBytes32(name)).call();
 
 		if (readAddress.toLowerCase() !== address.toLowerCase()) {
-			console.log(yellow(`  > ${name} is not set, including it...`));
+			console.log(yellow(`    > ${name} is not set, including it...`));
 			filteredNames.push(name);
 			filteredAddresses.push(address);
 		}
@@ -146,22 +147,33 @@ const connectLayer = async ({
 	if (needToImportAddresses) {
 		const ids = names.map(toBytes32);
 
-		console.log(yellow('  > Setting these values:'));
-		console.log(yellow(`  > ${names[0]} => ${addresses[0]}`));
-		console.log(yellow(`  > ${names[1]} => ${addresses[1]}`));
+		console.log(yellow('  * Setting these values:'));
+		names.map((_, idx) => console.log(yellow(`    > ${names[idx]} => ${addresses[idx]}`)));
 
 		if (!dryRun) {
-			console.log(yellow(`  > AddressResolver.importAddresses([${ids}], [${addresses}])`));
-			tx = await AddressResolver.methods
-				.importAddresses(names.map(toBytes32), addresses)
-				.send(params);
-			console.log(gray(`    > tx hash: ${tx.transactionHash}`));
+			console.log(
+				yellow.inverse(`  * CALLING AddressResolver.importAddresses([${ids}], [${addresses}])`)
+			);
+
+			const owner = await AddressResolver.methods.owner().call();
+			if (account.toLowerCase() !== owner.toLowerCase()) {
+				await confirmAction(
+					yellow(
+						`    ⚠️  AddressResolver is owned by ${owner} and the current signer is $${account}. Please execute the above transaction and press "y" when done.`
+					)
+				);
+			} else {
+				tx = await AddressResolver.methods
+					.importAddresses(names.map(toBytes32), addresses)
+					.send(params);
+				console.log(gray(`    > tx hash: ${tx.transactionHash}`));
+			}
 		} else {
-			console.log(yellow('  > Skipping, since this is a DRY RUN'));
+			console.log(yellow('  * Skipping, since this is a DRY RUN'));
 		}
 	} else {
 		console.log(
-			gray('  > Bridge is already does not need to import any addresses in this layer. Skipping...')
+			gray('  * Bridge is already does not need to import any addresses in this layer. Skipping...')
 		);
 	}
 
@@ -178,17 +190,17 @@ const connectLayer = async ({
 	}
 
 	if (needToSyncCacheOnBridge) {
-		console.log(yellow('  > Rebuilding cache on bridge...'));
+		console.log(yellow('  * Rebuilding caches...'));
 
 		if (!dryRun) {
-			console.log(yellow('  > SynthetixBridge.rebuildCache()...'));
+			console.log(yellow.inverse('  * CALLING SynthetixBridge.rebuildCache()...'));
 			tx = await SynthetixBridge.methods.rebuildCache().send(params);
 			console.log(gray(`    > tx hash: ${tx.transactionHash}`));
 		} else {
-			console.log(yellow('  > Skipping, since this is a DRY RUN'));
+			console.log(yellow('  * Skipping, since this is a DRY RUN'));
 		}
 	} else {
-		console.log(gray('  > Bridge cache is synced in this layer. Skipping...'));
+		console.log(gray('  * Bridge cache is synced in this layer. Skipping...'));
 	}
 };
 
