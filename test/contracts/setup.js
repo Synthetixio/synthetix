@@ -27,6 +27,7 @@ const {
 		ETHER_WRAPPER_MAX_ETH,
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
+		FUTURES_LIQUIDATION_FEE,
 	},
 } = require('../../');
 
@@ -244,6 +245,27 @@ const setupContract = async ({
 			0,
 			0,
 		],
+		FuturesMarketManager: [
+			tryGetAddressOf('ProxyFuturesMarketManager'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+		],
+		FuturesMarket: [
+			tryGetAddressOf('ProxyFuturesMarket'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sBTC'), // base asset
+			toWei('0.003'), // 0.3% exchange fee
+			toWei('10'), // 10x max leverage
+			toWei('100000'), // 100000 max market debt
+			toWei('100'), // 100 sUSD minimum initial margin
+			[
+				toWei('0.1'), // 10% max funding rate
+				toWei('1'), // 100% max funding rate skew
+				toWei('0.0125'), // 1.25% per hour max funding rate of change
+			],
+		],
+		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		WETH: [],
 	};
 
@@ -486,7 +508,23 @@ const setupContract = async ({
 				{ from: owner }
 			);
 		},
-
+		async FuturesMarketManager() {
+			await Promise.all([
+				cache['ProxyFuturesMarketManager'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyFuturesMarketManager'].address, {
+					from: owner,
+				}),
+			]);
+		},
+		async FuturesMarket() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+				cache['ProxyFuturesMarket'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyFuturesMarket'].address, {
+					from: owner,
+				}),
+			]);
+		},
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
@@ -820,6 +858,11 @@ const setupAllContracts = async ({
 			contract: 'CollateralManager',
 			deps: ['AddressResolver', 'SystemStatus', 'Issuer', 'ExchangeRates', 'DebtCache'],
 		},
+		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
+		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
+		{ contract: 'Proxy', forContract: 'FuturesMarket' },
+		{ contract: 'FuturesMarket', deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'] },
+		{ contract: 'FuturesMarketData', deps: [] },
 	];
 
 	// get deduped list of all required base contracts
@@ -1007,6 +1050,9 @@ const setupAllContracts = async ({
 				from: owner,
 			}),
 			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setFuturesLiquidationFee(FUTURES_LIQUIDATION_FEE, {
 				from: owner,
 			}),
 		]);

@@ -119,6 +119,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getDebtSnapshotStaleTime();
     }
 
+    function futuresLiquidationFee() external view returns (uint) {
+        return getFuturesLiquidationFee();
+    }
+
     function aggregatorWarningFlags() external view returns (address) {
         return getAggregatorWarningFlags();
     }
@@ -282,6 +286,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit DebtSnapshotStaleTimeUpdated(_seconds);
     }
 
+    function setFuturesLiquidationFee(uint _sUSD) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_LIQUIDATION_FEE, _sUSD);
+        emit FuturesLiquidationFeeUpdated(_sUSD);
+    }
+
     function setAggregatorWarningFlags(address _flags) external onlyOwner {
         require(_flags != address(0), "Valid address must be given");
         flexibleStorage().setAddressValue(SETTING_CONTRACT_NAME, SETTING_AGGREGATOR_WARNING_FLAGS, _flags);
@@ -320,6 +329,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
+    event FuturesLiquidationFeeUpdated(uint sUSD);
     event AggregatorWarningFlagsUpdated(address flags);
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);

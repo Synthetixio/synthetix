@@ -12,6 +12,7 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IIssuer.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/synth
 contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
@@ -31,6 +32,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
+    bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -175,11 +177,12 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](4);
+        addresses = new bytes32[](5);
         addresses[0] = CONTRACT_SYSTEMSTATUS;
         addresses[1] = CONTRACT_EXCHANGER;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_FEEPOOL;
+        addresses[4] = CONTRACT_FUTURESMARKETMANAGER;
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -196,6 +199,10 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
+    }
+
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
@@ -238,12 +245,16 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
 
     /* ========== MODIFIERS ========== */
 
-    modifier onlyInternalContracts() {
-        bool isFeePool = msg.sender == address(feePool());
-        bool isExchanger = msg.sender == address(exchanger());
-        bool isIssuer = msg.sender == address(issuer());
+    function _isInternalContract(address account) internal view returns (bool) {
+        return
+            account == address(feePool()) ||
+            account == address(exchanger()) ||
+            account == address(issuer()) ||
+            account == address(futuresMarketManager());
+    }
 
-        require(isFeePool || isExchanger || isIssuer, "Only FeePool, Exchanger or Issuer contracts allowed");
+    modifier onlyInternalContracts() {
+        require(_isInternalContract(msg.sender), "Only internal contracts allowed");
         _;
     }
 

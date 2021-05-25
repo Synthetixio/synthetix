@@ -53,6 +53,9 @@ contract('Synth', async accounts => {
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
+			mocks: {
+				FuturesMarketManager: true,
+			},
 			contracts: [
 				'Synth',
 				'ExchangeRates',
@@ -136,7 +139,7 @@ contract('Synth', async accounts => {
 					fnc: sUSDContract.issue,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger or Issuer contracts allowed',
+					reason: 'Only internal contracts allowed',
 				});
 			});
 		});
@@ -146,7 +149,7 @@ contract('Synth', async accounts => {
 					fnc: sUSDContract.burn,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger or Issuer contracts allowed',
+					reason: 'Only internal contracts allowed',
 				});
 			});
 		});

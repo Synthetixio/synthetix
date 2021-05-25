@@ -11,30 +11,6 @@
 	"BinaryOptionMarketData": {
 		"deploy": false
 	},
-	"CollateralManager": {
-		"deploy": false
-	},
-	"CollateralManagerState": {
-		"deploy": false
-	},
-	"CollateralEth": {
-		"deploy": false
-	},
-	"CollateralErc20": {
-		"deploy": false
-	},
-	"CollateralShort": {
-		"deploy": false
-	},
-	"CollateralStateErc20": {
-		"deploy": false
-	},
-	"CollateralStateEth": {
-		"deploy": false
-	},
-	"CollateralStateShort": {
-		"deploy": false
-	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
@@ -84,33 +60,6 @@
 		"deploy": false
 	},
 	"EternalStorageLiquidations": {
-		"deploy": false
-	},
-	"ProxyFuturesMarketBTC": {
-		"deploy": false
-	},
-	"FuturesMarketBTC": {
-		"deploy": false
-	},
-	"ProxyFuturesMarketETH": {
-		"deploy": false
-	},
-	"FuturesMarketETH": {
-		"deploy": false
-	},
-	"ProxyFuturesMarketLINK": {
-		"deploy": false
-	},
-	"FuturesMarketLINK": {
-		"deploy": false
-	},
-	"ProxyFuturesMarketManager": {
-		"deploy": false
-	},
-	"FuturesMarketManager": {
-		"deploy": false
-	},
-	"FuturesMarketData": {
 		"deploy": false
 	},
 	"Liquidations": {
@@ -428,6 +377,15 @@
 	"SynthsEOS": {
 		"deploy": false
 	},
+	"TokenStatesBCH": {
+		"deploy": false
+	},
+	"ProxysBCH": {
+		"deploy": false
+	},
+	"SynthsBCH": {
+		"deploy": false
+	},
 	"TokenStatesETC": {
 		"deploy": false
 	},
@@ -473,6 +431,15 @@
 	"SynthiEOS": {
 		"deploy": false
 	},
+	"TokenStateiBCH": {
+		"deploy": false
+	},
+	"ProxyiBCH": {
+		"deploy": false
+	},
+	"SynthiBCH": {
+		"deploy": false
+	},
 	"TokenStateiETC": {
 		"deploy": false
 	},
@@ -510,48 +477,6 @@
 		"deploy": false
 	},
 	"TradingRewards": {
-		"deploy": false
-	},
-	"RewardEscrowV2": {
-		"deploy": false
-	},
-	"SynthetixBridgeToOptimism": {
-		"deploy": false
-	},
-	"ShortingRewardssETH": {
-		"deploy": false
-	},
-	"ShortingRewardssBTC": {
-		"deploy": false
-	},
-	"TokenStatesTSLA": {
-		"deploy": false
-	},
-	"ProxysTSLA": {
-		"deploy": false
-	},
-	"SynthsTSLA": {
-		"deploy": false
-	},
-	"TokenStatesKRW": {
-		"deploy": false
-	},
-	"ProxysKRW": {
-		"deploy": false
-	},
-	"SynthsKRW": {
-		"deploy": false
-	},
-	"VirtualSynthMastercopy": {
-		"deploy": false
-	},
-	"SynthetixBridgeEscrow": {
-		"deploy": false
-	},
-	"EtherWrapper": {
-		"deploy": false
-	},
-	"NativeEtherWrapper": {
 		"deploy": false
 	}
 }

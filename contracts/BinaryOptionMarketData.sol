@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-// Inheritance
+// Internal references
 import "./BinaryOption.sol";
 import "./BinaryOptionMarket.sol";
 import "./BinaryOptionMarketManager.sol";

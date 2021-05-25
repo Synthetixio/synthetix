@@ -238,22 +238,21 @@
 		"sips": [112, 136]
 	},
 	{
-		"name": "Alnitak",
+		"name": "Unreleased",
 		"version": {
 			"major": 2,
 			"minor": 46
 		},
-		"sources": ["Exchanger", "Synthetix"],
-		"sips": [138]
-	},
-	{
-		"name": "Alnitak",
-		"version": {
-			"major": 2,
-			"minor": 46
-		},
-		"ovm": true,
-		"sources": ["Exchanger", "MintableSynthetix"],
-		"sips": [138]
+		"sources": [
+			"FuturesMarketBTC",
+			"FuturesMarketETH",
+			"FuturesMarketLINK",
+			"ProxyFuturesMarketManager",
+			"FuturesMarketManager",
+			"FuturesMarketData",
+			"SynthsUSD",
+			"SystemSettings"
+		],
+		"sips": [80]
 	}
 ]

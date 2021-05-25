@@ -1,0 +1,366 @@
+[
+	{
+		"name": "sUSD",
+		"asset": "USD",
+		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sEUR",
+		"asset": "EUR"
+	},
+	{
+		"name": "sJPY",
+		"asset": "JPY"
+	},
+	{
+		"name": "sAUD",
+		"asset": "AUD"
+	},
+	{
+		"name": "sGBP",
+		"asset": "GBP"
+	},
+	{
+		"name": "sCHF",
+		"asset": "CHF"
+	},
+	{
+		"name": "sXAU",
+		"asset": "XAU"
+	},
+	{
+		"name": "sXAG",
+		"asset": "XAG"
+	},
+	{
+		"name": "sBTC",
+		"asset": "BTC"
+	},
+	{
+		"name": "sETH",
+		"asset": "ETH",
+		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sBNB",
+		"asset": "BNB",
+		"subclass": "PurgeableSynth"
+	},
+	{
+		"name": "sTRX",
+		"asset": "TRX"
+	},
+	{
+		"name": "sXTZ",
+		"asset": "XTZ",
+		"subclass": "PurgeableSynth"
+	},
+	{
+		"name": "sXRP",
+		"asset": "XRP"
+	},
+	{
+		"name": "sLTC",
+		"asset": "LTC",
+		"subclass": "PurgeableSynth"
+	},
+	{
+		"name": "sLINK",
+		"asset": "LINK"
+	},
+	{
+		"name": "sEOS",
+		"asset": "EOS"
+	},
+	{
+		"name": "sBCH",
+		"asset": "BCH"
+	},
+	{
+		"name": "sETC",
+		"asset": "ETC"
+	},
+	{
+		"name": "sDASH",
+		"asset": "DASH"
+	},
+	{
+		"name": "sXMR",
+		"asset": "XMR"
+	},
+	{
+		"name": "sADA",
+		"asset": "ADA"
+	},
+	{
+		"name": "sCEX",
+		"asset": "CEX",
+		"index": [
+			{
+				"asset": "BNB",
+				"units": 12.98,
+				"weight": 29.15
+			},
+			{
+				"asset": "CRO",
+				"units": 1344.11,
+				"weight": 24.3
+			},
+			{
+				"asset": "LEO",
+				"units": 95.02,
+				"weight": 13.42
+			},
+			{
+				"asset": "HT",
+				"units": 23.76,
+				"weight": 11.73
+			},
+			{
+				"asset": "FTT",
+				"units": 9.43,
+				"weight": 3.56
+			},
+			{
+				"asset": "OKB",
+				"units": 25.41,
+				"weight": 16.97
+			},
+			{
+				"asset": "KCS",
+				"units": 8.66,
+				"weight": 0.87
+			}
+		],
+		"subclass": "PurgeableSynth"
+	},
+	{
+		"name": "sDEFI",
+		"asset": "DEFI",
+		"index": [
+			{
+				"asset": "COMP",
+				"units": 4.01,
+				"weight": 20.5
+			},
+			{
+				"asset": "MKR",
+				"units": 0.8,
+				"weight": 15.0
+			},
+			{
+				"asset": "ZRX",
+				"units": 708.02,
+				"weight": 9.7
+			},
+			{
+				"asset": "REP",
+				"units": 9.45,
+				"weight": 7.2
+			},
+			{
+				"asset": "LEND",
+				"units": 666.51,
+				"weight": 6.7
+			},
+			{
+				"asset": "UMA",
+				"units": 28.87,
+				"weight": 4.2
+			},
+			{
+				"asset": "SNX",
+				"units": 81.63,
+				"weight": 10.2
+			},
+			{
+				"asset": "REN",
+				"units": 814.38,
+				"weight": 5.0
+			},
+			{
+				"asset": "LRC",
+				"units": 913.1,
+				"weight": 3.8
+			},
+			{
+				"asset": "KNC",
+				"units": 213.76,
+				"weight": 11.8
+			},
+			{
+				"asset": "BNT",
+				"units": 62.87,
+				"weight": 3.4
+			},
+			{
+				"asset": "BAL",
+				"units": 7.06,
+				"weight": 2.5
+			}
+		],
+		"subclass": "PurgeableSynth"
+	},
+	{
+		"name": "iBTC",
+		"asset": "BTC",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 15699,
+			"upperLimit": 27473.25,
+			"lowerLimit": 3924.75
+		}
+	},
+	{
+		"name": "iETH",
+		"asset": "ETH",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 314.54,
+			"upperLimit": 550.445,
+			"lowerLimit": 78.635
+		}
+	},
+	{
+		"name": "iBNB",
+		"asset": "BNB",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 22.88,
+			"upperLimit": 34.32,
+			"lowerLimit": 11.44
+		}
+	},
+	{
+		"name": "iTRX",
+		"asset": "TRX",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0.0267,
+			"upperLimit": 0.04,
+			"lowerLimit": 0.0133
+		}
+	},
+	{
+		"name": "iXTZ",
+		"asset": "XTZ",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 2.542,
+			"upperLimit": 3.813,
+			"lowerLimit": 1.271
+		}
+	},
+	{
+		"name": "iXRP",
+		"asset": "XRP",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0.1883,
+			"upperLimit": 0.282,
+			"lowerLimit": 0.094
+		}
+	},
+	{
+		"name": "iLINK",
+		"asset": "LINK",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 12.73,
+			"upperLimit": 19.095,
+			"lowerLimit": 6.365
+		}
+	},
+	{
+		"name": "iLTC",
+		"asset": "LTC",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 48.12,
+			"upperLimit": 72.18,
+			"lowerLimit": 24.06
+		}
+	},
+	{
+		"name": "iEOS",
+		"asset": "EOS",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 2.22,
+			"upperLimit": 3.33,
+			"lowerLimit": 1.11
+		}
+	},
+	{
+		"name": "iBCH",
+		"asset": "BCH",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 229.54,
+			"upperLimit": 344.31,
+			"lowerLimit": 114.77
+		}
+	},
+	{
+		"name": "iETC",
+		"asset": "ETC",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 6.16,
+			"upperLimit": 9.24,
+			"lowerLimit": 3.08
+		}
+	},
+	{
+		"name": "iDASH",
+		"asset": "DASH",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 64.44,
+			"upperLimit": 96.66,
+			"lowerLimit": 32.22
+		}
+	},
+	{
+		"name": "iXMR",
+		"asset": "XMR",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 132.26,
+			"upperLimit": 198.4,
+			"lowerLimit": 66.13
+		}
+	},
+	{
+		"name": "iADA",
+		"asset": "ADA",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 0.133,
+			"upperLimit": 0.1995,
+			"lowerLimit": 0.0665
+		}
+	},
+	{
+		"name": "iCEX",
+		"asset": "CEX",
+		"index": "sCEX",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 988.56,
+			"upperLimit": 1482.84,
+			"lowerLimit": 494.28
+		}
+	},
+	{
+		"name": "iDEFI",
+		"asset": "DEFI",
+		"index": "sDEFI",
+		"subclass": "PurgeableSynth",
+		"inverted": {
+			"entryPoint": 2714.42,
+			"upperLimit": 4071.63,
+			"lowerLimit": 1357.21
+		}
+	}
+]

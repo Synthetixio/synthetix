@@ -83,6 +83,8 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 		CollateralManager = artifacts.require('CollateralManager');
 	});
 
+	const onlyInternalString = 'Only internal contracts allowed';
+
 	before(async () => {
 		synths = ['sUSD'];
 		({
@@ -104,6 +106,7 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 				'Exchanger',
 				'FeePool',
 				'CollateralManager',
+				'FuturesMarketManager',
 			],
 		}));
 
@@ -224,7 +227,16 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 			const actual = await this.synth.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
-				['SystemStatus', 'Exchanger', 'Issuer', 'FeePool', 'CollateralManager'].map(toBytes32)
+				[
+					'SystemStatus',
+					'Exchanger',
+					'Issuer',
+					'FeePool',
+					'FuturesMarketManager',
+					'CollateralManager',
+					'EtherCollateral',
+					'EtherCollateralsUSD',
+				].map(toBytes32)
 			);
 		});
 
@@ -234,7 +246,7 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 					fnc: this.synth.issue,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
+					reason: onlyInternalString,
 				});
 			});
 		});
@@ -244,7 +256,7 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 					fnc: this.synth.burn,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
+					reason: onlyInternalString,
 				});
 			});
 		});
