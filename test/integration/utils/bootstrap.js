@@ -10,12 +10,13 @@ const { deposit } = require('./bridge');
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
 		ctx.useOvm = false;
+		const network = hre.config.network;
 
 		// Provider
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
 		// Accounts
-		await loadUsers({ ctx });
+		await loadUsers({ ctx, network });
 
 		// Contracts
 		connectContracts({ ctx });
@@ -28,13 +29,14 @@ function bootstrapL1({ ctx }) {
 function bootstrapL2({ ctx }) {
 	before('bootstrap layer 2 instance', async () => {
 		ctx.useOvm = true;
+		const network = hre.config.network;
 
 		// Provider
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 		ctx.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
 		// Accounts
-		await loadUsers({ ctx });
+		await loadUsers({ ctx, network });
 
 		// Contracts
 		connectContracts({ ctx });
@@ -48,12 +50,13 @@ function bootstrapDual({ ctx }) {
 	before('bootstrap layer 1 and layer 2 intances', async () => {
 		ctx.l1 = { useOvm: false };
 		ctx.l2 = { useOvm: true };
+		const network = hre.config.network;
 
 		// Providers
-		ctx.provider = _setupProvider({
+		ctx.l1.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL1}`,
 		});
-		ctx.provider = _setupProvider({
+		ctx.l2.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
 		ctx.l2.provider.getGasPrice = () => ethers.BigNumber.from('0');
@@ -73,8 +76,8 @@ function bootstrapDual({ ctx }) {
 		});
 
 		// Accounts
-		await loadUsers({ ctx: ctx.l1 });
-		await loadUsers({ ctx: ctx.l2 });
+		await loadUsers({ ctx: ctx.l1, network });
+		await loadUsers({ ctx: ctx.l2, network });
 
 		// Contracts
 		connectContracts({ ctx: ctx.l1 });

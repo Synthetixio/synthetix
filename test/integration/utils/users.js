@@ -1,10 +1,8 @@
-const hre = require('hardhat');
 const ethers = require('ethers');
 const { getUsers } = require('../../..');
 
-async function loadUsers({ ctx }) {
+async function loadUsers({ ctx, network }) {
 	const { useOvm } = ctx;
-	const network = hre.config.targetNetwork;
 
 	ctx.users = {};
 
