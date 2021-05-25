@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { getPrivateKey } = require('./wallets');
+const { getPrivateKey } = require('./users');
 
 const commands = {
 	build: require('../../../publish/src/commands/build').build,
@@ -19,7 +19,12 @@ async function compileInstance({ useOvm }) {
 	});
 }
 
-async function deployInstance({ useOvm, providerUrl, providerPort }) {
+async function deployInstance({
+	useOvm,
+	providerUrl,
+	providerPort,
+	ignoreCustomParameters = false,
+}) {
 	const privateKey = getPrivateKey({ index: 0 });
 
 	await commands.deploy({
@@ -33,7 +38,7 @@ async function deployInstance({ useOvm, providerUrl, providerPort }) {
 		privateKey,
 		methodCallGasLimit: '3500000',
 		contractDeploymentGasLimit: useOvm ? OVM_MAX_GAS_LIMIT : '9500000',
-		ignoreCustomParameters: false,
+		ignoreCustomParameters,
 	});
 }
 
