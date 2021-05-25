@@ -6,13 +6,6 @@ pragma experimental ABIEncoderV2;
 import "./Collateral.sol";
 
 contract CollateralShort is Collateral {
-    bool public initialized = false;
-
-    function initialize(address _owner, address _resolver) external Collateral(_owner, _resolver) {
-        require(!initialized, "CollateralShort already initialized");
-        initialized = true;
-    }
-
     function open(
         uint collateral,
         uint amount,
