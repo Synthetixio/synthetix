@@ -167,7 +167,17 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint sourceAmount,
         bytes32 destinationCurrencyKey
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return exchanger().exchange(messageSender, sourceCurrencyKey, sourceAmount, destinationCurrencyKey, messageSender);
+        (amountReceived, ) = exchanger().exchange(
+            messageSender,
+            messageSender,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            messageSender,
+            false,
+            messageSender,
+            bytes32(0)
+        );
     }
 
     function exchangeOnBehalf(
@@ -176,14 +186,17 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint sourceAmount,
         bytes32 destinationCurrencyKey
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeOnBehalf(
-                exchangeForAddress,
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey
-            );
+        (amountReceived, ) = exchanger().exchange(
+            exchangeForAddress,
+            messageSender,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            exchangeForAddress,
+            false,
+            exchangeForAddress,
+            bytes32(0)
+        );
     }
 
     function settle(bytes32 currencyKey)
@@ -205,16 +218,17 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address originator,
         bytes32 trackingCode
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeWithTracking(
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                messageSender,
-                originator,
-                trackingCode
-            );
+        (amountReceived, ) = exchanger().exchange(
+            messageSender,
+            messageSender,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            messageSender,
+            false,
+            originator,
+            trackingCode
+        );
     }
 
     function exchangeOnBehalfWithTracking(
@@ -225,16 +239,17 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         address originator,
         bytes32 trackingCode
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeOnBehalfWithTracking(
-                exchangeForAddress,
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                originator,
-                trackingCode
-            );
+        (amountReceived, ) = exchanger().exchange(
+            exchangeForAddress,
+            messageSender,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            exchangeForAddress,
+            false,
+            originator,
+            trackingCode
+        );
     }
 
     function transfer(address to, uint value) external optionalProxy systemActive returns (bool) {
