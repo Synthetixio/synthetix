@@ -19,7 +19,6 @@ contract('Collateral', async accounts => {
 				'addRewardsContracts',
 				'addSynths',
 				'setCanOpenLoans',
-				'setInteractionDelay',
 				'setIssueFeeRate',
 				'setManager',
 				'setMinCratio',

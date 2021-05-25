@@ -27,7 +27,6 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 
 			await compileInstance({ useOvm: true });
 			await deployInstance({ useOvm: true, providerUrl, providerPort: providerPortL2 });
-
 			await connectInstances({ providerUrl, providerPortL1, providerPortL2 });
 		}
 

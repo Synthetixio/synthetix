@@ -4,24 +4,23 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinSystemSettings.sol";
+import "./MixinResolver.sol";
 import "./interfaces/ICollateralLoan.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./CollateralState.sol";
+import "./interfaces/ICollateralUtil.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IExchanger.sol";
 import "./interfaces/IShortingRewards.sol";
 
-contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
+contract Collateral is ICollateralLoan, Owned, MixinResolver {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -35,10 +34,10 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     // The synth corresponding to the collateral.
     bytes32 public collateralKey;
 
-    // Stores loans
-    CollateralState public state;
+    // Stores loans open
+    mapping(uint => Loan) public loans;
 
-    address public manager;
+    ICollateralManager public manager;
 
     // The synths that this contract can issue.
     bytes32[] public synths;
@@ -60,51 +59,48 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     // The fee charged for issuing a loan.
     uint public issueFeeRate;
 
-    // The maximum number of loans that an account can create with this collateral.
-    uint public maxLoansPerAccount = 50;
-
-    // Time in seconds that a user must wait between interacting with a loan.
-    // Provides front running and flash loan protection.
-    uint public interactionDelay = 300;
-
     bool public canOpenLoans = true;
+
+    bool public initialized = false;
+
+    uint public interactionDelay = 0;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 private constant CONTRACT_COLLATERALUTIL = "CollateralUtil";
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(
-        CollateralState _state,
-        address _owner,
-        address _manager,
-        address _resolver,
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
+
+    function initialize(
+        ICollateralManager _manager,
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    ) public Owned(_owner) MixinSystemSettings(_resolver) {
+    ) external onlyOwner {
+        require(!initialized);
         manager = _manager;
-        state = _state;
         collateralKey = _collateralKey;
         minCratio = _minCratio;
         minCollateral = _minCollateral;
+        initialized = true;
     }
 
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = MixinResolver.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_FEEPOOL;
         newAddresses[1] = CONTRACT_EXRATES;
-        newAddresses[2] = CONTRACT_EXCHANGER;
-        newAddresses[3] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[4] = CONTRACT_SYNTHSUSD;
+        newAddresses[2] = CONTRACT_SYSTEMSTATUS;
+        newAddresses[3] = CONTRACT_SYNTHSUSD;
+        newAddresses[4] = CONTRACT_COLLATERALUTIL;
 
         bytes32[] memory combined = combineArrays(existingAddresses, newAddresses);
 
@@ -129,60 +125,32 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
-    function _exchanger() internal view returns (IExchanger) {
-        return IExchanger(requireAndGetAddress(CONTRACT_EXCHANGER));
-    }
-
     function _feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
-    function _manager() internal view returns (ICollateralManager) {
-        return ICollateralManager(manager);
+    function _collateralUtil() internal view returns (ICollateralUtil) {
+        return ICollateralUtil(requireAndGetAddress(CONTRACT_COLLATERALUTIL));
     }
 
     /* ---------- Public Views ---------- */
 
-    function collateralRatio(Loan memory loan) public view returns (uint cratio) {
-        uint cvalue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
-        uint dvalue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
-        cratio = cvalue.divideDecimal(dvalue);
+    function collateralRatio(uint id) public view returns (uint cratio) {
+        Loan memory loan = loans[id];
+        return _collateralUtil().getCollateralRatio(loan, collateralKey);
     }
 
     // The maximum number of synths issuable for this amount of collateral
     function maxLoan(uint amount, bytes32 currency) public view returns (uint max) {
-        max = issuanceRatio().multiplyDecimal(_exchangeRates().effectiveValue(collateralKey, amount, currency));
+        return _collateralUtil().maxLoan(amount, currency, minCratio, collateralKey);
     }
 
-    /**
-     * r = target issuance ratio
-     * D = debt value in sUSD
-     * V = collateral value in sUSD
-     * P = liquidation penalty
-     * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
-     * Note: if you pass a loan in here that is not eligible for liquidation it will revert.
-     * We check the ratio first in liquidateInternal and only pass eligible loans in.
-     */
     function liquidationAmount(Loan memory loan) public view returns (uint amount) {
-        uint liquidationPenalty = getLiquidationPenalty();
-        uint debtValue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
-        uint collateralValue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
-        uint unit = SafeDecimalMath.unit();
-
-        uint dividend = debtValue.sub(collateralValue.divideDecimal(minCratio));
-        uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(minCratio));
-
-        uint sUSDamount = dividend.divideDecimal(divisor);
-
-        return _exchangeRates().effectiveValue(sUSD, sUSDamount, loan.currency);
+        return _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
     }
 
-    // amount is the amount of synths we are liquidating
     function collateralRedeemed(bytes32 currency, uint amount) public view returns (uint collateral) {
-        uint liquidationPenalty = getLiquidationPenalty();
-        collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
-
-        collateral = collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+        return _collateralUtil().collateralRedeemed(currency, amount, collateralKey);
     }
 
     function areSynthsAndCurrenciesSet(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys)
@@ -207,33 +175,12 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return true;
     }
 
-    /* ---------- UTILITIES ---------- */
-
-    // Check the account has enough of the synth to make the payment
-    function _checkSynthBalance(
-        address payer,
-        bytes32 key,
-        uint amount
-    ) internal view {
-        require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough synth balance");
-    }
-
-    // We set the interest index to 0 to indicate the loan has been closed.
-    function _checkLoanAvailable(Loan memory _loan) internal view {
-        require(_loan.interestIndex > 0, "Loan does not exist");
-        require(_loan.lastInteraction.add(interactionDelay) <= block.timestamp, "Loan recently interacted with");
-    }
-
-    function issuanceRatio() internal view returns (uint ratio) {
-        ratio = SafeDecimalMath.unit().divideDecimalRound(minCratio);
-    }
-
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Synths ---------- */
 
     function addSynths(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys) external onlyOwner {
-        require(_synthNamesInResolver.length == _synthKeys.length, "Input array length mismatch");
+        require(_synthNamesInResolver.length == _synthKeys.length);
 
         for (uint i = 0; i < _synthNamesInResolver.length; i++) {
             bytes32 synthName = _synthNamesInResolver[i];
@@ -253,32 +200,32 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- SETTERS ---------- */
 
-    function setMinCratio(uint _minCratio) external onlyOwner {
-        require(_minCratio > SafeDecimalMath.unit(), "Must be greater than 1");
-        minCratio = _minCratio;
-        emit MinCratioRatioUpdated(minCratio);
-    }
+    // function setMinCratio(uint _minCratio) external onlyOwner {
+    //     require(_minCratio > SafeDecimalMath.unit());
+    //     minCratio = _minCratio;
+    //     emit MinCratioRatioUpdated(minCratio);
+    // }
 
-    function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
-        issueFeeRate = _issueFeeRate;
-        emit IssueFeeRateUpdated(issueFeeRate);
-    }
+    // function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
+    //     issueFeeRate = _issueFeeRate;
+    //     emit IssueFeeRateUpdated(issueFeeRate);
+    // }
 
-    function setInteractionDelay(uint _interactionDelay) external onlyOwner {
-        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
-        interactionDelay = _interactionDelay;
-        emit InteractionDelayUpdated(interactionDelay);
-    }
+    // function setInteractionDelay(uint _interactionDelay) external onlyOwner {
+    //     require(_interactionDelay <= SafeDecimalMath.unit() * 3600);
+    //     interactionDelay = _interactionDelay;
+    //     emit InteractionDelayUpdated(interactionDelay);
+    // }
 
-    function setManager(address _newManager) external onlyOwner {
+    function setManager(ICollateralManager _newManager) external onlyOwner {
         manager = _newManager;
         emit ManagerUpdated(manager);
     }
 
-    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
-        canOpenLoans = _canOpenLoans;
-        emit CanOpenLoansUpdated(canOpenLoans);
-    }
+    // function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
+    //     canOpenLoans = _canOpenLoans;
+    //     emit CanOpenLoansUpdated(canOpenLoans);
+    // }
 
     /* ---------- LOAN INTERACTIONS ---------- */
 
@@ -291,27 +238,24 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
-        require(canOpenLoans, "Opening is disabled");
+        require(canOpenLoans);
 
         // 1. We can only issue certain synths.
-        require(synthsByKey[currency] > 0, "Not allowed to issue this synth");
+        require(synthsByKey[currency] > 0);
 
         // 2. Make sure the synth rate is not invalid.
-        require(!_exchangeRates().rateIsInvalid(currency), "Currency rate is invalid");
+        require(!_exchangeRates().rateIsInvalid(currency));
 
         // 3. Collateral >= minimum collateral size.
-        require(collateral >= minCollateral, "Not enough collateral to open");
-
-        // 4. Cap the number of loans so that the array doesn't get too big.
-        require(state.getNumLoans(msg.sender) < maxLoansPerAccount, "Max loans exceeded");
+        require(collateral >= minCollateral);
 
         // 5. Check we haven't hit the debt cap for non snx collateral.
-        (bool canIssue, bool anyRateIsInvalid) = _manager().exceedsDebtLimit(amount, currency);
+        (bool canIssue, bool anyRateIsInvalid) = manager.exceedsDebtLimit(amount, currency);
 
-        require(canIssue && !anyRateIsInvalid, "Debt limit or invalid rate");
+        require(canIssue && !anyRateIsInvalid);
 
         // 6. Require requested loan < max loan
-        require(amount <= maxLoan(collateral, currency), "Exceeds max borrowing power");
+        require(amount <= maxLoan(collateral, currency));
 
         // 7. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
@@ -320,98 +264,51 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint loanAmountMinusFee = amount.sub(issueFee);
 
         // 9. Get a Loan ID
-        id = _manager().getNewLoanId();
+        id = manager.getNewLoanId();
 
-        // 10. Create the loan struct.
-        Loan memory loan =
-            Loan({
-                id: id,
-                account: msg.sender,
-                collateral: collateral,
-                currency: currency,
-                amount: amount,
-                short: short,
-                accruedInterest: 0,
-                interestIndex: 0,
-                lastInteraction: block.timestamp
-            });
+        // 10. Create the loan.
+        loans[id] = Loan({
+            id: id,
+            account: msg.sender,
+            collateral: collateral,
+            currency: currency,
+            amount: amount,
+            short: short,
+            accruedInterest: 0,
+            interestIndex: 0,
+            lastInteraction: block.timestamp
+        });
 
         // 11. Accrue interest on the loan.
-        loan = accrueInterest(loan);
+        accrueInterest(loans[id]);
 
-        // 12. Save the loan to storage
-        state.createLoan(loan);
-
-        // 13. Pay the minting fees to the fee pool
+        // 12. Pay the minting fees to the fee pool
         _payFees(issueFee, currency);
 
-        // 14. If its short, convert back to sUSD, otherwise issue the loan.
+        // 13. If its short, convert back to sUSD, otherwise issue the loan.
         if (short) {
             _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(currency, loanAmountMinusFee, sUSD));
-            _manager().incrementShorts(currency, amount);
+            manager.incrementShorts(currency, amount);
 
             if (shortingRewards[currency] != address(0)) {
                 IShortingRewards(shortingRewards[currency]).enrol(msg.sender, amount);
             }
         } else {
             _synth(synthsByKey[currency]).issue(msg.sender, loanAmountMinusFee);
-            _manager().incrementLongs(currency, amount);
+            manager.incrementLongs(currency, amount);
         }
 
-        // 15. Emit event
+        // 14. Emit event
         emit LoanCreated(msg.sender, id, amount, collateral, currency, issueFee);
     }
 
-    function closeInternal(address borrower, uint id) internal rateIsValid returns (uint collateral) {
-        // 0. Check the system is active.
-        _systemStatus().requireIssuanceActive();
+    function closeInternal(address borrower, uint id) internal rateIsValid returns (uint amount, uint collateral) {
+        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
-        // 1. Get the loan.
-        Loan memory loan = state.getLoan(borrower, id);
+        (amount, collateral) = _closeLoan(borrower, borrower, loan);
 
-        // 2. Check loan is open and the last interaction time.
-        _checkLoanAvailable(loan);
-
-        // 3. Accrue interest on the loan.
-        loan = accrueInterest(loan);
-
-        // 4. Work out the total amount owing on the loan.
-        uint total = loan.amount.add(loan.accruedInterest);
-
-        // 5. Check they have enough balance to close the loan.
-        _checkSynthBalance(loan.account, loan.currency, total);
-
-        // 6. Burn the synths
-        require(
-            !_exchanger().hasWaitingPeriodOrSettlementOwing(borrower, loan.currency),
-            "Waiting secs or settlement owing"
-        );
-        _synth(synthsByKey[loan.currency]).burn(borrower, total);
-
-        // 7. Tell the manager.
-        if (loan.short) {
-            _manager().decrementShorts(loan.currency, loan.amount);
-
-            if (shortingRewards[loan.currency] != address(0)) {
-                IShortingRewards(shortingRewards[loan.currency]).withdraw(borrower, loan.amount);
-            }
-        } else {
-            _manager().decrementLongs(loan.currency, loan.amount);
-        }
-
-        // 8. Assign the collateral to be returned.
-        collateral = loan.collateral;
-
-        // 9. Pay fees
-        _payFees(loan.accruedInterest, loan.currency);
-
-        // 10. Record loan as closed
-        loan.amount = 0;
-        loan.collateral = 0;
-        loan.accruedInterest = 0;
+        // 10. Record loan as closed.
         loan.interestIndex = 0;
-        loan.lastInteraction = block.timestamp;
-        state.updateLoan(loan);
 
         // 11. Emit the event
         emit LoanClosed(borrower, id);
@@ -420,110 +317,84 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     function closeByLiquidationInternal(
         address borrower,
         address liquidator,
-        Loan memory loan
-    ) internal returns (uint collateral) {
+        Loan storage loan
+    ) internal returns (uint amount, uint collateral) {
+        (amount, collateral) = _closeLoan(borrower, liquidator, loan);
+
+        // 7. Record loan as closed
+        // TODO: why is this commented out? Want to allow the same loan to be used when liquidated?
+        // loan.interestIndex = 0;
+
+        // 8. Emit the event.
+        // TODO: could use the same event in closeInternal if renamed possibly
+        emit LoanClosedByLiquidation(borrower, loan.id, liquidator, amount, collateral);
+    }
+
+    function _closeLoan(
+        address borrower,
+        address liquidator,
+        Loan storage loan
+    ) internal returns (uint amount, uint collateral) {
         // 1. Work out the total amount owing on the loan.
         uint total = loan.amount.add(loan.accruedInterest);
 
         // 2. Store this for the event.
-        uint amount = loan.amount;
+        amount = loan.amount;
 
         // 3. Return collateral to the child class so it knows how much to transfer.
         collateral = loan.collateral;
 
         // 4. Burn the synths
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, loan.currency), "Waiting or settlement owing");
         _synth(synthsByKey[loan.currency]).burn(liquidator, total);
 
         // 5. Tell the manager.
         if (loan.short) {
-            _manager().decrementShorts(loan.currency, loan.amount);
+            manager.decrementShorts(loan.currency, loan.amount);
 
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).withdraw(borrower, loan.amount);
             }
         } else {
-            _manager().decrementLongs(loan.currency, loan.amount);
+            manager.decrementLongs(loan.currency, loan.amount);
         }
 
         // 6. Pay fees
         _payFees(loan.accruedInterest, loan.currency);
-
-        // 7. Record loan as closed
-        loan.amount = 0;
-        loan.collateral = 0;
-        loan.accruedInterest = 0;
-        loan.interestIndex = 0;
-        loan.lastInteraction = block.timestamp;
-        state.updateLoan(loan);
-
-        // 8. Emit the event.
-        emit LoanClosedByLiquidation(borrower, loan.id, liquidator, amount, collateral);
     }
 
     function depositInternal(
         address account,
         uint id,
         uint amount
-    ) internal rateIsValid {
-        // 0. Check the system is active.
+    ) internal rateIsValid returns (uint, uint) {
         _systemStatus().requireIssuanceActive();
-
-        // 1. They sent some value > 0
-        require(amount > 0, "Deposit must be greater than 0");
-
-        // 2. Get the loan
-        Loan memory loan = state.getLoan(account, id);
-
-        // 3. Check loan is open and last interaction time.
-        _checkLoanAvailable(loan);
-
-        // 4. Accrue interest
-        loan = accrueInterest(loan);
+        Loan storage loan = loans[id];
+        // Owner is not important here, as it is a donation to the collateral of the loan
+        require(loan.interestIndex != 0);
+        accrueInterest(loan);
 
         // 5. Add the collateral
         loan.collateral = loan.collateral.add(amount);
 
-        // 6. Update the last interaction time.
-        loan.lastInteraction = block.timestamp;
-
-        // 7. Store the loan
-        state.updateLoan(loan);
-
-        // 8. Emit the event
+        // 6. Emit the event
         emit CollateralDeposited(account, id, amount, loan.collateral);
+
+        return (loan.amount, loan.collateral);
     }
 
-    function withdrawInternal(uint id, uint amount) internal rateIsValid returns (uint withdraw) {
-        // 0. Check the system is active.
-        _systemStatus().requireIssuanceActive();
-
-        // 1. Get the loan.
-        Loan memory loan = state.getLoan(msg.sender, id);
-
-        // 2. Check loan is open and last interaction time.
-        _checkLoanAvailable(loan);
-
-        // 3. Accrue interest.
-        loan = accrueInterest(loan);
+    function withdrawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
+        Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
         // 4. Subtract the collateral.
         loan.collateral = loan.collateral.sub(amount);
 
-        // 5. Update the last interaction time.
-        loan.lastInteraction = block.timestamp;
-
         // 6. Check that the new amount does not put them under the minimum c ratio.
-        require(collateralRatio(loan) > minCratio, "Cratio too low");
-
-        // 7. Store the loan.
-        state.updateLoan(loan);
-
-        // 8. Assign the return variable.
-        withdraw = amount;
+        require(collateralRatio(loan.id) > minCratio);
 
         // 9. Emit the event.
         emit CollateralWithdrawn(msg.sender, id, amount, loan.collateral);
+
+        return (loan.amount, loan.collateral);
     }
 
     function liquidateInternal(
@@ -531,26 +402,17 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint id,
         uint payment
     ) internal rateIsValid returns (uint collateralLiquidated) {
-        // 0. Check the system is active.
-        _systemStatus().requireIssuanceActive();
+        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 1. Check the payment amount.
-        require(payment > 0, "Payment must be greater than 0");
-
-        // 2. Get the loan.
-        Loan memory loan = state.getLoan(borrower, id);
-
-        // 3. Check loan is open and last interaction time.
-        _checkLoanAvailable(loan);
-
-        // 4. Accrue interest.
-        loan = accrueInterest(loan);
+        require(payment > 0);
 
         // 5. Check they have enough balance to make the payment.
-        _checkSynthBalance(msg.sender, loan.currency, payment);
+        // TODO: verify this isn't necessary, at the very least this should be moved after if (amountToLiquidate >= amountOwing)
+        // require(IERC20(address(_synth(synthsByKey[loan.currency]))).balanceOf(msg.sender) >= payment);
 
         // 6. Check they are eligible for liquidation.
-        require(collateralRatio(loan) < minCratio, "Cratio above liquidation ratio");
+        require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio);
 
         // 7. Determine how much needs to be liquidated to fix their c ratio.
         uint liqAmount = liquidationAmount(loan);
@@ -563,25 +425,19 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 10. If its greater than the amount owing, we need to close the loan.
         if (amountToLiquidate >= amountOwing) {
-            return closeByLiquidationInternal(borrower, msg.sender, loan);
+            (, collateralLiquidated) = closeByLiquidationInternal(borrower, msg.sender, loan);
+            return collateralLiquidated;
         }
 
         // 11. Process the payment to workout interest/principal split.
-        loan = _processPayment(loan, amountToLiquidate);
+        _processPayment(loan, amountToLiquidate);
 
         // 12. Work out how much collateral to redeem.
         collateralLiquidated = collateralRedeemed(loan.currency, amountToLiquidate);
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
-        // 13. Update the last interaction time.
-        loan.lastInteraction = block.timestamp;
-
         // 14. Burn the synths from the liquidator.
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(msg.sender, loan.currency), "Waiting or settlement owing");
         _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
-
-        // 15. Store the loan.
-        state.updateLoan(loan);
 
         // 16. Emit the event
         emit LoanPartiallyLiquidated(borrower, id, msg.sender, amountToLiquidate, collateralLiquidated);
@@ -592,60 +448,41 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address repayer,
         uint id,
         uint payment
-    ) internal rateIsValid {
-        // 0. Check the system is active.
-        _systemStatus().requireIssuanceActive();
-
-        // 1. Check the payment amount.
-        require(payment > 0, "Payment must be greater than 0");
-
-        // 2. Get loan
-        Loan memory loan = state.getLoan(borrower, id);
+    ) internal rateIsValid returns (uint, uint) {
+        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 3. Check loan is open and last interaction time.
-        _checkLoanAvailable(loan);
-
-        // 4. Accrue interest.
-        loan = accrueInterest(loan);
-
-        // 5. Check the spender has enough synths to make the repayment
-        _checkSynthBalance(repayer, loan.currency, payment);
+        // TODO: why is there an interaction delay required for repaying?
+        //   The user already owns the eth and is burning it, how do frontrunners win here?
+        require(loan.lastInteraction.add(interactionDelay) <= block.timestamp);
 
         // 6. Process the payment.
-        loan = _processPayment(loan, payment);
+        require(payment > 0);
+        _processPayment(loan, payment);
 
         // 7. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
         // 8. Burn synths from the payer
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or settlement owing");
         _synth(synthsByKey[loan.currency]).burn(repayer, payment);
-
-        // 9. Store the loan
-        state.updateLoan(loan);
 
         // 10. Emit the event.
         emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
+
+        return (loan.amount, loan.collateral);
     }
 
-    function drawInternal(uint id, uint amount) internal rateIsValid {
-        // 0. Check the system is active.
-        _systemStatus().requireIssuanceActive();
+    function drawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
+        Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
-        // 1. Get loan.
-        Loan memory loan = state.getLoan(msg.sender, id);
-
-        // 2. Check loan is open and last interaction time.
-        _checkLoanAvailable(loan);
-
-        // 3. Accrue interest.
-        loan = accrueInterest(loan);
+        // 2. Check last interaction time.
+        require(loan.lastInteraction.add(interactionDelay) <= block.timestamp);
 
         // 4. Add the requested amount.
         loan.amount = loan.amount.add(amount);
 
         // 5. If it is below the minimum, don't allow this draw.
-        require(collateralRatio(loan) > minCratio, "Cannot draw this much");
+        require(collateralRatio(loan.id) > minCratio);
 
         // 6. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
@@ -655,14 +492,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 8. If its short, let the child handle it, otherwise issue the synths.
         if (loan.short) {
-            _manager().incrementShorts(loan.currency, amount);
+            manager.incrementShorts(loan.currency, amount);
             _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
 
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).enrol(msg.sender, amount);
             }
         } else {
-            _manager().incrementLongs(loan.currency, amount);
+            manager.incrementLongs(loan.currency, amount);
             _synth(synthsByKey[loan.currency]).issue(msg.sender, amountMinusFee);
         }
 
@@ -672,74 +509,47 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 10. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 11. Store the loan
-        state.updateLoan(loan);
-
         // 12. Emit the event.
         emit LoanDrawnDown(msg.sender, id, amount);
+
+        return (loan.amount, loan.collateral);
     }
 
     // Update the cumulative interest rate for the currency that was interacted with.
-    function accrueInterest(Loan memory loan) internal returns (Loan memory loanAfter) {
-        loanAfter = loan;
-
-        // 1. Get the rates we need.
-        (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) =
-            loan.short
-                ? _manager().getShortRatesAndTime(loan.currency, loan.interestIndex)
-                : _manager().getRatesAndTime(loan.interestIndex);
-
-        // 2. Get the instantaneous rate.
-        (uint rate, bool invalid) =
-            loan.short ? _manager().getShortRate(synthsByKey[loan.currency]) : _manager().getBorrowRate();
-
-        require(!invalid, "Rates are invalid");
-
-        // 3. Get the time since we last updated the rate.
-        uint timeDelta = block.timestamp.sub(lastUpdated).mul(SafeDecimalMath.unit());
-
-        // 4. Get the latest cumulative rate. F_n+1 = F_n + F_last
-        uint latestCumulative = lastRate.add(rate.multiplyDecimal(timeDelta));
+    function accrueInterest(Loan storage loan) internal {
+        (uint differential, uint newIndex) = manager.accrueInterest(loan.interestIndex, loan.currency, loan.short);
 
         // 5. If the loan was just opened, don't record any interest. Otherwise multiple by the amount outstanding.
-        uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative.sub(entryRate));
-
-        // 7. Update rates with the lastest cumulative rate. This also updates the time.
-        loan.short
-            ? _manager().updateShortRates(loan.currency, latestCumulative)
-            : _manager().updateBorrowRates(latestCumulative);
+        uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(differential);
 
         // 8. Update loan
-        loanAfter.accruedInterest = loan.accruedInterest.add(interest);
-        loanAfter.interestIndex = newIndex;
-        state.updateLoan(loanAfter);
+        loan.accruedInterest = loan.accruedInterest.add(interest);
+        loan.interestIndex = newIndex;
     }
 
     // Works out the amount of interest and principal after a repayment is made.
-    function _processPayment(Loan memory loanBefore, uint payment) internal returns (Loan memory loanAfter) {
-        loanAfter = loanBefore;
-
-        if (payment > 0 && loanBefore.accruedInterest > 0) {
-            uint interestPaid = payment > loanBefore.accruedInterest ? loanBefore.accruedInterest : payment;
-            loanAfter.accruedInterest = loanBefore.accruedInterest.sub(interestPaid);
+    function _processPayment(Loan storage loan, uint payment) internal {
+        if (payment > 0 && loan.accruedInterest > 0) {
+            uint interestPaid = payment > loan.accruedInterest ? loan.accruedInterest : payment;
+            loan.accruedInterest = loan.accruedInterest.sub(interestPaid);
             payment = payment.sub(interestPaid);
 
-            _payFees(interestPaid, loanBefore.currency);
+            _payFees(interestPaid, loan.currency);
         }
 
-        // If there is more payment left after the interest, pay down the principal.
+        // If there is more payment left after the interest, pay down the pr incipal.
         if (payment > 0) {
-            loanAfter.amount = loanBefore.amount.sub(payment);
+            loan.amount = loan.amount.sub(payment);
 
             // And get the manager to reduce the total long/short balance.
-            if (loanAfter.short) {
-                _manager().decrementShorts(loanAfter.currency, payment);
+            if (loan.short) {
+                manager.decrementShorts(loan.currency, payment);
 
-                if (shortingRewards[loanAfter.currency] != address(0)) {
-                    IShortingRewards(shortingRewards[loanAfter.currency]).withdraw(loanAfter.account, payment);
+                if (shortingRewards[loan.currency] != address(0)) {
+                    IShortingRewards(shortingRewards[loan.currency]).withdraw(loan.account, payment);
                 }
             } else {
-                _manager().decrementLongs(loanAfter.currency, payment);
+                manager.decrementLongs(loan.currency, payment);
             }
         }
     }
@@ -755,6 +565,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         }
     }
 
+    function _getLoanAndAccrueInterest(uint id, address owner) internal returns (Loan storage loan) {
+        loan = loans[id];
+        _systemStatus().requireIssuanceActive();
+        require(loan.account == owner);
+        require(loan.interestIndex != 0);
+        accrueInterest(loan);
+    }
+
     // ========== MODIFIERS ==========
 
     modifier rateIsValid() {
@@ -763,7 +581,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     function _requireRateIsValid() private view {
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
+        require(!_exchangeRates().rateIsInvalid(collateralKey));
     }
 
     // ========== EVENTS ==========
@@ -771,9 +589,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     event MinCratioRatioUpdated(uint minCratio);
     event MinCollateralUpdated(uint minCollateral);
     event IssueFeeRateUpdated(uint issueFeeRate);
-    event MaxLoansPerAccountUpdated(uint maxLoansPerAccount);
     event InteractionDelayUpdated(uint interactionDelay);
-    event ManagerUpdated(address manager);
+    event ManagerUpdated(ICollateralManager manager);
     event CanOpenLoansUpdated(bool canOpenLoans);
 
     // Loans

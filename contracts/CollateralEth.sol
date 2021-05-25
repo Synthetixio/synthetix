@@ -7,70 +7,68 @@ import "./Collateral.sol";
 import "openzeppelin-solidity-2.3.0/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/ICollateralEth.sol";
 
-// Internal references
-import "./CollateralState.sol";
-
 // This contract handles the payable aspects of eth loans.
 contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
     mapping(address => uint) public pendingWithdrawals;
 
     constructor(
-        CollateralState _state,
         address _owner,
         address _manager,
         address _resolver,
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    ) public Collateral(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
-
-    function open(uint amount, bytes32 currency) external payable {
-        openInternal(msg.value, amount, currency, false);
+    ) public Collateral(_owner, _resolver) {
+        initialize(_manager, _collateralKey, _minCratio, _minCollateral);
     }
 
-    function close(uint id) external {
-        uint collateral = closeInternal(msg.sender, id);
+    // function open(uint amount, bytes32 currency) external payable {
+    //     openInternal(msg.value, amount, currency, false);
+    // }
 
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateral);
-    }
+    // function close(uint id) external {
+    //     uint collateral = closeInternal(msg.sender, id);
 
-    function deposit(address borrower, uint id) external payable {
-        depositInternal(borrower, id, msg.value);
-    }
+    //     pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateral);
+    // }
 
-    function withdraw(uint id, uint withdrawAmount) external {
-        uint amount = withdrawInternal(id, withdrawAmount);
+    // function deposit(address borrower, uint id) external payable {
+    //     depositInternal(borrower, id, msg.value);
+    // }
 
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
-    }
+    // function withdraw(uint id, uint withdrawAmount) external {
+    //     uint amount = withdrawInternal(id, withdrawAmount);
 
-    function repay(
-        address account,
-        uint id,
-        uint amount
-    ) external {
-        repayInternal(account, msg.sender, id, amount);
-    }
+    //     pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
+    // }
 
-    function draw(uint id, uint amount) external {
-        drawInternal(id, amount);
-    }
+    // function repay(
+    //     address account,
+    //     uint id,
+    //     uint amount
+    // ) external {
+    //     repayInternal(account, msg.sender, id, amount);
+    // }
 
-    function liquidate(
-        address borrower,
-        uint id,
-        uint amount
-    ) external {
-        uint collateralLiquidated = liquidateInternal(borrower, id, amount);
+    // function draw(uint id, uint amount) external {
+    //     drawInternal(id, amount);
+    // }
 
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateralLiquidated);
-    }
+    // function liquidate(
+    //     address borrower,
+    //     uint id,
+    //     uint amount
+    // ) external {
+    //     uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 
-    function claim(uint amount) external nonReentrant {
-        // If they try to withdraw more than their total balance, it will fail on the safe sub.
-        pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
+    //     pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateralLiquidated);
+    // }
 
-        (bool success, ) = msg.sender.call.value(amount)("");
-        require(success, "Transfer failed");
-    }
+    // function claim(uint amount) external nonReentrant {
+    //     // If they try to withdraw more than their total balance, it will fail on the safe sub.
+    //     pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
+
+    //     (bool success, ) = msg.sender.call.value(amount)("");
+    //     require(success, "Transfer failed");
+    // }
 }
