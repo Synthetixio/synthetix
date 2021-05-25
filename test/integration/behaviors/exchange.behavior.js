@@ -13,7 +13,7 @@ function itCanPerformExchanges({ ctx }) {
 	before('target contracts and users', () => {
 		({ Synthetix, Exchanger, SynthsETH } = ctx.contracts);
 
-		owner = ctx.owner;
+		owner = ctx.users.owner;
 	});
 
 	before('ensure the owner has sUSD', async () => {

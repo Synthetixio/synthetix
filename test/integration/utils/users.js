@@ -1,16 +1,37 @@
+const hre = require('hardhat');
 const ethers = require('ethers');
+const { getUsers } = require('../../..');
 
-function loadUsers({ ctx }) {
-	ctx.users = [];
+async function loadUsers({ ctx }) {
+	const { useOvm } = ctx;
+	const network = hre.config.targetNetwork;
 
-	for (let i = 0; i < 10; i++) {
-		const wallet = new ethers.Wallet(getPrivateKey({ index: i }), ctx.provider);
+	ctx.users = {};
 
-		ctx.users.push(wallet);
+	await _getAdminUsers({ ctx, network, useOvm });
+	_createAdditionalUsers({ ctx });
+}
+
+async function _getAdminUsers({ ctx, network, useOvm }) {
+	const users = getUsers({ network, useOvm })
+		.filter(account => account.name !== 'fee')
+		.filter(account => account.name !== 'zero');
+
+	for (const user of users) {
+		const signer = await ctx.provider.getSigner(user.address);
+		signer.address = signer._address;
+
+		ctx.users[user.name] = signer;
 	}
+}
 
-	ctx.owner = ctx.users[0];
-	ctx.user = ctx.users[1];
+async function _createAdditionalUsers({ ctx }) {
+	const numUsers = 5;
+	const offset = 4;
+
+	for (let i = 0; i < numUsers; i++) {
+		ctx.users[`user${i}`] = new ethers.Wallet(getPrivateKey({ index: i + offset }), ctx.provider);
+	}
 }
 
 function getPrivateKey({ index }) {

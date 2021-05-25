@@ -4,6 +4,7 @@ const { compileInstance, deployInstance } = require('../../test/integration/util
 task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addFlag('compile', 'Compile an l1 instance before running the tests')
 	.addFlag('deploy', 'Deploy an l1 instance before running the tests')
+	.addOptionalParam('targetNetwork', 'The deployment path to target', 'local')
 	.addOptionalParam(
 		'providerPort',
 		'The target port for the running local chain to test on',
@@ -14,6 +15,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 
 		const providerUrl = (hre.config.providerUrl = 'http://localhost');
 		const providerPort = (hre.config.providerPort = taskArguments.providerPort);
+		hre.config.targetNetwork = taskArguments.targetNetwork;
 
 		const timeout = 5 * 60 * 1000;
 		hre.config.mocha.timeout = timeout;

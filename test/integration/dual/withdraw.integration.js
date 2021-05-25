@@ -21,7 +21,7 @@ describe('withdraw() integration tests (L1, L2)', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeToBase } = ctx.l2.contracts);
 
-			owner = ctx.l2.owner;
+			owner = ctx.l2.users.owner;
 		});
 
 		before('ensure the owner has SNX on L2', async () => {
@@ -50,7 +50,7 @@ describe('withdraw() integration tests (L1, L2)', () => {
 			before('target contracts and users', () => {
 				({ Synthetix } = ctx.l1.contracts);
 
-				owner = ctx.l1.owner;
+				owner = ctx.l1.users.owner;
 			});
 
 			before('record balances', async () => {

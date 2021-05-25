@@ -26,6 +26,23 @@ jobs:
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: rm -rf build # force a clean build
       - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
+  job-fork-tests:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npx hardhat node --target-network mainnet
+          background: true
+      - cmd-wait-for-port:
+          port: 8545
+      - run: npx hardhat test:integration:l1 --provider-port 8545 --target-network mainnet
   job-lint:
     working_directory: ~/repo
     docker:

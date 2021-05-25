@@ -1,3 +1,4 @@
+const hre = require('hardhat');
 const fs = require('fs');
 const path = require('path');
 const ethers = require('ethers');
@@ -5,7 +6,7 @@ const { getSource, getTarget } = require('../../..');
 
 function connectContracts({ ctx }) {
 	const { useOvm } = ctx;
-	const network = 'local';
+	const network = hre.config.targetNetwork;
 
 	const allTargets = getTarget({ fs, path, network, useOvm });
 
