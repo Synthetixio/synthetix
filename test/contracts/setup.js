@@ -108,8 +108,6 @@ const setupContract = async ({
 	properties = {},
 }) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
-	// TODO: temporary to share notes.
-	console.log(accounts); // currently [ '0x1B16A796a68a9d5C8A49D2607551f6c7F65709fa' ] on OVM Geth
 
 	const artifact = artifacts.require(source || contract);
 
