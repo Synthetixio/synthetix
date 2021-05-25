@@ -401,6 +401,9 @@ workflows:
       - job-test-deploy-script:
           requires:
             - job-prepare
+      - job-fork-tests:
+          requires:
+            - job-prepare
       - job-prod-tests:
           requires:
             - job-prepare
