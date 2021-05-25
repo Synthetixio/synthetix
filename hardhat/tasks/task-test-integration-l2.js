@@ -7,7 +7,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 	.addOptionalParam(
 		'providerPort',
 		'The target port for the running local chain to test on',
-		'9545'
+		'8545'
 	)
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/l2/';
