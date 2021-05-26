@@ -33,6 +33,22 @@ const {
 
 const SUPPLY_100M = toWei((1e8).toString()); // 100M
 
+const useOVM = true;
+if (useOVM) {
+	artifacts.require('AddressResolver');
+
+	// Monkey-patch artifacts.require.
+	const patch = superFn => {
+		return contract => {
+			console.log(`require(${contract}.ovm)`);
+			// TruffleEnvironmentArtifacts will strip the last ".ext" from the name.
+			// If this was left as "contract.ovm", it would
+			return superFn(`${contract}.ovm.json`);
+		};
+	};
+	artifacts.require = patch(artifacts.require);
+}
+
 /**
  * Create a mock ExternStateToken - useful to mock Synthetix or a synth
  */
