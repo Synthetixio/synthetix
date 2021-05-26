@@ -71,7 +71,7 @@ jobs:
       - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
-            npx hardhat test:integration:dual --connect
+            npx hardhat test:integration:dual --deploy --connect
   job-lint:
     working_directory: ~/repo
     docker:
