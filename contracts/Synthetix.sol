@@ -62,11 +62,14 @@ contract Synthetix is BaseSynthetix {
         returns (uint amountReceived, IVirtualSynth vSynth)
     {
         return
-            exchanger().exchangeWithVirtual(
+            exchanger().exchange(
+                messageSender,
                 messageSender,
                 sourceCurrencyKey,
                 sourceAmount,
                 destinationCurrencyKey,
+                messageSender,
+                true,
                 messageSender,
                 trackingCode
             );
@@ -82,17 +85,18 @@ contract Synthetix is BaseSynthetix {
         address originator,
         bytes32 trackingCode
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
-        return
-            exchanger().exchangeWithTracking(
-                messageSender,
-                sourceCurrencyKey,
-                sourceAmount,
-                destinationCurrencyKey,
-                // solhint-disable avoid-tx-origin
-                tx.origin,
-                originator,
-                trackingCode
-            );
+        (amountReceived, ) = exchanger().exchange(
+            messageSender,
+            messageSender,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            // solhint-disable avoid-tx-origin
+            tx.origin,
+            false,
+            originator,
+            trackingCode
+        );
     }
 
     function settle(bytes32 currencyKey)

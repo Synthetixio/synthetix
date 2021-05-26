@@ -1703,7 +1703,17 @@ contract('Exchanger (spec tests)', async accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: exchanger.exchange,
 					accounts,
-					args: [account1, sUSD, toUnit('100'), sAUD, account1],
+					args: [
+						account1,
+						account1,
+						sUSD,
+						toUnit('100'),
+						sAUD,
+						account1,
+						false,
+						account1,
+						toBytes32(''),
+					],
 					reason: 'Only synthetix or a synth contract can perform this action',
 				});
 			});
@@ -1935,16 +1945,6 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('exchanging on behalf', async () => {
 						const authoriser = account1;
 						const delegate = account2;
-
-						it('exchangeOnBehalf() cannot be invoked directly by any account via Exchanger', async () => {
-							await onlyGivenAddressCanInvoke({
-								fnc: exchanger.exchangeOnBehalf,
-								accounts,
-								args: [authoriser, delegate, sUSD, toUnit('100'), sAUD],
-								reason: 'Only synthetix or a synth contract can perform this action',
-							});
-						});
-
 						describe('when not approved it should revert on', async () => {
 							it('exchangeOnBehalf', async () => {
 								await assert.revert(
@@ -2041,15 +2041,6 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('exchanging on behalf with tracking', async () => {
 						const authoriser = account1;
 						const delegate = account2;
-
-						it('exchangeOnBehalfWithTracking() cannot be invoked directly by any account via Exchanger', async () => {
-							await onlyGivenAddressCanInvoke({
-								fnc: exchanger.exchangeOnBehalfWithTracking,
-								accounts,
-								args: [authoriser, delegate, sUSD, toUnit('100'), sAUD, authoriser, trackingCode],
-								reason: 'Only synthetix or a synth contract can perform this action',
-							});
-						});
 
 						describe('when not approved it should revert on', async () => {
 							it('exchangeOnBehalfWithTracking', async () => {
