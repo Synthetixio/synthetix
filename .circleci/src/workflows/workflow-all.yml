@@ -31,6 +31,12 @@ jobs:
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Integration tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-integration-tests:
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Prod tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-prod-tests:
@@ -40,9 +46,6 @@ jobs:
       {{> require-prepare.yml}}
   - job-prod-diff-tests-local:
       name: job-prod-diff-tests-local
-      {{> require-prepare.yml}}
-  - job-prod-diff-tests-local-ovm:
-      name: job-prod-diff-tests-local-ovm
       {{> require-prepare.yml}}
   - job-prod-diff-tests:
       name: job-prod-diff-tests-mainnet

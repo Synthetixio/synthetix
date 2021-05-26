@@ -90,6 +90,7 @@ contract('BaseSynthetix', async accounts => {
 				'exchangeOnBehalf',
 				'exchangeOnBehalfWithTracking',
 				'exchangeWithTracking',
+				'exchangeWithTrackingForInitiator',
 				'exchangeWithVirtual',
 				'issueMaxSynths',
 				'issueMaxSynthsOnBehalf',
@@ -142,7 +143,7 @@ contract('BaseSynthetix', async accounts => {
 
 	describe('non-basic functions always revert', () => {
 		const amount = 100;
-		it('ExchangeWithVirtual should revert no matter who the caller is', async () => {
+		it('exchangeWithVirtual should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.exchangeWithVirtual,
 				accounts,
@@ -150,7 +151,17 @@ contract('BaseSynthetix', async accounts => {
 				reason: 'Cannot be run on this layer',
 			});
 		});
-		it('Mint should revert no matter who the caller is', async () => {
+
+		it('exchangeWithTrackingForInitiator should revert no matter who the caller is', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: baseSynthetix.exchangeWithTrackingForInitiator,
+				accounts,
+				args: [sUSD, amount, sAUD, owner, toBytes32('AGGREGATOR')],
+				reason: 'Cannot be run on this layer',
+			});
+		});
+
+		it('mint should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.mint,
 				accounts,
@@ -159,7 +170,7 @@ contract('BaseSynthetix', async accounts => {
 			});
 		});
 
-		it('LiquidateDelinquentAccount should revert no matter who the caller is', async () => {
+		it('liquidateDelinquentAccount should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.liquidateDelinquentAccount,
 				accounts,
@@ -167,7 +178,7 @@ contract('BaseSynthetix', async accounts => {
 				reason: 'Cannot be run on this layer',
 			});
 		});
-		it('MintSecondary should revert no matter who the caller is', async () => {
+		it('mintSecondary should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.mintSecondary,
 				accounts,
@@ -175,7 +186,7 @@ contract('BaseSynthetix', async accounts => {
 				reason: 'Cannot be run on this layer',
 			});
 		});
-		it('MintSecondaryRewards should revert no matter who the caller is', async () => {
+		it('mintSecondaryRewards should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.mintSecondaryRewards,
 				accounts,
@@ -183,7 +194,7 @@ contract('BaseSynthetix', async accounts => {
 				reason: 'Cannot be run on this layer',
 			});
 		});
-		it('BurnSecondary should revert no matter who the caller is', async () => {
+		it('burnSecondary should revert no matter who the caller is', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: baseSynthetix.burnSecondary,
 				accounts,
@@ -322,7 +333,7 @@ contract('BaseSynthetix', async accounts => {
 
 		it('exchangeOnBehalf is called with the right arguments ', async () => {
 			await baseSynthetix.exchangeOnBehalf(account1, currencyKey1, amount1, currencyKey2, {
-				from: owner,
+				from: msgSender,
 			});
 			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][0], account1);
 			assert.equal(smockExchanger.smocked.exchangeOnBehalf.calls[0][1], msgSender);
@@ -338,7 +349,7 @@ contract('BaseSynthetix', async accounts => {
 				currencyKey2,
 				account2,
 				trackingCode,
-				{ from: owner }
+				{ from: msgSender }
 			);
 			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][0], msgSender);
 			assert.equal(smockExchanger.smocked.exchangeWithTracking.calls[0][1], currencyKey1);
