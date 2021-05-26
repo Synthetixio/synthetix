@@ -211,11 +211,11 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
     //     emit IssueFeeRateUpdated(issueFeeRate);
     // }
 
-    // function setInteractionDelay(uint _interactionDelay) external onlyOwner {
-    //     require(_interactionDelay <= SafeDecimalMath.unit() * 3600);
-    //     interactionDelay = _interactionDelay;
-    //     emit InteractionDelayUpdated(interactionDelay);
-    // }
+    function setInteractionDelay(uint _interactionDelay) external onlyOwner {
+        require(_interactionDelay <= SafeDecimalMath.unit() * 3600);
+        interactionDelay = _interactionDelay;
+        emit InteractionDelayUpdated(interactionDelay);
+    }
 
     function setManager(ICollateralManager _newManager) external onlyOwner {
         manager = _newManager;

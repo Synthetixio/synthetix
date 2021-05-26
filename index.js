@@ -83,7 +83,7 @@ const constants = {
 	AST_FOLDER: 'ast',
 
 	CONFIG_FILENAME: 'config.json',
-	PARAMS_FILENAME: 'params.js',
+	PARAMS_FILENAME: 'params',
 	SYNTHS_FILENAME: 'synths.json',
 	STAKING_REWARDS_FILENAME: 'rewards.json',
 	SHORTING_REWARDS_FILENAME: 'shorting-rewards.json',

@@ -2404,8 +2404,23 @@ const deploy = async ({
 		});
 
 		const collateralManagerShorts = collateralManagerDefaults['SHORTS'];
+		let inputArg = [
+			collateralManagerShorts.map(({ long, short }) =>
+				[`Synth${long}`, `Synth${short}`].map(toBytes32)
+			),
+			collateralManagerShorts.map(({ long }) => toBytes32(long)),
+		];
+
+		// CollateralManager on L2 has different write args
+		if (useOvm) {
+			inputArg = [
+				collateralManagerShorts.map(({ long }) => toBytes32(`Synth${long}`)),
+				collateralManagerShorts.map(({ long }) => toBytes32(long)),
+			];
+		}
+
 		await runStep({
-			gasLimit: 1e6,
+			gasLimit: 2e6,
 			contract: 'CollateralManager',
 			target: collateralManager,
 			read: 'areShortableSynthsSet',
@@ -2415,12 +2430,7 @@ const deploy = async ({
 			],
 			expected: input => input,
 			write: 'addShortableSynths',
-			writeArg: [
-				collateralManagerShorts.map(({ long, short }) =>
-					[`Synth${long}`, `Synth${short}`].map(toBytes32)
-				),
-				collateralManagerShorts.map(({ long }) => toBytes32(long)),
-			],
+			writeArg: inputArg,
 		});
 	}
 
@@ -2433,7 +2443,7 @@ const deploy = async ({
 			contract: 'CollateralShort',
 			target: collateralShort,
 			read: 'interactionDelay',
-			expected: input => input !== '0', // only change if zero
+			expected: input => input !== collateralShortInteractionDelay,
 			write: 'setInteractionDelay',
 			writeArg: collateralShortInteractionDelay,
 		});
