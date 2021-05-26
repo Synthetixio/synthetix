@@ -323,7 +323,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress,
         bool virtualSynth,
-        address originator,
+        address rewardAddress,
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
         uint fee;
@@ -340,8 +340,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             virtualSynth
         );
 
-        if (originator != address(0)) {
-            _processTradingRewards(fee, originator);
+        if (rewardAddress != address(0)) {
+            _processTradingRewards(fee, rewardAddress);
         }
 
         if (trackingCode != bytes32(0)) {
@@ -358,9 +358,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, toCurrencyKey, toAmount, fee);
     }
 
-    function _processTradingRewards(uint fee, address originator) internal {
-        if (fee > 0 && originator != address(0) && getTradingRewardsEnabled()) {
-            tradingRewards().recordExchangeFeeForAccount(fee, originator);
+    function _processTradingRewards(uint fee, address rewardAddress) internal {
+        if (fee > 0 && rewardAddress != address(0) && getTradingRewardsEnabled()) {
+            tradingRewards().recordExchangeFeeForAccount(fee, rewardAddress);
         }
     }
 

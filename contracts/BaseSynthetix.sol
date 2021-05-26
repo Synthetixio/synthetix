@@ -215,7 +215,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address originator,
+        address rewardAddress,
         bytes32 trackingCode
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
         (amountReceived, ) = exchanger().exchange(
@@ -226,7 +226,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             destinationCurrencyKey,
             messageSender,
             false,
-            originator,
+            rewardAddress,
             trackingCode
         );
     }
@@ -236,7 +236,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address originator,
+        address rewardAddress,
         bytes32 trackingCode
     ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
         (amountReceived, ) = exchanger().exchange(
@@ -247,7 +247,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
             destinationCurrencyKey,
             exchangeForAddress,
             false,
-            originator,
+            rewardAddress,
             trackingCode
         );
     }
