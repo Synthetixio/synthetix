@@ -82,7 +82,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    ) external onlyOwner {
+    ) public onlyOwner {
         require(!initialized);
         manager = _manager;
         collateralKey = _collateralKey;
@@ -145,14 +145,6 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         return _collateralUtil().maxLoan(amount, currency, minCratio, collateralKey);
     }
 
-    function liquidationAmount(Loan memory loan) public view returns (uint amount) {
-        return _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
-    }
-
-    function collateralRedeemed(bytes32 currency, uint amount) public view returns (uint collateral) {
-        return _collateralUtil().collateralRedeemed(currency, amount, collateralKey);
-    }
-
     function areSynthsAndCurrenciesSet(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys)
         external
         view
@@ -200,16 +192,16 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
 
     /* ---------- SETTERS ---------- */
 
-    // function setMinCratio(uint _minCratio) external onlyOwner {
-    //     require(_minCratio > SafeDecimalMath.unit());
-    //     minCratio = _minCratio;
-    //     emit MinCratioRatioUpdated(minCratio);
-    // }
+    function setMinCratio(uint _minCratio) external onlyOwner {
+        require(_minCratio > SafeDecimalMath.unit());
+        minCratio = _minCratio;
+        emit MinCratioRatioUpdated(minCratio);
+    }
 
-    // function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
-    //     issueFeeRate = _issueFeeRate;
-    //     emit IssueFeeRateUpdated(issueFeeRate);
-    // }
+    function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
+        issueFeeRate = _issueFeeRate;
+        emit IssueFeeRateUpdated(issueFeeRate);
+    }
 
     function setInteractionDelay(uint _interactionDelay) external onlyOwner {
         require(_interactionDelay <= SafeDecimalMath.unit() * 3600);
@@ -415,7 +407,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio);
 
         // 7. Determine how much needs to be liquidated to fix their c ratio.
-        uint liqAmount = liquidationAmount(loan);
+        uint liqAmount = _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
 
         // 8. Only allow them to liquidate enough to fix the c ratio.
         uint amountToLiquidate = liqAmount < payment ? liqAmount : payment;
@@ -433,7 +425,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         _processPayment(loan, amountToLiquidate);
 
         // 12. Work out how much collateral to redeem.
-        collateralLiquidated = collateralRedeemed(loan.currency, amountToLiquidate);
+        collateralLiquidated = _collateralUtil().collateralRedeemed(loan.currency, amountToLiquidate, collateralKey);
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
         // 14. Burn the synths from the liquidator.

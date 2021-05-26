@@ -6,6 +6,8 @@ pragma experimental ABIEncoderV2;
 import "./Collateral.sol";
 
 contract CollateralShort is Collateral {
+    constructor(address _owner, address _resolver) public Collateral(_owner, _resolver) {}
+
     function open(
         uint collateral,
         uint amount,
@@ -61,11 +63,5 @@ contract CollateralShort is Collateral {
         uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 
         IERC20(address(_synthsUSD())).transfer(msg.sender, collateralLiquidated);
-    }
-
-    function getReward(bytes32 currency, address account) external {
-        if (shortingRewards[currency] != address(0)) {
-            IShortingRewards(shortingRewards[currency]).getReward(account);
-        }
     }
 }

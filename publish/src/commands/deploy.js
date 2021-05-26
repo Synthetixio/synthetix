@@ -1191,8 +1191,6 @@ const deploy = async ({
 		args: [account, account, addressOf(readProxyForResolver)],
 	});
 
-	// let manager, collateralEth, collateralErc20, collateralShort;
-
 	if (useOvm) {
 		await deployer.deployContract({
 			// name is EtherCollateral as it behaves as EtherCollateral in the address resolver

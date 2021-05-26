@@ -112,7 +112,7 @@ contract ShortingRewards is IShortingRewards, RewardsDistributionRecipient, Reen
     }
 
     // this can be called by anyone on the short contract to claim the rewards.
-    function getReward(address account) external onlyShortContract nonReentrant updateReward(account) {
+    function getReward(address account) external nonReentrant updateReward(account) {
         uint256 reward = rewards[account];
         if (reward > 0) {
             rewards[account] = 0;

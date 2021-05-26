@@ -13,7 +13,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
 
     constructor(
         address _owner,
-        address _manager,
+        ICollateralManager _manager,
         address _resolver,
         bytes32 _collateralKey,
         uint _minCratio,
