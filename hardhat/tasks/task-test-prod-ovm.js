@@ -1,40 +1,16 @@
-const { task, extendEnvironment } = require('hardhat/config');
+const { task, extendEnvironment, extendConfig } = require('hardhat/config');
+const ethers = require('ethers');
 
 // Poll the node every 50ms, to override ethers.js's default 4000ms causing OVM
 // tests to be slow.
 const OVM_POLLING_INTERVAL = 50;
 
 extendEnvironment(hre => {
-	if (hre.ethers) {
-		const { ethers } = hre;
-		const interval = hre.network.config.interval || OVM_POLLING_INTERVAL;
-		if (hre.ethers.provider.pollingInterval === interval) {
-			return;
-		}
+	return;
+	const interval = hre.network.config.interval || OVM_POLLING_INTERVAL;
 
-		// override the provider polling interval
-		const provider = new ethers.providers.JsonRpcProvider(hre.ethers.provider.url);
-
-		// the gas price is overriden to the user provided gasPrice or to 0.
-		provider.getGasPrice = async () => ethers.BigNumber.from(hre.network.config.gasPrice || 0);
-
-		// Add the private keys for the geth-ovm node,
-		// and connect the signers to the provider defined above.
-		try {
-			let signers;
-			// These accounts are based on a mneumonic located in:
-			// https://sourcegraph.com/github.com/nomiclabs/hardhat@73ef8b2/-/blob/packages/hardhat-core/src/internal/core/config/default-config.ts#L17
-			const accounts = hre.network.config.accounts;
-			if (accounts) {
-				const indices = Array.from(Array(20).keys()); // generates array of [0, 1, 2, ..., 18, 19]
-				signers = indices.map(i =>
-					ethers.Wallet.fromMnemonic(accounts.mnemonic, `${accounts.path}/${i}`).connect(provider)
-				);
-			}
-
-			hre.ethers.getSigners = () => signers;
-		} catch (e) {}
-	}
+	// override the provider polling interval
+	const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
 });
 
 task('test:prod:ovm', 'run optimism production tests against a running ops instance')
@@ -44,6 +20,7 @@ task('test:prod:ovm', 'run optimism production tests against a running ops insta
 		'http://localhost'
 	)
 	.addFlag('gas', 'Compile gas usage')
+	.addFlag('noCompile', '')
 	.addOptionalParam('gasOutputFile', 'Gas reporter output file')
 	.addOptionalVariadicPositionalParam('testFiles', 'An optional list of files to test', [])
 	.setAction(async (taskArguments, hre) => {
