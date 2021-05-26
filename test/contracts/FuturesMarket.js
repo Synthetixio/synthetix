@@ -19,7 +19,14 @@ const {
 } = require('./helpers');
 
 contract('FuturesMarket', accounts => {
-	let systemSettings, proxyFuturesMarket, futuresMarket, exchangeRates, oracle, sUSD, feePool;
+	let systemSettings,
+		proxyFuturesMarket,
+		futuresMarket,
+		exchangeRates,
+		oracle,
+		sUSD,
+		feePool,
+		debtCache;
 
 	const owner = accounts[1];
 	const trader = accounts[2];
@@ -87,25 +94,28 @@ contract('FuturesMarket', accounts => {
 
 	before(async () => {
 		({
-			ProxyFuturesMarket: proxyFuturesMarket,
-			FuturesMarket: futuresMarket,
+			ProxyFuturesMarketBTC: proxyFuturesMarket,
+			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSD,
 			FeePool: feePool,
 			SystemSettings: systemSettings,
+			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
 			contracts: [
 				'FuturesMarketManager',
-				'ProxyFuturesMarket',
-				'FuturesMarket',
+				'ProxyFuturesMarketBTC',
+				'FuturesMarketBTC',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
 				'SystemStatus',
 				'SystemSettings',
 				'Synthetix',
+				'CollateralManager',
+				'DebtCache',
 			],
 		}));
 
@@ -1836,7 +1846,7 @@ contract('FuturesMarket', accounts => {
 			assert.isTrue(false);
 		});
 
-		it.skip('Liquidations accurately update market debt', async () => {
+		it.skip('Liquidations accurately update market debt and overall system debt', async () => {
 			assert.isTrue(false);
 		});
 
@@ -1872,6 +1882,43 @@ contract('FuturesMarket', accounts => {
 			assert.isFalse((await futuresMarket.marketDebt())[1]);
 			await fastForward(7 * 24 * 60 * 60);
 			assert.isTrue((await futuresMarket.marketDebt())[1]);
+		});
+
+		describe('Market debt is accurately reflected in total system debt', () => {
+			it('Margin modification does not alter total system debt', async () => {
+				const debt = (await debtCache.currentDebt())[0];
+				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
+				assert.bnEqual((await debtCache.currentDebt())[0], debt);
+				await futuresMarket.modifyMargin(toUnit('-500'), { from: trader });
+				assert.bnEqual((await debtCache.currentDebt())[0], debt);
+			});
+
+			it('Prices altering market debt are reflected in total system debt', async () => {
+				await modifyMarginSubmitAndConfirmOrder({
+					market: futuresMarket,
+					account: trader,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					leverage: toUnit('10'),
+				});
+
+				await modifyMarginSubmitAndConfirmOrder({
+					market: futuresMarket,
+					account: trader2,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					leverage: toUnit('-5'),
+				});
+
+				// Price move of $5 upwards should produce long profit of $500,
+				// Short losses of -$250. The debt should increase overall by $250.
+				const debt = (await debtCache.currentDebt())[0];
+				await setPrice(baseAsset, toUnit('105'));
+				assert.bnClose((await debtCache.currentDebt())[0], debt.add(toUnit('250')), toUnit('0.01'));
+				// Negate the signs for a downwards price movement.
+				await setPrice(baseAsset, toUnit('95'));
+				assert.bnClose((await debtCache.currentDebt())[0], debt.sub(toUnit('250')), toUnit('0.01'));
+			});
 		});
 	});
 

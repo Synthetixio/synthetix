@@ -19,6 +19,7 @@ import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
@@ -45,6 +46,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
+    bytes32 private constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -52,7 +54,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](8);
+        bytes32[] memory newAddresses = new bytes32[](9);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -61,6 +63,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         newAddresses[5] = CONTRACT_ETHERCOLLATERAL_SUSD;
         newAddresses[6] = CONTRACT_COLLATERALMANAGER;
         newAddresses[7] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[8] = CONTRACT_FUTURESMARKETMANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -94,6 +97,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function etherWrapper() internal view returns (IEtherWrapper) {
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
+    }
+
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     function debtSnapshotStaleTime() external view returns (uint) {
@@ -151,6 +158,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         view
         returns (
             uint[] memory snxIssuedDebts,
+            uint _futuresDebt,
             uint _excludedDebt,
             bool anyRateIsInvalid
         )
@@ -158,7 +166,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
         (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt();
-        return (values, excludedDebt, isInvalid || isAnyNonSnxDebtRateInvalid);
+        (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
+        return (values, futuresDebt, excludedDebt, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentSynthDebts(bytes32[] calldata currencyKeys)
@@ -166,6 +175,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         view
         returns (
             uint[] memory debtValues,
+            uint futuresDebt,
             uint excludedDebt,
             bool anyRateIsInvalid
         )
@@ -205,8 +215,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         }
 
         // 2. MultiCollateral long debt + short debt.
-        (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
-        (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
+        ICollateralManager _collateralManager = collateralManager();
+        (uint longValue, bool anyTotalLongRateIsInvalid) = _collateralManager.totalLong();
+        (uint shortValue, bool anyTotalShortRateIsInvalid) = _collateralManager.totalShort();
+
         isInvalid = isInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
         excludedDebt = excludedDebt.add(longValue).add(shortValue);
 
@@ -223,16 +235,22 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
         // Sum all issued synth values based on their supply.
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
-        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt();
 
         uint numValues = values.length;
         uint total;
         for (uint i; i < numValues; i++) {
             total = total.add(values[i]);
         }
+
+        // Add in the debt accounted for by futures
+        (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
+        total = total.add(futuresDebt);
+
+        // Ensure that if the excluded non-SNX debt exceeds SNX-backed debt, no overflow occurs
+        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt();
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
-        return (total, isInvalid || isAnyNonSnxDebtRateInvalid);
+        return (total, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {
