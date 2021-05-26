@@ -1755,15 +1755,6 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 			});
 
-			it('exchangeWithTracking() cannot be invoked directly by any account via Exchanger', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: exchanger.exchangeWithTracking,
-					accounts,
-					args: [account1, sUSD, toUnit('100'), sAUD, account2, account3, trackingCode],
-					reason: 'Only synthetix or a synth contract can perform this action',
-				});
-			});
-
 			describe('various exchange scenarios', () => {
 				describe('when a user has 1000 sUSD', () => {
 					// already issued in the top-level beforeEach
@@ -2009,7 +2000,9 @@ contract('Exchanger (spec tests)', async accounts => {
 								await onlyGivenAddressCanInvoke({
 									fnc: synthetix.exchangeOnBehalf,
 									args: [authoriser, sUSD, amountIssued, sAUD],
-									accounts,
+									// We cannot test the revert condition with the authoriser as the recipient
+									// because this will lead to a regular exchange, not one on behalf
+									accounts: accounts.filter(a => a !== authoriser),
 									address: delegate,
 									reason: 'Not approved to act on behalf',
 								});
@@ -2136,7 +2129,9 @@ contract('Exchanger (spec tests)', async accounts => {
 								await onlyGivenAddressCanInvoke({
 									fnc: synthetix.exchangeOnBehalfWithTracking,
 									args: [authoriser, sUSD, amountIssued, sAUD, authoriser, trackingCode],
-									accounts,
+									// We cannot test the revert condition with the authoriser as the recipient
+									// because this will lead to a regular exchange, not one on behalf
+									accounts: accounts.filter(a => a !== authoriser),
 									address: delegate,
 									reason: 'Not approved to act on behalf',
 								});
