@@ -243,16 +243,27 @@
 			"major": 2,
 			"minor": 46
 		},
+		"ovm": true,
 		"sources": [
+			"Exchanger",
+			"Synthetix",
 			"FuturesMarketBTC",
 			"FuturesMarketETH",
 			"FuturesMarketLINK",
 			"ProxyFuturesMarketManager",
 			"FuturesMarketManager",
-			"FuturesMarketData",
-			"SynthsUSD",
-			"SystemSettings"
+			"FuturesMarketData"
 		],
-		"sips": [80]
+		"sips": [80, 138, 139, 140]
+	},
+	{
+		"name": "Alnitak (Optimism)",
+		"version": {
+			"major": 2,
+			"minor": 46
+		},
+		"ovm": true,
+		"sources": ["Exchanger", "MintableSynthetix"],
+		"sips": [138, 139, 140]
 	}
 ]

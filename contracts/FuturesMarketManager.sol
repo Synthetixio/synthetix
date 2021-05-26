@@ -14,6 +14,7 @@ import "./AddressSetLib.sol";
 import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/ISynth.sol";
 
+// TODO: Does this really need to be proxyable?
 contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarketManager {
     using SafeMath for uint;
     using AddressSetLib for AddressSetLib.AddressSet;
@@ -105,9 +106,10 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
         uint numOfMarkets = marketsToRemove.length;
         for (uint i; i < numOfMarkets; i++) {
             address market = marketsToRemove[i];
+            require(market != address(0), "Unknown market");
 
             bytes32 key = IFuturesMarket(market).baseAsset();
-            require(marketForAsset[key] != address(0), "No market exists for this asset");
+            require(marketForAsset[key] != address(0), "Unknown market");
             delete marketForAsset[key];
             _markets.remove(market);
             emitMarketRemoved(market, key);
@@ -134,7 +136,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     /* ========== MODIFIERS ========== */
 
     function _requireIsMarket() internal view {
-        require(_markets.contains(messageSender) || _markets.contains(msg.sender), "Sender is not a market");
+        require(_markets.contains(messageSender) || _markets.contains(msg.sender), "Permitted only for markets");
     }
 
     modifier onlyMarkets() {
@@ -144,10 +146,6 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
 
     /* ========== EVENTS ========== */
 
-    function addressToBytes32(address input) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(input)));
-    }
-
     event MarketAdded(address market, bytes32 indexed asset);
     bytes32 internal constant MARKETADDED_SIG = keccak256("MarketAdded(address,bytes32)");
 
@@ -156,9 +154,9 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     }
 
     event MarketRemoved(address market, bytes32 indexed asset);
-    bytes32 internal constant MARKETREMOVED_SIG = keccak256("MarketAdded(address,bytes32)");
+    bytes32 internal constant MARKETREMOVED_SIG = keccak256("MarketRemoved(address,bytes32)");
 
     function emitMarketRemoved(address market, bytes32 asset) internal {
-        proxy._emit(abi.encode(market), 2, MARKETADDED_SIG, asset, 0, 0);
+        proxy._emit(abi.encode(market), 2, MARKETREMOVED_SIG, asset, 0, 0);
     }
 }

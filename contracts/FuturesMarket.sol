@@ -75,7 +75,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     // TODO: Convert funding rate from daily to per-second
     struct Parameters {
-        uint exchangeFee;
+        uint takerFee;
+        uint makerFee;
         uint maxLeverage;
         uint maxMarketValue;
         uint minInitialMargin;
@@ -126,7 +127,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     /* ---------- Parameter Names ---------- */
 
-    bytes32 internal constant PARAMETER_EXCHANGEFEE = "exchangeFee";
+    bytes32 internal constant PARAMETER_TAKERFEE = "takerFee";
+    bytes32 internal constant PARAMETER_MAKERFEE = "makerFee";
     bytes32 internal constant PARAMETER_MAXLEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAXMARKETVALUE = "maxMarketValue";
     bytes32 internal constant PARAMETER_MININITIALMARGIN = "minInitialMargin";
@@ -141,7 +143,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         address _owner,
         address _resolver,
         bytes32 _baseAsset,
-        uint _exchangeFee,
+        uint _takerFee,
+        uint _makerFee,
         uint _maxLeverage,
         uint _maxMarketValue,
         uint _minInitialMargin,
@@ -149,7 +152,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     ) public Owned(_owner) Proxyable(_proxy) MixinSystemSettings(_resolver) {
         baseAsset = _baseAsset;
 
-        parameters.exchangeFee = _exchangeFee;
+        parameters.takerFee = _takerFee;
+        parameters.makerFee = _makerFee;
         parameters.maxLeverage = _maxLeverage;
         parameters.maxMarketValue = _maxMarketValue;
         parameters.minInitialMargin = _minInitialMargin;
@@ -204,7 +208,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function _assetPriceRequireNotInvalid(IExchangeRates exchangeRates) internal view returns (uint) {
         (uint price, bool invalid) = _assetPrice(exchangeRates);
-        require(!invalid, "Price is invalid");
+        require(!invalid, "Invalid price");
         return price;
     }
 
@@ -470,14 +474,15 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     function _canLiquidate(
         Position storage position,
         uint liquidationFee,
-        uint fundingIndex
+        uint fundingIndex,
+        uint price,
+        bool invalid
     ) internal view returns (bool) {
         // No liquidating empty positions.
         if (position.size == 0) {
             return false;
         }
 
-        (uint price, bool invalid) = _assetPrice(_exchangeRates());
         // No liquidating when the current price is invalid.
         if (invalid) {
             return false;
@@ -487,7 +492,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function canLiquidate(address account) external view returns (bool) {
-        return _canLiquidate(positions[account], _liquidationFee(), fundingSequence.length);
+        (uint price, bool invalid) = _assetPrice(_exchangeRates());
+        return _canLiquidate(positions[account], _liquidationFee(), fundingSequence.length, price, invalid);
     }
 
     function _currentLeverage(
@@ -521,39 +527,44 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             return 0;
         }
 
-        int existingValue = existingSize.multiplyDecimalRound(int(price));
-        int chargeableValue = int(margin).multiplyDecimalRound(leverage);
-        int skew = marketSkew;
-
-        // If the order is submitted on the same side as the skew, a fee is charged on any increase
-        // in their position.
-        // Otherwise if the order is opposite to the skew,
-        // the fee is only charged on any new skew they induce on the order's side of the market.
-        if (_sameSide(skew, chargeableValue)) {
-            // If an existing position is open the same side as the order, deduct its value,
-            // ignore it as this position will be closed.
-            if (_sameSide(existingValue, chargeableValue)) {
-                // If decreasing their position, no fee is charged, even if it would increase the skew.
-                if (_abs(chargeableValue) <= _abs(existingValue)) {
-                    return 0;
-                }
-
-                // Now we know that |existing| < |chargeable|
-                chargeableValue = chargeableValue.sub(existingValue);
-            }
-        } else {
-            // Remove their existing contribution to the skew
-            int notionalSkew = skew.multiplyDecimalRound(int(price));
-            chargeableValue = notionalSkew.sub(existingValue).add(chargeableValue);
-
-            // If the order was insufficient to flip the skew, no fee is charged.
-            // Otherwise, there is a fee on the entire new skew induced on the side of their order.
-            if (_sameSide(notionalSkew, chargeableValue)) {
+        int existingNotional = existingSize.multiplyDecimalRound(int(price));
+        int newNotional = int(margin).multiplyDecimalRound(leverage);
+        int notionalDiff = newNotional;
+        if (_sameSide(newNotional, existingNotional)) {
+            // If decreasing a position, charge nothing.
+            if (_abs(newNotional) <= _abs(existingNotional)) {
                 return 0;
             }
+            // We now know |existingNotional| < |newNotional|, provided the new order is on the same side as an existing position,
+            // The existing position's notional may be larger if it is on the other side, but we neglect this,
+            // and take the delta in the notional to be the entire new notional size, as the existing position is closing.
+            notionalDiff = notionalDiff.sub(existingNotional);
         }
 
-        return _abs(chargeableValue.multiplyDecimalRound(int(parameters.exchangeFee)));
+        int skew = marketSkew;
+        if (_sameSide(newNotional, skew)) {
+            // If the order is submitted on the same side as the skew, increasing it.
+            // The taker fee is charged on the increase.
+            return _abs(notionalDiff.multiplyDecimalRound(int(parameters.takerFee)));
+        }
+
+        // Otherwise if the order is opposite to the skew,
+        // the maker fee is charged on new notional value up to the size of the existing skew,
+        // and the taker fee is charged on any new skew they induce on the order's side of the market.
+
+        int makerFee = int(parameters.makerFee);
+        int fee = notionalDiff.multiplyDecimalRound(makerFee);
+
+        // The notional value of the skew after the order is filled
+        int postSkewNotional = skew.multiplyDecimalRound(int(price)).sub(existingNotional).add(newNotional);
+
+        // The order is sufficient to flip the skew, charge/rebate the difference in fees
+        // between maker and taker on the new skew value.
+        if (_sameSide(newNotional, postSkewNotional)) {
+            fee = fee.add(postSkewNotional.multiplyDecimalRound(int(parameters.takerFee).sub(makerFee)));
+        }
+
+        return _abs(fee);
     }
 
     // TODO: Do we need this margin field?
@@ -571,10 +582,12 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         IExchangeRates exRates = _exchangeRates();
         (uint price, bool invalid) = _assetPrice(exRates);
         Order storage order = orders[account];
-        if (invalid || price == 0 || !_orderPending(order) || _currentRoundId(exRates) <= order.roundId) {
-            return false;
-        }
-        return true;
+        return
+            !invalid &&
+            price != 0 &&
+            _orderPending(order) &&
+            order.roundId < _currentRoundId(exRates) &&
+            !_canLiquidate(positions[account], _liquidationFee(), fundingSequence.length, price, invalid);
     }
 
     /* ---------- Utilities ---------- */
@@ -605,9 +618,14 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     /* ---------- Setters ---------- */
 
-    function setExchangeFee(uint exchangeFee) external optionalProxy_onlyOwner {
-        parameters.exchangeFee = exchangeFee;
-        emitParameterUpdated(PARAMETER_EXCHANGEFEE, exchangeFee);
+    function setTakerFee(uint takerFee) external optionalProxy_onlyOwner {
+        parameters.takerFee = takerFee;
+        emitParameterUpdated(PARAMETER_TAKERFEE, takerFee);
+    }
+
+    function setMakerFee(uint makerFee) external optionalProxy_onlyOwner {
+        parameters.makerFee = makerFee;
+        emitParameterUpdated(PARAMETER_MAKERFEE, makerFee);
     }
 
     function setMaxLeverage(uint maxLeverage) external optionalProxy_onlyOwner {
@@ -652,20 +670,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         fundingLastRecomputed = block.timestamp;
 
         return sequenceLength;
-    }
-
-    function _liquidateIfNeeded(
-        address account,
-        uint price,
-        uint fundingIndex
-    ) internal returns (bool liquidated) {
-        uint liquidationFee = _liquidationFee();
-        if (_canLiquidate(positions[account], liquidationFee, fundingIndex)) {
-            _liquidatePosition(account, account, fundingIndex, price, liquidationFee);
-            return true;
-        }
-
-        return false;
     }
 
     function _positionDebtCorrection(Position memory position) internal view returns (int) {
@@ -777,29 +781,20 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function cancelOrder() external optionalProxy {
-        address sender = messageSender;
-        // TODO: Canceling an order probably doesn't need to recompute funding and liquidat the order. Sanity check this.
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
-        uint fundingIndex = _recomputeFunding(price);
-        bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
-
-        // Liquidations cancel pending orders.
-        if (!liquidated) {
-            _cancelOrder(sender);
-        }
+        _cancelOrder(messageSender);
     }
 
     function _checkMargin(
         Position storage position,
         uint price,
         uint margin,
-        int leverage,
+        int desiredLeverage,
         bool sameSide
     ) internal view {
         int currentLeverage_ = _currentLeverage(position, price, margin);
 
         // We don't check the margin requirement if leverage is decreasing
-        if (sameSide && _abs(currentLeverage_) <= _abs(leverage)) {
+        if (sameSide && _abs(currentLeverage_) <= _abs(desiredLeverage)) {
             require(parameters.minInitialMargin <= margin, "Insufficient margin");
         }
     }
@@ -842,54 +837,54 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         address sender
     ) internal {
         require(_abs(leverage) <= parameters.maxLeverage, "Max leverage exceeded");
-        // TODO: If you're about to be liquidated, just block instead of actually liquidating.
-        bool liquidated = _liquidateIfNeeded(sender, price, fundingIndex);
+        Position storage position = positions[sender];
 
         // The order is not submitted if the user's existing position needed to be liquidated.
-        if (!liquidated) {
-            Position storage position = positions[sender];
-            uint margin = _remainingMargin(position, fundingIndex, price);
-            int size = position.size;
-            bool sameSide = _sameSide(leverage, size);
+        // We know that the price is not invalid now that we're in this function
+        require(!_canLiquidate(position, _liquidationFee(), fundingIndex, price, false), "Position can be liquidated");
 
-            // Check that the user has sufficient margin
-            _checkMargin(position, price, margin, leverage, sameSide);
+        uint margin = _remainingMargin(position, fundingIndex, price);
+        int size = position.size;
+        bool sameSide = _sameSide(leverage, size);
 
-            // Check that the order isn't too large for the market
-            // Note that this in principle allows several orders to be placed at once
-            // that collectively violate the maximum, but this is checked again when
-            // the orders are confirmed.
-            _checkOrderSize(
-                size,
-                int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price)),
-                sameSide,
-                100 * uint(_UNIT) // a bit of extra value in case of rounding errors
-            );
+        // Check that the user has sufficient margin
+        _checkMargin(position, price, margin, leverage, sameSide);
 
-            // Cancel any open order
-            Order storage order = orders[sender];
-            if (_orderPending(order)) {
-                _cancelOrder(sender);
-            }
+        // Check that the order isn't too large for the market
+        // Note that this in principle allows several orders to be placed at once
+        // that collectively violate the maximum, but this is checked again when
+        // the orders are confirmed.
+        _checkOrderSize(
+            size,
+            int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price)),
+            sameSide,
+            100 * uint(_UNIT) // a bit of extra value in case of rounding errors
+        );
 
-            // Compute the fee owed and check their sUSD balance is sufficient to cover it.
-            uint fee = _orderFee(margin, leverage, size, price);
-            if (0 < fee) {
-                require(fee <= _sUSD().balanceOf(sender), "Insufficient balance");
-                _manager().burnSUSD(sender, fee);
-            }
-
-            // Lodge the order, which can be confirmed at the next price update
-            uint roundId = _currentRoundId(_exchangeRates());
-            uint id = _nextOrderId;
-            _nextOrderId += 1;
-
-            order.id = id;
-            order.leverage = leverage;
-            order.fee = fee;
-            order.roundId = roundId;
-            emitOrderSubmitted(id, sender, leverage, fee, roundId);
+        // Cancel any open order
+        Order storage order = orders[sender];
+        if (_orderPending(order)) {
+            _cancelOrder(sender);
         }
+
+        // TODO: Charge this out of margin (also update _cancelOrder, and compute this before _checkMargin)
+        // Compute the fee owed and check their sUSD balance is sufficient to cover it.
+        uint fee = _orderFee(margin, leverage, size, price);
+        if (0 < fee) {
+            require(fee <= _sUSD().balanceOf(sender), "Insufficient balance");
+            _manager().burnSUSD(sender, fee);
+        }
+
+        // Lodge the order, which can be confirmed at the next price update
+        uint roundId = _currentRoundId(_exchangeRates());
+        uint id = _nextOrderId;
+        _nextOrderId += 1;
+
+        order.id = id;
+        order.leverage = leverage;
+        order.fee = fee;
+        order.roundId = roundId;
+        emitOrderSubmitted(id, sender, leverage, fee, roundId);
     }
 
     function submitOrder(int leverage) external optionalProxy {
@@ -916,17 +911,10 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     // TODO: Ensure that this is fine if the position is swapping sides
     // TODO: Check that everything is fine if a position already exists.
     function confirmOrder(address account) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
-        require(price != 0, "Zero entry price. Cancel order and try again.");
+        (uint price, bool invalid) = _assetPrice(_exchangeRates());
+        require(!(invalid || price == 0), "Invalid price");
 
         uint fundingIndex = _recomputeFunding(price);
-        // TODO: Just block here if an existing position can be liquidated -- confirmation keepers should not receive liquidation fees.
-        bool liquidated = _liquidateIfNeeded(account, price, fundingIndex);
-
-        // If the account needed to be liquidated, then the order was cancelled and it doesn't need to be confirmed.
-        if (liquidated) {
-            return;
-        }
 
         require(_orderPending(orders[account]), "No pending order");
         Order memory order = orders[account];
@@ -935,6 +923,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         require(order.roundId < _currentRoundId(_exchangeRates()), "Awaiting next price");
 
         Position storage position = positions[account];
+
+        // You can't outrun an impending liquidation by closing your position quickly, for example.
+        require(!_canLiquidate(position, _liquidationFee(), fundingIndex, price, invalid), "Position can be liquidated");
 
         // We weren't liquidated, so we realise the margin to compute the new position size.
         uint margin = _realiseMargin(position, fundingIndex, price, 0);
@@ -1021,11 +1012,14 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function liquidatePosition(address account) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        (uint price, bool invalid) = _assetPrice(_exchangeRates());
         uint fundingIndex = _recomputeFunding(price);
 
         uint liquidationFee = _liquidationFee();
-        require(_canLiquidate(positions[account], liquidationFee, fundingIndex), "Position cannot be liquidated");
+        require(
+            _canLiquidate(positions[account], liquidationFee, fundingIndex, price, invalid),
+            "Position cannot be liquidated"
+        );
 
         // If there are any pending orders, the liquidation will cancel them.
         if (_orderPending(orders[account])) {
