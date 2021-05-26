@@ -60,6 +60,7 @@ function itCanPerformExchanges({ ctx }) {
 		describe('when the owner exchanges sETH to sUSD', () => {
 			before('record balances', async () => {
 				balancesUSD = await SynthsUSD.balanceOf(owner.address);
+				balancesETH = await SynthsETH.balanceOf(owner.address);
 			});
 
 			before('perform the exchange', async () => {
