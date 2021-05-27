@@ -1,28 +1,40 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
-const { ensureBalance } = require('../utils/balances');
 
-function itCanPerformERC20Transfers({ ctx }) {
-	const SNXAmount = ethers.utils.parseEther('10000');
+function itBehavesLikeAnERC20({ ctx }) {
+	describe('erc20 functionality', () => {
+		let user;
+		let Synthetix;
 
-	let user;
-	let Synthetix;
+		let userBalance;
 
-	before('target contracts and users', () => {
-		({ Synthetix } = ctx.contracts);
+		before('target contracts and users', () => {
+			({ Synthetix } = ctx.contracts);
 
-		user = ctx.user;
-	});
+			user = ctx.user;
+		});
 
-	before('ensure the user has SNX', async () => {
-		await ensureBalance({ ctx, symbol: 'SNX', user, balance: SNXAmount });
-	});
+		before('record user balance', async () => {
+			userBalance = await Synthetix.balanceOf(user.address);
+		});
 
-	it('receives the expected amount of SNX', async () => {
-		assert.bnEqual(await Synthetix.balanceOf(user.address), SNXAmount);
+		describe('when the owner transfers SNX to the user', () => {
+			const amountToTransfer = ethers.utils.parseEther('1');
+
+			before('transfer', async () => {
+				Synthetix = Synthetix.connect(ctx.owner);
+
+				const tx = await Synthetix.transfer(user.address, amountToTransfer);
+				await tx.wait();
+			});
+
+			it('increases the users balance', async () => {
+				assert.bnEqual(await Synthetix.balanceOf(user.address), userBalance.add(amountToTransfer));
+			});
+		});
 	});
 }
 
 module.exports = {
-	itCanPerformERC20Transfers,
+	itBehavesLikeAnERC20,
 };
