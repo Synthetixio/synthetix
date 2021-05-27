@@ -60,6 +60,7 @@ const deploy = async ({
 	yes,
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
+	generateSolidity = false,
 	useFork,
 	providerUrl,
 	useOvm,
@@ -2673,6 +2674,7 @@ module.exports = {
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'
 			)
+			.option('-s, --generate-solidity', 'If enabled, will output all run steps as solidity code.')
 			.option(
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
