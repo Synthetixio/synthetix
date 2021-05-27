@@ -124,6 +124,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
+    bytes32 internal constant CONTRACT_KEEPER_REGISTRY = "KeeperRegistry";
+    bytes32 internal constant CONTRACT_FUTURES_CONFIRMATION_KEEPER = "FuturesConfirmationKeeper";
 
     /* ---------- Parameter Names ---------- */
 
@@ -171,12 +173,14 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYNTHSUSD;
         newAddresses[3] = CONTRACT_FEEPOOL;
         newAddresses[4] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[5] = CONTRACT_KEEPER_REGISTRY;
+        newAddresses[6] = CONTRACT_FUTURES_CONFIRMATION_KEEPER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -885,6 +889,14 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         order.fee = fee;
         order.roundId = roundId;
         emitOrderSubmitted(id, sender, leverage, fee, roundId);
+
+        // Now trigger the keeper.
+        keeperRegistry().registerUpkeep(
+            address(futuresConfirmationKeeper()),
+            9e6,
+            address(this), // admin
+            abi.encodePacked(address(this), account)
+        );
     }
 
     function submitOrder(int leverage) external optionalProxy {
@@ -972,6 +984,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         }
         delete orders[account];
         emitOrderConfirmed(order.id, account, margin, newSize, price, fundingIndex);
+
+        // delete the keeper
     }
 
     function _liquidatePosition(
