@@ -1480,6 +1480,39 @@ contract('FuturesMarket', accounts => {
 				);
 			});
 
+			it('current leverage can be less than 1', async () => {
+				await modifyMarginSubmitAndConfirmOrder({
+					market: futuresMarket,
+					account: trader,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					leverage: toUnit('0.5'),
+				});
+
+				assert.bnEqual((await futuresMarket.positions(trader)).size, toUnit('5'));
+				assert.bnClose(
+					(await futuresMarket.currentLeverage(trader))[0],
+					toUnit(0.5),
+					toUnit(0.001)
+				);
+
+				// The response of leverage to price with leverage < 1 is opposite to leverage > 1
+				// When leverage is fractional, increasing the price increases leverage
+				await setPrice(baseAsset, toUnit('300'));
+				assert.bnClose(
+					(await futuresMarket.currentLeverage(trader))[0],
+					toUnit(0.75),
+					toUnit(0.001)
+				);
+				// ...while decreasing the price deleverages the position.
+				await setPrice(baseAsset, toUnit('100').div(toBN(3)));
+				assert.bnClose(
+					(await futuresMarket.currentLeverage(trader))[0],
+					toUnit(0.25),
+					toUnit(0.001)
+				);
+			});
+
 			it('current leverage: no position', async () => {
 				const currentLeverage = await futuresMarket.currentLeverage(trader);
 				assert.bnEqual(currentLeverage[0], toBN('0'));
