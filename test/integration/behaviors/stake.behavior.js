@@ -5,7 +5,7 @@ const { ignoreMinimumStakeTime } = require('../utils/stakeTime');
 
 function itCanMintAndBurn({ ctx }) {
 	describe('staking', () => {
-		const SNXAmount = ethers.utils.parseEther('1');
+		const SNXAmount = ethers.utils.parseEther('10');
 		const sUSDamount = ethers.utils.parseEther('1');
 
 		let user;
@@ -18,7 +18,7 @@ function itCanMintAndBurn({ ctx }) {
 			user = ctx.user;
 		});
 
-		before('ensure the user has SNX', async () => {
+		before('ensure the user has enough SNX', async () => {
 			await ensureBalance({ ctx, symbol: 'SNX', user, balance: SNXAmount });
 		});
 

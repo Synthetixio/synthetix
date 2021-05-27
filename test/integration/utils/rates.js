@@ -15,6 +15,13 @@ async function simulateExchangeRates({ ctx }) {
 	await tx.wait();
 }
 
+async function getExchangeRate({ ctx, symbol }) {
+	const { ExchangeRates } = ctx.contracts.ExchangeRates;
+
+	return ExchangeRates.rateForCurrency(toBytes32(symbol));
+}
+
 module.exports = {
 	simulateExchangeRates,
+	getExchangeRate,
 };
