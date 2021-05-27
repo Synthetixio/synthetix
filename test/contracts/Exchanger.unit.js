@@ -23,27 +23,10 @@ contract('Exchanger (unit tests)', async accounts => {
 	// ensure all of the behaviors are bound to "this" for sharing test state
 	const behaviors = require('./Exchanger.behaviors').call(this, { accounts });
 
+	const callAsSynthetix = args => [...args, { from: this.mocks.Synthetix.address }];
+
 	describe('when a contract is instantiated', () => {
 		behaviors.whenInstantiated({ owner }, () => {
-			let defaultExchangeArgs;
-			const callAsSynthetix = args => [...args, { from: this.mocks.Synthetix.address }];
-
-			beforeEach('setup default exchange args', () => {
-				defaultExchangeArgs = callAsSynthetix([owner, sUSD, amountIn, sETH, owner, toBytes32()]);
-			});
-
-			behaviors.whenMockedToAllowExchangeInvocationChecks(() => {
-				it('it reverts when called by regular accounts', async () => {
-					await onlyGivenAddressCanInvoke({
-						fnc: this.instance.exchangeAtomically,
-						args: defaultExchangeArgs.slice(0, -1), // remove tx options
-						accounts: accounts.filter(a => a !== this.mocks.Synthetix.address),
-						reason: 'Exchanger: Only synthetix or a synth contract can perform this action',
-						// address: this.mocks.Synthetix.address (doesnt work as this reverts due to lack of mocking setup)
-					});
-				});
-			});
-
 			describe('atomicMaxVolumePerBlock()', () => {
 				// Mimic setting not being configured
 				behaviors.whenMockedWithUintSystemSetting(
@@ -77,7 +60,20 @@ contract('Exchanger (unit tests)', async accounts => {
 					}
 				);
 
-				// With configured values
+				// With configured override value
+				behaviors.whenMockedWithSynthUintSystemSetting(
+					{ setting: 'atomicExchangeFeeRate', synth: sETH, value: overrideFeeRate },
+					() => {
+						it('is set to the configured atomic override value', async () => {
+							assert.bnEqual(
+								await this.instance.feeRateForAtomicExchange(sUSD, sETH),
+								overrideFeeRate
+							);
+						});
+					}
+				);
+
+				// With configured base and override values
 				behaviors.whenMockedWithSynthUintSystemSetting(
 					{ setting: 'exchangeFeeRate', synth: sETH, value: baseFeeRate },
 					() => {
@@ -96,18 +92,6 @@ contract('Exchanger (unit tests)', async accounts => {
 								});
 							}
 						);
-					}
-				);
-
-				behaviors.whenMockedWithSynthUintSystemSetting(
-					{ setting: 'atomicExchangeFeeRate', synth: sETH, value: overrideFeeRate },
-					() => {
-						it('is set to the configured atomic override value', async () => {
-							assert.bnEqual(
-								await this.instance.feeRateForAtomicExchange(sUSD, sETH),
-								overrideFeeRate
-							);
-						});
 					}
 				);
 			});
@@ -193,6 +177,26 @@ contract('Exchanger (unit tests)', async accounts => {
 			});
 
 			describe('exchangeAtomically()', () => {
+				let defaultExchangeArgs;
+
+				beforeEach('setup default exchange args', () => {
+					defaultExchangeArgs = callAsSynthetix([owner, sUSD, amountIn, sETH, owner, toBytes32()]);
+				});
+
+				describe('when called by unauthorized', async () => {
+					behaviors.whenMockedToAllowExchangeInvocationChecks(() => {
+						it('it reverts when called by regular accounts', async () => {
+							await onlyGivenAddressCanInvoke({
+								fnc: this.instance.exchangeAtomically,
+								args: defaultExchangeArgs.slice(0, -1), // remove tx options
+								accounts: accounts.filter(a => a !== this.mocks.Synthetix.address),
+								reason: 'Exchanger: Only synthetix or a synth contract can perform this action',
+								// address: this.mocks.Synthetix.address (doesnt work as this reverts due to lack of mocking setup)
+							});
+						});
+					});
+				});
+
 				describe('when not exchangeable', () => {
 					it('reverts when src and dest are the same', async () => {
 						const args = callAsSynthetix([owner, sUSD, amountIn, sUSD, owner, toBytes32()]);

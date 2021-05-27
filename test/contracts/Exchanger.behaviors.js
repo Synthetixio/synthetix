@@ -164,6 +164,7 @@ module.exports = function({ accounts }) {
 						});
 					}
 				});
+
 				cb();
 			});
 		},
@@ -191,6 +192,7 @@ module.exports = function({ accounts }) {
 						return ZERO_ADDRESS;
 					});
 				});
+
 				cb();
 			});
 		},

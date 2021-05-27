@@ -2961,8 +2961,8 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 
 						it('used correct fee rate', async () => {
-							const expectedFees = await exchanger.feeRateForAtomicExchange(sUSD, sETH);
-							assert.bnEqual(exchangeFeeRate, expectedFees);
+							const expectedFeeRate = await exchanger.feeRateForAtomicExchange(sUSD, sETH);
+							assert.bnEqual(exchangeFeeRate, expectedFeeRate);
 							assert.bnEqual(
 								multiplyDecimal(amountReceived.add(amountFee), exchangeFeeRate),
 								amountFee
@@ -3007,14 +3007,14 @@ contract('Exchanger (spec tests)', async accounts => {
 
 					describe('when a fee override has been set for atomic exchanges', () => {
 						const amountIn = toUnit('100');
-						const feeOverride = toUnit('0.01');
+						const feeRateOverride = toUnit('0.01');
 
 						let amountReceived;
 						let amountFee;
 						let exchangeFeeRate;
 
 						beforeEach(async () => {
-							await systemSettings.setAtomicExchangeFeeRate(sETH, feeOverride, {
+							await systemSettings.setAtomicExchangeFeeRate(sETH, feeRateOverride, {
 								from: owner,
 							});
 						});
@@ -3032,7 +3032,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 
 						it('used correct fee rate', async () => {
-							assert.bnEqual(exchangeFeeRate, feeOverride);
+							assert.bnEqual(exchangeFeeRate, feeRateOverride);
 							assert.bnEqual(
 								multiplyDecimal(amountReceived.add(amountFee), exchangeFeeRate),
 								amountFee

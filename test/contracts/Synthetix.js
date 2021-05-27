@@ -124,7 +124,7 @@ contract('Synthetix', async accounts => {
 		const trackingCode = toBytes32('1inch');
 		const msgSender = owner;
 
-		it('exchangeWithVirtual is called with the right arguments ', async () => {
+		it('exchangeWithVirtual is called with the right arguments', async () => {
 			await synthetix.exchangeWithVirtual(currencyKey1, amount1, currencyKey2, trackingCode, {
 				from: msgSender,
 			});
