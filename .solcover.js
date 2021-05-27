@@ -6,6 +6,7 @@ module.exports = {
 	port: 8545,
 	skipFiles: [
 		'test-helpers',
+		'migrations',
 		'EscrowChecker.sol',
 		'ExchangeRatesWithoutInvPricing.sol',
 		'IssuerWithoutLiquidations.sol',

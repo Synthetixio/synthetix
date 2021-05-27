@@ -22,6 +22,7 @@ const nominate = async ({
 	network,
 	newOwner,
 	contracts,
+	useFork = false,
 	deploymentPath,
 	gasPrice,
 	gasLimit,
@@ -59,7 +60,11 @@ const nominate = async ({
 		contracts = Object.keys(config).filter(contract => contract !== 'DappMaintenance');
 	}
 
-	const { providerUrl: envProviderUrl, privateKey } = loadConnections({ network });
+	const { providerUrl: envProviderUrl, privateKey } = loadConnections({
+		network,
+		useFork,
+	});
+
 	if (!providerUrl) {
 		if (!envProviderUrl) {
 			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
@@ -132,6 +137,11 @@ module.exports = {
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
