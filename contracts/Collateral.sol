@@ -404,7 +404,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         // require(IERC20(address(_synth(synthsByKey[loan.currency]))).balanceOf(msg.sender) >= payment);
 
         // 6. Check they are eligible for liquidation.
-        // Note: this will revert if collateral is 0, however that should not be possible.
+        // Note: this will revert if collateral is 0, however that should only be possible if the loan amount is 0.
         require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio);
 
         // 7. Determine how much needs to be liquidated to fix their c ratio.
