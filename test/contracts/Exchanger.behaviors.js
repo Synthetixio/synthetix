@@ -15,6 +15,8 @@ const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 let Exchanger;
 
 module.exports = function({ accounts }) {
+	let flexibleStorage;
+
 	before(async () => {
 		Exchanger = artifacts.require('Exchanger');
 	});
@@ -39,14 +41,34 @@ module.exports = function({ accounts }) {
 			],
 			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
+
+		// Allow mocked flexible storage to be persisted through a run,
+		// to build up configuration values over multiple contexts
+		flexibleStorage = {};
 	});
 
+	const mockBoolSystemSetting = ({ setting, value }) => {
+		const bytes32Setting = setting.startsWith('0x') ? setting : toBytes32(setting);
+		// Compound additional system settings mocks rather than replacing
+		flexibleStorage.bool = flexibleStorage.bool || {};
+		flexibleStorage.bool[bytes32Setting] = value;
+
+		this.mocks.FlexibleStorage.smocked.getBoolValue.will.return.with((contract, record) => {
+			const recordValue = flexibleStorage.bool[record];
+			return contract === toBytes32('SystemSettings') ? recordValue : false;
+		});
+	};
+
 	const mockUintSystemSetting = ({ setting, value }) => {
-		this.mocks.FlexibleStorage.smocked.getUIntValue.will.return.with((contract, record) =>
-			contract === toBytes32('SystemSettings') && record === toBytes32(setting)
-				? value.toString()
-				: '0'
-		);
+		const bytes32Setting = setting.startsWith('0x') ? setting : toBytes32(setting);
+		// Compound additional system settings mocks rather than replacing
+		flexibleStorage.uint = flexibleStorage.uint || {};
+		flexibleStorage.uint[bytes32Setting] = value.toString();
+
+		this.mocks.FlexibleStorage.smocked.getUIntValue.will.return.with((contract, record) => {
+			const recordValue = flexibleStorage.uint[record];
+			return (contract === toBytes32('SystemSettings') && recordValue) || '0';
+		});
 	};
 
 	const mockEffectiveAtomicRate = ({ atomicRate, systemSourceRate, systemDestinationRate }) => {
@@ -98,6 +120,14 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
+		whenMockedWithBoolSystemSetting: ({ setting, value }, cb) => {
+			describe(`when SystemSetting.${setting} is mocked to ${value}`, () => {
+				beforeEach(async () => {
+					mockBoolSystemSetting({ setting, value });
+				});
+				cb();
+			});
+		},
 		whenMockedWithUintSystemSetting: ({ setting, value }, cb) => {
 			describe(`when SystemSetting.${setting} is mocked to ${value}`, () => {
 				beforeEach(async () => {
@@ -107,18 +137,14 @@ module.exports = function({ accounts }) {
 			});
 		},
 		whenMockedWithSynthUintSystemSetting: ({ setting, synth, value }, cb) => {
+			const settingForSynth = web3.utils.soliditySha3(
+				{ type: 'bytes32', value: toBytes32(setting) },
+				{ type: 'bytes32', value: synth }
+			);
 			const synthName = fromBytes32(synth);
 			describe(`when SystemSetting.${setting} for ${synthName} is mocked to ${value}`, () => {
 				beforeEach(async () => {
-					this.mocks.FlexibleStorage.smocked.getUIntValue.will.return.with((contract, record) => {
-						const settingForSynth = web3.utils.soliditySha3(
-							{ type: 'bytes32', value: toBytes32(setting) },
-							{ type: 'bytes32', value: synth }
-						);
-						return contract === toBytes32('SystemSettings') && record === settingForSynth
-							? value.toString()
-							: '0';
-					});
+					mockUintSystemSetting({ setting: settingForSynth, value });
 				});
 				cb();
 			});
@@ -158,6 +184,16 @@ module.exports = function({ accounts }) {
 						systemDestinationRate,
 					});
 
+					this.mocks.ExchangeRates.smocked.effectiveValue.will.return.with(
+						(srcKey, sourceAmount, destKey) => {
+							sourceAmount = sourceAmount.toString(); // seems to be passed to smock as a number
+							return multiplyDecimal(
+								sourceAmount,
+								srcKey === sUSD ? systemDestinationRate : systemSourceRate
+							).toString();
+						}
+					);
+
 					for (const [asset, lastRate] of lastExchangeRates) {
 						await this.instance.setLastExchangeRateForSynth(asset, lastRate, {
 							from: this.mocks.ExchangeRates.address,
@@ -193,6 +229,23 @@ module.exports = function({ accounts }) {
 					});
 				});
 
+				cb();
+			});
+		},
+		whenMockedFeePool: cb => {
+			describe('when mocked fee pool', () => {
+				beforeEach(async () => {
+					this.mocks.FeePool.smocked.FEE_ADDRESS.will.return.with(
+						'0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF'
+					);
+					// TODO
+					this.mocks.FlexibleStorage.smocked.getBoolValue.will.return.with((contract, record) => {
+						return !!(
+							contract === toBytes32('SystemSettings') &&
+							record === toBytes32('tradingRewardsEnabled')
+						);
+					});
+				});
 				cb();
 			});
 		},

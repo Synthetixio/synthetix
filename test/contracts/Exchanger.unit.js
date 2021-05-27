@@ -251,15 +251,12 @@ contract('Exchanger (unit tests)', async accounts => {
 										});
 									});
 
-									describe('when max volume limit is surpassed', () => {
-										const volumeLimit = toUnit('1000');
-										const aboveVolumeLimit = volumeLimit.add(toBN('1'));
-
+									describe('when max volume limit (0) is surpassed', () => {
 										it('reverts due to surpassed volume limit', async () => {
 											const args = callAsSynthetix([
 												owner,
 												sUSD,
-												aboveVolumeLimit,
+												toUnit('1'),
 												sETH,
 												owner,
 												toBytes32(),
@@ -270,6 +267,29 @@ contract('Exchanger (unit tests)', async accounts => {
 											);
 										});
 									});
+
+									behaviors.whenMockedWithUintSystemSetting(
+										{ setting: 'atomicMaxVolumePerBlock', value: maxVolumePerBlock },
+										() => {
+											describe(`when max volume limit (>0) is surpassed`, () => {
+												const aboveVolumeLimit = maxVolumePerBlock.add(toBN('1'));
+												it('reverts due to surpassed volume limit', async () => {
+													const args = callAsSynthetix([
+														owner,
+														sUSD,
+														aboveVolumeLimit,
+														sETH,
+														owner,
+														toBytes32(),
+													]);
+													await assert.revert(
+														this.instance.exchangeAtomically(...args),
+														'Surpassed volume limit'
+													);
+												});
+											});
+										}
+									);
 								}
 							);
 						});
@@ -391,46 +411,66 @@ contract('Exchanger (unit tests)', async accounts => {
 										],
 									},
 									() => {
-										const itExchangesCorrectly = ({ exchangeFeeRate, setAsOverrideRate }) => {
-											behaviors.whenMockedWithSynthUintSystemSetting(
-												{
-													setting: setAsOverrideRate ? 'atomicExchangeFeeRate' : 'exchangeFeeRate',
-													synth: sETH,
-													value: exchangeFeeRate,
-												},
-												() => {
-													beforeEach('attempt exchange', async () => {
-														await this.instance.exchangeAtomically(...defaultExchangeArgs);
+										behaviors.whenMockedWithUintSystemSetting(
+											{ setting: 'atomicMaxVolumePerBlock', value: maxVolumePerBlock },
+											() => {
+												const itExchangesCorrectly = ({ exchangeFeeRate, setAsOverrideRate }) => {
+													behaviors.whenMockedWithSynthUintSystemSetting(
+														{
+															setting: setAsOverrideRate
+																? 'atomicExchangeFeeRate'
+																: 'exchangeFeeRate',
+															synth: sETH,
+															value: exchangeFeeRate,
+														},
+														() => {
+															beforeEach('attempt exchange', async () => {
+																await this.instance.exchangeAtomically(...defaultExchangeArgs);
+															});
+															it('burned correct amount of sUSD', async () => {});
+															it('issued correct amount of sETH', async () => {});
+															it('reported correct fee to fee pool', async () => {});
+															it('updated debt cache', async () => {});
+															it('told Synthetix to emit an exchange event', async () => {});
+															it('does not add any fee reclamation entries to exchange state', async () => {});
+														}
+													);
+												};
+
+												describe('when no exchange fees are configured', () => {
+													itExchangesCorrectly({
+														exchangeFeeRate: toUnit('0'),
 													});
-													// TODO: smock doesn't seem to be reporting that the mocked methods are called
-													it('burned correct amount of sUSD', async () => {});
-													it('issued correct amount of sETH', async () => {});
-													it('reported correct fee to fee pool', async () => {});
-													it('updated debt cache', async () => {});
-													it('told Synthetix to emit an exchange event', async () => {});
-													it('does not add any fee reclamation entries to exchange state', async () => {});
-												}
-											);
-										};
+												});
 
-										describe('when no exchange fees are configured', () => {
-											itExchangesCorrectly({
-												exchangeFeeRate: toUnit('0'),
-											});
-										});
-
-										describe('when an exchange fee is configured', () => {
-											itExchangesCorrectly({
-												exchangeFeeRate: baseFeeRate,
-											});
-										});
-
-										describe('when an exchange fee override for atomic exchanges is configured', () => {
-											itExchangesCorrectly({
-												exchangeFeeRate: overrideFeeRate,
-												setAsOverrideRate: true,
-											});
-										});
+												behaviors.whenMockedFeePool(() => {
+													behaviors.whenMockedWithBoolSystemSetting(
+														{ setting: 'tradingRewardsEnabled', value: true },
+														() => {
+															describe('when an exchange fee is configured', () => {
+																itExchangesCorrectly({
+																	exchangeFeeRate: baseFeeRate,
+																});
+															});
+															describe('when an exchange fee override for atomic exchanges is configured', () => {
+																itExchangesCorrectly({
+																	exchangeFeeRate: overrideFeeRate,
+																	setAsOverrideRate: true,
+																});
+															});
+														}
+													);
+													behaviors.whenMockedWithBoolSystemSetting(
+														{ setting: 'tradingRewardsEnabled', value: false },
+														() => {
+															itExchangesCorrectly({
+																exchangeFeeRate: baseFeeRate,
+															});
+														}
+													);
+												});
+											}
+										);
 									}
 								);
 							});
