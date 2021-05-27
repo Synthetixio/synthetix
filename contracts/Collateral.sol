@@ -381,7 +381,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         loan.collateral = loan.collateral.sub(amount);
 
         // 6. Check that the new amount does not put them under the minimum c ratio.
-        require(collateralRatio(loan.id) > minCratio);
+        _checkLoanRatio(id);
 
         // 9. Emit the event.
         emit CollateralWithdrawn(msg.sender, id, amount, loan.collateral);
@@ -404,6 +404,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         // require(IERC20(address(_synth(synthsByKey[loan.currency]))).balanceOf(msg.sender) >= payment);
 
         // 6. Check they are eligible for liquidation.
+        // Note: this will revert if collateral is 0, however that should only be possible if the loan amount is 0.
         require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio);
 
         // 7. Determine how much needs to be liquidated to fix their c ratio.
@@ -474,7 +475,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         loan.amount = loan.amount.add(amount);
 
         // 5. If it is below the minimum, don't allow this draw.
-        require(collateralRatio(loan.id) > minCratio);
+        _checkLoanRatio(id);
 
         // 6. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
@@ -563,6 +564,13 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         require(loan.account == owner);
         require(loan.interestIndex != 0);
         accrueInterest(loan);
+    }
+
+    function _checkLoanRatio(Loan memory loan) internal {
+        if (loan.amount == 0) {
+            return;
+        }
+        require(collateralRatio(loan.id) > minCratio);
     }
 
     // ========== MODIFIERS ==========
