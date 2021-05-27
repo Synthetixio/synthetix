@@ -214,10 +214,10 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         emit ManagerUpdated(manager);
     }
 
-    // function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
-    //     canOpenLoans = _canOpenLoans;
-    //     emit CanOpenLoansUpdated(canOpenLoans);
-    // }
+    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
+        canOpenLoans = _canOpenLoans;
+        emit CanOpenLoansUpdated(canOpenLoans);
+    }
 
     /* ---------- LOAN INTERACTIONS ---------- */
 
@@ -314,8 +314,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         (amount, collateral) = _closeLoan(borrower, liquidator, loan);
 
         // 7. Record loan as closed
-        // TODO: why is this commented out? Want to allow the same loan to be used when liquidated?
-        // loan.interestIndex = 0;
+        loan.interestIndex = 0;
 
         // 8. Emit the event.
         // TODO: could use the same event in closeInternal if renamed possibly
@@ -399,10 +398,6 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         // 1. Check the payment amount.
         require(payment > 0);
 
-        // 5. Check they have enough balance to make the payment.
-        // TODO: verify this isn't necessary, at the very least this should be moved after if (amountToLiquidate >= amountOwing)
-        // require(IERC20(address(_synth(synthsByKey[loan.currency]))).balanceOf(msg.sender) >= payment);
-
         // 6. Check they are eligible for liquidation.
         require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio);
 
@@ -420,6 +415,8 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
             (, collateralLiquidated) = closeByLiquidationInternal(borrower, msg.sender, loan);
             return collateralLiquidated;
         }
+
+        // require(IERC20(address(_synth(synthsByKey[loan.currency]))).balanceOf(msg.sender) >= amountToLiquidate);
 
         // 11. Process the payment to workout interest/principal split.
         _processPayment(loan, amountToLiquidate);
@@ -444,8 +441,6 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 3. Check loan is open and last interaction time.
-        // TODO: why is there an interaction delay required for repaying?
-        //   The user already owns the eth and is burning it, how do frontrunners win here?
         require(loan.lastInteraction.add(interactionDelay) <= block.timestamp);
 
         // 6. Process the payment.
@@ -454,6 +449,8 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
 
         // 7. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
+
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or settlement owing");
 
         // 8. Burn synths from the payer
         _synth(synthsByKey[loan.currency]).burn(repayer, payment);
