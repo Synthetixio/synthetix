@@ -73,6 +73,14 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
+		whenMockedToAllowExchangeInvocationChecks: cb => {
+			describe(`when mocked to allow invocation checks`, () => {
+				beforeEach(async () => {
+					this.mocks.Synthetix.smocked.synthsByAddress.will.return.with(toBytes32());
+				});
+				cb();
+			});
+		},
 		whenMockedWithExchangeRatesValidity: ({ valid = true }, cb) => {
 			describe(`when mocked with ${valid ? 'valid' : 'invalid'} exchange rates`, () => {
 				beforeEach(async () => {

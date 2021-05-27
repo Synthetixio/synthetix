@@ -32,13 +32,15 @@ contract('Exchanger (unit tests)', async accounts => {
 				defaultExchangeArgs = callAsSynthetix([owner, sUSD, amountIn, sETH, owner, toBytes32()]);
 			});
 
-			it('it reverts when called by regular accounts', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: this.instance.exchangeAtomically,
-					args: defaultExchangeArgs.slice(0, -1), // remove tx options
-					accounts: accounts.filter(a => a !== this.mocks.Synthetix.address),
-					reason: 'Exchanger: Only synthetix or a synth can perform this action',
-					// address: this.mocks.Synthetix.address (doesnt work as this reverts due to lack of mocking setup)
+			behaviors.whenMockedToAllowExchangeInvocationChecks(() => {
+				it('it reverts when called by regular accounts', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: this.instance.exchangeAtomically,
+						args: defaultExchangeArgs.slice(0, -1), // remove tx options
+						accounts: accounts.filter(a => a !== this.mocks.Synthetix.address),
+						reason: 'Exchanger: Only synthetix or a synth contract can perform this action',
+						// address: this.mocks.Synthetix.address (doesnt work as this reverts due to lack of mocking setup)
+					});
 				});
 			});
 
