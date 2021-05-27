@@ -214,10 +214,10 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         emit ManagerUpdated(manager);
     }
 
-    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
-        canOpenLoans = _canOpenLoans;
-        emit CanOpenLoansUpdated(canOpenLoans);
-    }
+    // function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
+    //     canOpenLoans = _canOpenLoans;
+    //     emit CanOpenLoansUpdated(canOpenLoans);
+    // }
 
     /* ---------- LOAN INTERACTIONS ---------- */
 
@@ -380,7 +380,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         loan.collateral = loan.collateral.sub(amount);
 
         // 6. Check that the new amount does not put them under the minimum c ratio.
-        _checkLoanRatio(id);
+        _checkLoanRatio(loan);
 
         // 9. Emit the event.
         emit CollateralWithdrawn(msg.sender, id, amount, loan.collateral);
@@ -451,8 +451,6 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         // 7. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or settlement owing");
-
         // 8. Burn synths from the payer
         _synth(synthsByKey[loan.currency]).burn(repayer, payment);
 
@@ -472,7 +470,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         loan.amount = loan.amount.add(amount);
 
         // 5. If it is below the minimum, don't allow this draw.
-        _checkLoanRatio(id);
+        _checkLoanRatio(loan);
 
         // 6. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
@@ -563,7 +561,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver {
         accrueInterest(loan);
     }
 
-    function _checkLoanRatio(Loan memory loan) internal {
+    function _checkLoanRatio(Loan storage loan) internal {
         if (loan.amount == 0) {
             return;
         }
