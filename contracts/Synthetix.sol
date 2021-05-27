@@ -62,14 +62,41 @@ contract Synthetix is BaseSynthetix {
         returns (uint amountReceived, IVirtualSynth vSynth)
     {
         return
-            exchanger().exchangeWithVirtual(
+            exchanger().exchange(
+                messageSender,
                 messageSender,
                 sourceCurrencyKey,
                 sourceAmount,
                 destinationCurrencyKey,
                 messageSender,
+                true,
+                messageSender,
                 trackingCode
             );
+    }
+
+    // SIP-140 The initiating user of this exchange will receive the proceeds of the exchange
+    // Note: this function may have unintended consequences if not understood correctly. Please
+    // read SIP-140 for more information on the use-case
+    function exchangeWithTrackingForInitiator(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address rewardAddress,
+        bytes32 trackingCode
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
+        (amountReceived, ) = exchanger().exchange(
+            messageSender,
+            messageSender,
+            sourceCurrencyKey,
+            sourceAmount,
+            destinationCurrencyKey,
+            // solhint-disable avoid-tx-origin
+            tx.origin,
+            false,
+            rewardAddress,
+            trackingCode
+        );
     }
 
     function exchangeAtomically(

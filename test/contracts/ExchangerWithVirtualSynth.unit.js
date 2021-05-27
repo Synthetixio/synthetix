@@ -5,7 +5,6 @@ const { artifacts, contract, web3 } = require('hardhat');
 const { assert } = require('./common');
 
 const {
-	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	getEventByName,
 	buildMinimalProxyCode,
@@ -29,10 +28,7 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 			expected: [
 				'exchange',
 				'exchangeAtomically',
-				'exchangeOnBehalf',
-				'exchangeOnBehalfWithTracking',
-				'exchangeWithTracking',
-				'exchangeWithVirtual',
+				'resetLastExchangeRate',
 				'settle',
 				'suspendSynthWithInvalidRate',
 				'setLastExchangeRateForSynth',
@@ -45,30 +41,10 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 		const behaviors = require('./ExchangerWithVirtualSynth.behaviors').call(this, { accounts });
 
 		describe('exchanging', () => {
-			describe('exchangeWithVirtual', () => {
+			describe('exchange with virtual synths', () => {
 				describe('failure modes', () => {
-					const args = [owner, toBytes32('sUSD'), '100', toBytes32('sETH'), owner, toBytes32()];
-
 					behaviors.whenInstantiated({ owner }, () => {
-						it('it reverts when called by regular accounts', async () => {
-							await onlyGivenAddressCanInvoke({
-								fnc: this.instance.exchangeWithVirtual,
-								args,
-								accounts: accounts.filter(a => a !== this.mocks.Synthetix.address),
-								reason: 'Exchanger: Only synthetix can perform this action',
-								// address: this.mocks.Synthetix.address (doesnt work as this reverts due to lack of mocking setup)
-							});
-						});
-
 						behaviors.whenMockedWithExchangeRatesValidity({ valid: false }, () => {
-							it('it reverts when either rate is invalid', async () => {
-								await assert.revert(
-									this.instance.exchangeWithVirtual(
-										...args.concat({ from: this.mocks.Synthetix.address })
-									),
-									'Src/dest rate invalid or not found'
-								);
-							});
 							behaviors.whenMockedWithExchangeRatesValidity({ valid: true }, () => {
 								behaviors.whenMockedWithNoPriorExchangesToSettle(() => {
 									behaviors.whenMockedWithUintSystemSetting(
@@ -80,11 +56,14 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 														behaviors.whenMockedExchangeStatePersistance(() => {
 															it('it reverts trying to create a virtual synth with no supply', async () => {
 																await assert.revert(
-																	this.instance.exchangeWithVirtual(
+																	this.instance.exchange(
+																		owner,
 																		owner,
 																		toBytes32('sUSD'),
 																		'0',
 																		toBytes32('sETH'),
+																		owner,
+																		true,
 																		owner,
 																		toBytes32(),
 																		{ from: this.mocks.Synthetix.address }
@@ -94,11 +73,14 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 															});
 															it('it reverts trying to virtualize into an inverse synth', async () => {
 																await assert.revert(
-																	this.instance.exchangeWithVirtual(
+																	this.instance.exchange(
+																		owner,
 																		owner,
 																		toBytes32('sUSD'),
 																		'100',
 																		toBytes32('iETH'),
+																		owner,
+																		true,
 																		owner,
 																		toBytes32(),
 																		{ from: this.mocks.Synthetix.address }
@@ -132,11 +114,14 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 														let txn;
 														const amount = '101';
 														beforeEach(async () => {
-															txn = await this.instance.exchangeWithVirtual(
+															txn = await this.instance.exchange(
+																owner,
 																owner,
 																toBytes32('sUSD'),
 																amount,
 																toBytes32('sETH'),
+																owner,
+																true,
 																owner,
 																toBytes32(),
 																{ from: this.mocks.Synthetix.address }

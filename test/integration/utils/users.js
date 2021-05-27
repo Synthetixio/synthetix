@@ -1,15 +1,16 @@
 const ethers = require('ethers');
 
-function loadWallets({ ctx }) {
-	ctx.wallets = [];
+function loadUsers({ ctx }) {
+	ctx.users = [];
 
 	for (let i = 0; i < 10; i++) {
 		const wallet = new ethers.Wallet(getPrivateKey({ index: i }), ctx.provider);
 
-		ctx.wallets.push(wallet);
+		ctx.users.push(wallet);
 	}
 
-	ctx.owner = ctx.wallets[0];
+	ctx.owner = ctx.users[0];
+	ctx.user = ctx.users[1];
 }
 
 function getPrivateKey({ index }) {
@@ -21,6 +22,6 @@ function getPrivateKey({ index }) {
 }
 
 module.exports = {
-	loadWallets,
+	loadUsers,
 	getPrivateKey,
 };

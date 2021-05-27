@@ -327,117 +327,33 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
     function exchange(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
-        uint fee;
-        (amountReceived, fee, ) = _exchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress,
-            false
-        );
-
-        _processTradingRewards(fee, destinationAddress);
-    }
-
-    function exchangeOnBehalf(
-        address exchangeForAddress,
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey
-    ) external onlySynthetix returns (uint amountReceived) {
-        require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
-
-        uint fee;
-        (amountReceived, fee, ) = _exchange(
-            exchangeForAddress,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            exchangeForAddress,
-            false
-        );
-
-        _processTradingRewards(fee, exchangeForAddress);
-    }
-
-    function exchangeWithTracking(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress,
-        address originator,
-        bytes32 trackingCode
-    ) external onlySynthetix returns (uint amountReceived) {
-        uint fee;
-        (amountReceived, fee, ) = _exchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress,
-            false
-        );
-
-        // TODO: why is there originator vs. destinationAddress?
-        _processTradingRewards(fee, originator);
-
-        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
-    }
-
-    function exchangeOnBehalfWithTracking(
         address exchangeForAddress,
         address from,
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address originator,
-        bytes32 trackingCode
-    ) external onlySynthetix returns (uint amountReceived) {
-        require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
-
-        uint fee;
-        (amountReceived, fee, ) = _exchange(
-            exchangeForAddress,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            exchangeForAddress,
-            false
-        );
-
-        _processTradingRewards(fee, originator);
-
-        _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
-    }
-
-    function exchangeWithVirtual(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
         address destinationAddress,
+        bool virtualSynth,
+        address rewardAddress,
         bytes32 trackingCode
-    ) external onlySynthetix returns (uint amountReceived, IVirtualSynth vSynth) {
+    ) external onlySynthetixorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
         uint fee;
+        if (from != exchangeForAddress) {
+            require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
+        }
+
         (amountReceived, fee, vSynth) = _exchange(
-            from,
+            exchangeForAddress,
             sourceCurrencyKey,
             sourceAmount,
             destinationCurrencyKey,
             destinationAddress,
-            true
+            virtualSynth
         );
 
-        _processTradingRewards(fee, destinationAddress);
+        if (rewardAddress != address(0)) {
+            _processTradingRewards(fee, rewardAddress);
+        }
 
         if (trackingCode != bytes32(0)) {
             _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
@@ -452,7 +368,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // TODO: this destinationAddress variable doesn't seem to be needed since it's always the same as from
         address destinationAddress,
         bytes32 trackingCode
-    ) external onlySynthetix returns (uint amountReceived) {
+    ) external onlySynthetixorSynth returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee) = _exchangeAtomically(
             from,
@@ -478,9 +394,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, toCurrencyKey, toAmount, fee);
     }
 
-    function _processTradingRewards(uint fee, address originator) internal {
-        if (fee > 0 && originator != address(0) && getTradingRewardsEnabled()) {
-            tradingRewards().recordExchangeFeeForAccount(fee, originator);
+    function _processTradingRewards(uint fee, address rewardAddress) internal {
+        if (fee > 0 && rewardAddress != address(0) && getTradingRewardsEnabled()) {
+            tradingRewards().recordExchangeFeeForAccount(fee, rewardAddress);
         }
     }
 
@@ -812,6 +728,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external onlyExchangeRates {
         require(rate > 0, "Rate must be above 0");
         lastExchangeRate[currencyKey] = rate;
+    }
+
+    // SIP-139
+    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external onlyOwner {
+        (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
+
+        require(!anyRateInvalid, "Rates for given synths not valid");
+
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            lastExchangeRate[currencyKeys[i]] = rates[i];
+        }
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -1173,12 +1100,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             msg.sender == address(_synthetix) || _synthetix.synthsByAddress(msg.sender) != bytes32(0),
             "Exchanger: Only synthetix or a synth contract can perform this action"
         );
-        _;
-    }
-
-    modifier onlySynthetix() {
-        ISynthetix _synthetix = synthetix();
-        require(msg.sender == address(_synthetix), "Exchanger: Only synthetix can perform this action");
         _;
     }
 
