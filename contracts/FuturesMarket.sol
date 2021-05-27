@@ -891,12 +891,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         emitOrderSubmitted(id, sender, leverage, fee, roundId);
 
         // Now trigger the keeper.
-        keeperRegistry().registerUpkeep(
-            address(futuresConfirmationKeeper()),
-            9e6,
-            address(this), // admin
-            abi.encodePacked(address(this), account)
-        );
+        futuresKeepers().requestConfirmationKeeper(address(this), account);
     }
 
     function submitOrder(int leverage) external optionalProxy {

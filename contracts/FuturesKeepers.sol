@@ -1,6 +1,26 @@
 import "./interfaces/IKeeper.sol";
 import "./interfaces/IFuturesMarket.sol";
 
+contract FuturesKeepers {
+    function requestConfirmationKeeper(address market, address account) {
+        keeperRegistry().registerUpkeep(address(this), 9e6, address(this), this.checkOrderConfirmed.encode(market, account));
+    }
+
+    function checkOrderConfirmed(address market, address account) returns (bool upkeepNeeded, bytes memory performData) {
+        upkeepNeeded = IFuturesMarket(market).canConfirm(account);
+        performData = IFuturesMarket(market).confirmOrder.encode(account);
+    }
+
+    function checkUpkeep(bytes calldata checkData) external returns (bool upkeepNeeded, bytes memory performData) {
+        (upkeepNeeded, performData) = abi.decode(address(this).call(checkData), (bool, bytes));
+    }
+
+    function performUpkeep(bytes calldata performData) external {
+        (address target, bytes _calldata) = abi.decode(performData);
+        target.call(_calldata);
+    }
+}
+
 // https://docs.synthetix.io/contracts/source/contracts/FuturesConfirmationKeeper
 contract FuturesConfirmationKeeper is MixinResolver, IKeeper {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
