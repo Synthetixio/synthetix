@@ -16,6 +16,7 @@ import "./SignedSafeDecimalMath.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/IFuturesKeepers.sol";
 
 // Remaining Functionality
 //     Consider not exposing signs of short vs long positions
@@ -124,8 +125,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
-    bytes32 internal constant CONTRACT_KEEPER_REGISTRY = "KeeperRegistry";
-    bytes32 internal constant CONTRACT_FUTURES_CONFIRMATION_KEEPER = "FuturesConfirmationKeeper";
+    bytes32 internal constant CONTRACT_FUTURES_KEEPERS = "FuturesKeepers";
 
     /* ---------- Parameter Names ---------- */
 
@@ -173,14 +173,13 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](7);
+        bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYNTHSUSD;
         newAddresses[3] = CONTRACT_FEEPOOL;
         newAddresses[4] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[5] = CONTRACT_KEEPER_REGISTRY;
-        newAddresses[6] = CONTRACT_FUTURES_CONFIRMATION_KEEPER;
+        newAddresses[5] = CONTRACT_FUTURES_KEEPERS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -198,6 +197,10 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function _sUSD() internal view returns (IERC20) {
         return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD));
+    }
+
+    function futuresKeepers() internal view returns (IFuturesKeepers) {
+        return IFuturesKeepers(requireAndGetAddress(CONTRACT_FUTURES_KEEPERS));
     }
 
     /* ---------- Market Details ---------- */
@@ -891,7 +894,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         emitOrderSubmitted(id, sender, leverage, fee, roundId);
 
         // Now trigger the keeper.
-        futuresKeepers().requestConfirmationKeeper(address(this), account);
+        futuresKeepers().requestConfirmationKeeper(address(this), sender);
     }
 
     function submitOrder(int leverage) external optionalProxy {
