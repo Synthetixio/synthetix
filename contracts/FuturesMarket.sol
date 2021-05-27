@@ -981,6 +981,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         emitOrderConfirmed(order.id, account, margin, newSize, price, fundingIndex);
 
         // delete the keeper
+        futuresKeepers().cancelConfirmationKeeper(address(this), account);
+
+        futuresKeepers().requestLiquidationKeeper(address(this), account);
     }
 
     function _liquidatePosition(
