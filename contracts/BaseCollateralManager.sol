@@ -100,11 +100,7 @@ contract BaseCollateralManager is ICollateralManager, Owned, Pausable, MixinReso
         uint length = _shortableSynths.elements.length;
 
         if (length > 0) {
-            shortAddresses = new bytes32[](length);
-
-            for (uint i = 0; i < length; i++) {
-                shortAddresses[i] = _shortableSynths.elements[i];
-            }
+            shortAddresses = _requiredShortAddresses(length);
         }
 
         bytes32[] memory synthAddresses = combineArrays(shortAddresses, _synths.elements);
@@ -113,6 +109,13 @@ contract BaseCollateralManager is ICollateralManager, Owned, Pausable, MixinReso
             addresses = combineArrays(synthAddresses, staticAddresses);
         } else {
             addresses = staticAddresses;
+        }
+    }
+
+    function _requiredShortAddresses(uint length) internal view returns (bytes32[] memory shortAddresses) {
+        shortAddresses = new bytes32[](length);
+        for (uint i = 0; i < length; i++) {
+            shortAddresses[i] = _shortableSynths.elements[i];
         }
     }
 
@@ -225,8 +228,10 @@ contract BaseCollateralManager is ICollateralManager, Owned, Pausable, MixinReso
 
         // get the long supply of
         uint longSupply = IERC20(address(_synth(shortableSynthsByKey[synthKey]))).totalSupply();
+        uint inverseSupply = _getInverseSupply(synthKey);
+
         // add the iSynth to supply properly reflect the market skew.
-        uint shortSupply = state.short(synthKey);
+        uint shortSupply = state.short(synthKey).add(inverseSupply);
 
         // in this case, the market is skewed long so its free to short.
         if (longSupply > shortSupply) {
@@ -243,6 +248,9 @@ contract BaseCollateralManager is ICollateralManager, Owned, Pausable, MixinReso
         // finally, add the base short rate.
         shortRate = proportionalSkew.add(baseShortRate);
     }
+
+    // Empty function returns 0 and is overrided in the subclasses
+    function _getInverseSupply(bytes32 synth) internal view returns (uint) {}
 
     function getRatesAndTime(uint index)
         public
@@ -419,10 +427,10 @@ contract BaseCollateralManager is ICollateralManager, Owned, Pausable, MixinReso
 
         // first check contract state
         for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
-            // bytes32 synthName = requiredSynthNamesInResolver[i];
-            // if (!_shortableSynths.contains(synthName) || synthToInverseSynth[synthName] == bytes32(0)) {
-            //     return false;
-            // }
+            bytes32 synthName = requiredSynthNamesInResolver[i];
+            if (!_shortableSynths.contains(synthName)) {
+                return false;
+            }
         }
 
         // now check everything added to external state contract
@@ -435,23 +443,8 @@ contract BaseCollateralManager is ICollateralManager, Owned, Pausable, MixinReso
         return true;
     }
 
-    function removeShortableSynths(bytes32[] calldata synths) external onlyOwner {
-        for (uint i = 0; i < synths.length; i++) {
-            if (_shortableSynths.contains(synths[i])) {
-                // Remove it from the the address set lib.
-                _shortableSynths.remove(synths[i]);
-
-                bytes32 synthKey = _synth(synths[i]).currencyKey();
-
-                state.removeShortCurrency(synthKey);
-
-                // remove the inverse mapping.
-                // delete synthToInverseSynth[synths[i]];
-
-                emit ShortableSynthRemoved(synths[i]);
-            }
-        }
-    }
+    // Implemented in subclasses
+    function removeShortableSynths(bytes32[] calldata synths) external onlyOwner {}
 
     /* ---------- STATE MUTATIONS ---------- */
 

@@ -2,7 +2,7 @@
 const w3utils = require('web3-utils');
 
 const params = {
-	INITIAL_ISSUANCE: '0',
+	INITIAL_ISSUANCE: w3utils.toWei('10000000'), // owner gets the SNX
 	COLLATERAL_MANAGER: {
 		SYNTHS: ['sUSD', 'sETH'],
 		SHORTS: [{ long: 'sETH' }],
