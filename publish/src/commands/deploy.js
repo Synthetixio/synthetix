@@ -70,6 +70,7 @@ const deploy = async ({
 	ignoreCustomParameters,
 	concurrency,
 	specifyContracts,
+	skipPriceChecks,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -400,7 +401,7 @@ const deploy = async ({
 
 	let aggregatedPriceResults = 'N/A';
 
-	if (oldExrates && network !== 'local') {
+	if (oldExrates && network !== 'local' && !skipPriceChecks) {
 		const padding = '\n\t\t\t\t';
 		const aggResults = await checkAggregatorPrices({
 			network,
@@ -502,8 +503,10 @@ const deploy = async ({
 		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''}...`)
 	);
 
-	const runStep = async opts =>
-		performTransactionalStep({
+	const solidityWriteSteps = [];
+
+	const runStep = async opts => {
+		const { solidity, ...rest } = await performTransactionalStep({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
@@ -514,6 +517,15 @@ const deploy = async ({
 			dryRun,
 			nonceManager: manageNonces ? nonceManager : undefined,
 		});
+
+		if (solidity) {
+			solidityWriteSteps.push(solidity);
+
+			console.log(redBright(solidity));
+		}
+
+		return { ...rest };
+	};
 
 	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
 
@@ -2584,6 +2596,21 @@ const deploy = async ({
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
 	reportDeployedContracts({ deployer });
+
+	if (generateSolidity) {
+		console.log(
+			gray(
+				```
+=== SOLIDITY ===
+	contract SynthetixDeploy {
+		function migrate() external {
+			${solidityWriteSteps.join(';\n\t\t\t')};
+		}
+	}
+```
+			)
+		);
+	}
 };
 
 module.exports = {
@@ -2674,7 +2701,8 @@ module.exports = {
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'
 			)
-			.option('-s, --generate-solidity', 'If enabled, will output all run steps as solidity code.')
+			.option('--generate-solidity', 'If enabled, will output all run steps as solidity code.')
+			.option('--skip-price-checks', 'If enabled, will skip the price checking')
 			.option(
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'

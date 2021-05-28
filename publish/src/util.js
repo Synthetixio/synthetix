@@ -226,7 +226,18 @@ const performTransactionalStep = async ({
 			console.log(gray(`Nothing required for this action.`));
 			return { noop: true };
 		}
+		// else {
+		// 	solidity.push(`if (${contract}.${read}(${argumentsForReadFunction.join(',')}))`);
+		// }
 	}
+
+	// output write action as solidity
+	const output = {
+		solidity: `${contract}.${write}(${argumentsForWriteFunction.join(',')});`,
+	};
+
+	const returnObjGenerator = (obj = {}) => Object.assign(obj, output);
+
 	// otherwise check the owner
 	const owner = await target.methods.owner().call();
 	if (owner === account || publiclyCallable) {
@@ -267,7 +278,7 @@ const performTransactionalStep = async ({
 			)
 		);
 
-		return { mined: true, hash };
+		return returnObjGenerator({ mined: true, hash });
 	} else {
 		console.log(gray(`  > Account ${account} is not owner ${owner}`));
 	}
@@ -297,14 +308,14 @@ const performTransactionalStep = async ({
 		} else {
 			appendOwnerAction(ownerAction);
 		}
-		return { pending: true };
+		return returnObjGenerator({ pending: true });
 	} else {
 		// otherwise wait for owner in real time
 		try {
 			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
 			if (encodeABI) {
 				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
-				return { pending: true };
+				return Object.assign({ pending: true }, output);
 			}
 
 			await confirmAction(
@@ -315,10 +326,10 @@ const performTransactionalStep = async ({
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
 			);
 
-			return { pending: true };
+			return returnObjGenerator({ pending: true });
 		} catch (err) {
 			console.log(gray('Cancelled'));
-			return {};
+			return returnObjGenerator();
 		}
 	}
 };
