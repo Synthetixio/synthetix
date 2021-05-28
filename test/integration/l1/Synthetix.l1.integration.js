@@ -1,10 +1,13 @@
 const { bootstrapL1 } = require('../utils/bootstrap');
-const { itBehavesLikeSynthetix } = require('../behaviors/Synthetix.behavior');
+const { itCanExchange } = require('../behaviors/exchange.behavior');
+const { itCanMintAndBurn } = require('../behaviors/stake.behavior');
+const { itBehavesLikeAnERC20 } = require('../behaviors/erc20.behavior');
 
-describe('Synthetix integration tests (isolated on layer 1)', () => {
+describe('Synthetix integration tests (L1)', () => {
 	const ctx = this;
-
 	bootstrapL1({ ctx });
 
-	itBehavesLikeSynthetix({ ctx });
+	itCanExchange({ ctx });
+	itCanMintAndBurn({ ctx });
+	itBehavesLikeAnERC20({ ctx });
 });

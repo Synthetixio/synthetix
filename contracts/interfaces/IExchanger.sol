@@ -58,7 +58,7 @@ interface IExchanger {
         bytes32 destinationCurrencyKey,
         address destinationAddress,
         bool virtualSynth,
-        address originator,
+        address rewardAddress,
         bytes32 trackingCode
     ) external returns (uint amountReceived, IVirtualSynth vSynth);
 
