@@ -2,8 +2,7 @@
 
 const { artifacts, web3 } = require('hardhat');
 const { smockit } = require('@eth-optimism/smock');
-const { toBytes32 } = require('../..');
-const { prepareSmocks } = require('./helpers');
+const { prepareSmocks, prepareFlexibleStorageSmock } = require('./helpers');
 
 let ExchangerWithVirtualSynth;
 
@@ -34,6 +33,8 @@ module.exports = function({ accounts }) {
 			},
 			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
+
+		this.flexibleStorageMock = prepareFlexibleStorageSmock(this.mocks.FlexibleStorage);
 	});
 
 	before(async () => {
@@ -70,9 +71,7 @@ module.exports = function({ accounts }) {
 		whenMockedWithUintSystemSetting: ({ setting, value }, cb) => {
 			describe(`when SystemSetting.${setting} is mocked to ${value}`, () => {
 				beforeEach(async () => {
-					this.mocks.FlexibleStorage.smocked.getUIntValue.will.return.with((contract, record) =>
-						contract === toBytes32('SystemSettings') && record === toBytes32(setting) ? value : '0'
-					);
+					this.flexibleStorageMock.mockSystemSetting({ setting, value, type: 'uint' });
 				});
 				cb();
 			});

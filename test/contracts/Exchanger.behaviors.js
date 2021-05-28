@@ -7,7 +7,7 @@ const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
-const { prepareSmocks } = require('./helpers');
+const { prepareSmocks, prepareFlexibleStorageSmock } = require('./helpers');
 const { multiplyDecimal } = require('../utils')();
 
 const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
@@ -15,8 +15,6 @@ const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 let Exchanger;
 
 module.exports = function({ accounts }) {
-	let flexibleStorage;
-
 	before(async () => {
 		Exchanger = artifacts.require('Exchanger');
 	});
@@ -42,34 +40,8 @@ module.exports = function({ accounts }) {
 			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
 
-		// Allow mocked flexible storage to be persisted through a run,
-		// to build up configuration values over multiple contexts
-		flexibleStorage = {};
+		this.flexibleStorageMock = prepareFlexibleStorageSmock(this.mocks.FlexibleStorage);
 	});
-
-	const mockBoolSystemSetting = ({ setting, value }) => {
-		const bytes32Setting = setting.startsWith('0x') ? setting : toBytes32(setting);
-		// Compound additional system settings mocks rather than replacing
-		flexibleStorage.bool = flexibleStorage.bool || {};
-		flexibleStorage.bool[bytes32Setting] = value;
-
-		this.mocks.FlexibleStorage.smocked.getBoolValue.will.return.with((contract, record) => {
-			const recordValue = flexibleStorage.bool[record];
-			return contract === toBytes32('SystemSettings') ? recordValue : false;
-		});
-	};
-
-	const mockUintSystemSetting = ({ setting, value }) => {
-		const bytes32Setting = setting.startsWith('0x') ? setting : toBytes32(setting);
-		// Compound additional system settings mocks rather than replacing
-		flexibleStorage.uint = flexibleStorage.uint || {};
-		flexibleStorage.uint[bytes32Setting] = value.toString();
-
-		this.mocks.FlexibleStorage.smocked.getUIntValue.will.return.with((contract, record) => {
-			const recordValue = flexibleStorage.uint[record];
-			return (contract === toBytes32('SystemSettings') && recordValue) || '0';
-		});
-	};
 
 	const mockEffectiveAtomicRate = ({ atomicRate, systemSourceRate, systemDestinationRate }) => {
 		this.mocks.ExchangeRates.smocked.effectiveAtomicValueAndRates.will.return.with(
@@ -123,7 +95,7 @@ module.exports = function({ accounts }) {
 		whenMockedWithBoolSystemSetting: ({ setting, value }, cb) => {
 			describe(`when SystemSetting.${setting} is mocked to ${value}`, () => {
 				beforeEach(async () => {
-					mockBoolSystemSetting({ setting, value });
+					this.flexibleStorageMock.mockSystemSetting({ setting, value, type: 'bool' });
 				});
 				cb();
 			});
@@ -131,7 +103,7 @@ module.exports = function({ accounts }) {
 		whenMockedWithUintSystemSetting: ({ setting, value }, cb) => {
 			describe(`when SystemSetting.${setting} is mocked to ${value}`, () => {
 				beforeEach(async () => {
-					mockUintSystemSetting({ setting, value });
+					this.flexibleStorageMock.mockSystemSetting({ setting, value, type: 'uint' });
 				});
 				cb();
 			});
@@ -144,7 +116,11 @@ module.exports = function({ accounts }) {
 			const synthName = fromBytes32(synth);
 			describe(`when SystemSetting.${setting} for ${synthName} is mocked to ${value}`, () => {
 				beforeEach(async () => {
-					mockUintSystemSetting({ setting: settingForSynth, value });
+					this.flexibleStorageMock.mockSystemSetting({
+						value,
+						setting: settingForSynth,
+						type: 'uint',
+					});
 				});
 				cb();
 			});
@@ -173,9 +149,10 @@ module.exports = function({ accounts }) {
 
 			describe(`when mocked with atomic rate ${atomicRate}, src rate ${systemSourceRate}, dest rate ${systemDestinationRate}, deviationFactor ${deviationFactor}, lastExchangeRates ${lastRates}`, () => {
 				beforeEach(async () => {
-					mockUintSystemSetting({
+					this.flexibleStorageMock.mockSystemSetting({
 						setting: 'priceDeviationThresholdFactor',
 						value: deviationFactor,
+						type: 'uint',
 					});
 
 					mockEffectiveAtomicRate({
