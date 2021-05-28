@@ -238,11 +238,12 @@
 		"sips": [112, 136]
 	},
 	{
-		"name": "Alnitak",
+		"name": "Unreleased",
 		"version": {
 			"major": 2,
 			"minor": 46
 		},
+		"ovm": true,
 		"sources": [
 			"Exchanger",
 			"Synthetix",

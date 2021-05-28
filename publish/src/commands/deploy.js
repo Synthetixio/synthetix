@@ -269,8 +269,17 @@ const deploy = async ({
 	}
 
 	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
-	if (network !== 'local' && !privateKey) {
+	if (network === 'local' && !privateKey) {
 		privateKey = envPrivateKey;
+	}
+
+	// The OVM geth node requires that transactions are sent using eth_sendSignedTransaction.
+	// For web3.js to do this, it needs a private key.
+	//
+	// If OVM geth receives eth_sendTransaction, it will fail with error "OVM: Unsupported RPC Method".
+	// OVM has disabled this RPC method, as the local rollup node has no notion of unlocked accounts.
+	if (network === 'local' && useOvm && !privateKey) {
+		throw new Error('No private key specified while trying to deploy to OVM Geth.');
 	}
 
 	const nonceManager = new NonceManager({});
