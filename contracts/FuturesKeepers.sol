@@ -8,8 +8,8 @@ import "./MixinResolver.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesConfirmationKeeper
 contract FuturesKeepers is MixinResolver, IFuturesKeepers, IKeeper {
-    mapping(bytes32 => uint256) confirmationUpkeeps;
-    mapping(bytes32 => uint256) liquidationUpkeeps;
+    mapping(bytes32 => uint256) public confirmationUpkeeps;
+    mapping(bytes32 => uint256) public liquidationUpkeeps;
 
     bytes32 internal constant CONTRACT_KEEPER_REGISTRY = "KeeperRegistry";
 
@@ -118,12 +118,14 @@ contract FuturesKeepers is MixinResolver, IFuturesKeepers, IKeeper {
     //
 
     function checkUpkeep(bytes calldata checkData) external returns (bool upkeepNeeded, bytes memory performData) {
+        // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returnData) = address(this).call(checkData);
         (upkeepNeeded, performData) = abi.decode(returnData, (bool, bytes));
+        upkeepNeeded = success && upkeepNeeded;
     }
 
     function performUpkeep(bytes calldata performData) external {
-        // (address target, bytes memory _calldata) = abi.decode(performData, (address, _calldata));
+        // solhint-disable-next-line avoid-low-level-calls
         address(this).call(performData);
     }
 }

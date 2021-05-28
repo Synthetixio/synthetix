@@ -13,9 +13,9 @@ contract LimitedKeeperRegistry is IKeeperRegistry {
         bytes checkData;
     }
 
-    mapping(uint => Upkeep) upkeeps;
+    mapping(uint => Upkeep) public upkeeps;
 
-    uint upkeepCounter = 0;
+    uint private upkeepCounter = 0;
 
     function registerUpkeep(
         address target,
@@ -54,6 +54,7 @@ contract LimitedKeeperRegistry is IKeeperRegistry {
             int256 linkEth
         )
     {
+        from;
         Upkeep storage upkeep = upkeeps[upkeepId];
 
         (bool success, bytes memory performData) = upkeep.target.checkUpkeep(upkeep.checkData);
