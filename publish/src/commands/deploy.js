@@ -60,6 +60,7 @@ const deploy = async ({
 	yes,
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
+	skipFeedChecks = false,
 	useFork,
 	providerUrl,
 	useOvm,
@@ -399,7 +400,7 @@ const deploy = async ({
 
 	let aggregatedPriceResults = 'N/A';
 
-	if (oldExrates && network !== 'local') {
+	if (oldExrates && network !== 'local' && !skipFeedChecks) {
 		const padding = '\n\t\t\t\t';
 		const aggResults = await checkAggregatorPrices({
 			network,
@@ -2641,6 +2642,10 @@ module.exports = {
 			.option(
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
+			)
+			.option(
+				'--skip-feed-checks',
+				'If enabled, will skip the feed checking on start (speeds up deployment)'
 			)
 			.option(
 				'-r, --dry-run',
