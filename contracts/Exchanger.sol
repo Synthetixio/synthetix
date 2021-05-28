@@ -572,19 +572,18 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
 
         uint exchangeFeeRate;
-        uint systemAmountReceived;
+        uint systemConvertedAmount;
         uint systemSourceRate;
         uint systemDestinationRate;
 
-        // Note: `fee` is denominated in the destinationCurrencyKey.
         // Note: also ensures the given synths are allowed to be atomically exchanged
         (
-            amountReceived,
-            fee,
-            exchangeFeeRate,
-            systemAmountReceived,
-            systemSourceRate,
-            systemDestinationRate
+            amountReceived, // output amount with fee taken out (denominated in dest currency)
+            fee, // fee amount (denominated in dest currency)
+            exchangeFeeRate, // applied fee rate
+            systemConvertedAmount, // current system value without fees (denominated in dest currency)
+            systemSourceRate, // current system rate for src currency
+            systemDestinationRate // current system rate for dest currency
         ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
 
         // SIP-65: Decentralized Circuit Breaker (checking current system rates)
@@ -603,8 +602,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         if (sourceCurrencyKey == sUSD) {
             sourceSusdValue = sourceAmount;
         } else if (destinationCurrencyKey == sUSD) {
-            // In this case the systemAmountReceived would be the fee-free sUSD value of the source synth
-            sourceSusdValue = systemAmountReceived;
+            // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
+            sourceSusdValue = systemConvertedAmount;
         } else {
             revert("Src/dest synth must be sUSD");
         }
@@ -1013,13 +1012,13 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint amountReceived,
             uint fee,
             uint exchangeFeeRate,
-            uint systemAmountReceived,
+            uint systemConvertedAmount,
             uint systemSourceRate,
             uint systemDestinationRate
         )
     {
         uint destinationAmount;
-        (destinationAmount, systemAmountReceived, systemSourceRate, systemDestinationRate) = exchangeRates()
+        (destinationAmount, systemConvertedAmount, systemSourceRate, systemDestinationRate) = exchangeRates()
             .effectiveAtomicValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
 
         exchangeFeeRate = _feeRateForAtomicExchange(sourceCurrencyKey, destinationCurrencyKey);
