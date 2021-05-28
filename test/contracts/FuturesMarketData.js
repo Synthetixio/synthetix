@@ -27,7 +27,7 @@ contract('FuturesMarketData', accounts => {
 	before(async () => {
 		({
 			AddressResolver: addressResolver,
-			FuturesMarket: futuresMarket,
+			FuturesMarketBTC: futuresMarket,
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketData: futuresMarketData,
 			ExchangeRates: exchangeRates,
@@ -37,7 +37,7 @@ contract('FuturesMarketData', accounts => {
 			synths: ['sUSD'],
 			contracts: [
 				'FuturesMarketManager',
-				'FuturesMarket',
+				'FuturesMarketBTC',
 				'FuturesMarketData',
 				'AddressResolver',
 				'FeePool',

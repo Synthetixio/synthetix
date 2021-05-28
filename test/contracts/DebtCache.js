@@ -61,7 +61,9 @@ contract('DebtCache', async accounts => {
 		// MultiCollateral tests.
 		ceth,
 		// Short tests.
-		short;
+		short,
+		// Futures market
+		futuresMarketManager;
 
 	const deployCollateral = async ({
 		state,
@@ -258,6 +260,7 @@ contract('DebtCache', async accounts => {
 			Exchanger: exchanger,
 			EtherCollateral: etherCollateral,
 			EtherCollateralsUSD: etherCollateralsUSD,
+			FuturesMarketManager: futuresMarketManager,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -279,6 +282,7 @@ contract('DebtCache', async accounts => {
 				'RewardEscrowV2', // necessary for issuer._collateral()
 				'EtherCollateral',
 				'EtherCollateralsUSD',
+				'FuturesMarketManager',
 			],
 		}));
 	});
@@ -409,7 +413,7 @@ contract('DebtCache', async accounts => {
 				assert.bnEqual(debts[2], toUnit(50));
 				assert.bnEqual(debts[3], toUnit(200));
 
-				assert.isFalse(result[2]);
+				assert.isFalse(result[3]);
 			});
 		});
 
@@ -532,7 +536,7 @@ contract('DebtCache', async accounts => {
 				assert.isFalse((await issuer.collateralisationRatioAndAnyRatesInvalid(account1))[1]);
 			});
 
-			it('Rates are reported as invalid when the debt snapshot is uninitisalised', async () => {
+			it('Rates are reported as invalid when the debt snapshot is uninitialised', async () => {
 				const debtCacheName = toBytes32('DebtCache');
 
 				// Set the stale time to a huge value so that the snapshot will not be stale.
@@ -614,6 +618,24 @@ contract('DebtCache', async accounts => {
 					'Synthetix is suspended'
 				);
 				await debtCache.takeDebtSnapshot({ from: owner });
+			});
+
+			it('properly incorporates futures market debt', async () => {
+				const market = await setupContract({
+					accounts,
+					contract: 'MockFuturesMarket',
+					args: [futuresMarketManager.address, toBytes32('sLINK'), toUnit('1000'), false],
+					skipPostDeploy: true,
+				});
+				await futuresMarketManager.addMarkets([market.address], { from: owner });
+
+				await debtCache.takeDebtSnapshot();
+				const initialDebt = (await debtCache.cacheInfo()).debt;
+				await market.setMarketDebt(toUnit('2000'));
+				await debtCache.takeDebtSnapshot();
+
+				assert.bnEqual((await debtCache.cacheInfo()).debt, initialDebt.add(toUnit('1000')));
+				assert.bnEqual((await debtCache.currentSynthDebts([])).futuresDebt, toUnit('2000'));
 			});
 		});
 
