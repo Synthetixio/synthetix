@@ -246,12 +246,12 @@
 		"sources": [
 			"Exchanger",
 			"Synthetix",
-			"FuturesMarketBTC",
+			"ProxyFuturesMarketETH",
 			"FuturesMarketETH",
-			"FuturesMarketLINK",
 			"ProxyFuturesMarketManager",
 			"FuturesMarketManager",
-			"FuturesMarketData"
+			"FuturesMarketData",
+			"FuturesKeepers"
 		],
 		"sips": [80, 138, 139, 140]
 	},
