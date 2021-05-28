@@ -29,7 +29,6 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 		if (taskArguments.deploy) {
 			await deployInstance({
 				useOvm: true,
-				ignoreCustomParameters: true,
 				providerUrl,
 				providerPort,
 			});

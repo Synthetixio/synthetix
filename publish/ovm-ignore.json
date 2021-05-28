@@ -4,10 +4,6 @@
 	"BinaryOptionMarketData",
 	"BinaryOptionMarketFactory",
 	"BinaryOptionMarketManager",
-	"Collateral",
-	"CollateralErc20",
-	"CollateralEth",
-	"CollateralShort",
 	"EtherCollateral",
 	"EtherCollateralsUSD",
 	"ExchangerWithVirtualSynth",
@@ -16,6 +12,8 @@
 	"MockBinaryOptionMarketManager",
 	"TestableBinaryOptionMarket",
 	"Synthetix",
+	"CollateralEth",
+	"CollateralErc20",
 	"NativeEtherWrapper",
 	"WETH"
 ]

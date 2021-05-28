@@ -134,13 +134,19 @@
 	"SynthetixBridgeToBase": {
 		"deploy": true
 	},
+	"CollateralUtil": {
+		"deploy": true
+	},
 	"CollateralManager": {
 		"deploy": true
 	},
-	"EtherWrapper": {
+	"CollateralManagerState": {
 		"deploy": true
 	},
-	"NativeEtherWrapper": {
+	"CollateralShort": {
+		"deploy": true
+	},
+	"EtherWrapper": {
 		"deploy": true
 	}
 }

@@ -24,6 +24,7 @@ contract CollateralState is Owned, State, ICollateralLoan {
         Loan[] memory accountLoans = loans[account];
         for (uint i = 0; i < accountLoans.length; i++) {
             if (accountLoans[i].id == loanID) {
+                require(accountLoans[i].interestIndex > 0);
                 return (accountLoans[i]);
             }
         }
