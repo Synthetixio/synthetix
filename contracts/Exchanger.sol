@@ -603,7 +603,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // Ensure src/dest synth is sUSD and determine sUSD value of exchange
         uint sourceSusdValue;
         if (sourceCurrencyKey == sUSD) {
-            sourceSusdValue = sourceAmount;
+            sourceSusdValue = sourceAmountAfterSettlement;
         } else if (destinationCurrencyKey == sUSD) {
             // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
             sourceSusdValue = systemConvertedAmount;
