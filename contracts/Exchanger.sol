@@ -340,27 +340,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             virtualSynth
         );
 
-        if (rewardAddress != address(0)) {
-            _processTradingRewards(fee, rewardAddress);
+        if (fee > 0 && rewardAddress != address(0) && getTradingRewardsEnabled()) {
+            tradingRewards().recordExchangeFeeForAccount(fee, rewardAddress);
         }
 
         if (trackingCode != bytes32(0)) {
-            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
-        }
-    }
-
-    function _emitTrackingEvent(
-        bytes32 trackingCode,
-        bytes32 toCurrencyKey,
-        uint256 toAmount,
-        uint256 fee
-    ) internal {
-        ISynthetixInternal(address(synthetix())).emitExchangeTracking(trackingCode, toCurrencyKey, toAmount, fee);
-    }
-
-    function _processTradingRewards(uint fee, address rewardAddress) internal {
-        if (fee > 0 && rewardAddress != address(0) && getTradingRewardsEnabled()) {
-            tradingRewards().recordExchangeFeeForAccount(fee, rewardAddress);
+            ISynthetixInternal(address(synthetix())).emitExchangeTracking(
+                trackingCode,
+                destinationCurrencyKey,
+                amountReceived,
+                fee
+            );
         }
     }
 
