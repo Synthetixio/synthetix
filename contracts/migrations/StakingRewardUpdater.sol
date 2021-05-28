@@ -17,6 +17,8 @@ contract StakingRewardUpdater {
         uint rewardsPerContract,
         uint duration
     ) external {
+        require(msg.sender == deployer, "Only the deployer can invoke this");
+
         for (uint i = 0; i < rewardContracts.length; i++) {
             StakingRewards rewardContract = rewardContracts[i];
 
