@@ -72,8 +72,6 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
         return _marketsForAssets(assets);
     }
 
-    // TODO: Plug this into total system debt calculation
-    // TODO: Caching
     function totalDebt() external view returns (uint debt, bool isInvalid) {
         uint total;
         bool anyIsInvalid;
