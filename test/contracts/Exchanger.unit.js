@@ -297,97 +297,105 @@ contract('Exchanger (unit tests)', async accounts => {
 				});
 
 				describe('when exchange rates hit circuit breakers', () => {
-					behaviors.whenMockedWithExchangeRatesValidity({ valid: true }, () => {
-						behaviors.whenMockedWithNoPriorExchangesToSettle(() => {
-							behaviors.whenMockedWithSynthUintSystemSetting(
-								{ setting: 'exchangeFeeRate', synth: sETH, value: toUnit('0') },
-								() => {
-									const deviationFactor = toUnit('5'); // 5x deviation limit
-									const badRate = toUnit('10');
-									const lastRate = badRate.mul(toBN(10)); // should hit deviation factor of 5x
+					behaviors.whenMockedSusdAndSeth(() => {
+						behaviors.whenMockedWithExchangeRatesValidity({ valid: true }, () => {
+							behaviors.whenMockedWithNoPriorExchangesToSettle(() => {
+								behaviors.whenMockedWithSynthUintSystemSetting(
+									{ setting: 'exchangeFeeRate', synth: sETH, value: toUnit('0') },
+									() => {
+										const deviationFactor = toUnit('5'); // 5x deviation limit
+										const badRate = toUnit('10');
+										const lastRate = badRate.mul(toBN(10)); // should hit deviation factor of 5x
 
-									// Source rate invalid
-									behaviors.whenMockedEntireExchangeRateConfiguration(
-										{
-											atomicRate: lastRate,
-											systemSourceRate: badRate,
-											systemDestinationRate: lastRate,
-											deviationFactor: deviationFactor,
-											lastExchangeRates: [
-												[sUSD, lastRate],
-												[sETH, lastRate],
-											],
-										},
-										() => {
-											beforeEach('attempt exchange', async () => {
-												await this.instance.exchangeAtomically(...defaultExchangeArgs);
-											});
-											it('suspends src synth', async () => {
-												assert.equal(
-													this.mocks.SystemStatus.smocked.suspendSynth.calls[0][0],
-													sUSD
-												);
-												assert.equal(
-													this.mocks.SystemStatus.smocked.suspendSynth.calls[0][1],
-													'65' // circuit breaker reason
-												);
-											});
-											// TODO: is there a way to check no exchange happened?
-										}
-									);
+										// Source rate invalid
+										behaviors.whenMockedEntireExchangeRateConfiguration(
+											{
+												atomicRate: lastRate,
+												systemSourceRate: badRate,
+												systemDestinationRate: lastRate,
+												deviationFactor: deviationFactor,
+												lastExchangeRates: [
+													[sUSD, lastRate],
+													[sETH, lastRate],
+												],
+											},
+											() => {
+												beforeEach('attempt exchange', async () => {
+													await this.instance.exchangeAtomically(...defaultExchangeArgs);
+												});
+												it('suspends src synth', async () => {
+													assert.equal(
+														this.mocks.SystemStatus.smocked.suspendSynth.calls[0][0],
+														sUSD
+													);
+													assert.equal(
+														this.mocks.SystemStatus.smocked.suspendSynth.calls[0][1],
+														'65' // circuit breaker reason
+													);
+												});
+												it('does not issue or burn synths', async () => {
+													assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
+													assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
+												});
+											}
+										);
 
-									behaviors.whenMockedEntireExchangeRateConfiguration(
-										{
-											atomicRate: lastRate,
-											systemSourceRate: lastRate,
-											systemDestinationRate: badRate,
-											deviationFactor: deviationFactor,
-											lastExchangeRates: [
-												[sUSD, lastRate],
-												[sETH, lastRate],
-											],
-										},
-										() => {
-											beforeEach('attempt exchange', async () => {
-												await this.instance.exchangeAtomically(...defaultExchangeArgs);
-											});
-											it('suspends dest synth', async () => {
-												assert.equal(
-													this.mocks.SystemStatus.smocked.suspendSynth.calls[0][0],
-													sETH
-												);
-												assert.equal(
-													this.mocks.SystemStatus.smocked.suspendSynth.calls[0][1],
-													'65' // circuit breaker reason
-												);
-											});
-											// TODO: is there a way to check no exchange happened?
-										}
-									);
+										behaviors.whenMockedEntireExchangeRateConfiguration(
+											{
+												atomicRate: lastRate,
+												systemSourceRate: lastRate,
+												systemDestinationRate: badRate,
+												deviationFactor: deviationFactor,
+												lastExchangeRates: [
+													[sUSD, lastRate],
+													[sETH, lastRate],
+												],
+											},
+											() => {
+												beforeEach('attempt exchange', async () => {
+													await this.instance.exchangeAtomically(...defaultExchangeArgs);
+												});
+												it('suspends dest synth', async () => {
+													assert.equal(
+														this.mocks.SystemStatus.smocked.suspendSynth.calls[0][0],
+														sETH
+													);
+													assert.equal(
+														this.mocks.SystemStatus.smocked.suspendSynth.calls[0][1],
+														'65' // circuit breaker reason
+													);
+												});
+												it('does not issue or burn synths', async () => {
+													assert.equal(this.mocks.sUSD.smocked.issue.calls.length, 0);
+													assert.equal(this.mocks.sETH.smocked.burn.calls.length, 0);
+												});
+											}
+										);
 
-									// Atomic rate invalid
-									behaviors.whenMockedEntireExchangeRateConfiguration(
-										{
-											atomicRate: badRate,
-											systemSourceRate: lastRate,
-											systemDestinationRate: lastRate,
-											deviationFactor: deviationFactor,
-											lastExchangeRates: [
-												[sUSD, lastRate],
-												[sETH, lastRate],
-											],
-										},
-										() => {
-											it('reverts exchange', async () => {
-												await assert.revert(
-													this.instance.exchangeAtomically(...defaultExchangeArgs),
-													'Atomic rate deviates too much'
-												);
-											});
-										}
-									);
-								}
-							);
+										// Atomic rate invalid
+										behaviors.whenMockedEntireExchangeRateConfiguration(
+											{
+												atomicRate: badRate,
+												systemSourceRate: lastRate,
+												systemDestinationRate: lastRate,
+												deviationFactor: deviationFactor,
+												lastExchangeRates: [
+													[sUSD, lastRate],
+													[sETH, lastRate],
+												],
+											},
+											() => {
+												it('reverts exchange', async () => {
+													await assert.revert(
+														this.instance.exchangeAtomically(...defaultExchangeArgs),
+														'Atomic rate deviates too much'
+													);
+												});
+											}
+										);
+									}
+								);
+							});
 						});
 					});
 				});
