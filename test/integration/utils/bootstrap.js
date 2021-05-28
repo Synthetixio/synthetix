@@ -5,7 +5,7 @@ const { loadUsers } = require('./users');
 const { Watcher } = require('@eth-optimism/watcher');
 const { connectContracts } = require('./contracts');
 const { updateExchangeRatesIfNeeded } = require('./rates');
-const { deposit } = require('./bridge');
+const { ensureBalance } = require('./balances');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -33,6 +33,13 @@ function bootstrapL2({ ctx }) {
 		connectContracts({ ctx });
 
 		await updateExchangeRatesIfNeeded({ ctx });
+
+		await ensureBalance({
+			ctx,
+			symbol: 'SNX',
+			user: ctx.users.owner,
+			balance: ethers.utils.parseEther('1000000'),
+		});
 	});
 }
 
@@ -41,7 +48,8 @@ function bootstrapDual({ ctx }) {
 		ctx.l1 = { useOvm: false };
 		ctx.l2 = { useOvm: true };
 
-		// Providers
+		ctx.l2.l1 = ctx.l1;
+
 		ctx.l1.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL1}`,
 		});
@@ -50,7 +58,6 @@ function bootstrapDual({ ctx }) {
 		});
 		ctx.l2.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
-		// Watchers
 		const response = await axios.get(`${hre.config.providerUrl}:8080/addresses.json`);
 		const addresses = response.data;
 		ctx.watcher = new Watcher({
@@ -63,26 +70,23 @@ function bootstrapDual({ ctx }) {
 				messengerAddress: '0x4200000000000000000000000000000000000007',
 			},
 		});
+		ctx.l1.watcher = ctx.l2.watcher = ctx.watcher;
 
-		// Accounts
 		await loadUsers({ ctx: ctx.l1 });
 		await loadUsers({ ctx: ctx.l2 });
 
-		// Contracts
 		connectContracts({ ctx: ctx.l1 });
 		connectContracts({ ctx: ctx.l2 });
 
-		// Rates and snapshots
 		await updateExchangeRatesIfNeeded({ ctx: ctx.l1 });
 		await updateExchangeRatesIfNeeded({ ctx: ctx.l2 });
 
-		// Ensure owner has SNX on L2
-		const amount = ethers.utils.parseEther('1000000');
-		const balance = await ctx.l2.contracts.Synthetix.balanceOf(ctx.l2.users.owner.address);
-		if (balance.lt(amount)) {
-			const delta = amount.sub(balance);
-			await deposit({ ctx, from: ctx.l1.users.owner, to: ctx.l1.users.owner, amount: delta });
-		}
+		await ensureBalance({
+			ctx: ctx.l2,
+			symbol: 'SNX',
+			user: ctx.l2.users.owner,
+			balance: ethers.utils.parseEther('1000000'),
+		});
 	});
 }
 

@@ -39,13 +39,13 @@ async function _updateCache({ ctx }) {
 	await tx.wait();
 }
 
-async function getExchangeRate({ ctx, symbol }) {
-	const { ExchangeRates } = ctx.contracts.ExchangeRates;
+async function getRate({ ctx, symbol }) {
+	const { ExchangeRates } = ctx.contracts;
 
 	return ExchangeRates.rateForCurrency(toBytes32(symbol));
 }
 
 module.exports = {
 	updateExchangeRatesIfNeeded,
-	getExchangeRate,
+	getRate,
 };
