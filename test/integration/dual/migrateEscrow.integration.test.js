@@ -36,7 +36,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 			SynthetixBridgeToBase,
 		} = ctx.l2.contracts);
 
-		user = ctx.l1.user;
+		user = ctx.l1.users.someUser;
 	});
 
 	before('record current escrow state', async () => {
@@ -60,7 +60,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 		});
 
 		before('transfer SNX to the L1 user', async () => {
-			SynthetixL1 = SynthetixL1.connect(ctx.l1.owner);
+			SynthetixL1 = SynthetixL1.connect(ctx.l1.users.owner);
 
 			const tx = await SynthetixL1.transfer(user.address, snxAmount);
 			await tx.wait();

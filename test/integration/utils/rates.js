@@ -10,13 +10,14 @@ async function updateExchangeRatesIfNeeded({ ctx }) {
 
 	const { isInvalid, isStale } = await DebtCache.cacheInfo();
 	if (isInvalid || isStale) {
-		_updateCache({ ctx });
+		await _updateCache({ ctx });
 	}
 }
 
 async function _simulateExchangeRates({ ctx }) {
 	const { Issuer } = ctx.contracts;
 	let { ExchangeRates } = ctx.contracts;
+	ExchangeRates = ExchangeRates.connect(ctx.users.owner);
 
 	const currencyKeys = (await Issuer.availableCurrencyKeys())
 		.filter(key => key !== toBytes32('sUSD'))
@@ -24,9 +25,6 @@ async function _simulateExchangeRates({ ctx }) {
 
 	const { timestamp } = await ctx.provider.getBlock();
 	const rates = currencyKeys.map(() => ethers.utils.parseEther('1'));
-
-	const oracle = await ExchangeRates.oracle();
-	ExchangeRates = ExchangeRates.connect(await ctx.provider.getSigner(oracle));
 
 	const tx = await ExchangeRates.updateRates(currencyKeys, rates, timestamp);
 	await tx.wait();
@@ -41,6 +39,13 @@ async function _updateCache({ ctx }) {
 	await tx.wait();
 }
 
+async function getExchangeRate({ ctx, symbol }) {
+	const { ExchangeRates } = ctx.contracts.ExchangeRates;
+
+	return ExchangeRates.rateForCurrency(toBytes32(symbol));
+}
+
 module.exports = {
 	updateExchangeRatesIfNeeded,
+	getExchangeRate,
 };

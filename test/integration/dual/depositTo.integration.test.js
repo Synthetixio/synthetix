@@ -22,7 +22,7 @@ describe('depositTo() integration tests (L1, L2)', () => {
 			({ Synthetix, SynthetixBridgeToOptimism, SynthetixBridgeEscrow } = ctx.l1.contracts);
 
 			owner = ctx.l1.users.owner;
-			user = ctx.l1.users.user0;
+			user = ctx.l1.users.someUser;
 		});
 
 		before('record balances', async () => {

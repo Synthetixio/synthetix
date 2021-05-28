@@ -1,35 +1,21 @@
 const ethers = require('ethers');
-const { getUsers } = require('../../..');
 
 async function loadUsers({ ctx, network }) {
-	const { useOvm } = ctx;
+	const wallets = _createWallets({ provider: ctx.provider });
 
 	ctx.users = {};
-
-	await _getAdminUsers({ ctx, network, useOvm });
-	_createAdditionalUsers({ ctx });
+	ctx.users.owner = wallets[0];
+	ctx.users.someUser = wallets[1];
 }
 
-async function _getAdminUsers({ ctx, network, useOvm }) {
-	const users = getUsers({ network, useOvm })
-		.filter(account => account.name !== 'fee')
-		.filter(account => account.name !== 'zero');
+function _createWallets({ provider }) {
+	const wallets = [];
 
-	for (const user of users) {
-		const signer = await ctx.provider.getSigner(user.address);
-		signer.address = signer._address;
-
-		ctx.users[user.name] = signer;
+	for (let i = 0; i < 10; i++) {
+		wallets.push(new ethers.Wallet(getPrivateKey({ index: i }), provider));
 	}
-}
 
-async function _createAdditionalUsers({ ctx }) {
-	const numUsers = 5;
-	const offset = 4;
-
-	for (let i = 0; i < numUsers; i++) {
-		ctx.users[`user${i}`] = new ethers.Wallet(getPrivateKey({ index: i + offset }), ctx.provider);
-	}
+	return wallets;
 }
 
 function getPrivateKey({ index }) {
