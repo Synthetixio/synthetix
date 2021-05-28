@@ -1,0 +1,14 @@
+{
+	"name": "futures-keepers",
+	"version": "1.0.0",
+	"main": "src/index.js",
+	"license": "MIT",
+	"dependencies": {
+		"chalk": "^4.1.1",
+		"dotenv": "^10.0.0",
+		"ethers": "^5.2.0",
+		"synthetix": "file:..",
+		"ts-node": "^10.0.0",
+		"typescript": "^4.3.2"
+	}
+}
