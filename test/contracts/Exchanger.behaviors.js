@@ -238,13 +238,6 @@ module.exports = function({ accounts }) {
 					this.mocks.FeePool.smocked.FEE_ADDRESS.will.return.with(
 						'0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF'
 					);
-					// TODO
-					this.mocks.FlexibleStorage.smocked.getBoolValue.will.return.with((contract, record) => {
-						return !!(
-							contract === toBytes32('SystemSettings') &&
-							record === toBytes32('tradingRewardsEnabled')
-						);
-					});
 				});
 				cb();
 			});
