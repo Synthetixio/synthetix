@@ -7,30 +7,34 @@ import "./interfaces/IFuturesMarket.sol";
 import "./MixinResolver.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesConfirmationKeeper
-contract FuturesKeepers is MixinResolver, IFuturesKeepers, IKeeper {
+contract FuturesKeepers is IFuturesKeepers, IKeeper {
     mapping(bytes32 => uint256) public confirmationUpkeeps;
     mapping(bytes32 => uint256) public liquidationUpkeeps;
+    IKeeperRegistry public keeperRegistry;
 
-    bytes32 internal constant CONTRACT_KEEPER_REGISTRY = "KeeperRegistry";
+    // bytes32 internal constant CONTRACT_KEEPER_REGISTRY = "KeeperRegistry";
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _resolver) public MixinResolver(_resolver) {}
+    // constructor(address _resolver) public MixinResolver(_resolver) {}
+    constructor(address _keeperRegistry) public {
+        keeperRegistry = IKeeperRegistry(_keeperRegistry);
+    }
 
     /* ========== VIEWS ========== */
 
     /* ---------- External Contracts ---------- */
 
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinResolver.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_KEEPER_REGISTRY;
-        addresses = combineArrays(existingAddresses, newAddresses);
-    }
+    // function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    //     bytes32[] memory existingAddresses = MixinResolver.resolverAddressesRequired();
+    //     bytes32[] memory newAddresses = new bytes32[](1);
+    //     newAddresses[0] = CONTRACT_KEEPER_REGISTRY;
+    //     addresses = combineArrays(existingAddresses, newAddresses);
+    // }
 
-    function keeperRegistry() internal view returns (IKeeperRegistry) {
-        return IKeeperRegistry(requireAndGetAddress(CONTRACT_KEEPER_REGISTRY));
-    }
+    // function keeperRegistry internal view returns (IKeeperRegistry) {
+    //     return IKeeperRegistry(requireAndGetAddress(CONTRACT_KEEPER_REGISTRY));
+    // }
 
     //
     // Order confirmations.
@@ -56,7 +60,7 @@ contract FuturesKeepers is MixinResolver, IFuturesKeepers, IKeeper {
 
     function _requestConfirmationKeeper(address market, address account) internal {
         uint upkeepId =
-            keeperRegistry().registerUpkeep(
+            keeperRegistry.registerUpkeep(
                 address(this),
                 9e6,
                 address(this),
@@ -70,7 +74,7 @@ contract FuturesKeepers is MixinResolver, IFuturesKeepers, IKeeper {
     function cancelConfirmationKeeper(address market, address account) public {
         bytes32 id = sha256(abi.encodePacked(market, account));
         uint upkeepId = confirmationUpkeeps[id];
-        keeperRegistry().cancelUpkeep(upkeepId);
+        keeperRegistry.cancelUpkeep(upkeepId);
         delete confirmationUpkeeps[id];
     }
 
@@ -84,7 +88,7 @@ contract FuturesKeepers is MixinResolver, IFuturesKeepers, IKeeper {
 
     function _requestLiquidationKeeper(address market, address account) internal {
         uint upkeepId =
-            keeperRegistry().registerUpkeep(
+            keeperRegistry.registerUpkeep(
                 address(this),
                 9e6,
                 address(this),
@@ -98,7 +102,7 @@ contract FuturesKeepers is MixinResolver, IFuturesKeepers, IKeeper {
     function cancelLiquidationKeeper(address market, address account) public {
         bytes32 id = sha256(abi.encodePacked(market, account));
         uint upkeepId = liquidationUpkeeps[id];
-        keeperRegistry().cancelUpkeep(upkeepId);
+        keeperRegistry.cancelUpkeep(upkeepId);
         delete liquidationUpkeeps[id];
     }
 
@@ -126,6 +130,7 @@ contract FuturesKeepers is MixinResolver, IFuturesKeepers, IKeeper {
 
     function performUpkeep(bytes calldata performData) external {
         // solhint-disable-next-line avoid-low-level-calls
-        address(this).call(performData);
+        (bool success, ) = address(this).call(performData);
+        require(success);
     }
 }

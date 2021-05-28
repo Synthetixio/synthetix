@@ -1325,6 +1325,32 @@ const deploy = async ({
 		deps: ['AddressResolver'],
 	});
 
+	//
+	// KeeperRegistry
+	//
+	console.log(gray(`\n------ DEPLOY KEEPERS ------\n`));
+
+	let keeperRegistryAddress;
+	if (network === 'local') {
+		const keeperRegistry = await deployer.deployContract({
+			name: 'KeeperRegistry',
+			source: 'LimitedKeeperRegistry',
+			force: true,
+		});
+		keeperRegistryAddress = addressOf(keeperRegistry);
+	}
+
+	if (!keeperRegistryAddress) {
+		throw new Error('KeeperRegistry address not found.');
+	}
+
+	await deployer.deployContract({
+		name: 'FuturesKeepers',
+		args: [keeperRegistryAddress],
+		// deps: ['AddressResolver'],
+		// args: [addressOf(readProxyForResolver)],
+	});
+
 	// ----------------
 	// Futures market setup
 	// ----------------
