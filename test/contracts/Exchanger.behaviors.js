@@ -3,12 +3,13 @@
 const { artifacts, web3 } = require('hardhat');
 const { smockit } = require('@eth-optimism/smock');
 const {
+	getUsers,
 	fromBytes32,
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 const { prepareSmocks, prepareFlexibleStorageSmock } = require('./helpers');
-const { multiplyDecimal } = require('../utils')();
+const { divideDecimal, multiplyDecimal } = require('../utils')();
 
 const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
@@ -43,13 +44,32 @@ module.exports = function({ accounts }) {
 		this.flexibleStorageMock = prepareFlexibleStorageSmock(this.mocks.FlexibleStorage);
 	});
 
-	const mockEffectiveAtomicRate = ({ atomicRate, systemSourceRate, systemDestinationRate }) => {
+	const mockEffectiveAtomicRate = ({
+		sourceCurrency,
+		atomicRate,
+		systemSourceRate,
+		systemDestinationRate,
+	}) => {
 		this.mocks.ExchangeRates.smocked.effectiveAtomicValueAndRates.will.return.with(
 			(srcKey, amount, destKey) => {
 				amount = amount.toString(); // seems to be passed to smock as a number
+
+				// For ease of comparison when mocking, atomicRate is specified in the
+				// same direction as systemDestinationRate
+				const atomicValue =
+					srcKey === sourceCurrency
+						? divideDecimal(amount, atomicRate)
+						: multiplyDecimal(amount, atomicRate);
+
+				const [sourceRate, destinationRate] =
+					srcKey === sourceCurrency
+						? [systemSourceRate, systemDestinationRate]
+						: [systemDestinationRate, systemSourceRate];
+				const systemValue = divideDecimal(multiplyDecimal(amount, sourceRate), destinationRate);
+
 				return [
-					multiplyDecimal(amount, atomicRate), // destinationAmount
-					multiplyDecimal(amount, srcKey === sUSD ? systemDestinationRate : systemSourceRate), // systemAmountReceived
+					atomicValue, // value
+					systemValue, // systemValue
 					systemSourceRate, // systemSourceRate
 					systemDestinationRate, // systemDestinationRate
 				].map(bn => bn.toString());
@@ -126,12 +146,13 @@ module.exports = function({ accounts }) {
 			});
 		},
 		whenMockedEffectiveAtomicRateWithValue: (
-			{ atomicRate, systemSourceRate, systemDestinationRate },
+			{ sourceCurrency, atomicRate, systemSourceRate, systemDestinationRate },
 			cb
 		) => {
 			describe(`when mocked with atomic rate ${atomicRate}, src rate ${systemSourceRate}, dest rate ${systemDestinationRate}`, () => {
 				beforeEach(async () => {
 					mockEffectiveAtomicRate({
+						sourceCurrency,
 						atomicRate,
 						systemSourceRate,
 						systemDestinationRate,
@@ -140,7 +161,14 @@ module.exports = function({ accounts }) {
 			});
 		},
 		whenMockedEntireExchangeRateConfiguration: (
-			{ atomicRate, systemSourceRate, systemDestinationRate, deviationFactor, lastExchangeRates },
+			{
+				sourceCurrency,
+				atomicRate,
+				systemSourceRate,
+				systemDestinationRate,
+				deviationFactor,
+				lastExchangeRates,
+			},
 			cb
 		) => {
 			const lastRates = lastExchangeRates
@@ -156,6 +184,7 @@ module.exports = function({ accounts }) {
 					});
 
 					mockEffectiveAtomicRate({
+						sourceCurrency,
 						atomicRate,
 						systemSourceRate,
 						systemDestinationRate,
@@ -163,10 +192,15 @@ module.exports = function({ accounts }) {
 
 					this.mocks.ExchangeRates.smocked.effectiveValue.will.return.with(
 						(srcKey, sourceAmount, destKey) => {
-							sourceAmount = sourceAmount.toString(); // seems to be passed to smock as a number
-							return multiplyDecimal(
-								sourceAmount,
-								srcKey === sUSD ? systemDestinationRate : systemSourceRate
+							sourceAmount = sourceAmount.toString(); // passed from smock as a number
+
+							const [sourceRate, destinationRate] =
+								srcKey === sourceCurrency
+									? [systemSourceRate, systemDestinationRate]
+									: [systemDestinationRate, systemSourceRate];
+							return divideDecimal(
+								multiplyDecimal(sourceAmount, sourceRate),
+								destinationRate
 							).toString();
 						}
 					);
@@ -185,8 +219,6 @@ module.exports = function({ accounts }) {
 			describe(`when mocked sUSD and sETH`, () => {
 				async function mockSynth(currencyKey) {
 					const synth = await smockit(artifacts.require('Synth').abi);
-					synth.smocked.burn.will.return();
-					synth.smocked.issue.will.return();
 					synth.smocked.currencyKey.will.return.with(currencyKey);
 					synth.smocked.proxy.will.return.with(web3.eth.accounts.create().address);
 					return synth;
@@ -213,7 +245,7 @@ module.exports = function({ accounts }) {
 			describe('when mocked fee pool', () => {
 				beforeEach(async () => {
 					this.mocks.FeePool.smocked.FEE_ADDRESS.will.return.with(
-						'0xfeEFEEfeefEeFeefEEFEEfEeFeefEEFeeFEEFEeF'
+						getUsers({ network: 'mainnet', user: 'fee' }).address
 					);
 				});
 				cb();
