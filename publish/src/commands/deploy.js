@@ -837,68 +837,33 @@ const deploy = async ({
 		args: [account, account, addressOf(readProxyForResolver)],
 	});
 
-	// let manager, collateralEth, collateralErc20, collateralShort;
+	await deployer.deployContract({
+		// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
+		name: 'EtherCollateral',
+		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateral',
+		args: useOvm ? [] : [account, addressOf(readProxyForResolver)],
+	});
+	await deployer.deployContract({
+		name: 'EtherCollateralsUSD',
+		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateralsUSD',
+		args: useOvm ? [] : [account, addressOf(readProxyForResolver)],
+	});
+	await deployer.deployContract({
+		name: 'SynthetixBridgeToBase',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
 
-	if (useOvm) {
-		await deployer.deployContract({
-			// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
-			name: 'EtherCollateral',
-			source: 'EmptyEtherCollateral',
-			args: [],
-		});
-		await deployer.deployContract({
-			name: 'EtherCollateralsUSD',
-			source: 'EmptyEtherCollateral',
-			args: [],
-		});
-		await deployer.deployContract({
-			name: 'CollateralManager',
-			source: 'EmptyCollateralManager',
-			args: [],
-		});
-		await deployer.deployContract({
-			name: 'SynthetixBridgeToBase',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-	} else {
-		await deployer.deployContract({
-			name: 'EtherCollateral',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-		await deployer.deployContract({
-			name: 'EtherCollateralsUSD',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-		const SynthetixBridgeToOptimism = await deployer.deployContract({
-			name: 'SynthetixBridgeToOptimism',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-		const SynthetixBridgeEscrow = await deployer.deployContract({
-			name: 'SynthetixBridgeEscrow',
-			deps: ['AddressResolver'],
-			args: [account],
-		});
-
-		const allowance = await proxyERC20Synthetix.methods
-			.allowance(addressOf(SynthetixBridgeEscrow), addressOf(SynthetixBridgeToOptimism))
-			.call();
-		if (allowance.toString() === '0') {
-			await runStep({
-				contract: `SynthetixBridgeEscrow`,
-				target: SynthetixBridgeEscrow,
-				write: 'approveBridge',
-				writeArg: [
-					addressOf(proxyERC20Synthetix),
-					addressOf(SynthetixBridgeToOptimism),
-					w3utils.toWei('100000000'),
-				],
-			});
-		}
-	}
+	await deployer.deployContract({
+		name: 'SynthetixBridgeToOptimism',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
+	await deployer.deployContract({
+		name: 'SynthetixBridgeEscrow',
+		deps: ['AddressResolver'],
+		args: [account],
+	});
 
 	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
 
@@ -924,13 +889,11 @@ const deploy = async ({
 		args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
 	});
 
-	if (!useOvm) {
-		await deployer.deployContract({
-			name: 'NativeEtherWrapper',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-	}
+	await deployer.deployContract({
+		name: 'NativeEtherWrapper',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
 
 	// ----------------
 	// Binary option market factory and manager setup
@@ -990,149 +953,106 @@ const deploy = async ({
 	// ----------------
 	// Multi Collateral System
 	// ----------------
-	let collateralManager, collateralEth, collateralErc20, collateralShort;
 
 	const collateralManagerDefaults = await getDeployParameter('COLLATERAL_MANAGER');
 
-	if (!useOvm) {
-		console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
+	console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
 
-		const managerState = await deployer.deployContract({
-			name: 'CollateralManagerState',
-			args: [account, account],
-		});
+	const managerState = await deployer.deployContract({
+		name: 'CollateralManagerState',
+		args: [account, account],
+	});
 
-		collateralManager = await deployer.deployContract({
-			name: 'CollateralManager',
-			args: [
-				addressOf(managerState),
-				account,
-				addressOf(readProxyForResolver),
-				collateralManagerDefaults['MAX_DEBT'],
-				collateralManagerDefaults['BASE_BORROW_RATE'],
-				collateralManagerDefaults['BASE_SHORT_RATE'],
-			],
-		});
+	const useEmptyCollateralManager = useOvm;
+	const collateralManager = await deployer.deployContract({
+		name: 'CollateralManager',
+		source: useEmptyCollateralManager ? 'EmptyCollateralManager' : 'CollateralManager',
+		args: useEmptyCollateralManager
+			? []
+			: [
+					addressOf(managerState),
+					account,
+					addressOf(readProxyForResolver),
+					collateralManagerDefaults['MAX_DEBT'],
+					collateralManagerDefaults['BASE_BORROW_RATE'],
+					collateralManagerDefaults['BASE_SHORT_RATE'],
+			  ],
+	});
 
-		if (managerState && collateralManager) {
-			await runStep({
-				contract: 'CollateralManagerState',
-				target: managerState,
-				read: 'associatedContract',
-				expected: input => input === addressOf(collateralManager),
-				write: 'setAssociatedContract',
-				writeArg: addressOf(collateralManager),
-			});
+	const collateralStateEth = await deployer.deployContract({
+		name: 'CollateralStateEth',
+		source: 'CollateralState',
+		args: [account, account],
+	});
+
+	const collateralEth = await deployer.deployContract({
+		name: 'CollateralEth',
+		args: [
+			addressOf(collateralStateEth),
+			account,
+			addressOf(collateralManager),
+			addressOf(readProxyForResolver),
+			toBytes32('sETH'),
+			(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
+			(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
+		],
+	});
+
+	const collateralStateErc20 = await deployer.deployContract({
+		name: 'CollateralStateErc20',
+		source: 'CollateralState',
+		args: [account, account],
+	});
+
+	let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
+	if (!RENBTC_ADDRESS) {
+		if (network !== 'local') {
+			throw new Error('renBTC address is not known');
 		}
 
-		const collateralStateEth = await deployer.deployContract({
-			name: 'CollateralStateEth',
-			source: 'CollateralState',
-			args: [account, account],
+		// On local, deploy a mock renBTC token to use as the underlying in CollateralErc20
+		const renBTC = await deployer.deployContract({
+			name: 'MockToken',
+			args: ['renBTC', 'renBTC', 8],
 		});
 
-		collateralEth = await deployer.deployContract({
-			name: 'CollateralEth',
-			args: [
-				addressOf(collateralStateEth),
-				account,
-				addressOf(collateralManager),
-				addressOf(readProxyForResolver),
-				toBytes32('sETH'),
-				(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
-				(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
-			],
-		});
-
-		if (collateralStateEth && collateralEth) {
-			await runStep({
-				contract: 'CollateralStateEth',
-				target: collateralStateEth,
-				read: 'associatedContract',
-				expected: input => input === addressOf(collateralEth),
-				write: 'setAssociatedContract',
-				writeArg: addressOf(collateralEth),
-			});
-		}
-
-		const collateralStateErc20 = await deployer.deployContract({
-			name: 'CollateralStateErc20',
-			source: 'CollateralState',
-			args: [account, account],
-		});
-
-		let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
-		if (!RENBTC_ADDRESS) {
-			if (network !== 'local') {
-				throw new Error('renBTC address is not known');
-			}
-
-			// On local, deploy a mock renBTC token to use as the underlying in CollateralErc20
-			const renBTC = await deployer.deployContract({
-				name: 'MockToken',
-				args: ['renBTC', 'renBTC', 8],
-			});
-
-			RENBTC_ADDRESS = renBTC.options.address;
-		}
-
-		collateralErc20 = await deployer.deployContract({
-			name: 'CollateralErc20',
-			source: 'CollateralErc20',
-			args: [
-				addressOf(collateralStateErc20),
-				account,
-				addressOf(collateralManager),
-				addressOf(readProxyForResolver),
-				toBytes32('sBTC'),
-				(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_CRATIO'],
-				(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_COLLATERAL'],
-				RENBTC_ADDRESS,
-				8,
-			],
-		});
-
-		if (collateralStateErc20 && collateralErc20) {
-			await runStep({
-				contract: 'CollateralStateErc20',
-				target: collateralStateErc20,
-				read: 'associatedContract',
-				expected: input => input === addressOf(collateralErc20),
-				write: 'setAssociatedContract',
-				writeArg: addressOf(collateralErc20),
-			});
-		}
-
-		const collateralStateShort = await deployer.deployContract({
-			name: 'CollateralStateShort',
-			source: 'CollateralState',
-			args: [account, account],
-		});
-
-		collateralShort = await deployer.deployContract({
-			name: 'CollateralShort',
-			args: [
-				addressOf(collateralStateShort),
-				account,
-				addressOf(collateralManager),
-				addressOf(readProxyForResolver),
-				toBytes32('sUSD'),
-				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
-				(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
-			],
-		});
-
-		if (collateralStateShort && collateralShort) {
-			await runStep({
-				contract: 'CollateralStateShort',
-				target: collateralStateShort,
-				read: 'associatedContract',
-				expected: input => input === collateralShort.options.address,
-				write: 'setAssociatedContract',
-				writeArg: collateralShort.options.address,
-			});
-		}
+		RENBTC_ADDRESS = renBTC.options.address;
 	}
+
+	const collateralErc20 = await deployer.deployContract({
+		name: 'CollateralErc20',
+		source: 'CollateralErc20',
+		args: [
+			addressOf(collateralStateErc20),
+			account,
+			addressOf(collateralManager),
+			addressOf(readProxyForResolver),
+			toBytes32('sBTC'),
+			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_CRATIO'],
+			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_COLLATERAL'],
+			RENBTC_ADDRESS,
+			8,
+		],
+	});
+
+	const collateralStateShort = await deployer.deployContract({
+		name: 'CollateralStateShort',
+		source: 'CollateralState',
+		args: [account, account],
+	});
+
+	const collateralShort = await deployer.deployContract({
+		name: 'CollateralShort',
+		args: [
+			addressOf(collateralStateShort),
+			account,
+			addressOf(collateralManager),
+			addressOf(readProxyForResolver),
+			toBytes32('sUSD'),
+			(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
+			(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
+		],
+	});
 
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
@@ -2295,8 +2215,54 @@ const deploy = async ({
 		});
 	}
 
-	if (!useOvm) {
-		console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
+	console.log(gray(`\n------ CONFIGURING MULTI COLLATERAL ------\n`));
+
+	if (collateralStateShort && collateralShort) {
+		await runStep({
+			contract: 'CollateralStateShort',
+			target: collateralStateShort,
+			read: 'associatedContract',
+			expected: input => input === collateralShort.options.address,
+			write: 'setAssociatedContract',
+			writeArg: collateralShort.options.address,
+		});
+	}
+
+	if (collateralStateErc20 && collateralErc20) {
+		await runStep({
+			contract: 'CollateralStateErc20',
+			target: collateralStateErc20,
+			read: 'associatedContract',
+			expected: input => input === addressOf(collateralErc20),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(collateralErc20),
+		});
+	}
+
+	if (collateralStateEth && collateralEth) {
+		await runStep({
+			contract: 'CollateralStateEth',
+			target: collateralStateEth,
+			read: 'associatedContract',
+			expected: input => input === addressOf(collateralEth),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(collateralEth),
+		});
+	}
+	if (managerState && collateralManager) {
+		await runStep({
+			contract: 'CollateralManagerState',
+			target: managerState,
+			read: 'associatedContract',
+			expected: input => input === addressOf(collateralManager),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(collateralManager),
+		});
+	}
+
+	console.log(gray(`\n------ INITIALISING MULTI COLLATERAL ------\n`));
+
+	if (collateralEth && collateralErc20 && collateralShort) {
 		const collateralsArg = [collateralEth, collateralErc20, collateralShort].map(addressOf);
 		await runStep({
 			contract: 'CollateralManager',
@@ -2307,7 +2273,8 @@ const deploy = async ({
 			write: 'addCollaterals',
 			writeArg: [collateralsArg],
 		});
-
+	}
+	if (collateralEth) {
 		await runStep({
 			contract: 'CollateralEth',
 			target: collateralEth,
@@ -2316,7 +2283,6 @@ const deploy = async ({
 			write: 'setManager',
 			writeArg: addressOf(collateralManager),
 		});
-
 		const collateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['sUSD', 'sETH']
 		await runStep({
 			contract: 'CollateralEth',
@@ -2336,6 +2302,17 @@ const deploy = async ({
 		});
 
 		await runStep({
+			contract: 'CollateralEth',
+			target: collateralEth,
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
+		});
+	}
+
+	if (collateralErc20) {
+		await runStep({
 			contract: 'CollateralErc20',
 			target: collateralErc20,
 			read: 'manager',
@@ -2343,7 +2320,6 @@ const deploy = async ({
 			write: 'setManager',
 			writeArg: addressOf(collateralManager),
 		});
-
 		const collateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['sUSD', 'sBTC']
 		await runStep({
 			contract: 'CollateralErc20',
@@ -2362,6 +2338,17 @@ const deploy = async ({
 			],
 		});
 
+		await runStep({
+			contract: 'CollateralErc20',
+			target: collateralErc20,
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
+		});
+	}
+
+	if (collateralShort) {
 		await runStep({
 			contract: 'CollateralShort',
 			target: collateralShort,
@@ -2389,6 +2376,29 @@ const deploy = async ({
 			],
 		});
 
+		const collateralShortInteractionDelay = (await getDeployParameter('COLLATERAL_SHORT'))[
+			'INTERACTION_DELAY'
+		];
+
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'interactionDelay',
+			expected: input => input !== '0', // only change if zero
+			write: 'setInteractionDelay',
+			writeArg: collateralShortInteractionDelay,
+		});
+		await runStep({
+			contract: 'CollateralShort',
+			target: collateralShort,
+			read: 'issueFeeRate',
+			expected: input => input !== '0', // only change if zero
+			write: 'setIssueFeeRate',
+			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
+		});
+	}
+
+	if (!useEmptyCollateralManager) {
 		await runStep({
 			contract: 'CollateralManager',
 			target: collateralManager,
@@ -2453,46 +2463,6 @@ const deploy = async ({
 				),
 				collateralManagerShorts.map(({ long }) => toBytes32(long)),
 			],
-		});
-
-		const collateralShortInteractionDelay = (await getDeployParameter('COLLATERAL_SHORT'))[
-			'INTERACTION_DELAY'
-		];
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			read: 'interactionDelay',
-			expected: input => input !== '0', // only change if zero
-			write: 'setInteractionDelay',
-			writeArg: collateralShortInteractionDelay,
-		});
-
-		await runStep({
-			contract: 'CollateralEth',
-			target: collateralEth,
-			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero
-			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
-		});
-
-		await runStep({
-			contract: 'CollateralErc20',
-			target: collateralErc20,
-			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero
-			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
-		});
-
-		await runStep({
-			contract: 'CollateralShort',
-			target: collateralShort,
-			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero
-			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
 		});
 	}
 
