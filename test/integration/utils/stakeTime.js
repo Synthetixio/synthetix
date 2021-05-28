@@ -1,7 +1,7 @@
 function ignoreMinimumStakeTime({ ctx }) {
 	before('record and reduce minimumStakeTime', async () => {
 		let { SystemSettings } = ctx.contracts;
-		SystemSettings = SystemSettings.connect(ctx.owner);
+		SystemSettings = SystemSettings.connect(ctx.users.owner);
 
 		ctx.minimumStakeTime = await SystemSettings.minimumStakeTime();
 
@@ -11,7 +11,7 @@ function ignoreMinimumStakeTime({ ctx }) {
 
 	after('restore minimum stake time', async () => {
 		let { SystemSettings } = ctx.contracts;
-		SystemSettings = SystemSettings.connect(ctx.owner);
+		SystemSettings = SystemSettings.connect(ctx.users.owner);
 
 		const tx = await SystemSettings.setMinimumStakeTime(ctx.minimumStakeTime);
 		await tx.wait();

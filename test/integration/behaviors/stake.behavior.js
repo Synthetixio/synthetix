@@ -5,7 +5,7 @@ const { ignoreMinimumStakeTime } = require('../utils/stakeTime');
 
 function itCanMintAndBurn({ ctx }) {
 	describe('staking', () => {
-		const SNXAmount = ethers.utils.parseEther('10');
+		const SNXAmount = ethers.utils.parseEther('100');
 		const sUSDamount = ethers.utils.parseEther('1');
 
 		let user;
@@ -15,7 +15,7 @@ function itCanMintAndBurn({ ctx }) {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthsUSD } = ctx.contracts);
 
-			user = ctx.user;
+			user = ctx.users.someUser;
 		});
 
 		before('ensure the user has enough SNX', async () => {
@@ -27,7 +27,7 @@ function itCanMintAndBurn({ ctx }) {
 				balancesUSD = await SynthsUSD.balanceOf(user.address);
 			});
 
-			before('perform the issuance', async () => {
+			before('issue sUSD', async () => {
 				Synthetix = Synthetix.connect(user);
 
 				const tx = await Synthetix.issueSynths(sUSDamount);
@@ -46,7 +46,7 @@ function itCanMintAndBurn({ ctx }) {
 				balancesUSD = await SynthsUSD.balanceOf(user.address);
 			});
 
-			before('burn the sUSD', async () => {
+			before('burn sUSD', async () => {
 				Synthetix = Synthetix.connect(user);
 
 				const tx = await Synthetix.burnSynths(sUSDamount);
