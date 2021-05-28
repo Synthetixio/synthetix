@@ -539,17 +539,6 @@ const deploy = async ({
 		args: [account],
 	});
 
-	if (addressResolver && readProxyForResolver) {
-		await runStep({
-			contract: 'ReadProxyAddressResolver',
-			target: readProxyForResolver,
-			read: 'target',
-			expected: input => input === addressOf(addressResolver),
-			write: 'setTarget',
-			writeArg: addressOf(addressResolver),
-		});
-	}
-
 	await deployer.deployContract({
 		name: 'FlexibleStorage',
 		deps: ['ReadProxyAddressResolver'],
@@ -565,24 +554,6 @@ const deploy = async ({
 		name: 'SystemStatus',
 		args: [account],
 	});
-
-	if (network !== 'mainnet' && systemStatus) {
-		// On testnet, give the deployer the rights to update status
-		await runStep({
-			contract: 'SystemStatus',
-			target: systemStatus,
-			read: 'accessControl',
-			readArg: [toBytes32('System'), account],
-			expected: ({ canSuspend } = {}) => canSuspend,
-			write: 'updateAccessControls',
-			writeArg: [
-				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
-				[account, account, account, account, account],
-				[true, true, true, true, true],
-				[true, true, true, true, true],
-			],
-		});
-	}
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
@@ -630,17 +601,6 @@ const deploy = async ({
 		args: [account, addressOf(delegateApprovalsEternalStorage)],
 	});
 
-	if (delegateApprovals && delegateApprovalsEternalStorage) {
-		await runStep({
-			contract: 'EternalStorage',
-			target: delegateApprovalsEternalStorage,
-			read: 'associatedContract',
-			expected: input => input === addressOf(delegateApprovals),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(delegateApprovals),
-		});
-	}
-
 	const liquidations = await deployer.deployContract({
 		name: 'Liquidations',
 		args: [account, addressOf(readProxyForResolver)],
@@ -651,17 +611,6 @@ const deploy = async ({
 		source: 'EternalStorage',
 		args: [account, addressOf(liquidations)],
 	});
-
-	if (liquidations && eternalStorageLiquidations) {
-		await runStep({
-			contract: 'EternalStorageLiquidations',
-			target: eternalStorageLiquidations,
-			read: 'associatedContract',
-			expected: input => input === addressOf(liquidations),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(liquidations),
-		});
-	}
 
 	const feePoolEternalStorage = await deployer.deployContract({
 		name: 'FeePoolEternalStorage',
@@ -674,45 +623,11 @@ const deploy = async ({
 		args: [addressOf(proxyFeePool), account, addressOf(readProxyForResolver)],
 	});
 
-	if (proxyFeePool && feePool) {
-		await runStep({
-			contract: 'ProxyFeePool',
-			target: proxyFeePool,
-			read: 'target',
-			expected: input => input === addressOf(feePool),
-			write: 'setTarget',
-			writeArg: addressOf(feePool),
-		});
-	}
-
-	if (feePoolEternalStorage && feePool) {
-		await runStep({
-			contract: 'FeePoolEternalStorage',
-			target: feePoolEternalStorage,
-			read: 'associatedContract',
-			expected: input => input === addressOf(feePool),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(feePool),
-		});
-	}
-
 	const feePoolState = await deployer.deployContract({
 		name: 'FeePoolState',
 		deps: ['FeePool'],
 		args: [account, addressOf(feePool)],
 	});
-
-	if (feePool && feePoolState) {
-		// Rewire feePoolState if there is a feePool upgrade
-		await runStep({
-			contract: 'FeePoolState',
-			target: feePoolState,
-			read: 'feePool',
-			expected: input => input === addressOf(feePool),
-			write: 'setFeePool',
-			writeArg: addressOf(feePool),
-		});
-	}
 
 	const rewardsDistribution = await deployer.deployContract({
 		name: 'RewardsDistribution',
@@ -751,25 +666,6 @@ const deploy = async ({
 		],
 	});
 
-	if (synthetix && proxyERC20Synthetix) {
-		await runStep({
-			contract: 'ProxyERC20',
-			target: proxyERC20Synthetix,
-			read: 'target',
-			expected: input => input === addressOf(synthetix),
-			write: 'setTarget',
-			writeArg: addressOf(synthetix),
-		});
-		await runStep({
-			contract: 'Synthetix',
-			target: synthetix,
-			read: 'proxy',
-			expected: input => input === addressOf(proxyERC20Synthetix),
-			write: 'setProxy',
-			writeArg: addressOf(proxyERC20Synthetix),
-		});
-	}
-
 	// Old Synthetix proxy based off Proxy.sol: this has been deprecated.
 	// To be removed after May 30, 2020:
 	// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
@@ -778,16 +674,6 @@ const deploy = async ({
 		source: 'Proxy',
 		args: [account],
 	});
-	if (proxySynthetix && synthetix) {
-		await runStep({
-			contract: 'ProxySynthetix',
-			target: proxySynthetix,
-			read: 'target',
-			expected: input => input === addressOf(synthetix),
-			write: 'setTarget',
-			writeArg: addressOf(synthetix),
-		});
-	}
 
 	const debtCache = await deployer.deployContract({
 		name: 'DebtCache',
@@ -795,82 +681,22 @@ const deploy = async ({
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
-	let exchanger;
-	if (useOvm) {
-		exchanger = await deployer.deployContract({
-			name: 'Exchanger',
-			source: 'Exchanger',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
-	} else {
-		exchanger = await deployer.deployContract({
-			name: 'Exchanger',
-			source: 'ExchangerWithVirtualSynth',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(readProxyForResolver)],
-		});
+	const exchanger = await deployer.deployContract({
+		name: 'Exchanger',
+		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
+		deps: ['AddressResolver'],
+		args: [account, addressOf(readProxyForResolver)],
+	});
 
-		await deployer.deployContract({
-			name: 'VirtualSynthMastercopy',
-		});
-	}
+	await deployer.deployContract({
+		name: 'VirtualSynthMastercopy',
+	});
 
 	const exchangeState = await deployer.deployContract({
 		name: 'ExchangeState',
 		deps: ['Exchanger'],
 		args: [account, addressOf(exchanger)],
 	});
-
-	if (exchanger && exchangeState) {
-		// The exchangeState contract has Exchanger as it's associated contract
-		await runStep({
-			contract: 'ExchangeState',
-			target: exchangeState,
-			read: 'associatedContract',
-			expected: input => input === exchanger.options.address,
-			write: 'setAssociatedContract',
-			writeArg: exchanger.options.address,
-		});
-	}
-
-	if (exchanger && systemStatus) {
-		// SIP-65: ensure Exchanger can suspend synths if price spikes occur
-		await runStep({
-			contract: 'SystemStatus',
-			target: systemStatus,
-			read: 'accessControl',
-			readArg: [toBytes32('Synth'), addressOf(exchanger)],
-			expected: ({ canSuspend } = {}) => canSuspend,
-			write: 'updateAccessControl',
-			writeArg: [toBytes32('Synth'), addressOf(exchanger), true, false],
-		});
-	}
-
-	// only reset token state if redeploying
-	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
-		const initialIssuance = await getDeployParameter('INITIAL_ISSUANCE');
-		await runStep({
-			contract: 'TokenStateSynthetix',
-			target: tokenStateSynthetix,
-			read: 'balanceOf',
-			readArg: account,
-			expected: input => input === initialIssuance,
-			write: 'setBalanceOf',
-			writeArg: [account, initialIssuance],
-		});
-	}
-
-	if (tokenStateSynthetix && synthetix) {
-		await runStep({
-			contract: 'TokenStateSynthetix',
-			target: tokenStateSynthetix,
-			read: 'associatedContract',
-			expected: input => input === addressOf(synthetix),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(synthetix),
-		});
-	}
 
 	const issuer = await deployer.deployContract({
 		name: 'Issuer',
@@ -879,37 +705,16 @@ const deploy = async ({
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
-	const issuerAddress = addressOf(issuer);
-
 	await deployer.deployContract({
 		name: 'TradingRewards',
 		deps: ['AddressResolver', 'Exchanger'],
 		args: [account, account, addressOf(readProxyForResolver)],
 	});
 
-	if (synthetixState && issuer) {
-		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
-		await runStep({
-			contract: 'SynthetixState',
-			target: synthetixState,
-			read: 'associatedContract',
-			expected: input => input === issuerAddress,
-			write: 'setAssociatedContract',
-			writeArg: issuerAddress,
-		});
-	}
-
-	if (useOvm && synthetixState && feePool) {
-		// The SynthetixStateLimitedSetup) contract has FeePool to appendAccountIssuanceRecord
-		await runStep({
-			contract: 'SynthetixState',
-			target: synthetixState,
-			read: 'feePool',
-			expected: input => input === addressOf(feePool),
-			write: 'setFeePool',
-			writeArg: addressOf(feePool),
-		});
-	}
+	const supplySchedule = await deployer.deployContract({
+		name: 'SupplySchedule',
+		args: [account, currentLastMintEvent, currentWeekOfInflation],
+	});
 
 	if (synthetixEscrow) {
 		await deployer.deployContract({
@@ -917,106 +722,6 @@ const deploy = async ({
 			deps: ['SynthetixEscrow'],
 			args: [addressOf(synthetixEscrow)],
 		});
-	}
-
-	if (rewardEscrow && synthetix) {
-		await runStep({
-			contract: 'RewardEscrow',
-			target: rewardEscrow,
-			read: 'synthetix',
-			expected: input => input === addressOf(synthetix),
-			write: 'setSynthetix',
-			writeArg: addressOf(synthetix),
-		});
-	}
-
-	if (rewardEscrow && feePool) {
-		await runStep({
-			contract: 'RewardEscrow',
-			target: rewardEscrow,
-			read: 'feePool',
-			expected: input => input === addressOf(feePool),
-			write: 'setFeePool',
-			writeArg: addressOf(feePool),
-		});
-	}
-
-	if (!useOvm) {
-		const supplySchedule = await deployer.deployContract({
-			name: 'SupplySchedule',
-			args: [account, currentLastMintEvent, currentWeekOfInflation],
-		});
-		if (supplySchedule && synthetix) {
-			await runStep({
-				contract: 'SupplySchedule',
-				target: supplySchedule,
-				read: 'synthetixProxy',
-				expected: input => input === addressOf(proxySynthetix),
-				write: 'setSynthetixProxy',
-				writeArg: addressOf(proxySynthetix),
-			});
-		}
-	}
-
-	if (synthetix && rewardsDistribution) {
-		await runStep({
-			contract: 'RewardsDistribution',
-			target: rewardsDistribution,
-			read: 'authority',
-			expected: input => input === addressOf(synthetix),
-			write: 'setAuthority',
-			writeArg: addressOf(synthetix),
-		});
-
-		await runStep({
-			contract: 'RewardsDistribution',
-			target: rewardsDistribution,
-			read: 'synthetixProxy',
-			expected: input => input === addressOf(proxyERC20Synthetix),
-			write: 'setSynthetixProxy',
-			writeArg: addressOf(proxyERC20Synthetix),
-		});
-	}
-
-	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
-	if (rewardEscrowV2 && rewardsDistribution) {
-		await runStep({
-			contract: 'RewardsDistribution',
-			target: rewardsDistribution,
-			read: 'rewardEscrow',
-			expected: input => input === addressOf(rewardEscrowV2),
-			write: 'setRewardEscrow',
-			writeArg: addressOf(rewardEscrowV2),
-		});
-	}
-
-	// ----------------
-	// Setting proxyERC20 Synthetix for synthetixEscrow
-	// ----------------
-
-	// Skip setting unless redeploying either of these,
-	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
-		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
-		// it is "havven" and the ABI we have here is not sufficient
-		if (network === 'mainnet' && !useOvm) {
-			await runStep({
-				contract: 'SynthetixEscrow',
-				target: synthetixEscrow,
-				read: 'havven',
-				expected: input => input === addressOf(proxyERC20Synthetix),
-				write: 'setHavven',
-				writeArg: addressOf(proxyERC20Synthetix),
-			});
-		} else {
-			await runStep({
-				contract: 'SynthetixEscrow',
-				target: synthetixEscrow,
-				read: 'synthetix',
-				expected: input => input === addressOf(proxyERC20Synthetix),
-				write: 'setSynthetix',
-				writeArg: addressOf(proxyERC20Synthetix),
-			});
-		}
 	}
 
 	// ----------------
@@ -1027,7 +732,7 @@ const deploy = async ({
 	// The list of synth to be added to the Issuer once dependencies have been set up
 	const synthsToAdd = [];
 
-	for (const { name: currencyKey, subclass, asset } of synths) {
+	for (const { name: currencyKey, subclass } of synths) {
 		console.log(gray(`\n   --- SYNTH ${currencyKey} ---\n`));
 
 		const tokenStateForSynth = await deployer.deployContract({
@@ -1115,71 +820,11 @@ const deploy = async ({
 			force: addNewSynths,
 		});
 
-		if (tokenStateForSynth && synth) {
-			await runStep({
-				contract: `TokenState${currencyKey}`,
-				target: tokenStateForSynth,
-				read: 'associatedContract',
-				expected: input => input === addressOf(synth),
-				write: 'setAssociatedContract',
-				writeArg: addressOf(synth),
-			});
-		}
-
-		// Setup proxy for synth
-		if (proxyForSynth && synth) {
-			await runStep({
-				contract: `Proxy${currencyKey}`,
-				target: proxyForSynth,
-				read: 'target',
-				expected: input => input === addressOf(synth),
-				write: 'setTarget',
-				writeArg: addressOf(synth),
-			});
-
-			// Migration Phrase 2: if there's a ProxyERC20sUSD then the Synth's proxy must use it
-			await runStep({
-				contract: `Synth${currencyKey}`,
-				target: synth,
-				read: 'proxy',
-				expected: input => input === addressOf(proxyERC20ForSynth || proxyForSynth),
-				write: 'setProxy',
-				writeArg: addressOf(proxyERC20ForSynth || proxyForSynth),
-			});
-
-			if (proxyERC20ForSynth) {
-				// and make sure this new proxy has the target of the synth
-				await runStep({
-					contract: `ProxyERC20${currencyKey}`,
-					target: proxyERC20ForSynth,
-					read: 'target',
-					expected: input => input === addressOf(synth),
-					write: 'setTarget',
-					writeArg: addressOf(synth),
-				});
-			}
-		}
-
 		// Save the synth to be added once the AddressResolver has been synced.
 		if (synth && issuer) {
 			synthsToAdd.push({
 				synth,
 				currencyKeyInBytes,
-			});
-		}
-
-		const { feed } = feeds[asset] || {};
-
-		// now setup price aggregator if any for the synth
-		if (w3utils.isAddress(feed) && exchangeRates) {
-			await runStep({
-				contract: `ExchangeRates`,
-				target: exchangeRates,
-				read: 'aggregators',
-				readArg: currencyKeyInBytes,
-				expected: input => input === feed,
-				write: 'addAggregator',
-				writeArg: [currencyKeyInBytes, feed],
 			});
 		}
 	}
@@ -1341,24 +986,6 @@ const deploy = async ({
 	await deployer.deployContract({
 		name: 'BinaryOptionMarketData',
 	});
-
-	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
-
-	// Setup remaining price feeds (that aren't synths)
-
-	for (const { asset, feed } of standaloneFeeds) {
-		if (w3utils.isAddress(feed) && exchangeRates) {
-			await runStep({
-				contract: `ExchangeRates`,
-				target: exchangeRates,
-				read: 'aggregators',
-				readArg: toBytes32(asset),
-				expected: input => input === feed,
-				write: 'addAggregator',
-				writeArg: [toBytes32(asset), feed],
-			});
-		}
-	}
 
 	// ----------------
 	// Multi Collateral System
@@ -1854,7 +1481,383 @@ const deploy = async ({
 
 	console.log(gray('All caches are rebuilt. Continuing.'));
 
-	// now after resolvers have been set
+	console.log(gray(`\n------ CONFIGURE LEGACY CONTRACTS VIA SETTERS ------\n`));
+
+	// now configure everything
+	if (addressResolver && readProxyForResolver) {
+		await runStep({
+			contract: 'ReadProxyAddressResolver',
+			target: readProxyForResolver,
+			read: 'target',
+			expected: input => input === addressOf(addressResolver),
+			write: 'setTarget',
+			writeArg: addressOf(addressResolver),
+		});
+	}
+	if (network !== 'mainnet' && systemStatus) {
+		// On testnet, give the deployer the rights to update status
+		await runStep({
+			contract: 'SystemStatus',
+			target: systemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('System'), account],
+			expected: ({ canSuspend } = {}) => canSuspend,
+			write: 'updateAccessControls',
+			writeArg: [
+				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
+				[account, account, account, account, account],
+				[true, true, true, true, true],
+				[true, true, true, true, true],
+			],
+		});
+	}
+	if (delegateApprovals && delegateApprovalsEternalStorage) {
+		await runStep({
+			contract: 'EternalStorage',
+			target: delegateApprovalsEternalStorage,
+			read: 'associatedContract',
+			expected: input => input === addressOf(delegateApprovals),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(delegateApprovals),
+		});
+	}
+
+	if (liquidations && eternalStorageLiquidations) {
+		await runStep({
+			contract: 'EternalStorageLiquidations',
+			target: eternalStorageLiquidations,
+			read: 'associatedContract',
+			expected: input => input === addressOf(liquidations),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(liquidations),
+		});
+	}
+
+	if (proxyFeePool && feePool) {
+		await runStep({
+			contract: 'ProxyFeePool',
+			target: proxyFeePool,
+			read: 'target',
+			expected: input => input === addressOf(feePool),
+			write: 'setTarget',
+			writeArg: addressOf(feePool),
+		});
+	}
+
+	if (feePoolEternalStorage && feePool) {
+		await runStep({
+			contract: 'FeePoolEternalStorage',
+			target: feePoolEternalStorage,
+			read: 'associatedContract',
+			expected: input => input === addressOf(feePool),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(feePool),
+		});
+	}
+
+	if (feePool && feePoolState) {
+		// Rewire feePoolState if there is a feePool upgrade
+		await runStep({
+			contract: 'FeePoolState',
+			target: feePoolState,
+			read: 'feePool',
+			expected: input => input === addressOf(feePool),
+			write: 'setFeePool',
+			writeArg: addressOf(feePool),
+		});
+	}
+
+	if (synthetix && proxyERC20Synthetix) {
+		await runStep({
+			contract: 'ProxyERC20',
+			target: proxyERC20Synthetix,
+			read: 'target',
+			expected: input => input === addressOf(synthetix),
+			write: 'setTarget',
+			writeArg: addressOf(synthetix),
+		});
+		await runStep({
+			contract: 'Synthetix',
+			target: synthetix,
+			read: 'proxy',
+			expected: input => input === addressOf(proxyERC20Synthetix),
+			write: 'setProxy',
+			writeArg: addressOf(proxyERC20Synthetix),
+		});
+	}
+
+	if (proxySynthetix && synthetix) {
+		await runStep({
+			contract: 'ProxySynthetix',
+			target: proxySynthetix,
+			read: 'target',
+			expected: input => input === addressOf(synthetix),
+			write: 'setTarget',
+			writeArg: addressOf(synthetix),
+		});
+	}
+
+	if (exchanger && exchangeState) {
+		// The exchangeState contract has Exchanger as it's associated contract
+		await runStep({
+			contract: 'ExchangeState',
+			target: exchangeState,
+			read: 'associatedContract',
+			expected: input => input === exchanger.options.address,
+			write: 'setAssociatedContract',
+			writeArg: exchanger.options.address,
+		});
+	}
+
+	if (exchanger && systemStatus) {
+		// SIP-65: ensure Exchanger can suspend synths if price spikes occur
+		await runStep({
+			contract: 'SystemStatus',
+			target: systemStatus,
+			read: 'accessControl',
+			readArg: [toBytes32('Synth'), addressOf(exchanger)],
+			expected: ({ canSuspend } = {}) => canSuspend,
+			write: 'updateAccessControl',
+			writeArg: [toBytes32('Synth'), addressOf(exchanger), true, false],
+		});
+	}
+
+	// only reset token state if redeploying
+	if (tokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
+		const initialIssuance = await getDeployParameter('INITIAL_ISSUANCE');
+		await runStep({
+			contract: 'TokenStateSynthetix',
+			target: tokenStateSynthetix,
+			read: 'balanceOf',
+			readArg: account,
+			expected: input => input === initialIssuance,
+			write: 'setBalanceOf',
+			writeArg: [account, initialIssuance],
+		});
+	}
+
+	if (tokenStateSynthetix && synthetix) {
+		await runStep({
+			contract: 'TokenStateSynthetix',
+			target: tokenStateSynthetix,
+			read: 'associatedContract',
+			expected: input => input === addressOf(synthetix),
+			write: 'setAssociatedContract',
+			writeArg: addressOf(synthetix),
+		});
+	}
+
+	if (synthetixState && issuer) {
+		const issuerAddress = addressOf(issuer);
+		// The SynthetixState contract has Issuer as it's associated contract (after v2.19 refactor)
+		await runStep({
+			contract: 'SynthetixState',
+			target: synthetixState,
+			read: 'associatedContract',
+			expected: input => input === issuerAddress,
+			write: 'setAssociatedContract',
+			writeArg: issuerAddress,
+		});
+	}
+
+	if (useOvm && synthetixState && feePool) {
+		// The SynthetixStateLimitedSetup) contract has FeePool to appendAccountIssuanceRecord
+		await runStep({
+			contract: 'SynthetixState',
+			target: synthetixState,
+			read: 'feePool',
+			expected: input => input === addressOf(feePool),
+			write: 'setFeePool',
+			writeArg: addressOf(feePool),
+		});
+	}
+
+	if (rewardEscrow && synthetix) {
+		await runStep({
+			contract: 'RewardEscrow',
+			target: rewardEscrow,
+			read: 'synthetix',
+			expected: input => input === addressOf(synthetix),
+			write: 'setSynthetix',
+			writeArg: addressOf(synthetix),
+		});
+	}
+
+	if (rewardEscrow && feePool) {
+		await runStep({
+			contract: 'RewardEscrow',
+			target: rewardEscrow,
+			read: 'feePool',
+			expected: input => input === addressOf(feePool),
+			write: 'setFeePool',
+			writeArg: addressOf(feePool),
+		});
+	}
+
+	if (supplySchedule && synthetix) {
+		await runStep({
+			contract: 'SupplySchedule',
+			target: supplySchedule,
+			read: 'synthetixProxy',
+			expected: input => input === addressOf(proxySynthetix),
+			write: 'setSynthetixProxy',
+			writeArg: addressOf(proxySynthetix),
+		});
+	}
+
+	if (synthetix && rewardsDistribution) {
+		await runStep({
+			contract: 'RewardsDistribution',
+			target: rewardsDistribution,
+			read: 'authority',
+			expected: input => input === addressOf(synthetix),
+			write: 'setAuthority',
+			writeArg: addressOf(synthetix),
+		});
+
+		await runStep({
+			contract: 'RewardsDistribution',
+			target: rewardsDistribution,
+			read: 'synthetixProxy',
+			expected: input => input === addressOf(proxyERC20Synthetix),
+			write: 'setSynthetixProxy',
+			writeArg: addressOf(proxyERC20Synthetix),
+		});
+	}
+
+	// RewardEscrow on RewardsDistribution should be set to new RewardEscrowV2
+	if (rewardEscrowV2 && rewardsDistribution) {
+		await runStep({
+			contract: 'RewardsDistribution',
+			target: rewardsDistribution,
+			read: 'rewardEscrow',
+			expected: input => input === addressOf(rewardEscrowV2),
+			write: 'setRewardEscrow',
+			writeArg: addressOf(rewardEscrowV2),
+		});
+	}
+
+	// ----------------
+	// Setting proxyERC20 Synthetix for synthetixEscrow
+	// ----------------
+
+	// Skip setting unless redeploying either of these,
+	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
+		// Note: currently on mainnet SynthetixEscrow.methods.synthetix() does NOT exist
+		// it is "havven" and the ABI we have here is not sufficient
+		if (network === 'mainnet' && !useOvm) {
+			await runStep({
+				contract: 'SynthetixEscrow',
+				target: synthetixEscrow,
+				read: 'havven',
+				expected: input => input === addressOf(proxyERC20Synthetix),
+				write: 'setHavven',
+				writeArg: addressOf(proxyERC20Synthetix),
+			});
+		} else {
+			await runStep({
+				contract: 'SynthetixEscrow',
+				target: synthetixEscrow,
+				read: 'synthetix',
+				expected: input => input === addressOf(proxyERC20Synthetix),
+				write: 'setSynthetix',
+				writeArg: addressOf(proxyERC20Synthetix),
+			});
+		}
+	}
+
+	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
+
+	// Setup remaining price feeds (that aren't synths)
+
+	for (const { asset, feed } of standaloneFeeds) {
+		if (w3utils.isAddress(feed) && exchangeRates) {
+			await runStep({
+				contract: `ExchangeRates`,
+				target: exchangeRates,
+				read: 'aggregators',
+				readArg: toBytes32(asset),
+				expected: input => input === feed,
+				write: 'addAggregator',
+				writeArg: [toBytes32(asset), feed],
+			});
+		}
+	}
+
+	// now configure synths
+	console.log(gray(`\n------ CONFIGURE SYNTHS ------\n`));
+
+	for (const { name: currencyKey, asset } of synths) {
+		console.log(gray(`\n   --- SYNTH ${currencyKey} ---\n`));
+
+		const currencyKeyInBytes = toBytes32(currencyKey);
+
+		const synth = deployer.deployedContracts[`Synth${currencyKey}`];
+		const tokenStateForSynth = deployer.deployedContracts[`TokenState${currencyKey}`];
+		const proxyForSynth = deployer.deployedContracts[`Proxy${currencyKey}`];
+		const proxyERC20ForSynth =
+			currencyKey === 'sUSD' ? deployer.deployedContracts[`ProxyERC20sUSD`] : undefined;
+
+		if (tokenStateForSynth && synth) {
+			await runStep({
+				contract: `TokenState${currencyKey}`,
+				target: tokenStateForSynth,
+				read: 'associatedContract',
+				expected: input => input === addressOf(synth),
+				write: 'setAssociatedContract',
+				writeArg: addressOf(synth),
+			});
+		}
+
+		// Setup proxy for synth
+		if (proxyForSynth && synth) {
+			await runStep({
+				contract: `Proxy${currencyKey}`,
+				target: proxyForSynth,
+				read: 'target',
+				expected: input => input === addressOf(synth),
+				write: 'setTarget',
+				writeArg: addressOf(synth),
+			});
+
+			// Migration Phrase 2: if there's a ProxyERC20sUSD then the Synth's proxy must use it
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				read: 'proxy',
+				expected: input => input === addressOf(proxyERC20ForSynth || proxyForSynth),
+				write: 'setProxy',
+				writeArg: addressOf(proxyERC20ForSynth || proxyForSynth),
+			});
+
+			if (proxyERC20ForSynth) {
+				// and make sure this new proxy has the target of the synth
+				await runStep({
+					contract: `ProxyERC20sUSD`,
+					target: proxyERC20ForSynth,
+					read: 'target',
+					expected: input => input === addressOf(synth),
+					write: 'setTarget',
+					writeArg: addressOf(synth),
+				});
+			}
+		}
+
+		const { feed } = feeds[asset] || {};
+
+		// now setup price aggregator if any for the synth
+		if (w3utils.isAddress(feed) && exchangeRates) {
+			await runStep({
+				contract: `ExchangeRates`,
+				target: exchangeRates,
+				read: 'aggregators',
+				readArg: currencyKeyInBytes,
+				expected: input => input === feed,
+				write: 'addAggregator',
+				writeArg: [currencyKeyInBytes, feed],
+			});
+		}
+	}
 
 	console.log(gray(`\n------ ADD SYNTHS TO ISSUER ------\n`));
 
