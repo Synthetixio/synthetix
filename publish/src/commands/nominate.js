@@ -74,8 +74,15 @@ const nominate = async ({
 	}
 
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	web3.eth.accounts.wallet.add(privateKey);
-	const account = web3.eth.accounts.wallet[0].address;
+	let account;
+	if (useFork) {
+		web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		account = web3.eth.defaultAccount;
+	} else {
+		web3.eth.accounts.wallet.add(privateKey);
+		account = web3.eth.accounts.wallet[0].address;
+	}
+
 	console.log(gray(`Using account with public key ${account}`));
 
 	try {
