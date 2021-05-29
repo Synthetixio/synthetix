@@ -642,6 +642,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Note: As of this point, `fee` is denominated in sUSD.
 
+        // TODO: sanity checking, does this statement still hold true for atomic exchanges since the execution rate may differ from the system's current rate?
         // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
         // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
         // in these currencies
