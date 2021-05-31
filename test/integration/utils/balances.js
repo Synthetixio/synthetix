@@ -79,25 +79,35 @@ async function _getSNXForOwnerOnL2ByHackMinting({ ctx, amount }) {
 }
 
 async function _getsUSD({ ctx, user, amount }) {
-	const Synthetix = ctx.contracts.Synthetix.connect(ctx.users.owner);
+	let { Synthetix, SynthsUSD } = ctx.contracts;
 
 	let tx;
 
 	const requiredSNX = await _getSNXAmountRequiredForsUSDAmount({ ctx, amount });
 	await ensureBalance({ ctx, symbol: 'SNX', user, balance: requiredSNX });
 
+	Synthetix = Synthetix.connect(ctx.users.owner);
 	tx = await Synthetix.issueSynths(amount);
 	await tx.wait();
 
-	tx = await Synthetix.transfer(user.address, amount);
+	SynthsUSD = SynthsUSD.connect(ctx.users.owner);
+	tx = await SynthsUSD.transfer(user.address, amount);
 	await tx.wait();
 }
 
 async function _getSNXAmountRequiredForsUSDAmount({ ctx, amount }) {
-	// TODO: Do not assume that the c-ratio is 600%
-	// TODO: Do not assume that 1 SNX = 1 sUSD
+	const { Exchanger, SystemSettings } = ctx.contracts;
 
-	return amount.mul(ethers.BigNumber.from('6'));
+	const ratio = await SystemSettings.issuanceRatio();
+	const collateral = ethers.utils.parseEther(amount.div(ratio).toString());
+
+	const [expectedAmount, ,] = await Exchanger.getAmountsForExchange(
+		collateral,
+		toBytes32('sUSD'),
+		toBytes32('SNX')
+	);
+
+	return expectedAmount;
 }
 
 function _getTokenFromSymbol({ ctx, symbol }) {
