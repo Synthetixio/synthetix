@@ -3,6 +3,7 @@ const { compileInstance, deployInstance } = require('../../test/integration/util
 
 task('test:integration:l2', 'run isolated layer 2 production tests')
 	.addFlag('compile', 'Compile an l2 instance before running the tests')
+	.addFlag('noCompile', 'Avoid auto compilation')
 	.addFlag('deploy', 'Deploy an l2 instance before running the tests')
 	.addOptionalParam(
 		'providerPort',
