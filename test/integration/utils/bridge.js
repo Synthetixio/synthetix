@@ -1,7 +1,7 @@
 const { finalizationOnL2 } = require('./watchers');
 
 async function deposit({ ctx, from, to, amount }) {
-	let { Synthetix, SynthetixBridgeToOptimism } = ctx.l1.contracts;
+	let { Synthetix, SynthetixBridgeToOptimism } = ctx.contracts;
 	Synthetix = Synthetix.connect(from);
 	SynthetixBridgeToOptimism = SynthetixBridgeToOptimism.connect(from);
 
