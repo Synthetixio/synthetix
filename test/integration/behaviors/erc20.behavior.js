@@ -3,14 +3,17 @@ const { assert } = require('../../contracts/common');
 
 function itBehavesLikeAnERC20({ ctx }) {
 	describe('erc20 functionality', () => {
-		let user;
+		let owner, user;
 		let Synthetix;
 
 		let userBalance;
 
+		const amountToTransfer = ethers.utils.parseEther('1');
+
 		before('target contracts and users', () => {
 			({ Synthetix } = ctx.contracts);
 
+			owner = ctx.users.owner;
 			user = ctx.users.someUser;
 		});
 
@@ -19,10 +22,8 @@ function itBehavesLikeAnERC20({ ctx }) {
 		});
 
 		describe('when the owner transfers SNX to the user', () => {
-			const amountToTransfer = ethers.utils.parseEther('1');
-
 			before('transfer', async () => {
-				Synthetix = Synthetix.connect(ctx.users.owner);
+				Synthetix = Synthetix.connect(owner);
 
 				const tx = await Synthetix.transfer(user.address, amountToTransfer);
 				await tx.wait();

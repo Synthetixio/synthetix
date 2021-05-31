@@ -1,7 +1,6 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
-const { ensureBalance } = require('../utils/balances');
 const { finalizationOnL1 } = require('../utils/watchers');
 
 describe('withdraw() integration tests (L1, L2)', () => {
@@ -22,10 +21,6 @@ describe('withdraw() integration tests (L1, L2)', () => {
 			({ Synthetix, SynthetixBridgeToBase } = ctx.l2.contracts);
 
 			owner = ctx.l2.users.owner;
-		});
-
-		before('ensure the owner has SNX on L2', async () => {
-			await ensureBalance({ ctx: ctx.l2, symbol: 'SNX', user: owner, balance: amountToWithdraw });
 		});
 
 		before('record balances', async () => {
