@@ -152,24 +152,6 @@ const defaults = {
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
 	},
 
-	/***********************************
-	 * TODO: spec atomic configuration *
-	 ***********************************/
-	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${1e6}`), // 1 million
-	ATOMIC_TWAP_PRICE_WINDOW: '3600', // 1 hour
-
-	/**
-	 * Do these need defaults?
-	ATOMIC_PRICE_BUFFERS: {
-		crypto: w3utils.toWei('0.0025'), // 25 bps
-	},
-	ATOMIC_EQUIVALENTS_ON_DEX: {
-	},
-	ATOMIC_EXCHANGE_FEE_RATES: {
-		crypto: w3utils.toWei('0.01'),
-	},
-	*/
-
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
@@ -223,6 +205,24 @@ const defaults = {
 	ETHER_WRAPPER_MAX_ETH: w3utils.toWei('5000'),
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
+
+	/***********************************
+	 * TODO: spec atomic configuration *
+	 ***********************************/
+	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${1e6}`), // 1 million
+	ATOMIC_TWAP_PRICE_WINDOW: '3600', // 1 hour
+
+	/**
+	 * Do these need defaults?
+	ATOMIC_PRICE_BUFFERS: {
+		crypto: w3utils.toWei('0.0025'), // 25 bps
+	},
+	ATOMIC_EQUIVALENTS_ON_DEX: {
+	},
+	ATOMIC_EXCHANGE_FEE_RATES: {
+		crypto: w3utils.toWei('0.01'),
+	},
+	*/
 };
 
 /**

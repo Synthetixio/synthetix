@@ -2216,8 +2216,6 @@ const deploy = async ({
 			writeArg: await getDeployParameter('DEBT_SNAPSHOT_STALE_TIME'),
 		});
 
-		// TODO: add new atomic exchange system settings
-
 		await runStep({
 			contract: 'SystemSettings',
 			target: systemSettings,
@@ -2293,6 +2291,24 @@ const deploy = async ({
 			expected: input => input !== '0', // only change if zero
 			write: 'setEtherWrapperBurnFeeRate',
 			writeArg: await getDeployParameter('ETHER_WRAPPER_BURN_FEE_RATE'),
+		});
+
+		// TODO: finish configuring new atomic exchange system settings
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'atomicMaxVolumePerBlock',
+			expected: input => input !== '0', // only change if zero
+			write: 'setAtomicMaxVolumePerBlock',
+			writeArg: await getDeployParameter('ATOMIC_MAX_VOLUME_PER_BLOCK'),
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: systemSettings,
+			read: 'atomicTwapPriceWindow',
+			expected: input => input !== '0', // only change if zero
+			write: 'setAtomicTwapPriceWindow',
+			writeArg: await getDeployParameter('ATOMIC_TWAP_PRICE_WINDOW'),
 		});
 	}
 
