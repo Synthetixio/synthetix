@@ -10,6 +10,7 @@ const { ensureBalance } = require('./balances');
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
 		ctx.useOvm = false;
+		ctx.fork = hre.config.fork;
 
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
