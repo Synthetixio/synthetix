@@ -78,7 +78,7 @@
 		"@codechecks/client": "0.1.10",
 		"@eth-optimism/contracts": "0.2.10",
 		"@eth-optimism/plugins": "0.0.16",
-		"@eth-optimism/smock": "^1.0.2",
+		"@eth-optimism/smock": "~1.0.2",
 		"@eth-optimism/solc": "0.5.16-alpha.7",
 		"@eth-optimism/watcher": "0.0.1-alpha.8",
 		"@nomiclabs/hardhat-ethers": "^2.0.2",

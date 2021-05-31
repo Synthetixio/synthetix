@@ -1,16 +1,21 @@
 const ethers = require('ethers');
 
-function loadUsers({ ctx }) {
-	ctx.users = [];
+async function loadUsers({ ctx, network }) {
+	const wallets = _createWallets({ provider: ctx.provider });
+
+	ctx.users = {};
+	ctx.users.owner = wallets[0];
+	ctx.users.someUser = wallets[1];
+}
+
+function _createWallets({ provider }) {
+	const wallets = [];
 
 	for (let i = 0; i < 10; i++) {
-		const wallet = new ethers.Wallet(getPrivateKey({ index: i }), ctx.provider);
-
-		ctx.users.push(wallet);
+		wallets.push(new ethers.Wallet(getPrivateKey({ index: i }), provider));
 	}
 
-	ctx.owner = ctx.users[0];
-	ctx.user = ctx.users[1];
+	return wallets;
 }
 
 function getPrivateKey({ index }) {

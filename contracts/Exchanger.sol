@@ -351,9 +351,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             virtualSynth
         );
 
-        if (rewardAddress != address(0)) {
-            _processTradingRewards(fee, rewardAddress);
-        }
+        _processTradingRewards(fee, rewardAddress);
 
         if (trackingCode != bytes32(0)) {
             _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
