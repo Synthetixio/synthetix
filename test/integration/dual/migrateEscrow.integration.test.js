@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
-const { appendEscrow } = require('../utils/escrow');
+const { appendEscrows, retrieveEscrowParameters } = require('../utils/escrow');
 const { approveIfNeeded } = require('../utils/approve');
 
 describe('migrateEscrow() integration tests (L1, L2)', () => {
@@ -13,31 +13,15 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 
 	let initialParametersL1, initialParametersL2;
 
-	const retrieveEscrowParameters = async ({ ctx, user }) => {
-		const RewardEscrowV2 = ctx.contracts.RewardEscrowV2.connect(user);
-
-		const numberOfEntries = await RewardEscrowV2.nextEntryId();
-		const escrowedBalance = await RewardEscrowV2.totalEscrowedBalance();
-		const userNumVestingEntries = await RewardEscrowV2.numVestingEntries(user.address);
-		const userEscrowedBalance = await RewardEscrowV2.totalEscrowedAccountBalance(user.address);
-		const userVestedAccountBalance = await RewardEscrowV2.totalVestedAccountBalance(user.address);
-
-		return {
-			numberOfEntries,
-			escrowedBalance,
-			userNumVestingEntries,
-			userEscrowedBalance,
-			userVestedAccountBalance,
-		};
-	};
-
 	before('target contracts and users', () => {
-		user = ctx.l1.user;
+		({ Synthetix, RewardEscrowV2, SynthetixBridgeToOptimism } = ctx.l1.contracts);
+
+		user = ctx.l1.users.owner;
 	});
 
 	before('record current escrow state', async () => {
-		initialParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1, user });
-		initialParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2, user });
+		initialParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1 });
+		initialParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2 });
 	});
 
 	describe('when the user approves the reward escrow to transfer their SNX', () => {
@@ -46,7 +30,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 		before('approve reward escrow if needed', async () => {
 			await approveIfNeeded({
 				token: Synthetix,
-				user,
+				owner: user,
 				beneficiary: RewardEscrowV2,
 				amount: snxAmount,
 			});
@@ -61,7 +45,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 			let escrowEntriesData = {};
 
 			before('create and append escrow entries', async () => {
-				escrowEntriesData = await appendEscrow({
+				escrowEntriesData = await appendEscrows({
 					ctx: ctx.l1,
 					user,
 					escrowBatches,
@@ -72,7 +56,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 			});
 
 			before('grab new states on L1', async () => {
-				postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1, user });
+				postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1 });
 			});
 
 			it('should update the L1 escrow state', async () => {
@@ -94,164 +78,165 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 				);
 			});
 
-			describe('when the user has no outstanding debt on L1', () => {
-				describe('when the user migrates their escrow', () => {
-					let migrateEscrowReceipt, migrateEscrowReceiptExtra;
-					let userBalanceL2;
-					let totalSupplyL2;
-					let rewardEscrowBalanceL2;
+			describe('when the user migrates their escrow', () => {
+				let migrateEscrowReceipt, migrateEscrowReceiptExtra;
+				let userBalanceL2;
+				let totalSupplyL2;
+				let rewardEscrowBalanceL2;
 
-					const importedVestingEntriesEvents = [];
+				const importedVestingEntriesEvents = [];
 
-					const importedVestingEntriesEventListener = (account, amount, entries, event) => {
-						if (event && event.event === 'ImportedVestingEntries') {
-							importedVestingEntriesEvents.push(event);
-						}
-					};
+				const importedVestingEntriesEventListener = (account, amount, entries, event) => {
+					if (event && event.event === 'ImportedVestingEntries') {
+						importedVestingEntriesEvents.push(event);
+					}
+				};
 
-					before('get L2 contracts', () => {
-						({ Synthetix, RewardEscrowV2, SynthetixBridgeToBase } = ctx.l2.contracts);
-					});
+				before('target contracts and users L2 ', () => {
+					({ Synthetix, RewardEscrowV2, SynthetixBridgeToBase } = ctx.l2.contracts);
 
-					before('listen to events on L2', async () => {
-						SynthetixBridgeToBase.on('ImportedVestingEntries', importedVestingEntriesEventListener);
-					});
+					user = ctx.l2.users.owner;
+				});
 
-					before('record current values', async () => {
-						userBalanceL2 = await Synthetix.balanceOf(user.address);
-						totalSupplyL2 = await Synthetix.totalSupply();
-						rewardEscrowBalanceL2 = await Synthetix.balanceOf(RewardEscrowV2.address);
-					});
+				before('listen to events on L2', async () => {
+					SynthetixBridgeToBase.on('ImportedVestingEntries', importedVestingEntriesEventListener);
+				});
 
-					before('migrateEscrow', async () => {
-						SynthetixBridgeToOptimism = SynthetixBridgeToOptimism.connect(user);
-						// first test migrating a few entries using random extra invalid Ids!
-						const randomEntries = [escrowEntriesData.extraEntries, [0, 100, 3, 2]];
-						let tx = await SynthetixBridgeToOptimism.migrateEscrow(
-							escrowEntriesData.userEntryBatch
+				before('record current values', async () => {
+					userBalanceL2 = await Synthetix.balanceOf(user.address);
+					totalSupplyL2 = await Synthetix.totalSupply();
+					rewardEscrowBalanceL2 = await Synthetix.balanceOf(RewardEscrowV2.address);
+				});
+
+				before('migrateEscrow', async () => {
+					SynthetixBridgeToOptimism = SynthetixBridgeToOptimism.connect(ctx.l1.users.owner);
+					// first test migrating a few entries using random extra invalid Ids!
+					const randomEntries = [escrowEntriesData.extraEntries, [0, 100, 3, 2]];
+					let tx = await SynthetixBridgeToOptimism.migrateEscrow(escrowEntriesData.userEntryBatch);
+					migrateEscrowReceipt = await tx.wait();
+					tx = await SynthetixBridgeToOptimism.migrateEscrow(randomEntries);
+					migrateEscrowReceiptExtra = await tx.wait();
+				});
+
+				it('emitted three ExportedVestingEntries events', async () => {
+					let events = migrateEscrowReceipt.events.filter(
+						e => e.event === 'ExportedVestingEntries'
+					);
+					assert.equal(events.length, 2);
+					assert.equal(events[0].args.account, user.address);
+					assert.bnEqual(
+						events[0].args.escrowedAccountBalance,
+						escrowEntriesData.batchEscrowAmounts[0]
+					);
+					assert.equal(events[1].args.account, user.address);
+					assert.bnEqual(
+						events[1].args.escrowedAccountBalance,
+						escrowEntriesData.batchEscrowAmounts[1]
+					);
+
+					events = migrateEscrowReceiptExtra.events.filter(
+						e => e.event === 'ExportedVestingEntries'
+					);
+					assert.equal(events.length, 1);
+					assert.equal(events[0].args.account, user.address);
+					assert.bnEqual(
+						events[0].args.escrowedAccountBalance,
+						escrowEntriesData.extraEscrowAmount
+					);
+				});
+
+				it('should update the L1 escrow state', async () => {
+					postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1 });
+
+					assert.bnEqual(postParametersL1.escrowedBalance, initialParametersL1.escrowedBalance);
+
+					assert.bnEqual(
+						postParametersL1.userNumVestingEntries,
+						initialParametersL1.userNumVestingEntries.add(totalEntriesCreated)
+					);
+
+					assert.bnEqual(
+						postParametersL1.escrowedBalance,
+						initialParametersL1.escrowedBalance.add(escrowEntriesData.totalEscrowed)
+					);
+					assert.bnEqual(
+						postParametersL1.userEscrowedBalance,
+						initialParametersL1.userEscrowedBalance
+					);
+
+					assert.bnEqual(
+						postParametersL1.userVestedAccountBalance,
+						initialParametersL1.userVestedAccountBalance
+					);
+				});
+
+				// --------------------------
+				// Wait...
+				// --------------------------
+
+				describe('when waiting for the tx to complete on L2', () => {
+					before('stop listening to events on L2', async () => {
+						SynthetixBridgeToBase.off(
+							'ImportedVestingEntries',
+							importedVestingEntriesEventListener
 						);
-						migrateEscrowReceipt = await tx.wait();
-						tx = await SynthetixBridgeToOptimism.migrateEscrow(randomEntries);
-						migrateEscrowReceiptExtra = await tx.wait();
 					});
 
-					it('emitted three ExportedVestingEntries events', async () => {
-						let events = migrateEscrowReceipt.events.filter(
-							e => e.event === 'ExportedVestingEntries'
-						);
-						assert.equal(events.length, 2);
-						assert.equal(events[0].args.account, user.address);
+					it('emitted three ImportedVestingEntries events', async () => {
+						assert.equal(importedVestingEntriesEvents.length, 3);
+						assert.equal(importedVestingEntriesEvents[0].args.account, user.address);
 						assert.bnEqual(
-							events[0].args.escrowedAccountBalance,
+							importedVestingEntriesEvents[0].args.escrowedAmount,
 							escrowEntriesData.batchEscrowAmounts[0]
 						);
-						assert.equal(events[1].args.account, user.address);
+						assert.equal(importedVestingEntriesEvents[1].args.account, user.address);
 						assert.bnEqual(
-							events[1].args.escrowedAccountBalance,
+							importedVestingEntriesEvents[1].args.escrowedAmount,
 							escrowEntriesData.batchEscrowAmounts[1]
 						);
-
-						events = migrateEscrowReceiptExtra.events.filter(
-							e => e.event === 'ExportedVestingEntries'
-						);
-						assert.equal(events.length, 1);
-						assert.equal(events[0].args.account, user.address);
+						assert.equal(importedVestingEntriesEvents[2].args.account, user.address);
 						assert.bnEqual(
-							events[0].args.escrowedAccountBalance,
+							importedVestingEntriesEvents[2].args.escrowedAmount,
 							escrowEntriesData.extraEscrowAmount
 						);
 					});
 
-					it('should update the L1 escrow state', async () => {
-						postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1, user });
-
-						assert.bnEqual(postParametersL1.escrowedBalance, initialParametersL1.escrowedBalance);
-
+					it('should update the L2 escrow state', async () => {
+						const postParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2 });
 						assert.bnEqual(
-							postParametersL1.userNumVestingEntries,
-							initialParametersL1.userNumVestingEntries.add(totalEntriesCreated)
-						);
-
-						assert.bnEqual(
-							postParametersL1.escrowedBalance,
-							initialParametersL1.escrowedBalance.add(escrowEntriesData.totalEscrowed)
+							postParametersL2.escrowedBalance,
+							initialParametersL2.escrowedBalance.add(escrowEntriesData.totalEscrowed)
 						);
 						assert.bnEqual(
-							postParametersL1.userEscrowedBalance,
-							initialParametersL1.userEscrowedBalance
+							postParametersL2.userNumVestingEntries,
+							initialParametersL2.userNumVestingEntries.add(totalEntriesCreated)
 						);
-
 						assert.bnEqual(
-							postParametersL1.userVestedAccountBalance,
-							initialParametersL1.userVestedAccountBalance
+							postParametersL2.userEscrowedBalance,
+							initialParametersL2.userEscrowedBalance.add(escrowEntriesData.totalEscrowed)
+						);
+						assert.bnEqual(
+							postParametersL2.userVestedAccountBalance,
+							initialParametersL2.userVestedAccountBalance
 						);
 					});
 
-					// --------------------------
-					// Wait...
-					// --------------------------
+					it('should update the L2 Synthetix state', async () => {
+						({ Synthetix, RewardEscrowV2 } = ctx.l2.contracts);
 
-					describe('when waiting for the tx to complete on L2', () => {
-						before('stop listening to events on L2', async () => {
-							SynthetixBridgeToBase.off(
-								'ImportedVestingEntries',
-								importedVestingEntriesEventListener
-							);
-						});
+						user = ctx.l2.users.owner;
 
-						it('emitted three ImportedVestingEntries events', async () => {
-							assert.equal(importedVestingEntriesEvents.length, 3);
-							assert.equal(importedVestingEntriesEvents[0].args.account, user.address);
-							assert.bnEqual(
-								importedVestingEntriesEvents[0].args.escrowedAmount,
-								escrowEntriesData.batchEscrowAmounts[0]
-							);
-							assert.equal(importedVestingEntriesEvents[1].args.account, user.address);
-							assert.bnEqual(
-								importedVestingEntriesEvents[1].args.escrowedAmount,
-								escrowEntriesData.batchEscrowAmounts[1]
-							);
-							assert.equal(importedVestingEntriesEvents[2].args.account, user.address);
-							assert.bnEqual(
-								importedVestingEntriesEvents[2].args.escrowedAmount,
-								escrowEntriesData.extraEscrowAmount
-							);
-						});
-
-						it('should update the L2 escrow state', async () => {
-							const postParametersL2 = await retrieveEscrowParameters({ ctx: ctx.l2, user });
-							assert.bnEqual(
-								postParametersL2.escrowedBalance,
-								initialParametersL2.escrowedBalance.add(escrowEntriesData.totalEscrowed)
-							);
-							assert.bnEqual(
-								postParametersL2.userNumVestingEntries,
-								initialParametersL2.userNumVestingEntries.add(totalEntriesCreated)
-							);
-							assert.bnEqual(
-								postParametersL2.userEscrowedBalance,
-								initialParametersL2.userEscrowedBalance.add(escrowEntriesData.totalEscrowed)
-							);
-							assert.bnEqual(
-								postParametersL2.userVestedAccountBalance,
-								initialParametersL2.userVestedAccountBalance
-							);
-						});
-
-						it('should update the L2 Synthetix state', async () => {
-							({ Synthetix, RewardEscrowV2 } = ctx.l2.contracts);
-							// no change in user balance
-							assert.bnEqual(await Synthetix.balanceOf(user.address), userBalanceL2);
-							//
-							assert.bnEqual(
-								await Synthetix.balanceOf(RewardEscrowV2.address),
-								rewardEscrowBalanceL2.add(escrowEntriesData.totalEscrowed)
-							);
-							assert.bnEqual(
-								await Synthetix.totalSupply(),
-								totalSupplyL2.add(escrowEntriesData.totalEscrowed)
-							);
-						});
+						// no change in user balance
+						assert.bnEqual(await Synthetix.balanceOf(user.address), userBalanceL2);
+						//
+						assert.bnEqual(
+							await Synthetix.balanceOf(RewardEscrowV2.address),
+							rewardEscrowBalanceL2.add(escrowEntriesData.totalEscrowed)
+						);
+						assert.bnEqual(
+							await Synthetix.totalSupply(),
+							totalSupplyL2.add(escrowEntriesData.totalEscrowed)
+						);
 					});
 				});
 			});
