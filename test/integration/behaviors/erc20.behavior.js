@@ -11,7 +11,7 @@ function itBehavesLikeAnERC20({ ctx }) {
 		before('target contracts and users', () => {
 			({ Synthetix } = ctx.contracts);
 
-			user = ctx.user;
+			user = ctx.users.someUser;
 		});
 
 		before('record user balance', async () => {
@@ -22,7 +22,7 @@ function itBehavesLikeAnERC20({ ctx }) {
 			const amountToTransfer = ethers.utils.parseEther('1');
 
 			before('transfer', async () => {
-				Synthetix = Synthetix.connect(ctx.owner);
+				Synthetix = Synthetix.connect(ctx.users.owner);
 
 				const tx = await Synthetix.transfer(user.address, amountToTransfer);
 				await tx.wait();

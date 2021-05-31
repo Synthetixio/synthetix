@@ -20,14 +20,14 @@ async function _getTokens({ ctx, symbol, user, amount }) {
 }
 
 async function _getSNX({ ctx, user, amount }) {
-	const Synthetix = ctx.contracts.Synthetix.connect(ctx.owner);
+	const Synthetix = ctx.contracts.Synthetix.connect(ctx.users.owner);
 
 	const tx = await Synthetix.transfer(user.address, amount);
 	await tx.wait();
 }
 
 async function _getsUSD({ ctx, user, amount }) {
-	const Synthetix = ctx.contracts.Synthetix.connect(ctx.owner);
+	const Synthetix = ctx.contracts.Synthetix.connect(ctx.users.owner);
 
 	let tx;
 

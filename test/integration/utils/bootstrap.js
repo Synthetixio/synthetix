@@ -4,28 +4,20 @@ const axios = require('axios');
 const { loadUsers } = require('./users');
 const { Watcher } = require('@eth-optimism/watcher');
 const { connectContracts } = require('./contracts');
-const { simulateExchangeRates } = require('./rates');
-const { takeDebtSnapshot } = require('./cache');
+const { updateExchangeRatesIfNeeded } = require('./rates');
 const { deposit } = require('./bridge');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
 		ctx.useOvm = false;
 
-		// Provider
-		ctx.provider = new ethers.providers.JsonRpcProvider(
-			`${hre.config.providerUrl}:${hre.config.providerPort}`
-		);
+		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
-		// Accounts
-		loadUsers({ ctx });
+		await loadUsers({ ctx });
 
-		// Contracts
 		connectContracts({ ctx });
 
-		// Rates and snapshots
-		await simulateExchangeRates({ ctx });
-		await takeDebtSnapshot({ ctx });
+		await updateExchangeRatesIfNeeded({ ctx });
 	});
 }
 
@@ -33,21 +25,14 @@ function bootstrapL2({ ctx }) {
 	before('bootstrap layer 2 instance', async () => {
 		ctx.useOvm = true;
 
-		// Provider
-		ctx.provider = new ethers.providers.JsonRpcProvider(
-			`${hre.config.providerUrl}:${hre.config.providerPort}`
-		);
+		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 		ctx.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
-		// Accounts
-		loadUsers({ ctx });
+		await loadUsers({ ctx });
 
-		// Contracts
 		connectContracts({ ctx });
 
-		// Rates and snapshots
-		await simulateExchangeRates({ ctx });
-		await takeDebtSnapshot({ ctx });
+		await updateExchangeRatesIfNeeded({ ctx });
 	});
 }
 
@@ -57,12 +42,12 @@ function bootstrapDual({ ctx }) {
 		ctx.l2 = { useOvm: true };
 
 		// Providers
-		ctx.l1.provider = new ethers.providers.JsonRpcProvider(
-			`${hre.config.providerUrl}:${hre.config.providerPortL1}`
-		);
-		ctx.l2.provider = new ethers.providers.JsonRpcProvider(
-			`${hre.config.providerUrl}:${hre.config.providerPortL2}`
-		);
+		ctx.l1.provider = _setupProvider({
+			url: `${hre.config.providerUrl}:${hre.config.providerPortL1}`,
+		});
+		ctx.l2.provider = _setupProvider({
+			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
+		});
 		ctx.l2.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
 		// Watchers
@@ -80,26 +65,31 @@ function bootstrapDual({ ctx }) {
 		});
 
 		// Accounts
-		loadUsers({ ctx: ctx.l1 });
-		loadUsers({ ctx: ctx.l2 });
+		await loadUsers({ ctx: ctx.l1 });
+		await loadUsers({ ctx: ctx.l2 });
 
 		// Contracts
 		connectContracts({ ctx: ctx.l1 });
 		connectContracts({ ctx: ctx.l2 });
 
 		// Rates and snapshots
-		await simulateExchangeRates({ ctx: ctx.l1 });
-		await simulateExchangeRates({ ctx: ctx.l2 });
-		await takeDebtSnapshot({ ctx: ctx.l1 });
-		await takeDebtSnapshot({ ctx: ctx.l2 });
+		await updateExchangeRatesIfNeeded({ ctx: ctx.l1 });
+		await updateExchangeRatesIfNeeded({ ctx: ctx.l2 });
 
 		// Ensure owner has SNX on L2
 		const amount = ethers.utils.parseEther('1000000');
-		const balance = await ctx.l2.contracts.Synthetix.balanceOf(ctx.l2.owner.address);
+		const balance = await ctx.l2.contracts.Synthetix.balanceOf(ctx.l2.users.owner.address);
 		if (balance.lt(amount)) {
 			const delta = amount.sub(balance);
-			await deposit({ ctx, from: ctx.l1.owner, to: ctx.l1.owner, amount: delta });
+			await deposit({ ctx, from: ctx.l1.users.owner, to: ctx.l1.users.owner, amount: delta });
 		}
+	});
+}
+
+function _setupProvider({ url }) {
+	return new ethers.providers.JsonRpcProvider({
+		url,
+		timeout: 600000,
 	});
 }
 
