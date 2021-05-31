@@ -2,60 +2,89 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
-const { toUnit } = require('../../utils')();
+const { currentTime } = require('../../utils')();
 const { wait } = require('../utils/rpc');
-const { utils: { parseEther } } = ethers
+const {
+	utils: { parseEther },
+} = ethers;
 
 function itConfirmsOrders({ ctx }) {
-    const sUSDAmount = ethers.utils.parseEther('200');
-    const leverage = parseEther('0.001')
+	const sUSDAmount = parseEther('200');
+	const leverage = parseEther('1.0');
+	const margin = parseEther('150');
 
-    let owner;
+	const sETH = toBytes32('sETH');
 
-    let Synthetix, Exchanger, SynthsETH, FuturesMarketETH, Market;
+	let owner;
 
-    before('target contracts and users', () => {
-        ({ Synthetix, Exchanger, SynthsETH, FuturesMarketETH } = ctx.contracts);
+	let Synthetix, ExchangeRates, SynthsETH, FuturesMarketETH, Market;
 
-        owner = ctx.owner;
-    });
+	async function setPrice(asset, price) {
+		const { timestamp } = await ctx.provider.getBlock();
+		const tx = await ExchangeRates.updateRates([asset], [parseEther(price)], timestamp);
+		await tx.wait();
+	}
 
-    before('ensure the owner has sUSD', async () => {
-        await ensureBalance({ ctx: ctx, symbol: 'sUSD', user: owner, balance: sUSDAmount });
-    });
+	before('target contracts and users', () => {
+		({
+			Synthetix,
+			ExchangeRates,
+			SynthsETH,
+			ProxyFuturesMarketETH,
+			FuturesMarketETH,
+		} = ctx.contracts);
 
-    describe.only('when a user submits an order', () => {
-        let txReceipt
+		owner = ctx.owner;
+	});
 
-        before('submit the order', async () => {
-            Synthetix = Synthetix.connect(owner);
-            FuturesMarketETH = FuturesMarketETH.connect(owner);
-            // const market = FuturesMarketETH.connect(owner);
+	before('ensure the owner has sUSD', async () => {
+		await ensureBalance({ ctx: ctx, symbol: 'sUSD', user: owner, balance: sUSDAmount });
+	});
 
-            const tx = await FuturesMarketETH.submitOrder(leverage, { from: owner.address });
-            txReceipt = await tx.wait()
+	describe.only('when a user submits an order', () => {
+		let txReceipt;
+		let orderId;
 
-            // const tx = await Synthetix.exchange(toBytes32('sUSD'), sUSDAmount, toBytes32('sETH'));
-            // await tx.wait();
-            // OrderConfirmed(uint256, address, uint256, int256, uint256, uint256)
-            console.log(txReceipt)
-        });
+		before('submit the order', async () => {
+			Synthetix = Synthetix.connect(owner);
+			FuturesMarketETH = FuturesMarketETH.connect(owner);
 
-        it('is confirmed by the keeper within a second', async () => {
-            await wait({ seconds: 1 })
+			const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage, {
+				from: owner.address,
+			});
+			txReceipt = await tx.wait();
 
-            const events = await FuturesMarketETH.getPastEvents('OrderConfirmed', {
-                filter: {
-                    fromBlock: txReceipt.blockNumber
-                }
-            })
-            assert.isAtLeast(events.length, 1);
-            const event = events.find(log => log.event === 'OrderConfirmed');
-            console.log(events)
-        });
-    });
+			const orderSubmitted = txReceipt.events.filter(
+				({ address, event }) =>
+					address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
+			)[0];
+
+			({
+				args: { id: orderId },
+			} = orderSubmitted);
+			console.log(orderId);
+		});
+
+		before('next exrates round', async () => {
+			ExchangeRates = ExchangeRates.connect(owner);
+			await setPrice(sETH, '200');
+		});
+
+		it('is confirmed by the keeper within a second', async () => {
+			await wait({ seconds: 2 });
+
+			let events = await ProxyFuturesMarketETH.queryFilter(
+				FuturesMarketETH.filters.OrderConfirmed(orderId),
+				txReceipt.blockNumber
+			);
+
+			assert.isAtLeast(events.length, 1);
+			// const event = events.find(log => log.event === 'OrderConfirmed');
+			// console.log(events)
+		});
+	});
 }
 
 module.exports = {
-    itConfirmsOrders,
+	itConfirmsOrders,
 };

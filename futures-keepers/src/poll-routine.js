@@ -5,7 +5,7 @@ class PollRoutine {
 	}
 
 	run() {
-		this.timeout = setTimeout(() => {
+		this.timeout = setInterval(() => {
 			this.fn();
 		}, this.ms);
 	}
