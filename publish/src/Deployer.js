@@ -47,7 +47,14 @@ class Deployer {
 		this.useOvm = useOvm;
 		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
-		// Configure Web3 so we can sign transactions and connect to the network.
+		/*
+		 provider is defined here to hold backwards compatible web3 component as well as ethers 
+		 while the migration is completed. After all web3 references are replaced by ethers, 
+		 web3 provider will be removed. The aim is to get rid of all references to web3 and web3_utils 
+		 in the project.
+
+		 web3 and/or ethers is needed to interact with the contracts and sing transactions
+		 */
 		this.provider = { web3: {}, ethers: {} };
 		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 		this.provider.ethers.ro = ethers.getDefaultProvider(providerUrl);
