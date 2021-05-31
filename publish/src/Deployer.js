@@ -272,7 +272,7 @@ class Deployer {
 					});
 					if (!this.checkBytesAreSafeForOVM(encodedParameters)) {
 						throw new Error(
-							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. ${encodedParameters}`
+							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. Encoded parameters: ${encodedParameters} - parameters: ${args}`
 						);
 					}
 				}
