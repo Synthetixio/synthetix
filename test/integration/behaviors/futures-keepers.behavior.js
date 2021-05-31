@@ -9,6 +9,73 @@ const {
 } = ethers;
 
 function itConfirmsOrders({ ctx }) {
+	const sETH = toBytes32('sETH');
+
+	const sUSDAmount = parseEther('200');
+	const leverage = parseEther('1.0');
+	const margin = parseEther('150');
+
+	let owner;
+
+	let Synthetix, ExchangeRates, FuturesMarketETH;
+
+	async function setPrice(asset, price) {
+		const { timestamp } = await ctx.provider.getBlock();
+		const tx = await ExchangeRates.updateRates([asset], [parseEther(price)], timestamp);
+		await tx.wait();
+	}
+
+	before('target contracts and users', () => {
+		({ ExchangeRates, ProxyFuturesMarketETH, FuturesMarketETH } = ctx.contracts);
+
+		owner = ctx.users.owner;
+	});
+
+	before('ensure the owner has sUSD', async () => {
+		await ensureBalance({ ctx: ctx, symbol: 'sUSD', user: owner, balance: sUSDAmount });
+	});
+
+	describe('when a user submits an order', () => {
+		let txReceipt;
+		let orderId;
+
+		before('submit the order', async () => {
+			FuturesMarketETH = FuturesMarketETH.connect(owner);
+
+			const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage, {
+				from: owner.address,
+			});
+			txReceipt = await tx.wait();
+
+			const orderSubmitted = txReceipt.events.filter(
+				({ address, event }) =>
+					address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
+			)[0];
+
+			({
+				args: { id: orderId },
+			} = orderSubmitted);
+		});
+
+		before('next exrates round', async () => {
+			ExchangeRates = ExchangeRates.connect(owner);
+			await setPrice(sETH, '200');
+		});
+
+		it('is confirmed by the keeper within a second', async () => {
+			await wait({ seconds: 2 });
+
+			let events = await ProxyFuturesMarketETH.queryFilter(
+				FuturesMarketETH.filters.OrderConfirmed(orderId),
+				txReceipt.blockNumber
+			);
+
+			assert.isAtLeast(events.length, 1);
+		});
+	});
+}
+
+function itLiquidatesOrders({ ctx }) {
 	const sUSDAmount = parseEther('200');
 	const leverage = parseEther('1.0');
 	const margin = parseEther('150');
@@ -16,6 +83,7 @@ function itConfirmsOrders({ ctx }) {
 	const sETH = toBytes32('sETH');
 
 	let owner;
+	let user;
 
 	let Synthetix, ExchangeRates, SynthsETH, FuturesMarketETH, Market;
 
@@ -34,11 +102,12 @@ function itConfirmsOrders({ ctx }) {
 			FuturesMarketETH,
 		} = ctx.contracts);
 
-		owner = ctx.owner;
+		owner = ctx.users.owner;
+		user = ctx.users.someUser;
 	});
 
 	before('ensure the owner has sUSD', async () => {
-		await ensureBalance({ ctx: ctx, symbol: 'sUSD', user: owner, balance: sUSDAmount });
+		await ensureBalance({ ctx: ctx, symbol: 'sUSD', user: user, balance: sUSDAmount });
 	});
 
 	describe.only('when a user submits an order', () => {
@@ -46,12 +115,9 @@ function itConfirmsOrders({ ctx }) {
 		let orderId;
 
 		before('submit the order', async () => {
-			Synthetix = Synthetix.connect(owner);
-			FuturesMarketETH = FuturesMarketETH.connect(owner);
+			FuturesMarketETH = FuturesMarketETH.connect(user);
 
-			const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage, {
-				from: owner.address,
-			});
+			const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage);
 			txReceipt = await tx.wait();
 
 			const orderSubmitted = txReceipt.events.filter(
@@ -62,7 +128,6 @@ function itConfirmsOrders({ ctx }) {
 			({
 				args: { id: orderId },
 			} = orderSubmitted);
-			console.log(orderId);
 		});
 
 		before('next exrates round', async () => {
@@ -70,21 +135,28 @@ function itConfirmsOrders({ ctx }) {
 			await setPrice(sETH, '200');
 		});
 
-		it('is confirmed by the keeper within a second', async () => {
-			await wait({ seconds: 2 });
+		before('confirming order', async () => {
+			await wait({ seconds: 3 });
+			// TODO: assert order is confirmed.
+		});
 
-			let events = await ProxyFuturesMarketETH.queryFilter(
-				FuturesMarketETH.filters.OrderConfirmed(orderId),
-				txReceipt.blockNumber
-			);
+		before('price update', async () => {
+			await setPrice(sETH, '0.01');
+		});
 
-			assert.isAtLeast(events.length, 1);
-			// const event = events.find(log => log.event === 'OrderConfirmed');
-			// console.log(events)
+		it('is liquidated by the keeper within a second', async () => {
+			// await wait({ seconds: 2 });
+			// // event PositionLiquidated(address indexed account, address indexed liquidator, int size, uint price);
+			// let events = await ProxyFuturesMarketETH.queryFilter(
+			// 	FuturesMarketETH.filters.PositionLiquidated(owner.address),
+			// 	txReceipt.blockNumber
+			// );
+			// assert.isAtLeast(events.length, 1);
 		});
 	});
 }
 
 module.exports = {
 	itConfirmsOrders,
+	itLiquidatesOrders,
 };
