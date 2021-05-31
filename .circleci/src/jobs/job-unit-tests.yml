@@ -6,15 +6,24 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run: npx hardhat compile --showsize --optimizer
+  - run:
+      name: Pre compile
+      command: npx hardhat compile --showsize --optimizer
   - run:
       name: Test and output gas used
       command: |
         set +e
         circleci tests glob 'test/contracts/*.js' |
         circleci tests split |
-        xargs npm test
+        xargs npm test -- --gas --optimizer
         EXIT_CODE=$?
-        cat test-gas-used.log
         printf "\\n"
         exit $EXIT_CODE
+  - run:
+      name: Save gas report
+      command: |
+        mv gasReporterOutput.json ./gasReporterOutput-$CIRCLE_NODE_INDEX.json
+  - persist_to_workspace:
+      root: .
+      paths:
+        - gasReporterOutput-*.json

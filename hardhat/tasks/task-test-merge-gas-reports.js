@@ -100,9 +100,9 @@ task('test:merge-gas-reports', 'Merge several gasReporterOuput.json files into o
 				result.info.methods[key].gasData = [
 					...result.info.methods[key].gasData,
 					...report.info.methods[key].gasData,
-				];
+				].sort((a, b) => a - b);
 
-				result.info.methods[key].numberOfCalls += result.info.methods[key].numberOfCalls;
+				result.info.methods[key].numberOfCalls += report.info.methods[key].numberOfCalls;
 			});
 
 			if (!Array.isArray(report.info.deployments)) {
@@ -114,7 +114,7 @@ task('test:merge-gas-reports', 'Merge several gasReporterOuput.json files into o
 				const current = result.info.deployments.find(d => d.name === deployment.name);
 
 				if (current) {
-					current.gasData = [...current.gasData, ...deployment.gasData];
+					current.gasData = [...current.gasData, ...deployment.gasData].sort((a, b) => a - b);
 				} else {
 					result.info.deployments.push(deployment);
 				}
