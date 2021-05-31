@@ -2,7 +2,10 @@
 
 const path = require('path');
 const { gray, green, yellow, redBright, red } = require('chalk');
-const { parseUnits, formatUnits, isAddress, constants } = require('ethers');
+const {
+	utils: { parseUnits, formatUnits, isAddress },
+	constants,
+} = require('ethers');
 const Deployer = require('../Deployer');
 const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
