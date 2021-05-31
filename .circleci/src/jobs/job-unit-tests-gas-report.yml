@@ -1,11 +1,15 @@
 # Measures deployment and transaction gas usage in unit tests
 {{> job-header.yml}}
-resource_class: large
 steps:
   - checkout
   - attach_workspace:
-      at: .
-  - run: npm run test:gas
-  - run: npx codechecks codechecks.unit.yml
+      at: /tmp/coverage
+  - run:
+      name: Upload gas reports
+      command: |
+        cp -R /tmp/gas-reports/gasReporterOutput-*.json .
+        npx hardhat test:merge-gas-reports gasReporterOutput-*.json
+        npx codechecks codechecks.unit.yml
+        cat test-gas-used.log
   - store_artifacts:
       path: test-gas-used.log

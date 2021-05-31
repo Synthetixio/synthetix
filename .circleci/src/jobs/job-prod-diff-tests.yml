@@ -12,7 +12,7 @@ steps:
       command: npx hardhat node --target-network mainnet
       background: true
   - cmd-wait-for-port:
-        port: 8545
+      port: 8545
   # Prepare deploy
   - run: node publish prepare-deploy --network mainnet
   # Deploy

@@ -26,9 +26,9 @@ steps:
         cd optimism/ops
         docker-compose up -d
   - cmd-wait-for-port:
-        port: 8545
+      port: 8545
   - cmd-wait-for-port:
-        port: 9545
+      port: 9545
   - run:
       name: Deploy OVM Synthetix instances
       command: |
