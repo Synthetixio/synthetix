@@ -243,8 +243,8 @@
 			"major": 2,
 			"minor": 46
 		},
-		"sources": ["Exchanger", "Synthetix"],
-		"sips": [138, 139, 140]
+		"sources": ["ExchangeRates", "Exchanger", "Synthetix", "SystemSettings"],
+		"sips": [120, 138, 139, 140]
 	},
 	{
 		"name": "Alnitak (Optimism)",
