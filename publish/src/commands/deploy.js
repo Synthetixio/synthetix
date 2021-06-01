@@ -1020,7 +1020,8 @@ const deploy = async ({
 			args: ['renBTC', 'renBTC', 8],
 		});
 
-		RENBTC_ADDRESS = renBTC.options.address;
+		// this could be undefined in an env where MockToken is not listed in the config flags
+		RENBTC_ADDRESS = renBTC ? renBTC.options.address : undefined;
 	}
 
 	const collateralErc20 = await deployer.deployContract({
@@ -1034,7 +1035,7 @@ const deploy = async ({
 			toBytes32('sBTC'),
 			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_CRATIO'],
 			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_COLLATERAL'],
-			RENBTC_ADDRESS,
+			RENBTC_ADDRESS, // if undefined then this will error as expected.
 			8,
 		],
 	});
