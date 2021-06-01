@@ -48,11 +48,6 @@ task('test')
 		if (gas) {
 			console.log(gray(`Enabling ${yellow('gas')} reports, tests will run slower`));
 			hre.config.gasReporter.enabled = true;
-			if (!grep) {
-				console.log(gray(`Ignoring test specs containing`, yellow('@gas-skip')));
-				hre.config.mocha.grep = '@gas-skip';
-				hre.config.mocha.invert = true;
-			}
 		}
 
 		if (gasOutputFile) {
