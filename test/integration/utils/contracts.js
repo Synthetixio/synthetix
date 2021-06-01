@@ -5,7 +5,7 @@ const { getSource, getTarget } = require('../../..');
 
 function connectContracts({ ctx }) {
 	const { useOvm } = ctx;
-	const network = 'local';
+	const network = ctx.fork ? 'mainnet' : 'local';
 
 	const allTargets = getTarget({ fs, path, network, useOvm });
 
