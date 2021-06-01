@@ -2,156 +2,154 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
-const { currentTime } = require('../../utils')();
-const { wait } = require('../utils/rpc');
+const { waitForEvent } = require('../utils/events');
 const {
 	utils: { parseEther },
 } = ethers;
 
+const sETH = toBytes32('sETH');
+
 function itConfirmsOrders({ ctx }) {
-	const sETH = toBytes32('sETH');
+	describe('order confirmation', () => {
+		let ExchangeRates, ProxyFuturesMarketETH, FuturesMarketETH;
+		let owner;
 
-	const sUSDAmount = parseEther('200');
-	const leverage = parseEther('1.0');
-	const margin = parseEther('150');
+		async function setPrice(asset, price) {
+			const { timestamp } = await ctx.provider.getBlock();
+			const tx = await ExchangeRates.updateRates([asset], [parseEther(price)], timestamp);
+			await tx.wait();
+		}
 
-	let owner;
+		before('target contracts and users', () => {
+			({ ExchangeRates, ProxyFuturesMarketETH, FuturesMarketETH } = ctx.contracts);
 
-	let Synthetix, ExchangeRates, FuturesMarketETH;
+			owner = ctx.users.owner;
 
-	async function setPrice(asset, price) {
-		const { timestamp } = await ctx.provider.getBlock();
-		const tx = await ExchangeRates.updateRates([asset], [parseEther(price)], timestamp);
-		await tx.wait();
-	}
-
-	before('target contracts and users', () => {
-		({ ExchangeRates, ProxyFuturesMarketETH, FuturesMarketETH } = ctx.contracts);
-
-		owner = ctx.users.owner;
-	});
-
-	before('ensure the owner has sUSD', async () => {
-		await ensureBalance({ ctx: ctx, symbol: 'sUSD', user: owner, balance: sUSDAmount });
-	});
-
-	describe('when a user submits an order', () => {
-		let txReceipt;
-		let orderId;
-
-		before('submit the order', async () => {
-			FuturesMarketETH = FuturesMarketETH.connect(owner);
-
-			const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage, {
-				from: owner.address,
-			});
-			txReceipt = await tx.wait();
-
-			const orderSubmitted = txReceipt.events.filter(
-				({ address, event }) =>
-					address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
-			)[0];
-
-			({
-				args: { id: orderId },
-			} = orderSubmitted);
-		});
-
-		before('next exrates round', async () => {
 			ExchangeRates = ExchangeRates.connect(owner);
-			await setPrice(sETH, '200');
+			FuturesMarketETH = FuturesMarketETH.connect(owner);
+			FuturesMarketETH = FuturesMarketETH.attach(ProxyFuturesMarketETH.address);
 		});
 
-		it('is confirmed by the keeper within a second', async () => {
-			await wait({ seconds: 2 });
+		before('ensure the owner has sUSD', async () => {
+			const sUSDAmount = parseEther('200');
+			await ensureBalance({ ctx: ctx, symbol: 'sUSD', user: owner, balance: sUSDAmount });
+		});
 
-			let events = await ProxyFuturesMarketETH.queryFilter(
-				FuturesMarketETH.filters.OrderConfirmed(orderId),
-				txReceipt.blockNumber
-			);
+		describe('when a user submits an order', () => {
+			const leverage = parseEther('1.0');
+			const margin = parseEther('150');
 
-			assert.isAtLeast(events.length, 1);
+			let txReceipt;
+			let orderId;
+
+			before('submit the order', async () => {
+				const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage);
+				txReceipt = await tx.wait();
+
+				const orderSubmitted = txReceipt.events.filter(
+					({ address, event }) =>
+						address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
+				)[0];
+
+				({
+					args: { id: orderId },
+				} = orderSubmitted);
+			});
+
+			before('next price update', async () => {
+				await setPrice(sETH, '200');
+			});
+
+			it('is confirmed by the keeper', async () => {
+				const events = await waitForEvent(
+					ProxyFuturesMarketETH,
+					FuturesMarketETH.filters.OrderConfirmed(orderId),
+					txReceipt.blockNumber
+				);
+
+				assert.isAtLeast(events.length, 1);
+			});
 		});
 	});
 }
 
 function itLiquidatesOrders({ ctx }) {
-	const sUSDAmount = parseEther('200');
-	const leverage = parseEther('1.0');
-	const margin = parseEther('150');
+	describe('order liquidation', () => {
+		let owner;
+		let user;
 
-	const sETH = toBytes32('sETH');
+		let ExchangeRates, ProxyFuturesMarketETH, FuturesMarketETH;
 
-	let owner;
-	let user;
+		async function setPrice(asset, price) {
+			const { timestamp } = await ctx.provider.getBlock();
+			const tx = await ExchangeRates.updateRates([asset], [parseEther(price)], timestamp);
+			await tx.wait();
+		}
 
-	let Synthetix, ExchangeRates, SynthsETH, FuturesMarketETH, Market;
+		before('target contracts and users', () => {
+			({ ExchangeRates, ProxyFuturesMarketETH, FuturesMarketETH } = ctx.contracts);
 
-	async function setPrice(asset, price) {
-		const { timestamp } = await ctx.provider.getBlock();
-		const tx = await ExchangeRates.updateRates([asset], [parseEther(price)], timestamp);
-		await tx.wait();
-	}
+			owner = ctx.users.owner;
+			user = ctx.users.someUser;
 
-	before('target contracts and users', () => {
-		({
-			Synthetix,
-			ExchangeRates,
-			SynthsETH,
-			ProxyFuturesMarketETH,
-			FuturesMarketETH,
-		} = ctx.contracts);
-
-		owner = ctx.users.owner;
-		user = ctx.users.someUser;
-	});
-
-	before('ensure the owner has sUSD', async () => {
-		await ensureBalance({ ctx: ctx, symbol: 'sUSD', user: user, balance: sUSDAmount });
-	});
-
-	describe.only('when a user submits an order', () => {
-		let txReceipt;
-		let orderId;
-
-		before('submit the order', async () => {
-			FuturesMarketETH = FuturesMarketETH.connect(user);
-
-			const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage);
-			txReceipt = await tx.wait();
-
-			const orderSubmitted = txReceipt.events.filter(
-				({ address, event }) =>
-					address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
-			)[0];
-
-			({
-				args: { id: orderId },
-			} = orderSubmitted);
-		});
-
-		before('next exrates round', async () => {
 			ExchangeRates = ExchangeRates.connect(owner);
-			await setPrice(sETH, '200');
+			FuturesMarketETH = FuturesMarketETH.connect(user);
+			FuturesMarketETH = FuturesMarketETH.attach(ProxyFuturesMarketETH.address);
 		});
 
-		before('confirming order', async () => {
-			await wait({ seconds: 3 });
-			// TODO: assert order is confirmed.
+		before('ensure the owner has sUSD', async () => {
+			const sUSDAmount = parseEther('200');
+			await ensureBalance({ ctx: ctx, symbol: 'sUSD', user: user, balance: sUSDAmount });
 		});
 
-		before('price update', async () => {
-			await setPrice(sETH, '0.01');
-		});
+		describe('when a user submits an order', () => {
+			const leverage = parseEther('1.0');
+			const margin = parseEther('150');
 
-		it('is liquidated by the keeper within a second', async () => {
-			// await wait({ seconds: 2 });
-			// // event PositionLiquidated(address indexed account, address indexed liquidator, int size, uint price);
-			// let events = await ProxyFuturesMarketETH.queryFilter(
-			// 	FuturesMarketETH.filters.PositionLiquidated(owner.address),
-			// 	txReceipt.blockNumber
-			// );
-			// assert.isAtLeast(events.length, 1);
+			let txReceipt;
+			let orderId;
+
+			before('submit the order', async () => {
+				const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage);
+				txReceipt = await tx.wait();
+
+				const orderSubmitted = txReceipt.events.filter(
+					({ address, event }) =>
+						address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
+				)[0];
+
+				({
+					args: { id: orderId },
+				} = orderSubmitted);
+			});
+
+			before('next price update', async () => {
+				await setPrice(sETH, '200');
+			});
+
+			before('confirming order', async () => {
+				const events = await waitForEvent(
+					FuturesMarketETH,
+					FuturesMarketETH.filters.OrderConfirmed(orderId),
+					txReceipt.blockNumber,
+					10000
+				);
+				assert.isAtLeast(events.length, 1);
+			});
+
+			before('next price update, which puts position into liquidation', async () => {
+				await setPrice(sETH, '0.01');
+			});
+
+			it('is liquidated by the keeper', async () => {
+				const events = await waitForEvent(
+					FuturesMarketETH,
+					FuturesMarketETH.filters.PositionLiquidated(user.address),
+					'latest',
+					10000
+				);
+				assert.isAtLeast(events.length, 1);
+			});
 		});
 	});
 }
