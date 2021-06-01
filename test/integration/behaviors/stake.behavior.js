@@ -54,7 +54,12 @@ function itCanMintAndBurn({ ctx }) {
 			});
 
 			it('burnt the expected amount of sUSD', async () => {
-				assert.bnEqual(await SynthsUSD.balanceOf(user.address), balancesUSD.sub(sUSDamount));
+				const newBalancesUSD = await SynthsUSD.balanceOf(user.address);
+				const expected = balancesUSD.sub(sUSDamount);
+				const delta = newBalancesUSD.sub(expected);
+				const variance = ethers.utils.parseUnits('2', 'gwei');
+
+				assert.bnLt(delta, variance);
 			});
 		});
 	});

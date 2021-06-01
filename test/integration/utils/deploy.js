@@ -4,6 +4,7 @@ const { getPrivateKey } = require('./users');
 const commands = {
 	build: require('../../../publish/src/commands/build').build,
 	deploy: require('../../../publish/src/commands/deploy').deploy,
+	prepareDeploy: require('../../../publish/src/commands/prepare-deploy').prepareDeploy,
 	connectBridge: require('../../../publish/src/commands/connect-bridge').connectBridge,
 };
 
@@ -19,18 +20,26 @@ async function compileInstance({ useOvm }) {
 	});
 }
 
+async function prepareDeploy() {
+	await commands.prepareDeploy({ network: 'mainnet' });
+}
+
 async function deployInstance({
 	useOvm,
 	providerUrl,
 	providerPort,
+	useFork = false,
+	network = 'local',
+	freshDeploy = true,
 	ignoreCustomParameters = false,
 }) {
 	const privateKey = getPrivateKey({ index: 0 });
 
 	await commands.deploy({
 		concurrency: 1,
-		network: 'local',
-		freshDeploy: true,
+		network,
+		useFork,
+		freshDeploy,
 		yes: true,
 		providerUrl: `${providerUrl}:${providerPort}`,
 		gasPrice: useOvm ? '0' : '1',
@@ -76,4 +85,5 @@ module.exports = {
 	compileInstance,
 	deployInstance,
 	connectInstances,
+	prepareDeploy,
 };
