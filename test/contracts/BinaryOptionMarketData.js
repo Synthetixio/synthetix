@@ -6,7 +6,7 @@ const { setupContract, setupAllContracts } = require('./setup');
 const { currentTime, toUnit } = require('../utils')();
 const { toBytes32 } = require('../..');
 
-contract('BinaryOptionMarketData @gas-skip', accounts => {
+contract('BinaryOptionMarketData', accounts => {
 	let market, setupTime, dataContract;
 
 	before(async () => {
