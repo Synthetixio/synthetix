@@ -1,13 +1,18 @@
 const { task } = require('hardhat/config');
-const { compileInstance, deployInstance } = require('../../test/integration/utils/deploy');
+const {
+	compileInstance,
+	prepareDeploy,
+	deployInstance,
+} = require('../../test/integration/utils/deploy');
 
 task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addFlag('compile', 'Compile an l1 instance before running the tests')
 	.addFlag('deploy', 'Deploy an l1 instance before running the tests')
+	.addFlag('fork', 'Run the tests against a fork of mainnet')
 	.addOptionalParam(
 		'providerPort',
 		'The target port for the running local chain to test on',
-		'9545'
+		'8545'
 	)
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/l1/';
@@ -19,6 +24,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		hre.config.mocha.timeout = timeout;
 		hre.config.mocha.bail = false;
 		hre.config.networks.localhost.timeout = timeout;
+		hre.config.fork = taskArguments.fork;
 
 		taskArguments.maxMemory = true;
 
@@ -27,7 +33,19 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		}
 
 		if (taskArguments.deploy) {
-			await deployInstance({ useOvm: false, providerUrl, providerPort });
+			if (taskArguments.fork) {
+				await prepareDeploy({ network: 'mainnet' });
+				await deployInstance({
+					useFork: true,
+					network: 'mainnet',
+					useOvm: false,
+					freshDeploy: false,
+					providerUrl,
+					providerPort,
+				});
+			} else {
+				await deployInstance({ useOvm: false, providerUrl, providerPort });
+			}
 		}
 
 		await hre.run('test', taskArguments);
