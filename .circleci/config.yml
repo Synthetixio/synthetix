@@ -375,7 +375,7 @@ jobs:
             set +e
             circleci tests glob 'test/contracts/*.js' |
             circleci tests split |
-            xargs npm test -- --gas --optimizer
+            xargs npm test -- --gas
             EXIT_CODE=$?
             printf "\\n"
             exit $EXIT_CODE
