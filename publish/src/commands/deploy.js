@@ -1057,6 +1057,19 @@ const deploy = async ({
 
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
+	// Note: RPAR.setTarget(AR) MUST go before the addresses are imported into the resolver.
+	// most of the time it will be a no-op but when there's a new AddressResolver, it's critical
+	if (addressResolver && readProxyForResolver) {
+		await runStep({
+			contract: 'ReadProxyAddressResolver',
+			target: readProxyForResolver,
+			read: 'target',
+			expected: input => input === addressOf(addressResolver),
+			write: 'setTarget',
+			writeArg: addressOf(addressResolver),
+		});
+	}
+
 	let addressesAreImported = false;
 
 	if (addressResolver) {
@@ -1405,16 +1418,6 @@ const deploy = async ({
 	console.log(gray(`\n------ CONFIGURE LEGACY CONTRACTS VIA SETTERS ------\n`));
 
 	// now configure everything
-	if (addressResolver && readProxyForResolver) {
-		await runStep({
-			contract: 'ReadProxyAddressResolver',
-			target: readProxyForResolver,
-			read: 'target',
-			expected: input => input === addressOf(addressResolver),
-			write: 'setTarget',
-			writeArg: addressOf(addressResolver),
-		});
-	}
 	if (network !== 'mainnet' && systemStatus) {
 		// On testnet, give the deployer the rights to update status
 		await runStep({
