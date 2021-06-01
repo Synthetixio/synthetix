@@ -10,8 +10,6 @@ async function ensureBalance({ ctx, symbol, user, balance }) {
 		const amount = balance.sub(currentBalance);
 
 		await _getTokens({ ctx, symbol, user, amount });
-		console.log(`New balance: ${await token.balanceOf(user.address)}`);
-		// New balance: 0
 	}
 }
 
