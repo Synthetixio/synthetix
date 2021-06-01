@@ -1,8 +1,7 @@
 require('dotenv').config();
 const ethers = require('ethers');
-const { gray, blue } = require('chalk');
+const { gray } = require('chalk');
 const Keeper = require('./keeper');
-const PollRoutine = require('./poll-routine');
 
 async function main() {
 	const { FUTURES_MARKET_ETH_ADDRESS, POLL_INTERVAL, ETH_PRIVATE_KEY } = process.env;
@@ -16,7 +15,7 @@ async function main() {
 		throw new Error('ETH_PRIVATE_KEY environment variable is not configured.');
 	}
 
-	let privateKey = ETH_PRIVATE_KEY;
+	const privateKey = ETH_PRIVATE_KEY;
 	const pollInterval = parseInt(POLL_INTERVAL);
 
 	// Setup.
@@ -27,11 +26,13 @@ async function main() {
 	console.log(gray(`Connected to Ethereum node at http://localhost:8545`));
 	console.log(gray(`Account: ${account}`));
 
-	new Keeper({
+	const keeper = new Keeper({
 		proxyFuturesMarket: FUTURES_MARKET_ETH_ADDRESS,
 		signer,
 		pollInterval,
+		provider,
 	});
+	keeper.run();
 
 	await new Promise((resolve, reject) => {});
 }
