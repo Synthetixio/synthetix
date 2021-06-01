@@ -295,7 +295,7 @@ contract('RewardEscrow', async accounts => {
 
 				// append the MAX_VESTING_ENTRIES to the schedule
 				for (let i = 0; i < MAX_VESTING_ENTRIES; i++) {
-					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
+					await rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
 					await fastForward(WEEK);
 				}
 				// assert adding 1 more above the MAX_VESTING_ENTRIES fails
@@ -314,7 +314,7 @@ contract('RewardEscrow', async accounts => {
 
 				// Append the MAX_VESTING_ENTRIES to the schedule
 				for (let i = 0; i < MAX_VESTING_ENTRIES; i++) {
-					rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
+					await rewardEscrow.appendVestingEntry(account1, toUnit('1'), { from: feePoolAccount });
 					await fastForward(SECOND);
 				}
 
