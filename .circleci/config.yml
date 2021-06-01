@@ -371,6 +371,8 @@ jobs:
           command: npx hardhat compile --showsize --optimizer
       - run:
           name: Test and output gas used
+          environment:
+            CI: true
           command: |
             set +e
             circleci tests glob 'test/contracts/*.js' |

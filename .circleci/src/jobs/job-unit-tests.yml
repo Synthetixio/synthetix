@@ -14,6 +14,9 @@ steps:
       command: npx hardhat compile --showsize --optimizer
   - run:
       name: Test and output gas used
+      environment:
+        # Necessary for the npm test command to generate gasReporterOutput.json file
+        CI: true
       command: |
         set +e
         circleci tests glob 'test/contracts/*.js' |
