@@ -14,9 +14,8 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 	let initialParametersL1, initialParametersL2;
 
 	before('target contracts and users', () => {
-		({ Synthetix, RewardEscrowV2, SynthetixBridgeToOptimism } = ctx.l1.contracts);
-
-		user = ctx.l1.users.owner;
+		({ SynthetixBridgeToOptimism } = ctx.l1.contracts);
+		({ SynthetixBridgeToBase } = ctx.l2.contracts);
 	});
 
 	before('record current escrow state', async () => {
@@ -28,6 +27,9 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 		const snxAmount = ethers.utils.parseEther('100');
 
 		before('approve reward escrow if needed', async () => {
+			({ Synthetix, RewardEscrowV2 } = ctx.l1.contracts);
+			user = ctx.l1.users.owner;
+
 			await approveIfNeeded({
 				token: Synthetix,
 				owner: user,
@@ -45,6 +47,8 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 			let escrowEntriesData = {};
 
 			before('create and append escrow entries', async () => {
+				user = ctx.l1.users.owner;
+
 				escrowEntriesData = await appendEscrows({
 					ctx: ctx.l1,
 					user,
@@ -92,7 +96,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 					}
 				};
 
-				before('target contracts and users L2 ', () => {
+				before('target contracts and users', () => {
 					({ Synthetix, RewardEscrowV2, SynthetixBridgeToBase } = ctx.l2.contracts);
 
 					user = ctx.l2.users.owner;
@@ -145,7 +149,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 					);
 				});
 
-				it('should update the L1 escrow state', async () => {
+				it('should update the L1 escrow state after migrate', async () => {
 					postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1 });
 
 					assert.bnEqual(postParametersL1.escrowedBalance, initialParametersL1.escrowedBalance);
@@ -155,10 +159,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 						initialParametersL1.userNumVestingEntries.add(totalEntriesCreated)
 					);
 
-					assert.bnEqual(
-						postParametersL1.escrowedBalance,
-						initialParametersL1.escrowedBalance.add(escrowEntriesData.totalEscrowed)
-					);
+					assert.bnEqual(postParametersL1.escrowedBalance, initialParametersL1.escrowedBalance);
 					assert.bnEqual(
 						postParametersL1.userEscrowedBalance,
 						initialParametersL1.userEscrowedBalance
@@ -175,6 +176,17 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 				// --------------------------
 
 				describe('when waiting for the tx to complete on L2', () => {
+					before('listen for completion', async () => {
+						const [messageHashL2ImportEntries] = await ctx.watcher.getMessageHashesFromL1Tx(
+							migrateEscrowReceipt.transactionHash
+						);
+						await ctx.watcher.getL2TransactionReceipt(messageHashL2ImportEntries);
+						const [messageHashL2ImportEntriesExtra] = await ctx.watcher.getMessageHashesFromL1Tx(
+							migrateEscrowReceiptExtra.transactionHash
+						);
+						await ctx.watcher.getL2TransactionReceipt(messageHashL2ImportEntriesExtra);
+					});
+
 					before('stop listening to events on L2', async () => {
 						SynthetixBridgeToBase.off(
 							'ImportedVestingEntries',
