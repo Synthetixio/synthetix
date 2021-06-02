@@ -371,10 +371,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         external
         view
         returns (
-            uint value,
-            uint systemValue,
-            uint systemSourceRate,
-            uint systemDestinationRate
+            uint,
+            uint,
+            uint,
+            uint
         )
     {
         _notImplemented();
