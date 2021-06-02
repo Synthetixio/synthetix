@@ -3,7 +3,7 @@
 steps:
   - checkout
   - attach_workspace:
-      at: /tmp/coverage
+      at: /tmp/gas-reports
   - run:
       name: Upload gas reports
       command: |
