@@ -80,7 +80,7 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 	const abiEntryForFnc = artifacts.require(mock).abi.find(({ name }) => name === fncName);
 
 	if (!fncName || !abiEntryForFnc) {
-		throw Error(`Cannot find function "${fncName}" in the ABI of contract "${mock}"`);
+		throw new Error(`Cannot find function "${fncName}" in the ABI of contract "${mock}"`);
 	}
 	const signature = web3.eth.abi.encodeFunctionSignature(abiEntryForFnc);
 
@@ -101,7 +101,6 @@ const mockGenericContractFnc = async ({ instance, fncName, mock, returns = [] })
 const setupContract = async ({
 	accounts,
 	contract,
-	source = undefined, // if a separate source file should be used
 	mock = undefined, // if contract is GenericMock, this is the name of the contract being mocked
 	forContract = undefined, // when a contract is deployed for another (like Proxy for FeePool)
 	cache = {},
@@ -111,7 +110,7 @@ const setupContract = async ({
 }) => {
 	const [deployerAccount, owner, oracle, fundsWallet] = accounts;
 
-	const artifact = artifacts.require(source || contract);
+	const artifact = artifacts.require(contract);
 
 	const create = ({ constructorArgs }) => {
 		return artifact.new(
@@ -122,7 +121,7 @@ const setupContract = async ({
 	};
 
 	// if it needs library linking
-	if (Object.keys((await artifacts.readArtifact(source || contract)).linkReferences).length > 0) {
+	if (Object.keys((await artifacts.readArtifact(contract)).linkReferences).length > 0) {
 		await artifact.link(await artifacts.require('SafeDecimalMath').new());
 	}
 
@@ -154,6 +153,13 @@ const setupContract = async ({
 			[toBytes32('SNX')],
 			[toWei('0.2', 'ether')],
 		],
+		ExchangeRatesWithDexPricing: [
+			owner,
+			oracle,
+			tryGetAddressOf('AddressResolver'),
+			[toBytes32('SNX')], // TODO: can we remove these initial rates?
+			[toWei('0.2', 'ether')],
+		],
 		SynthetixState: [owner, ZERO_ADDRESS],
 		SupplySchedule: [owner, 0, 0],
 		Proxy: [owner],
@@ -164,6 +170,7 @@ const setupContract = async ({
 		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangerWithVirtualSynth: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		BaseSynthetix: [
@@ -258,14 +265,14 @@ const setupContract = async ({
 		if (process.env.DEBUG) {
 			log(
 				'Deployed',
-				contract + (source ? ` (${source})` : '') + (forContract ? ' for ' + forContract : ''),
+				contract + (forContract ? ' for ' + forContract : ''),
 				mock ? 'mock of ' + mock : '',
 				'to',
 				instance.address
 			);
 		}
 	} catch (err) {
-		throw Error(
+		throw new Error(
 			`Failed to deploy ${contract}. Does it have defaultArgs setup?\n\t└─> Caused by ${err.toString()}`
 		);
 	}
@@ -477,6 +484,19 @@ const setupContract = async ({
 				),
 			]);
 		},
+		async ExchangerWithVirtualSynth() {
+			await Promise.all([
+				cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner }),
+
+				cache['SystemStatus'].updateAccessControl(
+					toBytes32('Synth'),
+					instance.address,
+					true,
+					false,
+					{ from: owner }
+				),
+			]);
+		},
 
 		async SystemStatus() {
 			// ensure the owner has suspend/resume control over everything
@@ -576,6 +596,8 @@ const setupAllContracts = async ({
 	// BASE CONTRACTS
 
 	// Note: those with deps need to be listed AFTER their deps
+	// Note: deps are based on the contract's resolver name, allowing different contracts to be used
+	// for the same dependency (e.g. in l1/l2 configurations)
 	const baseContracts = [
 		{ contract: 'AddressResolver' },
 		{ contract: 'SystemStatus' },
@@ -587,6 +609,12 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'ExchangeRates',
+			deps: ['AddressResolver', 'SystemSettings'],
+			mocks: ['Exchanger'],
+		},
+		{
+			contract: 'ExchangeRatesWithDexPricing',
+			resolverAlias: 'ExchangeRates',
 			deps: ['AddressResolver', 'SystemSettings'],
 			mocks: ['Exchanger'],
 		},
@@ -678,7 +706,20 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Exchanger',
-			source: 'ExchangerWithVirtualSynth',
+			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals'],
+			deps: [
+				'AddressResolver',
+				'TradingRewards',
+				'SystemStatus',
+				'ExchangeRates',
+				'ExchangeState',
+				'FlexibleStorage',
+				'DebtCache',
+			],
+		},
+		{
+			contract: 'ExchangerWithVirtualSynth',
+			resolverAlias: 'Exchanger',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: [
 				'AddressResolver',
@@ -714,11 +755,11 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'TokenState',
 				'SystemStatus',
-				'ExchangeRates',
 			],
 		},
 		{
 			contract: 'BaseSynthetix',
+			resolverAlias: 'Synthetix',
 			mocks: [
 				'Exchanger',
 				'RewardEscrow',
@@ -735,18 +776,17 @@ const setupAllContracts = async ({
 				'AddressResolver',
 				'TokenState',
 				'SystemStatus',
-				'ExchangeRates',
 			],
 		},
 		{
 			contract: 'MintableSynthetix',
+			resolverAlias: 'Synthetix',
 			mocks: [
 				'Exchanger',
 				'SynthetixEscrow',
 				'Liquidations',
 				'Issuer',
 				'SystemStatus',
-				'ExchangeRates',
 				'SynthetixBridgeToBase',
 			],
 			deps: [
@@ -824,6 +864,30 @@ const setupAllContracts = async ({
 		},
 	];
 
+	// check contract list for contracts with the same address resolver name
+	const checkConflictsInDeclaredContracts = ({ contractList }) => {
+		// { resolverName: [contract1, contract2, ...], ... }
+		const resolverNameToContracts = baseContracts
+			.filter(({ contract }) => contractList.includes(contract))
+			.map(({ contract, resolverAlias }) => [contract, resolverAlias || contract])
+			.reduce((memo, [name, resolverName]) => {
+				memo[resolverName] = [].concat(memo[resolverName] || [], name);
+				return memo;
+			}, {});
+		// [[resolverName, [contract1, contract2, ...]]]
+		const conflicts = Object.entries(resolverNameToContracts).filter(
+			([resolverName, contracts]) => contracts.length > 1
+		);
+
+		if (conflicts.length) {
+			const errorStr = conflicts.map(
+				([resolverName, contracts]) => `[${contracts.join(',')}] conflict for ${resolverName}`
+			);
+
+			throw new Error(`Conflicting contracts declared in setup: ${errorStr}`);
+		}
+	};
+
 	// get deduped list of all required base contracts
 	const findAllAssociatedContracts = ({ contractList }) => {
 		return Array.from(
@@ -842,6 +906,15 @@ const setupAllContracts = async ({
 	// contract names the user requested - could be a list of strings or objects with a "contract" property
 	const contractNamesRequested = contracts.map(contract => contract.contract || contract);
 
+	// ensure user didn't specify conflicting contracts
+	checkConflictsInDeclaredContracts({ contractList: contractNamesRequested });
+
+	// get list of resolver aliases from declared contracts
+	const namesResolvedThroughAlias = contractNamesRequested
+		.map(contractName => baseContracts.find(({ contract }) => contract === contractName))
+		.map(({ resolverAlias }) => resolverAlias)
+		.filter(resolverAlias => !!resolverAlias);
+
 	// now go through all contracts and compile a list of them and all nested dependencies
 	const contractsRequired = findAllAssociatedContracts({ contractList: contractNamesRequested });
 
@@ -849,15 +922,17 @@ const setupAllContracts = async ({
 	const contractsToFetch = baseContracts.filter(
 		({ contract, forContract }) =>
 			// keep if contract is required
-			contractsRequired.indexOf(contract) > -1 &&
+			contractsRequired.includes(contract) &&
+			// ignore if contract has been aliased
+			!namesResolvedThroughAlias.includes(contract) &&
 			// and either there is no "forContract" or the forContract is itself required
-			(!forContract || contractsRequired.indexOf(forContract) > -1) &&
+			(!forContract || contractsRequired.includes(forContract)) &&
 			// and no entry in the existingContracts object
 			!(contract in existing)
 	);
 
 	// now setup each contract in serial in case we have deps we need to load
-	for (const { contract, source, mocks = [], forContract } of contractsToFetch) {
+	for (const { contract, resolverAlias, mocks = [], forContract } of contractsToFetch) {
 		// mark each mock onto the returnObj as true when it doesn't exist, indicating it needs to be
 		// put through the AddressResolver
 		// for all mocks required for this contract
@@ -880,16 +955,13 @@ const setupAllContracts = async ({
 		// (e.g. Proxy + FeePool)
 		const forContractName = forContract || '';
 
+		// some contracts should be registered to the address resolver with a different name
+		const contractRegistered = resolverAlias || contract;
+
 		// deploy the contract
-		// HACK: if MintableSynthetix is deployed then rename it
-		let contractRegistered = contract;
-		if (contract === 'MintableSynthetix' || contract === 'BaseSynthetix') {
-			contractRegistered = 'Synthetix';
-		}
 		returnObj[contractRegistered + forContractName] = await setupContract({
 			accounts,
 			contract,
-			source,
 			forContract,
 			// the cache is a combination of the mocks and any return objects
 			cache: Object.assign({}, mocks, returnObj),
