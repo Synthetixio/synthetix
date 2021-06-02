@@ -1,17 +1,30 @@
 const ethers = require('ethers');
-const { gray, blue, red, green } = require('chalk');
+const { gray, blue, red, green, yellow } = require('chalk');
 const FuturesMarketABI = require('synthetix/build/artifacts/contracts/FuturesMarket.sol/FuturesMarket.json')
+	.abi;
+const ExchangeRatesABI = require('synthetix/build/artifacts/contracts/ExchangeRates.sol/ExchangeRates.json')
 	.abi;
 const PollRoutine = require('./poll-routine');
 
+const EventEmitter = require('events').EventEmitter;
+
 const DEFAULT_GAS_PRICE = '0';
 
-class Keeper {
-	constructor({ proxyFuturesMarket: proxyFuturesMarketAddress, signer, provider }) {
-		// Setup KeeperRegistry.
-		//
+class Keeper extends EventEmitter {
+	// The index.
+
+	constructor({
+		proxyFuturesMarket: proxyFuturesMarketAddress,
+		exchangeRates: exchangeRatesAddress,
+		signer,
+		provider,
+	}) {
+		super();
 		const futuresMarket = new ethers.Contract(proxyFuturesMarketAddress, FuturesMarketABI, signer);
 		this.futuresMarket = futuresMarket;
+
+		const exchangeRates = new ethers.Contract(exchangeRatesAddress, ExchangeRatesABI, provider);
+		this.exchangeRates = exchangeRates;
 
 		this.liquidateRoutines = {};
 		this.confirmRoutines = {};
@@ -21,17 +34,32 @@ class Keeper {
 
 	run() {
 		console.log(gray(`Listening for events on FuturesMarket [${this.futuresMarket.address}]`));
-		this.provider.on('block', async blockNumber => {
+		this.on('block', async ({ blockNumber }) => {
 			if (!this.lastBlock) {
 				// Ethers.js begins on the last mined block, which we ignore.
 				this.lastBlock = blockNumber;
 				return;
 			}
 
-			console.log(gray(`New block: ${blockNumber}`));
+			// Check if oracle rates are updated.
+			this.exchangeRates.on('RatesUpdated', () => {
+				console.log('ExchangeRates', blue('RatesUpdated'));
+				this.emit('price-update');
+			});
+
+			this.exchangeRates.on('RateDeleted', () => {
+				console.log('ExchangeRates', blue('RateDeleted'));
+				this.emit('price-update');
+			});
+
 			const events = await this.futuresMarket.queryFilter('*', blockNumber, blockNumber);
+			console.log(gray(`New block: ${blockNumber}`));
 			console.log('FuturesMarket', gray`${events.length} events to process`);
 			this.processEvents(events);
+		});
+
+		this.provider.on('block', blockNumber => {
+			this.emit('block', { blockNumber });
 		});
 	}
 
@@ -113,7 +141,8 @@ class Keeper {
 			`FuturesMarket [${this.futuresMarket.address}]`,
 			`done confirmOrder [id=${id}]`,
 			`success=${!!receipt.status}`,
-			`tx=${receipt.transactionHash}`
+			`tx=${receipt.transactionHash}`,
+			yellow(`gasUsed=${receipt.gasUsed}`)
 		);
 	}
 
@@ -152,7 +181,8 @@ class Keeper {
 			`FuturesMarket [${this.futuresMarket.address}]`,
 			green(`done liquidatePosition [id=${id}]`),
 			`success=${!!receipt.status}`,
-			`tx=${receipt.transactionHash}`
+			`tx=${receipt.transactionHash}`,
+			yellow(`gasUsed=${receipt.gasUsed}`)
 		);
 	}
 }
