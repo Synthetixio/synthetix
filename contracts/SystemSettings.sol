@@ -271,25 +271,41 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         }
     }
 
-    function setMinCratio(uint _minCratio) external onlyOwner {
+    function setMinCratio(uint minCratio, address collateral) external onlyOwner {
         require(_minCratio > SafeDecimalMath.unit());
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_CRATIO, _minCratio);
-        emit MinCratioRatioUpdated(_minCratio);
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_MIN_CRATIO, collateral)),
+            _minCratio
+        );
+        emit MinCratioRatioUpdated(minCratio);
     }
 
-    function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUE_FEE_RATE, _issueFeeRate);
-        emit IssueFeeRateUpdated(_issueFeeRate);
+    function setIssueFeeRate(uint issueFeeRate, address collateral) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ISSUE_FEE_RATE, collateral)),
+            _issueFeeRate
+        );
+        emit IssueFeeRateUpdated(issueFeeRate);
     }
 
-    function setManager(address _newManager) external onlyOwner {
-        flexibleStorage().setAddressValue(SETTING_CONTRACT_NAME, SETTING_NEW_MANAGER, _newManager);
-        emit ManagerUpdated(_newManager);
+    function setManager(address newManager, address collateral) external onlyOwner {
+        flexibleStorage().setAddressValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_NEW_MANAGER, collateral)),
+            _newManager
+        );
+        emit ManagerUpdated(newManager);
     }
 
-    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
-        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_CAN_OPEN_LOANS, _canOpenLoans);
-        emit CanOpenLoansUpdated(_canOpenLoans);
+    function setCanOpenLoans(bool canOpenLoans, address collateral) external onlyOwner {
+        flexibleStorage().setBoolValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral)),
+            _canOpenLoans
+        );
+        emit CanOpenLoansUpdated(canOpenLoans);
     }
 
     function setMinimumStakeTime(uint _seconds) external onlyOwner {

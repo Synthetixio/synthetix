@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ICollateralLoan.sol";
 
@@ -21,7 +20,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IShortingRewards.sol";
 
-contract Collateral is ICollateralLoan, Owned, MixinResolver, MixinSystemSettings {
+contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -76,12 +75,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver, MixinSystemSetting
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver)
-        public
-        Owned(_owner)
-        MixinResolver(_resolver)
-        MixinSystemSettings(_resolver)
-    {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     function initialize(
         ICollateralManager _manager,
@@ -100,9 +94,7 @@ contract Collateral is ICollateralLoan, Owned, MixinResolver, MixinSystemSetting
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        // TODO how do you deal with having MixinSystemSettiings & MixinResolver
-        // bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory existingAddresses = MixinResolver.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_FEEPOOL;
         newAddresses[1] = CONTRACT_EXRATES;

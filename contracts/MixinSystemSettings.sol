@@ -143,19 +143,35 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE);
     }
 
-    function getMinCratio() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_CRATIO);
+    function getMinCratio(address collateral) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_MIN_CRATIO, collateral))
+            );
     }
 
-    function getIssueFeeRate() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUE_FEE_RATE);
+    function getIssueFeeRate(address collateral) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_ISSUE_FEE_RATE, collateral))
+            );
     }
 
-    function getNewManager() internal view returns (uint) {
-        return flexibleStorage().getAddressValue(SETTING_CONTRACT_NAME, SETTING_NEW_MANAGER);
+    function getNewManager(address collateral) internal view returns (address) {
+        return
+            flexibleStorage().getAddressValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_NEW_MANAGER, collateral))
+            );
     }
 
-    function getCanOpenLoans() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_CAN_OPEN_LOANS);
+    function getCanOpenLoans(address collateral) internal view returns (bool) {
+        return
+            flexibleStorage().getBoolValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral))
+            );
     }
 }
