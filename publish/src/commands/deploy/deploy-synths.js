@@ -16,9 +16,7 @@ module.exports = async ({
 	config,
 	deployer,
 	freshDeploy,
-	issuer,
 	network,
-	readProxyForResolver,
 	synths,
 	yes,
 }) => {
@@ -26,6 +24,8 @@ module.exports = async ({
 	// Synths
 	// ----------------
 	console.log(gray(`\n------ DEPLOY SYNTHS ------\n`));
+
+	const { Issuer, ReadProxyAddressResolver } = deployer.deployedContracts;
 
 	// The list of synth to be added to the Issuer once dependencies have been set up
 	const synthsToAdd = [];
@@ -113,13 +113,13 @@ module.exports = async ({
 				account,
 				currencyKeyInBytes,
 				originalTotalSupply,
-				addressOf(readProxyForResolver),
+				addressOf(ReadProxyAddressResolver),
 			],
 			force: addNewSynths,
 		});
 
 		// Save the synth to be added once the AddressResolver has been synced.
-		if (synth && issuer) {
+		if (synth && Issuer) {
 			synthsToAdd.push({
 				synth,
 				currencyKeyInBytes,

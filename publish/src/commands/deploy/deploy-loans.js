@@ -3,33 +3,27 @@
 const { gray } = require('chalk');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({
-	account,
-	addressOf,
-	deployer,
-	getDeployParameter,
-	network,
-	readProxyForResolver,
-	useOvm,
-}) => {
+module.exports = async ({ account, addressOf, deployer, getDeployParameter, network, useOvm }) => {
 	console.log(gray(`\n------ DEPLOY ANCILLARY CONTRACTS ------\n`));
+
+	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
 	await deployer.deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
-		args: [account, account, addressOf(readProxyForResolver)],
+		args: [account, account, addressOf(ReadProxyAddressResolver)],
 	});
 
 	await deployer.deployContract({
 		// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
 		name: 'EtherCollateral',
 		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateral',
-		args: useOvm ? [] : [account, addressOf(readProxyForResolver)],
+		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
 	});
 	await deployer.deployContract({
 		name: 'EtherCollateralsUSD',
 		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateralsUSD',
-		args: useOvm ? [] : [account, addressOf(readProxyForResolver)],
+		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
 	});
 
 	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
@@ -53,13 +47,13 @@ module.exports = async ({
 	await deployer.deployContract({
 		name: 'EtherWrapper',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
+		args: [account, addressOf(ReadProxyAddressResolver), WETH_ADDRESS],
 	});
 
 	await deployer.deployContract({
 		name: 'NativeEtherWrapper',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
+		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
 	// ----------------
@@ -84,7 +78,7 @@ module.exports = async ({
 			: [
 					addressOf(collateralManagerState),
 					account,
-					addressOf(readProxyForResolver),
+					addressOf(ReadProxyAddressResolver),
 					collateralManagerDefaults['MAX_DEBT'],
 					collateralManagerDefaults['BASE_BORROW_RATE'],
 					collateralManagerDefaults['BASE_SHORT_RATE'],
@@ -97,13 +91,13 @@ module.exports = async ({
 		args: [account, account],
 	});
 
-	const collateralEth = await deployer.deployContract({
+	await deployer.deployContract({
 		name: 'CollateralEth',
 		args: [
 			addressOf(collateralStateEth),
 			account,
 			addressOf(collateralManager),
-			addressOf(readProxyForResolver),
+			addressOf(ReadProxyAddressResolver),
 			toBytes32('sETH'),
 			(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
 			(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
@@ -132,14 +126,14 @@ module.exports = async ({
 		RENBTC_ADDRESS = renBTC ? renBTC.options.address : undefined;
 	}
 
-	const collateralErc20 = await deployer.deployContract({
+	await deployer.deployContract({
 		name: 'CollateralErc20',
 		source: 'CollateralErc20',
 		args: [
 			addressOf(collateralStateErc20),
 			account,
 			addressOf(collateralManager),
-			addressOf(readProxyForResolver),
+			addressOf(ReadProxyAddressResolver),
 			toBytes32('sBTC'),
 			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_CRATIO'],
 			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_COLLATERAL'],
@@ -154,13 +148,13 @@ module.exports = async ({
 		args: [account, account],
 	});
 
-	const collateralShort = await deployer.deployContract({
+	await deployer.deployContract({
 		name: 'CollateralShort',
 		args: [
 			addressOf(collateralStateShort),
 			account,
 			addressOf(collateralManager),
-			addressOf(readProxyForResolver),
+			addressOf(ReadProxyAddressResolver),
 			toBytes32('sUSD'),
 			(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
 			(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
@@ -168,15 +162,7 @@ module.exports = async ({
 	});
 
 	return {
-		collateralShort,
-		collateralEth,
-		collateralErc20,
-		collateralStateErc20,
-		collateralStateEth,
-		collateralStateShort,
-		collateralManager,
 		collateralManagerDefaults,
-		collateralManagerState,
 		useEmptyCollateralManager,
 	};
 };

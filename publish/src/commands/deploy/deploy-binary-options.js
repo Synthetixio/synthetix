@@ -6,16 +6,18 @@ const {
 	utils: { parseUnits },
 } = require('ethers');
 
-module.exports = async ({ account, addressOf, deployer, readProxyForResolver }) => {
+module.exports = async ({ account, addressOf, deployer }) => {
 	// ----------------
 	// Binary option market factory and manager setup
 	// ----------------
 
 	console.log(gray(`\n------ DEPLOY BINARY OPTIONS ------\n`));
 
+	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+
 	await deployer.deployContract({
 		name: 'BinaryOptionMarketFactory',
-		args: [account, addressOf(readProxyForResolver)],
+		args: [account, addressOf(ReadProxyAddressResolver)],
 		deps: ['AddressResolver'],
 	});
 
@@ -28,11 +30,11 @@ module.exports = async ({ account, addressOf, deployer, readProxyForResolver }) 
 	const poolFee = parseUnits('0.008').toString(); // 0.8% of the market's value goes to the pool in the end.
 	const creatorFee = parseUnits('0.002').toString(); // 0.2% of the market's value goes to the creator.
 	const refundFee = parseUnits('0.05').toString(); // 5% of a bid stays in the pot if it is refunded.
-	const binaryOptionMarketManager = await deployer.deployContract({
+	await deployer.deployContract({
 		name: 'BinaryOptionMarketManager',
 		args: [
 			account,
-			addressOf(readProxyForResolver),
+			addressOf(ReadProxyAddressResolver),
 			maxOraclePriceAge,
 			expiryDuration,
 			maxTimeToMaturity,
@@ -44,6 +46,4 @@ module.exports = async ({ account, addressOf, deployer, readProxyForResolver }) 
 		],
 		deps: ['AddressResolver'],
 	});
-
-	return { binaryOptionMarketManager };
 };
