@@ -344,6 +344,7 @@ jobs:
       - run:
           name: Upload gas reports
           command: |
+            ls -la /tmp/gas-reports
             cp -R /tmp/gas-reports/gasReporterOutput-*.json .
             npx hardhat test:merge-gas-reports gasReporterOutput-*.json
             npx codechecks codechecks.unit.yml
@@ -377,12 +378,14 @@ jobs:
             circleci tests split |
             xargs npm test -- --gas
             EXIT_CODE=$?
+            ls -la .
             printf "\\n"
             exit $EXIT_CODE
       - run:
           name: Save gas report
           command: |
             cp gasReporterOutput.json /tmp/gas-reports/gasReporterOutput-$CIRCLE_NODE_INDEX.json
+            ls -la /tmp/gas-reports
       - persist_to_workspace:
           root: /tmp/gas-reports
           paths:
