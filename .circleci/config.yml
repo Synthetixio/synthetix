@@ -340,7 +340,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: /tmp/gas-reports
+          at: .
       - run:
           name: Upload gas reports
           command: |
