@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
-const { ignoreMinimumStakeTime } = require('../utils/stakeTime');
+const { ignoreMinimumStakeTime } = require('../utils/staking');
 
 function itCanMintAndBurn({ ctx }) {
 	describe('staking', () => {
