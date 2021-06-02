@@ -123,7 +123,7 @@ describe('depositAndMigrateEscrow() integration tests (L1, L2)', () => {
 				depositAndMigrateEscrowReceipt = await tx.wait();
 			});
 
-			it('should update the L1 escrow state after migrate', async () => {
+			it('should update the L1 escrow state', async () => {
 				postParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1 });
 
 				assert.bnEqual(postParametersL1.escrowedBalance, initialParametersL1.escrowedBalance);
@@ -145,7 +145,7 @@ describe('depositAndMigrateEscrow() integration tests (L1, L2)', () => {
 				);
 			});
 
-			it('should update the L1 escrow state after migrate', async () => {
+			it('should update the L1 Synthetix state', async () => {
 				({ Synthetix } = ctx.l1.contracts);
 				user = ctx.l1.users.owner;
 
