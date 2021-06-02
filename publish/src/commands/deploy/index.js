@@ -6,11 +6,14 @@ const {
 	utils: { parseUnits, formatUnits, isAddress },
 	constants,
 } = require('ethers');
-const Deployer = require('../Deployer');
-const NonceManager = require('../NonceManager');
-const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
-const checkAggregatorPrices = require('../check-aggregator-prices');
 const pLimit = require('p-limit');
+const Deployer = require('../../Deployer');
+const NonceManager = require('../../NonceManager');
+const { loadCompiledFiles, getLatestSolTimestamp } = require('../../solidity');
+
+const checkAggregatorPrices = require('./check-aggregator-prices');
+const performSafetyChecks = require('./perform-safety-checks');
+const getDeployParameterFactory = require('./get-deploy-parameter-factory');
 
 const {
 	ensureDeploymentPath,
@@ -22,7 +25,7 @@ const {
 	performTransactionalStep,
 	parameterNotice,
 	reportDeployedContracts,
-} = require('../util');
+} = require('../../util');
 
 const {
 	toBytes32,
@@ -37,9 +40,7 @@ const {
 		OVM_MAX_GAS_LIMIT,
 		inflationStartTimestampInSecs,
 	},
-	defaults,
-	nonUpgradeable,
-} = require('../../../.');
+} = require('../../../..');
 
 const DEFAULTS = {
 	gasPrice: '1',
@@ -47,32 +48,32 @@ const DEFAULTS = {
 	contractDeploymentGasLimit: 6.9e6, // TODO split out into separate limits for different contracts, Proxys, Synths, Synthetix
 	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
 	network: 'kovan',
-	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
+	buildPath: path.join(__dirname, '..', '..', '..', '..', BUILD_FOLDER),
 };
 
 const deploy = async ({
 	addNewSynths,
-	gasPrice = DEFAULTS.gasPrice,
-	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
-	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
-	network = DEFAULTS.network,
 	buildPath = DEFAULTS.buildPath,
+	concurrency,
+	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
 	deploymentPath,
-	oracleExrates,
-	privateKey,
-	yes,
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
-	skipFeedChecks = false,
-	useFork,
-	providerUrl,
-	useOvm,
 	freshDeploy,
-	manageNonces,
-	ignoreSafetyChecks,
+	gasPrice = DEFAULTS.gasPrice,
 	ignoreCustomParameters,
-	concurrency,
+	ignoreSafetyChecks,
+	manageNonces,
+	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
+	network = DEFAULTS.network,
+	oracleExrates,
+	privateKey,
+	providerUrl,
+	skipFeedChecks = false,
 	specifyContracts,
+	useFork,
+	useOvm,
+	yes,
 } = {}) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -100,6 +101,8 @@ const deploy = async ({
 		network,
 	});
 
+	const getDeployParameter = getDeployParameterFactory({ params, yes, ignoreCustomParameters });
+
 	// Mark contracts for deployment specified via an argument
 	if (specifyContracts) {
 		// Ignore config.json
@@ -123,115 +126,20 @@ const deploy = async ({
 		deployment.sources = {};
 	}
 
-	if (!ignoreSafetyChecks) {
-		// Using Goerli without manageNonces?
-		if (network.toLowerCase() === 'goerli' && !useOvm && !manageNonces) {
-			throw new Error(`Deploying on Goerli needs to be performed with --manage-nonces.`);
-		}
-
-		// Cannot re-deploy legacy contracts
-		if (!freshDeploy) {
-			// Get list of contracts to be deployed
-			const contractsToDeploy = [];
-			Object.keys(config).map(contractName => {
-				if (config[contractName].deploy) {
-					contractsToDeploy.push(contractName);
-				}
-			});
-
-			// Check that no non-deployable is marked for deployment.
-			// Note: if nonDeployable = 'TokenState', this will match 'TokenStatesUSD'
-			nonUpgradeable.map(nonUpgradeableContract => {
-				contractsToDeploy.map(contractName => {
-					if (contractName.match(new RegExp(`^${nonUpgradeableContract}`, 'g'))) {
-						throw new Error(
-							`You are attempting to deploy a contract marked as non-upgradeable: ${contractName}. This action could result in loss of state. Please verify and use --ignore-safety-checks if you really know what you're doing.`
-						);
-					}
-				});
-			});
-		}
-
-		// Every transaction in Optimism needs to be below 9m gas, to ensure
-		// there are no deployment out of gas errors during fraud proofs.
-		if (useOvm) {
-			const maxOptimismGasLimit = OVM_MAX_GAS_LIMIT;
-			if (
-				contractDeploymentGasLimit > maxOptimismGasLimit ||
-				methodCallGasLimit > maxOptimismGasLimit
-			) {
-				throw new Error(
-					`Maximum transaction gas limit for OVM is ${maxOptimismGasLimit} gas, and specified contractDeploymentGasLimit and/or methodCallGasLimit are over such limit. Please make sure that these values are below the maximum gas limit to guarantee that fraud proofs can be done in L1.`
-				);
-			}
-		}
-
-		// Deploying on OVM and not using an OVM deployment path?
-		const lastPathItem = deploymentPath.split('/').pop();
-		const isOvmPath = lastPathItem.includes('ovm');
-		const deploymentPathMismatch = (useOvm && !isOvmPath) || (!useOvm && isOvmPath);
-		if (deploymentPathMismatch) {
-			if (useOvm) {
-				throw new Error(
-					`You are deploying to a non-ovm path ${deploymentPath}, while --use-ovm is true.`
-				);
-			} else {
-				throw new Error(
-					`You are deploying to an ovm path ${deploymentPath}, while --use-ovm is false.`
-				);
-			}
-		}
-
-		// Fresh deploy and deployment.json not empty?
-		if (freshDeploy && Object.keys(deployment.targets).length > 0 && network !== 'local') {
-			throw new Error(
-				`Cannot make a fresh deploy on ${deploymentPath} because a deployment has already been made on this path. If you intend to deploy a new instance, use a different path or delete the deployment files for this one.`
-			);
-		}
-	}
+	performSafetyChecks({
+		config,
+		contractDeploymentGasLimit,
+		deployment,
+		deploymentPath,
+		freshDeploy,
+		ignoreSafetyChecks,
+		manageNonces,
+		methodCallGasLimit,
+		network,
+		useOvm,
+	});
 
 	const standaloneFeeds = Object.values(feeds).filter(({ standalone }) => standalone);
-
-	const getDeployParameter = async name => {
-		const defaultParam = defaults[name];
-		if (ignoreCustomParameters) {
-			return defaultParam;
-		}
-
-		let effectiveValue = defaultParam;
-
-		const param = (params || []).find(p => p.name === name);
-
-		if (param) {
-			if (!yes) {
-				try {
-					await confirmAction(
-						yellow(
-							`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.json. Specified value is ${param.value} and default is ${defaultParam}.` +
-								'\nDo you want to use the specified value (default otherwise)? (y/n) '
-						)
-					);
-
-					effectiveValue = param.value;
-				} catch (err) {
-					console.error(err);
-				}
-			} else {
-				// yes = true
-				effectiveValue = param.value;
-			}
-		}
-
-		if (effectiveValue !== defaultParam) {
-			console.log(
-				yellow(
-					`PARAMETER OVERRIDE: Overriding default ${name} with ${effectiveValue}, specified in params.json.`
-				)
-			);
-		}
-
-		return effectiveValue;
-	};
 
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
