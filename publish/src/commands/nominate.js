@@ -132,7 +132,7 @@ module.exports = {
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
-			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
+			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 3e6)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-o, --new-owner <value>',
