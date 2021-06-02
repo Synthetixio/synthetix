@@ -9,7 +9,7 @@ function itCanExchange({ ctx }) {
 		const sUSDAmount = ethers.utils.parseEther('100');
 
 		let owner;
-		let balancesETH;
+		let balancesETH, originialPendingSettlements;
 		let Synthetix, Exchanger, SynthsETH;
 
 		before('target contracts and users', () => {
@@ -25,6 +25,12 @@ function itCanExchange({ ctx }) {
 		describe('when the owner exchanges sUSD to sETH', () => {
 			before('record balances', async () => {
 				balancesETH = await SynthsETH.balanceOf(owner.address);
+			});
+
+			before('record pending settlements', async () => {
+				const { numEntries } = await Exchanger.settlementOwing(owner.address, toBytes32('sETH'));
+
+				originialPendingSettlements = numEntries;
 			});
 
 			before('perform the exchange', async () => {
@@ -47,7 +53,7 @@ function itCanExchange({ ctx }) {
 			it('shows that the user now has pending settlements', async () => {
 				const { numEntries } = await Exchanger.settlementOwing(owner.address, toBytes32('sETH'));
 
-				assert.bnEqual(numEntries, '1');
+				assert.bnEqual(numEntries, originialPendingSettlements.add(ethers.constants.One));
 			});
 
 			describe('when settle is called', () => {
@@ -61,7 +67,7 @@ function itCanExchange({ ctx }) {
 				it('shows that the user no longer has pending settlements', async () => {
 					const { numEntries } = await Exchanger.settlementOwing(owner.address, toBytes32('sETH'));
 
-					assert.bnEqual(numEntries, '0');
+					assert.bnEqual(numEntries, ethers.constants.Zero);
 				});
 			});
 		});

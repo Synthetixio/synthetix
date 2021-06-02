@@ -1,19 +1,21 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
+const { exchangeSomething, ignoreFeePeriodDuration } = require('../utils/exchanging');
 const { ensureBalance } = require('../utils/balances');
 const { ignoreMinimumStakeTime } = require('../utils/staking');
+const { skipIfL2 } = require('../utils/l2');
 
-function itCanMintAndBurn({ ctx }) {
-	describe('staking', () => {
+function itCanStake({ ctx }) {
+	describe('staking and claiming', () => {
 		const SNXAmount = ethers.utils.parseEther('100');
 		const sUSDamount = ethers.utils.parseEther('1');
 
 		let user;
-		let Synthetix, SynthsUSD;
+		let Synthetix, SynthsUSD, FeePool;
 		let balancesUSD;
 
 		before('target contracts and users', () => {
-			({ Synthetix, SynthsUSD } = ctx.contracts);
+			({ Synthetix, SynthsUSD, FeePool } = ctx.contracts);
 
 			user = ctx.users.someUser;
 		});
@@ -36,6 +38,49 @@ function itCanMintAndBurn({ ctx }) {
 
 			it('issues the expected amount of sUSD', async () => {
 				assert.bnEqual(await SynthsUSD.balanceOf(user.address), balancesUSD.add(sUSDamount));
+			});
+
+			describe('claiming', () => {
+				// TODO: Disabled until Optimism supports 5s time granularity.
+				// We can set fee period duration to 5s, but we dont want this test
+				// to wait 3m, which is the current time granularity.
+				skipIfL2({
+					ctx,
+					reason:
+						'ops L2 time granularity needs to be less than 3m, so we cant close the fee period',
+				});
+
+				before('exchange something', async () => {
+					await exchangeSomething({ ctx });
+				});
+
+				describe('when the fee period closes', () => {
+					ignoreFeePeriodDuration({ ctx });
+
+					before('close the current fee period', async () => {
+						FeePool = FeePool.connect(ctx.users.owner);
+
+						const tx = await FeePool.closeCurrentFeePeriod();
+						await tx.wait();
+					});
+
+					describe('when the user claims rewards', () => {
+						before('record balances', async () => {
+							balancesUSD = await SynthsUSD.balanceOf(user.address);
+						});
+
+						before('claim', async () => {
+							FeePool = FeePool.connect(user);
+
+							const tx = await FeePool.claimFees();
+							await tx.wait();
+						});
+
+						it('shows a slight increase in the users sUSD balance', async () => {
+							assert.bnGt(await SynthsUSD.balanceOf(user.address), balancesUSD);
+						});
+					});
+				});
 			});
 		});
 
@@ -66,5 +111,5 @@ function itCanMintAndBurn({ ctx }) {
 }
 
 module.exports = {
-	itCanMintAndBurn,
+	itCanStake,
 };
