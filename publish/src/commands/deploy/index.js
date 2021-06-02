@@ -13,6 +13,11 @@ const { loadCompiledFiles } = require('../../solidity');
 
 const performSafetyChecks = require('./perform-safety-checks');
 const getDeployParameterFactory = require('./get-deploy-parameter-factory');
+const systemAndParameterCheck = require('./system-and-parameter-check');
+const deployCore = require('./deploy-core');
+const deploySynths = require('./deploy-synths');
+const deployLoans = require('./deploy-loans');
+const deployDappUtils = require('./deploy-dapp-utils.js');
 
 const {
 	ensureDeploymentPath,
@@ -20,7 +25,6 @@ const {
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
-	confirmAction,
 	performTransactionalStep,
 	reportDeployedContracts,
 } = require('../../util');
@@ -37,7 +41,7 @@ const {
 		OVM_MAX_GAS_LIMIT,
 	},
 } = require('../../../..');
-const systemAndParameterCheck = require('./system-and-parameter-check');
+const deployBinaryOptions = require('./deploy-binary-options');
 
 const DEFAULTS = {
 	gasPrice: '1',
@@ -100,6 +104,8 @@ const deploy = async ({
 	});
 
 	const getDeployParameter = getDeployParameterFactory({ params, yes, ignoreCustomParameters });
+
+	const addressOf = c => (c ? c.options.address : '');
 
 	// Mark contracts for deployment specified via an argument
 	if (specifyContracts) {
@@ -249,545 +255,92 @@ const deploy = async ({
 			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
-	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
-
-	await deployer.deployContract({
-		name: 'SafeDecimalMath',
+	const {
+		addressResolver,
+		debtCache,
+		delegateApprovals,
+		delegateApprovalsEternalStorage,
+		eternalStorageLiquidations,
+		exchanger,
+		exchangeRates,
+		exchangeState,
+		feePool,
+		feePoolEternalStorage,
+		feePoolState,
+		issuer,
+		liquidations,
+		proxyERC20Synthetix,
+		proxyFeePool,
+		proxySynthetix,
+		readProxyForResolver,
+		rewardEscrow,
+		rewardEscrowV2,
+		rewardsDistribution,
+		supplySchedule,
+		synthetix,
+		synthetixEscrow,
+		synthetixState,
+		systemSettings,
+		systemStatus,
+		tokenStateSynthetix,
+	} = await deployCore({
+		account,
+		addressOf,
+		currentLastMintEvent,
+		currentSynthetixSupply,
+		currentWeekOfInflation,
+		deployer,
+		oracleAddress,
+		useOvm,
 	});
 
-	await deployer.deployContract({
-		name: 'Math',
+	const { synthsToAdd } = await deploySynths({
+		account,
+		addressOf,
+		addNewSynths,
+		config,
+		deployer,
+		freshDeploy,
+		issuer,
+		network,
+		readProxyForResolver,
+		synths,
+		yes,
 	});
 
-	console.log(gray(`\n------ DEPLOY CORE PROTOCOL ------\n`));
-
-	const addressOf = c => (c ? c.options.address : '');
-
-	const addressResolver = await deployer.deployContract({
-		name: 'AddressResolver',
-		args: [account],
+	const {
+		collateralShort,
+		collateralEth,
+		collateralErc20,
+		collateralStateErc20,
+		collateralStateEth,
+		collateralStateShort,
+		collateralManager,
+		collateralManagerDefaults,
+		collateralManagerState,
+		useEmptyCollateralManager,
+	} = await deployLoans({
+		account,
+		addressOf,
+		deployer,
+		getDeployParameter,
+		network,
+		readProxyForResolver,
+		useOvm,
 	});
 
-	const readProxyForResolver = await deployer.deployContract({
-		name: 'ReadProxyAddressResolver',
-		source: 'ReadProxy',
-		args: [account],
+	const { binaryOptionMarketManager } = await deployBinaryOptions({
+		account,
+		addressOf,
+		deployer,
+		readProxyForResolver,
 	});
 
-	await deployer.deployContract({
-		name: 'FlexibleStorage',
-		deps: ['ReadProxyAddressResolver'],
-		args: [addressOf(readProxyForResolver)],
-	});
-
-	const systemSettings = await deployer.deployContract({
-		name: 'SystemSettings',
-		args: [account, addressOf(readProxyForResolver)],
-	});
-
-	const systemStatus = await deployer.deployContract({
-		name: 'SystemStatus',
-		args: [account],
-	});
-
-	const exchangeRates = await deployer.deployContract({
-		name: 'ExchangeRates',
-		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
-		args: [account, oracleAddress, addressOf(readProxyForResolver), [], []],
-	});
-
-	const rewardEscrow = await deployer.deployContract({
-		name: 'RewardEscrow',
-		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
-	});
-
-	const rewardEscrowV2 = await deployer.deployContract({
-		name: 'RewardEscrowV2',
-		source: useOvm ? 'ImportableRewardEscrowV2' : 'RewardEscrowV2',
-		args: [account, addressOf(readProxyForResolver)],
-		deps: ['AddressResolver'],
-	});
-
-	const synthetixEscrow = await deployer.deployContract({
-		name: 'SynthetixEscrow',
-		args: [account, ZERO_ADDRESS],
-	});
-
-	const synthetixState = await deployer.deployContract({
-		name: 'SynthetixState',
-		source: useOvm ? 'SynthetixStateWithLimitedSetup' : 'SynthetixState',
-		args: [account, account],
-	});
-
-	const proxyFeePool = await deployer.deployContract({
-		name: 'ProxyFeePool',
-		source: 'Proxy',
-		args: [account],
-	});
-
-	const delegateApprovalsEternalStorage = await deployer.deployContract({
-		name: 'DelegateApprovalsEternalStorage',
-		source: 'EternalStorage',
-		args: [account, ZERO_ADDRESS],
-	});
-
-	const delegateApprovals = await deployer.deployContract({
-		name: 'DelegateApprovals',
-		args: [account, addressOf(delegateApprovalsEternalStorage)],
-	});
-
-	const liquidations = await deployer.deployContract({
-		name: 'Liquidations',
-		args: [account, addressOf(readProxyForResolver)],
-	});
-
-	const eternalStorageLiquidations = await deployer.deployContract({
-		name: 'EternalStorageLiquidations',
-		source: 'EternalStorage',
-		args: [account, addressOf(liquidations)],
-	});
-
-	const feePoolEternalStorage = await deployer.deployContract({
-		name: 'FeePoolEternalStorage',
-		args: [account, ZERO_ADDRESS],
-	});
-
-	const feePool = await deployer.deployContract({
-		name: 'FeePool',
-		deps: ['ProxyFeePool', 'AddressResolver'],
-		args: [addressOf(proxyFeePool), account, addressOf(readProxyForResolver)],
-	});
-
-	const feePoolState = await deployer.deployContract({
-		name: 'FeePoolState',
-		deps: ['FeePool'],
-		args: [account, addressOf(feePool)],
-	});
-
-	const rewardsDistribution = await deployer.deployContract({
-		name: 'RewardsDistribution',
-		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrowV2', 'ProxyFeePool'],
-		args: [
-			account, // owner
-			ZERO_ADDRESS, // authority (synthetix)
-			ZERO_ADDRESS, // Synthetix Proxy
-			addressOf(rewardEscrowV2),
-			addressOf(proxyFeePool),
-		],
-	});
-
-	// New Synthetix proxy.
-	const proxyERC20Synthetix = await deployer.deployContract({
-		name: 'ProxyERC20',
-		args: [account],
-	});
-
-	const tokenStateSynthetix = await deployer.deployContract({
-		name: 'TokenStateSynthetix',
-		source: 'TokenState',
-		args: [account, account],
-	});
-
-	const synthetix = await deployer.deployContract({
-		name: 'Synthetix',
-		source: useOvm ? 'MintableSynthetix' : 'Synthetix',
-		deps: ['ProxyERC20', 'TokenStateSynthetix', 'AddressResolver'],
-		args: [
-			addressOf(proxyERC20Synthetix),
-			addressOf(tokenStateSynthetix),
-			account,
-			currentSynthetixSupply,
-			addressOf(readProxyForResolver),
-		],
-	});
-
-	// Old Synthetix proxy based off Proxy.sol: this has been deprecated.
-	// To be removed after May 30, 2020:
-	// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
-	const proxySynthetix = await deployer.deployContract({
-		name: 'ProxySynthetix',
-		source: 'Proxy',
-		args: [account],
-	});
-
-	const debtCache = await deployer.deployContract({
-		name: 'DebtCache',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
-	});
-
-	const exchanger = await deployer.deployContract({
-		name: 'Exchanger',
-		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
-	});
-
-	await deployer.deployContract({
-		name: 'VirtualSynthMastercopy',
-	});
-
-	const exchangeState = await deployer.deployContract({
-		name: 'ExchangeState',
-		deps: ['Exchanger'],
-		args: [account, addressOf(exchanger)],
-	});
-
-	const issuer = await deployer.deployContract({
-		name: 'Issuer',
-		source: useOvm ? 'IssuerWithoutLiquidations' : 'Issuer',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
-	});
-
-	await deployer.deployContract({
-		name: 'TradingRewards',
-		deps: ['AddressResolver', 'Exchanger'],
-		args: [account, account, addressOf(readProxyForResolver)],
-	});
-
-	const supplySchedule = await deployer.deployContract({
-		name: 'SupplySchedule',
-		args: [account, currentLastMintEvent, currentWeekOfInflation],
-	});
-
-	if (synthetixEscrow) {
-		await deployer.deployContract({
-			name: 'EscrowChecker',
-			deps: ['SynthetixEscrow'],
-			args: [addressOf(synthetixEscrow)],
-		});
-	}
-
-	// ----------------
-	// Synths
-	// ----------------
-	console.log(gray(`\n------ DEPLOY SYNTHS ------\n`));
-
-	// The list of synth to be added to the Issuer once dependencies have been set up
-	const synthsToAdd = [];
-
-	for (const { name: currencyKey, subclass } of synths) {
-		console.log(gray(`\n   --- SYNTH ${currencyKey} ---\n`));
-
-		const tokenStateForSynth = await deployer.deployContract({
-			name: `TokenState${currencyKey}`,
-			source: 'TokenState',
-			args: [account, ZERO_ADDRESS],
-			force: addNewSynths,
-		});
-
-		// Legacy proxy will be around until May 30, 2020
-		// https://docs.synthetix.io/integrations/guide/#proxy-deprecation
-		// Until this time, on mainnet we will still deploy ProxyERC20sUSD and ensure that
-		// SynthsUSD.proxy is ProxyERC20sUSD, SynthsUSD.integrationProxy is ProxysUSD
-		const synthProxyIsLegacy = currencyKey === 'sUSD' && network === 'mainnet';
-
-		const proxyForSynth = await deployer.deployContract({
-			name: `Proxy${currencyKey}`,
-			source: synthProxyIsLegacy ? 'Proxy' : 'ProxyERC20',
-			args: [account],
-			force: addNewSynths,
-		});
-
-		// additionally deploy an ERC20 proxy for the synth if it's legacy (sUSD)
-		let proxyERC20ForSynth;
-		if (currencyKey === 'sUSD') {
-			proxyERC20ForSynth = await deployer.deployContract({
-				name: `ProxyERC20${currencyKey}`,
-				source: `ProxyERC20`,
-				args: [account],
-				force: addNewSynths,
-			});
-		}
-
-		const currencyKeyInBytes = toBytes32(currencyKey);
-
-		const synthConfig = config[`Synth${currencyKey}`] || {};
-
-		// track the original supply if we're deploying a new synth contract for an existing synth
-		let originalTotalSupply = 0;
-		if (synthConfig.deploy) {
-			try {
-				const oldSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
-				originalTotalSupply = await oldSynth.methods.totalSupply().call();
-			} catch (err) {
-				if (!freshDeploy) {
-					// only throw if not local - allows local environments to handle both new
-					// and updating configurations
-					throw err;
-				}
-			}
-		}
-
-		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes && originalTotalSupply > 0) {
-			try {
-				await confirmAction(
-					yellow(
-						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
-					) +
-						gray('-'.repeat(50)) +
-						'\nDo you want to continue? (y/n) '
-				);
-			} catch (err) {
-				console.log(gray('Operation cancelled'));
-				return;
-			}
-		}
-
-		const sourceContract = subclass || 'Synth';
-		const synth = await deployer.deployContract({
-			name: `Synth${currencyKey}`,
-			source: sourceContract,
-			deps: [`TokenState${currencyKey}`, `Proxy${currencyKey}`, 'Synthetix', 'FeePool'],
-			args: [
-				proxyERC20ForSynth ? addressOf(proxyERC20ForSynth) : addressOf(proxyForSynth),
-				addressOf(tokenStateForSynth),
-				`Synth ${currencyKey}`,
-				currencyKey,
-				account,
-				currencyKeyInBytes,
-				originalTotalSupply,
-				addressOf(readProxyForResolver),
-			],
-			force: addNewSynths,
-		});
-
-		// Save the synth to be added once the AddressResolver has been synced.
-		if (synth && issuer) {
-			synthsToAdd.push({
-				synth,
-				currencyKeyInBytes,
-			});
-		}
-	}
-
-	console.log(gray(`\n------ DEPLOY ANCILLARY CONTRACTS ------\n`));
-
-	await deployer.deployContract({
-		name: 'Depot',
-		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
-		args: [account, account, addressOf(readProxyForResolver)],
-	});
-
-	await deployer.deployContract({
-		// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
-		name: 'EtherCollateral',
-		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateral',
-		args: useOvm ? [] : [account, addressOf(readProxyForResolver)],
-	});
-	await deployer.deployContract({
-		name: 'EtherCollateralsUSD',
-		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateralsUSD',
-		args: useOvm ? [] : [account, addressOf(readProxyForResolver)],
-	});
-	await deployer.deployContract({
-		name: 'SynthetixBridgeToBase',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
-	});
-
-	await deployer.deployContract({
-		name: 'SynthetixBridgeToOptimism',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
-	});
-	await deployer.deployContract({
-		name: 'SynthetixBridgeEscrow',
-		deps: ['AddressResolver'],
-		args: [account],
-	});
-
-	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
-
-	if (network === 'local') {
-		// On local, deploy a mock WETH token.
-		// OVM already has a deployment of WETH, however since we use
-		// Hardhat for the local-ovm environment, we must deploy
-		// our own.
-		const weth = await deployer.deployContract({
-			name: useOvm ? 'MockWETH' : 'WETH',
-			force: true,
-		});
-		WETH_ADDRESS = weth.options.address;
-	}
-
-	if (!WETH_ADDRESS) {
-		throw new Error('WETH address is not known');
-	}
-
-	await deployer.deployContract({
-		name: 'EtherWrapper',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver), WETH_ADDRESS],
-	});
-
-	await deployer.deployContract({
-		name: 'NativeEtherWrapper',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
-	});
-
-	// ----------------
-	// Binary option market factory and manager setup
-	// ----------------
-
-	console.log(gray(`\n------ DEPLOY BINARY OPTIONS ------\n`));
-
-	await deployer.deployContract({
-		name: 'BinaryOptionMarketFactory',
-		args: [account, addressOf(readProxyForResolver)],
-		deps: ['AddressResolver'],
-	});
-
-	const day = 24 * 60 * 60;
-	const maxOraclePriceAge = 120 * 60; // Price updates are accepted from up to two hours before maturity to allow for delayed chainlink heartbeats.
-	const expiryDuration = 26 * 7 * day; // Six months to exercise options before the market is destructible.
-	const maxTimeToMaturity = 730 * day; // Markets may not be deployed more than two years in the future.
-	const creatorCapitalRequirement = parseUnits('1000').toString(); // 1000 sUSD is required to create a new market.
-	const creatorSkewLimit = parseUnits('0.05').toString(); // Market creators must leave 5% or more of their position on either side.
-	const poolFee = parseUnits('0.008').toString(); // 0.8% of the market's value goes to the pool in the end.
-	const creatorFee = parseUnits('0.002').toString(); // 0.2% of the market's value goes to the creator.
-	const refundFee = parseUnits('0.05').toString(); // 5% of a bid stays in the pot if it is refunded.
-	const binaryOptionMarketManager = await deployer.deployContract({
-		name: 'BinaryOptionMarketManager',
-		args: [
-			account,
-			addressOf(readProxyForResolver),
-			maxOraclePriceAge,
-			expiryDuration,
-			maxTimeToMaturity,
-			creatorCapitalRequirement,
-			creatorSkewLimit,
-			poolFee,
-			creatorFee,
-			refundFee,
-		],
-		deps: ['AddressResolver'],
-	});
-
-	console.log(gray(`\n------ DEPLOY DAPP UTILITIES ------\n`));
-
-	await deployer.deployContract({
-		name: 'SynthUtil',
-		deps: ['ReadProxyAddressResolver'],
-		args: [addressOf(readProxyForResolver)],
-	});
-
-	await deployer.deployContract({
-		name: 'DappMaintenance',
-		args: [account],
-	});
-
-	await deployer.deployContract({
-		name: 'BinaryOptionMarketData',
-	});
-
-	// ----------------
-	// Multi Collateral System
-	// ----------------
-
-	const collateralManagerDefaults = await getDeployParameter('COLLATERAL_MANAGER');
-
-	console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
-
-	const managerState = await deployer.deployContract({
-		name: 'CollateralManagerState',
-		args: [account, account],
-	});
-
-	const useEmptyCollateralManager = useOvm;
-	const collateralManager = await deployer.deployContract({
-		name: 'CollateralManager',
-		source: useEmptyCollateralManager ? 'EmptyCollateralManager' : 'CollateralManager',
-		args: useEmptyCollateralManager
-			? []
-			: [
-					addressOf(managerState),
-					account,
-					addressOf(readProxyForResolver),
-					collateralManagerDefaults['MAX_DEBT'],
-					collateralManagerDefaults['BASE_BORROW_RATE'],
-					collateralManagerDefaults['BASE_SHORT_RATE'],
-			  ],
-	});
-
-	const collateralStateEth = await deployer.deployContract({
-		name: 'CollateralStateEth',
-		source: 'CollateralState',
-		args: [account, account],
-	});
-
-	const collateralEth = await deployer.deployContract({
-		name: 'CollateralEth',
-		args: [
-			addressOf(collateralStateEth),
-			account,
-			addressOf(collateralManager),
-			addressOf(readProxyForResolver),
-			toBytes32('sETH'),
-			(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
-			(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
-		],
-	});
-
-	const collateralStateErc20 = await deployer.deployContract({
-		name: 'CollateralStateErc20',
-		source: 'CollateralState',
-		args: [account, account],
-	});
-
-	let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
-	if (!RENBTC_ADDRESS) {
-		if (network !== 'local') {
-			throw new Error('renBTC address is not known');
-		}
-
-		// On local, deploy a mock renBTC token to use as the underlying in CollateralErc20
-		const renBTC = await deployer.deployContract({
-			name: 'MockToken',
-			args: ['renBTC', 'renBTC', 8],
-		});
-
-		// this could be undefined in an env where MockToken is not listed in the config flags
-		RENBTC_ADDRESS = renBTC ? renBTC.options.address : undefined;
-	}
-
-	const collateralErc20 = await deployer.deployContract({
-		name: 'CollateralErc20',
-		source: 'CollateralErc20',
-		args: [
-			addressOf(collateralStateErc20),
-			account,
-			addressOf(collateralManager),
-			addressOf(readProxyForResolver),
-			toBytes32('sBTC'),
-			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_CRATIO'],
-			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_COLLATERAL'],
-			RENBTC_ADDRESS, // if undefined then this will error as expected.
-			8,
-		],
-	});
-
-	const collateralStateShort = await deployer.deployContract({
-		name: 'CollateralStateShort',
-		source: 'CollateralState',
-		args: [account, account],
-	});
-
-	const collateralShort = await deployer.deployContract({
-		name: 'CollateralShort',
-		args: [
-			addressOf(collateralStateShort),
-			account,
-			addressOf(collateralManager),
-			addressOf(readProxyForResolver),
-			toBytes32('sUSD'),
-			(await getDeployParameter('COLLATERAL_SHORT'))['MIN_CRATIO'],
-			(await getDeployParameter('COLLATERAL_SHORT'))['MIN_COLLATERAL'],
-		],
+	await deployDappUtils({
+		account,
+		addressOf,
+		deployer,
+		readProxyForResolver,
 	});
 
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
@@ -1991,10 +1544,10 @@ const deploy = async ({
 			writeArg: addressOf(collateralEth),
 		});
 	}
-	if (managerState && collateralManager) {
+	if (collateralManagerState && collateralManager) {
 		await runStep({
 			contract: 'CollateralManagerState',
-			target: managerState,
+			target: collateralManagerState,
 			read: 'associatedContract',
 			expected: input => input === addressOf(collateralManager),
 			write: 'setAssociatedContract',
