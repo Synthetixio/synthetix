@@ -93,7 +93,7 @@ describe('Layer 2 production tests', () => {
 				});
 				let ExchangeRates = connectContract({
 					contract: 'ExchangeRates',
-					source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
+					source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRatesWithDexPricing',
 					provider,
 					useOvm,
 				});
