@@ -30,6 +30,10 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_ETHER_WRAPPER_MAX_ETH = "etherWrapperMaxETH";
     bytes32 internal constant SETTING_ETHER_WRAPPER_MINT_FEE_RATE = "etherWrapperMintFeeRate";
     bytes32 internal constant SETTING_ETHER_WRAPPER_BURN_FEE_RATE = "etherWrapperBurnFeeRate";
+    bytes32 internal constant SETTING_MIN_CRATIO = "minCratio";
+    bytes32 internal constant SETTING_ISSUE_FEE_RATE = "issueFeeRate";
+    bytes32 internal constant SETTING_NEW_MANAGER = "newManager";
+    bytes32 internal constant SETTING_CAN_OPEN_LOANS = "canOpenLoans";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -137,5 +141,21 @@ contract MixinSystemSettings is MixinResolver {
 
     function getEtherWrapperBurnFeeRate() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE);
+    }
+
+    function getMinCratio() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_CRATIO);
+    }
+
+    function getIssueFeeRate() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUE_FEE_RATE);
+    }
+
+    function getNewManager() internal view returns (uint) {
+        return flexibleStorage().getAddressValue(SETTING_CONTRACT_NAME, SETTING_NEW_MANAGER);
+    }
+
+    function getCanOpenLoans() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_CAN_OPEN_LOANS);
     }
 }

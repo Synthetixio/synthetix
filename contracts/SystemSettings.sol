@@ -271,6 +271,27 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         }
     }
 
+    function setMinCratio(uint _minCratio) external onlyOwner {
+        require(_minCratio > SafeDecimalMath.unit());
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_CRATIO, _minCratio);
+        emit MinCratioRatioUpdated(_minCratio);
+    }
+
+    function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ISSUE_FEE_RATE, _issueFeeRate);
+        emit IssueFeeRateUpdated(_issueFeeRate);
+    }
+
+    function setManager(address _newManager) external onlyOwner {
+        flexibleStorage().setAddressValue(SETTING_CONTRACT_NAME, SETTING_NEW_MANAGER, _newManager);
+        emit ManagerUpdated(_newManager);
+    }
+
+    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
+        flexibleStorage().setBoolValue(SETTING_CONTRACT_NAME, SETTING_CAN_OPEN_LOANS, _canOpenLoans);
+        emit CanOpenLoansUpdated(_canOpenLoans);
+    }
+
     function setMinimumStakeTime(uint _seconds) external onlyOwner {
         require(_seconds <= MAX_MINIMUM_STAKE_TIME, "stake time exceed maximum 1 week");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MINIMUM_STAKE_TIME, _seconds);
@@ -324,4 +345,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event MinCratioRatioUpdated(uint minCratio);
+    event IssueFeeRateUpdated(uint issueFeeRate);
+    event ManagerUpdated(address newManager);
+    event CanOpenLoansUpdated(bool canOpenLoans);
 }
