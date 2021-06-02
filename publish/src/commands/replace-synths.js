@@ -132,7 +132,8 @@ const replaceSynths = async ({
 		},
 	};
 
-	const { web3, account } = deployer;
+	const { account } = deployer;
+	const web3 = deployer.provider.web3;
 
 	console.log(gray(`Using account with public key ${account}`));
 	console.log(
