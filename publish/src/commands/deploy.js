@@ -589,7 +589,7 @@ const deploy = async ({
 
 	const exchangeRates = await deployer.deployContract({
 		name: 'ExchangeRates',
-		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
+		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRatesWithDexPricing',
 		args: [account, oracleExrates, addressOf(readProxyForResolver), [], []],
 	});
 
@@ -1186,7 +1186,19 @@ const deploy = async ({
 			});
 		}
 
-		// TODO: set up DEX TWAP oracle for exchange rates
+		if (!useOvm && exchangeRates) {
+			/*
+			TODO: set up DEX TWAP oracle for exchange rates
+			await runStep({
+				contract: `ExchangeRates`,
+				target: exchangeRates,
+				read: 'dexTwapAggregator',
+				expected: input => input === dexTwapAggregator,
+				write: 'setDexTwapAggregator',
+				writeArg: [dexTwapAggregator],
+			});
+			*/
+		}
 	}
 
 	console.log(gray(`\n------ DEPLOY ANCILLARY CONTRACTS ------\n`));
