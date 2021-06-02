@@ -2,10 +2,11 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./ExchangeRates.sol";
+import "./MixinSystemSettingsL1.sol";
 import "./interfaces/IDexTwapAggregator.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/ExchangeRatesWithDexPricing
-contract ExchangeRatesWithDexPricing is ExchangeRates {
+contract ExchangeRatesWithDexPricing is MixinSystemSettingsL1, ExchangeRates {
     // SIP-120 Atomic exchanges
     // Address of the external TWAP aggregator oracle
     IDexTwapAggregator public dexTwapAggregator;

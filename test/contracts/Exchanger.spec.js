@@ -3962,7 +3962,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
-	describe('With L1 configuration (Synthetix, ExchangerWithVirtualSynth, ExchangeRatesWithDexPricing)', () => {
+	describe('With L1 configuration (Synthetix, ExchangerWithVirtualSynth, ExchangeRatesWithDexPricing, SystemSettingsL1)', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 
@@ -3993,6 +3993,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					'Synthetix',
 					'ExchangerWithVirtualSynth',
 					'ExchangeRatesWithDexPricing',
+					'SystemSettingsL1',
 					// Same between L1 and L2
 					'ExchangeState',
 					'DebtCache',
@@ -4000,7 +4001,6 @@ contract('Exchanger (spec tests)', async accounts => {
 					'FeePool',
 					'FeePoolEternalStorage',
 					'SystemStatus',
-					'SystemSettings',
 					'DelegateApprovals',
 					'FlexibleStorage',
 					'CollateralManager',
@@ -4073,7 +4073,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		itSetsExchangeFeeRateForSynths();
 	});
 
-	describe('With L2 configuration (MintableSynthetix, Exchanger, ExchangeRates)', () => {
+	describe('With L2 configuration (MintableSynthetix, Exchanger, ExchangeRates, SystemSettings)', () => {
 		before(async () => {
 			({
 				Exchanger: exchanger,
@@ -4102,6 +4102,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					'MintableSynthetix',
 					'Exchanger',
 					'ExchangeRates',
+					'SystemSettings',
 					// Same between L1 and L2
 					'ExchangeState',
 					'DebtCache',
@@ -4109,7 +4110,6 @@ contract('Exchanger (spec tests)', async accounts => {
 					'FeePool',
 					'FeePoolEternalStorage',
 					'SystemStatus',
-					'SystemSettings',
 					'DelegateApprovals',
 					'FlexibleStorage',
 					'CollateralManager',

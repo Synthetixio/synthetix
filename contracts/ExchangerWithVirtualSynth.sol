@@ -6,10 +6,11 @@ import "./Exchanger.sol";
 // Internal references
 import "./interfaces/IVirtualSynth.sol";
 import "./MinimalProxyFactory.sol";
+import "./MixinSystemSettingsL1.sol";
 import "./VirtualSynth.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerwithvirtualsynth
-contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
+contract ExchangerWithVirtualSynth is MinimalProxyFactory, MixinSystemSettingsL1, Exchanger {
     using SafeMath for uint;
 
     struct ExchangeVolumeAtPeriod {

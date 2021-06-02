@@ -561,6 +561,7 @@ const deploy = async ({
 
 	const systemSettings = await deployer.deployContract({
 		name: 'SystemSettings',
+		source: useOvm ? 'SystemSettings' : 'SystemSettingsL1',
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
@@ -2311,23 +2312,25 @@ const deploy = async ({
 			writeArg: await getDeployParameter('ETHER_WRAPPER_BURN_FEE_RATE'),
 		});
 
-		// TODO: finish configuring new atomic exchange system settings
-		await runStep({
-			contract: 'SystemSettings',
-			target: systemSettings,
-			read: 'atomicMaxVolumePerBlock',
-			expected: input => input !== '0', // only change if zero
-			write: 'setAtomicMaxVolumePerBlock',
-			writeArg: await getDeployParameter('ATOMIC_MAX_VOLUME_PER_BLOCK'),
-		});
-		await runStep({
-			contract: 'SystemSettings',
-			target: systemSettings,
-			read: 'atomicTwapPriceWindow',
-			expected: input => input !== '0', // only change if zero
-			write: 'setAtomicTwapPriceWindow',
-			writeArg: await getDeployParameter('ATOMIC_TWAP_PRICE_WINDOW'),
-		});
+		if (!useOvm) {
+			// TODO: finish configuring new atomic exchange system settings
+			await runStep({
+				contract: 'SystemSettings',
+				target: systemSettings,
+				read: 'atomicMaxVolumePerBlock',
+				expected: input => input !== '0', // only change if zero
+				write: 'setAtomicMaxVolumePerBlock',
+				writeArg: await getDeployParameter('ATOMIC_MAX_VOLUME_PER_BLOCK'),
+			});
+			await runStep({
+				contract: 'SystemSettings',
+				target: systemSettings,
+				read: 'atomicTwapPriceWindow',
+				expected: input => input !== '0', // only change if zero
+				write: 'setAtomicTwapPriceWindow',
+				writeArg: await getDeployParameter('ATOMIC_TWAP_PRICE_WINDOW'),
+			});
+		}
 	}
 
 	if (!useOvm) {

@@ -3602,7 +3602,12 @@ contract('Exchange Rates', async accounts => {
 				AddressResolver: resolver,
 			} = await setupAllContracts({
 				accounts,
-				contracts: [exchangeRatesContract, 'SystemSettings', 'AddressResolver'],
+				contracts: [
+					exchangeRatesContract,
+					// Use L1 version of settings to test this version of ExchangeRates doesn't read from the setting
+					'SystemSettingsL1',
+					'AddressResolver',
+				],
 			}));
 
 			aggregatorJPY = await MockAggregator.new({ from: owner });
@@ -3661,7 +3666,7 @@ contract('Exchange Rates', async accounts => {
 				AddressResolver: resolver,
 			} = await setupAllContracts({
 				accounts,
-				contracts: [exchangeRatesContract, 'SystemSettings', 'AddressResolver'],
+				contracts: [exchangeRatesContract, 'SystemSettingsL1', 'AddressResolver'],
 			}));
 
 			aggregatorJPY = await MockAggregator.new({ from: owner });

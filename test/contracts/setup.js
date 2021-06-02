@@ -172,6 +172,7 @@ const setupContract = async ({
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangerWithVirtualSynth: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
+		SystemSettingsL1: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		BaseSynthetix: [
 			tryGetAddressOf('ProxyERC20BaseSynthetix'),
@@ -605,6 +606,11 @@ const setupAllContracts = async ({
 		{ contract: 'FlexibleStorage', deps: ['AddressResolver'] },
 		{
 			contract: 'SystemSettings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
+		{
+			contract: 'SystemSettingsL1',
+			resolverAlias: 'SystemSettings',
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
 		{
@@ -1084,6 +1090,12 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
 				from: owner,
 			}),
+		]);
+	}
+
+	// and set defaults for specific L1 settings if requested
+	if (contractNamesRequested.includes('SystemSettingsL1')) {
+		await Promise.all([
 			returnObj['SystemSettings'].setAtomicMaxVolumePerBlock(ATOMIC_MAX_VOLUME_PER_BLOCK, {
 				from: owner,
 			}),
