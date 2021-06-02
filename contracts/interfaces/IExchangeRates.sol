@@ -23,6 +23,13 @@ interface IExchangeRates {
 
     function anyRateIsInvalid(bytes32[] calldata currencyKeys) external view returns (bool);
 
+    // TODO: keep these viewers for atomic configuration?
+    function atomicTwapPriceWindow() external view returns (uint);
+
+    function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address);
+
+    function atomicPriceBuffer(bytes32 currencyKey) external view returns (uint);
+
     function canFreezeRate(bytes32 currencyKey) external view returns (bool);
 
     function currentRoundForRate(bytes32 currencyKey) external view returns (uint);

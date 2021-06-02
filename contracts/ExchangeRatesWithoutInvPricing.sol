@@ -43,8 +43,4 @@ contract ExchangeRatesWithoutInvPricing is ExchangeRates {
     function _rateIsFrozen(bytes32) internal view returns (bool) {
         return false;
     }
-
-    function _notImplemented() internal pure {
-        revert("Cannot be run on this layer");
-    }
 }

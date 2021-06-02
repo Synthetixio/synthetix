@@ -3553,8 +3553,105 @@ contract('Exchange Rates', async accounts => {
 		});
 	};
 
+	const itDoesntReadAtomicPricesFromDex = () => {
+		describe('Atomic pricing', () => {
+			it('errors with not implemented when attempted to set dex twap aggregator', async () => {
+				await assert.revert(
+					instance.setDexTwapAggregator(accountOne, { from: owner }),
+					'Cannot be run on this layer'
+				);
+			});
+			it('errors with not implemented when attempted to fetch atomic rate', async () => {
+				await assert.revert(
+					instance.effectiveAtomicValueAndRates(sETH, toUnit('10'), sUSD),
+					'Cannot be run on this layer'
+				);
+			});
+		});
+
+		describe('Atomic exchange configuration', () => {
+			const newPriceWindow = toBN(ATOMIC_TWAP_PRICE_WINDOW).add(toBN('1'));
+			const snxEquivalentAddr = accountOne;
+			const priceBuffer = toUnit('0.003');
+
+			before('setup configuration values', async () => {
+				await systemSettings.setAtomicTwapPriceWindow(newPriceWindow, { from: owner });
+				await systemSettings.setAtomicEquivalentForDexPricing(SNX, snxEquivalentAddr, {
+					from: owner,
+				});
+				await systemSettings.setAtomicPriceBuffer(SNX, priceBuffer, { from: owner });
+			});
+
+			it('returns zeros for atomic exchange related configuration', async () => {
+				// These all return zero despite being set through SystemSettings
+				assert.equal(await instance.atomicTwapPriceWindow(), '0');
+				assert.bnEqual(await instance.atomicEquivalentForDexPricing(SNX), ZERO_ADDRESS);
+				assert.bnEqual(await instance.atomicPriceBuffer(SNX), '0');
+			});
+		});
+	};
+
 	describe('Using ExchangeRates', () => {
 		const exchangeRatesContract = 'ExchangeRates';
+
+		before(async () => {
+			initialTime = await currentTime();
+			({
+				ExchangeRates: instance,
+				SystemSettings: systemSettings,
+				AddressResolver: resolver,
+			} = await setupAllContracts({
+				accounts,
+				contracts: [exchangeRatesContract, 'SystemSettings', 'AddressResolver'],
+			}));
+
+			aggregatorJPY = await MockAggregator.new({ from: owner });
+			aggregatorXTZ = await MockAggregator.new({ from: owner });
+			aggregatorFastGasPrice = await MockAggregator.new({ from: owner });
+
+			aggregatorJPY.setDecimals('8');
+			aggregatorXTZ.setDecimals('8');
+			aggregatorFastGasPrice.setDecimals('0');
+
+			// create but don't connect up the mock flags interface yet
+			mockFlagsInterface = await artifacts.require('MockFlagsInterface').new();
+		});
+
+		addSnapshotBeforeRestoreAfterEach();
+
+		beforeEach(async () => {
+			timeSent = await currentTime();
+		});
+
+		itIncludesCorrectMutativeFunctions();
+
+		itIsConstructedCorrectly(exchangeRatesContract);
+
+		itUpdatesRates();
+
+		itSetsOracle();
+
+		itDeletesRates();
+
+		itReturnsRates();
+
+		itCalculatesStaleRates();
+
+		itCalculatesInvalidRates();
+
+		itCalculatesLastUpdateTime();
+
+		itCalculatesEffectiveValue();
+
+		itCalculatesInvertedPrices();
+
+		itReadsFromAggregator();
+
+		itDoesntReadAtomicPricesFromDex();
+	});
+
+	describe('Using ExchangeRatesWithDexPricing', () => {
+		const exchangeRatesContract = 'ExchangeRatesWithDexPricing';
 
 		before(async () => {
 			initialTime = await currentTime();
