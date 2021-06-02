@@ -78,19 +78,12 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint timestamp;
     }
 
-    struct ExchangeVolumeAtPeriod {
-        uint64 time;
-        uint192 volume;
-    }
-
-    bytes32 private constant sUSD = "sUSD";
+    bytes32 internal constant sUSD = "sUSD";
 
     // SIP-65: Decentralized circuit breaker
     uint public constant CIRCUIT_BREAKER_SUSPENSION_REASON = 65;
 
     mapping(bytes32 => uint) public lastExchangeRate;
-
-    ExchangeVolumeAtPeriod public lastAtomicVolume;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -173,10 +166,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function priceDeviationThresholdFactor() external view returns (uint) {
         return getPriceDeviationThresholdFactor();
-    }
-
-    function atomicMaxVolumePerBlock() external view returns (uint) {
-        return getAtomicMaxVolumePerBlock();
     }
 
     function settlementOwing(address account, bytes32 currencyKey)
@@ -359,28 +348,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function exchangeAtomically(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        // TODO: this destinationAddress variable doesn't seem to be needed since it's always the same as from
-        address destinationAddress,
-        bytes32 trackingCode
-    ) external onlySynthetixorSynth returns (uint amountReceived) {
-        uint fee;
-        (amountReceived, fee) = _exchangeAtomically(
-            from,
-            sourceCurrencyKey,
-            sourceAmount,
-            destinationCurrencyKey,
-            destinationAddress
-        );
-
-        _processTradingRewards(fee, destinationAddress);
-
-        if (trackingCode != bytes32(0)) {
-            _emitTrackingEvent(trackingCode, destinationCurrencyKey, amountReceived, fee);
-        }
+        address,
+        bytes32,
+        uint,
+        bytes32,
+        address,
+        bytes32
+    ) external returns (uint amountReceived) {
+        _notImplemented();
     }
 
     function _emitTrackingEvent(
@@ -552,126 +527,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
     }
 
-    function _exchangeAtomically(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress
-    ) internal returns (uint amountReceived, uint fee) {
-        _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-
-        uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
-
-        // If, after settlement the user has no balance left (highly unlikely), then return to prevent
-        // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
-        if (sourceAmountAfterSettlement == 0) {
-            return (0, 0);
-        }
-
-        uint exchangeFeeRate;
-        uint systemConvertedAmount;
-        uint systemSourceRate;
-        uint systemDestinationRate;
-
-        // Note: also ensures the given synths are allowed to be atomically exchanged
-        (
-            amountReceived, // output amount with fee taken out (denominated in dest currency)
-            fee, // fee amount (denominated in dest currency)
-            exchangeFeeRate, // applied fee rate
-            systemConvertedAmount, // current system value without fees (denominated in dest currency)
-            systemSourceRate, // current system rate for src currency
-            systemDestinationRate // current system rate for dest currency
-        ) = _getAmountsForAtomicExchangeMinusFees(sourceAmountAfterSettlement, sourceCurrencyKey, destinationCurrencyKey);
-
-        // SIP-65: Decentralized Circuit Breaker (checking current system rates)
-        if (
-            _suspendIfRateInvalid(sourceCurrencyKey, systemSourceRate) ||
-            _suspendIfRateInvalid(destinationCurrencyKey, systemDestinationRate)
-        ) {
-            return (0, 0);
-        }
-
-        // Sanity check atomic output's value against current system value (checking atomic rates)
-        require(
-            !_isDeviationAboveThreshold(systemConvertedAmount, amountReceived.add(fee)),
-            "Atomic rate deviates too much"
-        );
-
-        // Ensure src/dest synth is sUSD and determine sUSD value of exchange
-        uint sourceSusdValue;
-        if (sourceCurrencyKey == sUSD) {
-            sourceSusdValue = sourceAmountAfterSettlement;
-        } else if (destinationCurrencyKey == sUSD) {
-            // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
-            sourceSusdValue = systemConvertedAmount;
-        } else {
-            revert("Src/dest synth must be sUSD");
-        }
-
-        // Check and update atomic volume limit
-        _checkAndUpdateAtomicVolume(sourceSusdValue);
-
-        // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
-        // the subtraction to not overflow, which would happen if their balance is not sufficient.
-
-        _convert(
-            sourceCurrencyKey,
-            from,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            amountReceived,
-            destinationAddress,
-            false // no vsynths
-        );
-
-        // Remit the fee if required
-        if (fee > 0) {
-            // Normalize fee to sUSD
-            // Note: `fee` is being reused to avoid stack too deep errors.
-            fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, sUSD);
-
-            // Remit the fee in sUSDs
-            issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), fee);
-
-            // Tell the fee pool about this
-            feePool().recordFeePaid(fee);
-        }
-
-        // Note: As of this point, `fee` is denominated in sUSD.
-
-        // TODO: sanity checking, does this statement still hold true for atomic exchanges since the execution rate may differ from the system's current rate?
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
-        // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
-        // in these currencies
-        _updateSNXIssuedDebtOnExchange(
-            [sourceCurrencyKey, destinationCurrencyKey],
-            [systemSourceRate, systemDestinationRate]
-        );
-
-        // Let the DApps know there was a Synth exchange
-        ISynthetixInternal(address(synthetix())).emitSynthExchange(
-            from,
-            sourceCurrencyKey,
-            sourceAmountAfterSettlement,
-            destinationCurrencyKey,
-            amountReceived,
-            destinationAddress
-        );
-
-        // No need to persist any exchange information, as no settlement is required for atomic exchanges
-    }
-
-    function _checkAndUpdateAtomicVolume(uint sourceSusdValue) internal {
-        uint currentVolume =
-            uint(lastAtomicVolume.time) == block.timestamp
-                ? uint(lastAtomicVolume.volume).add(sourceSusdValue)
-                : sourceSusdValue;
-        require(currentVolume <= getAtomicMaxVolumePerBlock(), "Surpassed volume limit");
-        lastAtomicVolume.time = uint64(block.timestamp);
-        lastAtomicVolume.volume = uint192(currentVolume); // Protected by volume limit check above
-    }
-
     function _convert(
         bytes32 sourceCurrencyKey,
         address from,
@@ -702,7 +557,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint,
         bytes32
     ) internal returns (IVirtualSynth) {
-        revert("Cannot be run on this layer");
+        _notImplemented();
     }
 
     // Note: this function can intentionally be called by anyone on behalf of anyone else (the caller just pays the gas)
@@ -887,32 +742,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
+    function feeRateForAtomicExchange(bytes32, bytes32) external view returns (uint exchangeFeeRate) {
+        // Not implemented
+        return 0;
+    }
+
     function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) internal view returns (uint) {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
-        return _calculateFeeRateFromExchangeSynths(baseRate, sourceCurrencyKey, destinationCurrencyKey);
-    }
-
-    function feeRateForAtomicExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        external
-        view
-        returns (uint exchangeFeeRate)
-    {
-        exchangeFeeRate = _feeRateForAtomicExchange(sourceCurrencyKey, destinationCurrencyKey);
-    }
-
-    function _feeRateForAtomicExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
-        internal
-        view
-        returns (uint)
-    {
-        // Get the exchange fee rate as per destination currencyKey
-        uint baseRate = getAtomicExchangeFeeRate(destinationCurrencyKey);
-        if (baseRate == 0) {
-            // If no atomic rate was set, fallback to the regular exchange rate
-            baseRate = getExchangeFeeRate(destinationCurrencyKey);
-        }
-
         return _calculateFeeRateFromExchangeSynths(baseRate, sourceCurrencyKey, destinationCurrencyKey);
     }
 
@@ -984,9 +821,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function getAmountsForAtomicExchange(
-        uint sourceAmount,
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey
+        uint,
+        bytes32,
+        bytes32
     )
         external
         view
@@ -996,36 +833,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint exchangeFeeRate
         )
     {
-        (amountReceived, fee, exchangeFeeRate, , , ) = _getAmountsForAtomicExchangeMinusFees(
-            sourceAmount,
-            sourceCurrencyKey,
-            destinationCurrencyKey
-        );
-    }
-
-    function _getAmountsForAtomicExchangeMinusFees(
-        uint sourceAmount,
-        bytes32 sourceCurrencyKey,
-        bytes32 destinationCurrencyKey
-    )
-        internal
-        view
-        returns (
-            uint amountReceived,
-            uint fee,
-            uint exchangeFeeRate,
-            uint systemConvertedAmount,
-            uint systemSourceRate,
-            uint systemDestinationRate
-        )
-    {
-        uint destinationAmount;
-        (destinationAmount, systemConvertedAmount, systemSourceRate, systemDestinationRate) = exchangeRates()
-            .effectiveAtomicValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
-
-        exchangeFeeRate = _feeRateForAtomicExchange(sourceCurrencyKey, destinationCurrencyKey);
-        amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
-        fee = destinationAmount.sub(amountReceived);
+        // Not implemented
+        return (0, 0, 0);
     }
 
     function _deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate)
@@ -1091,6 +900,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             exchangeEntry.timestamp,
             _waitingPeriodSecs
         );
+    }
+
+    function _notImplemented() internal pure {
+        revert("Cannot be run on this layer");
     }
 
     // ========== MODIFIERS ==========

@@ -2869,8 +2869,21 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
+	const itFailsToExchangeWithVirtual = () => {
+		describe('it cannot use exchangeWithVirtual()', () => {
+			it('errors with not implemented when attempted to exchange', async () => {
+				await assert.revert(
+					synthetix.exchangeWithVirtual(sUSD, amountIssued, sAUD, toBytes32(), {
+						from: account1,
+					}),
+					'Cannot be run on this layer'
+				);
+			});
+		});
+	};
+
 	const itExchangesAtomically = () => {
-		describe('itExchangesAtomically()', () => {
+		describe('exchangeAtomically()', () => {
 			describe('atomicMaxVolumePerBlock()', () => {
 				it('the default is configured correctly', async () => {
 					// Note: this only tests the effectiveness of the setup script, not the deploy script,
@@ -3056,6 +3069,33 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 					});
 				});
+			});
+		});
+	};
+
+	const itFailsToExchangeAtomically = () => {
+		describe('it cannot exchange atomically', () => {
+			it('errors with not implemented when attempted to exchange', async () => {
+				await assert.revert(
+					synthetix.exchangeAtomically(sUSD, amountIssued, sETH, toBytes32(), {
+						from: account1,
+					}),
+					'Cannot be run on this layer'
+				);
+			});
+
+			it('returns zeros for atomic exchange related getters', async () => {
+				const {
+					amountReceived,
+					fee,
+					exchangeFeeRate,
+				} = await exchanger.getAmountsForAtomicExchange(amountIssued, sUSD, sETH);
+				assert.equal(amountReceived, '0');
+				assert.equal(fee, '0');
+				assert.equal(exchangeFeeRate, '0');
+
+				const feeRate = await exchanger.feeRateForAtomicExchange(sUSD, sETH);
+				assert.equal(feeRate, '0');
 			});
 		});
 	};
@@ -3922,7 +3962,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
-	describe('When using Synthetix', () => {
+	describe('With L1 configuration (Synthetix, ExchangerWithVirtualSynth, ExchangeRatesWithDexPricing)', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 
@@ -3949,14 +3989,16 @@ contract('Exchanger (spec tests)', async accounts => {
 				accounts,
 				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
 				contracts: [
-					'Exchanger',
+					// L1 specific
+					'Synthetix',
+					'ExchangerWithVirtualSynth',
+					'ExchangeRatesWithDexPricing',
+					// Same between L1 and L2
 					'ExchangeState',
-					'ExchangeRates',
 					'DebtCache',
 					'Issuer', // necessary for synthetix transfers to succeed
 					'FeePool',
 					'FeePoolEternalStorage',
-					'Synthetix',
 					'SystemStatus',
 					'SystemSettings',
 					'DelegateApprovals',
@@ -4031,7 +4073,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		itSetsExchangeFeeRateForSynths();
 	});
 
-	describe('When using MintableSynthetix', () => {
+	describe('With L2 configuration (MintableSynthetix, Exchanger, ExchangeRates)', () => {
 		before(async () => {
 			({
 				Exchanger: exchanger,
@@ -4056,14 +4098,16 @@ contract('Exchanger (spec tests)', async accounts => {
 				accounts,
 				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
 				contracts: [
+					// L2 specific
+					'MintableSynthetix',
 					'Exchanger',
-					'ExchangeState',
 					'ExchangeRates',
+					// Same between L1 and L2
+					'ExchangeState',
 					'DebtCache',
 					'Issuer', // necessary for synthetix transfers to succeed
 					'FeePool',
 					'FeePoolEternalStorage',
-					'MintableSynthetix',
 					'SystemStatus',
 					'SystemSettings',
 					'DelegateApprovals',
@@ -4122,6 +4166,10 @@ contract('Exchanger (spec tests)', async accounts => {
 		itCalculatesAmountAfterSettlement();
 
 		itExchanges();
+
+		itFailsToExchangeWithVirtual();
+
+		itFailsToExchangeAtomically();
 
 		itSetsLastExchangeRateForSynth();
 

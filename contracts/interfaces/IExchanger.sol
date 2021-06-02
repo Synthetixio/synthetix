@@ -32,7 +32,26 @@ interface IExchanger {
         view
         returns (uint exchangeFeeRate);
 
+    // TODO: keep these viewers for atomic configuration?
+    function feeRateForAtomicExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey)
+        external
+        view
+        returns (uint exchangeFeeRate);
+
     function getAmountsForExchange(
+        uint sourceAmount,
+        bytes32 sourceCurrencyKey,
+        bytes32 destinationCurrencyKey
+    )
+        external
+        view
+        returns (
+            uint amountReceived,
+            uint fee,
+            uint exchangeFeeRate
+        );
+
+    function getAmountsForAtomicExchange(
         uint sourceAmount,
         bytes32 sourceCurrencyKey,
         bytes32 destinationCurrencyKey
