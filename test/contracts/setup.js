@@ -869,6 +869,7 @@ const setupAllContracts = async ({
 		// { resolverName: [contract1, contract2, ...], ... }
 		const resolverNameToContracts = baseContracts
 			.filter(({ contract }) => contractList.includes(contract))
+			.filter(({ forContract }) => !forContract) // ignore proxies
 			.map(({ contract, resolverAlias }) => [contract, resolverAlias || contract])
 			.reduce((memo, [name, resolverName]) => {
 				memo[resolverName] = [].concat(memo[resolverName] || [], name);
