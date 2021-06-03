@@ -6,6 +6,7 @@ const { Watcher } = require('@eth-optimism/watcher');
 const { connectContracts } = require('./contracts');
 const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
+const { approveBridge } = require('./bridge');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -81,6 +82,8 @@ function bootstrapDual({ ctx }) {
 
 		await updateExchangeRatesIfNeeded({ ctx: ctx.l1 });
 		await updateExchangeRatesIfNeeded({ ctx: ctx.l2 });
+
+		await approveBridge({ ctx: ctx.l1, amount: ethers.utils.parseEther('100000000') });
 
 		await ensureBalance({
 			ctx: ctx.l2,
