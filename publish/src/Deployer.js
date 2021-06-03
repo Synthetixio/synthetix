@@ -48,9 +48,9 @@ class Deployer {
 		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
 		/*
-		 provider is defined here to hold backwards compatible web3 component as well as ethers 
-		 while the migration is completed. After all web3 references are replaced by ethers, 
-		 web3 provider will be removed. The aim is to get rid of all references to web3 and web3_utils 
+		 provider is defined here to hold backwards compatible web3 component as well as ethers
+		 while the migration is completed. After all web3 references are replaced by ethers,
+		 web3 provider will be removed. The aim is to get rid of all references to web3 and web3_utils
 		 in the project.
 
 		 web3 and/or ethers is needed to interact with the contracts and sing transactions
@@ -392,7 +392,7 @@ class Deployer {
 				arg.toLowerCase() === forbiddenAddress.toLowerCase()
 			) {
 				throw Error(
-					`new ${name}(): Cannot use the AddressResolver as a constructor arg. Use ReadProxyForResolver instead.`
+					`new ${name}(): Cannot use the AddressResolver as a constructor arg. Use ReadProxyAddressResolver instead.`
 				);
 			}
 		}
