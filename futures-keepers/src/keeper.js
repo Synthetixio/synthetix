@@ -160,22 +160,22 @@ class Keeper {
 		}
 
 		console.log(`FuturesMarket [${this.futuresMarket.address}]`, `begin confirmOrder [id=${id}]`);
-		let confirmOrderTx, receipt;
+		let tx, receipt;
 
 		try {
-			confirmOrderTx = await this.futuresMarket.confirmOrder(account, {
+			tx = await this.futuresMarket.confirmOrder(account, {
 				gasPrice: DEFAULT_GAS_PRICE,
-				gasLimit: '3500000',
+				gasLimit: '7500000',
 			});
-			receipt = await confirmOrderTx.wait(1);
+			receipt = await tx.wait(1);
 		} catch (err) {
 			throw err;
-			return;
 		}
 
 		console.log(
 			`FuturesMarket [${this.futuresMarket.address}]`,
 			green`done confirmOrder [id=${id}]`,
+			`block=${receipt.blockNumber}`,
 			`success=${!!receipt.status}`,
 			`tx=${receipt.transactionHash}`,
 			yellow(`gasUsed=${receipt.gasUsed}`)
@@ -196,26 +196,26 @@ class Keeper {
 			return;
 		}
 
-		// console.log(
-		// 	`FuturesMarket [${this.futuresMarket.address}]`,
-		// 	`begin liquidatePosition [id=${id}]`
-		// );
+		console.log(
+			`FuturesMarket [${this.futuresMarket.address}]`,
+			`begin liquidatePosition [id=${id}]`
+		);
 		let tx, receipt;
 
 		try {
 			tx = await this.futuresMarket.liquidatePosition(account, {
 				gasPrice: DEFAULT_GAS_PRICE,
-				gasLimit: '6500000',
+				gasLimit: '7500000',
 			});
 			receipt = await tx.wait(1);
 		} catch (err) {
-			console.log(red(err));
-			return;
+			throw err;
 		}
 
 		console.log(
 			`FuturesMarket [${this.futuresMarket.address}]`,
 			green(`done liquidatePosition [id=${id}]`),
+			`block=${receipt.blockNumber}`,
 			`success=${!!receipt.status}`,
 			`tx=${receipt.transactionHash}`,
 			yellow(`gasUsed=${receipt.gasUsed}`)
