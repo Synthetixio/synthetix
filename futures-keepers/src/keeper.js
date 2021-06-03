@@ -114,11 +114,17 @@ class Keeper {
 				console.log('FuturesMarket', blue('OrderConfirmed'), `[id=${orderId} account=${account}]`);
 
 				delete this.orders[orderId];
+
+				if (margin == 0) {
+					// Position has been closed.
+					delete this.positions[account];
+				} else {
 				this.positions[account] = {
 					event,
 					orderId,
 					account,
 				};
+				}
 			} else if (event === 'PositionLiquidated') {
 				const { account, liquidator } = args;
 				console.log(
