@@ -5,6 +5,7 @@ const path = require('path');
 
 require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
+require('@nomiclabs/hardhat-ethers');
 require('solidity-coverage');
 require('hardhat-gas-reporter');
 
@@ -49,12 +50,14 @@ module.exports = {
 			allowUnlimitedContractSize: true,
 			gasPrice: GAS_PRICE,
 			initialDate: new Date(inflationStartTimestampInSecs * 1000).toISOString(),
+			timeout: 600000,
 			// Note: forking settings are injected at runtime by hardhat/tasks/task-node.js
 		},
 		localhost: {
 			gas: 12e6,
 			blockGasLimit: 12e6,
 			url: 'http://localhost:8545',
+			timeout: 600000,
 		},
 	},
 	gasReporter: {
