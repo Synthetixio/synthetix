@@ -32,7 +32,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_ETHER_WRAPPER_BURN_FEE_RATE = "etherWrapperBurnFeeRate";
     bytes32 internal constant SETTING_MIN_CRATIO = "minCratio";
     bytes32 internal constant SETTING_ISSUE_FEE_RATE = "issueFeeRate";
-    bytes32 internal constant SETTING_NEW_MANAGER = "newManager";
+    bytes32 internal constant SETTING_NEW_COLLATERAL_MANAGER = "newCollateralManager";
     bytes32 internal constant SETTING_CAN_OPEN_LOANS = "canOpenLoans";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
@@ -159,11 +159,11 @@ contract MixinSystemSettings is MixinResolver {
             );
     }
 
-    function getNewManager(address collateral) internal view returns (address) {
+    function getNewCollateralManager(address collateral) internal view returns (address) {
         return
             flexibleStorage().getAddressValue(
                 SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_NEW_MANAGER, collateral))
+                keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, collateral))
             );
     }
 

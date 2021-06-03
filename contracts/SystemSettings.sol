@@ -276,7 +276,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_MIN_CRATIO, collateral)),
-            _minCratio
+            minCratio
         );
         emit MinCratioRatioUpdated(minCratio);
     }
@@ -285,25 +285,25 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_ISSUE_FEE_RATE, collateral)),
-            _issueFeeRate
+            issueFeeRate
         );
         emit IssueFeeRateUpdated(issueFeeRate);
     }
 
-    function setManager(address newManager, address collateral) external onlyOwner {
+    function setCollateralManager(address newCollateralManager, address collateral) external onlyOwner {
         flexibleStorage().setAddressValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_NEW_MANAGER, collateral)),
-            _newManager
+            keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, collateral)),
+            newCollateralManager
         );
-        emit ManagerUpdated(newManager);
+        emit CollateralManagerUpdated(newCollateralManager);
     }
 
     function setCanOpenLoans(bool canOpenLoans, address collateral) external onlyOwner {
         flexibleStorage().setBoolValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral)),
-            _canOpenLoans
+            canOpenLoans
         );
         emit CanOpenLoansUpdated(canOpenLoans);
     }
@@ -363,6 +363,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperBurnFeeRateUpdated(uint rate);
     event MinCratioRatioUpdated(uint minCratio);
     event IssueFeeRateUpdated(uint issueFeeRate);
-    event ManagerUpdated(address newManager);
+    event CollateralManagerUpdated(address newCollateralManager);
     event CanOpenLoansUpdated(bool canOpenLoans);
 }
