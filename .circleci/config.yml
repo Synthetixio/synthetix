@@ -344,8 +344,6 @@ jobs:
       - run:
           name: Upload gas reports
           command: |
-            ls -la /tmp/gas-reports
-            cp -R /tmp/gas-reports/gasReporterOutput-*.json .
             npx hardhat test:merge-gas-reports gasReporterOutput-*.json
             npx codechecks codechecks.unit.yml
             cat test-gas-used.log
@@ -365,9 +363,6 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Create shared gas outputs folder
-          command: mkdir -p /tmp/gas-reports
-      - run:
           name: Pre compile
           command: npx hardhat compile --showsize --optimizer
       - run:
@@ -384,10 +379,9 @@ jobs:
       - run:
           name: Save gas report
           command: |
-            cp gasReporterOutput.json /tmp/gas-reports/gasReporterOutput-$CIRCLE_NODE_INDEX.json
-            ls -la /tmp/gas-reports
+            mv gasReporterOutput.json ./gasReporterOutput-$CIRCLE_NODE_INDEX.json
       - persist_to_workspace:
-          root: /tmp/gas-reports
+          root: .
           paths:
             - gasReporterOutput-*.json
   job-validate-deployments:

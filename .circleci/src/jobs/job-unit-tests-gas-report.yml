@@ -7,8 +7,6 @@ steps:
   - run:
       name: Upload gas reports
       command: |
-        ls -la /tmp/gas-reports
-        cp -R /tmp/gas-reports/gasReporterOutput-*.json .
         npx hardhat test:merge-gas-reports gasReporterOutput-*.json
         npx codechecks codechecks.unit.yml
         cat test-gas-used.log
