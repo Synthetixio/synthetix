@@ -140,6 +140,7 @@ module.exports = async ({
 				expected: input => input,
 				publiclyCallable: true, // does not require owner
 				write: 'rebuildCache',
+				skipSolidity: true, // this is a double check - we don't want solidity output for this
 			});
 		}
 	}

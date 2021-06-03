@@ -7857,6 +7857,7 @@
 					"constant": false,
 					"inputs": [
 						{
+							"internalType": "contract Proxyable",
 							"name": "_target",
 							"type": "address"
 						}
@@ -7964,6 +7965,7 @@
 					"name": "target",
 					"outputs": [
 						{
+							"internalType": "contract Proxyable",
 							"name": "",
 							"type": "address"
 						}
@@ -7994,6 +7996,7 @@
 					"inputs": [
 						{
 							"indexed": false,
+							"internalType": "contract Proxyable",
 							"name": "newTarget",
 							"type": "address"
 						}
@@ -13910,6 +13913,7 @@
 					"constant": false,
 					"inputs": [
 						{
+							"internalType": "contract IFeePool",
 							"name": "_feePool",
 							"type": "address"
 						}
@@ -14155,6 +14159,7 @@
 					"name": "synthetix",
 					"outputs": [
 						{
+							"internalType": "contract ISynthetix",
 							"name": "",
 							"type": "address"
 						}
@@ -14239,6 +14244,8 @@
 					"name": "feePool",
 					"outputs": [
 						{
+							"internalType": "contract IFeePool",
+
 							"name": "",
 							"type": "address"
 						}
@@ -14334,6 +14341,7 @@
 					"constant": false,
 					"inputs": [
 						{
+							"internalType": "contract ISynthetix",
 							"name": "_synthetix",
 							"type": "address"
 						}

@@ -320,6 +320,9 @@ class Deployer {
 			);
 		}
 
+		// track the source file for potential usage
+		deployedContract.options.source = source;
+
 		// append new deployedContract
 		this.deployedContracts[name] = deployedContract;
 

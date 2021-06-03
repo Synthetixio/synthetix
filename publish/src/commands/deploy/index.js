@@ -40,6 +40,7 @@ const configureInverseSynths = require('./configure-inverse-synths');
 const configureSystemSettings = require('./configure-system-settings');
 const configureLoans = require('./configure-loans');
 const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
+const generateSolidityOutput = require('./generate-solidity-output');
 
 const DEFAULTS = {
 	gasPrice: '1',
@@ -105,6 +106,7 @@ const deploy = async ({
 	const getDeployParameter = getDeployParameterFactory({ params, yes, ignoreCustomParameters });
 
 	const addressOf = c => (c ? c.options.address : '');
+	const sourceOf = c => (c ? c.options.source : '');
 
 	// Mark contracts for deployment specified via an argument
 	if (specifyContracts) {
@@ -241,10 +243,11 @@ const deploy = async ({
 		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''}...`)
 	);
 
-	const solidityWriteSteps = [];
+	// track for use with solidity output
+	const runSteps = [];
 
 	const runStep = async opts => {
-		const { solidity, ...rest } = await performTransactionalStep({
+		const { noop, ...rest } = await performTransactionalStep({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
@@ -256,10 +259,9 @@ const deploy = async ({
 			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
-		if (solidity) {
-			solidityWriteSteps.push(solidity);
-
-			console.log(gray(solidity));
+		// only track when there's an operation required
+		if (!noop) {
+			runSteps.push(opts);
 		}
 
 		return { ...rest };
@@ -312,6 +314,7 @@ const deploy = async ({
 	await importAddresses({
 		addressOf,
 		deployer,
+		dryRun,
 		limitPromise,
 		runStep,
 	});
@@ -398,20 +401,16 @@ const deploy = async ({
 
 	reportDeployedContracts({ deployer });
 
-	if (generateSolidity) {
-		console.log(
-			gray(
-				`
-=== SOLIDITY ===
-	contract SynthetixDeploy {
-		function migrate() external {
-			${solidityWriteSteps.join(';\n\t\t\t')};
-		}
-	}
-`
-			)
-		);
-	}
+	generateSolidityOutput({
+		addressOf,
+		deployer,
+		deployment,
+		generateSolidity,
+		network,
+		runSteps,
+		sourceOf,
+		useOvm,
+	});
 };
 
 module.exports = {
@@ -450,7 +449,7 @@ module.exports = {
 				'The address of the fee authority for this network (default is to use existing)'
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
-			.option('--generate-solidity', 'If enabled, will output all run steps as solidity code.')
+			.option('--generate-solidity <value>', 'A path to a solidity file to generate')
 			.option(
 				'-h, --fresh-deploy',
 				'Perform a "fresh" deploy, i.e. the first deployment on a network.'
