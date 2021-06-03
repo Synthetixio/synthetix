@@ -27,11 +27,7 @@ async function main() {
 	// Setup.
 	//
 	const provider = new ethers.providers.JsonRpcProvider();
-	// const signer = new NonceManager(
-	// 	new ethers.Wallet(privateKey, provider)
-	// )
 	const signer = new ethers.Wallet(privateKey, provider);
-	// const signer = new ethers.Wallet(privateKey, provider)
 	const account = await signer.getAddress();
 	console.log(gray(`Connected to Ethereum node at http://localhost:8545`));
 	console.log(gray(`Account: ${account}`));
