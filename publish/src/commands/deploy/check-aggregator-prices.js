@@ -4,8 +4,8 @@ const Web3 = require('web3');
 const axios = require('axios');
 const { gray, yellow, red, cyan } = require('chalk');
 
-const { loadConnections } = require('./util');
-const { toBytes32 } = require('../../.');
+const { loadConnections } = require('../../util');
+const { toBytes32 } = require('../../../..');
 
 module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, standaloneFeeds }) => {
 	const output = [];
