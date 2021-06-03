@@ -2,18 +2,18 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
-const { ignoreMinimumStakeTime } = require('../utils/stakeTime');
+const { ignoreWaitingPeriod } = require('../utils/exchanging');
 
 function itCanExchange({ ctx }) {
-	describe('exchanging', () => {
+	describe('exchanging and settling', () => {
 		const sUSDAmount = ethers.utils.parseEther('100');
 
 		let owner;
-		let balancesETH, balancesUSD;
-		let Synthetix, Exchanger, SynthsETH, SynthsUSD;
+		let balancesETH, originialPendingSettlements;
+		let Synthetix, Exchanger, SynthsETH;
 
 		before('target contracts and users', () => {
-			({ Synthetix, Exchanger, SynthsETH, SynthsUSD } = ctx.contracts);
+			({ Synthetix, Exchanger, SynthsETH } = ctx.contracts);
 
 			owner = ctx.users.owner;
 		});
@@ -25,6 +25,12 @@ function itCanExchange({ ctx }) {
 		describe('when the owner exchanges sUSD to sETH', () => {
 			before('record balances', async () => {
 				balancesETH = await SynthsETH.balanceOf(owner.address);
+			});
+
+			before('record pending settlements', async () => {
+				const { numEntries } = await Exchanger.settlementOwing(owner.address, toBytes32('sETH'));
+
+				originialPendingSettlements = numEntries;
 			});
 
 			before('perform the exchange', async () => {
@@ -44,30 +50,24 @@ function itCanExchange({ ctx }) {
 				assert.bnEqual(await SynthsETH.balanceOf(owner.address), balancesETH.add(expectedAmount));
 			});
 
-			// TODO: Disabled until we understand time granularity in the ops tool L2 chain
-			describe.skip('when the owner exchanges sETH to sUSD', () => {
-				ignoreMinimumStakeTime({ ctx });
+			it('shows that the user now has pending settlements', async () => {
+				const { numEntries } = await Exchanger.settlementOwing(owner.address, toBytes32('sETH'));
 
-				before('record balances', async () => {
-					balancesUSD = await SynthsUSD.balanceOf(owner.address);
-					balancesETH = await SynthsETH.balanceOf(owner.address);
-				});
+				assert.bnEqual(numEntries, originialPendingSettlements.add(ethers.constants.One));
+			});
 
-				before('perform the exchange', async () => {
-					Synthetix = Synthetix.connect(owner);
+			describe('when settle is called', () => {
+				ignoreWaitingPeriod({ ctx });
 
-					const tx = await Synthetix.exchange(toBytes32('sETH'), balancesETH, toBytes32('sUSD'));
+				before('settle', async () => {
+					const tx = await Synthetix.settle(toBytes32('sETH'));
 					await tx.wait();
 				});
 
-				it('receives the expected amount of sUSD', async () => {
-					const [expectedAmount, ,] = await Exchanger.getAmountsForExchange(
-						balancesETH,
-						toBytes32('sETH'),
-						toBytes32('sUSD')
-					);
+				it('shows that the user no longer has pending settlements', async () => {
+					const { numEntries } = await Exchanger.settlementOwing(owner.address, toBytes32('sETH'));
 
-					assert.bnEqual(await SynthsUSD.balanceOf(owner.address), balancesUSD.add(expectedAmount));
+					assert.bnEqual(numEntries, ethers.constants.Zero);
 				});
 			});
 		});
