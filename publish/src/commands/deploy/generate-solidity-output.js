@@ -4,6 +4,9 @@ const fs = require('fs');
 
 const { gray } = require('chalk');
 
+const {
+	utils: { parseBytes32String },
+} = require('ethers');
 const { getUsers } = require('../../../..');
 
 module.exports = async ({
@@ -40,6 +43,8 @@ module.exports = async ({
 			const abiEntry = abi.find(({ name }) => name === write);
 
 			const { internalType } = abiEntry.inputs[index];
+			const decodeBytes32IfRequired = input =>
+				/^0x[0-9a-fA-F]{64}/.test(input) ? `"${parseBytes32String(input)}"` : input;
 
 			if (Array.isArray(argument)) {
 				// arrays needs to be created in memory
@@ -50,7 +55,9 @@ module.exports = async ({
 					`${typeOfArrayElement}[] memory ${variableName} = new ${typeOfArrayElement}[](${argument.length})`
 				);
 				for (const [i, arg] of Object.entries(argument)) {
-					instructions.push(`${variableName}[${i}] = ${typeOfArrayElement}(${arg})`);
+					instructions.push(
+						`${variableName}[${i}] = ${typeOfArrayElement}(${decodeBytes32IfRequired(arg)})`
+					);
 				}
 				argsForWriteFnc.push(variableName);
 			} else if (/^contract /.test(internalType)) {
@@ -58,7 +65,7 @@ module.exports = async ({
 				argsForWriteFnc.push(`${internalType.split(' ')[1]}(${argument})`);
 			} else {
 				// otherwise just add it
-				argsForWriteFnc.push(argument);
+				argsForWriteFnc.push(decodeBytes32IfRequired(argument));
 			}
 		}
 		instructions.push(`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc})`);
@@ -86,7 +93,7 @@ contract Migrator {
 					deployer.deployedContracts[contract]
 				)}(${addressOf(deployer.deployedContracts[contract])});`
 		)
-		.join('\n')}
+		.join('\n\t')}
 
 	function migrate(address currentOwner) external {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
@@ -97,7 +104,7 @@ contract Migrator {
 			.join('\n\t\t')}
 
 		// perform migration
-		${instructions.join(';\n\t\t\t')};
+		${instructions.join(';\n\t\t')};
 
 		// nominate ownership back to owner
 		${contractsAddedToSolidity
