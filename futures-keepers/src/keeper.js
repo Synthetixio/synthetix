@@ -4,7 +4,6 @@ const FuturesMarketABI = require('synthetix/build/artifacts/contracts/FuturesMar
 	.abi;
 const ExchangeRatesABI = require('synthetix/build/artifacts/contracts/ExchangeRates.sol/ExchangeRates.json')
 	.abi;
-const PollRoutine = require('./poll-routine');
 
 const DEFAULT_GAS_PRICE = '0';
 
@@ -21,7 +20,10 @@ class Keeper {
 		this.positions = {};
 
 		// A mapping of already running keeper tasks.
-		this.keeperTasks = {};
+		this.activeKeeperTasks = {};
+
+		// A FIFO queue of blocks to be processed.
+		this.blockQueue = [];
 
 		const futuresMarket = new ethers.Contract(proxyFuturesMarketAddress, FuturesMarketABI, signer);
 		this.futuresMarket = futuresMarket;
@@ -56,53 +58,47 @@ class Keeper {
 				return;
 			}
 
-			this.blockTip = blockNumber;
-			const events = await this.futuresMarket.queryFilter('*', blockNumber, blockNumber);
-			console.log('');
 			console.log(gray(`New block: ${blockNumber}`));
-			console.log('FuturesMarket', gray`${events.length} events to process`);
-			this.updateIndex(events);
-			this.runKeepers();
+			this.blockQueue.push(blockNumber);
 		});
+
+		// The L2 node is constantly mining blocks, one block per transaction. When a new block is received, we queue it
+		// for processing in a FIFO queue. `processNewBlock` will scan its events, rebuild the index, and then run any
+		// keeper tasks that need running that aren't already active.
+		while (1) {
+			if (!this.blockQueue.length) {
+				await new Promise((resolve, reject) => setTimeout(resolve, 0.001));
+				continue;
+			}
+
+			const blockNumber = this.blockQueue.shift();
+			await this.processNewBlock(blockNumber);
+		}
 	}
 
-	async runKeepers() {
-		// Unconfirmed orders.
-		for (let { orderId, account } of Object.values(this.orders)) {
-			await this.runKeeperTask(`${orderId}-confirm`, () => this.confirmOrder(orderId, account));
-		}
-
-		// Open positions.
-		for (let { orderId, account } of Object.values(this.positions)) {
-			await this.runKeeperTask(`${orderId}-liquidation`, () =>
-				this.liquidateOrder(orderId, account)
-			);
-		}
-	}
-
-	async runKeeperTask(id, cb) {
-		if (this.keeperTasks[id]) {
-			// Skip task as its already running.
-			return;
-		}
-		this.keeperTasks[id] = true;
-
-		console.log(gray(`KeeperTask running [id=${id}]`));
-		try {
-			await cb();
-		} catch (err) {
-			console.error(red(`KeeperTask error [id=${id}]`), '\n', red(err.toString()));
-		}
-		console.log(gray(`KeeperTask done [id=${id}]`));
-
-		delete this.keeperTasks[id];
+	async processNewBlock(blockNumber) {
+		this.blockTip = blockNumber;
+		const events = await this.futuresMarket.queryFilter('*', blockNumber, blockNumber);
+		const exchangeRateEvents = await this.exchangeRates.queryFilter('*', blockNumber, blockNumber);
+		console.log('');
+		console.log(gray(`Processing block: ${blockNumber}`));
+		exchangeRateEvents
+			.filter(({ event, args }) => event === 'RatesUpdated' || event === 'RateDeleted')
+			.forEach(({ event }) => console.log('ExchangeRates', blue(event)));
+		console.log('FuturesMarket', gray`${events.length} events to process`);
+		this.updateIndex(events);
+		await this.runKeepers();
 	}
 
 	updateIndex(events) {
 		events.forEach(({ event, args }) => {
 			if (event === 'OrderSubmitted') {
-				const { id: orderId, account, sender, leverage, fee, roundId } = args;
-				console.log('FuturesMarket', blue('OrderSubmitted'), `[id=${orderId} account=${account}]`);
+				const { id: orderId, account, roundId } = args;
+				console.log(
+					'FuturesMarket',
+					blue('OrderSubmitted'),
+					`[id=${orderId} account=${account} roundId=${roundId}]`
+				);
 
 				this.orders[orderId] = {
 					account,
@@ -110,20 +106,24 @@ class Keeper {
 					event,
 				};
 			} else if (event === 'OrderConfirmed') {
-				const { id: orderId, account } = args;
-				console.log('FuturesMarket', blue('OrderConfirmed'), `[id=${orderId} account=${account}]`);
+				const { id: orderId, account, margin } = args;
+				console.log(
+					'FuturesMarket',
+					blue('OrderConfirmed'),
+					`[id=${orderId} account=${account} margin=${margin}]`
+				);
 
 				delete this.orders[orderId];
 
-				if (margin == 0) {
+				if (margin === 0) {
 					// Position has been closed.
 					delete this.positions[account];
 				} else {
-				this.positions[account] = {
-					event,
-					orderId,
-					account,
-				};
+					this.positions[account] = {
+						event,
+						orderId,
+						account,
+					};
 				}
 			} else if (event === 'PositionLiquidated') {
 				const { account, liquidator } = args;
@@ -134,7 +134,7 @@ class Keeper {
 				);
 
 				delete this.positions[account];
-			} else if (event == 'OrderCancelled') {
+			} else if (event === 'OrderCancelled') {
 				const { id: orderId, account } = args;
 				console.log('FuturesMarket', blue('OrderCancelled'), `[id=${orderId} account=${account}]`);
 
@@ -145,11 +145,39 @@ class Keeper {
 		});
 	}
 
+	async runKeepers() {
+		// Unconfirmed orders.
+		for (const { orderId, account } of Object.values(this.orders)) {
+			await this.runKeeperTask(`${orderId}-confirm`, () => this.confirmOrder(orderId, account));
+		}
+
+		// Open positions.
+		for (const { orderId, account } of Object.values(this.positions)) {
+			await this.runKeeperTask(`${orderId}-liquidation`, () =>
+				this.liquidateOrder(orderId, account)
+			);
+		}
+	}
+
+	async runKeeperTask(id, cb) {
+		if (this.activeKeeperTasks[id]) {
+			// Skip task as its already running.
+			return;
+		}
+		this.activeKeeperTasks[id] = true;
+
+		console.log(gray(`KeeperTask running [id=${id}]`));
+		try {
+			await cb();
+		} catch (err) {
+			console.error(red(`KeeperTask error [id=${id}]`), '\n', red(err.toString()));
+		}
+		console.log(gray(`KeeperTask done [id=${id}]`));
+
+		delete this.activeKeeperTasks[id];
+	}
+
 	async confirmOrder(id, account) {
-		// console.log(
-		// 	`FuturesMarket [${this.futuresMarket.address}]`,
-		// 	`begin canConfirmOrder [id=${id}]`
-		// );
 		const canConfirmOrder = await this.futuresMarket.canConfirmOrder(account);
 		if (!canConfirmOrder) {
 			// console.error(
