@@ -5,46 +5,49 @@ const { ensureBalance } = require('../utils/balances');
 function itBehavesLikeAnERC20({ ctx, contract }) {
 	describe('erc20 functionality', () => {
 		let owner, user;
-		let Contract;
+		let Token;
 
 		let userBalance;
 
 		const amountToTransfer = ethers.utils.parseEther('1');
 
-		before('target contracts and users', async () => {
+		before('target contracts and users', () => {
 			if (contract) {
-				Contract = ctx.contracts[contract];
-				const symbol = await Contract.symbol();
-
-				await ensureBalance({
-					ctx,
-					symbol,
-					user: ctx.users.owner,
-					balance: ethers.utils.parseEther('10'),
-				});
+				Token = ctx.contracts[contract];
 			} else {
 				const { Synthetix } = ctx.contracts;
-				Contract = Synthetix;
+				Token = Synthetix;
 			}
 
 			owner = ctx.users.owner;
 			user = ctx.users.someUser;
 		});
 
+		before('ensure owner balance for Token', async () => {
+			const symbol = await Token.symbol();
+
+			await ensureBalance({
+				ctx,
+				symbol,
+				user: ctx.users.owner,
+				balance: ethers.utils.parseEther('10'),
+			});
+		});
+
 		before('record user balance', async () => {
-			userBalance = await Contract.balanceOf(user.address);
+			userBalance = await Token.balanceOf(user.address);
 		});
 
 		describe('when the owner transfers Tokens to the user', async () => {
 			before('transfer', async () => {
-				Contract = Contract.connect(owner);
+				Token = Token.connect(owner);
 
-				const tx = await Contract.transfer(user.address, amountToTransfer);
+				const tx = await Token.transfer(user.address, amountToTransfer);
 				await tx.wait();
 			});
 
-			it(`increases the users balance`, async () => {
-				assert.bnEqual(await Contract.balanceOf(user.address), userBalance.add(amountToTransfer));
+			it('increases the users balance', async () => {
+				assert.bnEqual(await Token.balanceOf(user.address), userBalance.add(amountToTransfer));
 			});
 		});
 	});
