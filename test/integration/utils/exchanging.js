@@ -41,6 +41,9 @@ function ignoreFeePeriodDuration({ ctx }) {
 
 		ctx.feePeriodDuration = await SystemSettings.feePeriodDuration();
 
+		// SystemSettings.setFeePeriodDuration() enforces a minimum value of 1 day,
+		// which is not ideal for tests.
+		// Instead, we force it by writing to flexible storage directly.
 		await forceSetSystemSetting({ ctx, settingName: 'feePeriodDuration', newValue: 5 });
 
 		await wait({ seconds: 5 });

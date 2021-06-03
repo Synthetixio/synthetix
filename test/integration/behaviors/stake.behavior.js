@@ -1,4 +1,5 @@
 const ethers = require('ethers');
+const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
 const { exchangeSomething, ignoreFeePeriodDuration } = require('../utils/exchanging');
 const { ensureBalance } = require('../utils/balances');
@@ -8,11 +9,11 @@ const { skipIfL2 } = require('../utils/l2');
 function itCanStake({ ctx }) {
 	describe('staking and claiming', () => {
 		const SNXAmount = ethers.utils.parseEther('100');
-		const sUSDamount = ethers.utils.parseEther('1');
+		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
 
 		let user;
 		let Synthetix, SynthsUSD, FeePool;
-		let balancesUSD;
+		let balancesUSD, debtsUSD;
 
 		before('target contracts and users', () => {
 			({ Synthetix, SynthsUSD, FeePool } = ctx.contracts);
@@ -32,12 +33,15 @@ function itCanStake({ ctx }) {
 			before('issue sUSD', async () => {
 				Synthetix = Synthetix.connect(user);
 
-				const tx = await Synthetix.issueSynths(sUSDamount);
+				const tx = await Synthetix.issueSynths(amountToIssueAndBurnsUSD);
 				await tx.wait();
 			});
 
 			it('issues the expected amount of sUSD', async () => {
-				assert.bnEqual(await SynthsUSD.balanceOf(user.address), balancesUSD.add(sUSDamount));
+				assert.bnEqual(
+					await SynthsUSD.balanceOf(user.address),
+					balancesUSD.add(amountToIssueAndBurnsUSD)
+				);
 			});
 
 			describe('claiming', () => {
@@ -87,24 +91,27 @@ function itCanStake({ ctx }) {
 		describe('when the user burns sUSD', () => {
 			ignoreMinimumStakeTime({ ctx });
 
-			before('record values', async () => {
-				balancesUSD = await SynthsUSD.balanceOf(user.address);
+			before('record debt', async () => {
+				debtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
 			});
 
 			before('burn sUSD', async () => {
 				Synthetix = Synthetix.connect(user);
 
-				const tx = await Synthetix.burnSynths(sUSDamount);
+				const tx = await Synthetix.burnSynths(amountToIssueAndBurnsUSD);
 				await tx.wait();
 			});
 
-			it('burnt the expected amount of sUSD', async () => {
-				const newBalancesUSD = await SynthsUSD.balanceOf(user.address);
-				const expected = balancesUSD.sub(sUSDamount);
-				const delta = newBalancesUSD.sub(expected);
-				const variance = ethers.utils.parseUnits('2', 'gwei');
+			it('reduced the expected amount of debt', async () => {
+				const newDebtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
+				const debtReduction = debtsUSD.sub(newDebtsUSD);
 
-				assert.bnLt(delta, variance);
+				const tolerance = ethers.utils.parseUnits('10', 'gwei');
+				assert.bnClose(
+					debtReduction.toString(),
+					amountToIssueAndBurnsUSD.toString(),
+					tolerance.toString()
+				);
 			});
 		});
 	});
