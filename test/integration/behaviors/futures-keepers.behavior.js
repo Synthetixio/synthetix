@@ -109,9 +109,13 @@ function itLiquidatesOrders({ ctx }) {
 			let txReceipt;
 			let orderId;
 
+			before('price update', async () => {
+				await setPrice(sETH, '200');
+			});
+
 			before('submit the order', async () => {
 				const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage);
-				txReceipt = await tx.wait();
+				txReceipt = await tx.wait(1);
 
 				const orderSubmitted = txReceipt.events.filter(
 					({ address, event }) =>
@@ -138,7 +142,8 @@ function itLiquidatesOrders({ ctx }) {
 			});
 
 			before('next price update, which puts position into liquidation', async () => {
-				await setPrice(sETH, '0.01');
+				// TODO: remove
+				await setPrice(sETH, '.0001');
 			});
 
 			it('is liquidated by the keeper', async () => {
