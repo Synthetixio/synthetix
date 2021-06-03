@@ -6,94 +6,120 @@ const ExchangeRatesABI = require('synthetix/build/artifacts/contracts/ExchangeRa
 	.abi;
 const PollRoutine = require('./poll-routine');
 
-const EventEmitter = require('events').EventEmitter;
-
 const DEFAULT_GAS_PRICE = '0';
 
-class Keeper extends EventEmitter {
+class Keeper {
 	// The index.
-
 	constructor({
 		proxyFuturesMarket: proxyFuturesMarketAddress,
 		exchangeRates: exchangeRatesAddress,
 		signer,
 		provider,
 	}) {
-		super();
+		// The index.
+		this.orders = {};
+		this.positions = {};
+
+		// A mapping of already running keeper tasks.
+		this.keeperTasks = {};
+
 		const futuresMarket = new ethers.Contract(proxyFuturesMarketAddress, FuturesMarketABI, signer);
 		this.futuresMarket = futuresMarket;
 
 		const exchangeRates = new ethers.Contract(exchangeRatesAddress, ExchangeRatesABI, provider);
 		this.exchangeRates = exchangeRates;
 
-		this.liquidateRoutines = {};
-		this.confirmRoutines = {};
-		this.lastBlock = null;
+		this.blockTip = null;
 		this.provider = provider;
 	}
 
-	run() {
-		console.log(gray(`Listening for events on FuturesMarket [${this.futuresMarket.address}]`));
-		this.on('block', async ({ blockNumber }) => {
-			if (!this.lastBlock) {
-				// Ethers.js begins on the last mined block, which we ignore.
-				this.lastBlock = blockNumber;
+	async run({ fromBlock }) {
+		const events = await this.futuresMarket.queryFilter('*', fromBlock, 'latest');
+		console.log(gray(`Rebuilding index from `), `${fromBlock} ... latest`);
+		console.log(gray`${events.length} events to process`);
+		this.updateIndex(events);
+
+		console.log(gray(`Index build complete!`));
+		console.log(
+			gray`${Object.keys(this.orders).length} orders to confirm, ${
+				Object.keys(this.positions).length
+			} positions to keep`
+		);
+		console.log(gray(`Starting keeper loop`));
+		this.runKeepers();
+
+		console.log(`Listening for events on FuturesMarket [${this.futuresMarket.address}]`);
+		this.provider.on('block', async blockNumber => {
+			if (!this.blockTip) {
+				// Don't process the first block we see.
+				this.blockTip = blockNumber;
 				return;
 			}
 
-			// Check if oracle rates are updated.
-			this.exchangeRates.on('RatesUpdated', () => {
-				console.log('ExchangeRates', blue('RatesUpdated'));
-				this.emit('price-update');
-			});
-
-			this.exchangeRates.on('RateDeleted', () => {
-				console.log('ExchangeRates', blue('RateDeleted'));
-				this.emit('price-update');
-			});
-
+			this.blockTip = blockNumber;
 			const events = await this.futuresMarket.queryFilter('*', blockNumber, blockNumber);
+			console.log('');
 			console.log(gray(`New block: ${blockNumber}`));
 			console.log('FuturesMarket', gray`${events.length} events to process`);
-			this.processEvents(events);
-		});
-
-		this.provider.on('block', blockNumber => {
-			this.emit('block', { blockNumber });
+			this.updateIndex(events);
+			this.runKeepers();
 		});
 	}
 
-	processEvents(events) {
+	async runKeepers() {
+		// Unconfirmed orders.
+		for (let { orderId, account } of Object.values(this.orders)) {
+			await this.runKeeperTask(`${orderId}-confirm`, () => this.confirmOrder(orderId, account));
+		}
+
+		// Open positions.
+		for (let { orderId, account } of Object.values(this.positions)) {
+			await this.runKeeperTask(`${orderId}-liquidation`, () =>
+				this.liquidateOrder(orderId, account)
+			);
+		}
+	}
+
+	async runKeeperTask(id, cb) {
+		if (this.keeperTasks[id]) {
+			// Skip task as its already running.
+			return;
+		}
+		this.keeperTasks[id] = true;
+
+		console.log(gray(`KeeperTask running [id=${id}]`));
+		try {
+			await cb();
+		} catch (err) {
+			console.error(red(`KeeperTask error [id=${id}]`), '\n', red(err.toString()));
+		}
+		console.log(gray(`KeeperTask done [id=${id}]`));
+
+		delete this.keeperTasks[id];
+	}
+
+	updateIndex(events) {
 		events.forEach(({ event, args }) => {
 			if (event === 'OrderSubmitted') {
-				const { id, account } = args;
-				console.log('FuturesMarket', blue('OrderSubmitted'), `[id=${id} account=${account}]`);
-				this.confirmOrder(id, account);
+				const { id: orderId, account, sender, leverage, fee, roundId } = args;
+				console.log('FuturesMarket', blue('OrderSubmitted'), `[id=${orderId} account=${account}]`);
 
-				// Begin confirmOrder routine.
-				if (!(id in this.confirmRoutines)) {
-					const routine = new PollRoutine(() => this.confirmOrder(id, account), 1000);
-					this.confirmRoutines[id] = routine;
-					routine.run();
-				}
-			}
-			if (event === 'OrderConfirmed') {
-				const { id, account } = args;
-				console.log('FuturesMarket', blue('OrderConfirmed'), `[id=${id} account=${account}]`);
+				this.orders[orderId] = {
+					account,
+					orderId,
+					event,
+				};
+			} else if (event === 'OrderConfirmed') {
+				const { id: orderId, account } = args;
+				console.log('FuturesMarket', blue('OrderConfirmed'), `[id=${orderId} account=${account}]`);
 
-				if (id in this.confirmRoutines) {
-					this.confirmRoutines[id].cancel();
-					delete this.confirmRoutines[id];
-				}
-
-				if (!(account in this.liquidateRoutines)) {
-					// Begin liquidateOrder routine.
-					const routine = new PollRoutine(() => this.liquidateOrder(id, account), 1000);
-					this.liquidateRoutines[account] = routine;
-					routine.run();
-				}
-			}
-			if (event === 'PositionLiquidated') {
+				delete this.orders[orderId];
+				this.positions[account] = {
+					event,
+					orderId,
+					account,
+				};
+			} else if (event === 'PositionLiquidated') {
 				const { account, liquidator } = args;
 				console.log(
 					'FuturesMarket',
@@ -101,25 +127,29 @@ class Keeper extends EventEmitter {
 					`[account=${account} liquidator=${liquidator}]`
 				);
 
-				if (account in this.liquidateRoutines) {
-					this.liquidateRoutines[account].cancel();
-					delete this.liquidateRoutines[account];
-				}
+				delete this.positions[account];
+			} else if (event == 'OrderCancelled') {
+				const { id: orderId, account } = args;
+				console.log('FuturesMarket', blue('OrderCancelled'), `[id=${orderId} account=${account}]`);
+
+				delete this.orders[orderId];
+			} else {
+				console.log('FuturesMarket', blue(event), 'No handler');
 			}
 		});
 	}
 
 	async confirmOrder(id, account) {
-		console.log(
-			`FuturesMarket [${this.futuresMarket.address}]`,
-			`begin canConfirmOrder [id=${id}]`
-		);
+		// console.log(
+		// 	`FuturesMarket [${this.futuresMarket.address}]`,
+		// 	`begin canConfirmOrder [id=${id}]`
+		// );
 		const canConfirmOrder = await this.futuresMarket.canConfirmOrder(account);
 		if (!canConfirmOrder) {
-			console.error(
-				`FuturesMarket [${this.futuresMarket.address}]`,
-				`cannot confirm order [id=${id}]`
-			);
+			// console.error(
+			// 	`FuturesMarket [${this.futuresMarket.address}]`,
+			// 	`cannot confirm order [id=${id}]`
+			// );
 			return;
 		}
 
@@ -133,13 +163,13 @@ class Keeper extends EventEmitter {
 			});
 			receipt = await confirmOrderTx.wait(1);
 		} catch (err) {
-			console.log(red(err));
+			throw err;
 			return;
 		}
 
 		console.log(
 			`FuturesMarket [${this.futuresMarket.address}]`,
-			`done confirmOrder [id=${id}]`,
+			green`done confirmOrder [id=${id}]`,
 			`success=${!!receipt.status}`,
 			`tx=${receipt.transactionHash}`,
 			yellow(`gasUsed=${receipt.gasUsed}`)
@@ -147,10 +177,10 @@ class Keeper extends EventEmitter {
 	}
 
 	async liquidateOrder(id, account) {
-		console.log(
-			`FuturesMarket [${this.futuresMarket.address}]`,
-			`checking canLiquidate [id=${id}]`
-		);
+		// console.log(
+		// 	`FuturesMarket [${this.futuresMarket.address}]`,
+		// 	`checking canLiquidate [id=${id}]`
+		// );
 		const canLiquidateOrder = await this.futuresMarket.canLiquidate(account);
 		if (!canLiquidateOrder) {
 			// console.log(
@@ -160,10 +190,10 @@ class Keeper extends EventEmitter {
 			return;
 		}
 
-		console.log(
-			`FuturesMarket [${this.futuresMarket.address}]`,
-			`begin liquidatePosition [id=${id}]`
-		);
+		// console.log(
+		// 	`FuturesMarket [${this.futuresMarket.address}]`,
+		// 	`begin liquidatePosition [id=${id}]`
+		// );
 		let tx, receipt;
 
 		try {

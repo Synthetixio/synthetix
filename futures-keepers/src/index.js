@@ -41,7 +41,8 @@ async function main() {
 		pollInterval,
 		provider,
 	});
-	keeper.run();
+	const FROM_BLOCK = 423;
+	keeper.run({ fromBlock: FROM_BLOCK || 'latest' });
 
 	await new Promise((resolve, reject) => {});
 }
