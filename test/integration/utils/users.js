@@ -13,6 +13,7 @@ async function loadUsers({ ctx, network }) {
 	ctx.users = {};
 	ctx.users.owner = wallets[0];
 	ctx.users.someUser = wallets[1];
+	ctx.users.otherUser = wallets[2];
 }
 
 function _getWallets({ provider }) {
