@@ -2,7 +2,7 @@ const { wait } = require('./rpc');
 
 async function waitForEvent(contract, filter, fromBlockNumber, timeout = 7500) {
 	const timeoutFn = async () => {
-		await new Promise((resolve, reject) => setTimeout(resolve, timeout));
+		await new Promise((resolve, reject) => setTimeout(() => resolve(), timeout));
 		return [];
 	};
 
