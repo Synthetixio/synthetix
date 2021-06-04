@@ -1,10 +1,10 @@
 const { bootstrapL2 } = require('../utils/bootstrap');
 const { itConfirmsOrders, itLiquidatesOrders } = require('../behaviors/futures-keepers.behavior');
 
-describe.only('futures keepers integration tests (L2)', () => {
+describe('futures keepers integration tests (L2)', () => {
 	const ctx = this;
 	bootstrapL2({ ctx });
 
-	// itConfirmsOrders({ ctx });
+	itConfirmsOrders({ ctx });
 	itLiquidatesOrders({ ctx });
 });
