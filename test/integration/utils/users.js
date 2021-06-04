@@ -6,12 +6,13 @@ async function loadUsers({ ctx, network }) {
 	ctx.users = {};
 	ctx.users.owner = wallets[0];
 	ctx.users.someUser = wallets[1];
+	ctx.users.wallets = wallets;
 }
 
 function _createWallets({ provider }) {
 	const wallets = [];
 
-	for (let i = 0; i < 10; i++) {
+	for (let i = 0; i < 20; i++) {
 		wallets.push(new ethers.Wallet(getPrivateKey({ index: i }), provider));
 	}
 
