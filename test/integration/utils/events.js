@@ -1,16 +1,22 @@
 const { wait } = require('./rpc');
 
-async function waitForEvent(contract, filter, fromBlockNumber, timeout = 7500) {
-	const timeoutFn = async () => {
-		await new Promise((resolve, reject) => setTimeout(() => resolve(), timeout));
-		return [];
-	};
+async function waitForEvent(
+	contract,
+	filter,
+	fromBlockNumber,
+	timeout = 7500,
+	pollInterval = 1 / 1000
+) {
+	const timeoutFn = () =>
+		new Promise((resolve, reject) =>
+			setTimeout(() => reject(new Error('Timed out while waiting for event')), timeout)
+		);
 
 	const eventPolling = async () => {
 		while (true) {
 			const events = await contract.queryFilter(filter, fromBlockNumber, 'latest');
 			if (events.length) return events;
-			await wait(0.5);
+			await wait(pollInterval);
 		}
 	};
 
