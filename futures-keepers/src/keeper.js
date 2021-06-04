@@ -6,6 +6,7 @@ const ExchangeRatesABI = require('synthetix/build/artifacts/contracts/ExchangeRa
 	.abi;
 
 const DEFAULT_GAS_PRICE = '0';
+const SignerPool = require('./signer-pool');
 
 class Keeper {
 	// The index.
@@ -13,6 +14,7 @@ class Keeper {
 		proxyFuturesMarket: proxyFuturesMarketAddress,
 		exchangeRates: exchangeRatesAddress,
 		signer,
+		signers,
 		provider,
 	}) {
 		// The index.
@@ -33,6 +35,7 @@ class Keeper {
 
 		this.blockTip = null;
 		this.provider = provider;
+		this.signers = new SignerPool(signers);
 	}
 
 	async run({ fromBlock }) {
@@ -148,14 +151,12 @@ class Keeper {
 	async runKeepers() {
 		// Unconfirmed orders.
 		for (const { orderId, account } of Object.values(this.orders)) {
-			await this.runKeeperTask(`${orderId}-confirm`, () => this.confirmOrder(orderId, account));
+			this.runKeeperTask(`${orderId}-confirm`, () => this.confirmOrder(orderId, account));
 		}
 
 		// Open positions.
 		for (const { orderId, account } of Object.values(this.positions)) {
-			await this.runKeeperTask(`${orderId}-liquidation`, () =>
-				this.liquidateOrder(orderId, account)
-			);
+			this.runKeeperTask(`${orderId}-liquidation`, () => this.liquidateOrder(orderId, account));
 		}
 	}
 
@@ -191,11 +192,14 @@ class Keeper {
 		let tx, receipt;
 
 		try {
-			tx = await this.futuresMarket.confirmOrder(account, {
-				gasPrice: DEFAULT_GAS_PRICE,
-				gasLimit: '7500000',
+			await this.signers.withSigner(async signer => {
+				tx = await this.futuresMarket.connect(signer).confirmOrder(account, {
+					gasPrice: DEFAULT_GAS_PRICE,
+				});
+
+				console.log(tx.nonce);
+				receipt = await tx.wait(1);
 			});
-			receipt = await tx.wait(1);
 		} catch (err) {
 			throw err;
 		}
@@ -231,11 +235,13 @@ class Keeper {
 		let tx, receipt;
 
 		try {
-			tx = await this.futuresMarket.liquidatePosition(account, {
-				gasPrice: DEFAULT_GAS_PRICE,
-				gasLimit: '7500000',
+			await this.signers.withSigner(async signer => {
+				tx = await this.futuresMarket.connect(signer).liquidatePosition(account, {
+					gasPrice: DEFAULT_GAS_PRICE,
+				});
+				console.log(tx.nonce);
+				receipt = await tx.wait(1);
 			});
-			receipt = await tx.wait(1);
 		} catch (err) {
 			throw err;
 		}
