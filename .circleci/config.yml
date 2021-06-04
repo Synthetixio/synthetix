@@ -433,21 +433,6 @@ workflows:
       - job-integration-tests:
           requires:
             - job-prepare
-      - job-prod-tests:
-          requires:
-            - job-prepare
-      - job-prod-tests-ovm:
-          name: job-prod-tests-ovm
-          requires:
-            - job-prepare
-      - job-prod-diff-tests-local:
-          name: job-prod-diff-tests-local
-          requires:
-            - job-prepare
-      - job-prod-diff-tests:
-          name: job-prod-diff-tests-mainnet
-          requires:
-            - job-prepare
       - job-pack-browser:
           requires:
             - job-prepare
