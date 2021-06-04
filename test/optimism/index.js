@@ -136,6 +136,7 @@ describe('Layer 2 production tests', () => {
 			async function tweakSettings({ provider, owner, useOvm }) {
 				let SystemSettings = connectContract({
 					contract: 'SystemSettings',
+					source: useOvm ? 'SystemSettings' : 'SystemSettingsL1',
 					provider,
 					useOvm,
 				});
