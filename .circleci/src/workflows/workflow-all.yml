@@ -37,21 +37,6 @@ jobs:
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Prod tests
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # - job-prod-tests:
-  #     {{> require-prepare.yml}}
-  # - job-prod-tests-ovm:
-  #     name: job-prod-tests-ovm
-  #     {{> require-prepare.yml}}
-  # - job-prod-diff-tests-local:
-  #     name: job-prod-diff-tests-local
-  #     {{> require-prepare.yml}}
-  # - job-prod-diff-tests:
-  #     name: job-prod-diff-tests-mainnet
-  #     {{> require-prepare.yml}}
-
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Packaging
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-pack-browser:
