@@ -48,13 +48,13 @@ class Deployer {
 		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
 		/*
-		 provider is defined here to hold backwards compatible web3 component as well as ethers
-		 while the migration is completed. After all web3 references are replaced by ethers,
-		 web3 provider will be removed. The aim is to get rid of all references to web3 and web3_utils
-		 in the project.
+		provider is defined here to hold backwards compatible web3 component as well as ethers
+		while the migration is completed. After all web3 references are replaced by ethers,
+		web3 provider will be removed. The aim is to get rid of all references to web3 and web3_utils
+		in the project.
 
-		 web3 and/or ethers is needed to interact with the contracts and sing transactions
-		 */
+		web3 and/or ethers is needed to interact with the contracts and sign transactions
+		*/
 		this.provider = { web3: {}, ethers: {} };
 		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 		this.provider.ethers.ro = ethers.getDefaultProvider(providerUrl);
@@ -69,6 +69,7 @@ class Deployer {
 			this.provider.web3.eth.defaultAccount = this.provider.web3.eth.accounts.wallet[0].address;
 
 			this.provider.ethers.wallet = new ethers.Wallet(privateKey);
+			this.provider.ethers.signer = this.provider.ethers.wallet; // alias to use the default name in ethers documentation
 			this.provider.ethers.defaultAccount = this.provider.ethers.wallet.address;
 		}
 		this.account = this.provider.ethers.defaultAccount;
@@ -83,7 +84,7 @@ class Deployer {
 	}
 
 	async evaluateNextDeployedContractAddress() {
-		const nonce = await this.provider.web3.eth.getTransactionCount(this.account);
+		const nonce = await this.provider.ethers.getTransactionCount(this.account);
 		const rlpEncoded = ethers.utils.RLP.encode([this.account, ethers.utils.hexlify(nonce)]);
 		const hashed = ethers.utils.keccak256(rlpEncoded); // const hashed = this.web3.utils.sha3(rlpEncoded);
 
@@ -121,11 +122,11 @@ class Deployer {
 		}
 
 		const types = inputs.map(input => input.type);
-		return this.provider.web3.eth.abi.encodeParameters(types, params);
+		return ethers.utils.defaultAbiCoder.encode(types, params);
 	}
 
 	async sendDummyTx() {
-		await this.provider.web3.eth.sendTransaction({
+		await this.provider.ethers.wallet.sendTransaction({
 			from: this.account,
 			to: '0x0000000000000000000000000000000000000001',
 			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
@@ -277,6 +278,7 @@ class Deployer {
 					}
 				}
 
+				// TODO: find ethers replacement -- const newContract = ethers.ContractFactory.fromSolidity(compiled.abi, this.provider.ethers.signer);
 				const newContract = new this.provider.web3.eth.Contract(compiled.abi);
 				deployedContract = await newContract
 					.deploy({
@@ -296,7 +298,7 @@ class Deployer {
 			// the contract's constructor parameters are unsafe.
 			// This check is probably redundant given the previous check, but just in case...
 			if (this.useOvm && !dryRun) {
-				const code = await this.provider.web3.eth.getCode(deployedContract.options.address);
+				const code = await this.provider.ethers.getCode(deployedContract.options.address);
 
 				if (code.length === 2) {
 					throw new Error(`Contract deployment resulted in a contract with no bytecode: ${code}`);

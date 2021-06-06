@@ -3,8 +3,8 @@
 const { gray } = require('chalk');
 
 class NonceManager {
-	constructor({ web3, account }) {
-		this.web3 = web3;
+	constructor({ ethers, account }) {
+		this.ethers = ethers;
 		this.account = account;
 		this.storedNonces = {};
 	}
@@ -12,7 +12,7 @@ class NonceManager {
 	async getNonce() {
 		if (!this.storedNonces[this.account]) {
 			this.storedNonces[this.account] = parseInt(
-				(await this.web3.eth.getTransactionCount(this.account)).toString(),
+				(await this.ethers.eth.getTransactionCount(this.account)).toString(),
 				10
 			);
 		}
