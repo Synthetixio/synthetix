@@ -9384,7 +9384,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0x52f445ca"
 				},
 				{
 					"constant": true,
@@ -9398,7 +9399,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x53a47bb7"
 				},
 				{
 					"constant": false,
@@ -9412,7 +9414,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0x5b94db27"
 				},
 				{
 					"constant": true,
@@ -9431,7 +9434,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x70a08231"
 				},
 				{
 					"constant": false,
@@ -9440,7 +9444,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0x79ba5097"
 				},
 				{
 					"constant": true,
@@ -9454,7 +9459,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0x8da5cb5b"
 				},
 				{
 					"constant": true,
@@ -9468,7 +9474,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0xaefc4ccb"
 				},
 				{
 					"constant": false,
@@ -9486,7 +9493,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0xb46310f6"
 				},
 				{
 					"constant": false,
@@ -9508,7 +9516,8 @@
 					"outputs": [],
 					"payable": false,
 					"stateMutability": "nonpayable",
-					"type": "function"
+					"type": "function",
+					"signature": "0xda46098c"
 				},
 				{
 					"constant": true,
@@ -9531,7 +9540,8 @@
 					],
 					"payable": false,
 					"stateMutability": "view",
-					"type": "function"
+					"type": "function",
+					"signature": "0xdd62ed3e"
 				},
 				{
 					"inputs": [
@@ -9558,7 +9568,8 @@
 						}
 					],
 					"name": "AssociatedContractUpdated",
-					"type": "event"
+					"type": "event",
+					"signature": "0x73f20cff579e8a4086fa607db83867595f1b6a798e718c0bfa0b94a404128e03"
 				},
 				{
 					"anonymous": false,
@@ -9570,7 +9581,8 @@
 						}
 					],
 					"name": "OwnerNominated",
-					"type": "event"
+					"type": "event",
+					"signature": "0x906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce22"
 				},
 				{
 					"anonymous": false,
@@ -9587,7 +9599,8 @@
 						}
 					],
 					"name": "OwnerChanged",
-					"type": "event"
+					"type": "event",
+					"signature": "0xb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c"
 				}
 			]
 		},
@@ -14467,7 +14480,6 @@
 					"outputs": [
 						{
 							"internalType": "contract IFeePool",
-
 							"name": "",
 							"type": "address"
 						}
