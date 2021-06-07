@@ -24,32 +24,40 @@ module.exports = async ({
 	// Legacy contracts.
 	if (network === 'mainnet') {
 		// v2.35.2 contracts.
+		// TODO  -fetch these from getVersions()
 		const CollateralEth = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
-		const CollateralErc20REN = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
+		const CollateralErc20 = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46'; // REN
 		const CollateralShort = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
 
 		const legacyContracts = Object.entries({
 			CollateralEth,
-			CollateralErc20REN,
+			CollateralErc20,
 			CollateralShort,
 		}).map(([name, address]) => {
-			const contract = new deployer.provider.web3.eth.Contract(
+			const target = new deployer.provider.web3.eth.Contract(
 				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
 				address
 			);
-			return [`legacy:${name}`, contract];
+			target.options.source = name;
+			target.options.address = address;
+			return [`legacy_${name}`, target];
 		});
 
 		await Promise.all(
-			legacyContracts.map(async ([name, contract]) => {
+			legacyContracts.map(async ([name, target]) => {
 				return runStep({
 					gasLimit: 7e6,
 					contract: name,
-					target: contract,
+					target,
 					read: 'isResolverCached',
 					expected: input => input,
 					publiclyCallable: true, // does not require owner
 					write: 'rebuildCache',
+					// these updates are tricky to Soliditize, and aren't
+					// owner required and aren't critical to the core, so
+					// let's skip them in the migration script
+					// and a re-run of the deploy script will catch them
+					skipSolidity: true,
 				});
 			})
 		);

@@ -5,7 +5,7 @@ const { toBytes32 } = require('../../../..');
 
 const { reportDeployedContracts } = require('../../util');
 
-module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep }) => {
+module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, useFork }) => {
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
@@ -73,7 +73,7 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep }) 
 			)
 		);
 
-		if (!dryRun) {
+		if (!dryRun && !useFork) {
 			if (deployer.newContractsDeployed.length > 0) {
 				reportDeployedContracts({ deployer });
 			}

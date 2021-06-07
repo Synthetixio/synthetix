@@ -59,6 +59,7 @@ const deploy = async ({
 	deploymentPath,
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
+	forkAsOwner = false,
 	freshDeploy,
 	gasPrice = DEFAULTS.gasPrice,
 	generateSolidity = false,
@@ -191,6 +192,7 @@ const deploy = async ({
 		configFile,
 		deployment,
 		deploymentFile,
+		forkAsOwner,
 		gasPrice,
 		methodCallGasLimit,
 		network,
@@ -260,7 +262,7 @@ const deploy = async ({
 		});
 
 		// only track when there's an operation required
-		if (!noop) {
+		if (!noop && !opts.skipSolidity) {
 			runSteps.push(opts);
 		}
 
@@ -317,6 +319,7 @@ const deploy = async ({
 		dryRun,
 		limitPromise,
 		runStep,
+		useFork,
 	});
 
 	await rebuildResolverCaches({
@@ -448,6 +451,7 @@ module.exports = {
 				'-f, --fee-auth <value>',
 				'The address of the fee authority for this network (default is to use existing)'
 			)
+			.option('--fork-as-owner', 'When enabled will pown the owner and use it to deploy')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('--generate-solidity <value>', 'A path to a solidity file to generate')
 			.option(
