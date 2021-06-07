@@ -14,7 +14,7 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 		const providerPortL1 = (hre.config.providerPortL1 = '9545');
 		const providerPortL2 = (hre.config.providerPortL2 = '8545');
 
-		const timeout = 5 * 60 * 1000;
+		const timeout = 600000;
 		hre.config.mocha.timeout = timeout;
 		hre.config.mocha.bail = false;
 		hre.config.networks.localhost.timeout = timeout;
