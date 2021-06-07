@@ -297,10 +297,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     function closeInternal(address borrower, uint id) internal rateIsValid returns (uint amount, uint collateral) {
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
+        // Record loan as closed.
         (amount, collateral) = _closeLoan(borrower, borrower, loan);
-
-        // 10. Record loan as closed.
-        loan.interestIndex = 0;
 
         // 11. Emit the event
         emit LoanClosed(borrower, id);
@@ -312,9 +310,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         Loan storage loan
     ) internal returns (uint amount, uint collateral) {
         (amount, collateral) = _closeLoan(borrower, liquidator, loan);
-
-        // 7. Record loan as closed
-        loan.interestIndex = 0;
 
         // 8. Emit the event.
         // TODO: could use the same event in closeInternal if renamed possibly
@@ -351,6 +346,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 6. Pay fees
         _payFees(loan.accruedInterest, loan.currency);
+
+        // 7. Record loan as closed setting interestIndex = 0
+        loan.interestIndex = 0;
     }
 
     function depositInternal(
