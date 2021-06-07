@@ -13,12 +13,12 @@ async function ensureBalance({ ctx, symbol, user, balance }) {
 }
 
 async function _readBalance({ ctx, symbol, user }) {
-	if (symbol === 'ETH') {
-		return ctx.provider.getBalance(user.address);
-	} else {
+	if (symbol !== 'ETH') {
 		const token = _getTokenFromSymbol({ ctx, symbol });
 
 		return token.balanceOf(user.address);
+	} else {
+		return ctx.provider.getBalance(user.address);
 	}
 }
 
@@ -32,7 +32,9 @@ async function _getAmount({ ctx, symbol, user, amount }) {
 	} else if (symbol === 'ETH') {
 		await _getETHFromOtherUsers({ ctx, user, amount });
 	} else {
-		throw new Error('TODO: Ability to ensure non sUSD synth balance not yet implemented');
+		throw new Error(
+			`Symbol ${symbol} not yet supported. TODO: Support via exchanging sUSD to other Synths.`
+		);
 	}
 }
 

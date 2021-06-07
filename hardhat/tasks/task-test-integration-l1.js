@@ -20,7 +20,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		const providerUrl = (hre.config.providerUrl = 'http://localhost');
 		const providerPort = (hre.config.providerPort = taskArguments.providerPort);
 
-		const timeout = 600000;
+		const timeout = 600000; // 10m
 		hre.config.mocha.timeout = timeout;
 		hre.config.mocha.bail = false;
 		hre.config.networks.localhost.timeout = timeout;
