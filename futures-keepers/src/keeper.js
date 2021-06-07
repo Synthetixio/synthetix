@@ -36,6 +36,13 @@ class Keeper {
 		this.blockTip = null;
 		this.provider = provider;
 		this.signers = new SignerPool(signers);
+		this.signers = {
+			withSigner: cb => {
+				return cb(signers[0]);
+			},
+		};
+
+		this.futuresMarket = this.futuresMarket.connect(signers[0]);
 	}
 
 	async run({ fromBlock }) {
@@ -51,7 +58,7 @@ class Keeper {
 			} positions to keep`
 		);
 		console.log(gray(`Starting keeper loop`));
-		this.runKeepers();
+		await this.runKeepers();
 
 		console.log(`Listening for events on FuturesMarket [${this.futuresMarket.address}]`);
 		this.provider.on('block', async blockNumber => {
@@ -70,7 +77,7 @@ class Keeper {
 		// keeper tasks that need running that aren't already active.
 		while (1) {
 			if (!this.blockQueue.length) {
-				await new Promise((resolve, reject) => setTimeout(resolve, 0.001));
+				await new Promise((resolve, reject) => setTimeout(resolve, 30));
 				continue;
 			}
 
@@ -151,7 +158,7 @@ class Keeper {
 	async runKeepers() {
 		// Unconfirmed orders.
 		for (const { orderId, account } of Object.values(this.orders)) {
-			this.runKeeperTask(`${orderId}-confirm`, () => this.confirmOrder(orderId, account));
+			await this.runKeeperTask(`${orderId}-confirm`, () => this.confirmOrder(orderId, account));
 		}
 
 		// Open positions.
@@ -193,9 +200,11 @@ class Keeper {
 
 		try {
 			await this.signers.withSigner(async signer => {
-				tx = await this.futuresMarket.connect(signer).confirmOrder(account, {
+				console.time();
+				tx = await this.futuresMarket.confirmOrder(account, {
 					gasPrice: DEFAULT_GAS_PRICE,
 				});
+				console.timeEnd();
 
 				console.log(tx.nonce);
 				receipt = await tx.wait(1);
