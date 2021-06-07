@@ -84,7 +84,7 @@ class Deployer {
 	}
 
 	async evaluateNextDeployedContractAddress() {
-		const nonce = await this.provider.ethers.getTransactionCount(this.account);
+		const nonce = await this.provider.ethers.signer.getTransactionCount();
 		const rlpEncoded = ethers.utils.RLP.encode([this.account, ethers.utils.hexlify(nonce)]);
 		const hashed = ethers.utils.keccak256(rlpEncoded); // const hashed = this.web3.utils.sha3(rlpEncoded);
 
