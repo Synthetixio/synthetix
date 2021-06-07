@@ -16,11 +16,26 @@ async function ensureBalance({ ctx, symbol, user, balance }) {
 async function _getTokens({ ctx, symbol, user, amount }) {
 	if (symbol === 'SNX') {
 		await _getSNX({ ctx, user, amount });
+	} else if (symbol === 'WETH') {
+		await _getWETH({ ctx, user, amount });
 	} else if (symbol === 'sUSD') {
 		await _getsUSD({ ctx, user, amount });
+	} else if (symbol === 'ETH') {
+		throw new Error('TODO: Ability to ensure ETH balance not yet implemented');
 	} else {
-		// TODO: will need to get SNX and then exchange
+		throw new Error('TODO: Ability to ensure non sUSD synth balance not yet implemented');
 	}
+}
+
+async function _getWETH({ ctx, user, amount }) {
+	let { WETH } = ctx.contracts;
+	WETH = WETH.connect(user);
+
+	const tx = await WETH.deposit({
+		value: amount,
+	});
+
+	await tx.wait();
 }
 
 async function _getSNX({ ctx, user, amount }) {
@@ -113,6 +128,8 @@ async function _getSNXAmountRequiredForsUSDAmount({ ctx, amount }) {
 function _getTokenFromSymbol({ ctx, symbol }) {
 	if (symbol === 'SNX') {
 		return ctx.contracts.Synthetix;
+	} else if (symbol === 'WETH') {
+		return ctx.contracts.WETH;
 	} else {
 		return ctx.contracts[`Synth${symbol}`];
 	}
