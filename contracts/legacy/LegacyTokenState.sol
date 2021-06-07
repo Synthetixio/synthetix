@@ -3,7 +3,7 @@ pragma solidity ^0.4.20;
 
 import "./LegacyOwned.sol";
 
-contract TokenState is LegacyOwned {
+contract LgeacyTokenState is LegacyOwned {
     // the address of the contract that can modify balances and allowances
     // this can only be changed by the owner of this contract
     address public associatedContract;
@@ -12,7 +12,7 @@ contract TokenState is LegacyOwned {
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
-    function TokenState(address _owner, address _associatedContract) public LegacyOwned(_owner) {
+    constructor(address _owner, address _associatedContract) public LegacyOwned(_owner) {
         associatedContract = _associatedContract;
         emit AssociatedContractUpdated(_associatedContract);
     }

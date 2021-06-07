@@ -5,7 +5,7 @@ contract LegacyOwned {
     address public owner;
     address public nominatedOwner;
 
-    function LegacyOwned(address _owner) public {
+    constructor(address _owner) public {
         owner = _owner;
     }
 
