@@ -106,7 +106,7 @@ function itCanStake({ ctx }) {
 				const newDebtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));
 				const debtReduction = debtsUSD.sub(newDebtsUSD);
 
-				const tolerance = ethers.utils.parseUnits('40', 'gwei');
+				const tolerance = ethers.utils.parseUnits('0.01', 'ether');
 				assert.bnClose(
 					debtReduction.toString(),
 					amountToIssueAndBurnsUSD.toString(),

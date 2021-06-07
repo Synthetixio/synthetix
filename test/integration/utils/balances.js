@@ -3,17 +3,26 @@ const { deposit } = require('./bridge');
 const { toBytes32 } = require('../../..');
 
 async function ensureBalance({ ctx, symbol, user, balance }) {
-	const token = _getTokenFromSymbol({ ctx, symbol });
-	const currentBalance = await token.balanceOf(user.address);
+	const currentBalance = await _readBalance({ ctx, symbol, user });
 
 	if (currentBalance.lt(balance)) {
 		const amount = balance.sub(currentBalance);
 
-		await _getTokens({ ctx, symbol, user, amount });
+		await _getAmount({ ctx, symbol, user, amount });
 	}
 }
 
-async function _getTokens({ ctx, symbol, user, amount }) {
+async function _readBalance({ ctx, symbol, user }) {
+	if (symbol === 'ETH') {
+		return ctx.provider.getBalance(user.address);
+	} else {
+		const token = _getTokenFromSymbol({ ctx, symbol });
+
+		return token.balanceOf(user.address);
+	}
+}
+
+async function _getAmount({ ctx, symbol, user, amount }) {
 	if (symbol === 'SNX') {
 		await _getSNX({ ctx, user, amount });
 	} else if (symbol === 'WETH') {
@@ -21,13 +30,42 @@ async function _getTokens({ ctx, symbol, user, amount }) {
 	} else if (symbol === 'sUSD') {
 		await _getsUSD({ ctx, user, amount });
 	} else if (symbol === 'ETH') {
-		throw new Error('TODO: Ability to ensure ETH balance not yet implemented');
+		await _getETHFromOtherUsers({ ctx, user, amount });
 	} else {
 		throw new Error('TODO: Ability to ensure non sUSD synth balance not yet implemented');
 	}
 }
 
+async function _getETHFromOtherUsers({ ctx, user, amount }) {
+	for (const otherUser of Object.values(ctx.users)) {
+		if (otherUser.address === user.address) {
+			continue;
+		}
+
+		const otherUserBalance = await ctx.provider.getBalance(otherUser.address);
+		if (otherUserBalance.gte(ethers.utils.parseEther('1000'))) {
+			const tx = await otherUser.sendTransaction({
+				to: user.address,
+				value: amount,
+			});
+
+			await tx.wait();
+
+			return;
+		}
+	}
+
+	throw new Error('Unable to get ETH');
+}
+
 async function _getWETH({ ctx, user, amount }) {
+	const ethBalance = await ctx.provider.getBalance(user.address);
+	if (ethBalance.lt(amount)) {
+		const needed = amount.sub(ethBalance);
+
+		await _getETHFromOtherUsers({ ctx, user, amount: needed });
+	}
+
 	let { WETH } = ctx.contracts;
 	WETH = WETH.connect(user);
 
