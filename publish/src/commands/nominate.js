@@ -121,8 +121,12 @@ const nominate = async ({
 		if (account.toLowerCase() !== currentOwner) {
 			console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
-			console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
-			await deployedContract.methods.nominateNewOwner(newOwner).send({
+			// check for legacy function
+			const nominationFnc =
+				'nominateOwner' in deployedContract.methods ? 'nominateOwner' : 'nominateNewOwner';
+
+			console.log(yellow(`Invoking ${contract}.${nominationFnc}(${newOwner})`));
+			await deployedContract.methods[nominationFnc](newOwner).send({
 				from: account,
 				gas: gasLimit,
 				gasPrice: w3utils.toWei(gasPrice, 'gwei'),

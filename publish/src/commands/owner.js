@@ -44,6 +44,7 @@ const owner = async ({
 	privateKey,
 	yes,
 	useOvm,
+	useFork,
 	providerUrl,
 }) => {
 	ensureNetwork(network);
@@ -72,6 +73,7 @@ const owner = async ({
 
 	const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
+		useFork,
 	});
 	if (!providerUrl) {
 		if (!envProviderUrl) {
@@ -102,8 +104,15 @@ const owner = async ({
 		}
 	}
 
-	web3.eth.accounts.wallet.add(privateKey);
-	const account = web3.eth.accounts.wallet[0].address;
+	let account;
+	if (useFork) {
+		web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		account = web3.eth.defaultAccount;
+	} else {
+		web3.eth.accounts.wallet.add(privateKey);
+		account = web3.eth.accounts.wallet[0].address;
+	}
+
 	console.log(gray(`Using account with public key ${account}`));
 
 	if (!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
@@ -275,7 +284,7 @@ const owner = async ({
 			else console.log(yellow(`Calling acceptOwnership() on ${contract}...`));
 
 			try {
-				if (isContract) {
+				if (isContract && !useFork) {
 					const { txHash, newNonce } = await getNewTransactionHash({
 						safeContract: protocolDaoContract,
 						data: encodedData,
@@ -341,6 +350,11 @@ module.exports = {
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+			)
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
 			)
 			.option(
 				'-o, --new-owner <value>',
