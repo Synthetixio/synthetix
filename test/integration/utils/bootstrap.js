@@ -26,6 +26,11 @@ function bootstrapL2({ ctx }) {
 		ctx.useOvm = true;
 
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
+		if (ctx.provider.pollingInterval) {
+			// L2 mines very quickly. For non-websocket providers, we set the polling interval
+			// to match this speed of block production.
+			ctx.provider.pollingInterval = 1;
+		}
 		ctx.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
 		await loadUsers({ ctx });
@@ -57,6 +62,9 @@ function bootstrapDual({ ctx }) {
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
 		ctx.l2.provider.getGasPrice = () => ethers.BigNumber.from('0');
+		if (ctx.l2.provider.pollingInterval) {
+			ctx.l2.provider.pollingInterval = 1;
+		}
 
 		const response = await axios.get(`${hre.config.providerUrl}:8080/addresses.json`);
 		const addresses = response.data;
