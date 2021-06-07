@@ -16,6 +16,11 @@ function bootstrapL1({ ctx }) {
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
 		await loadUsers({ ctx });
+		if (ctx.fork) {
+			for (const user of Object.values(ctx.users)) {
+				await ensureBalance({ ctx, symbol: 'ETH', user, balance: ethers.utils.parseEther('50') });
+			}
+		}
 
 		connectContracts({ ctx });
 

@@ -3,24 +3,79 @@ const { deposit } = require('./bridge');
 const { toBytes32 } = require('../../..');
 
 async function ensureBalance({ ctx, symbol, user, balance }) {
-	const token = _getTokenFromSymbol({ ctx, symbol });
-	const currentBalance = await token.balanceOf(user.address);
+	const currentBalance = await _readBalance({ ctx, symbol, user });
 
 	if (currentBalance.lt(balance)) {
 		const amount = balance.sub(currentBalance);
 
-		await _getTokens({ ctx, symbol, user, amount });
+		await _getAmount({ ctx, symbol, user, amount });
 	}
 }
 
-async function _getTokens({ ctx, symbol, user, amount }) {
+async function _readBalance({ ctx, symbol, user }) {
+	if (symbol !== 'ETH') {
+		const token = _getTokenFromSymbol({ ctx, symbol });
+
+		return token.balanceOf(user.address);
+	} else {
+		return ctx.provider.getBalance(user.address);
+	}
+}
+
+async function _getAmount({ ctx, symbol, user, amount }) {
 	if (symbol === 'SNX') {
 		await _getSNX({ ctx, user, amount });
+	} else if (symbol === 'WETH') {
+		await _getWETH({ ctx, user, amount });
 	} else if (symbol === 'sUSD') {
 		await _getsUSD({ ctx, user, amount });
+	} else if (symbol === 'ETH') {
+		await _getETHFromOtherUsers({ ctx, user, amount });
 	} else {
-		// TODO: will need to get SNX and then exchange
+		throw new Error(
+			`Symbol ${symbol} not yet supported. TODO: Support via exchanging sUSD to other Synths.`
+		);
 	}
+}
+
+async function _getETHFromOtherUsers({ ctx, user, amount }) {
+	for (const otherUser of Object.values(ctx.users)) {
+		if (otherUser.address === user.address) {
+			continue;
+		}
+
+		const otherUserBalance = await ctx.provider.getBalance(otherUser.address);
+		if (otherUserBalance.gte(ethers.utils.parseEther('1000'))) {
+			const tx = await otherUser.sendTransaction({
+				to: user.address,
+				value: amount,
+			});
+
+			await tx.wait();
+
+			return;
+		}
+	}
+
+	throw new Error('Unable to get ETH');
+}
+
+async function _getWETH({ ctx, user, amount }) {
+	const ethBalance = await ctx.provider.getBalance(user.address);
+	if (ethBalance.lt(amount)) {
+		const needed = amount.sub(ethBalance);
+
+		await _getETHFromOtherUsers({ ctx, user, amount: needed });
+	}
+
+	let { WETH } = ctx.contracts;
+	WETH = WETH.connect(user);
+
+	const tx = await WETH.deposit({
+		value: amount,
+	});
+
+	await tx.wait();
 }
 
 async function _getSNX({ ctx, user, amount }) {
@@ -113,6 +168,8 @@ async function _getSNXAmountRequiredForsUSDAmount({ ctx, amount }) {
 function _getTokenFromSymbol({ ctx, symbol }) {
 	if (symbol === 'SNX') {
 		return ctx.contracts.Synthetix;
+	} else if (symbol === 'WETH') {
+		return ctx.contracts.WETH;
 	} else {
 		return ctx.contracts[`Synth${symbol}`];
 	}
