@@ -23,7 +23,6 @@ class Deployer {
 		deployment,
 		deploymentFile,
 		dryRun,
-		forkAsOwner,
 		gasPrice,
 		methodCallGasLimit,
 		network,
@@ -61,7 +60,7 @@ class Deployer {
 		this.provider.ethers.ro = ethers.getDefaultProvider(providerUrl);
 		this.provider.ethers.transactional = null;
 
-		if ((useFork && forkAsOwner) || (!privateKey && network === 'local')) {
+		if (useFork || (!privateKey && network === 'local')) {
 			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
 
 			this.provider.ethers.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
