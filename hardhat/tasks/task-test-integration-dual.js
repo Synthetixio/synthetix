@@ -40,7 +40,7 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 		}
 
 		if (taskArguments.compileOvm) {
-			await compileInstance({ useOvm: true, buildPath: buildPathEvm });
+			await compileInstance({ useOvm: true, buildPath: buildPathOvm });
 		}
 
 		if (taskArguments.deployEvm) {
