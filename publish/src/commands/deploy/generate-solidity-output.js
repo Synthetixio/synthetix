@@ -26,7 +26,9 @@ module.exports = async ({
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
 
-	for (const { skipSolidity, contract, target, writeArg, write } of runSteps) {
+	for (const [runIndex, { skipSolidity, contract, target, writeArg, write }] of Object.entries(
+		runSteps
+	)) {
 		if (skipSolidity) {
 			continue;
 		}
@@ -50,7 +52,7 @@ module.exports = async ({
 				// arrays needs to be created in memory
 				const typeOfArrayElement = internalType.replace(/\[|\]/g, '').replace(/^contract /, '');
 
-				const variableName = `${contract.toLowerCase()}_${write}_${index}`;
+				const variableName = `${contract.toLowerCase()}_${write}_${runIndex}_${index}`;
 				instructions.push(
 					`${typeOfArrayElement}[] memory ${variableName} = new ${typeOfArrayElement}[](${argument.length})`
 				);
