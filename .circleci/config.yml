@@ -61,7 +61,7 @@ jobs:
             git fetch
             git checkout master
             git pull origin master
-            git checkout 86708bb5758cd2b647b3ca2be698beb5aa3af81f
+            git checkout 8082d16c306aab1e53a019ecbce7038d2f1415ca
             yarn
             yarn build
             cd ops
