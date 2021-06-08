@@ -73,7 +73,7 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 			)
 		);
 
-		if (!dryRun && !useFork) {
+		if (!dryRun) {
 			if (deployer.newContractsDeployed.length > 0) {
 				reportDeployedContracts({ deployer });
 			}
