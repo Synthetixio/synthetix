@@ -40,17 +40,17 @@ contract Migrator {
         addressresolver_importAddresses_0_0[0] = bytes32("Synthetix");
         addressresolver_importAddresses_0_0[1] = bytes32("Exchanger");
         address[] memory addressresolver_importAddresses_0_1 = new address[](2);
-        addressresolver_importAddresses_0_1[0] = address(0xb01850a6c664FEfF9945c6f74ff86572794A2a1f);
-        addressresolver_importAddresses_0_1[1] = address(0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914);
+        addressresolver_importAddresses_0_1[0] = address(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed);
+        addressresolver_importAddresses_0_1[1] = address(0x94bB8919B036B1396e32F76Ed5a24dC8116cA05c);
         addressresolver_i.importAddresses(addressresolver_importAddresses_0_0, addressresolver_importAddresses_0_1);
         MixinResolver[] memory addressresolver_rebuildCaches_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_1_0[0] = MixinResolver(0xd69b189020EF614796578AfE4d10378c5e7e1138);
         addressresolver_rebuildCaches_1_0[1] = MixinResolver(0xDA4eF8520b1A57D7d63f1E249606D1A459698876);
         addressresolver_rebuildCaches_1_0[2] = MixinResolver(0xAD95C918af576c82Df740878C3E983CBD175daB6);
         addressresolver_rebuildCaches_1_0[3] = MixinResolver(0xcf9E60005C9aca983caf65d3669a24fDd0775fc0);
-        addressresolver_rebuildCaches_1_0[4] = MixinResolver(0xb01850a6c664FEfF9945c6f74ff86572794A2a1f);
+        addressresolver_rebuildCaches_1_0[4] = MixinResolver(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed);
         addressresolver_rebuildCaches_1_0[5] = MixinResolver(0x9bB05EF2cA7DBAafFC3da1939D1492e6b00F39b8);
-        addressresolver_rebuildCaches_1_0[6] = MixinResolver(0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914);
+        addressresolver_rebuildCaches_1_0[6] = MixinResolver(0x94bB8919B036B1396e32F76Ed5a24dC8116cA05c);
         addressresolver_rebuildCaches_1_0[7] = MixinResolver(0xB774711F0BC1306ce892ef8C02D0476dCccB46B7);
         addressresolver_rebuildCaches_1_0[8] = MixinResolver(0x62922670313bf6b41C580143d1f6C173C5C20019);
         addressresolver_rebuildCaches_1_0[9] = MixinResolver(0xCd9D4988C0AE61887B075bA77f08cbFAd2b65068);
@@ -127,13 +127,13 @@ contract Migrator {
         addressresolver_rebuildCaches_4_0[14] = MixinResolver(0xacAAB69C2BA65A2DB415605F309007e18D4F5E8C);
         addressresolver_rebuildCaches_4_0[15] = MixinResolver(0x9A5Ea0D8786B8d17a70410A905Aed1443fae5A38);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_4_0);
-        proxyerc20_i.setTarget(Proxyable(0xb01850a6c664FEfF9945c6f74ff86572794A2a1f));
-        proxysynthetix_i.setTarget(Proxyable(0xb01850a6c664FEfF9945c6f74ff86572794A2a1f));
-        exchangestate_i.setAssociatedContract(0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914);
-        systemstatus_i.updateAccessControl("Synth", 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914, true, false);
-        tokenstatesynthetix_i.setAssociatedContract(0xb01850a6c664FEfF9945c6f74ff86572794A2a1f);
-        rewardescrow_i.setSynthetix(ISynthetix(0xb01850a6c664FEfF9945c6f74ff86572794A2a1f));
-        rewardsdistribution_i.setAuthority(0xb01850a6c664FEfF9945c6f74ff86572794A2a1f);
+        proxyerc20_i.setTarget(Proxyable(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed));
+        proxysynthetix_i.setTarget(Proxyable(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed));
+        exchangestate_i.setAssociatedContract(0x94bB8919B036B1396e32F76Ed5a24dC8116cA05c);
+        systemstatus_i.updateAccessControl("Synth", 0x94bB8919B036B1396e32F76Ed5a24dC8116cA05c, true, false);
+        tokenstatesynthetix_i.setAssociatedContract(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed);
+        rewardescrow_i.setSynthetix(ISynthetix(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed));
+        rewardsdistribution_i.setAuthority(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed);
 
         // nominate ownership back to owner
         addressresolver_i.nominateNewOwner(owner);

@@ -79,7 +79,13 @@ module.exports = async ({
 pragma solidity ^0.5.16;
 
 ${contractsAddedToSolidity
-	.map(contract => `import "../${sourceOf(deployer.deployedContracts[contract])}.sol";`)
+	.map(contract => {
+		const contractSource = sourceOf(deployer.deployedContracts[contract]);
+		// support legacy contracts in "legacy" subfolder
+		return `import "../${
+			/^Legacy/.test(contractSource) ? `legacy/${contractSource}` : contractSource
+		}.sol";`;
+	})
 	.join('\n')}
 
 
@@ -110,7 +116,15 @@ contract Migrator {
 
 		// nominate ownership back to owner
 		${contractsAddedToSolidity
-			.map(contract => `${contract.toLowerCase()}_i.nominateNewOwner(owner);`)
+			.map(contract => {
+				// support LegacyOwned
+				const nominateFnc = deployment.sources[
+					sourceOf(deployer.deployedContracts[contract])
+				].abi.find(({ name }) => name === 'nominateNewOwner')
+					? 'nominateNewOwner'
+					: 'nominateOwner';
+				return `${contract.toLowerCase()}_i.${nominateFnc}(owner);`;
+			})
 			.join('\n\t\t')}
 	}
 }
