@@ -52,8 +52,7 @@ const build = async ({
 	const libraries = findSolFiles({ sourcePath: 'node_modules' });
 	const contracts = findSolFiles({
 		sourcePath: CONTRACTS_FOLDER,
-		// always ignore legacy folder (uses older compiler and no support)
-		ignore: [/^legacy\//].concat(!testHelpers ? /^test-helpers\// : []),
+		ignore: [].concat(!testHelpers ? /^test-helpers\// : []),
 	});
 
 	if (useOvm) {
