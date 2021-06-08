@@ -12,11 +12,12 @@ const {
 	constants: { OVM_MAX_GAS_LIMIT },
 } = require('../../../.');
 
-async function compileInstance({ useOvm }) {
+async function compileInstance({ useOvm, buildPath }) {
 	await commands.build({
 		useOvm,
 		optimizerRuns: useOvm ? 1 : 200,
 		testHelpers: true,
+		buildPath,
 	});
 }
 
@@ -32,6 +33,7 @@ async function deployInstance({
 	network = 'local',
 	freshDeploy = true,
 	ignoreCustomParameters = false,
+	buildPath,
 }) {
 	const privateKey = getPrivateKey({ index: 0 });
 
@@ -48,6 +50,7 @@ async function deployInstance({
 		methodCallGasLimit: '3500000',
 		contractDeploymentGasLimit: useOvm ? OVM_MAX_GAS_LIMIT : '9500000',
 		ignoreCustomParameters,
+		buildPath,
 	});
 }
 
