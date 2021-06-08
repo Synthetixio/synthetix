@@ -1,3 +1,7 @@
+const path = require('path');
+const {
+	constants: { BUILD_FOLDER },
+} = require('../..');
 const { task } = require('hardhat/config');
 const {
 	compileInstance,
@@ -9,6 +13,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addFlag('compile', 'Compile an l1 instance before running the tests')
 	.addFlag('deploy', 'Deploy an l1 instance before running the tests')
 	.addFlag('fork', 'Run the tests against a fork of mainnet')
+	.addOptionalParam('buildPath', 'The target build path for the evm artifacts')
 	.addOptionalParam(
 		'providerPort',
 		'The target port for the running local chain to test on',
@@ -19,17 +24,18 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 
 		const providerUrl = (hre.config.providerUrl = 'http://localhost');
 		const providerPort = (hre.config.providerPort = taskArguments.providerPort);
+		const buildPath = taskArguments.buildPath || path.join(__dirname, '..', '..', BUILD_FOLDER);
 
 		const timeout = 5 * 60 * 1000;
 		hre.config.mocha.timeout = timeout;
-		hre.config.mocha.bail = false;
+		hre.config.mocha.bail = true;
 		hre.config.networks.localhost.timeout = timeout;
 		hre.config.fork = taskArguments.fork;
 
 		taskArguments.maxMemory = true;
 
 		if (taskArguments.compile) {
-			await compileInstance({ useOvm: false });
+			await compileInstance({ useOvm: false, buildPath });
 		}
 
 		if (taskArguments.deploy) {
@@ -42,9 +48,10 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					freshDeploy: false,
 					providerUrl,
 					providerPort,
+					buildPath,
 				});
 			} else {
-				await deployInstance({ useOvm: false, providerUrl, providerPort });
+				await deployInstance({ useOvm: false, providerUrl, providerPort, buildPath });
 			}
 		}
 
