@@ -28,7 +28,7 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 		const buildPathOvm =
 			taskArguments.buildPathOvm || path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`);
 
-		const timeout = 5 * 60 * 1000;
+		const timeout = 600000; // 10m
 		hre.config.mocha.timeout = timeout;
 		hre.config.mocha.bail = true;
 		hre.config.networks.localhost.timeout = timeout;

@@ -26,7 +26,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		const providerPort = (hre.config.providerPort = taskArguments.providerPort);
 		const buildPath = taskArguments.buildPath || path.join(__dirname, '..', '..', BUILD_FOLDER);
 
-		const timeout = 5 * 60 * 1000;
+		const timeout = 600000; // 10m
 		hre.config.mocha.timeout = timeout;
 		hre.config.mocha.bail = true;
 		hre.config.networks.localhost.timeout = timeout;

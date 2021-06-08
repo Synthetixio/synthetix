@@ -22,7 +22,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 		const buildPath =
 			taskArguments.buildPath || path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`);
 
-		const timeout = 5 * 60 * 1000;
+		const timeout = 600000; // 10m
 		hre.config.mocha.timeout = timeout;
 		hre.config.mocha.bail = true;
 		hre.config.networks.localhost.timeout = timeout;
