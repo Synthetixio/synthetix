@@ -238,24 +238,6 @@
 		"sips": [112, 136]
 	},
 	{
-		"name": "Alnitak",
-		"version": {
-			"major": 2,
-			"minor": 46
-		},
-		"sources": [
-			"Exchanger",
-			"Synthetix",
-			"FuturesMarketBTC",
-			"FuturesMarketETH",
-			"FuturesMarketLINK",
-			"ProxyFuturesMarketManager",
-			"FuturesMarketManager",
-			"FuturesMarketData"
-		],
-		"sips": [80, 138, 139, 140]
-	},
-	{
 		"name": "Alnitak (Optimism)",
 		"version": {
 			"major": 2,
@@ -264,5 +246,27 @@
 		"ovm": true,
 		"sources": ["Exchanger", "MintableSynthetix"],
 		"sips": [138, 139, 140]
+	},
+	{
+		"name": "Futures (Optimism)",
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
+		"ovm": true,
+		"sources": [
+			"Exchanger",
+			"Synthetix",
+			"ProxyFuturesMarketBTC",
+			"FuturesMarketBTC",
+			"ProxyFuturesMarketETH",
+			"FuturesMarketETH",
+			"ProxyFuturesMarketLINK",
+			"FuturesMarketLINK",
+			"ProxyFuturesMarketManager",
+			"FuturesMarketManager",
+			"FuturesMarketData"
+		],
+		"sips": [80, 138, 139, 140]
 	}
 ]
