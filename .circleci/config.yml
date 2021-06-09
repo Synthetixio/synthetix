@@ -161,7 +161,7 @@ jobs:
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
-    resource_class: large
+    resource_class: xlarge
     steps:
       - checkout
       - attach_workspace:
