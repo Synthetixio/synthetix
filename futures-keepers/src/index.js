@@ -3,7 +3,6 @@ const ethers = require('ethers');
 const { gray } = require('chalk');
 const Keeper = require('./keeper');
 const { NonceManager } = require('@ethersproject/experimental');
-const { LocalNonceManager } = require('./local-nonce');
 
 async function main() {
 	const {
@@ -28,22 +27,14 @@ async function main() {
 	// Setup.
 	//
 	const provider = new ethers.providers.WebSocketProvider();
-	// provider.on('debug', (info) => {
-	// 	console.log(info.action);
-	// 	console.log(info.request);
-	// 	console.log(info.response);
-	// });
-	console.log(gray(`Connected to Ethereum node at ws://localhost:8545`));
+	console.log(gray(`Connected to Ethereum node at http://localhost:8545`));
 
-	let signers = createWallets({ provider, mnemonic: ETH_HDWALLET_MNEMONIC, num: 5 });
+	let signers = createWallets({ provider, mnemonic: ETH_HDWALLET_MNEMONIC, num: 2 });
 	console.log(gray`Using ${signers.length} account(s) to submit transactions:`);
 	signers = await Promise.all(
 		signers.map(async (signer, i) => {
 			console.log(gray(`Account #${i}: ${await signer.getAddress()}`));
-			const nonceManager = new LocalNonceManager(signer);
-			await nonceManager.initialize();
-			return nonceManager;
-			// return signer
+			return new NonceManager(signer);
 		})
 	);
 

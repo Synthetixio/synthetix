@@ -6,9 +6,10 @@ class SignerPool {
 
 	async acquire() {
 		while (!this.pool.length) {
-			await new Promise((resolve, reject) => setTimeout(resolve, 0.01));
+			await new Promise((resolve, reject) => setTimeout(resolve, 0.001));
 		}
-		return this.pool.shift();
+		const i = this.pool.pop();
+		return [i, this.signers[i]];
 	}
 
 	release(i) {
@@ -16,14 +17,9 @@ class SignerPool {
 	}
 
 	async withSigner(cb) {
-		const i = await this.acquire();
-		try {
-			await cb(this.signers[i]);
-		} catch(err) {
-			throw err
-		} finally {
-			this.release(i);
-		}
+		const [i, signer] = await this.acquire();
+		await cb(signer);
+		this.release(i);
 	}
 }
 
