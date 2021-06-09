@@ -42,7 +42,7 @@ jobs:
           background: true
       - cmd-wait-for-port:
           port: 8545
-      - run: npx hardhat test:integration:l1 --compile --deploy --fork
+      - run: npx hardhat test:integration:l1 --compile --deploy --use-fork
   job-integration-tests:
     working_directory: ~/repo
     machine:
@@ -89,7 +89,7 @@ jobs:
       - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
-            npx hardhat test:integration:dual --deploy-evm --deploy-ovm --connect
+            npx hardhat test:integration:dual --deploy
   job-lint:
     working_directory: ~/repo
     docker:
