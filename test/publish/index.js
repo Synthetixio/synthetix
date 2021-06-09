@@ -859,6 +859,8 @@ describe('publish scripts', () => {
 
 					describe('when user1 issues all possible sUSD', () => {
 						beforeEach(async () => {
+							Synthetix = Synthetix.connect(accounts.first);
+
 							const tx = await Synthetix.issueMaxSynths(overrides);
 							await tx.wait();
 						});
@@ -880,15 +882,15 @@ describe('publish scripts', () => {
 								const balance = await callMethodWithRetry(
 									sUSDContract.balanceOf(accounts.first.address)
 								);
-								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
+								assert.strictEqual(web3.utils.fromWei(balance.toString()), '5000', 'Balance should match');
 							});
 							it('and their sETH balance is 1000 - the fee', async () => {
 								const { amountReceived } = await callMethodWithRetry(
 									Exchanger.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sETH)
 								);
 								assert.strictEqual(
-									web3.utils.fromWei(sETHBalanceAfterExchange),
-									web3.utils.fromWei(amountReceived),
+									web3.utils.fromWei(sETHBalanceAfterExchange.toString()),
+									web3.utils.fromWei(amountReceived.toString()),
 									'Balance should match'
 								);
 							});
@@ -906,15 +908,15 @@ describe('publish scripts', () => {
 								const balance = await callMethodWithRetry(
 									sUSDContract.balanceOf(accounts.first.address)
 								);
-								assert.strictEqual(web3.utils.fromWei(balance), '5000', 'Balance should match');
+								assert.strictEqual(web3.utils.fromWei(balance.toString()), '5000', 'Balance should match');
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
 								const { amountReceived } = await callMethodWithRetry(
 									Exchanger.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sBTC)
 								);
 								assert.strictEqual(
-									web3.utils.fromWei(sBTCBalanceAfterExchange),
-									web3.utils.fromWei(amountReceived),
+									web3.utils.fromWei(sBTCBalanceAfterExchange.toString()),
+									web3.utils.fromWei(amountReceived.toString()),
 									'Balance should match'
 								);
 							});
@@ -934,7 +936,7 @@ describe('publish scripts', () => {
 									const balance = await callMethodWithRetry(
 										sUSDContract.balanceOf(accounts.first.address)
 									);
-									assert.strictEqual(web3.utils.fromWei(balance), '4990', 'Balance should match');
+									assert.strictEqual(web3.utils.fromWei(balance.toString()), '4990', 'Balance should match');
 								});
 
 								describe('when deployer replaces sBTC with PurgeableSynth', () => {
@@ -965,7 +967,7 @@ describe('publish scripts', () => {
 											const balance = await callMethodWithRetry(
 												sUSDContract.balanceOf(accounts.first.address)
 											);
-											const { amountReceived } = await callMethodWithRetry(
+											const [ amountReceived ] = await callMethodWithRetry(
 												Exchanger.getAmountsForExchange(
 													sBTCBalanceAfterExchange,
 													sBTC,
@@ -973,8 +975,8 @@ describe('publish scripts', () => {
 												)
 											);
 											assert.strictEqual(
-												web3.utils.fromWei(balance),
-												(4990 + +web3.utils.fromWei(amountReceived)).toString(),
+												web3.utils.fromWei(balance.toString()),
+												(4990 + +web3.utils.fromWei(amountReceived.toString())).toString(),
 												'Balance should match'
 											);
 										});
@@ -982,7 +984,7 @@ describe('publish scripts', () => {
 											const balance = await callMethodWithRetry(
 												sBTCContract.balanceOf(accounts.first.address)
 											);
-											assert.strictEqual(web3.utils.fromWei(balance), '0', 'Balance should match');
+											assert.strictEqual(web3.utils.fromWei(balance.toString()), '0', 'Balance should match');
 										});
 									});
 								});
@@ -1011,6 +1013,8 @@ describe('publish scripts', () => {
 						describe('when a user has issued and exchanged into iCEX', () => {
 							beforeEach(async () => {
 								let tx;
+
+								Synthetix = Synthetix.connect(accounts.first);
 
 								tx = await Synthetix.issueMaxSynths(overrides);
 								await tx.wait();
@@ -1094,28 +1098,28 @@ describe('publish scripts', () => {
 												shouldBeFrozenAtUpperLimit,
 												shouldBeFrozenAtLowerLimit,
 											}) => {
-												const {
+												const [
 													entryPoint,
 													upperLimit,
 													lowerLimit,
 													frozenAtUpperLimit,
 													frozenAtLowerLimit,
-												} = await callMethodWithRetry(
+												] = await callMethodWithRetry(
 													ExchangeRates.inversePricing(toBytes32(currencyKey))
 												);
 												const expected = synths.find(({ name }) => name === currencyKey).inverted;
 												assert.strictEqual(
-													+web3.utils.fromWei(entryPoint),
+													+web3.utils.fromWei(entryPoint.toString()),
 													expected.entryPoint,
 													'Entry points match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(upperLimit),
+													+web3.utils.fromWei(upperLimit.toString()),
 													expected.upperLimit,
 													'Upper limits match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(lowerLimit),
+													+web3.utils.fromWei(lowerLimit.toString()),
 													expected.lowerLimit,
 													'Lower limits match'
 												);
@@ -1134,25 +1138,25 @@ describe('publish scripts', () => {
 
 											it('then the new iABC synth should be added correctly (as it has no previous rate)', async () => {
 												const iABC = toBytes32('iABC');
-												const {
+												const [
 													entryPoint,
 													upperLimit,
 													lowerLimit,
 													frozenAtUpperLimit,
 													frozenAtLowerLimit,
-												} = await callMethodWithRetry(ExchangeRates.inversePricing(iABC));
+												] = await callMethodWithRetry(ExchangeRates.inversePricing(iABC));
 												const rate = await callMethodWithRetry(
 													ExchangeRates.rateForCurrency(iABC)
 												);
 
-												assert.strictEqual(+web3.utils.fromWei(entryPoint), 1, 'Entry point match');
+												assert.strictEqual(+web3.utils.fromWei(entryPoint.toString()), 1, 'Entry point match');
 												assert.strictEqual(
-													+web3.utils.fromWei(upperLimit),
+													+web3.utils.fromWei(upperLimit.toString()),
 													1.5,
 													'Upper limit match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(lowerLimit),
+													+web3.utils.fromWei(lowerLimit.toString()),
 													0.5,
 													'Lower limit match'
 												);
@@ -1162,7 +1166,7 @@ describe('publish scripts', () => {
 													'Is not frozen'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(rate),
+													+web3.utils.fromWei(rate.toString()),
 													0,
 													'No rate for new inverted synth'
 												);
@@ -1170,26 +1174,26 @@ describe('publish scripts', () => {
 
 											it('and the iXTZ synth should be reconfigured correctly (as it has 0 total supply)', async () => {
 												const iXTZ = toBytes32('iXTZ');
-												const {
+												const [
 													entryPoint,
 													upperLimit,
 													lowerLimit,
 													frozenAtUpperLimit,
 													frozenAtLowerLimit,
-												} = await callMethodWithRetry(ExchangeRates.inversePricing(iXTZ));
+												] = await callMethodWithRetry(ExchangeRates.inversePricing(iXTZ));
 
 												assert.strictEqual(
-													+web3.utils.fromWei(entryPoint),
+													+web3.utils.fromWei(entryPoint.toString()),
 													100,
 													'Entry point match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(upperLimit),
+													+web3.utils.fromWei(upperLimit.toString()),
 													150,
 													'Upper limit match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(lowerLimit),
+													+web3.utils.fromWei(lowerLimit.toString()),
 													50,
 													'Lower limit match'
 												);
@@ -1206,9 +1210,10 @@ describe('publish scripts', () => {
 												const tx = await ExchangeRates.freezeRate(iXTZ, overrides);
 												await tx.wait();
 
-												const {
-													frozenAtUpperLimit: newFrozenAtUpperLimit,
-												} = await callMethodWithRetry(ExchangeRates.inversePricing(iXTZ));
+												const [
+													,,,
+													newFrozenAtUpperLimit,
+												] = await callMethodWithRetry(ExchangeRates.inversePricing(iXTZ));
 
 												assert.strictEqual(
 													newFrozenAtUpperLimit,
@@ -1218,12 +1223,12 @@ describe('publish scripts', () => {
 											});
 
 											it('and the iCEX synth should not be inverted at all', async () => {
-												const { entryPoint } = await callMethodWithRetry(
+												const [ entryPoint ] = await callMethodWithRetry(
 													ExchangeRates.inversePricing(toBytes32('iCEX'))
 												);
 
 												assert.strictEqual(
-													+web3.utils.fromWei(entryPoint),
+													+web3.utils.fromWei(entryPoint.toString()),
 													0,
 													'iCEX should not be set'
 												);
@@ -1261,7 +1266,8 @@ describe('publish scripts', () => {
 												});
 
 												describe('when user tries to exchange into iABC', () => {
-													it('then it fails', async done => {
+													it('then it fails', async () => {
+														let failed;
 														try {
 															const tx = await Synthetix.exchange(
 																toBytes32('iCEX'),
@@ -1271,10 +1277,12 @@ describe('publish scripts', () => {
 															);
 															await tx.wait();
 
-															done('Should not have compelte');
+															failed = false;
 														} catch (err) {
-															done();
+															failed = true;
 														}
+
+														assert.equal(failed, true);
 													});
 												});
 											});
@@ -1366,7 +1374,7 @@ describe('publish scripts', () => {
 										const response = await callMethodWithRetry(
 											ExchangeRates.rateForCurrency(toBytes32('sEUR'))
 										);
-										assert.strictEqual(web3.utils.fromWei(response), rate);
+										assert.strictEqual(web3.utils.fromWei(response.toString()), rate);
 									});
 								});
 
@@ -1507,7 +1515,7 @@ describe('publish scripts', () => {
 										sources[source].abi.find(({ name }) => name === 'resolver')
 									)
 									.map(([contract, { source, address }]) => {
-										const Contract = new ethers.Contract(address, sources[source].abi);
+										const Contract = new ethers.Contract(address, sources[source].abi, provider);
 										return { contract, Contract };
 									})
 							);
