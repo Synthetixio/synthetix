@@ -142,24 +142,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         address payable _proxy,
         address _owner,
         address _resolver,
-        bytes32 _baseAsset,
-        uint _takerFee,
-        uint _makerFee,
-        uint _maxLeverage,
-        uint _maxMarketValue,
-        uint _minInitialMargin,
-        uint[3] memory _fundingParameters
+        bytes32 _baseAsset
     ) public Owned(_owner) Proxyable(_proxy) MixinSystemSettings(_resolver) {
         baseAsset = _baseAsset;
-
-        parameters.takerFee = _takerFee;
-        parameters.makerFee = _makerFee;
-        parameters.maxLeverage = _maxLeverage;
-        parameters.maxMarketValue = _maxMarketValue;
-        parameters.minInitialMargin = _minInitialMargin;
-        parameters.maxFundingRate = _fundingParameters[0];
-        parameters.maxFundingRateSkew = _fundingParameters[1];
-        parameters.maxFundingRateDelta = _fundingParameters[2];
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
