@@ -96,7 +96,7 @@ class Keeper {
 			.forEach(({ event }) => {
 				console.log('ExchangeRates', blue(event));
 
-				if (event == 'RatesUpdated') {
+				if (event === 'RatesUpdated') {
 					this.currentExchangeRatesRound = this.currentExchangeRatesRound.add(1);
 				}
 			});

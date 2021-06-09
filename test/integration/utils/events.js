@@ -5,7 +5,7 @@ async function waitForEvent(
 	filter,
 	fromBlockNumber,
 	timeout = 7500,
-	pollInterval = 1 / 1000
+	pollInterval = 10 / 1000
 ) {
 	const timeoutFn = () =>
 		new Promise((resolve, reject) =>

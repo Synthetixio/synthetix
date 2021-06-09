@@ -71,7 +71,7 @@ function itConfirmsOrders({ ctx }) {
 			});
 		});
 
-		describe.only('stress testing', async () => {
+		describe('stress testing', async () => {
 			let users;
 			const leverage = parseEther('1.0');
 			const margin = parseEther('150');
@@ -116,7 +116,7 @@ function itConfirmsOrders({ ctx }) {
 			});
 
 			it('processes 10 orders within 3s', async () => {
-				const confirmedOrders = await Promise.all(
+				await Promise.all(
 					orders.map(order =>
 						waitForEvent(
 							FuturesMarketETH,
