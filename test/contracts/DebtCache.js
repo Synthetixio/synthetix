@@ -1182,9 +1182,10 @@ contract('DebtCache', async accounts => {
 			});
 
 			describe('after the synths are exchanged into other synths', async () => {
+				let tx;
 				beforeEach(async () => {
 					// Swap some sETH into synthetic dollarydoos.
-					await synthetix.exchange(sETH, '5', sAUD, { from: account1 });
+					tx = await synthetix.exchange(sETH, '5', sAUD, { from: account1 });
 				});
 
 				it('non-SNX debt is unchanged', async () => {
@@ -1195,6 +1196,39 @@ contract('DebtCache', async accounts => {
 				});
 				it('currentDebt is unchanged', async () => {
 					assert.bnEqual(currentDebt, await debtCache.currentDebt());
+				});
+
+				it('cached debt is properly updated', async () => {
+					const logs = await getDecodedLogs({
+						hash: tx.tx,
+						contracts: [debtCache],
+					});
+
+					const cachedDebt = (await debtCache.cacheInfo())[0];
+					decodedEventEqual({
+						event: 'DebtCacheUpdated',
+						emittedFrom: debtCache.address,
+						args: [cachedDebt],
+						log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+					});
+				});
+			});
+
+			it('is properly reflected in a snapshot', async () => {
+				const currentDebt = (await debtCache.currentDebt())[0];
+				const cachedDebt = (await debtCache.cacheInfo())[0];
+				assert.bnEqual(currentDebt, cachedDebt);
+				const tx = await debtCache.takeDebtSnapshot();
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheUpdated',
+					emittedFrom: debtCache.address,
+					args: [cachedDebt],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 				});
 			});
 		});
