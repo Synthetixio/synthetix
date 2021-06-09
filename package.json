@@ -23,7 +23,7 @@
 		"test:etherscan": "node test/etherscan",
 		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 240000\"",
 		"optimism:clear": "docker system prune -f && rm -rf ${OPT_PATH:-~/optimism} && mkdir -p  ${OPT_PATH:-~/optimism} && cd ${OPT_PATH:-~/optimism} && git clone https://github.com/ethereum-optimism/optimism.git .",
-		"optimism:build": "cd ${OPT_PATH:-~/optimism} && git fetch && git checkout master && git pull origin master && git checkout ${OPT_HASH:-86708bb5758cd2b647b3ca2be698beb5aa3af81f} && yarn && yarn build ",
+		"optimism:build": "cd ${OPT_PATH:-~/optimism} && git fetch && git checkout master && git pull origin master && git checkout ${OPT_COMMIT:-86708bb5758cd2b647b3ca2be698beb5aa3af81f} && yarn && yarn build ",
 		"optimism:build_image": "cd ${OPT_PATH:-~/optimism}/ops && export COMPOSE_DOCKER_CLI_BUILD=1 && export DOCKER_BUILDKIT=1 && docker-compose build ",
 		"optimism:start": "cd ${OPT_PATH:-~/optimism}/ops && docker-compose up",
 		"optimism:stop": "cd ${OPT_PATH:-~/optimism}/ops && docker-compose down -v",
