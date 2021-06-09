@@ -5,7 +5,6 @@ deploy_settings.py
 
 # gitignore - Truffle proj
 .idea/
-build
 bin/
 node_modules
 yarn-error.log
@@ -17,7 +16,7 @@ site/
 .env
 
 # Build artifacts
-flattened-contracts/
+build*/
 
 # For eth-gas-reporter in tests
 test-gas-used.log
