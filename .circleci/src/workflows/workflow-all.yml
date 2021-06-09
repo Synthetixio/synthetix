@@ -3,50 +3,50 @@ jobs:
   # Basic
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-prepare
-  - job-lint:
-      {{> require-prepare.yml}}
-  - job-compile:
-      {{> require-prepare.yml}}
-  - job-static-analysis:
-      {{> require-prepare.yml}}
+  # - job-lint:
+  #     {{> require-prepare.yml}}
+  # - job-compile:
+  #     {{> require-prepare.yml}}
+  # - job-static-analysis:
+  #     {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Unit tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-unit-tests:
-      {{> require-prepare.yml}}
-  - job-unit-tests-coverage:
-      {{> require-prepare.yml}}
-  - job-unit-tests-coverage-report:
-      {{> require-unit-tests-coverage.yml}}
-  - job-unit-tests-gas-report:
-      {{> require-prepare.yml}}
+  # - job-unit-tests:
+  #     {{> require-prepare.yml}}
+  # - job-unit-tests-coverage:
+  #     {{> require-prepare.yml}}
+  # - job-unit-tests-coverage-report:
+  #     {{> require-unit-tests-coverage.yml}}
+  # - job-unit-tests-gas-report:
+  #     {{> require-prepare.yml}}
   - job-test-deploy-script:
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Fork tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-fork-tests:
-      {{> require-prepare.yml}}
+  # - job-fork-tests:
+  #     {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Integration tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-integration-tests:
-      {{> require-prepare.yml}}
+  # - job-integration-tests:
+  #     {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Packaging
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-pack-browser:
-      {{> require-prepare.yml}}
+  # - job-pack-browser:
+  #     {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Deployment validation
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-validate-deployments:
-      {{> require-prepare.yml}}
+  # - job-validate-deployments:
+  #     {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Etherscan validations
