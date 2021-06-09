@@ -34,9 +34,10 @@ contract DebtCache is BaseDebtCache {
             _cachedSynthDebt[currencyKeys[i]] = value;
         }
         _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
-        _cachedDebt = snxCollateralDebt.floorsub(excludedDebt);
+        uint newDebt = snxCollateralDebt.floorsub(excludedDebt);
+        _cachedDebt = newDebt;
         _cacheTimestamp = block.timestamp;
-        emit DebtCacheUpdated(snxCollateralDebt);
+        emit DebtCacheUpdated(newDebt);
         emit DebtCacheSnapshotTaken(block.timestamp);
 
         // (in)validate the cache if necessary
