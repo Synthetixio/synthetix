@@ -29,12 +29,17 @@ async function main() {
 	const provider = new ethers.providers.WebSocketProvider();
 	console.log(gray(`Connected to Ethereum node at http://localhost:8545`));
 
-	let signers = createWallets({ provider, mnemonic: ETH_HDWALLET_MNEMONIC, num: 2 });
+	let signers = createWallets({ provider, mnemonic: ETH_HDWALLET_MNEMONIC, num: 10 });
 	console.log(gray`Using ${signers.length} account(s) to submit transactions:`);
 	signers = await Promise.all(
 		signers.map(async (signer, i) => {
 			console.log(gray(`Account #${i}: ${await signer.getAddress()}`));
-			return new NonceManager(signer);
+			let wrappedSigner = new NonceManager(signer);
+
+			// Each signer gets its own WebSocket RPC connection.
+			// This seems to improve the transaction speed even further.
+			wrappedSigner = wrappedSigner.connect(new ethers.providers.WebSocketProvider());
+			return wrappedSigner;
 		})
 	);
 
