@@ -1,4 +1,3 @@
-const ethers = require('ethers');
 const { getUsers } = require('../../../index');
 const { loadLocalWallets } = require('../../test-utils/wallets');
 

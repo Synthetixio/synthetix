@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { loadLocalPrivateKey } = require('../../test-utils/wallets');
+const { getLocalPrivateKey } = require('../../test-utils/wallets');
 
 const commands = {
 	build: require('../../../publish/src/commands/build').build,

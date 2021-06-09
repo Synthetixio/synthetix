@@ -3,13 +3,12 @@ const path = require('path');
 const assert = require('assert');
 const pLimit = require('p-limit');
 
-const { isAddress } = require('web3-utils');
-const Web3 = require('web3');
 const ethers = require('ethers');
 const isCI = require('is-ci');
 
 const { loadCompiledFiles } = require('../../publish/src/solidity');
 const { loadLocalWallets } = require('../test-utils/wallets');
+const { fastForward } = require('../test-utils/rpc');
 
 const deployStakingRewardsCmd = require('../../publish/src/commands/deploy-staking-rewards');
 const deployShortingRewardsCmd = require('../../publish/src/commands/deploy-shorting-rewards');
@@ -95,9 +94,7 @@ describe('publish scripts', () => {
 	let sUSD;
 	let sBTC;
 	let sETH;
-	let web3;
 	let provider;
-	let fastForward;
 	let overrides;
 
 	const resetConfigAndSynthFiles = () => {
@@ -133,14 +130,11 @@ describe('publish scripts', () => {
 	beforeEach(async () => {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 
-		// TODO: DELETE
-		web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
-		provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+		provider = new ethers.providers.JsonRpcProvider({
+			url: 'http://localhost:8545',
+		});
 
-		let isCompileRequired;
-
-		// TODO: DELETE
-		({ isCompileRequired, fastForward } = testUtils({ web3 }));
+		const { isCompileRequired } = testUtils();
 
 		// load accounts used by local EVM
 		const wallets = loadLocalWallets({ provider });
@@ -223,7 +217,11 @@ describe('publish scripts', () => {
 			const setAggregatorAnswer = async ({ asset, rate }) => {
 				let tx;
 
-				tx = await aggregators[asset].setLatestAnswer((rate * 1e8).toString(), timestamp, overrides);
+				tx = await aggregators[asset].setLatestAnswer(
+					(rate * 1e8).toString(),
+					timestamp,
+					overrides
+				);
 				await tx.wait();
 
 				// Cache the debt to make sure nothing's wrong/stale after the rate update.
@@ -231,7 +229,7 @@ describe('publish scripts', () => {
 			};
 
 			beforeEach(async () => {
-				timestamp = (await web3.eth.getBlock('latest')).timestamp;
+				timestamp = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
 				// deploy a mock aggregator for all supported rates
 				const feeds = JSON.parse(feedsJSON);
@@ -275,41 +273,26 @@ describe('publish scripts', () => {
 
 			describe('default system settings', () => {
 				it('defaults are properly configured in a fresh deploy', async () => {
-					assert.strictEqual(
-						(await Exchanger.waitingPeriodSecs()).toString(),
-						WAITING_PERIOD_SECS
-					);
+					assert.strictEqual((await Exchanger.waitingPeriodSecs()).toString(), WAITING_PERIOD_SECS);
 					assert.strictEqual(
 						(await Exchanger.priceDeviationThresholdFactor()).toString(),
 						PRICE_DEVIATION_THRESHOLD_FACTOR
 					);
-					assert.strictEqual(
-						await Exchanger.tradingRewardsEnabled(),
-						TRADING_REWARDS_ENABLED
-					);
+					assert.strictEqual(await Exchanger.tradingRewardsEnabled(), TRADING_REWARDS_ENABLED);
 					assert.strictEqual((await Issuer.issuanceRatio()).toString(), ISSUANCE_RATIO);
 					assert.strictEqual((await FeePool.feePeriodDuration()).toString(), FEE_PERIOD_DURATION);
 					assert.strictEqual(
 						(await FeePool.targetThreshold()).toString(),
-						web3.utils.toWei((TARGET_THRESHOLD / 100).toString())
+						ethers.utils.parseEther((TARGET_THRESHOLD / 100).toString()).toString()
 					);
 
-					assert.strictEqual(
-						(await Liquidations.liquidationDelay()).toString(),
-						LIQUIDATION_DELAY
-					);
-					assert.strictEqual(
-						(await Liquidations.liquidationRatio()).toString(),
-						LIQUIDATION_RATIO
-					);
+					assert.strictEqual((await Liquidations.liquidationDelay()).toString(), LIQUIDATION_DELAY);
+					assert.strictEqual((await Liquidations.liquidationRatio()).toString(), LIQUIDATION_RATIO);
 					assert.strictEqual(
 						(await Liquidations.liquidationPenalty()).toString(),
 						LIQUIDATION_PENALTY
 					);
-					assert.strictEqual(
-						(await ExchangeRates.rateStalePeriod()).toString(),
-						RATE_STALE_PERIOD
-					);
+					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
 					assert.strictEqual(
 						(await DebtCache.debtSnapshotStaleTime()).toString(),
 						DEBT_SNAPSHOT_STALE_TIME
@@ -323,7 +306,9 @@ describe('publish scripts', () => {
 						);
 
 						assert.strictEqual(
-							(await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))).toString(),
+							(
+								await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
+							).toString(),
 							rate
 						);
 					}
@@ -345,15 +330,15 @@ describe('publish scripts', () => {
 
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
-						newPriceDeviation = web3.utils.toWei('0.45');
-						newIssuanceRatio = web3.utils.toWei('0.25');
+						newPriceDeviation = ethers.utils.parseEther('0.45').toString();
+						newIssuanceRatio = ethers.utils.parseEther('0.25').toString();
 						newFeePeriodDuration = (3600 * 24 * 3).toString(); // 3 days
 						newTargetThreshold = '6';
 						newLiquidationsDelay = newFeePeriodDuration;
-						newLiquidationsRatio = web3.utils.toWei('0.6'); // must be above newIssuanceRatio * 2
-						newLiquidationsPenalty = web3.utils.toWei('0.25');
+						newLiquidationsRatio = ethers.utils.parseEther('0.6').toString(); // must be above newIssuanceRatio * 2
+						newLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
 						newRateStalePeriod = '3400';
-						newRateForsUSD = web3.utils.toWei('0.1');
+						newRateForsUSD = ethers.utils.parseEther('0.1').toString();
 						newMinimumStakeTime = '3999';
 						newDebtSnapshotStaleTime = '43200'; // Half a day
 
@@ -362,7 +347,10 @@ describe('publish scripts', () => {
 						tx = await SystemSettings.setWaitingPeriodSecs(newWaitingPeriod, overrides);
 						await tx.wait();
 
-						tx = await SystemSettings.setPriceDeviationThresholdFactor(newPriceDeviation, overrides);
+						tx = await SystemSettings.setPriceDeviationThresholdFactor(
+							newPriceDeviation,
+							overrides
+						);
 						await tx.wait();
 
 						tx = await SystemSettings.setIssuanceRatio(newIssuanceRatio, overrides);
@@ -392,7 +380,11 @@ describe('publish scripts', () => {
 						tx = await SystemSettings.setMinimumStakeTime(newMinimumStakeTime, overrides);
 						await tx.wait();
 
-						tx = await SystemSettings .setExchangeFeeRateForSynths([toBytes32('sUSD')], [newRateForsUSD]), overrides ;
+						tx = await SystemSettings.setExchangeFeeRateForSynths(
+							[toBytes32('sUSD')],
+							[newRateForsUSD],
+							overrides
+						);
 						await tx.wait();
 					});
 					describe('when redeployed with a new system settings contract', () => {
@@ -430,7 +422,7 @@ describe('publish scripts', () => {
 							);
 							assert.strictEqual(
 								(await FeePool.targetThreshold()).toString(),
-								web3.utils.toWei((newTargetThreshold / 100).toString())
+								ethers.utils.parseEther((newTargetThreshold / 100).toString()).toString()
 							);
 							assert.strictEqual(
 								(await Liquidations.liquidationDelay()).toString(),
@@ -448,12 +440,11 @@ describe('publish scripts', () => {
 								(await ExchangeRates.rateStalePeriod()).toString(),
 								newRateStalePeriod
 							);
+							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
 							assert.strictEqual(
-								(await Issuer.minimumStakeTime()).toString(),
-								newMinimumStakeTime
-							);
-							assert.strictEqual(
-								(await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))).toString(),
+								(
+									await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
+								).toString(),
 								newRateForsUSD
 							);
 						});
@@ -462,10 +453,12 @@ describe('publish scripts', () => {
 			});
 
 			describe('synths added to Issuer', () => {
+				const hexToString = hex => ethers.utils.toUtf8String(hex).replace(/\0/g, '');
+
 				it('then all synths are added to the issuer', async () => {
 					const keys = await Issuer.availableCurrencyKeys();
 					assert.deepStrictEqual(
-						keys.map(web3.utils.hexToUtf8),
+						keys.map(hexToString),
 						JSON.parse(synthsJSON).map(({ name }) => name)
 					);
 				});
@@ -501,7 +494,7 @@ describe('publish scripts', () => {
 						});
 						it('then only sUSD is added to the issuer', async () => {
 							const keys = await Issuer.availableCurrencyKeys();
-							assert.deepStrictEqual(keys.map(web3.utils.hexToUtf8), ['sUSD', 'sETH']);
+							assert.deepStrictEqual(keys.map(hexToString), ['sUSD', 'sETH']);
 						});
 					});
 				});
@@ -545,7 +538,7 @@ describe('publish scripts', () => {
 						for (const { token, method } of tokens) {
 							const tokenAddress = await stakingRewardsContract[method]();
 
-							if (isAddress(token)) {
+							if (ethers.utils.isAddress(token)) {
 								assert.strictEqual(token.toLowerCase(), tokenAddress.toLowerCase());
 							} else {
 								assert.strictEqual(
@@ -588,7 +581,7 @@ describe('publish scripts', () => {
 
 						const tokenAddress = await shortingRewardsContract.rewardsToken();
 
-						if (isAddress(rewardsToken)) {
+						if (ethers.utils.isAddress(rewardsToken)) {
 							assert.strictEqual(rewardsToken.toLowerCase(), tokenAddress.toLowerCase());
 						} else {
 							assert.strictEqual(
@@ -674,21 +667,23 @@ describe('publish scripts', () => {
 					beforeEach(async () => {
 						periodsAdded = [];
 						const addPeriod = (feePeriodId, startTime) => {
-							periodsAdded.push([
-								`${feePeriodId}`,
-								'0',
-								`${startTime}`,
-								'0',
-								'0',
-								'0',
-								'0'
-							]);
+							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '0', '0', '0', '0']);
 						};
 						for (let i = 0; i < feePeriodLength; i++) {
 							const startTime = daysAgo((i + 1) * 6);
 							addPeriod((i + 1).toString(), startTime.toString());
 
-							const tx = await FeePool.importFeePeriod(i, i + 1, 0, startTime, 0, 0, 0, 0, overrides);
+							const tx = await FeePool.importFeePeriod(
+								i,
+								i + 1,
+								0,
+								startTime,
+								0,
+								0,
+								0,
+								0,
+								overrides
+							);
 							await tx.wait();
 						}
 					});
@@ -705,7 +700,17 @@ describe('publish scripts', () => {
 								describe('when the new FeePool is manually given fee periods', () => {
 									beforeEach(async () => {
 										for (let i = 0; i < feePeriodLength; i++) {
-											const tx = await FeePoolNew.importFeePeriod(i, i + 1, 0, daysAgo((i + 1) * 6), 0, 0, 0, 0, overrides);
+											const tx = await FeePoolNew.importFeePeriod(
+												i,
+												i + 1,
+												0,
+												daysAgo((i + 1) * 6),
+												0,
+												0,
+												0,
+												0,
+												overrides
+											);
 											await tx.wait();
 										}
 									});
@@ -766,7 +771,17 @@ describe('publish scripts', () => {
 					describe('when FeePool is given old import periods', () => {
 						beforeEach(async () => {
 							for (let i = 0; i < feePeriodLength; i++) {
-								const tx = await FeePool.importFeePeriod(i, i + 1, 0, daysAgo((i + 1) * 14), 0, 0, 0, 0, overrides);
+								const tx = await FeePool.importFeePeriod(
+									i,
+									i + 1,
+									0,
+									daysAgo((i + 1) * 14),
+									0,
+									0,
+									0,
+									0,
+									overrides
+								);
 								await tx.wait();
 							}
 						});
@@ -794,7 +809,10 @@ describe('publish scripts', () => {
 			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
 				beforeEach(async () => {
 					// set default issuance of 0.2
-					const tx = await SystemSettings.setIssuanceRatio(web3.utils.toWei('0.2'), overrides);
+					const tx = await SystemSettings.setIssuanceRatio(
+						ethers.utils.parseEther('0.2'),
+						overrides
+					);
 					await tx.wait();
 
 					// make sure exchange rates has prices for specific assets
@@ -853,7 +871,11 @@ describe('publish scripts', () => {
 				describe('when transferring 100k SNX to user1', () => {
 					beforeEach(async () => {
 						// transfer SNX to first account
-						const tx = await Synthetix.transfer(accounts.first.address, web3.utils.toWei('100000'), overrides);
+						const tx = await Synthetix.transfer(
+							accounts.first.address,
+							ethers.utils.parseEther('100000'),
+							overrides
+						);
 						await tx.wait();
 					});
 
@@ -868,12 +890,16 @@ describe('publish scripts', () => {
 							const balance = await callMethodWithRetry(
 								sUSDContract.balanceOf(accounts.first.address)
 							);
-							assert.strictEqual(web3.utils.fromWei(balance.toString()), '6000', 'Balance should match');
+							assert.strictEqual(
+								ethers.utils.formatEther(balance.toString()),
+								'6000.0',
+								'Balance should match'
+							);
 						});
 						describe('when user1 exchange 1000 sUSD for sETH (the MultiCollateralSynth)', () => {
 							let sETHBalanceAfterExchange;
 							beforeEach(async () => {
-								await Synthetix.exchange(sUSD, web3.utils.toWei('1000'), sETH, overrides);
+								await Synthetix.exchange(sUSD, ethers.utils.parseEther('1000'), sETH, overrides);
 								sETHBalanceAfterExchange = await callMethodWithRetry(
 									sETHContract.balanceOf(accounts.first.address)
 								);
@@ -882,15 +908,19 @@ describe('publish scripts', () => {
 								const balance = await callMethodWithRetry(
 									sUSDContract.balanceOf(accounts.first.address)
 								);
-								assert.strictEqual(web3.utils.fromWei(balance.toString()), '5000', 'Balance should match');
+								assert.strictEqual(
+									ethers.utils.formatEther(balance.toString()),
+									'5000.0',
+									'Balance should match'
+								);
 							});
 							it('and their sETH balance is 1000 - the fee', async () => {
 								const { amountReceived } = await callMethodWithRetry(
-									Exchanger.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sETH)
+									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), sUSD, sETH)
 								);
 								assert.strictEqual(
-									web3.utils.fromWei(sETHBalanceAfterExchange.toString()),
-									web3.utils.fromWei(amountReceived.toString()),
+									ethers.utils.formatEther(sETHBalanceAfterExchange.toString()),
+									ethers.utils.formatEther(amountReceived.toString()),
 									'Balance should match'
 								);
 							});
@@ -898,7 +928,12 @@ describe('publish scripts', () => {
 						describe('when user1 exchange 1000 sUSD for sBTC', () => {
 							let sBTCBalanceAfterExchange;
 							beforeEach(async () => {
-								const tx = await Synthetix.exchange(sUSD, web3.utils.toWei('1000'), sBTC, overrides);
+								const tx = await Synthetix.exchange(
+									sUSD,
+									ethers.utils.parseEther('1000'),
+									sBTC,
+									overrides
+								);
 								await tx.wait();
 								sBTCBalanceAfterExchange = await callMethodWithRetry(
 									sBTCContract.balanceOf(accounts.first.address)
@@ -908,15 +943,19 @@ describe('publish scripts', () => {
 								const balance = await callMethodWithRetry(
 									sUSDContract.balanceOf(accounts.first.address)
 								);
-								assert.strictEqual(web3.utils.fromWei(balance.toString()), '5000', 'Balance should match');
+								assert.strictEqual(
+									ethers.utils.formatEther(balance.toString()),
+									'5000.0',
+									'Balance should match'
+								);
 							});
 							it('and their sBTC balance is 1000 - the fee', async () => {
 								const { amountReceived } = await callMethodWithRetry(
-									Exchanger.getAmountsForExchange(web3.utils.toWei('1000'), sUSD, sBTC)
+									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), sUSD, sBTC)
 								);
 								assert.strictEqual(
-									web3.utils.fromWei(sBTCBalanceAfterExchange.toString()),
-									web3.utils.fromWei(amountReceived.toString()),
+									ethers.utils.formatEther(sBTCBalanceAfterExchange.toString()),
+									ethers.utils.formatEther(amountReceived.toString()),
 									'Balance should match'
 								);
 							});
@@ -929,14 +968,18 @@ describe('publish scripts', () => {
 									await tx.wait();
 
 									// burn
-									tx = await Synthetix.burnSynths(web3.utils.toWei('10'), overrides);
+									tx = await Synthetix.burnSynths(ethers.utils.parseEther('10'), overrides);
 									await tx.wait();
 								});
 								it('then their sUSD balance is 4990', async () => {
 									const balance = await callMethodWithRetry(
 										sUSDContract.balanceOf(accounts.first.address)
 									);
-									assert.strictEqual(web3.utils.fromWei(balance.toString()), '4990', 'Balance should match');
+									assert.strictEqual(
+										ethers.utils.formatEther(balance.toString()),
+										'4990.0',
+										'Balance should match'
+									);
 								});
 
 								describe('when deployer replaces sBTC with PurgeableSynth', () => {
@@ -952,7 +995,7 @@ describe('publish scripts', () => {
 									});
 									describe('and deployer invokes purge', () => {
 										beforeEach(async () => {
-											fastForward(500); // fast forward through waiting period
+											await fastForward({ seconds: 500, provider }); // fast forward through waiting period
 
 											await commands.purgeSynths({
 												network,
@@ -967,16 +1010,12 @@ describe('publish scripts', () => {
 											const balance = await callMethodWithRetry(
 												sUSDContract.balanceOf(accounts.first.address)
 											);
-											const [ amountReceived ] = await callMethodWithRetry(
-												Exchanger.getAmountsForExchange(
-													sBTCBalanceAfterExchange,
-													sBTC,
-													sUSD
-												)
+											const [amountReceived] = await callMethodWithRetry(
+												Exchanger.getAmountsForExchange(sBTCBalanceAfterExchange, sBTC, sUSD)
 											);
 											assert.strictEqual(
-												web3.utils.fromWei(balance.toString()),
-												(4990 + +web3.utils.fromWei(amountReceived.toString())).toString(),
+												ethers.utils.formatEther(balance.toString()),
+												(4990 + +ethers.utils.formatEther(amountReceived.toString())).toString(),
 												'Balance should match'
 											);
 										});
@@ -984,7 +1023,11 @@ describe('publish scripts', () => {
 											const balance = await callMethodWithRetry(
 												sBTCContract.balanceOf(accounts.first.address)
 											);
-											assert.strictEqual(web3.utils.fromWei(balance.toString()), '0', 'Balance should match');
+											assert.strictEqual(
+												ethers.utils.formatEther(balance.toString()),
+												'0.0',
+												'Balance should match'
+											);
 										});
 									});
 								});
@@ -998,7 +1041,12 @@ describe('publish scripts', () => {
 									await setAggregatorAnswer({ asset: 'ETH', rate: 20 });
 								});
 								it('when exchange occurs into that synth, the synth is suspended', async () => {
-									const tx = await Synthetix.exchange(sUSD, web3.utils.toWei('1'), sETH, overrides);
+									const tx = await Synthetix.exchange(
+										sUSD,
+										ethers.utils.parseEther('1'),
+										sETH,
+										overrides
+									);
 									await tx.wait();
 
 									const { suspended, reason } = await SystemStatus.synthSuspension(sETH);
@@ -1019,7 +1067,12 @@ describe('publish scripts', () => {
 								tx = await Synthetix.issueMaxSynths(overrides);
 								await tx.wait();
 
-								tx = await Synthetix.exchange(toBytes32('sUSD'), web3.utils.toWei('100'), toBytes32('iCEX'), overrides);
+								tx = await Synthetix.exchange(
+									toBytes32('sUSD'),
+									ethers.utils.parseEther('100'),
+									toBytes32('iCEX'),
+									overrides
+								);
 								await tx.wait();
 							});
 							describe('when a new inverted synth iABC is added to the list', () => {
@@ -1109,17 +1162,17 @@ describe('publish scripts', () => {
 												);
 												const expected = synths.find(({ name }) => name === currencyKey).inverted;
 												assert.strictEqual(
-													+web3.utils.fromWei(entryPoint.toString()),
+													+ethers.utils.formatEther(entryPoint.toString()),
 													expected.entryPoint,
 													'Entry points match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(upperLimit.toString()),
+													+ethers.utils.formatEther(upperLimit.toString()),
 													expected.upperLimit,
 													'Upper limits match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(lowerLimit.toString()),
+													+ethers.utils.formatEther(lowerLimit.toString()),
 													expected.lowerLimit,
 													'Lower limits match'
 												);
@@ -1145,18 +1198,20 @@ describe('publish scripts', () => {
 													frozenAtUpperLimit,
 													frozenAtLowerLimit,
 												] = await callMethodWithRetry(ExchangeRates.inversePricing(iABC));
-												const rate = await callMethodWithRetry(
-													ExchangeRates.rateForCurrency(iABC)
-												);
+												const rate = await callMethodWithRetry(ExchangeRates.rateForCurrency(iABC));
 
-												assert.strictEqual(+web3.utils.fromWei(entryPoint.toString()), 1, 'Entry point match');
 												assert.strictEqual(
-													+web3.utils.fromWei(upperLimit.toString()),
+													+ethers.utils.formatEther(entryPoint.toString()),
+													1,
+													'Entry point match'
+												);
+												assert.strictEqual(
+													+ethers.utils.formatEther(upperLimit.toString()),
 													1.5,
 													'Upper limit match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(lowerLimit.toString()),
+													+ethers.utils.formatEther(lowerLimit.toString()),
 													0.5,
 													'Lower limit match'
 												);
@@ -1166,7 +1221,7 @@ describe('publish scripts', () => {
 													'Is not frozen'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(rate.toString()),
+													+ethers.utils.formatEther(rate.toString()),
 													0,
 													'No rate for new inverted synth'
 												);
@@ -1183,17 +1238,17 @@ describe('publish scripts', () => {
 												] = await callMethodWithRetry(ExchangeRates.inversePricing(iXTZ));
 
 												assert.strictEqual(
-													+web3.utils.fromWei(entryPoint.toString()),
+													+ethers.utils.formatEther(entryPoint.toString()),
 													100,
 													'Entry point match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(upperLimit.toString()),
+													+ethers.utils.formatEther(upperLimit.toString()),
 													150,
 													'Upper limit match'
 												);
 												assert.strictEqual(
-													+web3.utils.fromWei(lowerLimit.toString()),
+													+ethers.utils.formatEther(lowerLimit.toString()),
 													50,
 													'Lower limit match'
 												);
@@ -1210,10 +1265,9 @@ describe('publish scripts', () => {
 												const tx = await ExchangeRates.freezeRate(iXTZ, overrides);
 												await tx.wait();
 
-												const [
-													,,,
-													newFrozenAtUpperLimit,
-												] = await callMethodWithRetry(ExchangeRates.inversePricing(iXTZ));
+												const [, , , newFrozenAtUpperLimit] = await callMethodWithRetry(
+													ExchangeRates.inversePricing(iXTZ)
+												);
 
 												assert.strictEqual(
 													newFrozenAtUpperLimit,
@@ -1223,12 +1277,12 @@ describe('publish scripts', () => {
 											});
 
 											it('and the iCEX synth should not be inverted at all', async () => {
-												const [ entryPoint ] = await callMethodWithRetry(
+												const [entryPoint] = await callMethodWithRetry(
 													ExchangeRates.inversePricing(toBytes32('iCEX'))
 												);
 
 												assert.strictEqual(
-													+web3.utils.fromWei(entryPoint.toString()),
+													+ethers.utils.formatEther(entryPoint.toString()),
 													0,
 													'iCEX should not be set'
 												);
@@ -1271,7 +1325,7 @@ describe('publish scripts', () => {
 														try {
 															const tx = await Synthetix.exchange(
 																toBytes32('iCEX'),
-																web3.utils.toWei('1000'),
+																ethers.utils.parseEther('1000'),
 																toBytes32('iABC'),
 																overrides
 															);
@@ -1366,7 +1420,11 @@ describe('publish scripts', () => {
 								let newTs;
 								beforeEach(async () => {
 									newTs = timestamp + 300;
-									const tx = await mockAggregator.setLatestAnswer((rate * 1e8).toFixed(0), newTs, overrides);
+									const tx = await mockAggregator.setLatestAnswer(
+										(rate * 1e8).toFixed(0),
+										newTs,
+										overrides
+									);
 									await tx.wait();
 								});
 								describe('then the price from exchange rates for that currency key uses the aggregator', () => {
@@ -1374,7 +1432,7 @@ describe('publish scripts', () => {
 										const response = await callMethodWithRetry(
 											ExchangeRates.rateForCurrency(toBytes32('sEUR'))
 										);
-										assert.strictEqual(web3.utils.fromWei(response.toString()), rate);
+										assert.strictEqual(ethers.utils.formatEther(response.toString()), rate);
 									});
 								});
 
@@ -1419,10 +1477,7 @@ describe('publish scripts', () => {
 							AddressResolver = getContract({ target: 'AddressResolver' });
 						});
 						it('then the read proxy address resolver is updated', async () => {
-							assert.strictEqual(
-								await ReadProxyAddressResolver.target(),
-								AddressResolver.address
-							);
+							assert.strictEqual(await ReadProxyAddressResolver.target(), AddressResolver.address);
 						});
 						it('and the resolver has all the addresses inside', async () => {
 							const targets = getTarget();
