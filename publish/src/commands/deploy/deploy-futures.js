@@ -4,7 +4,14 @@ const { gray } = require('chalk');
 const w3utils = require('web3-utils');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ account, addressOf, deployer, readProxyForResolver, runStep }) => {
+module.exports = async ({
+	account,
+	addressOf,
+	deployer,
+	readProxyForResolver,
+	runStep,
+	useOvm,
+}) => {
 	// ----------------
 	// Futures market setup
 	// ----------------
@@ -19,8 +26,15 @@ module.exports = async ({ account, addressOf, deployer, readProxyForResolver, ru
 
 	const futuresMarketManager = await deployer.deployContract({
 		name: 'FuturesMarketManager',
-		args: [addressOf(proxyFuturesMarketManager), account, addressOf(readProxyForResolver)],
+		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
+		args: useOvm
+			? [addressOf(proxyFuturesMarketManager), account, addressOf(readProxyForResolver)]
+			: [],
 	});
+
+	if (!useOvm) {
+		return;
+	}
 
 	if (proxyFuturesMarketManager && futuresMarketManager) {
 		await runStep({

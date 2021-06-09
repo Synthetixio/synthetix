@@ -248,6 +248,15 @@
 		"sips": [138, 139, 140]
 	},
 	{
+		"name": "Futures",
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
+		"sources": ["Exchanger", "Synthetix", "FuturesMarketManager"],
+		"sips": [80, 138, 139, 140]
+	},
+	{
 		"name": "Futures (Optimism)",
 		"version": {
 			"major": 2,

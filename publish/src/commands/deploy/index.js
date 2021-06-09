@@ -292,16 +292,14 @@ const deploy = async ({
 		deployer,
 	});
 
-	if (useOvm) {
-		await deployFutures({
-			account,
-			addressOf,
-			useOvm,
-			deployer,
-			readProxyForResolver,
-			runStep,
-		});
-	}
+	await deployFutures({
+		account,
+		addressOf,
+		deployer,
+		readProxyForResolver,
+		runStep,
+		useOvm,
+	});
 
 	await deployDappUtils({
 		account,
