@@ -21,7 +21,7 @@
 		"test:gas": "hardhat test --gas --optimizer || cat test-gas-used.log",
 		"test:deployments": "mocha test/deployments -- --timeout 60000",
 		"test:etherscan": "node test/etherscan",
-		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 240000\""
+		"test:publish": "concurrently --kill-others --success first \"npx hardhat node --mining-interval 3 > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 240000\""
 	},
 	"husky": {
 		"hooks": {
