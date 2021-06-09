@@ -136,5 +136,32 @@
 	},
 	"EtherWrapper": {
 		"deploy": true
+	},
+	"ProxyFuturesMarketBTC": {
+		"deploy": true
+	},
+	"FuturesMarketBTC": {
+		"deploy": true
+	},
+	"ProxyFuturesMarketETH": {
+		"deploy": true
+	},
+	"FuturesMarketETH": {
+		"deploy": true
+	},
+	"ProxyFuturesMarketLINK": {
+		"deploy": true
+	},
+	"FuturesMarketLINK": {
+		"deploy": true
+	},
+	"ProxyFuturesMarketManager": {
+		"deploy": true
+	},
+	"FuturesMarketManager": {
+		"deploy": true
+	},
+	"FuturesMarketData": {
+		"deploy": true
 	}
 }
