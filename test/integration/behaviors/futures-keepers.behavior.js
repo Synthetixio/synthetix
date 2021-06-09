@@ -115,19 +115,17 @@ function itConfirmsOrders({ ctx }) {
 				await setPrice(sETH, '205');
 			});
 
-			it('processes 10 orders within 1s', async () => {
-				const confirmedOrders = await Promise.all(orders.map(order =>
-					waitForEvent(
-						FuturesMarketETH,
-						FuturesMarketETH.filters.OrderConfirmed(order),
-						startBlockNumber,
-						5000
+			it('processes 10 orders within 3s', async () => {
+				const confirmedOrders = await Promise.all(
+					orders.map(order =>
+						waitForEvent(
+							FuturesMarketETH,
+							FuturesMarketETH.filters.OrderConfirmed(order),
+							startBlockNumber,
+							3000
+						)
 					)
-				))
-
-				// assert.doesNotThrow(async () => {
-					
-				// });
+				);
 			});
 		});
 	});
