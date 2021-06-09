@@ -89,7 +89,7 @@ jobs:
       - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
-            npx hardhat test:integration:dual --deploy
+            npx hardhat test:integration:dual --deploy-evm --deploy-ovm --connect
   job-lint:
     working_directory: ~/repo
     docker:
