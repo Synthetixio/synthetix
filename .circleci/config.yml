@@ -54,10 +54,14 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Build docker containers and start chains
+          name: Build docker containers
+          command: |
+            npx hardhat ops --fresh --build --build-ops --optimism-path ./optimism
+      - run:
+          name: Start docker chains
           background: true
           command: |
-            npx hardhat ops --fresh --start --optimism-path ./optimism
+            npx hardhat ops --start --optimism-path ./optimism
       - cmd-wait-for-port:
           port: 8545
       - cmd-wait-for-port:
