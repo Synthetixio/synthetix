@@ -5,7 +5,7 @@ async function updateExchangeRatesIfNeeded({ ctx }) {
 	const { Synthetix, DebtCache } = ctx.contracts;
 
 	if (await Synthetix.anySynthOrSNXRateIsInvalid()) {
-		await _simulateExchangeRates({ ctx });
+	await _simulateExchangeRates({ ctx });
 	}
 
 	const { isInvalid, isStale } = await DebtCache.cacheInfo();
@@ -21,7 +21,10 @@ async function _simulateExchangeRates({ ctx }) {
 
 	const currencyKeys = (await Issuer.availableCurrencyKeys())
 		.filter(key => key !== toBytes32('sUSD'))
-		.concat(['SNX', 'ETH'].map(toBytes32));
+		// Manually add the futures assets: ETH, BTC and LINK.
+		// These are not added to the issuer yet, but their prices
+		// are needed in the futures markets.
+		.concat(['SNX', 'ETH', 'sETH', 'sBTC', 'sLINK'].map(toBytes32));
 
 	const { timestamp } = await ctx.provider.getBlock();
 	const rates = currencyKeys.map(key => {
