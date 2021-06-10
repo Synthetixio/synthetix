@@ -4,6 +4,7 @@ const { getPrivateKey } = require('./users');
 const commands = {
 	build: require('../../../publish/src/commands/build').build,
 	deploy: require('../../../publish/src/commands/deploy').deploy,
+	prepareDeploy: require('../../../publish/src/commands/prepare-deploy').prepareDeploy,
 	connectBridge: require('../../../publish/src/commands/connect-bridge').connectBridge,
 };
 
@@ -11,26 +12,36 @@ const {
 	constants: { OVM_MAX_GAS_LIMIT },
 } = require('../../../.');
 
-async function compileInstance({ useOvm }) {
+async function compileInstance({ useOvm, buildPath }) {
 	await commands.build({
 		useOvm,
 		optimizerRuns: useOvm ? 1 : 200,
 		testHelpers: true,
+		buildPath,
 	});
+}
+
+async function prepareDeploy() {
+	await commands.prepareDeploy({ network: 'mainnet' });
 }
 
 async function deployInstance({
 	useOvm,
 	providerUrl,
 	providerPort,
+	useFork = false,
+	network = 'local',
+	freshDeploy = true,
 	ignoreCustomParameters = false,
+	buildPath,
 }) {
 	const privateKey = getPrivateKey({ index: 0 });
 
 	await commands.deploy({
 		concurrency: 1,
-		network: 'local',
-		freshDeploy: true,
+		network,
+		useFork,
+		freshDeploy,
 		yes: true,
 		providerUrl: `${providerUrl}:${providerPort}`,
 		gasPrice: useOvm ? '0' : '1',
@@ -39,6 +50,7 @@ async function deployInstance({
 		methodCallGasLimit: '3500000',
 		contractDeploymentGasLimit: useOvm ? OVM_MAX_GAS_LIMIT : '9500000',
 		ignoreCustomParameters,
+		buildPath,
 	});
 }
 
@@ -76,4 +88,5 @@ module.exports = {
 	compileInstance,
 	deployInstance,
 	connectInstances,
+	prepareDeploy,
 };

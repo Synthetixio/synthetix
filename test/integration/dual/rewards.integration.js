@@ -19,7 +19,7 @@ describe('depositReward() integration tests (L1, L2)', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeToOptimism } = ctx.l1.contracts);
 
-			owner = ctx.l1.owner;
+			owner = ctx.l1.users.owner;
 		});
 
 		before('approve if needed', async () => {
@@ -41,7 +41,7 @@ describe('depositReward() integration tests (L1, L2)', () => {
 		describe('when the deposit gets picked up in L2', () => {
 			let currentFeePeriodRewards;
 
-			before('target contracts and users', () => {
+			before('target contracts', () => {
 				({ FeePool } = ctx.l2.contracts);
 			});
 

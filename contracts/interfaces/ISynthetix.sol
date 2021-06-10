@@ -69,7 +69,7 @@ interface ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address originator,
+        address rewardAddress,
         bytes32 trackingCode
     ) external returns (uint amountReceived);
 
@@ -77,7 +77,7 @@ interface ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address originator,
+        address rewardAddress,
         bytes32 trackingCode
     ) external returns (uint amountReceived);
 
@@ -86,7 +86,7 @@ interface ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address originator,
+        address rewardAddress,
         bytes32 trackingCode
     ) external returns (uint amountReceived);
 
