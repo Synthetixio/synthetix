@@ -17,7 +17,7 @@ task('ops', 'Run Optimism chain')
 	.addFlag('build', 'Get the right commit and builds the repository')
 	.addFlag('buildOps', 'Build fresh docker images for the chain')
 	.addFlag('start', 'Start the latest build')
-	.addFlag('stop', 'Deploy an l1 instance before running the tests')
+	.addFlag('stop', 'Stop optimism chain')
 	.addOptionalParam('optimismPath', 'Path to optmism repository folder', '~/optimism')
 	.addOptionalParam(
 		'optimismCommit',
@@ -87,7 +87,7 @@ function _isRunning({ opsPath }) {
 	console.log(gray('  check if services are running'));
 	let result = true;
 
-	const running = execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker compose ps --services`]);
+	const running = execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker-compose ps --services`]);
 	const items = running.stdout.split(EOL);
 
 	if (!items) return false;
