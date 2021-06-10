@@ -253,7 +253,12 @@
 			"major": 2,
 			"minor": 47
 		},
-		"sources": ["Exchanger", "Synthetix", "FuturesMarketManager"],
+		"sources": [
+			"Exchanger", 
+			"Synthetix",
+			"FuturesMarketManager",
+			"SystemSettings"
+		],
 		"sips": [80, 138, 139, 140]
 	},
 	{
@@ -274,7 +279,8 @@
 			"FuturesMarketLINK",
 			"ProxyFuturesMarketManager",
 			"FuturesMarketManager",
-			"FuturesMarketData"
+			"FuturesMarketData",
+			"SystemSettings"
 		],
 		"sips": [80, 138, 139, 140]
 	}

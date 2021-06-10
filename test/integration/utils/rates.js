@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { toBytes32 } = require('../../..');
 
 async function updateExchangeRatesIfNeeded({ ctx }) {
-	const { Synthetix, DebtCache } = ctx.contracts;
+	const { DebtCache } = ctx.contracts;
 
 	await _simulateExchangeRates({ ctx });
 
