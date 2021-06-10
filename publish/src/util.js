@@ -225,7 +225,7 @@ const performTransactionalStep = async ({
 	if (read) {
 		// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
 		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		const response = await target.methods[read](...argumentsForReadFunction).call();
+		const response = await target[read](...argumentsForReadFunction);
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
@@ -233,7 +233,7 @@ const performTransactionalStep = async ({
 		}
 	}
 	// otherwise check the owner
-	const owner = await target.methods.owner().call();
+	const owner = await target.owner();
 	if (owner === account || publiclyCallable) {
 		// perform action
 		let hash;

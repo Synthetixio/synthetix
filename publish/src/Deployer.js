@@ -57,8 +57,7 @@ class Deployer {
 		 */
 		this.provider = { web3: {}, ethers: {} };
 		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-		this.provider.ethers.ro = ethers.getDefaultProvider(providerUrl);
-		this.provider.ethers.transactional = null;
+		this.provider.ethers.provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 		if (useFork || (!privateKey && network === 'local')) {
 			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
@@ -68,7 +67,7 @@ class Deployer {
 			this.provider.web3.eth.accounts.wallet.add(privateKey);
 			this.provider.web3.eth.defaultAccount = this.provider.web3.eth.accounts.wallet[0].address;
 
-			this.provider.ethers.wallet = new ethers.Wallet(privateKey);
+			this.provider.ethers.wallet = new ethers.Wallet(privateKey, this.provider.ethers.provider);
 			this.provider.ethers.defaultAccount = this.provider.ethers.wallet.address;
 		}
 		this.account = this.provider.ethers.defaultAccount;
@@ -277,14 +276,33 @@ class Deployer {
 					}
 				}
 
+				const params = await this.sendParameters('contract-deployment');
 				const newContract = new this.provider.web3.eth.Contract(compiled.abi);
-				deployedContract = await newContract
-					.deploy({
-						data: '0x' + bytecode,
-						arguments: args,
-					})
-					.send(await this.sendParameters('contract-deployment'))
-					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
+
+				// Estimate gas
+				// await newContract.deploy({
+				// 	data: '0x' + bytecode,
+				// 	arguments: args,
+				// }).estimateGas((err, gas) => {
+				// 	console.log(err, gas);
+				// });
+
+				// Deploy
+				// deployedContract = await newContract.deploy({
+				// 		data: '0x' + bytecode,
+				// 		arguments: args,
+				// 	})
+				// 	.send(params)
+				// 	.on('receipt', receipt => (gasUsed = receipt.gasUsed));
+
+				const factory = new ethers.ContractFactory(compiled.abi, bytecode, this.provider.ethers.wallet);
+				deployedContract = await factory.deploy(...args, {
+					gasLimit: 8000000,
+					gasPrice: 0
+				});
+				deployedContract.options = {
+					address: deployedContract.address,
+				};
 
 				if (this.nonceManager) {
 					this.nonceManager.incrementNonce();
