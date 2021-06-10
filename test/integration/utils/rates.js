@@ -1,11 +1,18 @@
 const ethers = require('ethers');
 const { toBytes32 } = require('../../..');
 
-async function updateExchangeRatesIfNeeded({ ctx }) {
-	const { DebtCache } = ctx.contracts;
+async function updateExchangeRatesIfNeeded({ ctx, forceUpdate = false }) {
+	const { Synthetix, DebtCache } = ctx.contracts;
 
-	if (await Synthetix.anySynthOrSNXRateIsInvalid()) {
-	await _simulateExchangeRates({ ctx });
+	// Temporary fix: futures assets need their rates updated,
+	// however they are not added to the issuer, and thus won't be
+	// included in the output of anySynthOrSNXRateIsInvalid.
+	//
+	// Previously I'd removed this if block, but the L1 integration test
+	// fails with "Only the oracle can perform this action". It's easier to
+	// just force it for now, as this is temporary until we get CL feeds on L2.
+	if ((await Synthetix.anySynthOrSNXRateIsInvalid()) || forceUpdate) {
+		await _simulateExchangeRates({ ctx });
 	}
 
 	const { isInvalid, isStale } = await DebtCache.cacheInfo();

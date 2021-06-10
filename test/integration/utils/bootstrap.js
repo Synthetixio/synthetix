@@ -39,7 +39,7 @@ function bootstrapL2({ ctx }) {
 
 		connectContracts({ ctx });
 
-		await updateExchangeRatesIfNeeded({ ctx });
+		await updateExchangeRatesIfNeeded({ ctx, forceUpdate: true });
 
 		await ensureBalance({
 			ctx,
@@ -86,7 +86,7 @@ function bootstrapDual({ ctx }) {
 		connectContracts({ ctx: ctx.l2 });
 
 		await updateExchangeRatesIfNeeded({ ctx: ctx.l1 });
-		await updateExchangeRatesIfNeeded({ ctx: ctx.l2 });
+		await updateExchangeRatesIfNeeded({ ctx: ctx.l2, forceUpdate: true });
 
 		await approveBridge({ ctx: ctx.l1, amount: ethers.utils.parseEther('100000000') });
 
