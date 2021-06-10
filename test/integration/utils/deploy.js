@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { getPrivateKey } = require('./users');
+const { getLocalPrivateKey } = require('../../test-utils/wallets');
 
 const commands = {
 	build: require('../../../publish/src/commands/build').build,
@@ -35,7 +35,7 @@ async function deployInstance({
 	ignoreCustomParameters = false,
 	buildPath,
 }) {
-	const privateKey = getPrivateKey({ index: 0 });
+	const privateKey = getLocalPrivateKey({ index: 0 });
 
 	await commands.deploy({
 		concurrency: 1,
@@ -55,7 +55,7 @@ async function deployInstance({
 }
 
 async function connectInstances({ providerUrl, providerPortL1, providerPortL2 }) {
-	const privateKey = getPrivateKey({ index: 0 });
+	const privateKey = getLocalPrivateKey({ index: 0 });
 
 	const { l1Messenger, l2Messenger } = await _getMessengers({ providerUrl });
 
