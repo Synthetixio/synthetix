@@ -1,9 +1,19 @@
+const fs = require('fs');
+const { EOL, homedir } = require('os');
 const { gray, yellow } = require('chalk');
 const { task } = require('hardhat/config');
 const execa = require('execa');
+const OPS_PROCESSES = [
+	{ service: 'batch_submitter', image: 'ethereumoptimism/batch-submitter' },
+	{ service: 'deployer', image: 'ethereumoptimism/deployer' },
+	{ service: 'dtl', image: 'ethereumoptimism/data-transport-layer' },
+	{ service: 'l1_chain', image: 'ethereumoptimism/hardhat' },
+	{ service: 'l2geth', image: 'ethereumoptimism/l2geth' },
+	{ service: 'relayer', image: 'ethereumoptimism/message-relayer' },
+];
 
 task('ops', 'Run Optimism chain')
-	.addFlag('clear', 'Clean up docker and get a fresh clone of the optimism repository')
+	.addFlag('fresh', 'Clean up docker and get a fresh clone of the optimism repository')
 	.addFlag('build', 'Get the right commit and builds the repository')
 	.addFlag('buildOps', 'Build fresh docker images for the chain')
 	.addFlag('start', 'Start the latest build')
@@ -15,58 +25,130 @@ task('ops', 'Run Optimism chain')
 		'86708bb5758cd2b647b3ca2be698beb5aa3af81f'
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
-		const opsPath = taskArguments.optimismPath;
+		const opsPath = taskArguments.optimismPath.replace('~', homedir);
 		const opsCommit = taskArguments.optimismCommit;
 
-		if (taskArguments.clear) {
-			// clear
-			console.log(yellow('clearing all'));
-			console.log(gray('  stop if still running'));
-			await execa('sh', ['-c', `cd ${opsPath}/ops && docker-compose down -v`]);
-			console.log(gray('  prune docker'));
-			await execa('docker', ['system', 'prune', '-f']);
-			console.log(gray('  clone fresh repository into', opsPath));
-			await execa('sh', ['-c', 'rm -drf ' + opsPath]);
-			await execa('sh', [
-				'-c',
-				'git clone https://github.com/ethereum-optimism/optimism.git ' + opsPath,
-			]);
-			// docker system prune -f && rm -rf ${OPT_PATH:-~/optimism} && mkdir -p  ${OPT_PATH:-~/optimism} && cd ${OPT_PATH:-~/optimism} && git clone https://github.com/ethereum-optimism/optimism.git .
-		}
-		if (taskArguments.build || (taskArguments.clear && taskArguments.start)) {
-			// build
-			console.log(yellow('building'));
-			console.log(gray('  checkout commit:', opsCommit));
-			await execa('sh', ['-c', `cd ${opsPath} && git fetch `]);
-			await execa('sh', ['-c', `cd ${opsPath} && git checkout master `]);
-			await execa('sh', ['-c', `cd ${opsPath} && git pull origin master `]);
-			await execa('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
-			console.log(gray('  get dependencies'));
-			await execa('sh', ['-c', `cd ${opsPath} && yarn `]);
-			console.log(gray('  build'));
-			await execa('sh', ['-c', `cd ${opsPath} && yarn build `]);
-			// cd ${OPT_PATH:-~/optimism} && git fetch && git checkout master && git pull origin master && git checkout ${OPT_COMMIT:-86708bb5758cd2b647b3ca2be698beb5aa3af81f} && yarn && yarn build
-		}
-		if (taskArguments.buildOps || (taskArguments.clear && taskArguments.start)) {
-			// buildOps
-			console.log(yellow('building docker images'));
-			await execa('sh', [
-				'-c',
-				`cd ${opsPath}/ops && export COMPOSE_DOCKER_CLI_BUILD=1 && export DOCKER_BUILDKIT=1 && docker-compose build`,
-			]);
+		console.log(gray('optimism folder:', opsPath));
 
-			// cd ${OPT_PATH:-~/optimism}/ops && export COMPOSE_DOCKER_CLI_BUILD=1 && export DOCKER_BUILDKIT=1 && docker-compose build
-		}
-		if (taskArguments.start) {
-			// start
-			console.log(yellow('starting'));
-			await execa('sh', ['-c', `cd ${opsPath}/ops && docker-compose up -d`]);
-			// cd ${OPT_PATH:-~/optimism}/ops && docker-compose up
-		}
 		if (taskArguments.stop) {
-			// stop
 			console.log(yellow('stoping'));
-			await execa('sh', ['-c', `cd ${opsPath}/ops && docker-compose down -v`]);
-			// cd ${OPT_PATH:-~/optimism}/ops && docker-compose down -v
+			if (fs.existsSync(opsPath)) {
+				await _stop({ opsPath });
+			}
+			return;
+		}
+
+		if (taskArguments.fresh) {
+			console.log(yellow('clearing and getting a fresh clone'));
+			if (fs.existsSync(opsPath) && _isRunning({ opsPath })) {
+				_stop({ opsPath });
+			}
+			_fresh({ opsPath });
+		}
+
+		if (taskArguments.build || (taskArguments.fresh && taskArguments.start)) {
+			console.log(yellow('building'));
+			if (!fs.existsSync(opsPath)) {
+				_fresh({ opsPath });
+			}
+
+			_build({ opsPath, opsCommit });
+		}
+
+		if (taskArguments.buildOps || (taskArguments.fresh && taskArguments.start)) {
+			console.log(yellow('building ops'));
+			if (!fs.existsSync(opsPath)) {
+				_fresh({ opsPath });
+				_build({ opsPath, opsCommit });
+			}
+			_buildOps({ opsPath });
+		}
+
+		if (taskArguments.start) {
+			console.log(yellow('starting'));
+			if (fs.existsSync(opsPath) && _isRunning({ opsPath })) {
+				console.log(yellow('already running'));
+				return;
+			}
+
+			if (!fs.existsSync(opsPath)) {
+				_fresh({ opsPath });
+				_build({ opsPath, opsCommit });
+				_buildOps({ opsPath });
+			} else if (!_imagesExist()) {
+				_build({ opsPath, opsCommit });
+				_buildOps({ opsPath });
+			}
+			_start({ opsPath });
 		}
 	});
+
+function _isRunning({ opsPath }) {
+	console.log(gray('  check if services are running'));
+	let result = true;
+
+	const running = execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker compose ps --services`]);
+	const items = running.stdout.split(EOL);
+
+	if (!items) return false;
+	OPS_PROCESSES.forEach(item => {
+		if (!items.includes(item.service)) {
+			result = false;
+		}
+	});
+	return result;
+}
+
+function _imagesExist() {
+	console.log(gray('  check if images exists'));
+	let result = true;
+
+	OPS_PROCESSES.forEach(item => {
+		const imageId = execa.sync('sh', ['-c', `docker image ls ${item.image} -q`]);
+		if (imageId.stdout === '') {
+			result = false;
+		}
+	});
+	return result;
+}
+
+function _fresh({ opsPath }) {
+	console.log(gray('  prune docker'));
+	execa.sync('docker', ['system', 'prune', '-f']);
+	console.log(gray('  clone fresh repository into', opsPath));
+	execa.sync('sh', ['-c', 'rm -drf ' + opsPath]);
+	execa.sync('sh', [
+		'-c',
+		'git clone https://github.com/ethereum-optimism/optimism.git ' + opsPath,
+	]);
+}
+
+function _build({ opsPath, opsCommit }) {
+	console.log(gray('  checkout commit:', opsCommit));
+	execa.sync('sh', ['-c', `cd ${opsPath} && git fetch `]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout master `]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && git pull origin master `]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
+	console.log(gray('  get dependencies'));
+	execa.sync('sh', ['-c', `cd ${opsPath} && yarn `]);
+	console.log(gray('  build'));
+	execa.sync('sh', ['-c', `cd ${opsPath} && yarn build `]);
+}
+
+function _buildOps({ opsPath }) {
+	console.log(gray('  build ops images'));
+	execa.sync('sh', [
+		'-c',
+		`cd ${opsPath}/ops && export COMPOSE_DOCKER_CLI_BUILD=1 && export DOCKER_BUILDKIT=1 && docker-compose build`,
+	]);
+}
+
+function _start({ opsPath }) {
+	console.log(gray('  start ops'));
+	execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker-compose up -d`]);
+}
+
+function _stop({ opsPath }) {
+	console.log(gray('  stop ops'));
+	execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker-compose down -v`]);
+}
