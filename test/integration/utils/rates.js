@@ -4,7 +4,9 @@ const { toBytes32 } = require('../../..');
 async function updateExchangeRatesIfNeeded({ ctx }) {
 	const { DebtCache } = ctx.contracts;
 
+	if (await Synthetix.anySynthOrSNXRateIsInvalid()) {
 	await _simulateExchangeRates({ ctx });
+	}
 
 	const { isInvalid, isStale } = await DebtCache.cacheInfo();
 	if (isInvalid || isStale) {
