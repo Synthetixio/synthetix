@@ -1,7 +1,8 @@
 const fs = require('fs');
-const { EOL, homedir } = require('os');
+const { homedir } = require('os');
 const { gray, yellow } = require('chalk');
 const { task } = require('hardhat/config');
+const { spawn } = require('child_process');
 const execa = require('execa');
 const OPS_PROCESSES = [
 	{ service: 'batch_submitter', image: 'ethereumoptimism/batch-submitter' },
@@ -18,6 +19,7 @@ task('ops', 'Run Optimism chain')
 	.addFlag('buildOps', 'Build fresh docker images for the chain')
 	.addFlag('start', 'Start the latest build')
 	.addFlag('stop', 'Stop optimism chain')
+	.addFlag('detached', 'Detach the chain from the console')
 	.addOptionalParam('optimismPath', 'Path to optmism repository folder', '~/optimism')
 	.addOptionalParam(
 		'optimismCommit',
@@ -27,13 +29,14 @@ task('ops', 'Run Optimism chain')
 	.setAction(async (taskArguments, hre, runSuper) => {
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
 		const opsCommit = taskArguments.optimismCommit;
+		const opsDetached = taskArguments.detached ? '-d' : '';
 
 		console.log(gray('optimism folder:', opsPath));
 
 		if (taskArguments.stop) {
 			console.log(yellow('stoping'));
 			if (fs.existsSync(opsPath)) {
-				await _stop({ opsPath });
+				_stop({ opsPath });
 			}
 			return;
 		}
@@ -79,7 +82,7 @@ task('ops', 'Run Optimism chain')
 				_build({ opsPath, opsCommit });
 				_buildOps({ opsPath });
 			}
-			_start({ opsPath });
+			_start({ opsPath, opsDetached });
 		}
 	});
 
@@ -87,13 +90,24 @@ function _isRunning({ opsPath }) {
 	console.log(gray('  check if services are running'));
 	let result = true;
 
-	const running = execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker-compose ps --services`]);
-	const items = running.stdout.split(EOL);
+	const images = execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker ps -q --no-trunc `]);
+	if (images.stdout === '') {
+		return false;
+	}
 
-	if (!items) return false;
 	OPS_PROCESSES.forEach(item => {
-		if (!items.includes(item.service)) {
-			result = false;
+		try {
+			const imageId = execa.sync('sh', [
+				'-c',
+				`cd ${opsPath}/ops && docker ps -q --no-trunc | grep $(docker-compose ps -q ${item.service} )`,
+			]);
+			if (imageId.stdout === '') {
+				result = false;
+			}
+		} catch (err) {
+			if (err.exitCode === 1) {
+				result = false;
+			}
 		}
 	});
 	return result;
@@ -143,9 +157,12 @@ function _buildOps({ opsPath }) {
 	]);
 }
 
-function _start({ opsPath }) {
+async function _start({ opsPath, opsDetached }) {
 	console.log(gray('  start ops'));
-	execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker-compose up -d`]);
+	spawn('sh', ['-c', `cd ${opsPath}/ops && docker-compose up ${opsDetached}`], {
+		stdio: 'inherit',
+	});
+	await new Promise(() => {}); // Keeps the process open
 }
 
 function _stop({ opsPath }) {
