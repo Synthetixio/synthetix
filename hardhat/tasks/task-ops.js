@@ -82,7 +82,7 @@ task('ops', 'Run Optimism chain')
 				_build({ opsPath, opsCommit });
 				_buildOps({ opsPath });
 			}
-			_start({ opsPath, opsDetached });
+			await _start({ opsPath, opsDetached });
 		}
 	});
 
