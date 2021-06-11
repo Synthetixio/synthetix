@@ -1,7 +1,7 @@
 'use strict';
 
 const {
-	constants: { OVM_MAX_GAS_LIMIT },
+	constants: { OVM_GAS_PRICE_GWEI },
 	nonUpgradeable,
 } = require('../../../..');
 
@@ -15,6 +15,7 @@ module.exports = ({
 	manageNonces,
 	methodCallGasLimit,
 	network,
+	gasPrice,
 	useOvm,
 }) => {
 	if (!ignoreSafetyChecks) {
@@ -46,17 +47,19 @@ module.exports = ({
 			});
 		}
 
-		// Every transaction in Optimism needs to be below 9m gas, to ensure
-		// there are no deployment out of gas errors during fraud proofs.
+		// Gas price needs to be set to 0.015 gwei in Optimism,
+		// and gas limits need to be dynamically set by the provider.
+		// More info:
+		// https://www.notion.so/How-to-pay-Fees-in-Optimistic-Ethereum-f706f4e5b13e460fa5671af48ce9a695
 		if (useOvm) {
-			const maxOptimismGasLimit = OVM_MAX_GAS_LIMIT;
-			if (
-				contractDeploymentGasLimit > maxOptimismGasLimit ||
-				methodCallGasLimit > maxOptimismGasLimit
-			) {
+			if (contractDeploymentGasLimit || methodCallGasLimit) {
 				throw new Error(
-					`Maximum transaction gas limit for OVM is ${maxOptimismGasLimit} gas, and specified contractDeploymentGasLimit and/or methodCallGasLimit are over such limit. Please make sure that these values are below the maximum gas limit to guarantee that fraud proofs can be done in L1.`
+					'Gas limits should not be set by the user in Optimism. Please use dynamic values.'
 				);
+			}
+
+			if (gasPrice !== OVM_GAS_PRICE_GWEI) {
+				throw new Error(`Gas price needs to be ${OVM_GAS_PRICE_GWEI} when targeting Optimism.`);
 			}
 		}
 

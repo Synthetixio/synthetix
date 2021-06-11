@@ -24,7 +24,7 @@ task('ops', 'Run Optimism chain')
 	.addOptionalParam(
 		'optimismCommit',
 		'Commit to checkout',
-		'86708bb5758cd2b647b3ca2be698beb5aa3af81f'
+		undefined // Define here to pin to that specific commit
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
@@ -142,7 +142,9 @@ function _build({ opsPath, opsCommit }) {
 	execa.sync('sh', ['-c', `cd ${opsPath} && git fetch `]);
 	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout master `]);
 	execa.sync('sh', ['-c', `cd ${opsPath} && git pull origin master `]);
-	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
+	if (opsCommit) {
+		execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
+	}
 	console.log(gray('  get dependencies'));
 	execa.sync('sh', ['-c', `cd ${opsPath} && yarn `]);
 	console.log(gray('  build'));
