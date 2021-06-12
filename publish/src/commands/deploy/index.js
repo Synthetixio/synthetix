@@ -202,7 +202,7 @@ const deploy = async ({
 
 	const { account } = deployer;
 
-	nonceManager.web3 = deployer.provider.web3;
+	nonceManager.ethers = deployer.provider.ethers;
 	nonceManager.account = account;
 
 	const {
