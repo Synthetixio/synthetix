@@ -27,7 +27,9 @@ const nominate = async ({
 	gasPrice,
 	gasLimit,
 	useOvm,
+	privateKey,
 	providerUrl,
+	yes,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -60,7 +62,7 @@ const nominate = async ({
 		contracts = Object.keys(config).filter(contract => contract !== 'DappMaintenance');
 	}
 
-	const { providerUrl: envProviderUrl, privateKey } = loadConnections({
+	const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
 		useFork,
 	});
@@ -71,6 +73,11 @@ const nominate = async ({
 		}
 
 		providerUrl = envProviderUrl;
+	}
+
+	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
+	if (network !== 'local' && !privateKey) {
+		privateKey = envPrivateKey;
 	}
 
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
@@ -85,19 +92,21 @@ const nominate = async ({
 
 	console.log(gray(`Using account with public key ${account}`));
 
-	try {
-		await confirmAction(
-			cyan(
-				`${yellow(
-					'WARNING'
-				)}: This action will nominate ${newOwner} as the owner in ${network} of the following contracts:\n- ${contracts.join(
-					'\n- '
-				)}`
-			) + '\nDo you want to continue? (y/n) '
-		);
-	} catch (err) {
-		console.log(gray('Operation cancelled'));
-		process.exit();
+	if (!yes) {
+		try {
+			await confirmAction(
+				cyan(
+					`${yellow(
+						'WARNING'
+					)}: This action will nominate ${newOwner} as the owner in ${network} of the following contracts:\n- ${contracts.join(
+						'\n- '
+					)}`
+				) + '\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			process.exit();
+		}
 	}
 
 	for (const contract of contracts) {
@@ -160,6 +169,11 @@ module.exports = {
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
+			.option(
+				'-v, --private-key [value]',
+				'The private key to deploy with (only works in local mode, otherwise set in .env).'
+			)
+			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option(
 				'-c, --contracts [value]',
 				'The list of contracts. Applies to all contract by default',
