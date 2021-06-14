@@ -15,6 +15,7 @@ const commands = {
 async function compileInstance({ useOvm, buildPath }) {
 	await commands.build({
 		useOvm,
+		cleanBuild: true,
 		optimizerRuns: useOvm ? 1 : 200,
 		testHelpers: true,
 		buildPath,

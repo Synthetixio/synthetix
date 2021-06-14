@@ -224,6 +224,7 @@ const deploy = async ({
 		oracleAddress,
 	} = await systemAndParameterCheck({
 		account,
+		buildPath,
 		addNewSynths,
 		concurrency,
 		config,
