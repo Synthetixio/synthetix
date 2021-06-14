@@ -32,6 +32,7 @@ function itCanNominate({ ctx }) {
 				network: 'local',
 				privateKey,
 				yes: true,
+				quiet: true,
 				newOwner: address,
 				contracts: _applicableContracts({ ctx }),
 				useFork: ctx.useFork,

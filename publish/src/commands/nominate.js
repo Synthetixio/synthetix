@@ -1,12 +1,11 @@
 'use strict';
 
+const ethers = require('ethers');
 const { gray, yellow, red, cyan } = require('chalk');
-const w3utils = require('web3-utils');
-const Web3 = require('web3');
 
 const {
 	getUsers,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, OVM_GAS_PRICE_GWEI },
 } = require('../../..');
 
 const {
@@ -30,7 +29,12 @@ const nominate = async ({
 	privateKey,
 	providerUrl,
 	yes,
+	quiet,
 }) => {
+	if (quiet) {
+		console.log = () => {};
+	}
+
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
@@ -39,7 +43,7 @@ const nominate = async ({
 		newOwner = getUsers({ network, useOvm, user: 'owner' }).address;
 	}
 
-	if (!newOwner || !w3utils.isAddress(newOwner)) {
+	if (!newOwner || !ethers.utils.isAddress(newOwner)) {
 		console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 		process.exit(1);
 	} else {
@@ -80,17 +84,16 @@ const nominate = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	let account;
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	let wallet;
 	if (useFork) {
-		web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
-		account = web3.eth.defaultAccount;
+		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		wallet = provider.getSigner(account);
 	} else {
-		web3.eth.accounts.wallet.add(privateKey);
-		account = web3.eth.accounts.wallet[0].address;
+		wallet = new ethers.Wallet(privateKey, provider);
 	}
 
-	console.log(gray(`Using account with public key ${account}`));
+	console.log(gray(`Using account with public key ${wallet.address}`));
 
 	if (!yes) {
 		try {
@@ -112,36 +115,32 @@ const nominate = async ({
 	for (const contract of contracts) {
 		const { address, source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
-		const deployedContract = new web3.eth.Contract(abi, address);
+		const deployedContract = new ethers.Contract(address, abi, wallet);
 
 		// ignore contracts that don't support Owned
-		if (!deployedContract.methods.owner) {
+		if (!deployedContract.functions.owner) {
 			continue;
 		}
 
-		const currentOwner = (await deployedContract.methods.owner().call()).toLowerCase();
-		const nominatedOwner = (await deployedContract.methods.nominatedOwner().call()).toLowerCase();
+		const currentOwner = (await deployedContract.owner()).toLowerCase();
+		const nominatedOwner = (await deployedContract.nominatedOwner()).toLowerCase();
 
 		console.log(
 			gray(
 				`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
 			)
 		);
-		if (account.toLowerCase() !== currentOwner) {
+		if (wallet.address.toLowerCase() !== currentOwner) {
 			console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 			console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
-			if (useOvm) {
-				gasLimit = await deployedContract.methods
-					.nominateNewOwner(newOwner)
-					.estimateGas({ from: account });
-			}
+			const overrides = {
+				gasLimit: useOvm ? undefined : gasLimit,
+				gasPrice: useOvm ? OVM_GAS_PRICE_GWEI : ethers.utils.parseUnits(gasPrice, 'gwei'),
+			};
 
-			await deployedContract.methods.nominateNewOwner(newOwner).send({
-				from: account,
-				gas: gasLimit,
-				gasPrice: w3utils.toWei(gasPrice, 'gwei'),
-			});
+			const tx = await deployedContract.nominateNewOwner(newOwner, overrides);
+			await tx.wait();
 		} else {
 			console.log(gray('No change required.'));
 		}
@@ -179,6 +178,7 @@ module.exports = {
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
 			)
+			.option('--quiet', 'Dont print logs.')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option(
 				'-c, --contracts [value]',
