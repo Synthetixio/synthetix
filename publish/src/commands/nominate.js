@@ -131,6 +131,12 @@ const nominate = async ({
 			console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 			console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
+			if (useOvm) {
+				gasLimit = await deployedContract.methods
+					.nominateNewOwner(newOwner)
+					.estimateGas({ from: account });
+			}
+
 			await deployedContract.methods.nominateNewOwner(newOwner).send({
 				from: account,
 				gas: gasLimit,
