@@ -5,7 +5,7 @@ const { gray, yellow, red, cyan } = require('chalk');
 
 const {
 	getUsers,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, OVM_GAS_PRICE_GWEI },
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
 } = require('../../..');
 
 const {
@@ -135,8 +135,8 @@ const nominate = async ({
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 			console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
 			const overrides = {
-				gasLimit: useOvm ? undefined : gasLimit,
-				gasPrice: useOvm ? OVM_GAS_PRICE_GWEI : ethers.utils.parseUnits(gasPrice, 'gwei'),
+				gasLimit,
+				gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 			};
 
 			const tx = await deployedContract.nominateNewOwner(newOwner, overrides);
