@@ -1,6 +1,6 @@
 {
 	"name": "synthetix",
-	"version": "2.44.0-alpha-1",
+	"version": "2.45.2",
 	"license": "MIT",
 	"author": "Synthetix",
 	"description": "The smart contracts which make up the Synthetix system. (synthetix.io)",
@@ -19,12 +19,9 @@
 		"test": "hardhat test",
 		"describe": "hardhat describe",
 		"test:gas": "hardhat test --gas --optimizer || cat test-gas-used.log",
-		"test:prod": "hardhat test:prod --network localhost --optimizer",
-		"test:prod:gas": "hardhat test:prod --gas --network localhost --optimizer --gas-output-file test-gas-used-prod.log",
-		"test:prod:ovm": "concurrently --kill-others --success first \"wait-port 8545 && wait-port 9545 && mocha test/optimism --timeout 900000\"",
 		"test:deployments": "mocha test/deployments -- --timeout 60000",
 		"test:etherscan": "node test/etherscan",
-		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --timeout 240000\""
+		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --bail --timeout 240000\""
 	},
 	"husky": {
 		"hooks": {
@@ -74,10 +71,14 @@
 		"test": "test"
 	},
 	"devDependencies": {
+		"@chainlink/contracts-0.0.10": "npm:@chainlink/contracts@0.0.10",
 		"@codechecks/client": "0.1.10",
-		"@eth-optimism/plugins": "0.0.16",
-		"@eth-optimism/smock": "0.2.1-alpha.0",
+		"@eth-optimism/contracts": "0.3.4",
+		"@eth-optimism/hardhat-ovm": "0.2.2",
+		"@eth-optimism/smock": "1.1.4",
 		"@eth-optimism/solc": "0.5.16-alpha.7",
+		"@eth-optimism/watcher": "0.0.1-alpha.9",
+		"@nomiclabs/hardhat-ethers": "^2.0.2",
 		"@nomiclabs/hardhat-truffle5": "2.0.0",
 		"@nomiclabs/hardhat-web3": "2.0.0",
 		"@pinata/sdk": "1.1.11",
@@ -99,10 +100,10 @@
 		"eslint-plugin-prettier": "^2.6.2",
 		"eslint-plugin-promise": "^4.0.1",
 		"eslint-plugin-standard": "^4.0.0",
-		"ethers": "5.0.31",
+		"ethers": "5.1.4",
 		"execa": "^4.1.0",
 		"fs-extra": "9.0.1",
-		"hardhat": "~2.1.2",
+		"hardhat": "~2.2.1",
 		"hardhat-gas-reporter": "~1.0.4",
 		"husky": "^4.3.0",
 		"is-ci": "^2.0.0",
@@ -110,6 +111,7 @@
 		"lodash.uniq": "^4.5.0",
 		"mocha": "8.1.3",
 		"mustache": "^4.0.1",
+		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
 		"p-limit": "1.3.0",
 		"prettier": "~1.19.1",
 		"prettier-plugin-solidity": "1.0.0-beta.6",
@@ -128,12 +130,8 @@
 		"yaml-validator": "^3.0.0"
 	},
 	"dependencies": {
-		"@chainlink/contracts-0.0.10": "npm:@chainlink/contracts@0.0.10",
-		"@eth-optimism/contracts": "0.2.10",
-		"@eth-optimism/watcher": "0.0.1-alpha.8",
 		"abi-decoder": "2.3.0",
 		"commander": "5.1.0",
-		"openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
 		"pretty-error": "^2.1.1",
 		"solidity-parser-antlr": "^0.4.11",
 		"web3-utils": "1.2.2"

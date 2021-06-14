@@ -6,10 +6,10 @@ module.exports = {
 	port: 8545,
 	skipFiles: [
 		'test-helpers',
+		'migrations',
 		'EscrowChecker.sol',
 		'ExchangeRatesWithoutInvPricing.sol',
 		'IssuerWithoutLiquidations.sol',
-		'BridgeMigrator.sol',
 	],
 	providerOptions: {
 		default_balance_ether: 10000000000000, // extra zero just in case (coverage consumes more gas)

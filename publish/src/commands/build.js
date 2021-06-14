@@ -35,7 +35,7 @@ const build = async ({
 	useOvm,
 	cleanBuild,
 } = {}) => {
-	console.log(gray(`Starting build${useOvm ? ' using OVM' : ''}...`));
+	console.log(gray(`Starting build${useOvm ? ' using OVM' : ''} at path ${buildPath}...`));
 
 	if (cleanBuild && fs.existsSync(buildPath)) {
 		fs.rmdirSync(buildPath, { recursive: true });

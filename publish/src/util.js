@@ -59,7 +59,7 @@ const ensureDeploymentPath = deploymentPath => {
 };
 
 // Load up all contracts in the flagged source, get their deployed addresses (if any) and compiled sources
-const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
+const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
 	const synths = getSynths({ network, deploymentPath });
@@ -96,6 +96,11 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 		fs.writeFileSync(deploymentFile, stringify({ targets: {}, sources: {} }));
 	}
 	const deployment = JSON.parse(fs.readFileSync(deploymentFile));
+
+	if (freshDeploy) {
+		deployment.targets = {};
+		deployment.sources = {};
+	}
 
 	const ownerActionsFile = path.join(deploymentPath, OWNER_ACTIONS_FILENAME);
 	if (!fs.existsSync(ownerActionsFile)) {
@@ -239,7 +244,9 @@ const performTransactionalStep = async ({
 		} else {
 			const params = {
 				from: account,
-				gas: Number(gasLimit),
+				gas:
+					Number(gasLimit) ||
+					(await target.methods[write](...argumentsForWriteFunction).estimateGas()),
 				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
 			};
 
