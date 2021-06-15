@@ -54,7 +54,7 @@ async function run({
 		signers,
 		provider,
 	});
-	keeper.run({ fromBlock, });
+	keeper.run({ fromBlock });
 
 	await new Promise((resolve, reject) => {});
 }
