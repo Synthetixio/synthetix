@@ -1,9 +1,9 @@
 const { bootstrapL2 } = require('../utils/bootstrap');
-const { itCanNominate } = require('../behaviors/nominate.behavior');
+const { itCanManageOwnedContracts } = require('../behaviors/owned.behavior');
 
 describe('Owned integration tests (L2)', () => {
 	const ctx = this;
 	bootstrapL2({ ctx });
 
-	itCanNominate({ ctx });
+	itCanManageOwnedContracts({ ctx });
 });
