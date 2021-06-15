@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 // Internal references
 import "./FuturesMarket.sol";
 import "./FuturesMarketManager.sol";
+import "./FuturesMarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
 
 contract FuturesMarketData {
@@ -104,7 +105,14 @@ contract FuturesMarketData {
             );
     }
 
-    function _getParameters(FuturesMarket market) internal view returns (FuturesMarket.Parameters memory) {
+    function _futuresMarketSettings() internal view returns (FuturesMarketSettings) {
+        return
+            FuturesMarketSettings(
+                resolverProxy.requireAndGetAddress("FuturesMarketSettings", "Missing FuturesMarketSettings Address")
+            );
+    }
+
+    function _getParameters(bytes32 baseAsset) internal view returns (FuturesMarketSettings.Parameters memory) {
         (
             uint takerFee,
             uint makerFee,
@@ -114,9 +122,9 @@ contract FuturesMarketData {
             uint maxFundingRate,
             uint maxFundingRateSkew,
             uint maxFundingRateDelta
-        ) = market.parameters();
+        ) = _futuresMarketSettings().getAllParameters(baseAsset);
         return
-            FuturesMarket.Parameters(
+            FuturesMarketSettings.Parameters(
                 takerFee,
                 makerFee,
                 maxLeverage,
@@ -134,7 +142,7 @@ contract FuturesMarketData {
         for (uint i; i < numMarkets; i++) {
             FuturesMarket market = FuturesMarket(markets[i]);
 
-            FuturesMarket.Parameters memory parameters = _getParameters(market);
+            FuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
             (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
 
@@ -166,7 +174,7 @@ contract FuturesMarketData {
         return _marketSummaries(_futuresMarketManager().allMarkets());
     }
 
-    function _fundingParameters(FuturesMarket.Parameters memory parameters)
+    function _fundingParameters(FuturesMarketSettings.Parameters memory parameters)
         internal
         pure
         returns (FundingParameters memory)
@@ -183,7 +191,7 @@ contract FuturesMarketData {
         (uint price, bool invalid) = market.assetPrice();
         (uint marketDebt, ) = market.marketDebt();
 
-        FuturesMarket.Parameters memory parameters = _getParameters(market);
+        FuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
 
         return
             MarketData(

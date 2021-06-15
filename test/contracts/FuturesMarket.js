@@ -21,6 +21,7 @@ const {
 contract('FuturesMarket', accounts => {
 	let systemSettings,
 		proxyFuturesMarket,
+		futuresMarketSettings,
 		futuresMarket,
 		exchangeRates,
 		oracle,
@@ -38,12 +39,8 @@ contract('FuturesMarket', accounts => {
 	const baseAsset = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
-	const maxLeverage = toUnit('10');
 	const maxMarketValue = toUnit('100000');
-	const minInitialMargin = toUnit('100');
 	const maxFundingRate = toUnit('0.1');
-	const maxFundingRateSkew = toUnit('1');
-	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
 	const liquidationFee = toUnit('20');
 
@@ -95,6 +92,7 @@ contract('FuturesMarket', accounts => {
 	before(async () => {
 		({
 			ProxyFuturesMarketBTC: proxyFuturesMarket,
+			FuturesMarketSettings: futuresMarketSettings,
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSD,
@@ -106,6 +104,7 @@ contract('FuturesMarket', accounts => {
 			synths: ['sUSD'],
 			contracts: [
 				'FuturesMarketManager',
+				'FuturesMarketSettings',
 				'ProxyFuturesMarketBTC',
 				'FuturesMarketBTC',
 				'AddressResolver',
@@ -139,14 +138,6 @@ contract('FuturesMarket', accounts => {
 				abi: futuresMarket.abi,
 				ignoreParents: ['Owned', 'Proxyable', 'MixinSystemSettings'],
 				expected: [
-					'setTakerFee',
-					'setMakerFee',
-					'setMaxLeverage',
-					'setMaxMarketValue',
-					'setMinInitialMargin',
-					'setMaxFundingRate',
-					'setMaxFundingRateSkew',
-					'setMaxFundingRateDelta',
 					'modifyMargin',
 					'withdrawAllMargin',
 					'submitOrder',
@@ -159,19 +150,6 @@ contract('FuturesMarket', accounts => {
 			});
 		});
 
-		it('static parameters are set properly at construction', async () => {
-			const parameters = await futuresMarket.parameters();
-			assert.equal(await futuresMarket.baseAsset(), baseAsset);
-			assert.bnEqual(parameters.takerFee, takerFee);
-			assert.bnEqual(parameters.makerFee, makerFee);
-			assert.bnEqual(parameters.maxLeverage, maxLeverage);
-			assert.bnEqual(parameters.maxMarketValue, maxMarketValue);
-			assert.bnEqual(parameters.minInitialMargin, minInitialMargin);
-			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
-			assert.bnEqual(parameters.maxFundingRateSkew, maxFundingRateSkew);
-			assert.bnEqual(parameters.maxFundingRateDelta, maxFundingRateDelta);
-		});
-
 		it('prices are properly fetched', async () => {
 			const roundId = await futuresMarket.currentRoundId();
 			const price = toUnit(200);
@@ -181,42 +159,6 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(result.price, price);
 			assert.isFalse(result.invalid);
 			assert.bnEqual(await futuresMarket.currentRoundId(), toBN(roundId).add(toBN(1)));
-		});
-
-		it('Setters', async () => {
-			const params = [
-				['takerFee', '0.01', futuresMarket.setTakerFee],
-				['makerFee', '0.01', futuresMarket.setMakerFee],
-				['maxLeverage', '20', futuresMarket.setMaxLeverage],
-				['maxMarketValue', '50000', futuresMarket.setMaxMarketValue],
-				['minInitialMargin', '500', futuresMarket.setMinInitialMargin],
-				['maxFundingRate', '0.5', futuresMarket.setMaxFundingRate],
-				['maxFundingRateSkew', '0.5', futuresMarket.setMaxFundingRateSkew],
-				['maxFundingRateDelta', '0.02', futuresMarket.setMaxFundingRateDelta],
-			];
-
-			for (const p of params) {
-				const param = toBytes32(p[0]);
-				const value = toUnit(p[1]);
-				const setter = p[2];
-
-				// Only settable by the owner
-				await assert.revert(setter(value, { from: trader }), 'Owner only function');
-
-				const tx = await setter(value, { from: owner });
-				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
-
-				assert.equal(decodedLogs.length, 1);
-				decodedEventEqual({
-					event: 'ParameterUpdated',
-					emittedFrom: proxyFuturesMarket.address,
-					args: [param, value],
-					log: decodedLogs[0],
-				});
-
-				// And the parameter was actually set properly
-				assert.bnEqual((await futuresMarket.parameters())[p[0]], value);
-			}
 		});
 
 		it('market size and skew', async () => {
@@ -1663,9 +1605,9 @@ contract('FuturesMarket', accounts => {
 
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('-0.05'));
 
-			await futuresMarket.setMaxFundingRate(toUnit('0.2'), { from: owner });
+			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.2'), { from: owner });
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('-0.1'));
-			await futuresMarket.setMaxFundingRate(toUnit('0'), { from: owner });
+			await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0'), { from: owner });
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0'));
 		});
 
@@ -1686,16 +1628,16 @@ contract('FuturesMarket', accounts => {
 				leverage: toUnit('1'),
 			});
 
-			await futuresMarket.setMaxFundingRateSkew(toUnit('0.5'), { from: owner });
+			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.5'), { from: owner });
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
 
-			await futuresMarket.setMaxFundingRateSkew(toUnit('0.75'), { from: owner });
+			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.75'), { from: owner });
 			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('0.2').div(toBN(3)));
 
-			await futuresMarket.setMaxFundingRateSkew(toUnit('0.25'), { from: owner });
+			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.25'), { from: owner });
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
 
-			await futuresMarket.setMaxFundingRateSkew(toUnit('0'), { from: owner });
+			await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0'), { from: owner });
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit('0.1'));
 		});
 
@@ -1730,7 +1672,9 @@ contract('FuturesMarket', accounts => {
 					const points = 5;
 
 					for (const maxFRSkew of ['1', '0.5', '0.3'].map(toUnit)) {
-						await futuresMarket.setMaxFundingRateSkew(maxFRSkew, { from: owner });
+						await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, maxFRSkew, {
+							from: owner,
+						});
 						// We will sample points linearly from proportionalSkew = 0 down to proportionalSkew = maxFRSkew,
 						// So that the funding rate will go from 0 to maxFR.
 						// 0 skew is achieved when oppLev = -leverage.
@@ -1748,7 +1692,7 @@ contract('FuturesMarket', accounts => {
 							.div(toUnit(1).add(maxFRSkew));
 
 						for (const maxFR of ['0.1', '0.2', '0.05'].map(toUnit)) {
-							await futuresMarket.setMaxFundingRate(maxFR, { from: owner });
+							await futuresMarketSettings.setMaxFundingRate(baseAsset, maxFR, { from: owner });
 
 							const lowLev = leverage.mul(k).div(toUnit(1));
 

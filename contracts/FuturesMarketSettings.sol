@@ -3,11 +3,12 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
+import "./interfaces/IFuturesMarketSettings.sol";
 
 // Libraries
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarketSettings
-contract FuturesMarketSettings is Owned, MixinSystemSettings {
+contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
     // TODO: Convert funding rate from daily to per-second
     struct Parameters {
         uint takerFee;
@@ -133,6 +134,64 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings {
 
         parameters[_baseAsset].maxFundingRateDelta = _fundingParameters[2];
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATEDELTA, _fundingParameters[2]);
+    }
+
+    /* ---------- Getters ---------- */
+
+    function getTakerFee(bytes32 _baseAsset) external view returns (uint) {
+        return parameters[_baseAsset].takerFee;
+    }
+
+    function getMakerFee(bytes32 _baseAsset) external view returns (uint) {
+        return parameters[_baseAsset].makerFee;
+    }
+
+    function getMaxLeverage(bytes32 _baseAsset) external view returns (uint) {
+        return parameters[_baseAsset].maxLeverage;
+    }
+
+    function getMaxMarketValue(bytes32 _baseAsset) external view returns (uint) {
+        return parameters[_baseAsset].maxMarketValue;
+    }
+
+    function getMinInitialMargin(bytes32 _baseAsset) external view returns (uint) {
+        return parameters[_baseAsset].minInitialMargin;
+    }
+
+    function getMaxFundingRate(bytes32 _baseAsset) external view returns (uint) {
+        return parameters[_baseAsset].maxFundingRate;
+    }
+
+    function getMaxFundingRateSkew(bytes32 _baseAsset) external view returns (uint) {
+        return parameters[_baseAsset].maxFundingRateSkew;
+    }
+
+    function getMaxFundingRateDelta(bytes32 _baseAsset) external view returns (uint) {
+        return parameters[_baseAsset].maxFundingRateDelta;
+    }
+
+    function getAllParameters(bytes32 _baseAsset)
+        external
+        view
+        returns (
+            uint takerFee,
+            uint makerFee,
+            uint maxLeverage,
+            uint maxMarketValue,
+            uint minInitialMargin,
+            uint maxFundingRate,
+            uint maxFundingRateSkew,
+            uint maxFundingRateDelta
+        )
+    {
+        takerFee = parameters[_baseAsset].takerFee;
+        makerFee = parameters[_baseAsset].makerFee;
+        maxLeverage = parameters[_baseAsset].maxLeverage;
+        maxMarketValue = parameters[_baseAsset].maxMarketValue;
+        minInitialMargin = parameters[_baseAsset].minInitialMargin;
+        maxFundingRate = parameters[_baseAsset].maxFundingRate;
+        maxFundingRateSkew = parameters[_baseAsset].maxFundingRateSkew;
+        maxFundingRateDelta = parameters[_baseAsset].maxFundingRateDelta;
     }
 
     /* ========== EVENTS ========== */

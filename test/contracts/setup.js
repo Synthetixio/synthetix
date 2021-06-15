@@ -251,37 +251,18 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
+		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketBTC: [
 			tryGetAddressOf('ProxyFuturesMarketBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset
-			toWei('0.003'), // 0.3% taker fee
-			toWei('0.001'), // 0.1% maker fee
-			toWei('10'), // 10x max leverage
-			toWei('100000'), // 100000 max market debt
-			toWei('100'), // 100 sUSD minimum initial margin
-			[
-				toWei('0.1'), // 10% max funding rate
-				toWei('1'), // 100% max funding rate skew
-				toWei('0.0125'), // 1.25% per hour max funding rate of change
-			],
 		],
 		FuturesMarketETH: [
 			tryGetAddressOf('ProxyFuturesMarketETH'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sETH'), // base asset
-			toWei('0.003'), // 0.3% taker fee
-			toWei('0.001'), // 0.1% maker fee
-			toWei('10'), // 10x max leverage
-			toWei('100000'), // 100000 max market debt
-			toWei('100'), // 100 sUSD minimum initial margin
-			[
-				toWei('0.1'), // 10% max funding rate
-				toWei('1'), // 100% max funding rate skew
-				toWei('0.0125'), // 1.25% per hour max funding rate of change
-			],
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 	};
@@ -535,6 +516,20 @@ const setupContract = async ({
 		},
 		async FuturesMarketBTC() {
 			await Promise.all([
+				cache['FuturesMarketSettings'].setAllParameters(
+					toBytes32('sBTC'),
+					toWei('0.003'), // 0.3% taker fee
+					toWei('0.001'), // 0.1% maker fee
+					toWei('10'), // 10x max leverage
+					toWei('100000'), // 100000 max market debt
+					toWei('100'), // 100 sUSD minimum initial margin
+					[
+						toWei('0.1'), // 10% max funding rate
+						toWei('1'), // 100% max funding rate skew
+						toWei('0.0125'), // 1.25% per hour max funding rate of change
+					],
+					{ from: owner }
+				),
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 				cache['ProxyFuturesMarketBTC'].setTarget(instance.address, { from: owner }),
 				instance.setProxy(cache['ProxyFuturesMarketBTC'].address, {
@@ -544,6 +539,20 @@ const setupContract = async ({
 		},
 		async FuturesMarketETH() {
 			await Promise.all([
+				cache['FuturesMarketSettings'].setAllParameters(
+					toBytes32('sETH'),
+					toWei('0.003'), // 0.3% taker fee
+					toWei('0.001'), // 0.1% maker fee
+					toWei('10'), // 10x max leverage
+					toWei('100000'), // 100000 max market debt
+					toWei('100'), // 100 sUSD minimum initial margin
+					[
+						toWei('0.1'), // 10% max funding rate
+						toWei('1'), // 100% max funding rate skew
+						toWei('0.0125'), // 1.25% per hour max funding rate of change
+					],
+					{ from: owner }
+				),
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 				cache['ProxyFuturesMarketETH'].setTarget(instance.address, { from: owner }),
 				instance.setProxy(cache['ProxyFuturesMarketETH'].address, {
@@ -895,17 +904,18 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
 		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
+		{ contract: 'FuturesMarketSettings', deps: ['AddressResolver'] },
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
 			contract: 'FuturesMarketBTC',
 			source: 'FuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{
 			contract: 'FuturesMarketETH',
 			source: 'FuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
 		},
 		{ contract: 'FuturesMarketData', deps: [] },
 	];
