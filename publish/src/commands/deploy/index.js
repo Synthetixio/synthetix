@@ -461,7 +461,6 @@ module.exports = {
 				'-f, --fee-auth <value>',
 				'The address of the fee authority for this network (default is to use existing)'
 			)
-			.option('--fork-as-owner', 'When enabled will pown the owner and use it to deploy')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('--generate-solidity <value>', 'A path to a solidity file to generate')
 			.option(
