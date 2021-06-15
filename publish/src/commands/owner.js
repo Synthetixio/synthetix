@@ -1,9 +1,8 @@
 'use strict';
 
+const ethers = require('ethers');
 const fs = require('fs');
 const { gray, yellow, red, cyan, bgYellow, black } = require('chalk');
-const w3utils = require('web3-utils');
-const Web3 = require('web3');
 
 const {
 	getUsers,
@@ -45,13 +44,8 @@ const owner = async ({
 	yes,
 	useOvm,
 	providerUrl,
-	quiet,
 	useFork,
 }) => {
-	if (quiet) {
-		console.log = () => {};
-	}
-
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
@@ -64,7 +58,7 @@ const owner = async ({
 		newOwner = getUsers({ network, useOvm, user: 'owner' }).address;
 	}
 
-	if (!w3utils.isAddress(newOwner)) {
+	if (!ethers.utils.isAddress(newOwner)) {
 		console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 		process.exit(1);
 	} else {
@@ -93,9 +87,9 @@ const owner = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	const code = await web3.eth.getCode(newOwner);
+	const code = await provider.getCode(newOwner);
 	const isContract = code !== '0x';
 	if (!isContract && !yes) {
 		try {
@@ -110,19 +104,18 @@ const owner = async ({
 		}
 	}
 
-	let account;
+	let wallet;
 	if (useFork) {
-		web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
-		account = web3.eth.defaultAccount;
+		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		wallet = provider.getSigner(account);
 	} else {
-		web3.eth.accounts.wallet.add(privateKey);
-		account = web3.eth.accounts.wallet[0].address;
+		wallet = new ethers.Wallet(privateKey, provider);
 	}
-	console.log(gray(`Using account with public key ${account}`));
+	console.log(gray(`Using account with public key ${wallet.address}`));
 
-	if (!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
+	if (!isContract && wallet.address.toLowerCase() !== newOwner.toLowerCase()) {
 		throw new Error(
-			`New owner is ${newOwner} and signer is ${account}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
+			`New owner is ${newOwner} and signer is ${wallet.address}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
 		);
 	}
 
@@ -133,7 +126,7 @@ const owner = async ({
 	let currentSafeNonce;
 	if (isContract) {
 		// new owner should be gnosis safe proxy address
-		protocolDaoContract = getSafeInstance(web3, newOwner);
+		protocolDaoContract = getSafeInstance(providerUrl, newOwner);
 
 		// get protocolDAO nonce
 		currentSafeNonce = await getSafeNonce(protocolDaoContract);
@@ -143,9 +136,7 @@ const owner = async ({
 			process.exit();
 		}
 
-		console.log(
-			yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.options.address}`)
-		);
+		console.log(yellow(`Using Protocol DAO Safe contract at ${protocolDaoContract.address}`));
 	}
 
 	const confirmOrEnd = async message => {
@@ -173,7 +164,7 @@ const owner = async ({
 		// Load staged transactions
 		stagedTransactions = await getSafeTransactions({
 			network,
-			safeAddress: protocolDaoContract.options.address,
+			safeAddress: protocolDaoContract.address,
 		});
 	}
 
@@ -205,14 +196,15 @@ const owner = async ({
 					safeContract: protocolDaoContract,
 					data,
 					to: target,
-					sender: account,
+					sender: wallet.address,
 					network,
 					lastNonce,
 				});
 
 				// sign txHash to get signature
 				const sig = getSafeSignature({
-					signer: web3.eth.accounts.wallet[0],
+					privateKey,
+					providerUrl,
 					contractTxHash: txHash,
 				});
 
@@ -223,7 +215,7 @@ const owner = async ({
 					data,
 					nonce: newNonce,
 					to: target,
-					sender: account,
+					sender: wallet.address,
 					transactionHash: txHash,
 					signature: sig,
 				});
@@ -231,15 +223,15 @@ const owner = async ({
 				// track lastNonce submitted
 				lastNonce = newNonce;
 			} else {
-				const tx = await web3.eth.sendTransaction({
-					from: account,
+				const tx = await wallet.sendTransaction({
 					to: target,
-					gasPrice: w3utils.toWei(gasPrice, 'gwei'),
-					gas: gasLimit,
+					gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+					gasLimit: ethers.BigNumber.from(gasLimit),
 					data,
 				});
+				const receipt = await tx.wait();
 
-				logTx(tx);
+				logTx(receipt);
 			}
 
 			entry.complete = true;
@@ -256,25 +248,25 @@ const owner = async ({
 	for (const contract of Object.keys(config)) {
 		const { address, source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
-		const deployedContract = new web3.eth.Contract(abi, address);
+		const deployedContract = new ethers.Contract(address, abi, provider);
 
 		// ignore contracts that don't support Owned
-		if (!deployedContract.methods.owner) {
+		if (!deployedContract.functions.owner) {
 			continue;
 		}
-		const currentOwner = (await deployedContract.methods.owner().call()).toLowerCase();
-		const nominatedOwner = (await deployedContract.methods.nominatedOwner().call()).toLowerCase();
+		const currentOwner = (await deployedContract.owner()).toLowerCase();
+		const nominatedOwner = (await deployedContract.nominatedOwner()).toLowerCase();
 
 		if (currentOwner === newOwner) {
 			console.log(gray(`${newOwner} is already the owner of ${contract}`));
 		} else if (nominatedOwner === newOwner) {
-			const encodedData = deployedContract.methods.acceptOwnership().encodeABI();
+			const encodedData = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
 
 			if (isContract) {
 				// Check if similar one already staged and pending
 				const existingTx = checkExistingPendingTx({
 					stagedTransactions,
-					target: deployedContract.options.address,
+					target: deployedContract.address,
 					encodedData,
 					currentSafeNonce,
 				});
@@ -293,15 +285,16 @@ const owner = async ({
 					const { txHash, newNonce } = await getNewTransactionHash({
 						safeContract: protocolDaoContract,
 						data: encodedData,
-						to: deployedContract.options.address,
-						sender: account,
+						to: deployedContract.address,
+						sender: wallet.address,
 						network,
 						lastNonce,
 					});
 
 					// sign txHash to get signature
 					const sig = getSafeSignature({
-						signer: web3.eth.accounts.wallet[0],
+						privateKey,
+						providerUrl,
 						contractTxHash: txHash,
 					});
 
@@ -311,8 +304,8 @@ const owner = async ({
 						network,
 						data: encodedData,
 						nonce: newNonce,
-						to: deployedContract.options.address,
-						sender: account,
+						to: deployedContract.address,
+						sender: wallet.address,
 						transactionHash: txHash,
 						signature: sig,
 					});
@@ -320,15 +313,15 @@ const owner = async ({
 					// track lastNonce submitted
 					lastNonce = newNonce;
 				} else {
-					const tx = await web3.eth.sendTransaction({
-						from: account,
-						to: deployedContract.options.address,
-						gasPrice: w3utils.toWei(gasPrice, 'gwei'),
-						gas: gasLimit,
+					const tx = await wallet.sendTransaction({
+						to: deployedContract.address,
+						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+						gasLimit: ethers.BigNumber.from(gasLimit),
 						data: encodedData,
 					});
+					const receipt = await tx.wait();
 
-					logTx(tx);
+					logTx(receipt);
 				}
 			} catch (err) {
 				console.log(
@@ -371,7 +364,6 @@ module.exports = {
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
-			.option('--quiet', 'Dont print logs.')
 			.option(
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
