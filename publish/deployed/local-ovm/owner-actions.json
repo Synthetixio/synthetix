@@ -1,0 +1,37 @@
+{
+	"ReadProxyAddressResolver.setTarget(0xeC827421505972a2AE9C320302d3573B42363C26)": {
+		"target": "0x74Df809b1dfC099E8cdBc98f6a8D1F5c2C3f66f8",
+		"action": "setTarget(0xeC827421505972a2AE9C320302d3573B42363C26)",
+		"complete": false,
+		"link": "https://local.etherscan.io/address/0x74Df809b1dfC099E8cdBc98f6a8D1F5c2C3f66f8#writeContract",
+		"data": "0x776d1a01000000000000000000000000ec827421505972a2ae9c320302d3573b42363c26"
+	},
+	"ReadProxyAddressResolver.setTarget(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0)": {
+		"target": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+		"action": "setTarget(0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0)",
+		"complete": false,
+		"link": "https://local.etherscan.io/address/0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9#writeContract",
+		"data": "0x776d1a010000000000000000000000009fe46736679d2d9a65f0992f2272de9f3c7fa6e0"
+	},
+	"ReadProxyAddressResolver.setTarget(0x610178dA211FEF7D417bC0e6FeD39F05609AD788)": {
+		"target": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+		"action": "setTarget(0x610178dA211FEF7D417bC0e6FeD39F05609AD788)",
+		"complete": false,
+		"link": "https://local.etherscan.io/address/0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e#writeContract",
+		"data": "0x776d1a01000000000000000000000000610178da211fef7d417bc0e6fed39f05609ad788"
+	},
+	"ReadProxyAddressResolver.setTarget(0x68B1D87F95878fE05B998F19b66F4baba5De1aed)": {
+		"target": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
+		"action": "setTarget(0x68B1D87F95878fE05B998F19b66F4baba5De1aed)",
+		"complete": false,
+		"link": "https://local.etherscan.io/address/0x3Aa5ebB10DC797CAC828524e59A333d0A371443c#writeContract",
+		"data": "0x776d1a0100000000000000000000000068b1d87f95878fe05b998f19b66f4baba5de1aed"
+	},
+	"ReadProxyAddressResolver.setTarget(0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf)": {
+		"target": "0x9d4454B023096f34B160D6B654540c56A1F81688",
+		"action": "setTarget(0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf)",
+		"complete": false,
+		"link": "https://local.etherscan.io/address/0x9d4454B023096f34B160D6B654540c56A1F81688#writeContract",
+		"data": "0x776d1a010000000000000000000000008f86403a4de0bb5791fa46b8e795c547942fe4cf"
+	}
+}
