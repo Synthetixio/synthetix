@@ -3,7 +3,7 @@
 const { gray, red, yellow, redBright } = require('chalk');
 const {
 	fromBytes32,
-	constants: { OVM_MAX_GAS_LIMIT, ZERO_ADDRESS },
+	constants: { ZERO_ADDRESS },
 } = require('../../../..');
 
 module.exports = async ({
@@ -113,7 +113,7 @@ module.exports = async ({
 			if (unknownAddress) {
 				console.log(
 					redBright(
-						`WARINING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
+						`WARNING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
 							unknownAddress
 						)} is unknown. This contract requires: ${requiredAddresses.map(id => fromBytes32(id))}`
 					)
@@ -128,7 +128,7 @@ module.exports = async ({
 	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
 		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
 		await runStep({
-			gasLimit: useOvm ? OVM_MAX_GAS_LIMIT : 7e6,
+			gasLimit: useOvm ? undefined : 7e6,
 			contract: `AddressResolver`,
 			target: AddressResolver,
 			publiclyCallable: true, // does not require owner
@@ -271,7 +271,7 @@ module.exports = async ({
 		for (let i = 0; i < binaryOptionMarketsToRebuildCacheOn.length; i += addressesChunkSize) {
 			const chunk = binaryOptionMarketsToRebuildCacheOn.slice(i, i + addressesChunkSize);
 			await runStep({
-				gasLimit: useOvm ? OVM_MAX_GAS_LIMIT : 7e6,
+				gasLimit: useOvm ? undefined : 7e6,
 				contract: `BinaryOptionMarketManager`,
 				target: BinaryOptionMarketManager,
 				publiclyCallable: true, // does not require owner

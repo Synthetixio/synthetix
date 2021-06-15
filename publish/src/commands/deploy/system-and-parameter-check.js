@@ -42,6 +42,7 @@ module.exports = async ({
 	useFork,
 	useOvm,
 	yes,
+	buildPath,
 }) => {
 	let oracleAddress;
 	let currentSynthetixSupply;
@@ -196,6 +197,7 @@ module.exports = async ({
 		'Gas price to use': `${gasPrice} GWEI`,
 		'Method call gas limit': `${methodCallGasLimit} gas`,
 		'Contract deployment gas limit': `${contractDeploymentGasLimit} gas`,
+		'Build Path': buildPath,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
 			: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') + deploymentPath,

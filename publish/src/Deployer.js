@@ -57,8 +57,7 @@ class Deployer {
 		 */
 		this.provider = { web3: {}, ethers: {} };
 		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-		this.provider.ethers.ro = ethers.getDefaultProvider(providerUrl);
-		this.provider.ethers.transactional = null;
+		this.provider.ethers.provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 		if (useFork || (!privateKey && network === 'local')) {
 			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
@@ -68,7 +67,7 @@ class Deployer {
 			this.provider.web3.eth.accounts.wallet.add(privateKey);
 			this.provider.web3.eth.defaultAccount = this.provider.web3.eth.accounts.wallet[0].address;
 
-			this.provider.ethers.wallet = new ethers.Wallet(privateKey);
+			this.provider.ethers.wallet = new ethers.Wallet(privateKey, this.provider.ethers.provider);
 			this.provider.ethers.defaultAccount = this.provider.ethers.wallet.address;
 		}
 		this.account = this.provider.ethers.defaultAccount;
@@ -140,9 +139,15 @@ class Deployer {
 	}
 
 	async sendParameters(type = 'method-call') {
+		const gas = this.useOvm
+			? undefined
+			: type === 'method-call'
+			? this.methodCallGasLimit
+			: this.contractDeploymentGasLimit;
+
 		const params = {
 			from: this.account,
-			gas: type === 'method-call' ? this.methodCallGasLimit : this.contractDeploymentGasLimit,
+			gas,
 			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		};
 
@@ -279,12 +284,17 @@ class Deployer {
 				}
 
 				const newContract = new this.provider.web3.eth.Contract(compiled.abi);
-				deployedContract = await newContract
-					.deploy({
-						data: '0x' + bytecode,
-						arguments: args,
-					})
-					.send(await this.sendParameters('contract-deployment'))
+
+				const deploymentTx = await newContract.deploy({
+					data: '0x' + bytecode,
+					arguments: args,
+				});
+
+				const params = await this.sendParameters('contract-deployment');
+				params.gas = await deploymentTx.estimateGas();
+
+				deployedContract = await deploymentTx
+					.send(params)
 					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
 
 				if (this.nonceManager) {
