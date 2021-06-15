@@ -25,7 +25,7 @@ contract Migrator {
     function migrate(address currentOwner) external {
         require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
-        // accept ownership
+        // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
         addressresolver_i.acceptOwnership();
         proxyerc20_i.acceptOwnership();
         proxysynthetix_i.acceptOwnership();
@@ -35,22 +35,24 @@ contract Migrator {
         rewardescrow_i.acceptOwnership();
         rewardsdistribution_i.acceptOwnership();
 
-        // perform migration
+        // MIGRATION
+        // Import all new contracts into the address resolver;
         bytes32[] memory addressresolver_importAddresses_0_0 = new bytes32[](2);
         addressresolver_importAddresses_0_0[0] = bytes32("Synthetix");
         addressresolver_importAddresses_0_0[1] = bytes32("Exchanger");
         address[] memory addressresolver_importAddresses_0_1 = new address[](2);
-        addressresolver_importAddresses_0_1[0] = address(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed);
-        addressresolver_importAddresses_0_1[1] = address(0x94bB8919B036B1396e32F76Ed5a24dC8116cA05c);
+        addressresolver_importAddresses_0_1[0] = address(0x016DbF6F15cF1762acEa80B37a3Ab898119e687F);
+        addressresolver_importAddresses_0_1[1] = address(0x9d54cd46dBDcA1a3Dd43f8EAE2148f68A66250cD);
         addressresolver_i.importAddresses(addressresolver_importAddresses_0_0, addressresolver_importAddresses_0_1);
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 1;
         MixinResolver[] memory addressresolver_rebuildCaches_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_1_0[0] = MixinResolver(0xd69b189020EF614796578AfE4d10378c5e7e1138);
         addressresolver_rebuildCaches_1_0[1] = MixinResolver(0xDA4eF8520b1A57D7d63f1E249606D1A459698876);
         addressresolver_rebuildCaches_1_0[2] = MixinResolver(0xAD95C918af576c82Df740878C3E983CBD175daB6);
         addressresolver_rebuildCaches_1_0[3] = MixinResolver(0xcf9E60005C9aca983caf65d3669a24fDd0775fc0);
-        addressresolver_rebuildCaches_1_0[4] = MixinResolver(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed);
+        addressresolver_rebuildCaches_1_0[4] = MixinResolver(0x016DbF6F15cF1762acEa80B37a3Ab898119e687F);
         addressresolver_rebuildCaches_1_0[5] = MixinResolver(0x9bB05EF2cA7DBAafFC3da1939D1492e6b00F39b8);
-        addressresolver_rebuildCaches_1_0[6] = MixinResolver(0x94bB8919B036B1396e32F76Ed5a24dC8116cA05c);
+        addressresolver_rebuildCaches_1_0[6] = MixinResolver(0x9d54cd46dBDcA1a3Dd43f8EAE2148f68A66250cD);
         addressresolver_rebuildCaches_1_0[7] = MixinResolver(0xB774711F0BC1306ce892ef8C02D0476dCccB46B7);
         addressresolver_rebuildCaches_1_0[8] = MixinResolver(0x62922670313bf6b41C580143d1f6C173C5C20019);
         addressresolver_rebuildCaches_1_0[9] = MixinResolver(0xCd9D4988C0AE61887B075bA77f08cbFAd2b65068);
@@ -65,6 +67,7 @@ contract Migrator {
         addressresolver_rebuildCaches_1_0[18] = MixinResolver(0x9745606DA6e162866DAD7bF80f2AbF145EDD7571);
         addressresolver_rebuildCaches_1_0[19] = MixinResolver(0x2962EA4E749e54b10CFA557770D597027BA67cB3);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_1_0);
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 2;
         MixinResolver[] memory addressresolver_rebuildCaches_2_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_2_0[0] = MixinResolver(0xDB91E4B3b6E19bF22E810C43273eae48C9037e74);
         addressresolver_rebuildCaches_2_0[1] = MixinResolver(0xab4e760fEEe20C5c2509061b995e06b542D3112B);
@@ -87,6 +90,7 @@ contract Migrator {
         addressresolver_rebuildCaches_2_0[18] = MixinResolver(0x34c76BC146b759E58886e821D62548AC1e0BA7Bc);
         addressresolver_rebuildCaches_2_0[19] = MixinResolver(0x0E8Fa2339314AB7E164818F26207897bBe29C3af);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_2_0);
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 3;
         MixinResolver[] memory addressresolver_rebuildCaches_3_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_3_0[0] = MixinResolver(0xe615Df79AC987193561f37E77465bEC2aEfe9aDb);
         addressresolver_rebuildCaches_3_0[1] = MixinResolver(0x3E2dA260B4A85782A629320EB027A3B7c28eA9f1);
@@ -109,7 +113,8 @@ contract Migrator {
         addressresolver_rebuildCaches_3_0[18] = MixinResolver(0x099CfAd1640fc7EA686ab1D83F0A285Ba0470882);
         addressresolver_rebuildCaches_3_0[19] = MixinResolver(0x19cC1f63e344D74A87D955E3F3E95B28DDDc61d8);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_3_0);
-        MixinResolver[] memory addressresolver_rebuildCaches_4_0 = new MixinResolver[](16);
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 4;
+        MixinResolver[] memory addressresolver_rebuildCaches_4_0 = new MixinResolver[](19);
         addressresolver_rebuildCaches_4_0[0] = MixinResolver(0x4D50A0e5f068ACdC80A1da2dd1f0Ad48845df2F8);
         addressresolver_rebuildCaches_4_0[1] = MixinResolver(0xb73c665825dAa926D6ef09417FbE5654473c1b49);
         addressresolver_rebuildCaches_4_0[2] = MixinResolver(0x806A599d60B2FdBda379D5890287D2fba1026cC0);
@@ -126,16 +131,26 @@ contract Migrator {
         addressresolver_rebuildCaches_4_0[13] = MixinResolver(0xF6ce55E09De0F9F97210aAf6DB88Ed6b6792Ca1f);
         addressresolver_rebuildCaches_4_0[14] = MixinResolver(0xacAAB69C2BA65A2DB415605F309007e18D4F5E8C);
         addressresolver_rebuildCaches_4_0[15] = MixinResolver(0x9A5Ea0D8786B8d17a70410A905Aed1443fae5A38);
+        addressresolver_rebuildCaches_4_0[16] = MixinResolver(0x5c8344bcdC38F1aB5EB5C1d4a35DdEeA522B5DfA);
+        addressresolver_rebuildCaches_4_0[17] = MixinResolver(0xaa03aB31b55DceEeF845C8d17890CC61cD98eD04);
+        addressresolver_rebuildCaches_4_0[18] = MixinResolver(0x1F2c3a1046c32729862fcB038369696e3273a516);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_4_0);
-        proxyerc20_i.setTarget(Proxyable(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed));
-        proxysynthetix_i.setTarget(Proxyable(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed));
-        exchangestate_i.setAssociatedContract(0x94bB8919B036B1396e32F76Ed5a24dC8116cA05c);
-        systemstatus_i.updateAccessControl("Synth", 0x94bB8919B036B1396e32F76Ed5a24dC8116cA05c, true, false);
-        tokenstatesynthetix_i.setAssociatedContract(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed);
-        rewardescrow_i.setSynthetix(ISynthetix(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed));
-        rewardsdistribution_i.setAuthority(0x6Bd333647DBBE4D6bc10644FeB5de61269FEb8ed);
+        // Ensure the SNX proxy has the correct Synthetix target set;
+        proxyerc20_i.setTarget(Proxyable(0x016DbF6F15cF1762acEa80B37a3Ab898119e687F));
+        // Ensure the legacy SNX proxy has the correct Synthetix target set;
+        proxysynthetix_i.setTarget(Proxyable(0x016DbF6F15cF1762acEa80B37a3Ab898119e687F));
+        // Ensure the Exchanger contract can write to its State;
+        exchangestate_i.setAssociatedContract(0x9d54cd46dBDcA1a3Dd43f8EAE2148f68A66250cD);
+        // Ensure the Exchanger contract can suspend synths - see SIP-65;
+        systemstatus_i.updateAccessControl("Synth", 0x9d54cd46dBDcA1a3Dd43f8EAE2148f68A66250cD, true, false);
+        // Ensure the Synthetix contract can write to its TokenState contract;
+        tokenstatesynthetix_i.setAssociatedContract(0x016DbF6F15cF1762acEa80B37a3Ab898119e687F);
+        // Ensure the legacy RewardEscrow contract is connected to the Synthetix contract;
+        rewardescrow_i.setSynthetix(ISynthetix(0x016DbF6F15cF1762acEa80B37a3Ab898119e687F));
+        // Ensure the RewardsDistribution has Synthetix set as its authority for distribution;
+        rewardsdistribution_i.setAuthority(0x016DbF6F15cF1762acEa80B37a3Ab898119e687F);
 
-        // nominate ownership back to owner
+        // NOMINATE OWNERSHIP back to owner for aforementioned contracts
         addressresolver_i.nominateNewOwner(owner);
         proxyerc20_i.nominateNewOwner(owner);
         proxysynthetix_i.nominateNewOwner(owner);
