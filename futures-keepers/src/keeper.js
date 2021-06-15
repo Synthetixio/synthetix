@@ -51,11 +51,6 @@ class Keeper {
 		this.updateIndex(events);
 
 		console.log(gray(`Index build complete!`));
-		console.log(
-			gray`${Object.keys(this.orders).length} orders to confirm, ${
-				Object.keys(this.positions).length
-			} positions to keep`
-		);
 		console.log(gray(`Starting keeper loop`));
 		await this.runKeepers();
 
@@ -162,6 +157,11 @@ class Keeper {
 	}
 
 	async runKeepers() {
+		console.log(
+			gray`${Object.keys(this.orders).length} orders to confirm, ${Object.keys(this.positions).length
+				} positions to keep`
+		);
+		
 		// Unconfirmed orders.
 		for (const { orderId, account } of Object.values(this.orders)) {
 			this.runKeeperTask(`${orderId}-confirm`, () => this.confirmOrder(orderId, account));
@@ -194,10 +194,10 @@ class Keeper {
 	async confirmOrder(id, account) {
 		const canConfirmOrder = await this.futuresMarket.canConfirmOrder(account);
 		if (!canConfirmOrder) {
-			// console.error(
-			// 	`FuturesMarket [${this.futuresMarket.address}]`,
-			// 	`cannot confirm order [id=${id}]`
-			// );
+			console.error(gray(
+				`FuturesMarket [${this.futuresMarket.address}]`,
+				`cannot confirm order [id=${id}]`
+			));
 			return;
 		}
 
