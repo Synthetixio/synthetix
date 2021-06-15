@@ -6,7 +6,7 @@ function loadLocalWallets({ provider }) {
 	for (let i = 0; i < 10; i++) {
 		const privateKey = getLocalPrivateKey({ index: i });
 		const wallet = new ethers.Wallet(privateKey, provider);
-		wallet.privateKey = privateKey;
+		wallet.pk = privateKey;
 		wallets.push(wallet);
 	}
 

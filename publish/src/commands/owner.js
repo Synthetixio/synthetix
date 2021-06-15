@@ -45,7 +45,13 @@ const owner = async ({
 	yes,
 	useOvm,
 	providerUrl,
+	quiet,
+	useFork,
 }) => {
+	if (quiet) {
+		console.log = () => {};
+	}
+
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
@@ -72,7 +78,9 @@ const owner = async ({
 
 	const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
+		useFork,
 	});
+
 	if (!providerUrl) {
 		if (!envProviderUrl) {
 			throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
@@ -102,8 +110,14 @@ const owner = async ({
 		}
 	}
 
-	web3.eth.accounts.wallet.add(privateKey);
-	const account = web3.eth.accounts.wallet[0].address;
+	let account;
+	if (useFork) {
+		web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		account = web3.eth.defaultAccount;
+	} else {
+		web3.eth.accounts.wallet.add(privateKey);
+		account = web3.eth.accounts.wallet[0].address;
+	}
 	console.log(gray(`Using account with public key ${account}`));
 
 	if (!isContract && account.toLowerCase() !== newOwner.toLowerCase()) {
@@ -346,12 +360,18 @@ module.exports = {
 				'-o, --new-owner <value>',
 				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)'
 			)
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+			.option('--quiet', 'Dont print logs.')
 			.option(
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
