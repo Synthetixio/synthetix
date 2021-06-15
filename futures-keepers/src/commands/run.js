@@ -42,7 +42,7 @@ async function run({
 
 			// Each signer gets its own WebSocket RPC connection.
 			// This seems to improve the transaction speed even further.
-			wrappedSigner = wrappedSigner.connect(new ethers.providers.WebSocketProvider());
+			wrappedSigner = wrappedSigner.connect(new ethers.providers.WebSocketProvider(providerUrl));
 			return wrappedSigner;
 		})
 	);
