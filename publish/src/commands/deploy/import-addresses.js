@@ -20,6 +20,7 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 			expected: input => input === addressOf(AddressResolver),
 			write: 'setTarget',
 			writeArg: addressOf(AddressResolver),
+			comment: 'set the target of the address resolver proxy to the latest resolver',
 		});
 	}
 
@@ -55,6 +56,7 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 			expected: input => input,
 			write: 'importAddresses',
 			writeArg: addressArgs,
+			comment: 'Import all new contracts into the address resolver',
 		});
 
 		addressesAreImported = !pending;

@@ -125,6 +125,7 @@ module.exports = async ({
 	}
 
 	const addressesChunkSize = useOvm ? 7 : 20;
+	let batchCounter = 1;
 	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
 		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
 		await runStep({
@@ -134,6 +135,7 @@ module.exports = async ({
 			publiclyCallable: true, // does not require owner
 			write: 'rebuildCaches',
 			writeArg: [chunk],
+			comment: `Rebuild the resolver caches in all MixinResolver contracts - batch ${batchCounter++}`,
 		});
 	}
 
@@ -268,6 +270,7 @@ module.exports = async ({
 		);
 
 		const addressesChunkSize = useOvm ? 7 : 20;
+		let binaryOptionBatchCounter = 1;
 		for (let i = 0; i < binaryOptionMarketsToRebuildCacheOn.length; i += addressesChunkSize) {
 			const chunk = binaryOptionMarketsToRebuildCacheOn.slice(i, i + addressesChunkSize);
 			await runStep({
@@ -277,6 +280,7 @@ module.exports = async ({
 				publiclyCallable: true, // does not require owner
 				write: 'rebuildMarketCaches',
 				writeArg: [chunk],
+				comment: `Rebuild the caches of existing Binary Option Markets - batch ${binaryOptionBatchCounter++}`,
 			});
 		}
 	}
@@ -297,6 +301,8 @@ module.exports = async ({
 			expected: input => input,
 			write: 'setResolverAndSyncCache',
 			writeArg: addressOf(ReadProxyAddressResolver),
+			comment:
+				'Rebuild the resolver cache of contracts that use the legacy "setResolverAndSyncCache" function',
 		});
 	}
 
@@ -314,6 +320,7 @@ module.exports = async ({
 			expected: input => addressOf(ReadProxyAddressResolver),
 			write: 'setResolver',
 			writeArg: addressOf(ReadProxyAddressResolver),
+			comment: 'Rebuild the resolver cache of contracts that use the legacy "setResolver" function',
 		});
 	}
 

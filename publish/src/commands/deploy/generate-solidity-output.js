@@ -26,11 +26,15 @@ module.exports = async ({
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
 
-	for (const [runIndex, { skipSolidity, contract, target, writeArg, write }] of Object.entries(
-		runSteps
-	)) {
+	for (const [
+		runIndex,
+		{ skipSolidity, contract, target, writeArg, write, comment },
+	] of Object.entries(runSteps)) {
 		if (skipSolidity) {
 			continue;
+		}
+		if (comment) {
+			instructions.push(`// ${comment}`);
 		}
 		const { abi } = deployment.sources[sourceOf(target)];
 
@@ -106,15 +110,15 @@ contract Migrator {
 	function migrate(address currentOwner) external {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
-		// accept ownership
+		// ACCEPT OWNERSHIP for all contracts that require ownership to make changes
 		${contractsAddedToSolidity
 			.map(contract => `${contract.toLowerCase()}_i.acceptOwnership();`)
 			.join('\n\t\t')}
 
-		// perform migration
+		// MIGRATION
 		${instructions.join(';\n\t\t')};
 
-		// nominate ownership back to owner
+		// NOMINATE OWNERSHIP back to owner for aforementioned contracts
 		${contractsAddedToSolidity
 			.map(contract => {
 				// support LegacyOwned

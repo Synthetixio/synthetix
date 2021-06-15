@@ -24,6 +24,7 @@ module.exports = async ({ addressOf, deployer, runStep, synthsToAdd }) => {
 	}
 
 	const synthChunkSize = 15;
+	let batchCounter = 1;
 	for (let i = 0; i < filteredSynths.length; i += synthChunkSize) {
 		const chunk = filteredSynths.slice(i, i + synthChunkSize);
 		await runStep({
@@ -37,6 +38,7 @@ module.exports = async ({ addressOf, deployer, runStep, synthsToAdd }) => {
 			write: 'addSynths',
 			writeArg: [chunk.map(synth => addressOf(synth.synth))],
 			gasLimit: 1e5 * synthChunkSize,
+			comment: `Add synths to the Issuer contract - batch ${batchCounter++}`,
 		});
 	}
 };

@@ -22,6 +22,7 @@ module.exports = async ({ debtSnapshotMaxDeviation, deployer, runStep, useOvm })
 				write: 'takeDebtSnapshot',
 				writeArg: [],
 				publiclyCallable: true, // does not require owner
+				skipSolidity: true, // should not be in an upgrade contract - it'll exceed the block gas limit
 			});
 		} else if (!validityChanged) {
 			console.log(
