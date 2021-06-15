@@ -53,19 +53,20 @@ function itConfirmsOrders({ ctx }) {
 						address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
 				)[0];
 
-				orderId = orderSubmitted.args.id
+				orderId = orderSubmitted.args.id;
 			});
 
 			before('next price update', async () => {
 				await setPrice(sETH, '200');
 			});
 
-			it('is confirmed by the keeper', async () => {
+			it('is confirmed by the keeper', async function() {
+				this.timeout(7500);
+
 				const events = await waitForEvent(
 					FuturesMarketETH,
 					FuturesMarketETH.filters.OrderConfirmed(orderId),
-					startBlockNumber,
-					7500
+					startBlockNumber
 				);
 
 				assert.isAtLeast(events.length, 1);
@@ -116,14 +117,15 @@ function itConfirmsOrders({ ctx }) {
 				await setPrice(sETH, '205');
 			});
 
-			it('processes 10 orders within 3s', async () => {
+			it('processes 10 orders within 3s', async function() {
+				this.timeout(3000 * 15);
+
 				await Promise.all(
 					orders.map(order =>
 						waitForEvent(
 							FuturesMarketETH,
 							FuturesMarketETH.filters.OrderConfirmed(order),
-							startBlockNumber,
-							3000
+							startBlockNumber
 						)
 					)
 				);
@@ -181,19 +183,19 @@ function itLiquidatesOrders({ ctx }) {
 						address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
 				)[0];
 
-				orderId = orderSubmitted.args.id
+				orderId = orderSubmitted.args.id;
 			});
 
 			before('next price update', async () => {
 				await setPrice(sETH, '200');
 			});
 
-			before('confirming order', async () => {
+			before('confirming order', async function() {
+				this.timeout(7500);
 				const events = await waitForEvent(
 					FuturesMarketETH,
 					FuturesMarketETH.filters.OrderConfirmed(orderId),
-					txReceipt.blockNumber,
-					10000
+					txReceipt.blockNumber
 				);
 				assert.isAtLeast(events.length, 1);
 			});
@@ -203,12 +205,12 @@ function itLiquidatesOrders({ ctx }) {
 				await setPrice(sETH, '.0001');
 			});
 
-			it('is liquidated by the keeper', async () => {
+			it('is liquidated by the keeper', async function() {
+				this.timeout(7500);
 				const events = await waitForEvent(
 					FuturesMarketETH,
 					FuturesMarketETH.filters.PositionLiquidated(user.address),
-					'latest',
-					10000
+					'latest'
 				);
 				assert.isAtLeast(events.length, 1);
 			});
