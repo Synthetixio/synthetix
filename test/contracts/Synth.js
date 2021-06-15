@@ -53,9 +53,6 @@ contract('Synth', async accounts => {
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			mocks: {
-				FuturesMarketManager: true,
-			},
 			contracts: [
 				'Synth',
 				'ExchangeRates',

@@ -4,28 +4,27 @@ const axios = require('axios');
 const { loadUsers } = require('./users');
 const { Watcher } = require('@eth-optimism/watcher');
 const { connectContracts } = require('./contracts');
-const { simulateExchangeRates } = require('./rates');
-const { takeDebtSnapshot } = require('./cache');
-const { deposit } = require('./bridge');
+const { updateExchangeRatesIfNeeded } = require('./rates');
+const { ensureBalance } = require('./balances');
+const { approveBridge } = require('./bridge');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
 		ctx.useOvm = false;
+		ctx.fork = hre.config.fork;
 
-		// Provider
-		ctx.provider = new ethers.providers.JsonRpcProvider(
-			`${hre.config.providerUrl}:${hre.config.providerPort}`
-		);
+		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
-		// Accounts
-		loadUsers({ ctx });
+		await loadUsers({ ctx });
+		if (ctx.fork) {
+			for (const user of Object.values(ctx.users)) {
+				await ensureBalance({ ctx, symbol: 'ETH', user, balance: ethers.utils.parseEther('50') });
+			}
+		}
 
-		// Contracts
 		connectContracts({ ctx });
 
-		// Rates and snapshots
-		await simulateExchangeRates({ ctx });
-		await takeDebtSnapshot({ ctx });
+		await updateExchangeRatesIfNeeded({ ctx });
 	});
 }
 
@@ -33,21 +32,21 @@ function bootstrapL2({ ctx }) {
 	before('bootstrap layer 2 instance', async () => {
 		ctx.useOvm = true;
 
-		// Provider
-		ctx.provider = new ethers.providers.JsonRpcProvider(
-			`${hre.config.providerUrl}:${hre.config.providerPort}`
-		);
+		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 		ctx.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
-		// Accounts
-		loadUsers({ ctx });
+		await loadUsers({ ctx });
 
-		// Contracts
 		connectContracts({ ctx });
 
-		// Rates and snapshots
-		await simulateExchangeRates({ ctx });
-		await takeDebtSnapshot({ ctx });
+		await updateExchangeRatesIfNeeded({ ctx, forceUpdate: true });
+
+		await ensureBalance({
+			ctx,
+			symbol: 'SNX',
+			user: ctx.users.owner,
+			balance: ethers.utils.parseEther('1000000'),
+		});
 	});
 }
 
@@ -56,16 +55,16 @@ function bootstrapDual({ ctx }) {
 		ctx.l1 = { useOvm: false };
 		ctx.l2 = { useOvm: true };
 
-		// Providers
-		ctx.l1.provider = new ethers.providers.JsonRpcProvider(
-			`${hre.config.providerUrl}:${hre.config.providerPortL1}`
-		);
-		ctx.l2.provider = new ethers.providers.JsonRpcProvider(
-			`${hre.config.providerUrl}:${hre.config.providerPortL2}`
-		);
+		ctx.l2.l1 = ctx.l1;
+
+		ctx.l1.provider = _setupProvider({
+			url: `${hre.config.providerUrl}:${hre.config.providerPortL1}`,
+		});
+		ctx.l2.provider = _setupProvider({
+			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
+		});
 		ctx.l2.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
-		// Watchers
 		const response = await axios.get(`${hre.config.providerUrl}:8080/addresses.json`);
 		const addresses = response.data;
 		ctx.watcher = new Watcher({
@@ -78,28 +77,32 @@ function bootstrapDual({ ctx }) {
 				messengerAddress: '0x4200000000000000000000000000000000000007',
 			},
 		});
+		ctx.l1.watcher = ctx.l2.watcher = ctx.watcher;
 
-		// Accounts
-		loadUsers({ ctx: ctx.l1 });
-		loadUsers({ ctx: ctx.l2 });
+		await loadUsers({ ctx: ctx.l1 });
+		await loadUsers({ ctx: ctx.l2 });
 
-		// Contracts
 		connectContracts({ ctx: ctx.l1 });
 		connectContracts({ ctx: ctx.l2 });
 
-		// Rates and snapshots
-		await simulateExchangeRates({ ctx: ctx.l1 });
-		await simulateExchangeRates({ ctx: ctx.l2 });
-		await takeDebtSnapshot({ ctx: ctx.l1 });
-		await takeDebtSnapshot({ ctx: ctx.l2 });
+		await updateExchangeRatesIfNeeded({ ctx: ctx.l1 });
+		await updateExchangeRatesIfNeeded({ ctx: ctx.l2, forceUpdate: true });
 
-		// Ensure owner has SNX on L2
-		const amount = ethers.utils.parseEther('1000000');
-		const balance = await ctx.l2.contracts.Synthetix.balanceOf(ctx.l2.owner.address);
-		if (balance.lt(amount)) {
-			const delta = amount.sub(balance);
-			await deposit({ ctx, from: ctx.l1.owner, to: ctx.l1.owner, amount: delta });
-		}
+		await approveBridge({ ctx: ctx.l1, amount: ethers.utils.parseEther('100000000') });
+
+		await ensureBalance({
+			ctx: ctx.l2,
+			symbol: 'SNX',
+			user: ctx.l2.users.owner,
+			balance: ethers.utils.parseEther('1000000'),
+		});
+	});
+}
+
+function _setupProvider({ url }) {
+	return new ethers.providers.JsonRpcProvider({
+		url,
+		timeout: 600000,
 	});
 }
 

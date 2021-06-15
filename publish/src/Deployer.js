@@ -2,7 +2,7 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
-const RLP = require('rlp');
+const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
 const { stringify, getEtherscanLinkPrefix } = require('./util');
@@ -47,16 +47,31 @@ class Deployer {
 		this.useOvm = useOvm;
 		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
-		// Configure Web3 so we can sign transactions and connect to the network.
-		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+		/*
+		 provider is defined here to hold backwards compatible web3 component as well as ethers
+		 while the migration is completed. After all web3 references are replaced by ethers,
+		 web3 provider will be removed. The aim is to get rid of all references to web3 and web3_utils
+		 in the project.
+
+		 web3 and/or ethers is needed to interact with the contracts and sing transactions
+		 */
+		this.provider = { web3: {}, ethers: {} };
+		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+		this.provider.ethers.ro = ethers.getDefaultProvider(providerUrl);
+		this.provider.ethers.transactional = null;
 
 		if (useFork || (!privateKey && network === 'local')) {
-			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+
+			this.provider.ethers.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		} else {
-			this.web3.eth.accounts.wallet.add(privateKey);
-			this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
+			this.provider.web3.eth.accounts.wallet.add(privateKey);
+			this.provider.web3.eth.defaultAccount = this.provider.web3.eth.accounts.wallet[0].address;
+
+			this.provider.ethers.wallet = new ethers.Wallet(privateKey);
+			this.provider.ethers.defaultAccount = this.provider.ethers.wallet.address;
 		}
-		this.account = this.web3.eth.defaultAccount;
+		this.account = this.provider.ethers.defaultAccount;
 		this.deployedContracts = {};
 		this._dryRunCounter = 0;
 
@@ -68,9 +83,9 @@ class Deployer {
 	}
 
 	async evaluateNextDeployedContractAddress() {
-		const nonce = await this.web3.eth.getTransactionCount(this.account);
-		const rlpEncoded = RLP.encode([this.account, nonce]);
-		const hashed = this.web3.utils.sha3(rlpEncoded);
+		const nonce = await this.provider.web3.eth.getTransactionCount(this.account);
+		const rlpEncoded = ethers.utils.RLP.encode([this.account, ethers.utils.hexlify(nonce)]);
+		const hashed = ethers.utils.keccak256(rlpEncoded); // const hashed = this.web3.utils.sha3(rlpEncoded);
 
 		return `0x${hashed.slice(12).substring(14)}`;
 	}
@@ -106,17 +121,17 @@ class Deployer {
 		}
 
 		const types = inputs.map(input => input.type);
-		return this.web3.eth.abi.encodeParameters(types, params);
+		return this.provider.web3.eth.abi.encodeParameters(types, params);
 	}
 
 	async sendDummyTx() {
-		await this.web3.eth.sendTransaction({
+		await this.provider.web3.eth.sendTransaction({
 			from: this.account,
 			to: '0x0000000000000000000000000000000000000001',
 			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 			value: 0,
 			gas: 1000000,
-			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
+			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		});
 
 		if (this.nonceManager) {
@@ -128,7 +143,7 @@ class Deployer {
 		const params = {
 			from: this.account,
 			gas: type === 'method-call' ? this.methodCallGasLimit : this.contractDeploymentGasLimit,
-			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
+			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		};
 
 		if (this.nonceManager) {
@@ -257,12 +272,12 @@ class Deployer {
 					});
 					if (!this.checkBytesAreSafeForOVM(encodedParameters)) {
 						throw new Error(
-							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. ${encodedParameters}`
+							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. Encoded parameters: ${encodedParameters} - parameters: ${args}`
 						);
 					}
 				}
 
-				const newContract = new this.web3.eth.Contract(compiled.abi);
+				const newContract = new this.provider.web3.eth.Contract(compiled.abi);
 				deployedContract = await newContract
 					.deploy({
 						data: '0x' + bytecode,
@@ -281,7 +296,7 @@ class Deployer {
 			// the contract's constructor parameters are unsafe.
 			// This check is probably redundant given the previous check, but just in case...
 			if (this.useOvm && !dryRun) {
-				const code = await this.web3.eth.getCode(deployedContract.options.address);
+				const code = await this.provider.web3.eth.getCode(deployedContract.options.address);
 
 				if (code.length === 2) {
 					throw new Error(`Contract deployment resulted in a contract with no bytecode: ${code}`);
@@ -377,7 +392,7 @@ class Deployer {
 				arg.toLowerCase() === forbiddenAddress.toLowerCase()
 			) {
 				throw Error(
-					`new ${name}(): Cannot use the AddressResolver as a constructor arg. Use ReadProxyForResolver instead.`
+					`new ${name}(): Cannot use the AddressResolver as a constructor arg. Use ReadProxyAddressResolver instead.`
 				);
 			}
 		}
@@ -402,7 +417,7 @@ class Deployer {
 	}
 
 	makeContract({ abi, address }) {
-		return new this.web3.eth.Contract(abi, address);
+		return new this.provider.web3.eth.Contract(abi, address);
 	}
 
 	getExistingContract({ contract }) {
