@@ -39,10 +39,12 @@ function itConfirmsOrders({ ctx }) {
 			const leverage = parseEther('1.0');
 			const margin = parseEther('150');
 
+			let startBlockNumber;
 			let txReceipt;
 			let orderId;
 
 			before('submit the order', async () => {
+				startBlockNumber = await ctx.provider.getBlockNumber();
 				const tx = await FuturesMarketETH.modifyMarginAndSubmitOrder(margin, leverage);
 				txReceipt = await tx.wait(1);
 
@@ -51,9 +53,7 @@ function itConfirmsOrders({ ctx }) {
 						address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
 				)[0];
 
-				({
-					args: { id: orderId },
-				} = orderSubmitted);
+				orderId = orderSubmitted.args.id
 			});
 
 			before('next price update', async () => {
@@ -62,9 +62,10 @@ function itConfirmsOrders({ ctx }) {
 
 			it('is confirmed by the keeper', async () => {
 				const events = await waitForEvent(
-					ProxyFuturesMarketETH,
+					FuturesMarketETH,
 					FuturesMarketETH.filters.OrderConfirmed(orderId),
-					txReceipt.blockNumber
+					startBlockNumber,
+					7500
 				);
 
 				assert.isAtLeast(events.length, 1);
@@ -180,9 +181,7 @@ function itLiquidatesOrders({ ctx }) {
 						address === ProxyFuturesMarketETH.address && event === 'OrderSubmitted'
 				)[0];
 
-				({
-					args: { id: orderId },
-				} = orderSubmitted);
+				orderId = orderSubmitted.args.id
 			});
 
 			before('next price update', async () => {
