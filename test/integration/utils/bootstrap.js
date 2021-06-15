@@ -33,11 +33,9 @@ function bootstrapL2({ ctx }) {
 		ctx.useOvm = true;
 
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
-		if (ctx.provider.pollingInterval) {
-			// L2 mines very quickly. For non-websocket providers, we set the polling interval
-			// to match this speed of block production.
-			ctx.provider.pollingInterval = 1;
-		}
+		// L2 mines very quickly. For non-websocket providers, we set the polling interval
+		// to match this speed of block production.
+		ctx.provider.pollingInterval = 1;
 		ctx.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
 		await loadUsers({ ctx });
