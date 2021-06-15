@@ -248,7 +248,7 @@ module.exports = async ({
 			read: 'synthetixProxy',
 			expected: input => input === addressOf(ProxySynthetix),
 			write: 'setSynthetixProxy',
-			writeArg: addressOf(ProxySynthetix),
+			writeArg: addressOf(ProxyERC20),
 		});
 	}
 
