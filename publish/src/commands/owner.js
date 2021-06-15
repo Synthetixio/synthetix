@@ -45,6 +45,7 @@ const owner = async ({
 	useOvm,
 	providerUrl,
 	useFork,
+	isContract,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -89,8 +90,6 @@ const owner = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	const code = await provider.getCode(newOwner);
-	const isContract = code !== '0x';
 	if (!isContract && !yes) {
 		try {
 			await confirmAction(
@@ -358,6 +357,7 @@ module.exports = {
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
 				false
 			)
+			.option('--is-contract', 'Wether the new owner is a contract wallet or an EOA', false)
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
