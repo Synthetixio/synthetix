@@ -84,9 +84,9 @@ module.exports = {
 				'Rebuild the keeper index from a starting block, before initiating keeper actions.',
 				DEFAULTS.fromBlock
 			)
-			.option('-p, --provider-url', 'Ethereum RPC URL', DEFAULTS.providerUrl)
+			.option('-p, --provider-url <value>', 'Ethereum RPC URL', DEFAULTS.providerUrl)
 			.option(
-				'-n, --num-accounts',
+				'-n, --num-accounts <value>',
 				'Number of accounts from the HD wallet to use for parallel tx submission. Improves performance.',
 				DEFAULTS.numAccounts
 			)
