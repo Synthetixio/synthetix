@@ -254,12 +254,12 @@
 			"minor": 47
 		},
 		"sources": [
-			"Exchanger", 
+			"Exchanger",
 			"Synthetix",
 			"FuturesMarketManager",
 			"SystemSettings"
 		],
-		"sips": [80, 138, 139, 140]
+		"sips": [80]
 	},
 	{
 		"name": "Futures (Optimism)",
@@ -282,6 +282,6 @@
 			"FuturesMarketData",
 			"SystemSettings"
 		],
-		"sips": [80, 138, 139, 140]
+		"sips": [80]
 	}
 ]
