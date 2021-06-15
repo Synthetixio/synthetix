@@ -7,6 +7,7 @@ const axios = require('axios');
 
 const {
 	toBytes32,
+	getUsers,
 	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
 } = require('../../..');
 
@@ -39,6 +40,7 @@ const purgeSynths = async ({
 	addresses = [],
 	batchSize = DEFAULTS.batchSize,
 	proxyAddress,
+	useFork,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
@@ -50,7 +52,7 @@ const purgeSynths = async ({
 	});
 
 	if (synthsToPurge.length < 1) {
-		console.log(gray('No synths provided. Please use --synths-to-remove option'));
+		console.log(gray('No synths provided. Please use --synths-to-purge option'));
 		return;
 	}
 
@@ -75,6 +77,7 @@ const purgeSynths = async ({
 
 	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
 		network,
+		useFork,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -82,9 +85,17 @@ const purgeSynths = async ({
 		privateKey = envPrivateKey;
 	}
 
+	console.log(gray(`Provider url: ${providerUrl}`));
 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	web3.eth.accounts.wallet.add(privateKey);
-	const account = web3.eth.accounts.wallet[0].address;
+
+	let account;
+	if (useFork) {
+		web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		account = web3.eth.defaultAccount;
+	} else {
+		web3.eth.accounts.wallet.add(privateKey);
+		account = web3.eth.accounts.wallet[0].address;
+	}
 	console.log(gray(`Using account with public key ${account}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
 
@@ -261,6 +272,12 @@ module.exports = {
 				'-p, --proxy-address <value>',
 				'Override the proxy address for the token (only works with a single synth given)'
 			)
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
+			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option(
 				'-s, --synths-to-purge <value>',
 				'The list of synths to purge',
