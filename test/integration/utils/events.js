@@ -16,7 +16,7 @@ async function waitForEvent(
 		while (true) {
 			const events = await contract.queryFilter(filter, fromBlockNumber, 'latest');
 			if (events.length) return events;
-			await wait(pollInterval);
+			await new Promise((resolve, reject) => setTimeout(resolve, pollInterval));
 		}
 	};
 
