@@ -26,6 +26,23 @@ jobs:
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: rm -rf build # force a clean build
       - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
+  job-fork-tests:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npm run fork
+          background: true
+      - cmd-wait-for-port:
+          port: 8545
+      - run: npx hardhat test:integration:l1 --compile --deploy --fork
   job-integration-tests:
     working_directory: ~/repo
     machine:
@@ -44,6 +61,7 @@ jobs:
             git fetch
             git checkout master
             git pull origin master
+            git checkout 86708bb5758cd2b647b3ca2be698beb5aa3af81f
             yarn
             yarn build
             cd ops
@@ -63,7 +81,7 @@ jobs:
       - run:
           name: Run isolated layer 1 integration tests
           command: |
-            npx hardhat test:integration:l1 --compile --deploy
+            npx hardhat test:integration:l1 --compile --deploy --provider-port 9545
       - run:
           name: Run isolated layer 2 integration tests
           command: |
@@ -71,7 +89,7 @@ jobs:
       - run:
           name: Run dual layer 1 and layer 2 integration tests
           command: |
-            npx hardhat test:integration:dual --deploy
+            npx hardhat test:integration:dual --deploy-evm --deploy-ovm --connect
   job-lint:
     working_directory: ~/repo
     docker:
@@ -119,111 +137,6 @@ jobs:
           root: .
           paths:
             - node_modules
-  job-prod-diff-tests-local:
-    working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:14.16-focal
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build --test-helpers
-      - run:
-          command: npx hardhat node
-          background: true
-      - cmd-wait-for-port:
-          port: 8545
-      - run: node publish deploy --network local --fresh-deploy --yes
-      - run: npm run test:prod -- --patch-fresh-deployment
-  job-prod-diff-tests:
-    working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:14.16-focal
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    resource_class: large
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build
-      - run:
-          command: npx hardhat node --target-network mainnet
-          background: true
-      - cmd-wait-for-port:
-          port: 8545
-      - run: node publish prepare-deploy --network mainnet
-      - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
-      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment
-      - run: npx codechecks codechecks.prod.yml
-      - store_artifacts:
-          path: test-gas-used-prod.log
-  job-prod-tests-ovm:
-    working_directory: ~/repo
-    machine:
-      image: ubuntu-2004:202010-01
-      docker_layer_caching: true
-    resource_class: large
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          name: Build docker containers
-          command: |
-            git clone git@github.com:ethereum-optimism/optimism.git
-            cd optimism
-            git fetch
-            git checkout develop
-            git pull origin develop
-            yarn
-            yarn build
-            cd ops
-            export COMPOSE_DOCKER_CLI_BUILD=1
-            export DOCKER_BUILDKIT=1
-            docker-compose build --parallel
-      - run:
-          name: Start chains
-          background: true
-          command: |
-            cd optimism/ops
-            docker-compose up -d
-      - cmd-wait-for-port:
-          port: 8545
-      - cmd-wait-for-port:
-          port: 9545
-      - run:
-          name: Deploy OVM Synthetix instances
-          command: |
-            node publish deploy-ovm-pair
-      - run:
-          name: Run OVM production tests
-          command: |
-            npm run test:prod:ovm
-  job-prod-tests:
-    working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:14.16-focal
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          command: npx hardhat node --target-network mainnet
-          background: true
-      - cmd-wait-for-port:
-          port: 8545
-      - run: npm run test:prod:gas -- --target-network mainnet
-      - run: npx codechecks codechecks.prod.yml
-      - store_artifacts:
-          path: test-gas-used-prod.log
   job-static-analysis:
     working_directory: ~/repo
     docker:
@@ -410,22 +323,10 @@ workflows:
       - job-test-deploy-script:
           requires:
             - job-prepare
+      - job-fork-tests:
+          requires:
+            - job-prepare
       - job-integration-tests:
-          requires:
-            - job-prepare
-      - job-prod-tests:
-          requires:
-            - job-prepare
-      - job-prod-tests-ovm:
-          name: job-prod-tests-ovm
-          requires:
-            - job-prepare
-      - job-prod-diff-tests-local:
-          name: job-prod-diff-tests-local
-          requires:
-            - job-prepare
-      - job-prod-diff-tests:
-          name: job-prod-diff-tests-mainnet
           requires:
             - job-prepare
       - job-pack-browser:

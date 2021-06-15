@@ -253,16 +253,35 @@
 			"major": 2,
 			"minor": 47
 		},
+		"sources": [
+			"Exchanger",
+			"Synthetix",
+			"FuturesMarketManager",
+			"SystemSettings"
+		],
+		"sips": [80]
+	},
+	{
+		"name": "Futures (Optimism)",
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
 		"ovm": true,
 		"sources": [
 			"Exchanger",
 			"Synthetix",
+			"ProxyFuturesMarketBTC",
+			"FuturesMarketBTC",
 			"ProxyFuturesMarketETH",
 			"FuturesMarketETH",
+			"ProxyFuturesMarketLINK",
+			"FuturesMarketLINK",
 			"ProxyFuturesMarketManager",
 			"FuturesMarketManager",
-			"FuturesMarketData"
+			"FuturesMarketData",
+			"SystemSettings"
 		],
-		"sips": [80, 138, 139, 140]
+		"sips": [80]
 	}
 ]

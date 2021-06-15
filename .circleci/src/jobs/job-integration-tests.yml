@@ -13,6 +13,7 @@ steps:
         git fetch
         git checkout master
         git pull origin master
+        git checkout 86708bb5758cd2b647b3ca2be698beb5aa3af81f
         yarn
         yarn build
         cd ops
@@ -32,7 +33,7 @@ steps:
   - run:
       name: Run isolated layer 1 integration tests
       command: |
-        npx hardhat test:integration:l1 --compile --deploy
+        npx hardhat test:integration:l1 --compile --deploy --provider-port 9545
   - run:
       name: Run isolated layer 2 integration tests
       command: |
@@ -40,4 +41,4 @@ steps:
   - run:
       name: Run dual layer 1 and layer 2 integration tests
       command: |
-        npx hardhat test:integration:dual --deploy
+        npx hardhat test:integration:dual --deploy-evm --deploy-ovm --connect

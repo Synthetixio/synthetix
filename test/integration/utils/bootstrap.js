@@ -6,14 +6,21 @@ const { Watcher } = require('@eth-optimism/watcher');
 const { connectContracts } = require('./contracts');
 const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
+const { approveBridge } = require('./bridge');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
 		ctx.useOvm = false;
+		ctx.fork = hre.config.fork;
 
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
 		await loadUsers({ ctx });
+		if (ctx.fork) {
+			for (const user of Object.values(ctx.users)) {
+				await ensureBalance({ ctx, symbol: 'ETH', user, balance: ethers.utils.parseEther('50') });
+			}
+		}
 
 		connectContracts({ ctx });
 
@@ -37,7 +44,7 @@ function bootstrapL2({ ctx }) {
 
 		connectContracts({ ctx });
 
-		await updateExchangeRatesIfNeeded({ ctx });
+		await updateExchangeRatesIfNeeded({ ctx, forceUpdate: true });
 
 		await ensureBalance({
 			ctx,
@@ -87,7 +94,9 @@ function bootstrapDual({ ctx }) {
 		connectContracts({ ctx: ctx.l2 });
 
 		await updateExchangeRatesIfNeeded({ ctx: ctx.l1 });
-		await updateExchangeRatesIfNeeded({ ctx: ctx.l2 });
+		await updateExchangeRatesIfNeeded({ ctx: ctx.l2, forceUpdate: true });
+
+		await approveBridge({ ctx: ctx.l1, amount: ethers.utils.parseEther('100000000') });
 
 		await ensureBalance({
 			ctx: ctx.l2,
