@@ -27,7 +27,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	ensureDeploymentPath(deploymentPath);
 
 	// We're just using the ERC20 members `balanceOf` and `Transfer`, so any ERC20 contract will do.
-	const { getSource, getTarget, getVersions, getUsers } = wrap({
+	const { getSource, getTarget, getVersions } = wrap({
 		network,
 		deploymentPath,
 		fs,
@@ -86,13 +86,11 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	);
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-	const account = getUsers({ network, user: 'owner' }).address;
-	const wallet = provider.getSigner(account);
 
 	const ExchangeRates = new ethers.Contract(
 		getTarget({ contract: 'ExchangeRates' }).address,
 		getSource({ contract: 'ExchangeRates' }).abi,
-		wallet
+		provider
 	);
 
 	// The price at which the inverse synth was frozen, to compute how much users are owed after purging
@@ -109,7 +107,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	const SystemSettings = new ethers.Contract(
 		getTarget({ contract: 'SystemSettings' }).address,
 		getSource({ contract: 'SystemSettings' }).abi,
-		wallet
+		provider
 	);
 
 	// The exchange fee incurred when users are purged into sUSD
@@ -124,7 +122,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 		const xBN = ethers.BigNumber.isBigNumber(x) ? x : ethers.BigNumber.from(x);
 		const yBN = ethers.BigNumber.isBigNumber(y) ? y : ethers.BigNumber.from(y);
 
-		const unit = ethers.utils.parseUnits('1');
+		const unit = ethers.utils.parseEther('1');
 		return xBN.mul(yBN).div(unit);
 	}
 
@@ -156,8 +154,8 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 
 	// Looks for all transfers into the staking contract
 	async function fetchStakedBalances() {
-		const iSynth = new ethers.Contract(iSynthAddress, snxABI, wallet);
-		const stakingContract = new ethers.Contract(stakingAddress, snxABI, wallet);
+		const iSynth = new ethers.Contract(iSynthAddress, snxABI, provider);
+		const stakingContract = new ethers.Contract(stakingAddress, snxABI, provider);
 
 		const currentBlock = await provider.getBlockNumber();
 		const deploymentBlockDetails = await provider.getBlock(deploymentBlock);
@@ -210,11 +208,11 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 		console.log(`    Price: ${ethers.utils.formatEther(frozenPrice)}`);
 		console.log(
 			`    Exchange Fee: ${ethers.utils.formatEther(
-				multiplyDecimal(exchangeFee, ethers.utils.parseUnits('100'))
+				multiplyDecimal(exchangeFee, ethers.utils.parseEther('100'))
 			)}%`
 		);
 
-		const feeMultiplier = ethers.utils.parseUnits('1').sub(exchangeFee);
+		const feeMultiplier = ethers.utils.parseEther('1').sub(exchangeFee);
 		const result = balances.map(b => {
 			const owed = multiplyDecimal(multiplyDecimal(b.balance, frozenPrice), feeMultiplier);
 
