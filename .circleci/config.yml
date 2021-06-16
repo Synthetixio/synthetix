@@ -53,10 +53,19 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - restore_cache:
+          keys:
+            - optimism-build
       - run:
-          name: Build docker containers
+          name: Build docker containers if necessary
           command: |
-            npx hardhat ops --fresh --build --build-ops --optimism-path ./optimism
+            if [ ! -d ./optimism ]; then
+              npx hardhat ops --fresh --build --build-ops --optimism-path ./optimism
+            fi;
+      - save_cache:
+          key: optimism-build
+          paths:
+            - ./optimism
       - run:
           name: Start docker chains
           background: true
