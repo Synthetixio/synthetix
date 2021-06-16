@@ -275,6 +275,13 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run:
+          name: Only run when publish/deployed/*/deployment.json changes
+          command: |
+            changes=$(git diff --name-status origin/develop | grep 'publish\/deployed\/[a-z0-9\-]*\/deployment\.json$' || true)
+            if [ -z "$changes" ]; then
+              circleci-agent step halt
+            fi;
       - run: npm run test:deployments
   job-validate-etherscan:
     working_directory: ~/repo
