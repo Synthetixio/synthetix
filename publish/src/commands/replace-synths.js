@@ -22,7 +22,7 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
-	performTransactionalStep,
+	performTransactionalStepWeb3,
 } = require('../util');
 
 const DEFAULTS = {
@@ -220,7 +220,7 @@ const replaceSynths = async ({
 	const updatedSynths = JSON.parse(fs.readFileSync(synthsFile));
 
 	const runStep = async opts =>
-		performTransactionalStep({
+		performTransactionalStepWeb3({
 			...opts,
 			account,
 			gasLimit: methodCallGasLimit,

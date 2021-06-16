@@ -3,7 +3,7 @@
 const { gray, yellow, red, cyan, green } = require('chalk');
 const fs = require('fs');
 const path = require('path');
-const Web3 = require('web3');
+const ethers = require('ethers');
 
 const { wrap, toBytes32 } = require('../../..');
 
@@ -55,7 +55,7 @@ const settle = async ({
 }) => {
 	ensureNetwork(network);
 
-	const { getTarget, getSource, getVersions } = wrap({ network, fs, path });
+	const { getTarget, getSource, getVersions, getUsers } = wrap({ network, fs, path });
 
 	console.log(gray('Using network:', yellow(network)));
 
@@ -66,21 +66,29 @@ const settle = async ({
 
 	privateKey = privateKey || envPrivateKey;
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 	console.log(gray('gasPrice'), yellow(gasPrice));
-	const gas = gasLimit;
-	gasPrice = web3.utils.toWei(gasPrice, 'gwei');
-	const user = web3.eth.accounts.wallet.add(privateKey);
-	const deployer = web3.eth.accounts.wallet.add(envPrivateKey);
+	gasPrice = ethers.utils.parseUnits(gasPrice, 'gwei');
+
+	let deployer;
+	if (useFork) {
+		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		deployer = provider.getSigner(account);
+	} else {
+		deployer = new ethers.Wallet(privateKey, provider);
+	}
+	deployer.address = deployer._address;
+
+	const user = new ethers.Wallet(privateKey, provider);
 
 	if (synth) {
 		console.log(gray('Filtered to synth:'), yellow(synth));
 	}
 	console.log(gray('Using wallet', cyan(user.address)));
-	const balance = web3.utils.fromWei(await web3.eth.getBalance(user.address));
+	const balance = ethers.utils.formatEther(await provider.getBalance(user.address));
 	console.log(gray('ETH balance'), yellow(balance));
-	let nonce = await web3.eth.getTransactionCount(user.address);
+	let nonce = await provider.getTransactionCount(user.address);
 	console.log(gray('Starting at nonce'), yellow(nonce));
 
 	if (balance < '0.1') {
@@ -91,18 +99,17 @@ const settle = async ({
 				green(`Sending ${yellow(ethToSeed)} ETH to address from`),
 				yellow(deployer.address)
 			);
-			const { transactionHash } = await web3.eth.sendTransaction({
-				from: deployer.address,
+			const { transactionHash } = await deployer.sendTransaction({
 				to: user.address,
-				value: web3.utils.toWei(ethToSeed),
-				gas,
+				value: ethers.utils.parseUnits(ethToSeed),
+				gasLimit,
 				gasPrice,
 			});
 			console.log(gray(`${etherscanLinkPrefix}/tx/${transactionHash}`));
 		}
 	}
 
-	const { number: currentBlock } = await web3.eth.getBlock('latest');
+	const { number: currentBlock } = await provider.getBlock(await provider.getBlockNumber());
 
 	const versions = getVersions({ byContract: true });
 
@@ -118,7 +125,7 @@ const settle = async ({
 			}
 		}
 		// console.log(`For ${label} using ${address}`);
-		return new web3.eth.Contract(getSource({ contract: source }).abi, address);
+		return new ethers.Contract(address, getSource({ contract: source }).abi, user);
 	};
 
 	const Synthetix = getContract({
@@ -181,9 +188,10 @@ const settle = async ({
 		const ExchangeRates = getContract({ label: 'ExchangeRates', blockNumber });
 
 		// check for current settlement owing
-		const { reclaimAmount, rebateAmount, numEntries } = await Exchanger.methods
-			.settlementOwing(account, toCurrencyKey)
-			.call();
+		const { reclaimAmount, rebateAmount, numEntries } = await Exchanger.settlementOwing(
+			account,
+			toCurrencyKey
+		);
 
 		if (+numEntries > 0) {
 			// Fetch all entries within the settlement
@@ -191,12 +199,14 @@ const settle = async ({
 			let earliestTimestamp = Infinity;
 			const fromSynths = [];
 			for (let i = 0; i < numEntries; i++) {
-				const { src, amount, timestamp } = await ExchangeState.methods
-					.getEntryAt(account, toCurrencyKey, i)
-					.call();
+				const { src, amount, timestamp } = await ExchangeState.getEntryAt(
+					account,
+					toCurrencyKey,
+					i
+				);
 
 				results.push(
-					`${web3.utils.hexToUtf8(src)} - ${web3.utils.fromWei(amount)} at ${new Date(
+					`${ethers.utils.toUtf8String(src)} - ${ethers.utils.formatEther(amount)} at ${new Date(
 						timestamp * 1000
 					).toString()}`
 				);
@@ -204,8 +214,8 @@ const settle = async ({
 				fromSynths.push(src);
 				earliestTimestamp = Math.min(timestamp, earliestTimestamp);
 			}
-			const isSynthTheDest = new RegExp(synth).test(web3.utils.hexToUtf8(toCurrencyKey));
-			const isSynthOneSrcEntry = !!fromSynths.find(src => web3.utils.hexToUtf8(src) === synth);
+			const isSynthTheDest = new RegExp(synth).test(ethers.utils.toUtf8String(toCurrencyKey));
+			const isSynthOneSrcEntry = !!fromSynths.find(src => ethers.utils.toUtf8String(src) === synth);
 
 			// skip when filtered by synth if not the destination and not any of the sources
 			if (synth && !isSynthTheDest && !isSynthOneSrcEntry) {
@@ -219,7 +229,7 @@ const settle = async ({
 					'processing',
 					yellow(account),
 					'into',
-					yellow(web3.utils.hexToAscii(toCurrencyKey)),
+					yellow(ethers.utils.toUtf8String(toCurrencyKey)),
 					'with',
 					yellow(numEntries),
 					'entries'
@@ -229,22 +239,19 @@ const settle = async ({
 			const wasReclaimOrRebate = reclaimAmount > 0 || rebateAmount > 0;
 			let skipIfWillFail = false;
 
-			const secsLeft = await Exchanger.methods
-				.maxSecsLeftInWaitingPeriod(account, toCurrencyKey)
-				.call();
+			const secsLeft = await Exchanger.maxSecsLeftInWaitingPeriod(account, toCurrencyKey);
 
 			skipIfWillFail = +secsLeft > 0;
 
 			if (showDebt) {
 				const valueInUSD = wasReclaimOrRebate
-					? web3.utils.fromWei(
-							await ExchangeRates.methods
-								.effectiveValue(
-									toCurrencyKey,
-									reclaimAmount > rebateAmount ? reclaimAmount.toString() : rebateAmount.toString(),
-									toBytes32('sUSD')
-								)
-								.call(blockNumber)
+					? ethers.utils.formatEther(
+							await ExchangeRates.effectiveValue(
+								toCurrencyKey,
+								reclaimAmount > rebateAmount ? reclaimAmount.toString() : rebateAmount.toString(),
+								toBytes32('sUSD'),
+								{ blockTag: blockNumber }
+							)
 					  )
 					: 0;
 
@@ -264,18 +271,22 @@ const settle = async ({
 				);
 				// see if user has enough funds to settle
 				if (reclaimAmount > 0) {
-					const synth = await Synthetix.methods.synths(toCurrencyKey).call();
+					const synth = await Synthetix.synths(toCurrencyKey);
 
-					const Synth = new web3.eth.Contract(getSource({ contract: 'Synth' }).abi, synth);
+					const Synth = new ethers.eth.Contract(
+						synth,
+						getSource({ contract: 'Synth' }).abi,
+						provider
+					);
 
-					const balance = await Synth.methods.balanceOf(account).call();
+					const balance = await Synth.balanceOf(account);
 
 					console.log(
 						gray('Warning: user does not have enough balance to be reclaimed'),
 						gray('User has'),
-						yellow(web3.utils.fromWei(balance.toString())),
+						yellow(ethers.utils.formatEther(balance.toString())),
 						gray('needs'),
-						yellow(web3.utils.fromWei(reclaimAmount.toString())),
+						yellow(ethers.utils.formatEther(reclaimAmount.toString())),
 						+reclaimAmount > +balance ? red('not enough!') : green('sufficient')
 					);
 					skipIfWillFail = skipIfWillFail || +reclaimAmount > +balance;
@@ -288,7 +299,9 @@ const settle = async ({
 						'entries.',
 						wasReclaimOrRebate
 							? (reclaimAmount > rebateAmount ? green : red)(
-									web3.utils.fromWei(reclaimAmount > rebateAmount ? reclaimAmount : rebateAmount)
+									ethers.utils.formatEther(
+										reclaimAmount > rebateAmount ? reclaimAmount : rebateAmount
+									)
 							  )
 							: '($0)',
 						'Settling...'
@@ -308,12 +321,12 @@ const settle = async ({
 				console.log(green(`Invoking settle()`));
 
 				try {
-					const { transactionHash } = await Exchanger.methods.settle(account, toCurrencyKey).send({
-						from: user.address,
-						gas: Math.max(gas * numEntries, 650e3),
+					const tx = await Exchanger.settle(account, toCurrencyKey, {
+						gasLimit: Math.max(gasLimit * numEntries, 650e3),
 						gasPrice,
 						nonce: nonce++,
 					});
+					const { transactionHash } = await tx.wait();
 
 					console.log(gray(`${etherscanLinkPrefix}/tx/${transactionHash}`));
 				} catch (err) {
@@ -328,7 +341,7 @@ const settle = async ({
 					'processing',
 					yellow(account),
 					'into',
-					yellow(web3.utils.hexToAscii(toCurrencyKey)),
+					yellow(ethers.utils.toUtf8String(toCurrencyKey)),
 					'> Nothing to settle.'
 				)
 			);
