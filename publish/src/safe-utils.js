@@ -1,5 +1,6 @@
 'use strict';
 
+const Web3 = require('web3');
 const w3utils = require('web3-utils');
 const axios = require('axios');
 const { green, gray, red, yellow } = require('chalk');
@@ -63,7 +64,11 @@ const safeTransactionApi = ({ network, safeAddress }) => {
 	return `https://safe-transaction.${network}.gnosis.io/api/v1/safes/${address}/multisig-transactions/`;
 };
 
-const getSafeInstance = (web3, safeAddress) => {
+const getSafeInstance = (web3, providerUrl, safeAddress) => {
+	if (!web3) {
+		web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	}
+
 	return new web3.eth.Contract(abi, safeAddress);
 };
 
@@ -239,7 +244,13 @@ const getNewTransactionHash = async ({ safeContract, data, to, sender, network, 
 	return { txHash, newNonce };
 };
 
-const getSafeSignature = ({ signer, contractTxHash }) => {
+const getSafeSignature = ({ signer, privateKey, providerUrl, contractTxHash }) => {
+	if (!signer) {
+		const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+
+		signer = web3.eth.accounts.wallet.add(privateKey);
+	}
+
 	// sign txHash to get signature
 	const { signature } = signer.sign(contractTxHash);
 

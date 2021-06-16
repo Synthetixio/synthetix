@@ -1,0 +1,27 @@
+Loading default deployment for network
+Using ProxyiETH address of 0xA9859874e1743A32409f75bB11549892138BBA1E
+Using StakingRewardsiETH address of 0x3f27c540ADaE3a9E8c875C61e3B970b559d7F65d
+Loading rewards for synth iETH on network mainnet
+Staking rewards StakingRewardsiETH deployed at block 11781285
+iETH current price is  774.0
+Exchange fee of sUSD is 0.003
+Querying all transfers into the staking contract to find candidate stakers.
+
+    Staking Contract: 0x3f27c540ADaE3a9E8c875C61e3B970b559d7F65d
+    Synth: 0xA9859874e1743A32409f75bB11549892138BBA1E
+    Starting Block: 11781285 (855481 blocks ago at 2021/1/3 5:0:31 UTC)
+
+138 candidate holders found. Querying their balances.
+
+    |██████████████████████████████████████████████████| - 138 / 138 (100%)
+
+9 active stakers found.
+
+Computing owed sUSD balances for accounts using parameters:
+    Price: 774.0
+    Exchange Fee: 0.3%
+
+10.791025799025218434 staked in total.
+8327.197206540182510709 total sUSD owed.
+
+Saving results to owedBalances.csv...

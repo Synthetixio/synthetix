@@ -29,12 +29,7 @@ const nominate = async ({
 	privateKey,
 	providerUrl,
 	yes,
-	quiet,
 }) => {
-	if (quiet) {
-		console.log = () => {};
-	}
-
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
@@ -182,7 +177,6 @@ module.exports = {
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
 			)
-			.option('--quiet', 'Dont print logs.')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option(
 				'-c, --contracts [value]',
