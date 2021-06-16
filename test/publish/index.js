@@ -282,7 +282,7 @@ describe('publish scripts', () => {
 					);
 					assert.strictEqual(await Exchanger.tradingRewardsEnabled(), TRADING_REWARDS_ENABLED);
 					assert.strictEqual(
-						await Exchanger.atomicMaxVolumePerBlock().toString(),
+						(await Exchanger.atomicMaxVolumePerBlock()).toString(),
 						ATOMIC_MAX_VOLUME_PER_BLOCK
 					);
 					assert.strictEqual((await Issuer.issuanceRatio()).toString(), ISSUANCE_RATIO);
@@ -300,7 +300,7 @@ describe('publish scripts', () => {
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
 					assert.strictEqual(
-						await ExchangeRates.atomicTwapPriceWindow().toString(),
+						(await ExchangeRates.atomicTwapPriceWindow()).toString(),
 						ATOMIC_TWAP_PRICE_WINDOW
 					);
 					assert.strictEqual(
@@ -439,7 +439,7 @@ describe('publish scripts', () => {
 								newPriceDeviation
 							);
 							assert.strictEqual(
-								await Exchanger.atomicMaxVolumePerBlock().toString(),
+								(await Exchanger.atomicMaxVolumePerBlock()).toString(),
 								newAtomicMaxVolumePerBlock
 							);
 							assert.strictEqual((await Issuer.issuanceRatio()).toString(), newIssuanceRatio);
@@ -468,7 +468,7 @@ describe('publish scripts', () => {
 								newRateStalePeriod
 							);
 							assert.strictEqual(
-								await ExchangeRates.atomicTwapPriceWindow().toString(),
+								(await ExchangeRates.atomicTwapPriceWindow()).toString(),
 								newAtomicTwapPriceWindow
 							);
 							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
