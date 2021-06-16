@@ -17,6 +17,24 @@ function connectContracts({ ctx }) {
 			ctx.provider
 		);
 	});
+
+	_ensureWETH({ ctx });
+}
+
+function _ensureWETH({ ctx }) {
+	if (!ctx.contracts.WETH) {
+		if (ctx.fork) {
+			ctx.contracts.WETH = new ethers.Contract(
+				'0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', // WETH on mainnet L1
+				_loadCustomAbi({ name: 'WETH' }),
+				ctx.provider
+			);
+		}
+	}
+}
+
+function _loadCustomAbi({ name }) {
+	return JSON.parse(fs.readFileSync(path.resolve(__dirname, '../abis/WETH.json'), 'utf8'));
 }
 
 module.exports = {

@@ -1,19 +1,23 @@
-const ethers = require('ethers');
 const { getUsers } = require('../../../index');
+const { loadLocalWallets } = require('../../test-utils/wallets');
 
 async function loadUsers({ ctx, network }) {
-	let wallets;
+	let wallets = [];
 
-	if (!ctx.fork) {
-		wallets = _createWallets({ provider: ctx.provider });
-	} else {
-		wallets = _getWallets({ provider: ctx.provider });
+	// Retrieve and create wallets
+	if (ctx.fork) {
+		wallets = wallets.concat(_getWallets({ provider: ctx.provider }));
 	}
+	wallets = wallets.concat(loadLocalWallets({ provider: ctx.provider }));
 
+	// Build ctx.users
 	ctx.users = {};
 	ctx.users.owner = wallets[0];
 	ctx.users.someUser = wallets[1];
 	ctx.users.otherUser = wallets[2];
+	for (let i = 3; i < wallets.length; i++) {
+		ctx.users[`user${i}`] = wallets[i];
+	}
 }
 
 function _getWallets({ provider }) {
@@ -32,25 +36,6 @@ function _getWallets({ provider }) {
 	return signers;
 }
 
-function _createWallets({ provider }) {
-	const wallets = [];
-
-	for (let i = 0; i < 10; i++) {
-		wallets.push(new ethers.Wallet(getPrivateKey({ index: i }), provider));
-	}
-
-	return wallets;
-}
-
-function getPrivateKey({ index }) {
-	const masterNode = ethers.utils.HDNode.fromMnemonic(
-		'test test test test test test test test test test test junk' // Default hardhat mnemonic
-	);
-
-	return masterNode.derivePath(`m/44'/60'/0'/0/${index}`).privateKey;
-}
-
 module.exports = {
 	loadUsers,
-	getPrivateKey,
 };
