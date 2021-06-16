@@ -195,7 +195,7 @@ let _dryRunCounter = 0;
  *
  * @returns transaction hash if successful, true if user completed, or falsy otherwise
  */
-const performTransactionalStep = async ({
+const performTransactionalStepWeb3 = async ({
 	account,
 	contract,
 	target,
@@ -371,7 +371,7 @@ module.exports = {
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,
-	performTransactionalStep,
+	performTransactionalStepWeb3,
 	parameterNotice,
 	reportDeployedContracts,
 };

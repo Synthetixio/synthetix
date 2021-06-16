@@ -13,7 +13,7 @@ const {
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
-	performTransactionalStep,
+	performTransactionalStepWeb3,
 	reportDeployedContracts,
 } = require('../../util');
 
@@ -253,7 +253,7 @@ const deploy = async ({
 	);
 
 	const runStep = async opts =>
-		performTransactionalStep({
+		performTransactionalStepWeb3({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
