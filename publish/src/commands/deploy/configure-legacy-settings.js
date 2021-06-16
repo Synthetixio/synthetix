@@ -246,7 +246,7 @@ module.exports = async ({
 			contract: 'SupplySchedule',
 			target: SupplySchedule,
 			read: 'synthetixProxy',
-			expected: input => input === addressOf(ProxySynthetix),
+			expected: input => input === addressOf(ProxyERC20),
 			write: 'setSynthetixProxy',
 			writeArg: addressOf(ProxyERC20),
 		});
