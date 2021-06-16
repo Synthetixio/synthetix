@@ -1,8 +1,7 @@
 'use strict';
 
 const { gray, green, yellow, red, cyan } = require('chalk');
-const Web3 = require('web3');
-const w3utils = require('web3-utils');
+const ethers = require('ethers');
 const axios = require('axios');
 
 const {
@@ -18,8 +17,9 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
-	performTransactionalStep,
 } = require('../util');
+
+const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
 	network: 'kovan',
@@ -86,17 +86,17 @@ const purgeSynths = async ({
 	}
 
 	console.log(gray(`Provider url: ${providerUrl}`));
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	let account;
+	let wallet;
 	if (useFork) {
-		web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
-		account = web3.eth.defaultAccount;
+		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		wallet = provider.getSigner(account);
 	} else {
-		web3.eth.accounts.wallet.add(privateKey);
-		account = web3.eth.accounts.wallet[0].address;
+		wallet = new ethers.Wallet(privateKey, provider);
 	}
-	console.log(gray(`Using account with public key ${account}`));
+	wallet.address = wallet._address;
+	console.log(gray(`Using account with public key ${wallet.address}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
 
 	console.log(gray('Dry-run:'), dryRun ? green('yes') : yellow('no'));
@@ -120,7 +120,7 @@ const purgeSynths = async ({
 
 	const { address: synthetixAddress, source } = deployment.targets['Synthetix'];
 	const { abi: synthetixABI } = deployment.sources[source];
-	const Synthetix = new web3.eth.Contract(synthetixABI, synthetixAddress);
+	const Synthetix = new ethers.Contract(synthetixAddress, synthetixABI, wallet);
 
 	let totalBatches = 0;
 	for (const currencyKey of synthsToPurge) {
@@ -129,7 +129,7 @@ const purgeSynths = async ({
 		];
 
 		const { abi: synthABI } = deployment.sources[synthSource];
-		const Synth = new web3.eth.Contract(synthABI, synthAddress);
+		const Synth = new ethers.Contract(synthAddress, synthABI, wallet);
 		proxyAddress = proxyAddress || deployment.targets[`Proxy${currencyKey}`].address;
 
 		console.log(
@@ -145,7 +145,7 @@ const purgeSynths = async ({
 			)
 		);
 
-		const currentSynthInSNX = await Synthetix.methods.synths(toBytes32(currencyKey)).call();
+		const currentSynthInSNX = await Synthetix.synths(toBytes32(currencyKey));
 
 		if (synthAddress !== currentSynthInSNX) {
 			console.error(
@@ -173,13 +173,13 @@ const purgeSynths = async ({
 			console.log(gray(`Found ${topTokenHolders.length} possible holders of ${currencyKey}`));
 			// Filter out any 0 holder
 			const supplyPerEntry = await Promise.all(
-				topTokenHolders.map(entry => Synth.methods.balanceOf(entry).call())
+				topTokenHolders.map(entry => Synth.balanceOf(entry))
 			);
 			addresses = topTokenHolders.filter((e, i) => supplyPerEntry[i] !== '0');
 			console.log(gray(`Filtered to ${addresses.length} with supply`));
 		}
 
-		const totalSupplyBefore = w3utils.fromWei(await Synth.methods.totalSupply().call());
+		const totalSupplyBefore = ethers.utils.formatEther(await Synth.totalSupply());
 
 		if (Number(totalSupplyBefore) === 0) {
 			console.log(gray('Total supply is 0, exiting.'));
@@ -203,7 +203,7 @@ const purgeSynths = async ({
 				console.log(green('Would attempt to purge:', entries));
 			} else {
 				await performTransactionalStep({
-					account,
+					account: wallet,
 					contract: `Synth${currencyKey}`,
 					target: Synth,
 					write: 'purge',
@@ -217,7 +217,7 @@ const purgeSynths = async ({
 		}
 
 		// step 3. confirmation
-		const totalSupply = w3utils.fromWei(await Synth.methods.totalSupply().call());
+		const totalSupply = ethers.utils.formatEther(await Synth.totalSupply());
 		if (Number(totalSupply) > 0) {
 			console.log(
 				yellow(
