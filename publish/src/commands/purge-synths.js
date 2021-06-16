@@ -19,7 +19,7 @@ const {
 	confirmAction,
 } = require('../util');
 
-const { performTransactionalStep } = require('../command-utils/transact');
+const { performTransactionalStepWeb3 } = require('../command-utils/transact');
 
 const DEFAULTS = {
 	network: 'kovan',
@@ -202,7 +202,7 @@ const purgeSynths = async ({
 			if (dryRun) {
 				console.log(green('Would attempt to purge:', entries));
 			} else {
-				await performTransactionalStep({
+				await performTransactionalStepWeb3({
 					account: wallet,
 					contract: `Synth${currencyKey}`,
 					target: Synth,
