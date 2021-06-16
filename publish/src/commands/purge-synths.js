@@ -19,7 +19,7 @@ const {
 	confirmAction,
 } = require('../util');
 
-const { performTransactionalStepWeb3 } = require('../command-utils/transact');
+const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
 	network: 'kovan',
@@ -95,7 +95,8 @@ const purgeSynths = async ({
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
-	wallet.address = wallet._address;
+	console.log(wallet);
+	if (!wallet.address) wallet.address = wallet._address;
 	console.log(gray(`Using account with public key ${wallet.address}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
 
@@ -202,7 +203,7 @@ const purgeSynths = async ({
 			if (dryRun) {
 				console.log(green('Would attempt to purge:', entries));
 			} else {
-				await performTransactionalStepWeb3({
+				await performTransactionalStep({
 					account: wallet,
 					contract: `Synth${currencyKey}`,
 					target: Synth,
