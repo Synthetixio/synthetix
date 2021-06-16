@@ -25,10 +25,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
 
     mapping(bytes32 => Parameters) public parameters;
 
-    /* ---------- Address Resolver Configuration ---------- */
-
-    bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-
     /* ---------- Parameter Names ---------- */
 
     bytes32 internal constant PARAMETER_TAKERFEE = "takerFee";
@@ -43,17 +39,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
-
-    /* ========== VIEWS ========== */
-
-    /* ---------- External Contracts ---------- */
-
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
-        addresses = combineArrays(existingAddresses, newAddresses);
-    }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
