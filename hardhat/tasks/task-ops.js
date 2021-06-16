@@ -127,8 +127,6 @@ function _imagesExist() {
 }
 
 function _fresh({ opsPath }) {
-	console.log(gray('  prune docker'));
-	execa.sync('docker', ['system', 'prune', '-f']);
 	console.log(gray('  clone fresh repository into', opsPath));
 	execa.sync('sh', ['-c', 'rm -drf ' + opsPath]);
 	execa.sync('sh', [
