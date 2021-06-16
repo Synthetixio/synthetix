@@ -51,6 +51,7 @@ contract('SystemSettings', async accounts => {
 				'setTradingRewardsEnabled',
 				'setDebtSnapshotStaleTime',
 				'setFuturesLiquidationFee',
+				'setFuturesMinInitialMargin',
 				'setCrossDomainMessageGasLimit',
 				'setEtherWrapperMaxETH',
 				'setEtherWrapperMintFeeRate',
@@ -612,9 +613,47 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
+	describe('setFuturesMinInitialMargin()', () => {
+		it('should be able to change the futures min initial margin', async () => {
+			const initialMargin = toUnit('200');
+
+			const originalInitialMargin = await systemSettings.futuresMinInitialMargin.call();
+			await systemSettings.setFuturesMinInitialMargin(initialMargin, { from: owner });
+			const newInitialMargin = await systemSettings.futuresMinInitialMargin.call();
+			assert.bnEqual(newInitialMargin, initialMargin);
+			assert.bnNotEqual(newInitialMargin, originalInitialMargin);
+		});
+
+		it('only owner is permitted to change the futures min initial margin', async () => {
+			const initialMargin = toUnit('200');
+
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setFuturesMinInitialMargin,
+				args: [initialMargin.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should emit event on successful min initial margin change', async () => {
+			const initialMargin = toUnit('250');
+
+			const txn = await systemSettings.setFuturesMinInitialMargin(initialMargin, { from: owner });
+			assert.eventEqual(txn, 'FuturesMinInitialMarginUpdated', {
+				minMargin: initialMargin,
+			});
+		});
+	});
+
 	describe('setFuturesLiquidationFee()', () => {
+		let minInitialMargin;
+		beforeEach(async () => {
+			minInitialMargin = await systemSettings.futuresMinInitialMargin.call();
+		});
 		it('should be able to change the futures liquidation fee', async () => {
-			const liquidationFee = toUnit('999');
+			// fee <= minInitialMargin
+			const liquidationFee = minInitialMargin;
 
 			const originalLiquidationFee = await systemSettings.futuresLiquidationFee.call();
 			await systemSettings.setFuturesLiquidationFee(liquidationFee, { from: owner });
@@ -624,7 +663,7 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('only owner is permitted to change the futures liquidation fee', async () => {
-			const liquidationFee = toUnit('999');
+			const liquidationFee = toUnit('100');
 
 			await onlyGivenAddressCanInvoke({
 				fnc: systemSettings.setFuturesLiquidationFee,
@@ -635,8 +674,26 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
-		it('should emit event on successful rate stale period change', async () => {
-			const liquidationFee = toUnit('999');
+		it('should revert if the fee is greater than the min initial margin', async () => {
+			await assert.revert(
+				systemSettings.setFuturesLiquidationFee(minInitialMargin.add(new BN(1)), {
+					from: owner,
+				}),
+				'fee is greater than min margin'
+			);
+
+			const currentLiquidationFee = await systemSettings.futuresLiquidationFee.call();
+			await assert.revert(
+				systemSettings.setFuturesMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
+					from: owner,
+				}),
+				'fee is greater than min margin'
+			);
+		});
+
+		it('should emit event on successful liquidation fee change', async () => {
+			// fee <= minInitialMargin
+			const liquidationFee = minInitialMargin.sub(new BN(1));
 
 			const txn = await systemSettings.setFuturesLiquidationFee(liquidationFee, { from: owner });
 			assert.eventEqual(txn, 'FuturesLiquidationFeeUpdated', {

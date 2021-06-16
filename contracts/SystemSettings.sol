@@ -123,6 +123,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getFuturesLiquidationFee();
     }
 
+    function futuresMinInitialMargin() external view returns (uint) {
+        return getFuturesMinInitialMargin();
+    }
+
     function aggregatorWarningFlags() external view returns (address) {
         return getAggregatorWarningFlags();
     }
@@ -287,8 +291,15 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setFuturesLiquidationFee(uint _sUSD) external onlyOwner {
+        require(_sUSD <= getFuturesMinInitialMargin(), "fee is greater than min margin");
         flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_LIQUIDATION_FEE, _sUSD);
         emit FuturesLiquidationFeeUpdated(_sUSD);
+    }
+
+    function setFuturesMinInitialMargin(uint _minMargin) external onlyOwner {
+        require(getFuturesLiquidationFee() <= _minMargin, "fee is greater than min margin");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_MIN_INITIAL_MARGIN, _minMargin);
+        emit FuturesMinInitialMarginUpdated(_minMargin);
     }
 
     function setAggregatorWarningFlags(address _flags) external onlyOwner {
@@ -330,6 +341,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event FuturesLiquidationFeeUpdated(uint sUSD);
+    event FuturesMinInitialMarginUpdated(uint minMargin);
     event AggregatorWarningFlagsUpdated(address flags);
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);

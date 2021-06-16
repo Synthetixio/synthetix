@@ -61,7 +61,6 @@ contract('FuturesMarketData', accounts => {
 				toWei('0.001'), // 0.1% maker fee
 				toWei('5'), // 5x max leverage
 				toWei('1000000'), // 1000000 max total margin
-				toWei('10'), // 10 sUSD minimum initial margin
 				[
 					toWei('0.2'), // 20% max funding rate
 					toWei('0.5'), // 50% max funding rate skew
@@ -154,7 +153,6 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details.feeRates.makerFee, params.makerFee);
 			assert.bnEqual(details.limits.maxLeverage, params.maxLeverage);
 			assert.bnEqual(details.limits.maxMarketValue, params.maxMarketValue);
-			assert.bnEqual(details.limits.minInitialMargin, params.minInitialMargin);
 
 			assert.bnEqual(details.fundingParameters.maxFundingRate, params.maxFundingRate);
 			assert.bnEqual(details.fundingParameters.maxFundingRateSkew, params.maxFundingRateSkew);

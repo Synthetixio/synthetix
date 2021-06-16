@@ -9,8 +9,6 @@ interface IFuturesMarketSettings {
 
     function getMaxMarketValue(bytes32 _baseAsset) external view returns (uint);
 
-    function getMinInitialMargin(bytes32 _baseAsset) external view returns (uint);
-
     function getMaxFundingRate(bytes32 _baseAsset) external view returns (uint);
 
     function getMaxFundingRateSkew(bytes32 _baseAsset) external view returns (uint);
@@ -25,7 +23,6 @@ interface IFuturesMarketSettings {
             uint makerFee,
             uint maxLeverage,
             uint maxMarketValue,
-            uint minInitialMargin,
             uint maxFundingRate,
             uint maxFundingRateSkew,
             uint maxFundingRateDelta

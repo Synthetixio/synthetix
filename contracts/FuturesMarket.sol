@@ -170,6 +170,10 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return getFuturesLiquidationFee();
     }
 
+    function _minInitialMargin() internal view returns (uint) {
+        return getFuturesMinInitialMargin();
+    }
+
     function _assetPrice(IExchangeRates exchangeRates) internal view returns (uint price, bool invalid) {
         return exchangeRates.rateAndInvalid(baseAsset);
     }
@@ -255,7 +259,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function _currentFundingRate() internal view returns (int) {
-        (, , , , , uint uMaxFundingRate, uint uMaxFundingRateSkew, ) = _marketSettings().getAllParameters(baseAsset);
+        (, , , , uint uMaxFundingRate, uint uMaxFundingRateSkew, ) = _marketSettings().getAllParameters(baseAsset);
         int maxFundingRate = int(uMaxFundingRate);
         int maxFundingRateSkew = int(uMaxFundingRateSkew);
         if (maxFundingRateSkew == 0) {
@@ -662,7 +666,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         //     * the resulting margin would not be lower than the minimum margin
         //     * the resulting leverage is lower than the maximum leverage
         if (0 < position.size && marginDelta <= 0) {
-            require(_marketSettings().getMinInitialMargin(baseAsset) <= remainingMargin_, "Insufficient margin");
+            require(_minInitialMargin() <= remainingMargin_, "Insufficient margin");
             require(
                 _abs(_currentLeverage(position, price, remainingMargin_)) < _marketSettings().getMaxLeverage(baseAsset),
                 "Max leverage exceeded"
@@ -721,7 +725,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         // We don't check the margin requirement if leverage is decreasing
         if (sameSide && _abs(currentLeverage_) <= _abs(desiredLeverage)) {
-            require(_marketSettings().getMinInitialMargin(baseAsset) <= margin, "Insufficient margin");
+            require(_minInitialMargin() <= margin, "Insufficient margin");
         }
     }
 

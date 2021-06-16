@@ -24,7 +24,7 @@ contract('FuturesMarketSettings', accounts => {
 	const makerFee = toUnit('0.001');
 	const maxLeverage = toUnit('10');
 	const maxMarketValue = toUnit('100000');
-	const minInitialMargin = toUnit('100');
+
 	const maxFundingRate = toUnit('0.1');
 	const maxFundingRateSkew = toUnit('1');
 	const maxFundingRateDelta = toUnit('0.0125');
@@ -46,7 +46,6 @@ contract('FuturesMarketSettings', accounts => {
 				'setMakerFee',
 				'setMaxLeverage',
 				'setMaxMarketValue',
-				'setMinInitialMargin',
 				'setMaxFundingRate',
 				'setMaxFundingRateSkew',
 				'setMaxFundingRateDelta',
@@ -82,12 +81,6 @@ contract('FuturesMarketSettings', accounts => {
 					maxMarketValue,
 					futuresMarketSettings.setMaxMarketValue,
 					futuresMarketSettings.getMaxMarketValue,
-				],
-				[
-					'minInitialMargin',
-					minInitialMargin,
-					futuresMarketSettings.setMinInitialMargin,
-					futuresMarketSettings.getMinInitialMargin,
 				],
 				[
 					'maxFundingRate',
@@ -137,15 +130,7 @@ contract('FuturesMarketSettings', accounts => {
 
 					await onlyGivenAddressCanInvoke({
 						fnc: futuresMarketSettings.setAllParameters,
-						args: [
-							baseAsset,
-							takerFee,
-							makerFee,
-							maxLeverage,
-							maxMarketValue,
-							minInitialMargin,
-							fundingParams,
-						],
+						args: [baseAsset, takerFee, makerFee, maxLeverage, maxMarketValue, fundingParams],
 						address: owner,
 						accounts,
 					});
@@ -187,7 +172,6 @@ contract('FuturesMarketSettings', accounts => {
 					const newMakerFee = makerFee.mul(bn2);
 					const newMaxLeverage = maxLeverage.mul(bn2);
 					const newMaxMarketValue = maxMarketValue.mul(bn2);
-					const newMinInitialMargin = minInitialMargin.mul(bn2);
 					const newMaxFundingRate = maxFundingRate.mul(bn2);
 					const newMaxFundingRateSkew = maxFundingRateSkew.mul(bn2);
 					const newMaxFundingRateDelta = maxFundingRateDelta.mul(bn2);
@@ -206,7 +190,6 @@ contract('FuturesMarketSettings', accounts => {
 								newMakerFee,
 								newMaxLeverage,
 								newMaxMarketValue,
-								newMinInitialMargin,
 								newFundingParams,
 								{ from: owner }
 							);
@@ -219,7 +202,7 @@ contract('FuturesMarketSettings', accounts => {
 							hash: tx.tx,
 							contracts: [futuresMarketSettings],
 						});
-						assert.equal(decodedLogs.length, 8);
+						assert.equal(decodedLogs.length, 7);
 
 						for (const p of params) {
 							const param = toBytes32(p[0]);

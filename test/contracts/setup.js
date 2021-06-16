@@ -28,6 +28,7 @@ const {
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
 		FUTURES_LIQUIDATION_FEE,
+		FUTURES_MIN_INITIAL_MARGIN,
 	},
 } = require('../../');
 
@@ -522,7 +523,6 @@ const setupContract = async ({
 					toWei('0.001'), // 0.1% maker fee
 					toWei('10'), // 10x max leverage
 					toWei('100000'), // 100000 max market debt
-					toWei('100'), // 100 sUSD minimum initial margin
 					[
 						toWei('0.1'), // 10% max funding rate
 						toWei('1'), // 100% max funding rate skew
@@ -545,7 +545,6 @@ const setupContract = async ({
 					toWei('0.001'), // 0.1% maker fee
 					toWei('10'), // 10x max leverage
 					toWei('100000'), // 100000 max market debt
-					toWei('100'), // 100 sUSD minimum initial margin
 					[
 						toWei('0.1'), // 10% max funding rate
 						toWei('1'), // 100% max funding rate skew
@@ -1105,6 +1104,9 @@ const setupAllContracts = async ({
 				from: owner,
 			}),
 			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setFuturesMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 				from: owner,
 			}),
 			returnObj['SystemSettings'].setFuturesLiquidationFee(FUTURES_LIQUIDATION_FEE, {

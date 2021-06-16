@@ -15,7 +15,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         uint makerFee;
         uint maxLeverage;
         uint maxMarketValue;
-        uint minInitialMargin;
         uint maxFundingRate;
         uint maxFundingRateSkew;
         uint maxFundingRateDelta;
@@ -31,7 +30,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     bytes32 internal constant PARAMETER_MAKERFEE = "makerFee";
     bytes32 internal constant PARAMETER_MAXLEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAXMARKETVALUE = "maxMarketValue";
-    bytes32 internal constant PARAMETER_MININITIALMARGIN = "minInitialMargin";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATE = "maxFundingRate";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATESKEW = "maxFundingRateSkew";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATEDELTA = "maxFundingRateDelta";
@@ -64,11 +62,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXMARKETVALUE, _maxMarketValue);
     }
 
-    function setMinInitialMargin(bytes32 _baseAsset, uint _minInitialMargin) external onlyOwner {
-        parameters[_baseAsset].minInitialMargin = _minInitialMargin;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MININITIALMARGIN, _minInitialMargin);
-    }
-
     // TODO: Setting this parameter should record funding first.
     function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) external onlyOwner {
         parameters[_baseAsset].maxFundingRate = _maxFundingRate;
@@ -93,7 +86,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         uint _makerFee,
         uint _maxLeverage,
         uint _maxMarketValue,
-        uint _minInitialMargin,
         uint[3] calldata _fundingParameters
     ) external onlyOwner {
         parameters[_baseAsset].takerFee = _takerFee;
@@ -107,9 +99,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
 
         parameters[_baseAsset].maxMarketValue = _maxMarketValue;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXMARKETVALUE, _maxMarketValue);
-
-        parameters[_baseAsset].minInitialMargin = _minInitialMargin;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MININITIALMARGIN, _minInitialMargin);
 
         parameters[_baseAsset].maxFundingRate = _fundingParameters[0];
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATE, _fundingParameters[0]);
@@ -139,10 +128,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         return parameters[_baseAsset].maxMarketValue;
     }
 
-    function getMinInitialMargin(bytes32 _baseAsset) external view returns (uint) {
-        return parameters[_baseAsset].minInitialMargin;
-    }
-
     function getMaxFundingRate(bytes32 _baseAsset) external view returns (uint) {
         return parameters[_baseAsset].maxFundingRate;
     }
@@ -163,7 +148,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
             uint makerFee,
             uint maxLeverage,
             uint maxMarketValue,
-            uint minInitialMargin,
             uint maxFundingRate,
             uint maxFundingRateSkew,
             uint maxFundingRateDelta
@@ -173,7 +157,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         makerFee = parameters[_baseAsset].makerFee;
         maxLeverage = parameters[_baseAsset].maxLeverage;
         maxMarketValue = parameters[_baseAsset].maxMarketValue;
-        minInitialMargin = parameters[_baseAsset].minInitialMargin;
         maxFundingRate = parameters[_baseAsset].maxFundingRate;
         maxFundingRateSkew = parameters[_baseAsset].maxFundingRateSkew;
         maxFundingRateDelta = parameters[_baseAsset].maxFundingRateDelta;
