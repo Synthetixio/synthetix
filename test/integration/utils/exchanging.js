@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { ensureBalance } = require('./balances');
 const { forceSetSystemSetting } = require('./settings');
 const { toBytes32 } = require('../../../index');
-const { wait } = require('./wait');
+const { wait } = require('../../test-utils/wait');
 
 function ignoreWaitingPeriod({ ctx }) {
 	before('record and reduce waitingPeriodSecs', async () => {

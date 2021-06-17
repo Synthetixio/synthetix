@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
-const { ignoreWaitingPeriod } = require('../utils/exchanging');
+const { skipWaitingPeriod } = require('../../test-utils/skip');
 
 function itCanExchange({ ctx }) {
 	describe('exchanging and settling', () => {
@@ -57,7 +57,9 @@ function itCanExchange({ ctx }) {
 			});
 
 			describe('when settle is called', () => {
-				ignoreWaitingPeriod({ ctx });
+				before('skip waiting period', async () => {
+					await skipWaitingPeriod({ ctx });
+				});
 
 				before('settle', async () => {
 					const tx = await Synthetix.settle(toBytes32('sETH'));
