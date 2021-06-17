@@ -158,9 +158,8 @@ const importFeePeriods = async ({
 	if (!override) {
 		for (let i = 0; i < feePeriodLength; i++) {
 			const period = await targetContract.recentFeePeriods(i);
-			console.log(period);
 			// ignore any initial entry where feePeriodId is 1 as this is created by the FeePool constructor
-			if (period.feePeriodId !== '1' && period.startTime !== '0') {
+			if (period.feePeriodId.toString() !== '1' && period.startTime.toString() !== '0') {
 				throw Error(
 					`The new target FeePool already has imported fee periods (one or more entries has ` +
 						`startTime as 0. Please check to make sure you are using the latest FeePool ` +
