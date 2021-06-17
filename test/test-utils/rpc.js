@@ -1,5 +1,7 @@
 const { wait } = require('./wait');
 
+let heartbeatActive = false;
+
 async function fastForward({ seconds, provider }) {
 	await provider.send('evm_increaseTime', [seconds]);
 	await provider.send('evm_mine', []);
@@ -25,6 +27,12 @@ async function dummyTx({ wallet, useOvm }) {
  * of the ops tool.
  * */
 async function startOpsHeartbeat({ l1Wallet, l2Wallet }) {
+	if (heartbeatActive) {
+		return;
+	}
+
+	heartbeatActive = true;
+
 	async function heartbeat() {
 		await dummyTx({ wallet: l1Wallet, useOvm: false });
 		await dummyTx({ wallet: l2Wallet, useOvm: true });
