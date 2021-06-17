@@ -1,10 +1,9 @@
 const ethers = require('ethers');
 const { toBytes32 } = require('../../../index');
 const { assert } = require('../../contracts/common');
-const { exchangeSomething, ignoreFeePeriodDuration } = require('../utils/exchanging');
+const { exchangeSomething } = require('../utils/exchanging');
 const { ensureBalance } = require('../utils/balances');
-const { ignoreMinimumStakeTime } = require('../utils/staking');
-const { skipIfL2 } = require('../utils/l2');
+const { skipFeePeriod, skipMinimumStakeTime } = require('../utils/skip');
 
 function itCanStake({ ctx }) {
 	describe('staking and claiming', () => {
@@ -45,21 +44,14 @@ function itCanStake({ ctx }) {
 			});
 
 			describe('claiming', () => {
-				// TODO: Disabled until Optimism supports 5s time granularity.
-				// We can set fee period duration to 5s, but we dont want this test
-				// to wait 3m, which is the current time granularity.
-				skipIfL2({
-					ctx,
-					reason:
-						'ops L2 time granularity needs to be less than 3m, so we cant close the fee period',
-				});
-
 				before('exchange something', async () => {
 					await exchangeSomething({ ctx });
 				});
 
 				describe('when the fee period closes', () => {
-					ignoreFeePeriodDuration({ ctx });
+					before('skip fee period', async () => {
+						await skipFeePeriod({ ctx });
+					});
 
 					before('close the current fee period', async () => {
 						FeePool = FeePool.connect(ctx.users.owner);
@@ -89,7 +81,9 @@ function itCanStake({ ctx }) {
 		});
 
 		describe('when the user burns sUSD', () => {
-			ignoreMinimumStakeTime({ ctx });
+			before('', async () => {
+				await skipMinimumStakeTime({ ctx });
+			});
 
 			before('record debt', async () => {
 				debtsUSD = await Synthetix.debtBalanceOf(user.address, toBytes32('sUSD'));

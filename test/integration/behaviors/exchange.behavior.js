@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
-const { skipWaitingPeriod } = require('../../test-utils/skip');
+const { skipWaitingPeriod } = require('../utils/skip');
 
 function itCanExchange({ ctx }) {
 	describe('exchanging and settling', () => {
