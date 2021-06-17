@@ -24,7 +24,7 @@ task('ops', 'Run Optimism chain')
 	.addOptionalParam(
 		'optimismCommit',
 		'Commit to checkout',
-		undefined // Define here to pin to that specific commit
+		'6d7b12b8693117c379be76223448ef36707304d2' // Specify a specific commit in the master branch to pin the tool
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
