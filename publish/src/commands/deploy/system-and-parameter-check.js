@@ -35,6 +35,7 @@ module.exports = async ({
 	methodCallGasLimit,
 	network,
 	oracleExrates,
+	owner,
 	providerUrl,
 	skipFeedChecks,
 	standaloneFeeds,
@@ -214,6 +215,7 @@ module.exports = async ({
 			? green('✅ YES\n\t\t\t\t') + newSynthsToAdd.join(', ')
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
+		'Owner account': owner,
 		'Synthetix totalSupply': `${Math.round(formatUnits(currentSynthetixSupply) / 1e6)}m`,
 		'ExchangeRates Oracle': oracleAddress,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,

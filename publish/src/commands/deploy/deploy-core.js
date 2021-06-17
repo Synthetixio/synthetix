@@ -7,13 +7,13 @@ const {
 } = require('../../../..');
 
 module.exports = async ({
-	account,
 	addressOf,
 	currentLastMintEvent,
 	currentSynthetixSupply,
 	currentWeekOfInflation,
 	deployer,
 	oracleAddress,
+	owner,
 	useOvm,
 }) => {
 	console.log(gray(`\n------ DEPLOY LIBRARIES ------\n`));
@@ -30,13 +30,13 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'AddressResolver',
-		args: [account],
+		args: [owner],
 	});
 
 	const readProxyForResolver = await deployer.deployContract({
 		name: 'ReadProxyAddressResolver',
 		source: 'ReadProxy',
-		args: [account],
+		args: [owner],
 	});
 
 	await deployer.deployContract({
@@ -47,93 +47,93 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'SystemSettings',
-		args: [account, addressOf(readProxyForResolver)],
+		args: [owner, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
 		name: 'SystemStatus',
-		args: [account],
+		args: [owner],
 	});
 
 	await deployer.deployContract({
 		name: 'ExchangeRates',
 		source: useOvm ? 'ExchangeRatesWithoutInvPricing' : 'ExchangeRates',
-		args: [account, oracleAddress, addressOf(readProxyForResolver), [], []],
+		args: [owner, oracleAddress, addressOf(readProxyForResolver), [], []],
 	});
 
 	await deployer.deployContract({
 		name: 'RewardEscrow',
-		args: [account, ZERO_ADDRESS, ZERO_ADDRESS],
+		args: [owner, ZERO_ADDRESS, ZERO_ADDRESS],
 	});
 
 	const rewardEscrowV2 = await deployer.deployContract({
 		name: 'RewardEscrowV2',
 		source: useOvm ? 'ImportableRewardEscrowV2' : 'RewardEscrowV2',
-		args: [account, addressOf(readProxyForResolver)],
+		args: [owner, addressOf(readProxyForResolver)],
 		deps: ['AddressResolver'],
 	});
 
 	const synthetixEscrow = await deployer.deployContract({
 		name: 'SynthetixEscrow',
-		args: [account, ZERO_ADDRESS],
+		args: [owner, ZERO_ADDRESS],
 	});
 
 	await deployer.deployContract({
 		name: 'SynthetixState',
 		source: useOvm ? 'SynthetixStateWithLimitedSetup' : 'SynthetixState',
-		args: [account, account],
+		args: [owner, ZERO_ADDRESS],
 	});
 
 	const proxyFeePool = await deployer.deployContract({
 		name: 'ProxyFeePool',
 		source: 'Proxy',
-		args: [account],
+		args: [owner],
 	});
 
 	const delegateApprovalsEternalStorage = await deployer.deployContract({
 		name: 'DelegateApprovalsEternalStorage',
 		source: 'EternalStorage',
-		args: [account, ZERO_ADDRESS],
+		args: [owner, ZERO_ADDRESS],
 	});
 
 	await deployer.deployContract({
 		name: 'DelegateApprovals',
-		args: [account, addressOf(delegateApprovalsEternalStorage)],
+		args: [owner, addressOf(delegateApprovalsEternalStorage)],
 	});
 
 	const liquidations = await deployer.deployContract({
 		name: 'Liquidations',
-		args: [account, addressOf(readProxyForResolver)],
+		args: [owner, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
 		name: 'EternalStorageLiquidations',
 		source: 'EternalStorage',
-		args: [account, addressOf(liquidations)],
+		args: [owner, addressOf(liquidations)],
 	});
 
 	await deployer.deployContract({
 		name: 'FeePoolEternalStorage',
-		args: [account, ZERO_ADDRESS],
+		args: [owner, ZERO_ADDRESS],
 	});
 
 	const feePool = await deployer.deployContract({
 		name: 'FeePool',
 		deps: ['ProxyFeePool', 'AddressResolver'],
-		args: [addressOf(proxyFeePool), account, addressOf(readProxyForResolver)],
+		args: [addressOf(proxyFeePool), owner, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
 		name: 'FeePoolState',
 		deps: ['FeePool'],
-		args: [account, addressOf(feePool)],
+		args: [owner, addressOf(feePool)],
 	});
 
 	await deployer.deployContract({
 		name: 'RewardsDistribution',
 		deps: useOvm ? ['RewardEscrowV2', 'ProxyFeePool'] : ['RewardEscrowV2', 'ProxyFeePool'],
 		args: [
-			account, // owner
+			owner, // owner
 			ZERO_ADDRESS, // authority (synthetix)
 			ZERO_ADDRESS, // Synthetix Proxy
 			addressOf(rewardEscrowV2),
@@ -144,13 +144,13 @@ module.exports = async ({
 	// New Synthetix proxy.
 	const proxyERC20Synthetix = await deployer.deployContract({
 		name: 'ProxyERC20',
-		args: [account],
+		args: [owner],
 	});
 
 	const tokenStateSynthetix = await deployer.deployContract({
 		name: 'TokenStateSynthetix',
 		source: 'LegacyTokenState',
-		args: [account, account],
+		args: [owner, ZERO_ADDRESS],
 	});
 
 	await deployer.deployContract({
@@ -160,7 +160,7 @@ module.exports = async ({
 		args: [
 			addressOf(proxyERC20Synthetix),
 			addressOf(tokenStateSynthetix),
-			account,
+			owner,
 			currentSynthetixSupply,
 			addressOf(readProxyForResolver),
 		],
@@ -172,20 +172,20 @@ module.exports = async ({
 	await deployer.deployContract({
 		name: 'ProxySynthetix',
 		source: 'Proxy',
-		args: [account],
+		args: [owner],
 	});
 
 	await deployer.deployContract({
 		name: 'DebtCache',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
+		args: [owner, addressOf(readProxyForResolver)],
 	});
 
 	const exchanger = await deployer.deployContract({
 		name: 'Exchanger',
 		source: useOvm ? 'Exchanger' : 'ExchangerWithVirtualSynth',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
+		args: [owner, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
@@ -195,25 +195,25 @@ module.exports = async ({
 	await deployer.deployContract({
 		name: 'ExchangeState',
 		deps: ['Exchanger'],
-		args: [account, addressOf(exchanger)],
+		args: [owner, addressOf(exchanger)],
 	});
 
 	await deployer.deployContract({
 		name: 'Issuer',
 		source: useOvm ? 'IssuerWithoutLiquidations' : 'Issuer',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
+		args: [owner, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
 		name: 'TradingRewards',
 		deps: ['AddressResolver', 'Exchanger'],
-		args: [account, account, addressOf(readProxyForResolver)],
+		args: [owner, owner, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
 		name: 'SupplySchedule',
-		args: [account, currentLastMintEvent, currentWeekOfInflation],
+		args: [owner, currentLastMintEvent, currentWeekOfInflation],
 	});
 
 	if (synthetixEscrow) {
@@ -227,18 +227,18 @@ module.exports = async ({
 	await deployer.deployContract({
 		name: 'SynthetixBridgeToBase',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
+		args: [owner, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
 		name: 'SynthetixBridgeToOptimism',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(readProxyForResolver)],
+		args: [owner, addressOf(readProxyForResolver)],
 	});
 
 	await deployer.deployContract({
 		name: 'SynthetixBridgeEscrow',
 		deps: ['AddressResolver'],
-		args: [account],
+		args: [owner],
 	});
 };

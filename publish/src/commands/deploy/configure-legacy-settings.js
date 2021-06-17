@@ -10,6 +10,7 @@ module.exports = async ({
 	deployer,
 	getDeployParameter,
 	network,
+	owner,
 	runStep,
 	useOvm,
 }) => {
@@ -182,15 +183,26 @@ module.exports = async ({
 
 	// only reset token state if redeploying
 	if (TokenStateSynthetix && config['TokenStateSynthetix'].deploy) {
+		// ensure the owner is the associated contract so we can perform the setBalanceOf action below
+		await runStep({
+			contract: 'TokenStateSynthetix',
+			target: TokenStateSynthetix,
+			read: 'associatedContract',
+			expected: input => input === owner,
+			write: 'setAssociatedContract',
+			writeArg: owner,
+			comment:
+				'Ensure the TokenStateSynthetix contract has the correct initial issuance (WARNING: only for new deploys)',
+		});
 		const initialIssuance = await getDeployParameter('INITIAL_ISSUANCE');
 		await runStep({
 			contract: 'TokenStateSynthetix',
 			target: TokenStateSynthetix,
 			read: 'balanceOf',
-			readArg: account,
+			readArg: owner,
 			expected: input => input === initialIssuance,
 			write: 'setBalanceOf',
-			writeArg: [account, initialIssuance],
+			writeArg: [owner, initialIssuance],
 			comment:
 				'Ensure the TokenStateSynthetix contract has the correct initial issuance (WARNING: only for new deploys)',
 		});

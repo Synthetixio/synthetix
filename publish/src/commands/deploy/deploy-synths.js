@@ -10,13 +10,13 @@ const {
 } = require('../../../..');
 
 module.exports = async ({
-	account,
 	addressOf,
 	addNewSynths,
 	config,
 	deployer,
 	freshDeploy,
 	network,
+	owner,
 	synths,
 	yes,
 }) => {
@@ -36,7 +36,7 @@ module.exports = async ({
 		const tokenStateForSynth = await deployer.deployContract({
 			name: `TokenState${currencyKey}`,
 			source: 'TokenState',
-			args: [account, ZERO_ADDRESS],
+			args: [owner, ZERO_ADDRESS],
 			force: addNewSynths,
 		});
 
@@ -49,7 +49,7 @@ module.exports = async ({
 		const proxyForSynth = await deployer.deployContract({
 			name: `Proxy${currencyKey}`,
 			source: synthProxyIsLegacy ? 'Proxy' : 'ProxyERC20',
-			args: [account],
+			args: [owner],
 			force: addNewSynths,
 		});
 
@@ -59,7 +59,7 @@ module.exports = async ({
 			proxyERC20ForSynth = await deployer.deployContract({
 				name: `ProxyERC20${currencyKey}`,
 				source: `ProxyERC20`,
-				args: [account],
+				args: [owner],
 				force: addNewSynths,
 			});
 		}
@@ -110,7 +110,7 @@ module.exports = async ({
 				addressOf(tokenStateForSynth),
 				`Synth ${currencyKey}`,
 				currencyKey,
-				account,
+				owner,
 				currencyKeyInBytes,
 				originalTotalSupply,
 				addressOf(ReadProxyAddressResolver),

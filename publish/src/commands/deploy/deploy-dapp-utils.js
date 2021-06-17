@@ -15,7 +15,7 @@ module.exports = async ({ account, addressOf, deployer }) => {
 
 	await deployer.deployContract({
 		name: 'DappMaintenance',
-		args: [account],
+		args: [account], // explicitly keep the deployment account as owner
 	});
 
 	await deployer.deployContract({

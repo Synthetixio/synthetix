@@ -233,8 +233,8 @@ const performTransactionalStep = async ({
 		}
 	}
 	// otherwise check the owner
-	const owner = await target.methods.owner().call();
-	if (owner === account || publiclyCallable) {
+	const targetOwner = await target.methods.owner().call();
+	if (targetOwner === account || publiclyCallable) {
 		// perform action
 		let hash;
 		let gasUsed = 0;
@@ -276,7 +276,7 @@ const performTransactionalStep = async ({
 
 		return { mined: true, hash };
 	} else {
-		console.log(gray(`  > Account ${account} is not owner ${owner}`));
+		console.log(gray(`  > Account ${account} is not owner ${targetOwner}`));
 	}
 
 	let data;
@@ -316,7 +316,7 @@ const performTransactionalStep = async ({
 
 			await confirmAction(
 				redBright(
-					`Confirm: Invoke ${write}(${argumentsForWriteFunction}) via https://gnosis-safe.io/app/#/safes/${owner}/transactions` +
+					`Confirm: Invoke ${write}(${argumentsForWriteFunction}) via https://gnosis-safe.io/app/#/safes/${targetOwner}/transactions` +
 						`to recipient ${target.options.address}` +
 						`with data: ${data}`
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '

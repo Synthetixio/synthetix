@@ -214,7 +214,7 @@ const deploy = async ({
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
-	const { account } = deployer;
+	const { account, owner } = deployer;
 
 	nonceManager.web3 = deployer.provider.web3;
 	nonceManager.account = account;
@@ -242,6 +242,7 @@ const deploy = async ({
 		methodCallGasLimit,
 		network,
 		oracleExrates,
+		owner,
 		providerUrl,
 		skipFeedChecks,
 		standaloneFeeds,
@@ -259,7 +260,7 @@ const deploy = async ({
 	const runSteps = [];
 
 	const runStep = async opts => {
-		const { pending, mined, ...rest } = await performTransactionalStep({
+		const transactionResult = await performTransactionalStep({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
@@ -271,51 +272,53 @@ const deploy = async ({
 			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
+		const { pending, mined } = transactionResult;
+
 		// only add to solidity when forked and task perfomed and not skipped or when not forked
 		// and action pending and no solidity skipping
 		if ((useFork && mined && !opts.skipSolidity) || (!useFork && pending && !opts.skipSolidity)) {
 			runSteps.push(opts);
 		}
 
-		return { ...rest };
+		return transactionResult;
 	};
 
 	await deployCore({
-		account,
 		addressOf,
 		currentLastMintEvent,
 		currentSynthetixSupply,
 		currentWeekOfInflation,
 		deployer,
 		oracleAddress,
+		owner,
 		useOvm,
 	});
 
 	const { synthsToAdd } = await deploySynths({
-		account,
 		addressOf,
 		addNewSynths,
 		config,
 		deployer,
 		freshDeploy,
 		network,
+		owner,
 		synths,
 		yes,
 	});
 
 	const { useEmptyCollateralManager, collateralManagerDefaults } = await deployLoans({
-		account,
 		addressOf,
 		deployer,
 		getDeployParameter,
 		network,
+		owner,
 		useOvm,
 	});
 
 	await deployBinaryOptions({
-		account,
 		addressOf,
 		deployer,
+		owner,
 	});
 
 	await deployDappUtils({
@@ -350,6 +353,7 @@ const deploy = async ({
 		deployer,
 		getDeployParameter,
 		network,
+		owner,
 		runStep,
 		useOvm,
 	});
