@@ -43,11 +43,13 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     /* ---------- Setters ---------- */
 
     function setTakerFee(bytes32 _baseAsset, uint _takerFee) external onlyOwner {
+        require(_takerFee <= 1 ether, "taker fee greater than 1");
         parameters[_baseAsset].takerFee = _takerFee;
         emit ParameterUpdated(_baseAsset, PARAMETER_TAKERFEE, _takerFee);
     }
 
     function setMakerFee(bytes32 _baseAsset, uint _makerFee) external onlyOwner {
+        require(_makerFee <= 1 ether, "maker fee greater than 1");
         parameters[_baseAsset].makerFee = _makerFee;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAKERFEE, _makerFee);
     }

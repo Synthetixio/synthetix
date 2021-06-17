@@ -110,6 +110,25 @@ contract('FuturesMarketSettings', accounts => {
 			}
 		});
 
+		describe('bounds checking', async () => {
+			it('should revert if maker fee is greater than 1', async () => {
+				await assert.revert(
+					futuresMarketSettings.setMakerFee(baseAsset, toUnit('1').add(new BN(1)), {
+						from: owner,
+					}),
+					'maker fee greater than 1'
+				);
+			});
+			it('should revert if taker fee is greater than 1', async () => {
+				await assert.revert(
+					futuresMarketSettings.setTakerFee(baseAsset, toUnit('1').add(new BN(1)), {
+						from: owner,
+					}),
+					'taker fee greater than 1'
+				);
+			});
+		});
+
 		describe('Setting the params', async () => {
 			describe('when not invoked by the owner', async () => {
 				it('should revert ', async () => {
