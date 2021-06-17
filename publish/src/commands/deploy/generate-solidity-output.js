@@ -149,7 +149,7 @@ contract Migrator {
 			.join('\n\t\t')}
 
 		// MIGRATION
-		${instructions.join(';\n\t\t')};
+		${instructions.length ? `${instructions.join(';\n\t\t')};` : ''}
 
 		// NOMINATE OWNERSHIP back to owner for aforementioned contracts
 		${contractsAddedToSolidity
