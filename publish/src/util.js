@@ -38,7 +38,6 @@ const {
 const { networks } = require('../..');
 const JSONreplacer = (key, value) => {
 	if (typeof value === 'object' && value.type && value.type === 'BigNumber') {
-		//
 		return BigNumber.from(value).toString();
 	}
 	return value;
