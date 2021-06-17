@@ -95,7 +95,7 @@ const purgeSynths = async ({
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
-	console.log(wallet);
+
 	if (!wallet.address) wallet.address = wallet._address;
 	console.log(gray(`Using account with public key ${wallet.address}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
