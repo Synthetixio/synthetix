@@ -97,7 +97,7 @@ const importFeePeriods = async ({
 		} else {
 			throw Error('Cannot determine which is the last version of FeePool for the network');
 		}
-	} else if (!w3utils.isAddress(sourceContractAddress)) {
+	} else if (!ethers.utils.isAddress(sourceContractAddress)) {
 		throw Error(
 			'Invalid address detected for source (please check your inputs): ',
 			sourceContractAddress
