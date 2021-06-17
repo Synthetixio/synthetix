@@ -25,6 +25,10 @@ module.exports = async ({
 
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
+	const newContractsBeingAdded = {};
+
+	// function to derive a unique name for each new contract
+	const newContractVariableFunctor = name => `new_${name}_contract`;
 
 	for (const [
 		runIndex,
@@ -43,14 +47,37 @@ module.exports = async ({
 
 		const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 
+		// Collect all new contracts being added to the address resolver so we
+		// can define them as local variables in the migration function to further check them.
+		// This works as all new contracts are first be added to the address resolver
+		// before they can be used.
+		if (contract === 'AddressResolver' && write === 'importAddresses') {
+			argumentsForWriteFunction[0].forEach(
+				(name, i) =>
+					(newContractsBeingAdded[argumentsForWriteFunction[1][i]] = parseBytes32String(name))
+			);
+		}
 		// now generate the write action as solidity
 		const argsForWriteFnc = [];
 		for (const [index, argument] of Object.entries(argumentsForWriteFunction)) {
 			const abiEntry = abi.find(({ name }) => name === write);
 
 			const { internalType } = abiEntry.inputs[index];
+
 			const decodeBytes32IfRequired = input =>
-				/^0x[0-9a-fA-F]{64}/.test(input) ? `"${parseBytes32String(input)}"` : input;
+				Array.isArray(input)
+					? input.map(decodeBytes32IfRequired)
+					: /^0x[0-9a-fA-F]{64}/.test(input)
+					? `"${parseBytes32String(input)}"`
+					: input;
+			const useVariableForContractNameIfRequired = input =>
+				Array.isArray(input)
+					? input.map(useVariableForContractNameIfRequired)
+					: input in newContractsBeingAdded
+					? newContractVariableFunctor(newContractsBeingAdded[input])
+					: input;
+			const transformValueIfRequired = input =>
+				useVariableForContractNameIfRequired(decodeBytes32IfRequired(input));
 
 			if (Array.isArray(argument)) {
 				// arrays needs to be created in memory
@@ -62,16 +89,18 @@ module.exports = async ({
 				);
 				for (const [i, arg] of Object.entries(argument)) {
 					instructions.push(
-						`${variableName}[${i}] = ${typeOfArrayElement}(${decodeBytes32IfRequired(arg)})`
+						`${variableName}[${i}] = ${typeOfArrayElement}(${transformValueIfRequired(arg)})`
 					);
 				}
 				argsForWriteFnc.push(variableName);
 			} else if (/^contract /.test(internalType)) {
 				// if it's a contract type, it needs casting
-				argsForWriteFnc.push(`${internalType.split(' ')[1]}(${argument})`);
+				argsForWriteFnc.push(
+					`${internalType.split(' ')[1]}(${transformValueIfRequired(argument)})`
+				);
 			} else {
 				// otherwise just add it
-				argsForWriteFnc.push(decodeBytes32IfRequired(argument));
+				argsForWriteFnc.push(transformValueIfRequired(argument));
 			}
 		}
 		instructions.push(`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc})`);
@@ -109,6 +138,10 @@ contract Migrator {
 
 	function migrate(address currentOwner) external {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
+
+		${Object.entries(newContractsBeingAdded)
+			.map(([address, name]) => `address ${newContractVariableFunctor(name)} = ${address};`)
+			.join('\n\t\t')}
 
 		// ACCEPT OWNERSHIP for all contracts that require ownership to make changes
 		${contractsAddedToSolidity

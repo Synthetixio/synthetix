@@ -61,7 +61,7 @@ module.exports = async ({
 	}
 	if (DelegateApprovals && DelegateApprovalsEternalStorage) {
 		await runStep({
-			contract: 'EternalStorage',
+			contract: 'DelegateApprovalsEternalStorage',
 			target: DelegateApprovalsEternalStorage,
 			read: 'associatedContract',
 			expected: input => input === addressOf(DelegateApprovals),
