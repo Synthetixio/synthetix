@@ -6,16 +6,14 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  - run:
-      name: Pre compile
-      command: npx hardhat compile --showsize --optimizer
+  - run: npx hardhat compile --showsize --optimizer
   - run:
       name: Test and output gas used
       command: |
         set +e
         circleci tests glob 'test/contracts/*.js' |
         circleci tests split |
-        xargs npm test -- --gas --optimizer
+        xargs npm test -- --gas
         EXIT_CODE=$?
         printf "\\n"
         exit $EXIT_CODE
