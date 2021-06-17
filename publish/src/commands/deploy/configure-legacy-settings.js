@@ -42,17 +42,18 @@ module.exports = async ({
 
 	// now configure everything
 	if (network !== 'mainnet' && SystemStatus) {
-		// On testnet, give the deployer the rights to update status
+		// On testnet, give the owner of SystemStatus the rights to update status
+		const statusOwner = await SystemStatus.methods.owner().call();
 		await runStep({
 			contract: 'SystemStatus',
 			target: SystemStatus,
 			read: 'accessControl',
-			readArg: [toBytes32('System'), account],
+			readArg: [toBytes32('System'), statusOwner],
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControls',
 			writeArg: [
 				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
-				[account, account, account, account, account],
+				[statusOwner, statusOwner, statusOwner, statusOwner, statusOwner],
 				[true, true, true, true, true],
 				[true, true, true, true, true],
 			],

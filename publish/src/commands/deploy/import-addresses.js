@@ -33,22 +33,25 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 
 		const allContracts = Object.entries(deployer.deployedContracts);
 		await Promise.all(
-			allContracts.map(([name, contract]) => {
-				return limitPromise(async () => {
-					const isImported = await AddressResolver.methods
-						.areAddressesImported([toBytes32(name)], [contract.options.address])
-						.call();
+			allContracts
+				// ignore adding contracts with the skipResolver option
+				.filter(([, contract]) => !contract.options.skipResolver)
+				.map(([name, contract]) => {
+					return limitPromise(async () => {
+						const isImported = await AddressResolver.methods
+							.areAddressesImported([toBytes32(name)], [contract.options.address])
+							.call();
 
-					if (!isImported) {
-						console.log(green(`${name} needs to be imported to the AddressResolver`));
+						if (!isImported) {
+							console.log(green(`${name} needs to be imported to the AddressResolver`));
 
-						addressArgs[0].push(toBytes32(name));
-						addressArgs[1].push(contract.options.address);
+							addressArgs[0].push(toBytes32(name));
+							addressArgs[1].push(contract.options.address);
 
-						newContractsBeingAdded[contract.options.address] = name;
-					}
-				});
-			})
+							newContractsBeingAdded[contract.options.address] = name;
+						}
+					});
+				})
 		);
 
 		const { pending } = await runStep({
