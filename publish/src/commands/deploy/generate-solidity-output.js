@@ -137,9 +137,11 @@ ${contractsAddedToSolidity
 	.join('\n')}
 
 interface ISynthetixNamedContract {
+    // solhint-disable func-name-mixedcase
 	function CONTRACT_NAME() external view returns (bytes32);
 }
 
+// solhint-disable contract-name-camelcase
 contract Migration_${releaseName} {
 	address public constant owner = ${getUsers({ network, useOvm, user: 'owner' }).address};
 
