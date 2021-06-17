@@ -276,7 +276,10 @@ const deploy = async ({
 
 		// only add to solidity when forked and task perfomed and not skipped or when not forked
 		// and action pending and no solidity skipping
-		if ((useFork && mined && !opts.skipSolidity) || (!useFork && pending && !opts.skipSolidity)) {
+		if (
+			(!opts.skipSolidity && (network === 'local' || useFork) && mined) ||
+			(!useFork && pending)
+		) {
 			runSteps.push(opts);
 		}
 
