@@ -1,12 +1,9 @@
 'use strict';
 
 const { gray } = require('chalk');
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../../../..');
+const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ addressOf, deployer, getDeployParameter, network, owner, useOvm }) => {
+module.exports = async ({ account, addressOf, deployer, getDeployParameter, network, useOvm }) => {
 	console.log(gray(`\n------ DEPLOY ANCILLARY CONTRACTS ------\n`));
 
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
@@ -14,19 +11,19 @@ module.exports = async ({ addressOf, deployer, getDeployParameter, network, owne
 	await deployer.deployContract({
 		name: 'Depot',
 		deps: ['ProxySynthetix', 'SynthsUSD', 'FeePool'],
-		args: [owner, owner, addressOf(ReadProxyAddressResolver)],
+		args: [account, account, addressOf(ReadProxyAddressResolver)],
 	});
 
 	await deployer.deployContract({
 		// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
 		name: 'EtherCollateral',
 		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateral',
-		args: useOvm ? [] : [owner, addressOf(ReadProxyAddressResolver)],
+		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
 	});
 	await deployer.deployContract({
 		name: 'EtherCollateralsUSD',
 		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateralsUSD',
-		args: useOvm ? [] : [owner, addressOf(ReadProxyAddressResolver)],
+		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
 	});
 
 	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
@@ -50,13 +47,13 @@ module.exports = async ({ addressOf, deployer, getDeployParameter, network, owne
 	await deployer.deployContract({
 		name: 'EtherWrapper',
 		deps: ['AddressResolver'],
-		args: [owner, addressOf(ReadProxyAddressResolver), WETH_ADDRESS],
+		args: [account, addressOf(ReadProxyAddressResolver), WETH_ADDRESS],
 	});
 
 	await deployer.deployContract({
 		name: 'NativeEtherWrapper',
 		deps: ['AddressResolver'],
-		args: [owner, addressOf(ReadProxyAddressResolver)],
+		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
 	// ----------------
@@ -69,7 +66,7 @@ module.exports = async ({ addressOf, deployer, getDeployParameter, network, owne
 
 	const collateralManagerState = await deployer.deployContract({
 		name: 'CollateralManagerState',
-		args: [owner, ZERO_ADDRESS],
+		args: [account, account],
 	});
 
 	const useEmptyCollateralManager = useOvm;
@@ -80,7 +77,7 @@ module.exports = async ({ addressOf, deployer, getDeployParameter, network, owne
 			? []
 			: [
 					addressOf(collateralManagerState),
-					owner,
+					account,
 					addressOf(ReadProxyAddressResolver),
 					collateralManagerDefaults['MAX_DEBT'],
 					collateralManagerDefaults['BASE_BORROW_RATE'],
@@ -91,14 +88,14 @@ module.exports = async ({ addressOf, deployer, getDeployParameter, network, owne
 	const collateralStateEth = await deployer.deployContract({
 		name: 'CollateralStateEth',
 		source: 'CollateralState',
-		args: [owner, ZERO_ADDRESS],
+		args: [account, account],
 	});
 
 	await deployer.deployContract({
 		name: 'CollateralEth',
 		args: [
 			addressOf(collateralStateEth),
-			owner,
+			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
 			toBytes32('sETH'),
@@ -110,7 +107,7 @@ module.exports = async ({ addressOf, deployer, getDeployParameter, network, owne
 	const collateralStateErc20 = await deployer.deployContract({
 		name: 'CollateralStateErc20',
 		source: 'CollateralState',
-		args: [owner, ZERO_ADDRESS],
+		args: [account, account],
 	});
 
 	let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
@@ -134,7 +131,7 @@ module.exports = async ({ addressOf, deployer, getDeployParameter, network, owne
 		source: 'CollateralErc20',
 		args: [
 			addressOf(collateralStateErc20),
-			owner,
+			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
 			toBytes32('sBTC'),
@@ -148,14 +145,14 @@ module.exports = async ({ addressOf, deployer, getDeployParameter, network, owne
 	const collateralStateShort = await deployer.deployContract({
 		name: 'CollateralStateShort',
 		source: 'CollateralState',
-		args: [owner, ZERO_ADDRESS],
+		args: [account, account],
 	});
 
 	await deployer.deployContract({
 		name: 'CollateralShort',
 		args: [
 			addressOf(collateralStateShort),
-			owner,
+			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
 			toBytes32('sUSD'),

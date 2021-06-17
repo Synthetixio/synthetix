@@ -6,7 +6,7 @@ const {
 	utils: { parseUnits },
 } = require('ethers');
 
-module.exports = async ({ addressOf, deployer, owner }) => {
+module.exports = async ({ account, addressOf, deployer }) => {
 	// ----------------
 	// Binary option market factory and manager setup
 	// ----------------
@@ -17,7 +17,7 @@ module.exports = async ({ addressOf, deployer, owner }) => {
 
 	await deployer.deployContract({
 		name: 'BinaryOptionMarketFactory',
-		args: [owner, addressOf(ReadProxyAddressResolver)],
+		args: [account, addressOf(ReadProxyAddressResolver)],
 		deps: ['AddressResolver'],
 	});
 
@@ -33,7 +33,7 @@ module.exports = async ({ addressOf, deployer, owner }) => {
 	await deployer.deployContract({
 		name: 'BinaryOptionMarketManager',
 		args: [
-			owner,
+			account,
 			addressOf(ReadProxyAddressResolver),
 			maxOraclePriceAge,
 			expiryDuration,

@@ -59,11 +59,10 @@ class Deployer {
 		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 		this.provider.ethers.provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-		this.owner = getUsers({ network, user: 'owner' }).address;
-
 		if (useFork || (!privateKey && network === 'local')) {
-			this.provider.web3.eth.defaultAccount = this.owner;
-			this.provider.ethers.defaultAccount = this.owner;
+			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+
+			this.provider.ethers.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		} else {
 			this.provider.web3.eth.accounts.wallet.add(privateKey);
 			this.provider.web3.eth.defaultAccount = this.provider.web3.eth.accounts.wallet[0].address;
@@ -71,7 +70,6 @@ class Deployer {
 			this.provider.ethers.wallet = new ethers.Wallet(privateKey, this.provider.ethers.provider);
 			this.provider.ethers.defaultAccount = this.provider.ethers.wallet.address;
 		}
-		// account might be the same as the owner, but it also may not be
 		this.account = this.provider.ethers.defaultAccount;
 		this.deployedContracts = {};
 		this._dryRunCounter = 0;
