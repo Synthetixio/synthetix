@@ -470,7 +470,7 @@ module.exports = {
 				'The address of the fee authority for this network (default is to use existing)'
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
-			.option('--generate-solidity <value>', 'A path to a solidity file to generate')
+			.option('--generate-solidity', 'Whether or not to output the migration as a Solidity file')
 			.option(
 				'-h, --fresh-deploy',
 				'Perform a "fresh" deploy, i.e. the first deployment on a network.'

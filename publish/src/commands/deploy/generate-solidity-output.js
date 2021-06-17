@@ -1,13 +1,18 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 
-const { gray } = require('chalk');
+const { gray, yellow } = require('chalk');
 
 const {
 	utils: { parseBytes32String },
 } = require('ethers');
-const { getUsers } = require('../../../..');
+const {
+	getUsers,
+	releases,
+	constants: { CONTRACTS_FOLDER, MIGRATIONS_FOLDER },
+} = require('../../../..');
 
 // Known limitations of this Solidity migration generator
 // 1. 	Multidimensional arrays for inputs like CollateralManager.addShortableSynths
@@ -114,6 +119,10 @@ module.exports = async ({
 
 	const contractsAddedToSolidity = Array.from(contractsAddedToSoliditySet);
 
+	const release = releases.reverse().find(release => (useOvm ? release.ovm : !release.ovm));
+
+	const releaseName = release.name.replace(/[^\w]/g, '');
+
 	const solidity = `
 pragma solidity ^0.5.16;
 
@@ -131,7 +140,7 @@ interface ISynthetixNamedContract {
 	function CONTRACT_NAME() external view returns (bytes32);
 }
 
-contract Migrator {
+contract Migration_${releaseName} {
 	address public constant owner = ${getUsers({ network, useOvm, user: 'owner' }).address};
 
 	${contractsAddedToSolidity
@@ -186,7 +195,17 @@ contract Migrator {
 }
 `;
 
-	fs.writeFileSync(generateSolidity, solidity);
+	const migrationContractPath = path.join(
+		__dirname,
+		'..',
+		'..',
+		'..',
+		'..',
+		CONTRACTS_FOLDER,
+		MIGRATIONS_FOLDER,
+		`Migration_${releaseName}.sol`
+	);
+	fs.writeFileSync(migrationContractPath, solidity);
 
-	console.log(gray('Wrote Solidity output to', generateSolidity));
+	console.log(gray('Wrote Solidity output to', yellow(migrationContractPath)));
 };

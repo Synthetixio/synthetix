@@ -78,6 +78,7 @@ const networkToChainId = Object.entries(chainIdMapping).reduce(
 const constants = {
 	BUILD_FOLDER: 'build',
 	CONTRACTS_FOLDER: 'contracts',
+	MIGRATIONS_FOLDER: 'migrations',
 	COMPILED_FOLDER: 'compiled',
 	FLATTENED_FOLDER: 'flattened',
 	AST_FOLDER: 'ast',
