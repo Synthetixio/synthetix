@@ -9,6 +9,12 @@ const {
 } = require('ethers');
 const { getUsers } = require('../../../..');
 
+// Known limitations of this Solidity migration generator
+// 1. 	Multidimensional arrays for inputs like CollateralManager.addShortableSynths
+// 		are not currently supported.
+// 2.	Enum inputs like SystemSettings.setCrossDomainMessageGasLimit are not supported
+// 3. 	Large upgrades will cause Solidity "Stack Too Deep" errors.
+
 module.exports = async ({
 	deployer,
 	deployment,
@@ -121,6 +127,9 @@ ${contractsAddedToSolidity
 	})
 	.join('\n')}
 
+interface ISynthetixNamedContract {
+	function CONTRACT_NAME() external view returns (bytes32);
+}
 
 contract Migrator {
 	address public constant owner = ${getUsers({ network, useOvm, user: 'owner' }).address};
@@ -139,8 +148,18 @@ contract Migrator {
 	function migrate(address currentOwner) external {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
+		// NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
 		${Object.entries(newContractsBeingAdded)
 			.map(([address, name]) => `address ${newContractVariableFunctor(name)} = ${address};`)
+			.join('\n\t\t')}
+
+		${Object.entries(newContractsBeingAdded)
+			.map(
+				([address, name]) =>
+					`require(ISynthetixNamedContract(${newContractVariableFunctor(
+						name
+					)}).CONTRACT_NAME() == "${name}", "Invalid contract supplied for ${name}");`
+			)
 			.join('\n\t\t')}
 
 		// ACCEPT OWNERSHIP for all contracts that require ownership to make changes
