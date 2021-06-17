@@ -259,7 +259,7 @@ const deploy = async ({
 	const runSteps = [];
 
 	const runStep = async opts => {
-		const { noop, ...rest } = await performTransactionalStep({
+		const { pending, mined, ...rest } = await performTransactionalStep({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
@@ -271,8 +271,9 @@ const deploy = async ({
 			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
-		// only track when there's an operation required
-		if (!noop && !opts.skipSolidity) {
+		// only add to solidity when forked and task perfomed and not skipped or when not forked
+		// and action pending and no solidity skipping
+		if ((useFork && mined && !opts.skipSolidity) || (!useFork && pending && !opts.skipSolidity)) {
 			runSteps.push(opts);
 		}
 
