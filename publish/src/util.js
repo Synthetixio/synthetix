@@ -206,6 +206,7 @@ const performTransactionalStepWeb3 = async ({
 	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
 	gasPrice,
+	generateSolidity,
 	etherscanLinkPrefix,
 	ownerActions,
 	ownerActionsFile,
@@ -238,7 +239,7 @@ const performTransactionalStepWeb3 = async ({
 		// perform action
 		let hash;
 		let gasUsed = 0;
-		if (dryRun) {
+		if (dryRun || generateSolidity) {
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
@@ -267,7 +268,7 @@ const performTransactionalStepWeb3 = async ({
 		console.log(
 			green(
 				`${
-					dryRun ? '[DRY RUN] ' : ''
+					dryRun || generateSolidity ? gray('[SIMULATION] ') : ''
 				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
 					2
 				)}m `

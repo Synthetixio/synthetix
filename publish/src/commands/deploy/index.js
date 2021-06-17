@@ -263,12 +263,13 @@ const deploy = async ({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
-			gasPrice,
+			dryRun,
 			etherscanLinkPrefix,
+			gasPrice,
+			generateSolidity,
+			nonceManager: manageNonces ? nonceManager : undefined,
 			ownerActions,
 			ownerActionsFile,
-			dryRun,
-			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
 		// only add to solidity when forked and task perfomed and not skipped or when not forked
@@ -327,7 +328,7 @@ const deploy = async ({
 		deployer,
 	});
 
-	await importAddresses({
+	const { newContractsBeingAdded } = await importAddresses({
 		addressOf,
 		deployer,
 		dryRun,
@@ -424,6 +425,7 @@ const deploy = async ({
 		deployment,
 		generateSolidity,
 		network,
+		newContractsBeingAdded,
 		runSteps,
 		sourceOf,
 		useOvm,

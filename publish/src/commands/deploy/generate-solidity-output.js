@@ -25,6 +25,7 @@ module.exports = async ({
 	deployment,
 	generateSolidity,
 	network,
+	newContractsBeingAdded,
 	useOvm,
 	runSteps,
 	sourceOf,
@@ -36,7 +37,6 @@ module.exports = async ({
 
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
-	const newContractsBeingAdded = {};
 
 	// function to derive a unique name for each new contract
 	const newContractVariableFunctor = name => `new_${name}_contract`;
@@ -58,16 +58,6 @@ module.exports = async ({
 
 		const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 
-		// Collect all new contracts being added to the address resolver so we
-		// can define them as local variables in the migration function to further check them.
-		// This works as all new contracts are first be added to the address resolver
-		// before they can be used.
-		if (contract === 'AddressResolver' && write === 'importAddresses') {
-			argumentsForWriteFunction[0].forEach(
-				(name, i) =>
-					(newContractsBeingAdded[argumentsForWriteFunction[1][i]] = parseBytes32String(name))
-			);
-		}
 		// now generate the write action as solidity
 		const argsForWriteFnc = [];
 		for (const [index, argument] of Object.entries(argumentsForWriteFunction)) {
@@ -114,7 +104,7 @@ module.exports = async ({
 				argsForWriteFnc.push(transformValueIfRequired(argument));
 			}
 		}
-		instructions.push(`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc})`);
+		instructions.push(`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc.join(', ')})`);
 	}
 
 	const contractsAddedToSolidity = Array.from(contractsAddedToSoliditySet);
@@ -195,7 +185,7 @@ contract Migration_${releaseName} {
 			.join('\n\t\t')}
 	}
 }
-`;
+`.replace(/\t/g, ' '.repeat(4)); // switch tabs to spaces for Solidity
 
 	const migrationContractPath = path.join(
 		__dirname,

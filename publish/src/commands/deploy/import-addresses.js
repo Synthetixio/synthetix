@@ -26,6 +26,8 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 
 	let addressesAreImported = false;
 
+	const newContractsBeingAdded = {};
+
 	if (AddressResolver) {
 		const addressArgs = [[], []];
 
@@ -42,6 +44,8 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 
 						addressArgs[0].push(toBytes32(name));
 						addressArgs[1].push(contract.options.address);
+
+						newContractsBeingAdded[contract.options.address] = name;
 					}
 				});
 			})
@@ -84,4 +88,6 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 	} else {
 		console.log(gray('Addresses are correctly set up.'));
 	}
+
+	return { newContractsBeingAdded };
 };
