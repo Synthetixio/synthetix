@@ -138,19 +138,19 @@ const importFeePeriods = async ({
 			}
 		}
 
-		console.log(period);
-		console.log(Object.keys(period));
-
 		// remove redundant index keys (returned from struct calls)
+		const filteredPeriod = {};
 		Object.keys(period)
-			.filter(key => /^[0-9]+$/.test(key))
-			.forEach(key => {
-				console.log(key);
-				delete period[key];
-			});
-		feePeriods.push(period);
+			.filter(key => /^[0-9]+$/.test(key) === false)
+			.forEach(key => (filteredPeriod[key] = period[key]));
+
+		feePeriods.push(filteredPeriod);
 		console.log(
-			gray(`loaded feePeriod ${i} from FeePool (startTime: ${new Date(period.startTime * 1000)})`)
+			gray(
+				`loaded feePeriod ${i} from FeePool (startTime: ${new Date(
+					filteredPeriod.startTime * 1000
+				)})`
+			)
 		);
 	}
 
@@ -158,6 +158,7 @@ const importFeePeriods = async ({
 	if (!override) {
 		for (let i = 0; i < feePeriodLength; i++) {
 			const period = await targetContract.recentFeePeriods(i);
+			console.log(period);
 			// ignore any initial entry where feePeriodId is 1 as this is created by the FeePool constructor
 			if (period.feePeriodId !== '1' && period.startTime !== '0') {
 				throw Error(
