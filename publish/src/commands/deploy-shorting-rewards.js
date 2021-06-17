@@ -16,7 +16,7 @@ const {
 	loadConnections,
 	confirmAction,
 	parameterNotice,
-	performTransactionalStep,
+	performTransactionalStepWeb3,
 } = require('../util');
 
 const {
@@ -246,7 +246,7 @@ const deployShortingRewards = async ({
 		const manageNonces = deployer.manageNonces;
 
 		const runStep = async opts =>
-			performTransactionalStep({
+			performTransactionalStepWeb3({
 				gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 				...opts,
 				deployer,

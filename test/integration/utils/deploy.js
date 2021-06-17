@@ -1,6 +1,10 @@
 const axios = require('axios');
 const { getLocalPrivateKey } = require('../../test-utils/wallets');
 
+const {
+	constants: { OVM_GAS_PRICE },
+} = require('../../..');
+
 const commands = {
 	build: require('../../../publish/src/commands/build').build,
 	deploy: require('../../../publish/src/commands/deploy').deploy,
@@ -8,13 +12,10 @@ const commands = {
 	connectBridge: require('../../../publish/src/commands/connect-bridge').connectBridge,
 };
 
-const {
-	constants: { OVM_MAX_GAS_LIMIT },
-} = require('../../../.');
-
 async function compileInstance({ useOvm, buildPath }) {
 	await commands.build({
 		useOvm,
+		cleanBuild: true,
 		optimizerRuns: useOvm ? 1 : 200,
 		testHelpers: true,
 		buildPath,
@@ -44,11 +45,11 @@ async function deployInstance({
 		freshDeploy,
 		yes: true,
 		providerUrl: `${providerUrl}:${providerPort}`,
-		gasPrice: useOvm ? '0' : '1',
+		gasPrice: useOvm ? OVM_GAS_PRICE : '1',
 		useOvm,
 		privateKey,
-		methodCallGasLimit: '3500000',
-		contractDeploymentGasLimit: useOvm ? OVM_MAX_GAS_LIMIT : '9500000',
+		methodCallGasLimit: useOvm ? undefined : '3500000',
+		contractDeploymentGasLimit: useOvm ? undefined : '9500000',
 		ignoreCustomParameters,
 		buildPath,
 	});
@@ -69,7 +70,7 @@ async function connectInstances({ providerUrl, providerPortL1, providerPortL2 })
 		l1PrivateKey: privateKey,
 		l2PrivateKey: privateKey,
 		l1GasPrice: 1,
-		l2GasPrice: 0,
+		l2GasPrice: OVM_GAS_PRICE,
 		gasLimit: 8000000,
 	});
 }
