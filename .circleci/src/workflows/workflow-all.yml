@@ -20,7 +20,7 @@ jobs:
   - job-unit-tests-coverage-report:
       {{> require-unit-tests-coverage.yml}}
   - job-unit-tests-gas-report:
-      {{> require-prepare.yml}}
+      {{> require-unit-tests.yml}}
   - job-test-deploy-script:
       {{> require-prepare.yml}}
 
