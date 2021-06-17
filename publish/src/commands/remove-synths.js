@@ -18,7 +18,7 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
-	performTransactionalStep,
+	performTransactionalStepWeb3,
 } = require('../util');
 
 const DEFAULTS = {
@@ -155,7 +155,7 @@ const removeSynths = async ({
 		}
 
 		// perform transaction if owner of Synthetix or append to owner actions list
-		await performTransactionalStep({
+		await performTransactionalStepWeb3({
 			account,
 			contract: 'Issuer',
 			target: Issuer,
