@@ -232,7 +232,7 @@ const getPathToNetwork = ({ network = 'mainnet', file = '', useOvm = false, path
 
 // Pass in fs and path to avoid webpack wrapping those
 const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = false }) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].deployment;
 	}
 	const pathToDeployment = deploymentPath
