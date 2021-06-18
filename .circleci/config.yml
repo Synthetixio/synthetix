@@ -230,15 +230,17 @@ jobs:
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
-    resource_class: large
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:gas
-      - run: npx codechecks codechecks.unit.yml
+      - run:
+          name: Upload gas reports
+          command: |
+            npx hardhat test:merge-gas-reports gasReporterOutput-*.json
+            npx codechecks codechecks.unit.yml
       - store_artifacts:
-          path: test-gas-used.log
+          path: gasReporterOutput.json
   job-unit-tests:
     working_directory: ~/repo
     docker:
@@ -259,11 +261,18 @@ jobs:
             set +e
             circleci tests glob 'test/contracts/*.js' |
             circleci tests split |
-            xargs npm test
+            xargs npm test -- --gas
             EXIT_CODE=$?
-            cat test-gas-used.log
             printf "\\n"
             exit $EXIT_CODE
+      - run:
+          name: Save gas report
+          command: |
+            mv gasReporterOutput.json ./gasReporterOutput-$CIRCLE_NODE_INDEX.json
+      - persist_to_workspace:
+          root: .
+          paths:
+            - gasReporterOutput-*.json
   job-validate-deployments:
     working_directory: ~/repo
     docker:
@@ -324,6 +333,7 @@ workflows:
       - job-unit-tests-gas-report:
           requires:
             - job-prepare
+            - job-unit-tests
       - job-test-deploy-script:
           requires:
             - job-prepare
