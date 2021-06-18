@@ -70,7 +70,7 @@ jobs:
           name: Start docker chains
           background: true
           command: |
-            npx hardhat ops --start --detached --optimism-path ./optimism
+            npx hardhat ops --start --optimism-path ./optimism
       - cmd-wait-for-port:
           port: 8545
       - cmd-wait-for-port:
