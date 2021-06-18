@@ -178,10 +178,14 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return exchangeRates.rateAndInvalid(baseAsset);
     }
 
-    function _assetPriceRequireNotInvalid(IExchangeRates exchangeRates) internal view returns (uint) {
-        (uint price, bool invalid) = _assetPrice(exchangeRates);
+    function _assetPriceRequireNotInvalid() internal view returns (uint) {
+        (uint price, bool invalid) = _assetPrice(_exchangeRates());
         require(!invalid, "Invalid price");
         return price;
+    }
+
+    function assetPriceRequireNotInvalid() external view returns (uint) {
+        return _assetPriceRequireNotInvalid();
     }
 
     function assetPrice() external view returns (uint price, bool invalid) {
@@ -602,6 +606,10 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return sequenceLength;
     }
 
+    function recomputeFunding(uint price) external returns (uint lastIndex) {
+        return _recomputeFunding(price);
+    }
+
     function _positionDebtCorrection(Position memory position) internal view returns (int) {
         return
             int(position.margin).sub(
@@ -683,14 +691,14 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function modifyMargin(int marginDelta) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         _modifyMargin(marginDelta, price, fundingIndex, messageSender);
     }
 
     function withdrawAllMargin() external optionalProxy {
         address sender = messageSender;
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         int marginDelta = -int(_remainingMargin(positions[sender], fundingIndex, price));
         _modifyMargin(marginDelta, price, fundingIndex, sender);
@@ -821,20 +829,20 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function submitOrder(int leverage) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         _submitOrder(leverage, price, fundingIndex, messageSender);
     }
 
     function closePosition() external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         _submitOrder(0, price, fundingIndex, messageSender);
     }
 
     // TODO: Do we really need this function?
     function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         address sender = messageSender;
         _modifyMargin(marginDelta, price, fundingIndex, sender);

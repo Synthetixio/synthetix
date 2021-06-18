@@ -5,7 +5,8 @@ import "./Owned.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 
-// Libraries
+// Internal references
+import "./interfaces/IFuturesMarket.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarketSettings
 contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
@@ -23,6 +24,7 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     /* ========== STATE VARIABLES ========== */
 
     mapping(bytes32 => Parameters) public parameters;
+    mapping(bytes32 => address) public markets;
 
     /* ---------- Parameter Names ---------- */
 
@@ -39,6 +41,11 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function connectMarket(bytes32 _baseAsset, address _marketAddress) external onlyOwner {
+        markets[_baseAsset] = _marketAddress;
+        emit MarketConnected(_baseAsset, _marketAddress);
+    }
 
     /* ---------- Setters ---------- */
 
@@ -66,18 +73,24 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
 
     // TODO: Setting this parameter should record funding first.
     function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) external onlyOwner {
+        IFuturesMarket futuresMarket = IFuturesMarket(markets[_baseAsset]);
+        futuresMarket.recomputeFunding(futuresMarket.assetPriceRequireNotInvalid());
         parameters[_baseAsset].maxFundingRate = _maxFundingRate;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATE, _maxFundingRate);
     }
 
     // TODO: Setting this parameter should record funding first.
     function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) external onlyOwner {
+        IFuturesMarket futuresMarket = IFuturesMarket(markets[_baseAsset]);
+        futuresMarket.recomputeFunding(futuresMarket.assetPriceRequireNotInvalid());
         parameters[_baseAsset].maxFundingRateSkew = _maxFundingRateSkew;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATESKEW, _maxFundingRateSkew);
     }
 
     // TODO: Setting this parameter should record funding first.
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) external onlyOwner {
+        IFuturesMarket futuresMarket = IFuturesMarket(markets[_baseAsset]);
+        futuresMarket.recomputeFunding(futuresMarket.assetPriceRequireNotInvalid());
         parameters[_baseAsset].maxFundingRateDelta = _maxFundingRateDelta;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATEDELTA, _maxFundingRateDelta);
     }
@@ -167,4 +180,5 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     /* ========== EVENTS ========== */
 
     event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
+    event MarketConnected(bytes32 indexed market, address marketAddress);
 }

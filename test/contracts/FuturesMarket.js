@@ -146,6 +146,7 @@ contract('FuturesMarket', accounts => {
 					'modifyMarginAndSubmitOrder',
 					'confirmOrder',
 					'liquidatePosition',
+					'recomputeFunding',
 				],
 			});
 		});

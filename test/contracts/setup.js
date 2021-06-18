@@ -517,6 +517,9 @@ const setupContract = async ({
 		},
 		async FuturesMarketBTC() {
 			await Promise.all([
+				cache['FuturesMarketSettings'].connectMarket(toBytes32('sBTC'), instance.address, {
+					from: owner,
+				}),
 				cache['FuturesMarketSettings'].setAllParameters(
 					toBytes32('sBTC'),
 					toWei('0.003'), // 0.3% taker fee
@@ -539,6 +542,9 @@ const setupContract = async ({
 		},
 		async FuturesMarketETH() {
 			await Promise.all([
+				cache['FuturesMarketSettings'].connectMarket(toBytes32('sETH'), instance.address, {
+					from: owner,
+				}),
 				cache['FuturesMarketSettings'].setAllParameters(
 					toBytes32('sETH'),
 					toWei('0.003'), // 0.3% taker fee
