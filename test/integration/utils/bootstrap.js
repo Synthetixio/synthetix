@@ -9,6 +9,15 @@ const { ensureBalance } = require('./balances');
 const { approveBridge } = require('./bridge');
 const { startOpsHeartbeat } = require('../../test-utils/rpc');
 
+// Temp workaround until this issue is fixed:
+// https://github.com/ethereum-optimism/optimism/issues/1041
+// Remove and use Watcher directly when fixed.
+class PatchedWatcher extends Watcher {
+	async getL1TransactionReceipt(l2ToL1MsgHash, pollForPending = true) {
+		return this.getTransactionReceipt(this.l1, l2ToL1MsgHash, pollForPending);
+	}
+}
+
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
 		ctx.useOvm = false;
@@ -88,7 +97,7 @@ function bootstrapDual({ ctx }) {
 
 		const response = await axios.get(`${hre.config.providerUrl}:8080/addresses.json`);
 		const addresses = response.data;
-		ctx.watcher = new Watcher({
+		ctx.watcher = new PatchedWatcher({
 			l1: {
 				provider: ctx.l1.provider,
 				messengerAddress: addresses['Proxy__OVM_L1CrossDomainMessenger'],
