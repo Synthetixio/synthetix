@@ -106,7 +106,10 @@ contract DebtCache is BaseDebtCache {
             require(cachedSum <= debt, "Cached synth sum exceeds total debt");
             debt = debt.sub(cachedSum).add(currentSum);
 
-            // Unused code until we circle back to refactor the debt system
+            // As of SIPS 136 and 150, this excluded debt section is unused.
+            // All callers of this function pass in false for `recomputeExcludedDebt`
+            // for performance reasons (_totalNonSnxBackedDebt is expensive)
+            // until we circle back when the debt calculation is refactored or discarded.
             if (recomputeExcludedDebt) {
                 (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
                 anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
