@@ -81,7 +81,7 @@ function itCanStake({ ctx }) {
 		});
 
 		describe('when the user burns sUSD', () => {
-			before('', async () => {
+			before('skip min stake time', async () => {
 				await skipMinimumStakeTime({ ctx });
 			});
 
