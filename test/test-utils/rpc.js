@@ -1,8 +1,11 @@
 const { wait } = require('./wait');
+const chalk = require('chalk');
 
 let heartbeatActive = false;
 
 async function fastForward({ seconds, provider }) {
+	console.log(chalk.gray(`> Fast forwarding ${seconds} seconds`));
+
 	await provider.send('evm_increaseTime', [seconds]);
 	await provider.send('evm_mine', []);
 }
@@ -23,8 +26,6 @@ async function dummyTx({ wallet, useOvm }) {
 /*
  * Sends L1 and L2 txs on a timer, which keeps the L2 timestamp in
  * sync with the L1 timestamp.
- * The 5 second delay is chosen because this is the default time granularity
- * of the ops tool.
  * */
 async function startOpsHeartbeat({ l1Wallet, l2Wallet }) {
 	if (heartbeatActive) {
@@ -37,12 +38,16 @@ async function startOpsHeartbeat({ l1Wallet, l2Wallet }) {
 		await dummyTx({ wallet: l1Wallet, useOvm: false });
 		await dummyTx({ wallet: l2Wallet, useOvm: true });
 
-		await wait({ seconds: 5 });
+		await wait({ seconds: 1 });
+
+		const l1Timestamp = (await l1Wallet.provider.getBlock()).timestamp;
+		const l2Timestamp = (await l2Wallet.provider.getBlock()).timestamp;
+		console.log(chalk.gray(`> Ops heartbeat - Timestamps: [${l1Timestamp}, ${l2Timestamp}]`));
 
 		await heartbeat();
 	}
 
-	heartbeat();
+	await heartbeat();
 }
 
 module.exports = {

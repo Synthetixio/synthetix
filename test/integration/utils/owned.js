@@ -13,7 +13,7 @@ async function nominateOwnership({ ctx, address, privateKey }) {
 		privateKey,
 		yes: true,
 		newOwner: address,
-		contracts: _ownableContracts({ ctx }),
+		contracts: _ownableContractsSample({ ctx }),
 		useFork: ctx.useFork,
 		gasPrice: ctx.useOvm ? OVM_GAS_PRICE_GWEI : '1',
 		gasLimit: ctx.useOvm ? undefined : '8000000',
@@ -23,7 +23,7 @@ async function nominateOwnership({ ctx, address, privateKey }) {
 }
 
 async function verifyNomination({ ctx, address }) {
-	const contractNames = _ownableContracts({ ctx });
+	const contractNames = _ownableContractsSample({ ctx });
 
 	for (const name of contractNames) {
 		const contract = ctx.contracts[name];
@@ -51,7 +51,7 @@ async function acceptOwnership({ ctx, address, privateKey }) {
 }
 
 async function verifyOwnership({ ctx, address }) {
-	const contractNames = _ownableContracts({ ctx });
+	const contractNames = _ownableContractsSample({ ctx });
 
 	for (const name of contractNames) {
 		const contract = ctx.contracts[name];
@@ -60,11 +60,12 @@ async function verifyOwnership({ ctx, address }) {
 	}
 }
 
-function _ownableContracts({ ctx }) {
+function _ownableContractsSample({ ctx, sampleSize = 3 }) {
 	return Object.entries(ctx.contracts)
 		.filter(([name, contract]) => !['WETH'].includes(name))
 		.filter(([name, contract]) => contract.functions.nominatedOwner)
-		.map(([name, contract]) => name);
+		.map(([name, contract]) => name)
+		.slice(-sampleSize);
 }
 
 module.exports = {
