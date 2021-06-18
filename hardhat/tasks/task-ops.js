@@ -24,7 +24,7 @@ task('ops', 'Run Optimism chain')
 	.addOptionalParam(
 		'optimismCommit',
 		'Commit to checkout',
-		'd9fd67d2502a590e116ffdb6c1c53003a045e318' // Specify a specific commit in the master branch to pin the tool
+		undefined // Specify a specific commit in the master branch to pin the tool
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		taskArguments.maxMemory = true;

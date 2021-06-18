@@ -7,7 +7,7 @@ steps:
       at: .
   - restore_cache:
       keys:
-        - optimism-build-d9fd67d2502a590e116ffdb6c1c53003a045e318-1
+        - optimism-build-{{ checksum "package-lock.json" }}
   - run:
       name: Build docker containers if necessary
       command: |
@@ -15,7 +15,7 @@ steps:
           npx hardhat ops --fresh --build --build-ops --optimism-path ./optimism
         fi;
   - save_cache:
-      key: optimism-build-d9fd67d2502a590e116ffdb6c1c53003a045e318-1
+      key: optimism-build-{{ checksum "package-lock.json" }}
       paths:
         - ./optimism
   - run:
