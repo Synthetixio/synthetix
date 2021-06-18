@@ -331,7 +331,7 @@ const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
 const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) => {
 	let feeds;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		feeds = data[getFolderNameForNetwork({ network, useOvm })].feeds;
 	} else {
 		const pathToFeeds = deploymentPath
@@ -378,7 +378,7 @@ const getSynths = ({
 } = {}) => {
 	let synths;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		synths = data[getFolderNameForNetwork({ network, useOvm })].synths;
 	} else {
 		const pathToSynthList = deploymentPath
