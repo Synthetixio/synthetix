@@ -441,7 +441,7 @@ const getStakingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].rewards;
 	}
 
@@ -469,7 +469,7 @@ const getShortingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })]['shorting-rewards'];
 	}
 
@@ -540,7 +540,7 @@ const getVersions = ({
 } = {}) => {
 	let versions;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		versions = data[getFolderNameForNetwork({ network, useOvm })].versions;
 	} else {
 		const pathToVersions = deploymentPath
