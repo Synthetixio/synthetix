@@ -8,7 +8,10 @@ async function finalizationOnL2({ ctx, transactionHash }) {
 		ctx.watcher.getL2TransactionReceipt(messageHash)
 	);
 
-	await Promise.all(promises);
+	const receipts = await Promise.all(promises).catch(console.log);
+	receipts.map(receipt =>
+		console.log(chalk.gray(`> Tx finalized on L2: ${receipt.transactionHash}`))
+	);
 }
 
 async function finalizationOnL1({ ctx, transactionHash }) {
@@ -19,7 +22,10 @@ async function finalizationOnL1({ ctx, transactionHash }) {
 		ctx.watcher.getL1TransactionReceipt(messageHash)
 	);
 
-	await Promise.all(promises);
+	const receipts = await Promise.all(promises).catch(console.log);
+	receipts.map(receipt =>
+		console.log(chalk.gray(`> Tx finalized on L1: ${receipt.transactionHash}`))
+	);
 }
 
 module.exports = {

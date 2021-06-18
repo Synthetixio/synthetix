@@ -27,6 +27,8 @@ task('ops', 'Run Optimism chain')
 		'd9fd67d2502a590e116ffdb6c1c53003a045e318' // Specify a specific commit in the master branch to pin the tool
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
+		taskArguments.maxMemory = true;
+
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
 		const opsCommit = taskArguments.optimismCommit;
 		const opsDetached = taskArguments.detached ? '-d' : '';
