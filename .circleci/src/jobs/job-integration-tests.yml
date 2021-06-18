@@ -7,7 +7,7 @@ steps:
       at: .
   - restore_cache:
       keys:
-        - optimism-build
+        - optimism-build-d9fd67d2502a590e116ffdb6c1c53003a045e318
   - run:
       name: Build docker containers if necessary
       command: |
@@ -15,14 +15,14 @@ steps:
           npx hardhat ops --fresh --build --build-ops --optimism-path ./optimism
         fi;
   - save_cache:
-      key: optimism-build
+      key: optimism-build-d9fd67d2502a590e116ffdb6c1c53003a045e318
       paths:
         - ./optimism
   - run:
       name: Start docker chains
       background: true
       command: |
-        npx hardhat ops --start --optimism-path ./optimism
+        npx hardhat ops --start --detached --optimism-path ./optimism
   - cmd-wait-for-port:
       port: 8545
   - cmd-wait-for-port:

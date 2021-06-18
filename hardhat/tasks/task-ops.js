@@ -31,6 +31,7 @@ task('ops', 'Run Optimism chain')
 		const opsCommit = taskArguments.optimismCommit;
 		const opsDetached = taskArguments.detached ? '-d' : '';
 
+		console.log(gray('optimism commit:', taskArguments.optimismCommit));
 		console.log(gray('optimism folder:', opsPath));
 
 		if (taskArguments.stop) {
