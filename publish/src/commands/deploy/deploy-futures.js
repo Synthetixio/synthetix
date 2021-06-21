@@ -146,4 +146,12 @@ module.exports = async ({
 			});
 		}
 	}
+
+	// This belongs in dapp-utils, but since we are only deploying futures on L2,
+	// I've colocated it here for now.
+	await deployer.deployContract({
+		name: 'FuturesMarketData',
+		deps: ['ReadProxyAddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
 };
