@@ -818,12 +818,13 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         int newSideSize;
         if (0 < newSize) {
-            // long case
+            // long case: marketSize + skew = 2 * longSize
             newSideSize = newMarketSize.add(newSkew);
         } else {
-            // short case
+            // short case: marketSize - skew = 2 * shortSize
             newSideSize = newMarketSize.sub(newSkew);
         }
+        // newSideSize still includes an extra factor of 2 here, so we will divide by 2 in the require statement.
 
         // We'll allow an extra little bit of value over and above the stated max to allow for
         // rounding errors, price movements, multiple orders etc.
