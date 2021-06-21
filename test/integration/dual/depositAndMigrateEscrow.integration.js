@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { appendEscrows, retrieveEscrowParameters } = require('../utils/escrow');
-const { finalizationOnL2 } = require('../utils/watchers');
+const { finalizationOnL2 } = require('../utils/bridge');
 const { approveIfNeeded } = require('../utils/approve');
 
 describe('depositAndMigrateEscrow() integration tests (L1, L2)', () => {

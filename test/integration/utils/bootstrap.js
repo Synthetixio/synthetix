@@ -2,21 +2,12 @@ const hre = require('hardhat');
 const ethers = require('ethers');
 const axios = require('axios');
 const { loadUsers } = require('./users');
-const { Watcher } = require('@eth-optimism/core-utils');
 const { connectContracts } = require('./contracts');
 const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
-const { approveBridge } = require('./bridge');
+// const { Watcher } = require('@eth-optimism/core-utils'); // TODO: See ./bridge/Watcher.js comment. Replace when fixed.
+const { approveBridge, watchOptimismMessengers, Watcher } = require('./bridge');
 const { startOpsHeartbeat } = require('../../test-utils/rpc');
-
-// Temp workaround until this issue is fixed:
-// https://github.com/ethereum-optimism/optimism/issues/1041
-// Remove and use Watcher directly when fixed.
-class PatchedWatcher extends Watcher {
-	async getL1TransactionReceipt(l2ToL1MsgHash, pollForPending = true) {
-		return this.getTransactionReceipt(this.l1, l2ToL1MsgHash, pollForPending);
-	}
-}
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -97,17 +88,21 @@ function bootstrapDual({ ctx }) {
 
 		const response = await axios.get(`${hre.config.providerUrl}:8080/addresses.json`);
 		const addresses = response.data;
-		ctx.watcher = new PatchedWatcher({
+		const l1MessengerAddress = addresses['Proxy__OVM_L1CrossDomainMessenger'];
+		const l2MessengerAddress = '0x4200000000000000000000000000000000000007';
+		ctx.watcher = new Watcher({
 			l1: {
 				provider: ctx.l1.provider,
-				messengerAddress: addresses['Proxy__OVM_L1CrossDomainMessenger'],
+				messengerAddress: l1MessengerAddress,
 			},
 			l2: {
 				provider: ctx.l2.provider,
-				messengerAddress: '0x4200000000000000000000000000000000000007',
+				messengerAddress: l2MessengerAddress,
 			},
 		});
 		ctx.l1.watcher = ctx.l2.watcher = ctx.watcher;
+
+		watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress });
 
 		await loadUsers({ ctx: ctx.l1 });
 		await loadUsers({ ctx: ctx.l2 });
