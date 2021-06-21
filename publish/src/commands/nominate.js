@@ -81,14 +81,16 @@ const nominate = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 	let wallet;
-	if (useFork) {
+	if (useFork || network === 'local') {
 		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		wallet = provider.getSigner(account);
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
 
-	console.log(gray(`Using account with public key ${wallet.address}`));
+	const signerAddress = await wallet.getAddress();
+
+	console.log(gray(`Using account with public key ${signerAddress}`));
 
 	if (!yes) {
 		try {
@@ -125,7 +127,7 @@ const nominate = async ({
 				`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
 			)
 		);
-		if (wallet.address.toLowerCase() !== currentOwner) {
+		if (signerAddress.toLowerCase() !== currentOwner) {
 			console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 			// check for legacy function
