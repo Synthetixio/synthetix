@@ -7,6 +7,10 @@ describe.only('withdraw() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
+	after('keep open', async () => {
+			await new Promise(() => {});
+	});
+
 	const amountToWithdraw = ethers.utils.parseEther('10');
 
 	let owner;

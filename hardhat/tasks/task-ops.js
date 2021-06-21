@@ -24,10 +24,12 @@ task('ops', 'Run Optimism chain')
 	.addOptionalParam(
 		'optimismCommit',
 		'Commit to checkout',
-		undefined // Specify a specific commit in the master branch to pin the tool
+		undefined // Specify a specific commit in the branch to pin the tool
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		taskArguments.maxMemory = true;
+
+		const branch = 'regenesis/0.4.0';
 
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
 		const opsCommit = taskArguments.optimismCommit;
@@ -58,14 +60,14 @@ task('ops', 'Run Optimism chain')
 				_fresh({ opsPath });
 			}
 
-			_build({ opsPath, opsCommit });
+			_build({ opsPath, opsCommit, branch });
 		}
 
 		if (taskArguments.buildOps || (taskArguments.fresh && taskArguments.start)) {
 			console.log(yellow('building ops'));
 			if (!fs.existsSync(opsPath)) {
 				_fresh({ opsPath });
-				_build({ opsPath, opsCommit });
+				_build({ opsPath, opsCommit, branch });
 			}
 			_buildOps({ opsPath });
 		}
@@ -79,10 +81,10 @@ task('ops', 'Run Optimism chain')
 
 			if (!fs.existsSync(opsPath)) {
 				_fresh({ opsPath });
-				_build({ opsPath, opsCommit });
+				_build({ opsPath, opsCommit, branch });
 				_buildOps({ opsPath });
 			} else if (!_imagesExist()) {
-				_build({ opsPath, opsCommit });
+				_build({ opsPath, opsCommit, branch });
 				_buildOps({ opsPath });
 			}
 			await _start({ opsPath, opsDetached });
@@ -138,11 +140,11 @@ function _fresh({ opsPath }) {
 	]);
 }
 
-function _build({ opsPath, opsCommit }) {
+function _build({ opsPath, opsCommit, branch }) {
 	console.log(gray('  checkout commit:', opsCommit));
 	execa.sync('sh', ['-c', `cd ${opsPath} && git fetch `]);
-	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout master `]);
-	execa.sync('sh', ['-c', `cd ${opsPath} && git pull origin master `]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${branch} `]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && git pull origin ${branch} `]);
 	if (opsCommit) {
 		execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
 	}
