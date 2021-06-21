@@ -93,12 +93,30 @@ function _printMessengerLog(log) {
 	console.log(chalk.gray(`> ${event.name}(${argName}:${argType} = ${argValue})`));
 }
 
+// Block based
 function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }) {
 	if (watchingBridges) {
 		return;
 	}
 	watchingBridges = true;
 
+	ctx.l1.provider.on('block', block => {
+		console.log(chalk.green('L1 Messenger log emitted:'));
+		_printMessengerLog(log);
+	});
+	ctx.l2.provider.on(l2Filter, log => {
+		console.log(chalk.green('L2 Messenger log emitted:'));
+		_printMessengerLog(log);
+	});
+}
+
+function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }) {
+	if (watchingBridges) {
+		return;
+	}
+	watchingBridges = true;
+
+	// Event listeners
 	const l1Filter = {
 		address: l1MessengerAddress,
 		topics: [
@@ -121,7 +139,6 @@ function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }
 		],
 		fromBlock: 0,
 	};
-
 	ctx.l1.provider.on(l1Filter, log => {
 		console.log(chalk.green('L1 Messenger log emitted:'));
 		_printMessengerLog(log);
@@ -129,6 +146,32 @@ function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }
 	ctx.l2.provider.on(l2Filter, log => {
 		console.log(chalk.green('L2 Messenger log emitted:'));
 		_printMessengerLog(log);
+	});
+
+	// Block listeners
+	ctx.l1.provider.on('block', async blockNumber => {
+		const block = await ctx.l1.provider.getBlock(blockNumber);
+		const txs = await Promise.all(
+			block.transactions.map(hash => ctx.l1.provider.getTransaction(hash))
+		);
+		txs.map(tx => {
+			if (tx.to === l1MessengerAddress) {
+				console.log(chalk.blue('L1 Messenger tx:'));
+				console.log(chalk.gray(JSON.stringify(tx, null, 2)));
+			}
+		});
+	});
+	ctx.l2.provider.on('block', async blockNumber => {
+		const block = await ctx.l2.provider.getBlock(blockNumber);
+		const txs = await Promise.all(
+			block.transactions.map(hash => ctx.l2.provider.getTransaction(hash))
+		);
+		txs.map(tx => {
+			if (tx.to === l2MessengerAddress) {
+				console.log(chalk.blue('L2 Messenger tx:'));
+				console.log(chalk.gray(JSON.stringify(tx, null, 2)));
+			}
+		});
 	});
 }
 
@@ -218,9 +261,8 @@ class Watcher {
 
 		return new Promise(async (resolve, reject) => {
 			const handleEvent = async log => {
-
 				console.log(chalk.yellow('Watcher.getTransactionReceipt - handleEvent:'));
-				_printMessengerLog(log)
+				_printMessengerLog(log);
 
 				if (log.data === msgHash) {
 					try {
