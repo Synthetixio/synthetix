@@ -53,7 +53,7 @@ const migrateBinaryOptionMarkets = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const provider = new ethers.providers.WebSocketProvider(providerUrl);
 	const wallet = new ethers.Wallet(privateKey, provider);
 	if (!wallet.address) wallet.address = wallet._address;
 

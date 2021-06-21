@@ -79,7 +79,7 @@ const nominate = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const provider = new ethers.providers.WebSocketProvider(providerUrl);
 	let wallet;
 	if (useFork) {
 		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO

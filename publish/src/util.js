@@ -145,7 +145,7 @@ const loadConnections = ({ network, useFork }) => {
 	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	let providerUrl;
 	if (network === 'local' || useFork) {
-		providerUrl = 'http://127.0.0.1:8545';
+		providerUrl = 'ws://127.0.0.1:8546';
 	} else {
 		if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
 			providerUrl = process.env.PROVIDER_URL_MAINNET;

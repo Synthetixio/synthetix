@@ -66,7 +66,7 @@ const settle = async ({
 
 	privateKey = privateKey || envPrivateKey;
 
-	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const provider = new ethers.providers.WebSocketProvider(providerUrl);
 
 	console.log(gray('gasPrice'), yellow(gasPrice));
 	gasPrice = ethers.utils.parseUnits(gasPrice, 'gwei');

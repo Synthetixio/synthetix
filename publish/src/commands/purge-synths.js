@@ -86,7 +86,7 @@ const purgeSynths = async ({
 	}
 
 	console.log(gray(`Provider url: ${providerUrl}`));
-	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const provider = new ethers.providers.WebSocketProvider(providerUrl);
 
 	let wallet;
 	if (useFork) {

@@ -280,7 +280,7 @@ const bootstrapConnection = ({
 	}
 
 	const providerUrl = specifiedProviderUrl || defaultProviderUrl;
-	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const provider = new ethers.providers.WebSocketProvider(providerUrl);
 
 	const { getUsers, getTarget, getSource } = wrap({ network, useOvm, fs, path });
 

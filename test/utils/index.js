@@ -529,7 +529,7 @@ module.exports = ({ web3 } = {}) => {
 	};
 
 	const setupProvider = ({ providerUrl, privateKey, publicKey }) => {
-		const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+		const provider = new ethers.providers.WebSocketProvider(providerUrl);
 
 		let wallet;
 		if (publicKey) {

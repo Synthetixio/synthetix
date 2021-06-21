@@ -130,8 +130,8 @@ describe('publish scripts', () => {
 	beforeEach(async () => {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 
-		provider = new ethers.providers.JsonRpcProvider({
-			url: 'http://localhost:8545',
+		provider = new ethers.providers.WebSocketProvider({
+			url: 'ws://localhost:8546',
 		});
 
 		const { isCompileRequired } = testUtils();

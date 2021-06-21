@@ -17,14 +17,14 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addOptionalParam(
 		'providerPort',
 		'The target port for the running local chain to test on',
-		'8545'
+		'8546'
 	)
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/l1/';
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
 
-		const providerUrl = (hre.config.providerUrl = 'http://localhost');
+		const providerUrl = (hre.config.providerUrl = 'ws://localhost');
 		const providerPort = (hre.config.providerPort = taskArguments.providerPort);
 		const useOvm = false;
 		const buildPath = path.join(__dirname, '..', '..', BUILD_FOLDER);
@@ -61,8 +61,8 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
 
-		const providerUrl = (hre.config.providerUrl = 'http://localhost');
-		const providerPort = (hre.config.providerPort = '8545');
+		const providerUrl = (hre.config.providerUrl = 'ws://localhost');
+		const providerPort = (hre.config.providerPort = '8546');
 		const useOvm = true;
 		const buildPath = path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`);
 
@@ -90,9 +90,9 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
 
-		const providerUrl = (hre.config.providerUrl = 'http://localhost');
-		const providerPortL1 = (hre.config.providerPortL1 = '9545');
-		const providerPortL2 = (hre.config.providerPortL2 = '8545');
+		const providerUrl = (hre.config.providerUrl = 'ws://localhost');
+		const providerPortL1 = (hre.config.providerPortL1 = '9546');
+		const providerPortL2 = (hre.config.providerPortL2 = '8546');
 		const buildPathEvm = path.join(__dirname, '..', '..', BUILD_FOLDER);
 		const buildPathOvm = path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`);
 

@@ -397,6 +397,11 @@ const deploy = async ({
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
 	reportDeployedContracts({ deployer });
+
+	// the process hangs when using the web3 websocket provider,
+	// probably because of an unresolved promise. This attempts to
+	// address that.
+	deployer.provider.web3.currentProvider.disconnect();
 };
 
 module.exports = {

@@ -85,7 +85,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 		yellow(deploymentBlock)
 	);
 
-	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const provider = new ethers.providers.WebSocketProvider(providerUrl);
 
 	const ExchangeRates = new ethers.Contract(
 		getTarget({ contract: 'ExchangeRates' }).address,

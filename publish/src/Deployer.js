@@ -56,8 +56,8 @@ class Deployer {
 		 web3 and/or ethers is needed to interact with the contracts and sing transactions
 		 */
 		this.provider = { web3: {}, ethers: {} };
-		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-		this.provider.ethers.provider = new ethers.providers.JsonRpcProvider(providerUrl);
+		this.provider.web3 = new Web3(new Web3.providers.WebsocketProvider(providerUrl));
+		this.provider.ethers.provider = new ethers.providers.WebSocketProvider(providerUrl);
 
 		if (useFork || (!privateKey && network === 'local')) {
 			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO

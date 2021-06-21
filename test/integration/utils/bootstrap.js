@@ -100,7 +100,7 @@ function bootstrapDual({ ctx }) {
 }
 
 function _setupProvider({ url }) {
-	return new ethers.providers.JsonRpcProvider({
+	return new ethers.providers.WebSocketProvider({
 		url,
 		timeout: 600000,
 	});
