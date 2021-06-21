@@ -37,10 +37,10 @@ const setContentHash = async ({ name, hash, txConfig, dryRun }) => {
 	}
 
 	// Check hash
-	const bytes = Base58.decode(hash);
-	if (bytes.length !== 34 || bytes[0] !== 18 || bytes[1] !== 32) {
-		throw new Error('Unsupported IPFS hash');
-	}
+	// const bytes = Base58.decode(hash);
+	// if (bytes.length !== 34 || bytes[0] !== 18 || bytes[1] !== 32) {
+	// 	throw new Error('Unsupported IPFS hash');
+	// }
 	// const multihash = ethers.utils.concat(['0xe3010170', bytes]);
 	// const multihashHex = ethers.utils.hexlify(multihash);
 	const nodehash = ethers.utils.namehash(name);
