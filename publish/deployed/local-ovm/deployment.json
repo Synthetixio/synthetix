@@ -2,496 +2,505 @@
 	"targets": {
 		"SafeDecimalMath": {
 			"name": "SafeDecimalMath",
-			"address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+			"address": "0x798f111c92E38F102931F34D1e0ea7e671BDBE31",
 			"source": "SafeDecimalMath",
-			"link": "https://local.etherscan.io/address/0x5FbDB2315678afecb367f032d93F642f64180aa3",
-			"timestamp": "2021-06-15T01:22:44.985Z",
+			"link": "https://local.etherscan.io/address/0x798f111c92E38F102931F34D1e0ea7e671BDBE31",
+			"timestamp": "2021-06-21T02:17:21.911Z",
 			"txn": "",
 			"network": "local"
 		},
 		"Math": {
 			"name": "Math",
-			"address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+			"address": "0xabebE9a2D62Af9a89E86EB208b51321e748640C3",
 			"source": "Math",
-			"link": "https://local.etherscan.io/address/0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-			"timestamp": "2021-06-15T01:22:45.187Z",
+			"link": "https://local.etherscan.io/address/0xabebE9a2D62Af9a89E86EB208b51321e748640C3",
+			"timestamp": "2021-06-21T02:17:22.117Z",
 			"txn": "",
 			"network": "local"
 		},
 		"AddressResolver": {
 			"name": "AddressResolver",
-			"address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+			"address": "0xf42Ec71A4440F5e9871C643696DD6Dc9a38911F8",
 			"source": "AddressResolver",
-			"link": "https://local.etherscan.io/address/0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-			"timestamp": "2021-06-15T01:22:46.469Z",
+			"link": "https://local.etherscan.io/address/0xf42Ec71A4440F5e9871C643696DD6Dc9a38911F8",
+			"timestamp": "2021-06-21T02:17:23.378Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ReadProxyAddressResolver": {
 			"name": "ReadProxyAddressResolver",
-			"address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+			"address": "0xbc71F5687CFD36f64Ae6B4549186EE3A6eE259a4",
 			"source": "ReadProxy",
-			"link": "https://local.etherscan.io/address/0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-			"timestamp": "2021-06-15T01:22:47.860Z",
+			"link": "https://local.etherscan.io/address/0xbc71F5687CFD36f64Ae6B4549186EE3A6eE259a4",
+			"timestamp": "2021-06-21T02:17:24.022Z",
 			"txn": "",
 			"network": "local"
 		},
 		"FlexibleStorage": {
 			"name": "FlexibleStorage",
-			"address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+			"address": "0xD73bAb8F06DB28c87932571f87D0D2C0FDF13D94",
 			"source": "FlexibleStorage",
-			"link": "https://local.etherscan.io/address/0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-			"timestamp": "2021-06-15T01:22:49.350Z",
+			"link": "https://local.etherscan.io/address/0xD73bAb8F06DB28c87932571f87D0D2C0FDF13D94",
+			"timestamp": "2021-06-21T02:17:25.627Z",
 			"txn": "",
 			"network": "local"
 		},
 		"SystemSettings": {
 			"name": "SystemSettings",
-			"address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+			"address": "0x28227B230d3945e580eD3B1c6c8ea1df658A7AA9",
 			"source": "SystemSettings",
-			"link": "https://local.etherscan.io/address/0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
-			"timestamp": "2021-06-15T01:22:50.685Z",
+			"link": "https://local.etherscan.io/address/0x28227B230d3945e580eD3B1c6c8ea1df658A7AA9",
+			"timestamp": "2021-06-21T02:17:27.096Z",
 			"txn": "",
 			"network": "local"
 		},
 		"SystemStatus": {
 			"name": "SystemStatus",
-			"address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+			"address": "0x82A9286dB983093Ff234cefCea1d8fA66382876B",
 			"source": "SystemStatus",
-			"link": "https://local.etherscan.io/address/0x0165878A594ca255338adfa4d48449f69242Eb8F",
-			"timestamp": "2021-06-15T01:22:52.010Z",
+			"link": "https://local.etherscan.io/address/0x82A9286dB983093Ff234cefCea1d8fA66382876B",
+			"timestamp": "2021-06-21T02:17:27.424Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ExchangeRates": {
 			"name": "ExchangeRates",
-			"address": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+			"address": "0x41219a0a9C0b86ED81933c788a6B63Dfef8f17eE",
 			"source": "ExchangeRatesWithoutInvPricing",
-			"link": "https://local.etherscan.io/address/0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-			"timestamp": "2021-06-15T01:22:53.489Z",
+			"link": "https://local.etherscan.io/address/0x41219a0a9C0b86ED81933c788a6B63Dfef8f17eE",
+			"timestamp": "2021-06-21T02:17:28.928Z",
 			"txn": "",
 			"network": "local"
 		},
 		"RewardEscrow": {
 			"name": "RewardEscrow",
-			"address": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+			"address": "0x1d460d731Bd5a0fF2cA07309dAEB8641a7b175A1",
 			"source": "RewardEscrow",
-			"link": "https://local.etherscan.io/address/0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
-			"timestamp": "2021-06-15T01:22:54.805Z",
+			"link": "https://local.etherscan.io/address/0x1d460d731Bd5a0fF2cA07309dAEB8641a7b175A1",
+			"timestamp": "2021-06-21T02:17:30.280Z",
 			"txn": "",
 			"network": "local"
 		},
 		"RewardEscrowV2": {
 			"name": "RewardEscrowV2",
-			"address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+			"address": "0xF67e26649037695DdFAB19f4E22d5c9Fd1564592",
 			"source": "ImportableRewardEscrowV2",
-			"link": "https://local.etherscan.io/address/0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
-			"timestamp": "2021-06-15T01:22:56.181Z",
+			"link": "https://local.etherscan.io/address/0xF67e26649037695DdFAB19f4E22d5c9Fd1564592",
+			"timestamp": "2021-06-21T02:17:32.053Z",
 			"txn": "",
 			"network": "local"
 		},
 		"SynthetixEscrow": {
 			"name": "SynthetixEscrow",
-			"address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+			"address": "0xeA8AE08513f8230cAA8d031D28cB4Ac8CE720c68",
 			"source": "SynthetixEscrow",
-			"link": "https://local.etherscan.io/address/0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
-			"timestamp": "2021-06-15T01:22:57.494Z",
+			"link": "https://local.etherscan.io/address/0xeA8AE08513f8230cAA8d031D28cB4Ac8CE720c68",
+			"timestamp": "2021-06-21T02:17:35.918Z",
 			"txn": "",
 			"network": "local"
 		},
 		"SynthetixState": {
 			"name": "SynthetixState",
-			"address": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+			"address": "0x6431AF84d34F0522cAA58b221d94A150B5AdAC69",
 			"source": "SynthetixStateWithLimitedSetup",
-			"link": "https://local.etherscan.io/address/0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
-			"timestamp": "2021-06-15T01:22:58.801Z",
+			"link": "https://local.etherscan.io/address/0x6431AF84d34F0522cAA58b221d94A150B5AdAC69",
+			"timestamp": "2021-06-21T02:17:36.508Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxyFeePool": {
 			"name": "ProxyFeePool",
-			"address": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+			"address": "0x2f321ed425c82E74925488139e1556f9B76a2551",
 			"source": "Proxy",
-			"link": "https://local.etherscan.io/address/0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
-			"timestamp": "2021-06-15T01:23:00.046Z",
+			"link": "https://local.etherscan.io/address/0x2f321ed425c82E74925488139e1556f9B76a2551",
+			"timestamp": "2021-06-21T02:17:37.121Z",
 			"txn": "",
 			"network": "local"
 		},
 		"DelegateApprovalsEternalStorage": {
 			"name": "DelegateApprovalsEternalStorage",
-			"address": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
+			"address": "0x776D6996c8180838dC0587aE0DE5D614b1350f37",
 			"source": "EternalStorage",
-			"link": "https://local.etherscan.io/address/0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
-			"timestamp": "2021-06-15T01:23:01.361Z",
+			"link": "https://local.etherscan.io/address/0x776D6996c8180838dC0587aE0DE5D614b1350f37",
+			"timestamp": "2021-06-21T02:17:39.294Z",
 			"txn": "",
 			"network": "local"
 		},
 		"DelegateApprovals": {
 			"name": "DelegateApprovals",
-			"address": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+			"address": "0x3A906C603F080D96dc08f81CF2889dAB6FF299dE",
 			"source": "DelegateApprovals",
-			"link": "https://local.etherscan.io/address/0x9A676e781A523b5d0C0e43731313A708CB607508",
-			"timestamp": "2021-06-15T01:23:02.681Z",
+			"link": "https://local.etherscan.io/address/0x3A906C603F080D96dc08f81CF2889dAB6FF299dE",
+			"timestamp": "2021-06-21T02:17:41.604Z",
 			"txn": "",
 			"network": "local"
 		},
 		"Liquidations": {
 			"name": "Liquidations",
-			"address": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
+			"address": "0x820638ecd57B55e51CE6EaD7D137962E7A201dD9",
 			"source": "Liquidations",
-			"link": "https://local.etherscan.io/address/0x0B306BF915C4d645ff596e518fAf3F9669b97016",
-			"timestamp": "2021-06-15T01:23:04.030Z",
+			"link": "https://local.etherscan.io/address/0x820638ecd57B55e51CE6EaD7D137962E7A201dD9",
+			"timestamp": "2021-06-21T02:17:42.044Z",
 			"txn": "",
 			"network": "local"
 		},
 		"EternalStorageLiquidations": {
 			"name": "EternalStorageLiquidations",
-			"address": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
+			"address": "0x725314746e727f586E9FCA65AeD5dBe45aA71B99",
 			"source": "EternalStorage",
-			"link": "https://local.etherscan.io/address/0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1",
-			"timestamp": "2021-06-15T01:23:05.352Z",
+			"link": "https://local.etherscan.io/address/0x725314746e727f586E9FCA65AeD5dBe45aA71B99",
+			"timestamp": "2021-06-21T02:17:43.353Z",
 			"txn": "",
 			"network": "local"
 		},
 		"FeePoolEternalStorage": {
 			"name": "FeePoolEternalStorage",
-			"address": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
+			"address": "0x987Aa6E80e995d6A76C4d061eE324fc760Ea9F61",
 			"source": "FeePoolEternalStorage",
-			"link": "https://local.etherscan.io/address/0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
-			"timestamp": "2021-06-15T01:23:06.671Z",
+			"link": "https://local.etherscan.io/address/0x987Aa6E80e995d6A76C4d061eE324fc760Ea9F61",
+			"timestamp": "2021-06-21T02:17:44.764Z",
 			"txn": "",
 			"network": "local"
 		},
 		"FeePool": {
 			"name": "FeePool",
-			"address": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+			"address": "0xA8d14b3d9e2589CEA8644BB0f67EB90d21079f8B",
 			"source": "FeePool",
-			"link": "https://local.etherscan.io/address/0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
-			"timestamp": "2021-06-15T01:23:08.030Z",
+			"link": "https://local.etherscan.io/address/0xA8d14b3d9e2589CEA8644BB0f67EB90d21079f8B",
+			"timestamp": "2021-06-21T02:17:46.844Z",
 			"txn": "",
 			"network": "local"
 		},
 		"FeePoolState": {
 			"name": "FeePoolState",
-			"address": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
+			"address": "0x716473Fb4E7cD49c7d1eC7ec6d7490A03d9dA332",
 			"source": "FeePoolState",
-			"link": "https://local.etherscan.io/address/0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
-			"timestamp": "2021-06-15T01:23:09.275Z",
+			"link": "https://local.etherscan.io/address/0x716473Fb4E7cD49c7d1eC7ec6d7490A03d9dA332",
+			"timestamp": "2021-06-21T02:17:47.132Z",
 			"txn": "",
 			"network": "local"
 		},
 		"RewardsDistribution": {
 			"name": "RewardsDistribution",
-			"address": "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
+			"address": "0x64079a2Edd1104a2323E2b732A1244BCE011B1F5",
 			"source": "RewardsDistribution",
-			"link": "https://local.etherscan.io/address/0xc6e7DF5E7b4f2A278906862b61205850344D4e7d",
-			"timestamp": "2021-06-15T01:23:10.584Z",
+			"link": "https://local.etherscan.io/address/0x64079a2Edd1104a2323E2b732A1244BCE011B1F5",
+			"timestamp": "2021-06-21T02:17:47.786Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxyERC20": {
 			"name": "ProxyERC20",
-			"address": "0x59b670e9fA9D0A427751Af201D676719a970857b",
+			"address": "0x0Deeb4b6492C1a55Bb7C0555AaFf65fF6dC424B2",
 			"source": "ProxyERC20",
-			"link": "https://local.etherscan.io/address/0x59b670e9fA9D0A427751Af201D676719a970857b",
-			"timestamp": "2021-06-15T01:23:11.843Z",
+			"link": "https://local.etherscan.io/address/0x0Deeb4b6492C1a55Bb7C0555AaFf65fF6dC424B2",
+			"timestamp": "2021-06-21T02:17:49.253Z",
 			"txn": "",
 			"network": "local"
 		},
 		"TokenStateSynthetix": {
 			"name": "TokenStateSynthetix",
-			"address": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
+			"address": "0xe24e7570Fe7207AdAaAa8c6c89a59850391B5276",
 			"source": "TokenState",
-			"link": "https://local.etherscan.io/address/0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
-			"timestamp": "2021-06-15T01:23:13.250Z",
+			"link": "https://local.etherscan.io/address/0xe24e7570Fe7207AdAaAa8c6c89a59850391B5276",
+			"timestamp": "2021-06-21T02:17:50.523Z",
 			"txn": "",
 			"network": "local"
 		},
 		"Synthetix": {
 			"name": "Synthetix",
-			"address": "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
+			"address": "0x67Fc5Aa53440518DdbAd4B381fD4b86fFD77B776",
 			"source": "MintableSynthetix",
-			"link": "https://local.etherscan.io/address/0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44",
-			"timestamp": "2021-06-15T01:23:14.632Z",
+			"link": "https://local.etherscan.io/address/0x67Fc5Aa53440518DdbAd4B381fD4b86fFD77B776",
+			"timestamp": "2021-06-21T02:17:52.625Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxySynthetix": {
 			"name": "ProxySynthetix",
-			"address": "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f",
+			"address": "0xFE92134da38df8c399A90a540f20187D19216E05",
 			"source": "Proxy",
-			"link": "https://local.etherscan.io/address/0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f",
-			"timestamp": "2021-06-15T01:23:15.897Z",
+			"link": "https://local.etherscan.io/address/0xFE92134da38df8c399A90a540f20187D19216E05",
+			"timestamp": "2021-06-21T02:17:52.872Z",
 			"txn": "",
 			"network": "local"
 		},
 		"DebtCache": {
 			"name": "DebtCache",
-			"address": "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
+			"address": "0x2e13f7644014F6E934E314F0371585845de7B986",
 			"source": "DebtCache",
-			"link": "https://local.etherscan.io/address/0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
-			"timestamp": "2021-06-15T01:23:17.231Z",
+			"link": "https://local.etherscan.io/address/0x2e13f7644014F6E934E314F0371585845de7B986",
+			"timestamp": "2021-06-21T02:17:54.308Z",
 			"txn": "",
 			"network": "local"
 		},
 		"Exchanger": {
 			"name": "Exchanger",
-			"address": "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
+			"address": "0xf4e55515952BdAb2aeB4010f777E802D61eB384f",
 			"source": "Exchanger",
-			"link": "https://local.etherscan.io/address/0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
-			"timestamp": "2021-06-15T01:23:18.578Z",
+			"link": "https://local.etherscan.io/address/0xf4e55515952BdAb2aeB4010f777E802D61eB384f",
+			"timestamp": "2021-06-21T02:17:55.902Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ExchangeState": {
 			"name": "ExchangeState",
-			"address": "0x09635F643e140090A9A8Dcd712eD6285858ceBef",
+			"address": "0xe519389F8c262d4301Fd2830196FB7D0021daf59",
 			"source": "ExchangeState",
-			"link": "https://local.etherscan.io/address/0x09635F643e140090A9A8Dcd712eD6285858ceBef",
-			"timestamp": "2021-06-15T01:23:19.844Z",
+			"link": "https://local.etherscan.io/address/0xe519389F8c262d4301Fd2830196FB7D0021daf59",
+			"timestamp": "2021-06-21T02:17:56.114Z",
 			"txn": "",
 			"network": "local"
 		},
 		"Issuer": {
 			"name": "Issuer",
-			"address": "0xc5a5C42992dECbae36851359345FE25997F5C42d",
+			"address": "0xcE7e5946C14Cdd1f8de4473dB9c20fd65EBd47d0",
 			"source": "IssuerWithoutLiquidations",
-			"link": "https://local.etherscan.io/address/0xc5a5C42992dECbae36851359345FE25997F5C42d",
-			"timestamp": "2021-06-15T01:23:21.199Z",
+			"link": "https://local.etherscan.io/address/0xcE7e5946C14Cdd1f8de4473dB9c20fd65EBd47d0",
+			"timestamp": "2021-06-21T02:17:57.718Z",
 			"txn": "",
 			"network": "local"
 		},
 		"TradingRewards": {
 			"name": "TradingRewards",
-			"address": "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
+			"address": "0xA496E0071780CF57cd699cb1D5Ac0CdCD6cCD673",
 			"source": "TradingRewards",
-			"link": "https://local.etherscan.io/address/0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
-			"timestamp": "2021-06-15T01:23:22.534Z",
+			"link": "https://local.etherscan.io/address/0xA496E0071780CF57cd699cb1D5Ac0CdCD6cCD673",
+			"timestamp": "2021-06-21T02:17:59.710Z",
 			"txn": "",
 			"network": "local"
 		},
 		"EscrowChecker": {
 			"name": "EscrowChecker",
-			"address": "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E",
+			"address": "0x4E76FbE44fa5Dae076a7f4f676250e7941421fbA",
 			"source": "EscrowChecker",
-			"link": "https://local.etherscan.io/address/0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E",
-			"timestamp": "2021-06-15T01:23:23.819Z",
+			"link": "https://local.etherscan.io/address/0x4E76FbE44fa5Dae076a7f4f676250e7941421fbA",
+			"timestamp": "2021-06-21T02:18:00.010Z",
 			"txn": "",
 			"network": "local"
 		},
 		"SynthetixBridgeToBase": {
 			"name": "SynthetixBridgeToBase",
-			"address": "0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690",
+			"address": "0x00B0517de6b2b09aBD3a7B69d66D85eFdb2c7d94",
 			"source": "SynthetixBridgeToBase",
-			"link": "https://local.etherscan.io/address/0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690",
-			"timestamp": "2021-06-15T01:23:25.153Z",
+			"link": "https://local.etherscan.io/address/0x00B0517de6b2b09aBD3a7B69d66D85eFdb2c7d94",
+			"timestamp": "2021-06-21T02:18:00.282Z",
 			"txn": "",
 			"network": "local"
 		},
 		"TokenStatesUSD": {
 			"name": "TokenStatesUSD",
-			"address": "0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB",
+			"address": "0xa9efDEf197130B945462163a0B852019BA529a66",
 			"source": "TokenState",
-			"link": "https://local.etherscan.io/address/0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB",
-			"timestamp": "2021-06-15T01:23:26.399Z",
+			"link": "https://local.etherscan.io/address/0xa9efDEf197130B945462163a0B852019BA529a66",
+			"timestamp": "2021-06-21T02:18:01.521Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxysUSD": {
 			"name": "ProxysUSD",
-			"address": "0x9E545E3C0baAB3E08CdfD552C960A1050f373042",
+			"address": "0x06786bCbc114bbfa670E30A1AC35dFd1310Be82f",
 			"source": "ProxyERC20",
-			"link": "https://local.etherscan.io/address/0x9E545E3C0baAB3E08CdfD552C960A1050f373042",
-			"timestamp": "2021-06-15T01:23:26.626Z",
+			"link": "https://local.etherscan.io/address/0x06786bCbc114bbfa670E30A1AC35dFd1310Be82f",
+			"timestamp": "2021-06-21T02:18:02.206Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxyERC20sUSD": {
 			"name": "ProxyERC20sUSD",
-			"address": "0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9",
+			"address": "0x72F853E9E202600c5017B5A060168603c3ed7368",
 			"source": "ProxyERC20",
-			"link": "https://local.etherscan.io/address/0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9",
-			"timestamp": "2021-06-15T01:23:30.959Z",
+			"link": "https://local.etherscan.io/address/0x72F853E9E202600c5017B5A060168603c3ed7368",
+			"timestamp": "2021-06-21T02:18:03.972Z",
 			"txn": "",
 			"network": "local"
 		},
 		"SynthsUSD": {
 			"name": "SynthsUSD",
-			"address": "0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8",
+			"address": "0x82Bd83ec6D4bCC8EaB6F6cF7565efE1e41D92Ce5",
 			"source": "Synth",
-			"link": "https://local.etherscan.io/address/0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8",
-			"timestamp": "2021-06-15T01:23:32.421Z",
+			"link": "https://local.etherscan.io/address/0x82Bd83ec6D4bCC8EaB6F6cF7565efE1e41D92Ce5",
+			"timestamp": "2021-06-21T02:18:05.614Z",
 			"txn": "",
 			"network": "local"
 		},
 		"TokenStatesETH": {
 			"name": "TokenStatesETH",
-			"address": "0x851356ae760d987E095750cCeb3bC6014560891C",
+			"address": "0x7aB5cEee0Ff304b053CE1F67d84C33F0ff407a55",
 			"source": "TokenState",
-			"link": "https://local.etherscan.io/address/0x851356ae760d987E095750cCeb3bC6014560891C",
-			"timestamp": "2021-06-15T01:23:32.680Z",
+			"link": "https://local.etherscan.io/address/0x7aB5cEee0Ff304b053CE1F67d84C33F0ff407a55",
+			"timestamp": "2021-06-21T02:18:05.966Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxysETH": {
 			"name": "ProxysETH",
-			"address": "0xf5059a5D33d5853360D16C683c16e67980206f36",
+			"address": "0x26Df0Ea798971A97Ae121514B32999DfDb220e1f",
 			"source": "ProxyERC20",
-			"link": "https://local.etherscan.io/address/0xf5059a5D33d5853360D16C683c16e67980206f36",
-			"timestamp": "2021-06-15T01:23:33.927Z",
+			"link": "https://local.etherscan.io/address/0x26Df0Ea798971A97Ae121514B32999DfDb220e1f",
+			"timestamp": "2021-06-21T02:18:06.744Z",
 			"txn": "",
 			"network": "local"
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
-			"address": "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
+			"address": "0xA3b48c7b901fede641B596A4C10a4630052449A6",
 			"source": "MultiCollateralSynth",
-			"link": "https://local.etherscan.io/address/0x95401dc811bb5740090279Ba06cfA8fcF6113778",
-			"timestamp": "2021-06-15T01:23:35.403Z",
+			"link": "https://local.etherscan.io/address/0xA3b48c7b901fede641B596A4C10a4630052449A6",
+			"timestamp": "2021-06-21T02:18:08.305Z",
 			"txn": "",
 			"network": "local"
 		},
 		"Depot": {
 			"name": "Depot",
-			"address": "0x998abeb3E57409262aE5b751f60747921B33613E",
+			"address": "0xa138575a030a2F4977D19Cc900781E7BE3fD2bc0",
 			"source": "Depot",
-			"link": "https://local.etherscan.io/address/0x998abeb3E57409262aE5b751f60747921B33613E",
-			"timestamp": "2021-06-15T01:23:36.776Z",
+			"link": "https://local.etherscan.io/address/0xa138575a030a2F4977D19Cc900781E7BE3fD2bc0",
+			"timestamp": "2021-06-21T02:18:10.194Z",
 			"txn": "",
 			"network": "local"
 		},
 		"EtherCollateral": {
 			"name": "EtherCollateral",
-			"address": "0x70e0bA845a1A0F2DA3359C97E0285013525FFC49",
+			"address": "0xB8d6D6b01bFe81784BE46e5771eF017Fa3c906d8",
 			"source": "EmptyEtherCollateral",
-			"link": "https://local.etherscan.io/address/0x70e0bA845a1A0F2DA3359C97E0285013525FFC49",
-			"timestamp": "2021-06-15T01:23:38.007Z",
+			"link": "https://local.etherscan.io/address/0xB8d6D6b01bFe81784BE46e5771eF017Fa3c906d8",
+			"timestamp": "2021-06-21T02:18:10.378Z",
 			"txn": "",
 			"network": "local"
 		},
 		"EtherCollateralsUSD": {
 			"name": "EtherCollateralsUSD",
-			"address": "0x4826533B4897376654Bb4d4AD88B7faFD0C98528",
+			"address": "0xf524930660f75CF602e909C15528d58459AB2A56",
 			"source": "EmptyEtherCollateral",
-			"link": "https://local.etherscan.io/address/0x4826533B4897376654Bb4d4AD88B7faFD0C98528",
-			"timestamp": "2021-06-15T01:23:38.244Z",
+			"link": "https://local.etherscan.io/address/0xf524930660f75CF602e909C15528d58459AB2A56",
+			"timestamp": "2021-06-21T02:18:10.568Z",
 			"txn": "",
 			"network": "local"
 		},
 		"MockWETH": {
 			"name": "MockWETH",
-			"address": "0x99bbA657f2BbC93c02D617f8bA121cB8Fc104Acf",
+			"address": "0x6c383Ef7C9Bf496b5c847530eb9c49a3ED6E4C56",
 			"source": "MockWETH",
-			"link": "https://local.etherscan.io/address/0x99bbA657f2BbC93c02D617f8bA121cB8Fc104Acf",
-			"timestamp": "2021-06-15T01:23:39.525Z",
+			"link": "https://local.etherscan.io/address/0x6c383Ef7C9Bf496b5c847530eb9c49a3ED6E4C56",
+			"timestamp": "2021-06-21T02:18:11.839Z",
 			"txn": "",
 			"network": "local"
 		},
 		"EtherWrapper": {
 			"name": "EtherWrapper",
-			"address": "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF",
+			"address": "0xAAF0F531b7947e8492f21862471d61d5305f7538",
 			"source": "EtherWrapper",
-			"link": "https://local.etherscan.io/address/0x0E801D84Fa97b50751Dbf25036d067dCf18858bF",
-			"timestamp": "2021-06-15T01:23:40.886Z",
+			"link": "https://local.etherscan.io/address/0xAAF0F531b7947e8492f21862471d61d5305f7538",
+			"timestamp": "2021-06-21T02:18:16.299Z",
 			"txn": "",
 			"network": "local"
 		},
 		"CollateralManager": {
 			"name": "CollateralManager",
-			"address": "0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf",
+			"address": "0x2aA12f98795E7A65072950AfbA9d1E023D398241",
 			"source": "EmptyCollateralManager",
-			"link": "https://local.etherscan.io/address/0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf",
-			"timestamp": "2021-06-15T01:23:42.147Z",
+			"link": "https://local.etherscan.io/address/0x2aA12f98795E7A65072950AfbA9d1E023D398241",
+			"timestamp": "2021-06-21T02:18:16.769Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxyFuturesMarketManager": {
 			"name": "ProxyFuturesMarketManager",
-			"address": "0x9d4454B023096f34B160D6B654540c56A1F81688",
+			"address": "0x81f4f47aa3bBd154171C877b4d70F6C9EeCAb216",
 			"source": "Proxy",
-			"link": "https://local.etherscan.io/address/0x9d4454B023096f34B160D6B654540c56A1F81688",
-			"timestamp": "2021-06-15T01:23:43.396Z",
+			"link": "https://local.etherscan.io/address/0x81f4f47aa3bBd154171C877b4d70F6C9EeCAb216",
+			"timestamp": "2021-06-21T02:18:17.891Z",
 			"txn": "",
 			"network": "local"
 		},
 		"FuturesMarketManager": {
 			"name": "FuturesMarketManager",
-			"address": "0x5eb3Bc0a489C5A8288765d2336659EbCA68FCd00",
+			"address": "0x2ce1F0e20C1f69E9d9AEA83b25F0cEB69e2AA2b5",
 			"source": "FuturesMarketManager",
-			"link": "https://local.etherscan.io/address/0x5eb3Bc0a489C5A8288765d2336659EbCA68FCd00",
-			"timestamp": "2021-06-15T01:23:44.731Z",
+			"link": "https://local.etherscan.io/address/0x2ce1F0e20C1f69E9d9AEA83b25F0cEB69e2AA2b5",
+			"timestamp": "2021-06-21T02:18:19.229Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxyFuturesMarketBTC": {
 			"name": "ProxyFuturesMarketBTC",
-			"address": "0x809d550fca64d94Bd9F66E60752A544199cfAC3D",
+			"address": "0x9bE634797af98cB560DB23260b5f7C6e98AcCAcf",
 			"source": "Proxy",
-			"link": "https://local.etherscan.io/address/0x809d550fca64d94Bd9F66E60752A544199cfAC3D",
-			"timestamp": "2021-06-15T01:23:46.147Z",
+			"link": "https://local.etherscan.io/address/0x9bE634797af98cB560DB23260b5f7C6e98AcCAcf",
+			"timestamp": "2021-06-21T02:18:21.379Z",
 			"txn": "",
 			"network": "local"
 		},
 		"FuturesMarketBTC": {
 			"name": "FuturesMarketBTC",
-			"address": "0x4c5859f0F772848b2D91F1D83E2Fe57935348029",
+			"address": "0x01c93598EeC9131C05a2450Cd033cbd8F82da31e",
 			"source": "FuturesMarket",
-			"link": "https://local.etherscan.io/address/0x4c5859f0F772848b2D91F1D83E2Fe57935348029",
-			"timestamp": "2021-06-15T01:23:47.571Z",
+			"link": "https://local.etherscan.io/address/0x01c93598EeC9131C05a2450Cd033cbd8F82da31e",
+			"timestamp": "2021-06-21T02:18:23.796Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxyFuturesMarketETH": {
 			"name": "ProxyFuturesMarketETH",
-			"address": "0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154",
+			"address": "0x33f4f8bf90d8AA3d19fF812B50e79c15Df0d0b03",
 			"source": "Proxy",
-			"link": "https://local.etherscan.io/address/0x5f3f1dBD7B74C6B46e8c44f98792A1dAf8d69154",
-			"timestamp": "2021-06-15T01:23:47.979Z",
+			"link": "https://local.etherscan.io/address/0x33f4f8bf90d8AA3d19fF812B50e79c15Df0d0b03",
+			"timestamp": "2021-06-21T02:18:24.358Z",
 			"txn": "",
 			"network": "local"
 		},
 		"FuturesMarketETH": {
 			"name": "FuturesMarketETH",
-			"address": "0xb7278A61aa25c888815aFC32Ad3cC52fF24fE575",
+			"address": "0x1F2C6E90F3DF741E0191eAbB1170f0B9673F12b3",
 			"source": "FuturesMarket",
-			"link": "https://local.etherscan.io/address/0xb7278A61aa25c888815aFC32Ad3cC52fF24fE575",
-			"timestamp": "2021-06-15T01:23:49.440Z",
+			"link": "https://local.etherscan.io/address/0x1F2C6E90F3DF741E0191eAbB1170f0B9673F12b3",
+			"timestamp": "2021-06-21T02:18:26.123Z",
 			"txn": "",
 			"network": "local"
 		},
 		"ProxyFuturesMarketLINK": {
 			"name": "ProxyFuturesMarketLINK",
-			"address": "0x82e01223d51Eb87e16A03E24687EDF0F294da6f1",
+			"address": "0x9bDD64340D3CE0607f51bBC7508CA40D45849ab8",
 			"source": "Proxy",
-			"link": "https://local.etherscan.io/address/0x82e01223d51Eb87e16A03E24687EDF0F294da6f1",
-			"timestamp": "2021-06-15T01:23:49.852Z",
+			"link": "https://local.etherscan.io/address/0x9bDD64340D3CE0607f51bBC7508CA40D45849ab8",
+			"timestamp": "2021-06-21T02:18:27.560Z",
 			"txn": "",
 			"network": "local"
 		},
 		"FuturesMarketLINK": {
 			"name": "FuturesMarketLINK",
-			"address": "0x2bdCC0de6bE1f7D2ee689a0342D76F52E8EFABa3",
+			"address": "0xB354ECF032e9e14442bE590D9Eaee37d2924B67A",
 			"source": "FuturesMarket",
-			"link": "https://local.etherscan.io/address/0x2bdCC0de6bE1f7D2ee689a0342D76F52E8EFABa3",
-			"timestamp": "2021-06-15T01:23:51.258Z",
+			"link": "https://local.etherscan.io/address/0xB354ECF032e9e14442bE590D9Eaee37d2924B67A",
+			"timestamp": "2021-06-21T02:18:29.114Z",
+			"txn": "",
+			"network": "local"
+		},
+		"FuturesMarketData": {
+			"name": "FuturesMarketData",
+			"address": "0xD962a5F050A5F0a2f8dF82aFc04CF1afFE585082",
+			"source": "FuturesMarketData",
+			"link": "https://local.etherscan.io/address/0xD962a5F050A5F0a2f8dF82aFc04CF1afFE585082",
+			"timestamp": "2021-06-21T02:18:32.809Z",
 			"txn": "",
 			"network": "local"
 		},
 		"SynthUtil": {
 			"name": "SynthUtil",
-			"address": "0xc351628EB244ec633d5f21fBD6621e1a683B1181",
+			"address": "0x221416CFa5A3CD92035E537ded1dD12d4d587c03",
 			"source": "SynthUtil",
-			"link": "https://local.etherscan.io/address/0xc351628EB244ec633d5f21fBD6621e1a683B1181",
-			"timestamp": "2021-06-15T01:23:54.035Z",
+			"link": "https://local.etherscan.io/address/0x221416CFa5A3CD92035E537ded1dD12d4d587c03",
+			"timestamp": "2021-06-21T02:18:34.245Z",
 			"txn": "",
 			"network": "local"
 		},
 		"DappMaintenance": {
 			"name": "DappMaintenance",
-			"address": "0xFD471836031dc5108809D173A067e8486B9047A3",
+			"address": "0x0BbfcD7a557FFB8A70CB0948FF680F0E573bbFf2",
 			"source": "DappMaintenance",
-			"link": "https://local.etherscan.io/address/0xFD471836031dc5108809D173A067e8486B9047A3",
-			"timestamp": "2021-06-15T01:23:55.306Z",
+			"link": "https://local.etherscan.io/address/0x0BbfcD7a557FFB8A70CB0948FF680F0E573bbFf2",
+			"timestamp": "2021-06-21T02:18:35.501Z",
 			"txn": "",
 			"network": "local"
 		}
@@ -26806,6 +26815,870 @@
 						"urls": [
 							"bzz-raw://7bd188475eab8dc531eb61c54e37ea9e36c8c6e71057aa9f13e9e724e50669aa",
 							"dweb:/ipfs/QmZYSbxFw4tYsSdDjya8rnSZu6uMkGRFKATAPeRPmDwg15"
+						]
+					}
+				},
+				"version": 1
+			}
+		},
+		"FuturesMarketData": {
+			"bytecode": "60806040523480156200001c57600080620000196200007d565b50505b50604051620026a4380380620026a48339810160408190526200003f91620001b2565b8060006001816200004f620000ea565b816001600160a01b0302191690836001600160a01b0316021790620000736200014c565b505050506200022e565b632a2a7adb598160e01b8152600481016020815285602082015260005b86811015620000b75780860151828201604001526020016200009a565b506020828760640184336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b505050565b6303daa959598160e01b8152836004820152602081602483336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b8051935060005b604081101562000147576000828201526020016200012e565b505050565b6322bd64c0598160e01b8152836004820152846024820152600081604483336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b6000815260206200012e565b600081519050620001ac816200020c565b92915050565b600060208284031215620001d057600080620001cd6200007d565b50505b6000620001de84846200019b565b949350505050565b6000620001ac8262000200565b6000620001ac82620001e6565b6001600160a01b031690565b6200021781620001f3565b81146200022b57600080620001476200007d565b50565b612466806200023e6000396000f3fe6080604052348015610019576000806100166115d5565b50505b50600436106100915760003560e01c8063730e003711610064578063730e003714610105578063808bad3414610125578063a9e0bef714610138578063ccb045b91461014b57610091565b80630c1ea85c1461009f57806339c93192146100c85780633c88ee18146100e85780636a59e495146100f0575b60008061009c6115d5565b50505b6100b26100ad366004611b4b565b61015e565b6040516100bf9190612318565b60405180910390f35b6100db6100d6366004611c5b565b61021f565b6040516100bf9190612372565b6100b26102d7565b6100f861031c565b6040516100bf9190612337565b610118610113366004611c9e565b61033a565b6040516100bf9190612363565b6100db610133366004611cc5565b61034b565b6100b2610146366004611b4b565b61035d565b610118610159366004611c0d565b61039b565b606061021661016b610452565b6001600160a01b0316630a347f1a85856040518363ffffffff1660e01b8152600401610198929190612306565b60006040518083038186806101ab611640565b1580156101c0576000806101bd6115d5565b50505b505a6101ca6116a0565b50505050501580156101e9573d6000803e3d60006101e66115d5565b50505b505050506040513d6000823e601f3d908101601f191682016040526102119190810190611b9f565b61050b565b90505b92915050565b61022761178b565b610216610232610452565b6001600160a01b031663afbb1217856040518263ffffffff1660e01b815260040161025d9190612329565b6020604051808303818680610270611640565b158015610285576000806102826115d5565b50505b505a61028f6116a0565b50505050501580156102ae573d6000803e3d60006102ab6115d5565b50505b50505050604051601f3d908101601f191682016040526102d19190810190611b1c565b8361099e565b60606103176102e4610452565b6001600160a01b031663375a7cba6040518163ffffffff1660e01b815260040160006040518083038186806101ab611640565b905090565b6000806103276117dc565b906101000a90046001600160a01b031681565b610342611828565b61021982610c2e565b61035361178b565b610216838361099e565b606061021683838080602002602001604051908101604052809392919081815260200183836020028082843760009201919091525061050b92505050565b6103a3611828565b6102196103ae610452565b6001600160a01b031663afbb1217846040518263ffffffff1660e01b81526004016103d99190612329565b60206040518083038186806103ec611640565b158015610401576000806103fe6115d5565b50505b505a61040b6116a0565b505050505015801561042a573d6000803e3d60006104276115d5565b50505b50505050604051601f3d908101601f1916820160405261044d9190810190611b1c565b610c2e565b6000808061045e6117dc565b906101000a90046001600160a01b03166001600160a01b031663dacb2d016040518163ffffffff1660e01b815260040161049790612345565b60206040518083038186806104aa611640565b1580156104bf576000806104bc6115d5565b50505b505a6104c96116a0565b50505050501580156104e8573d6000803e3d60006104e56115d5565b50505b50505050604051601f3d908101601f191682016040526103179190810190611b1c565b606060008251905060608160405190808252806020026020018201604052801561054f57816020015b61053c611881565b8152602001906001900390816105345790505b50905060005b8281101561099657600085828151811061056b57fe5b6020026020010151905061057d6118d9565b610586826111d0565b90506000826001600160a01b031663d24378eb6040518163ffffffff1660e01b8152600401604080518083038186806105bd611640565b1580156105d2576000806105cf6115d5565b50505b505a6105dc6116a0565b50505050501580156105fb573d6000803e3d60006105f86115d5565b50505b50505050604051601f3d908101601f1916820160405261061e9190810190611ced565b5090506000836001600160a01b031663e8c634706040518163ffffffff1660e01b815260040160408051808303818680610656611640565b15801561066b576000806106686115d5565b50505b505a6106756116a0565b5050505050158015610694573d6000803e3d60006106916115d5565b50505b50505050604051601f3d908101601f191682016040526106b79190810190611ced565b509050604051806101200160405280856001600160a01b03168152602001856001600160a01b031663cdf456e16040518163ffffffff1660e01b81526004016020604051808303818680610709611640565b15801561071e5760008061071b6115d5565b50505b505a6107286116a0565b5050505050158015610747573d6000803e3d60006107446115d5565b50505b50505050604051601f3d908101601f1916820160405261076a9190810190611c34565b815260200184604001518152602001838152602001856001600160a01b031663eb56105d6040518163ffffffff1660e01b815260040160206040518083038186806107b3611640565b1580156107c8576000806107c56115d5565b50505b505a6107d26116a0565b50505050501580156107f1573d6000803e3d60006107ee6115d5565b50505b50505050604051601f3d908101601f191682016040526108149190810190611c34565b8152602001856001600160a01b0316632b58ecef6040518163ffffffff1660e01b8152600401602060405180830381868061084d611640565b1580156108625760008061085f6115d5565b50505b505a61086c6116a0565b505050505015801561088b573d6000803e3d60006108886115d5565b50505b50505050604051601f3d908101601f191682016040526108ae9190810190611c34565b8152602001828152602001856001600160a01b0316633aef4d0b6040518163ffffffff1660e01b815260040160206040518083038186806108ed611640565b158015610902576000806108ff6115d5565b50505b505a61090c6116a0565b505050505015801561092b573d6000803e3d60006109286115d5565b50505b50505050604051601f3d908101601f1916820160405261094e9190810190611c34565b815260200160405160408082019052808651815260200186602001519052905286868151811061097a57fe5b6020026020010181905250505050508080600101915050610555565b509392505050565b6109a661178b565b600080600080866001600160a01b03166355f57510876040518263ffffffff1660e01b81526004016109d891906122d6565b60806040518083038186806109eb611640565b158015610a00576000806109fd6115d5565b50505b505a610a0a6116a0565b5050505050158015610a29573d6000803e3d6000610a266115d5565b50505b50505050604051601f3d908101601f19168201604052610a4c9190810190611d26565b93509350935093506000876001600160a01b031663bd2dcd388860016040518363ffffffff1660e01b8152600401610a859291906122e4565b60408051808303818680610a97611640565b158015610aac57600080610aa96115d5565b50505b505a610ab66116a0565b5050505050158015610ad5573d6000803e3d6000610ad26115d5565b50505b50505050604051601f3d908101601f19168201604052610af89190810190611ced565b509050604051806101000160405280610b118a8a6112ce565b8152602001896001600160a01b031663df41f8ef8a6040518263ffffffff1660e01b8152600401610b4291906122d6565b6020604051808303818680610b55611640565b158015610b6a57600080610b676115d5565b50505b505a610b746116a0565b5050505050158015610b93573d6000803e3d6000610b906115d5565b50505b50505050604051601f3d908101601f19168201604052610bb69190810190611be6565b151581526020016040518060800160405280888152602001878152602001868152602001858152508152602001610bed8a8a6113ae565b8152602001610bfc8a8a611459565b8152602001610c0b8a8a611488565b8152602001610c1a8a8a6114b7565b815260200191909152979650505050505050565b610c36611828565b600080836001600160a01b031663d24378eb6040518163ffffffff1660e01b815260040160408051808303818680610c6c611640565b158015610c8157600080610c7e6115d5565b50505b505a610c8b6116a0565b5050505050158015610caa573d6000803e3d6000610ca76115d5565b50505b50505050604051601f3d908101601f19168201604052610ccd9190810190611ced565b915091506000846001600160a01b031663e8c634706040518163ffffffff1660e01b815260040160408051808303818680610d06611640565b158015610d1b57600080610d186115d5565b50505b505a610d256116a0565b5050505050158015610d44573d6000803e3d6000610d416115d5565b50505b50505050604051601f3d908101601f19168201604052610d679190810190611ced565b509050610d726118d9565b610d7b866111d0565b90506040518060e00160405280876001600160a01b03168152602001876001600160a01b031663cdf456e16040518163ffffffff1660e01b81526004016020604051808303818680610dcb611640565b158015610de057600080610ddd6115d5565b50505b505a610dea6116a0565b5050505050158015610e09573d6000803e3d6000610e066115d5565b50505b50505050604051601f3d908101601f19168201604052610e2c9190810190611c34565b815260200160405160408082019052808451815260200184602001519052815260200160405180606001604052808460400151815260200184606001518152602001846080015190528152602001610e83836114e6565b81526020016040518060c00160405280896001600160a01b031663eb56105d6040518163ffffffff1660e01b81526004016020604051808303818680610ec7611640565b158015610edc57600080610ed96115d5565b50505b505a610ee66116a0565b5050505050158015610f05573d6000803e3d6000610f026115d5565b50505b50505050604051601f3d908101601f19168201604052610f289190810190611c34565b8152602001610f368a61151a565b8152602001858152602001896001600160a01b0316632b58ecef6040518163ffffffff1660e01b81526004016020604051808303818680610f75611640565b158015610f8a57600080610f876115d5565b50505b505a610f946116a0565b5050505050158015610fb3573d6000803e3d6000610fb06115d5565b50505b50505050604051601f3d908101601f19168201604052610fd69190810190611c34565b8152602001896001600160a01b031663c115e4436040518163ffffffff1660e01b8152600401602060405180830381868061100f611640565b158015611024576000806110216115d5565b50505b505a61102e6116a0565b505050505015801561104d573d6000803e3d600061104a6115d5565b50505b50505050604051601f3d908101601f191682016040526110709190810190611c34565b8152602001896001600160a01b03166322d3090a6040518163ffffffff1660e01b815260040160206040518083038186806110a9611640565b1580156110be576000806110bb6115d5565b50505b505a6110c86116a0565b50505050501580156110e7573d6000803e3d60006110e46115d5565b50505b50505050604051601f3d908101601f1916820160405261110a9190810190611c34565b905281526020016040518060600160405280878152602001896001600160a01b0316639cbe5efd6040518163ffffffff1660e01b81526004016020604051808303818680611156611640565b15801561116b576000806111686115d5565b50505b505a6111756116a0565b5050505050158015611194573d6000803e3d60006111916115d5565b50505b50505050604051601f3d908101601f191682016040526111b79190810190611c34565b8152602001861515815250815250945050505050919050565b6111d86118d9565b600080600080600080600080896001600160a01b031663890357306040518163ffffffff1660e01b8152600401610100604051808303818680611219611640565b15801561122e5760008061122b6115d5565b50505b505a6112386116a0565b5050505050158015611257573d6000803e3d60006112546115d5565b50505b50505050604051601f3d908101601f1916820160405261127a9190810190611dc9565b97509750975097509750975097509750604051610100810160409081529881526020810197909752968601949094526060850192909252608084015260a083015260c082015260e081019190915292915050565b6112d661191e565b600080600080866001600160a01b031663f40e8471876040518263ffffffff1660e01b815260040161130891906122d6565b608060405180830381868061131b611640565b1580156113305760008061132d6115d5565b50505b505a61133a6116a0565b5050505050158015611359573d6000803e3d60006113566115d5565b50505b50505050604051601f3d908101601f1916820160405261137c9190810190611d26565b935093509350935060405160808101604090815294815260208101939093529282015260608101919091529392505050565b600080836001600160a01b031663b895daab846040518263ffffffff1660e01b81526004016113dd91906122d6565b604080518083038186806113ef611640565b158015611404576000806114016115d5565b50505b505a61140e6116a0565b505050505015801561142d573d6000803e3d600061142a6115d5565b50505b50505050604051601f3d908101601f191682016040526114509190810190611ced565b50949350505050565b600080836001600160a01b031663b111dfac846040518263ffffffff1660e01b81526004016113dd91906122d6565b600080836001600160a01b0316631bf556d0846040518263ffffffff1660e01b81526004016113dd91906122d6565b600080836001600160a01b0316639cfbf4e4846040518263ffffffff1660e01b81526004016113dd91906122d6565b6114ee611946565b60405180606001604052808360a0015181526020018360c0015181526020018360e00151905292915050565b611522611967565b600080836001600160a01b0316635fc890c26040518163ffffffff1660e01b815260040160408051808303818680611558611640565b15801561156d5760008061156a6115d5565b50505b505a6115776116a0565b5050505050158015611596573d6000803e3d60006115936115d5565b50505b50505050604051601f3d908101601f191682016040526115b99190810190611d90565b9150915060405160408181019052918252602082015292915050565b632a2a7adb598160e01b8152600481016020815285602082015260005b8681101561160d5780860151828201604001526020016115f2565b506020828760640184336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b505050565b638435035b598160e01b8152836004820152602081602483336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b8051935060005b604081101561169b57600082820152602001611684565b505050565b638540661f598160e01b81526116d1565b8080831115610219575090919050565b8080831015610219575090919050565b836004820152846024820152606060448201528660648201526084810160005b888110156117095780880151828201526020016116f1565b506060828960a40184336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b815160408301513d6000853e8b8b82606087013350600060045af1505961175e8d3d6116c1565b8c0161176a81876116b1565b5b8281101561177f576000815260200161176b565b50929c50505050505050565b60405180610100016040528061179f61191e565b8152600060208201526040016117b361191e565b815260200160008152602001600081526020016000815260200160008152602001600081525090565b6303daa959598160e01b8152836004820152602081602483336000905af158600e01573d6000803e3d6000fd5b3d6001141558600a015760016000f35b80516000825293506020611684565b60405160e081016040908152600080835260208301528101611848611967565b8152602001611855611946565b8152602001611862611946565b815260200161186f61197e565b815260200161187c6119ba565b905290565b60405180610120016040528060006001600160a01b031681526020016000801916815260200160008152602001600081526020016000815260200160008152602001600081526020016000815260200161187c611967565b60405180610100016040528060008152602001600081526020016000815260200160008152602001600081526020016000815260200160008152602001600081525090565b6040518060800160405280600081526020016000815260200160008152602001600081525090565b60405180606001604052806000815260200160008152602001600081525090565b604051604080820190526000808252602082015290565b6040518060c0016040528060008152602001611998611967565b8152602001600081526020016000815260200160008152602001600081525090565b6040516060810160409081526000808352602083018190529082015290565b80356102198161242e565b6000815190506102198161242e565b60008083601f840112611a0e57600080611a0b6115d5565b50505b50813567ffffffffffffffff811115611a2f57600080611a2c6115d5565b50505b602083019150836020820283011115611a5057600080611a4d6115d5565b50505b9250929050565b600082601f830112611a7157600080611a6e6115d5565b50505b8151611a84611a7f826123b5565b612381565b91508181835260208401935060208101905083856020840282011115611ab257600080611aaf6115d5565b50505b60005b83811015611ade5781611ac888826119e4565b8452506020928301929190910190600101611ab5565b5050505092915050565b6000815190506102198161244b565b803561021981612454565b60008151905061021981612454565b80356102198161245d565b600060208284031215611b3757600080611b346115d5565b50505b6000611b4384846119e4565b949350505050565b60008060208385031215611b6757600080611b646115d5565b50505b823567ffffffffffffffff811115611b8757600080611b846115d5565b50505b611b93858286016119f3565b92509250509250929050565b600060208284031215611bba57600080611bb76115d5565b50505b815167ffffffffffffffff811115611bda57600080611bd76115d5565b50505b611b4384828501611a57565b600060208284031215611c0157600080611bfe6115d5565b50505b6000611b438484611ae8565b600060208284031215611c2857600080611c256115d5565b50505b6000611b438484611af7565b600060208284031215611c4f57600080611c4c6115d5565b50505b6000611b438484611b02565b60008060408385031215611c7757600080611c746115d5565b50505b6000611c838585611af7565b9250506020611c94858286016119d9565b9150509250929050565b600060208284031215611cb957600080611cb66115d5565b50505b6000611b438484611b11565b60008060408385031215611ce157600080611cde6115d5565b50505b6000611c838585611b11565b60008060408385031215611d0957600080611d066115d5565b50505b6000611d158585611b02565b9250506020611c9485828601611ae8565b60008060008060808587031215611d4557600080611d426115d5565b50505b6000611d518787611b02565b9450506020611d6287828801611b02565b9350506040611d7387828801611b02565b9250506060611d8487828801611b02565b91505092959194509250565b60008060408385031215611dac57600080611da96115d5565b50505b6000611db88585611b02565b9250506020611c9485828601611b02565b600080600080600080600080610100898b031215611def57600080611dec6115d5565b50505b6000611dfb8b8b611b02565b9850506020611e0c8b828c01611b02565b9750506040611e1d8b828c01611b02565b9650506060611e2e8b828c01611b02565b9550506080611e3f8b828c01611b02565b94505060a0611e508b828c01611b02565b93505060c0611e618b828c01611b02565b92505060e0611e728b828c01611b02565b9150509295985092959890939650565b6000611e8e8383612111565b50506101400190565b611ea0816123f8565b82525050565b6000611eb283856123ef565b93506001600160fb1b03831115611ed157600080611ece6115d5565b50505b602083029250611ee2838584612422565b50500190565b6000611ef3826123e5565b611efd81856123ef565b9350611f08836123df565b8060005b83811015611f36578151611f208882611e82565b9750611f2b836123df565b925050600101611f0c565b509495945050505050565b611ea081612403565b611ea081612408565b611ea08161240b565b6000611f696024836123ef565b7f4d697373696e6720467574757265734d61726b65744d616e61676572204164648152637265737360e01b602082015260400192915050565b73233aba3ab932b9a6b0b935b2ba26b0b730b3b2b960611b9052565b604082018151611fce8482611f4a565b506020820151611fe16020850182611f4a565b50505050565b606082018151611ff78482611f4a565b50602082015161200a6020850182611f4a565b506040820151611fe16040850182611f4a565b6102808201815161202e8482611e97565b5060208201516120416020850182611f4a565b5060408201516120546040850182611fbe565b5060608201516120676080850182611fe7565b50608082015161207a60e0850182611fe7565b5060a082015161208e6101408501826120a2565b5060c0820151611fe16102208501826122a0565b60e0820181516120b28482611f4a565b5060208201516120c56020850182611fbe565b5060408201516120d86060850182611f4a565b5060608201516120eb6080850182611f4a565b5060808201516120fe60a0850182611f4a565b5060a0820151611fe160c0850182611f4a565b610140820181516121228482611e97565b5060208201516121356020850182611f4a565b5060408201516121486040850182611f4a565b50606082015161215b6060850182611f4a565b50608082015161216e6080850182611f4a565b5060a082015161218160a0850182611f4a565b5060c082015161219460c0850182611f4a565b5060e08201516121a760e0850182611f4a565b50610100820151611fe1610100850182611fbe565b6080820181516121cc8482611f4a565b5060208201516121df6020850182611f4a565b5060408201516121f26040850182611f4a565b506060820151611fe16060850182611f4a565b6101c08201815161221684826121bc565b5060208201516122296080850182611f41565b50604082015161223c60a08501826121bc565b506060820151612250610120850182611f4a565b506080820151612264610140850182611f4a565b5060a0820151612278610160850182611f4a565b5060c082015161228c610180850182611f4a565b5060e0820151611fe16101a0850182611f4a565b6060820181516122b08482611f4a565b5060208201516122c36020850182611f4a565b506040820151611fe16040850182611f41565b602081016102198284611e97565b604081016122f28285611e97565b6122ff6020830184611f41565b9392505050565b60208082528101611b43818486611ea6565b602080825281016102168184611ee8565b602081016102198284611f4a565b602081016102198284611f53565b6040810161235282611fa2565b818103602083015261021981611f5c565b6102808101610219828461201d565b6101c081016102198284612205565b6000604051905081810181811067ffffffffffffffff821117156123ad576000806123aa6115d5565b50505b604052919050565b600067ffffffffffffffff8211156123d5576000806123d26115d5565b50505b5060209081020190565b60200190565b6000815192915050565b90815260200190565b600061021982612416565b151590565b90565b6000610219826123f8565b6001600160a01b031690565b82818337506000910152565b612437816123f8565b81146124485760008061169b6115d5565b50565b61243781612403565b61243781612408565b6124378161240b56",
+			"abi": [
+				{
+					"inputs": [
+						{
+							"internalType": "contract IAddressResolver",
+							"name": "_resolverProxy",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "constructor",
+					"signature": "constructor"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "allMarketSummaries",
+					"outputs": [
+						{
+							"components": [
+								{
+									"internalType": "address",
+									"name": "market",
+									"type": "address"
+								},
+								{
+									"internalType": "bytes32",
+									"name": "asset",
+									"type": "bytes32"
+								},
+								{
+									"internalType": "uint256",
+									"name": "maxLeverage",
+									"type": "uint256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "price",
+									"type": "uint256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "marketSize",
+									"type": "uint256"
+								},
+								{
+									"internalType": "int256",
+									"name": "marketSkew",
+									"type": "int256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "marketDebt",
+									"type": "uint256"
+								},
+								{
+									"internalType": "int256",
+									"name": "currentFundingRate",
+									"type": "int256"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "takerFee",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "makerFee",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.FeeRates",
+									"name": "feeRates",
+									"type": "tuple"
+								}
+							],
+							"internalType": "struct FuturesMarketData.MarketSummary[]",
+							"name": "",
+							"type": "tuple[]"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x3c88ee18"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"internalType": "contract FuturesMarket",
+							"name": "market",
+							"type": "address"
+						}
+					],
+					"name": "marketDetails",
+					"outputs": [
+						{
+							"components": [
+								{
+									"internalType": "address",
+									"name": "market",
+									"type": "address"
+								},
+								{
+									"internalType": "bytes32",
+									"name": "baseAsset",
+									"type": "bytes32"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "takerFee",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "makerFee",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.FeeRates",
+									"name": "feeRates",
+									"type": "tuple"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "maxLeverage",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "maxMarketValue",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "minInitialMargin",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.MarketLimits",
+									"name": "limits",
+									"type": "tuple"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "maxFundingRate",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "maxFundingRateSkew",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "maxFundingRateDelta",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.FundingParameters",
+									"name": "fundingParameters",
+									"type": "tuple"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "marketSize",
+											"type": "uint256"
+										},
+										{
+											"components": [
+												{
+													"internalType": "uint256",
+													"name": "long",
+													"type": "uint256"
+												},
+												{
+													"internalType": "uint256",
+													"name": "short",
+													"type": "uint256"
+												}
+											],
+											"internalType": "struct FuturesMarketData.Sides",
+											"name": "sides",
+											"type": "tuple"
+										},
+										{
+											"internalType": "uint256",
+											"name": "marketDebt",
+											"type": "uint256"
+										},
+										{
+											"internalType": "int256",
+											"name": "marketSkew",
+											"type": "int256"
+										},
+										{
+											"internalType": "int256",
+											"name": "proportionalSkew",
+											"type": "int256"
+										},
+										{
+											"internalType": "int256",
+											"name": "entryDebtCorrection",
+											"type": "int256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.MarketSizeDetails",
+									"name": "marketSizeDetails",
+									"type": "tuple"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "price",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "currentRoundId",
+											"type": "uint256"
+										},
+										{
+											"internalType": "bool",
+											"name": "invalid",
+											"type": "bool"
+										}
+									],
+									"internalType": "struct FuturesMarketData.PriceDetails",
+									"name": "priceDetails",
+									"type": "tuple"
+								}
+							],
+							"internalType": "struct FuturesMarketData.MarketData",
+							"name": "",
+							"type": "tuple"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x730e0037"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"internalType": "bytes32",
+							"name": "asset",
+							"type": "bytes32"
+						}
+					],
+					"name": "marketDetailsForAsset",
+					"outputs": [
+						{
+							"components": [
+								{
+									"internalType": "address",
+									"name": "market",
+									"type": "address"
+								},
+								{
+									"internalType": "bytes32",
+									"name": "baseAsset",
+									"type": "bytes32"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "takerFee",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "makerFee",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.FeeRates",
+									"name": "feeRates",
+									"type": "tuple"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "maxLeverage",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "maxMarketValue",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "minInitialMargin",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.MarketLimits",
+									"name": "limits",
+									"type": "tuple"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "maxFundingRate",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "maxFundingRateSkew",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "maxFundingRateDelta",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.FundingParameters",
+									"name": "fundingParameters",
+									"type": "tuple"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "marketSize",
+											"type": "uint256"
+										},
+										{
+											"components": [
+												{
+													"internalType": "uint256",
+													"name": "long",
+													"type": "uint256"
+												},
+												{
+													"internalType": "uint256",
+													"name": "short",
+													"type": "uint256"
+												}
+											],
+											"internalType": "struct FuturesMarketData.Sides",
+											"name": "sides",
+											"type": "tuple"
+										},
+										{
+											"internalType": "uint256",
+											"name": "marketDebt",
+											"type": "uint256"
+										},
+										{
+											"internalType": "int256",
+											"name": "marketSkew",
+											"type": "int256"
+										},
+										{
+											"internalType": "int256",
+											"name": "proportionalSkew",
+											"type": "int256"
+										},
+										{
+											"internalType": "int256",
+											"name": "entryDebtCorrection",
+											"type": "int256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.MarketSizeDetails",
+									"name": "marketSizeDetails",
+									"type": "tuple"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "price",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "currentRoundId",
+											"type": "uint256"
+										},
+										{
+											"internalType": "bool",
+											"name": "invalid",
+											"type": "bool"
+										}
+									],
+									"internalType": "struct FuturesMarketData.PriceDetails",
+									"name": "priceDetails",
+									"type": "tuple"
+								}
+							],
+							"internalType": "struct FuturesMarketData.MarketData",
+							"name": "",
+							"type": "tuple"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0xccb045b9"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"internalType": "address[]",
+							"name": "markets",
+							"type": "address[]"
+						}
+					],
+					"name": "marketSummaries",
+					"outputs": [
+						{
+							"components": [
+								{
+									"internalType": "address",
+									"name": "market",
+									"type": "address"
+								},
+								{
+									"internalType": "bytes32",
+									"name": "asset",
+									"type": "bytes32"
+								},
+								{
+									"internalType": "uint256",
+									"name": "maxLeverage",
+									"type": "uint256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "price",
+									"type": "uint256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "marketSize",
+									"type": "uint256"
+								},
+								{
+									"internalType": "int256",
+									"name": "marketSkew",
+									"type": "int256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "marketDebt",
+									"type": "uint256"
+								},
+								{
+									"internalType": "int256",
+									"name": "currentFundingRate",
+									"type": "int256"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "takerFee",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "makerFee",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.FeeRates",
+									"name": "feeRates",
+									"type": "tuple"
+								}
+							],
+							"internalType": "struct FuturesMarketData.MarketSummary[]",
+							"name": "",
+							"type": "tuple[]"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0xa9e0bef7"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"internalType": "bytes32[]",
+							"name": "assets",
+							"type": "bytes32[]"
+						}
+					],
+					"name": "marketSummariesForAssets",
+					"outputs": [
+						{
+							"components": [
+								{
+									"internalType": "address",
+									"name": "market",
+									"type": "address"
+								},
+								{
+									"internalType": "bytes32",
+									"name": "asset",
+									"type": "bytes32"
+								},
+								{
+									"internalType": "uint256",
+									"name": "maxLeverage",
+									"type": "uint256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "price",
+									"type": "uint256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "marketSize",
+									"type": "uint256"
+								},
+								{
+									"internalType": "int256",
+									"name": "marketSkew",
+									"type": "int256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "marketDebt",
+									"type": "uint256"
+								},
+								{
+									"internalType": "int256",
+									"name": "currentFundingRate",
+									"type": "int256"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "takerFee",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "makerFee",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarketData.FeeRates",
+									"name": "feeRates",
+									"type": "tuple"
+								}
+							],
+							"internalType": "struct FuturesMarketData.MarketSummary[]",
+							"name": "",
+							"type": "tuple[]"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x0c1ea85c"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"internalType": "contract FuturesMarket",
+							"name": "market",
+							"type": "address"
+						},
+						{
+							"internalType": "address",
+							"name": "account",
+							"type": "address"
+						}
+					],
+					"name": "positionDetails",
+					"outputs": [
+						{
+							"components": [
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "id",
+											"type": "uint256"
+										},
+										{
+											"internalType": "int256",
+											"name": "leverage",
+											"type": "int256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "fee",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "roundId",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarket.Order",
+									"name": "order",
+									"type": "tuple"
+								},
+								{
+									"internalType": "bool",
+									"name": "orderPending",
+									"type": "bool"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "margin",
+											"type": "uint256"
+										},
+										{
+											"internalType": "int256",
+											"name": "size",
+											"type": "int256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "lastPrice",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "fundingIndex",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarket.Position",
+									"name": "position",
+									"type": "tuple"
+								},
+								{
+									"internalType": "int256",
+									"name": "notionalValue",
+									"type": "int256"
+								},
+								{
+									"internalType": "int256",
+									"name": "profitLoss",
+									"type": "int256"
+								},
+								{
+									"internalType": "int256",
+									"name": "accruedFunding",
+									"type": "int256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "remainingMargin",
+									"type": "uint256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "liquidationPrice",
+									"type": "uint256"
+								}
+							],
+							"internalType": "struct FuturesMarketData.PositionData",
+							"name": "",
+							"type": "tuple"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x808bad34"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"internalType": "bytes32",
+							"name": "asset",
+							"type": "bytes32"
+						},
+						{
+							"internalType": "address",
+							"name": "account",
+							"type": "address"
+						}
+					],
+					"name": "positionDetailsForAsset",
+					"outputs": [
+						{
+							"components": [
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "id",
+											"type": "uint256"
+										},
+										{
+											"internalType": "int256",
+											"name": "leverage",
+											"type": "int256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "fee",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "roundId",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarket.Order",
+									"name": "order",
+									"type": "tuple"
+								},
+								{
+									"internalType": "bool",
+									"name": "orderPending",
+									"type": "bool"
+								},
+								{
+									"components": [
+										{
+											"internalType": "uint256",
+											"name": "margin",
+											"type": "uint256"
+										},
+										{
+											"internalType": "int256",
+											"name": "size",
+											"type": "int256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "lastPrice",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint256",
+											"name": "fundingIndex",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct FuturesMarket.Position",
+									"name": "position",
+									"type": "tuple"
+								},
+								{
+									"internalType": "int256",
+									"name": "notionalValue",
+									"type": "int256"
+								},
+								{
+									"internalType": "int256",
+									"name": "profitLoss",
+									"type": "int256"
+								},
+								{
+									"internalType": "int256",
+									"name": "accruedFunding",
+									"type": "int256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "remainingMargin",
+									"type": "uint256"
+								},
+								{
+									"internalType": "uint256",
+									"name": "liquidationPrice",
+									"type": "uint256"
+								}
+							],
+							"internalType": "struct FuturesMarketData.PositionData",
+							"name": "",
+							"type": "tuple"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x39c93192"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "resolverProxy",
+					"outputs": [
+						{
+							"internalType": "contract IAddressResolver",
+							"name": "",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x6a59e495"
+				}
+			],
+			"source": {
+				"keccak256": "0xba54f3f22e6d09f48e04bee20b8606824e11d560ea95d03aceaee2a2a34120a9",
+				"urls": [
+					"bzz-raw://40293565f6e2447857ab1db61ee1c05c61e5cee03bd0f1e84d550ccac7f2b26d",
+					"dweb:/ipfs/QmQZqZQdkAxieN28APfqLfJvHg8f6Em3A5c3ngDhNVJKRF"
+				]
+			},
+			"metadata": {
+				"compiler": {
+					"version": "0.5.16-develop.2020.12.10+ovm+commit.25adf37d"
+				},
+				"language": "Solidity",
+				"settings": {
+					"compilationTarget": {
+						"FuturesMarketData.sol": "FuturesMarketData"
+					},
+					"evmVersion": "istanbul",
+					"libraries": {},
+					"optimizer": {
+						"enabled": true,
+						"runs": 200
+					},
+					"remappings": []
+				},
+				"sources": {
+					"FuturesMarketData.sol": {
+						"keccak256": "0xba54f3f22e6d09f48e04bee20b8606824e11d560ea95d03aceaee2a2a34120a9",
+						"urls": [
+							"bzz-raw://40293565f6e2447857ab1db61ee1c05c61e5cee03bd0f1e84d550ccac7f2b26d",
+							"dweb:/ipfs/QmQZqZQdkAxieN28APfqLfJvHg8f6Em3A5c3ngDhNVJKRF"
 						]
 					}
 				},

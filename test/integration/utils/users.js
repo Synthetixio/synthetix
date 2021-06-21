@@ -15,7 +15,6 @@ async function loadUsers({ ctx, network }) {
 	ctx.users.owner = wallets[0];
 	ctx.users.someUser = wallets[1];
 	ctx.users.otherUser = wallets[2];
-	ctx.users.wallets = wallets; // TODO(liamz)
 	for (let i = 3; i < wallets.length; i++) {
 		ctx.users[`user${i}`] = wallets[i];
 	}
@@ -40,7 +39,7 @@ function _getWallets({ provider }) {
 function _createWallets({ provider }) {
 	const wallets = [];
 
-	for (let i = 0; i < 20; i++) {
+	for (let i = 0; i < 10; i++) {
 		wallets.push(new ethers.Wallet(getPrivateKey({ index: i }), provider));
 	}
 
