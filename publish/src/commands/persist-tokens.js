@@ -5,6 +5,7 @@ const path = require('path');
 const util = require('util');
 const { confirmAction, ensureNetwork, loadConnections } = require('../util');
 const { gray, yellow, red, green } = require('chalk');
+const ethers = require('ethers');
 const Web3 = require('web3');
 const w3utils = require('web3-utils');
 const axios = require('axios');
@@ -145,10 +146,10 @@ const persistTokens = async ({
 		process.exit(1);
 	}
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	web3.eth.accounts.wallet.add(privateKey);
-	const account = web3.eth.accounts.wallet[0].address;
-	console.log(gray(`Using account with public key ${account}`));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const wallet = new ethers.Wallet(privateKey, provider);
+	if (!wallet.address) wallet.address = wallet._address;
+	console.log(gray(`Using account with public key ${wallet.address}`));
 
 	const ensName = 'synths.snx.eth';
 	const content = `ipfs://${hash}`;
@@ -165,8 +166,13 @@ const persistTokens = async ({
 	console.log(gray(`Using Gas Price: ${gasPrice} gwei`));
 
 	try {
+		// TODO Remove when setContentHash is replaced by ethers
+		const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+		web3.eth.accounts.wallet.add(privateKey);
+		const w3account = web3.eth.accounts.wallet[0].address;
+		// TODO Replace with ethers
 		const { transactionHash } = await web3.eth.ens.setContenthash(ensName, content, {
-			from: account,
+			from: w3account,
 			gas: Number(gasLimit),
 			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
 		});
