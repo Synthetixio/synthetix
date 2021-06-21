@@ -1,6 +1,6 @@
 'use strict';
 
-const Web3 = require('web3');
+const ethers = require('ethers');
 const axios = require('axios');
 const { gray, yellow, red, cyan } = require('chalk');
 
@@ -11,7 +11,7 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, stan
 	const output = [];
 	const { etherscanUrl } = loadConnections({ network });
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 	const feeds = standaloneFeeds.concat(synths);
 
@@ -20,7 +20,7 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, stan
 	for (const { name, asset, feed, inverted } of feeds) {
 		const currencyKey = name || asset; // either name of synth or asset for standalone
 		if (feed) {
-			if (!web3.utils.isAddress(feed)) {
+			if (!ethers.utils.isAddress(feed)) {
 				throw Error(
 					`Invalid aggregator address for ${currencyKey}: ${feed}. (If mixed case, make sure it is valid checksum)`
 				);
@@ -47,14 +47,14 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, stan
 				}
 			}
 
-			const liveAggregator = new web3.eth.Contract(abi, feed);
+			const liveAggregator = new ethers.Contract(feed, abi, provider);
 
 			const [
 				aggAnswerRaw,
 				exRatesAnswerRaw,
 				{ frozenAtUpperLimit, frozenAtLowerLimit },
 			] = await Promise.all([
-				liveAggregator.methods.latestAnswer().call(),
+				liveAggregator.latestAnswer(),
 				oldExrates.methods.rateForCurrency(toBytes32(currencyKey)).call(),
 				oldExrates.methods.inversePricing(toBytes32(currencyKey)).call(),
 			]);
@@ -68,7 +68,7 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, stan
 				answer = frozenAtUpperLimit ? inverted.upperLimit : Math.min(answer, inverted.upperLimit);
 			}
 
-			const existing = web3.utils.fromWei(exRatesAnswerRaw);
+			const existing = ethers.utils.formatUnits(exRatesAnswerRaw);
 
 			if (answer === existing) {
 				output.push(
