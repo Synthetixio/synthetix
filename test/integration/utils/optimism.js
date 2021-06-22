@@ -1,6 +1,6 @@
 const chalk = require('chalk');
 const ethers = require('ethers');
-const { hre } = require('hardhat');
+const hre = require('hardhat');
 const { wait } = require('../../test-utils/wait');
 const { dummyTx } = require('../../test-utils/rpc');
 const OptimismMessengerABI = require('@eth-optimism/contracts/artifacts/contracts/optimistic-ethereum/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol/iAbs_BaseCrossDomainMessenger.json')
@@ -64,8 +64,8 @@ async function startOpsHeartbeat({ l1Wallet, l2Wallet }) {
 	heartbeatActive = true;
 
 	async function heartbeat() {
-		await dummyTx({ wallet: l1Wallet, useOvm: false });
-		await dummyTx({ wallet: l2Wallet, useOvm: true });
+		await dummyTx({ wallet: l1Wallet, gasPrice: 1, gasLimit: 8000000 });
+		await dummyTx({ wallet: l2Wallet, gasPrice: 0, gasLimit: 33600000000001 });
 
 		await wait({ seconds: 1 });
 

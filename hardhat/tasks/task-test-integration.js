@@ -54,10 +54,12 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 	});
 
 task('test:integration:l2', 'run isolated layer 2 production tests')
+	.addFlag('debugOptimism', 'Debug Optimism activity')
 	.addFlag('compile', 'Compile an l2 instance before running the tests')
 	.addFlag('deploy', 'Deploy an l2 instance before running the tests')
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/l2/';
+		hre.config.debugOptimism = taskArguments.debugOptimism;
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
 

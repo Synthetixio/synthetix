@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 const chalk = require('chalk');
-const { hre } = require('hardhat');
+const hre = require('hardhat');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL1 } = require('../utils/optimism');
