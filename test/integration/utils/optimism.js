@@ -2,7 +2,6 @@ const chalk = require('chalk');
 const ethers = require('ethers');
 const { wait } = require('../../test-utils/wait');
 const { dummyTx } = require('../../test-utils/rpc');
-const { restartRelayer } = require('../../../hardhat/tasks/task-ops');
 const OptimismMessengerABI = require('@eth-optimism/contracts/artifacts/contracts/optimistic-ethereum/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol/iAbs_BaseCrossDomainMessenger.json')
 	.abi;
 
@@ -281,10 +280,6 @@ class Watcher {
 		}
 
 		return new Promise(async (resolve, reject) => {
-			const watchTimer = setInterval(async () => {
-				restartRelayer({ opsPath: './optimism' });
-			}, 60000);
-
 			const handleEvent = async log => {
 				console.log(chalk.yellow('Watcher.getTransactionReceipt - handleEvent:'));
 				_printMessengerLog(log);
@@ -296,10 +291,8 @@ class Watcher {
 						layer.provider.off(successFilter);
 						layer.provider.off(failureFilter);
 
-						clearInterval(watchTimer);
 						resolve(txReceipt);
 					} catch (e) {
-						clearInterval(watchTimer);
 						reject(e);
 					}
 				}

@@ -59,9 +59,7 @@ jobs:
       - run:
           name: Build docker containers if necessary
           command: |
-            if [ ! -d ./optimism ]; then
-              npx hardhat ops --fresh --build --build-ops
-            fi;
+            npx hardhat ops --fresh --build --build-ops
       - save_cache:
           key: v2-optimism-build-
           paths:

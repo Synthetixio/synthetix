@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { homedir } = require('os');
-const { gray, yellow, red } = require('chalk');
+const { gray, yellow } = require('chalk');
 const { task } = require('hardhat/config');
 const { spawn } = require('child_process');
 const execa = require('execa');
@@ -175,12 +175,3 @@ function _stop({ opsPath }) {
 	console.log(gray('  stop ops'));
 	execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker-compose down -v`]);
 }
-
-function restartRelayer({ opsPath }) {
-	console.log(red('Restarting relayer subprocess...'));
-	execa.sync('sh', ['-c', `cd ${opsPath}/ops && docker-compose restart relayer`]);
-}
-
-module.exports = {
-	restartRelayer,
-};
