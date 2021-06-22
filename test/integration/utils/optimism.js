@@ -1,10 +1,10 @@
 const chalk = require('chalk');
 const ethers = require('ethers');
+const { wait } = require('../../test-utils/wait');
+const { dummyTx } = require('../../test-utils/rpc');
 const { restartRelayer } = require('../../../hardhat/tasks/task-ops');
 const OptimismMessengerABI = require('@eth-optimism/contracts/artifacts/contracts/optimistic-ethereum/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol/iAbs_BaseCrossDomainMessenger.json')
 	.abi;
-
-let watchingBridges = false;
 
 async function deposit({ ctx, from, to, amount }) {
 	let { Synthetix, SynthetixBridgeToOptimism } = ctx.contracts;
@@ -49,6 +49,34 @@ async function approveBridge({ ctx, amount }) {
 		amount
 	);
 	await tx.wait();
+}
+
+/*
+ * Sends L1 and L2 txs on a timer, which keeps the L2 timestamp in
+ * sync with the L1 timestamp.
+ * */
+let heartbeatActive = false;
+async function startOpsHeartbeat({ l1Wallet, l2Wallet }) {
+	if (heartbeatActive) {
+		return;
+	}
+
+	heartbeatActive = true;
+
+	async function heartbeat() {
+		await dummyTx({ wallet: l1Wallet, useOvm: false });
+		await dummyTx({ wallet: l2Wallet, useOvm: true });
+
+		await wait({ seconds: 1 });
+
+		const l1Timestamp = (await l1Wallet.provider.getBlock()).timestamp;
+		const l2Timestamp = (await l2Wallet.provider.getBlock()).timestamp;
+		console.log(chalk.gray(`> Ops heartbeat - Timestamps: [${l1Timestamp}, ${l2Timestamp}]`));
+
+		await heartbeat();
+	}
+
+	await heartbeat();
 }
 
 function skipIfL2({ ctx, reason }) {
@@ -109,6 +137,7 @@ function _printMessengerLog(log) {
 	console.log(chalk.gray(`> ${event.name}(${argName}:${argType} = ${argValue})`));
 }
 
+let watchingBridges = false;
 function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }) {
 	if (watchingBridges) {
 		return;
@@ -291,4 +320,5 @@ module.exports = {
 	finalizationOnL2,
 	Watcher,
 	skipIfL2,
+	startOpsHeartbeat,
 };

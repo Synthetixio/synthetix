@@ -5,8 +5,12 @@ const { loadUsers } = require('./users');
 const { connectContracts } = require('./contracts');
 const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
-const { approveBridge, watchOptimismMessengers, Watcher } = require('./optimism');
-const { startOpsHeartbeat } = require('../../test-utils/rpc');
+const {
+	approveBridge,
+	watchOptimismMessengers,
+	startOpsHeartbeat,
+	Watcher,
+} = require('./optimism');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
