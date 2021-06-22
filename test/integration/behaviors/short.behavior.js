@@ -6,7 +6,8 @@ const { approveIfNeeded } = require('../utils/approve');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
-const { exchangeSynths, ignoreWaitingPeriod } = require('../utils/exchanging');
+const { exchangeSynths } = require('../utils/exchanging');
+const { skipWaitingPeriod } = require('../utils/skip');
 
 function itCanOpenAndCloseShort({ ctx }) {
 	describe('shorting', () => {
@@ -69,9 +70,6 @@ function itCanOpenAndCloseShort({ ctx }) {
 				describe('closing a loan', () => {
 					let interactionDelay, CollateralShortAsOwner;
 
-					// Ignore settlement period for sUSD --> sETH closing the loan
-					ignoreWaitingPeriod({ ctx });
-
 					before('skip waiting period by setting interaction delay to zero', async () => {
 						CollateralShortAsOwner = CollateralShort.connect(ctx.users.owner);
 						interactionDelay = await CollateralShortAsOwner.interactionDelay();
@@ -87,6 +85,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 							amount: parseEther('1000'),
 							user,
 						});
+
+						// Ignore settlement period for sUSD --> sETH closing the loan
+						await skipWaitingPeriod({ ctx });
 
 						tx = await CollateralShort.close(loanId);
 						loan = await CollateralStateShort.getLoan(user.address, loanId);
