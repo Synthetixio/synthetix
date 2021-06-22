@@ -231,7 +231,7 @@ const getPathToNetwork = ({ network = 'mainnet', file = '', useOvm = false, path
 
 // Pass in fs and path to avoid webpack wrapping those
 const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = false }) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].deployment;
 	}
 	const pathToDeployment = deploymentPath
@@ -330,7 +330,7 @@ const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
 const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) => {
 	let feeds;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		feeds = data[getFolderNameForNetwork({ network, useOvm })].feeds;
 	} else {
 		const pathToFeeds = deploymentPath
@@ -377,7 +377,7 @@ const getSynths = ({
 } = {}) => {
 	let synths;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		synths = data[getFolderNameForNetwork({ network, useOvm })].synths;
 	} else {
 		const pathToSynthList = deploymentPath
@@ -440,7 +440,7 @@ const getStakingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].rewards;
 	}
 
@@ -468,7 +468,7 @@ const getShortingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })]['shorting-rewards'];
 	}
 
@@ -539,7 +539,7 @@ const getVersions = ({
 } = {}) => {
 	let versions;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		versions = data[getFolderNameForNetwork({ network, useOvm })].versions;
 	} else {
 		const pathToVersions = deploymentPath
