@@ -120,7 +120,12 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 			});
 		}
 
-		await connectInstances({ providerUrl, providerPortL1, providerPortL2 });
+		await connectInstances({
+			providerUrl,
+			providerPortL1,
+			providerPortL2,
+			quiet: !taskArguments.debugOptimism,
+		});
 
 		await hre.run('test', taskArguments);
 	});

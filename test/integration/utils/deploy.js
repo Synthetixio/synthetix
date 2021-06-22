@@ -1,6 +1,5 @@
 const axios = require('axios');
 const { getLocalPrivateKey } = require('../../test-utils/wallets');
-const { hre } = require('hardhat');
 
 const {
 	constants: { OVM_GAS_PRICE },
@@ -56,7 +55,7 @@ async function deployInstance({
 	});
 }
 
-async function connectInstances({ providerUrl, providerPortL1, providerPortL2 }) {
+async function connectInstances({ providerUrl, providerPortL1, providerPortL2, quiet }) {
 	const privateKey = getLocalPrivateKey({ index: 0 });
 
 	const { l1Messenger, l2Messenger } = await _getMessengers({ providerUrl });
@@ -73,7 +72,7 @@ async function connectInstances({ providerUrl, providerPortL1, providerPortL2 })
 		l1GasPrice: 1,
 		l2GasPrice: OVM_GAS_PRICE,
 		gasLimit: 8000000,
-		quiet: !hre.config.debugOptimism,
+		quiet,
 	});
 }
 
