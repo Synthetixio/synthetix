@@ -606,8 +606,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return sequenceLength;
     }
 
-    function recomputeFunding(uint price) external returns (uint lastIndex) {
-        return _recomputeFunding(price);
+    function recomputeFunding() external returns (uint lastIndex) {
+        require(msg.sender == address(_marketSettings()), "Can be invoked by marketSettings only");
+        return _recomputeFunding(_assetPriceRequireNotInvalid());
     }
 
     function _positionDebtCorrection(Position memory position) internal view returns (int) {

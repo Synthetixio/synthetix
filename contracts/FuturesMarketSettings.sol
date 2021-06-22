@@ -8,7 +8,7 @@ import "./interfaces/IFuturesMarketSettings.sol";
 // Internal references
 import "./interfaces/IFuturesMarket.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/futuresmarketSettings
+// https://docs.synthetix.io/contracts/source/contracts/futuresMarketSettings
 contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
     // TODO: Convert funding rate from daily to per-second
     struct Parameters {
@@ -71,26 +71,20 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXMARKETVALUE, _maxMarketValue);
     }
 
-    // TODO: Setting this parameter should record funding first.
     function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) external onlyOwner {
-        IFuturesMarket futuresMarket = IFuturesMarket(markets[_baseAsset]);
-        futuresMarket.recomputeFunding(futuresMarket.assetPriceRequireNotInvalid());
+        IFuturesMarket(markets[_baseAsset]).recomputeFunding();
         parameters[_baseAsset].maxFundingRate = _maxFundingRate;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATE, _maxFundingRate);
     }
 
-    // TODO: Setting this parameter should record funding first.
     function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) external onlyOwner {
-        IFuturesMarket futuresMarket = IFuturesMarket(markets[_baseAsset]);
-        futuresMarket.recomputeFunding(futuresMarket.assetPriceRequireNotInvalid());
+        IFuturesMarket(markets[_baseAsset]).recomputeFunding();
         parameters[_baseAsset].maxFundingRateSkew = _maxFundingRateSkew;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATESKEW, _maxFundingRateSkew);
     }
 
-    // TODO: Setting this parameter should record funding first.
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) external onlyOwner {
-        IFuturesMarket futuresMarket = IFuturesMarket(markets[_baseAsset]);
-        futuresMarket.recomputeFunding(futuresMarket.assetPriceRequireNotInvalid());
+        IFuturesMarket(markets[_baseAsset]).recomputeFunding();
         parameters[_baseAsset].maxFundingRateDelta = _maxFundingRateDelta;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATEDELTA, _maxFundingRateDelta);
     }

@@ -1,9 +1,9 @@
-const { contract } = require('hardhat');
+const { artifacts, contract } = require('hardhat');
 
 const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils')();
 
-const { setupAllContracts } = require('./setup');
+const { mockGenericContractFnc, setupAllContracts } = require('./setup');
 const { assert } = require('./common');
 const {
 	getDecodedLogs,
@@ -17,7 +17,10 @@ const BN = require('bn.js');
 contract('FuturesMarketSettings', accounts => {
 	let futuresMarketSettings;
 
+	let mockFuturesMarketBTC;
+
 	const owner = accounts[1];
+	const randomAddress = accounts[2];
 
 	const baseAsset = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
@@ -32,8 +35,23 @@ contract('FuturesMarketSettings', accounts => {
 	before(async () => {
 		({ FuturesMarketSettings: futuresMarketSettings } = await setupAllContracts({
 			accounts,
-			contracts: ['FuturesMarketSettings'],
+			synths: ['sUSD'],
+			contracts: ['FuturesMarketSettings', 'SystemStatus'],
 		}));
+
+		mockFuturesMarketBTC = await artifacts.require('GenericMock').new();
+
+		mockGenericContractFnc({
+			instance: mockFuturesMarketBTC,
+			mock: 'FuturesMarket',
+			fncName: 'recomputeFunding',
+			returns: ['0'],
+		});
+
+		// connect the market
+		await futuresMarketSettings.connectMarket(baseAsset, mockFuturesMarketBTC.address, {
+			from: owner,
+		});
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -41,6 +59,7 @@ contract('FuturesMarketSettings', accounts => {
 			abi: futuresMarketSettings.abi,
 			ignoreParents: ['Owned', 'MixinSystemSettings'],
 			expected: [
+				'connectMarket',
 				'setAllParameters',
 				'setTakerFee',
 				'setMakerFee',
@@ -50,6 +69,39 @@ contract('FuturesMarketSettings', accounts => {
 				'setMaxFundingRateSkew',
 				'setMaxFundingRateDelta',
 			],
+		});
+	});
+
+	describe('connectMarket', () => {
+		const asset = toBytes32('sUNI');
+		it('Only the owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: futuresMarketSettings.connectMarket,
+				args: [asset, randomAddress],
+				address: owner,
+				accounts,
+			});
+		});
+
+		describe('when invoked by the owner', () => {
+			let tx;
+			before(async () => {
+				tx = await futuresMarketSettings.connectMarket(asset, randomAddress, {
+					from: owner,
+				});
+			});
+
+			it('it should connect the market', async () => {
+				const marketAddress = await futuresMarketSettings.markets(toBytes32('sUNI'));
+				assert.equal(marketAddress, randomAddress);
+			});
+
+			it('it should emit an event', async () => {
+				assert.eventEqual(tx, 'MarketConnected', {
+					market: toBytes32('sUNI'),
+					marketAddress: randomAddress,
+				});
+			});
 		});
 	});
 
@@ -103,13 +155,6 @@ contract('FuturesMarketSettings', accounts => {
 			];
 		});
 
-		it('Initially the params are uninitialized', async () => {
-			for (const p of params) {
-				const getter = p[3];
-				assert.bnEqual(await getter(baseAsset), '0');
-			}
-		});
-
 		describe('bounds checking', async () => {
 			it('should revert if maker fee is greater than 1', async () => {
 				await assert.revert(
@@ -133,7 +178,6 @@ contract('FuturesMarketSettings', accounts => {
 			describe('when not invoked by the owner', async () => {
 				it('should revert ', async () => {
 					for (const p of params) {
-						// const param = toBytes32(p[0]);
 						const value = p[1];
 						const setter = p[2];
 

@@ -633,6 +633,15 @@ const setupContract = async ({
 						returns: ['0', false],
 					}),
 				]);
+			} else if (mock === 'FuturesMarket') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'recomputeFunding',
+						returns: ['0'],
+					}),
+				]);
 			}
 		},
 	};
@@ -909,12 +918,26 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
 		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
-		{ contract: 'FuturesMarketSettings', deps: ['AddressResolver', 'SystemSettings'] },
+		{
+			contract: 'FuturesMarketSettings',
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
 			contract: 'FuturesMarketBTC',
 			source: 'FuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
+			deps: [
+				'Proxy',
+				'AddressResolver',
+				'FuturesMarketManager',
+				'FuturesMarketSettings',
+				'SystemSettings',
+				'ExchangeRates',
+				'FeePool',
+				'Issuer',
+				'SynthetixEscrow',
+				'Liquidations',
+			],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{
