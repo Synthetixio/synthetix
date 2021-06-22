@@ -1,16 +1,11 @@
 const hre = require('hardhat');
 const ethers = require('ethers');
-const axios = require('axios');
 const { loadUsers } = require('./users');
 const { connectContracts } = require('./contracts');
 const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
-const {
-	approveBridge,
-	watchOptimismMessengers,
-	startOpsHeartbeat,
-	Watcher,
-} = require('./optimism');
+const { setupOptimismWatchers, approveBridge } = require('./optimism');
+const { startOpsHeartbeat } = require('./optimism-temp');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -89,23 +84,7 @@ function bootstrapDual({ ctx }) {
 		});
 		ctx.l2.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
-		const response = await axios.get(`${hre.config.providerUrl}:8080/addresses.json`);
-		const addresses = response.data;
-		const l1MessengerAddress = addresses['Proxy__OVM_L1CrossDomainMessenger'];
-		const l2MessengerAddress = '0x4200000000000000000000000000000000000007';
-		ctx.watcher = new Watcher({
-			l1: {
-				provider: ctx.l1.provider,
-				messengerAddress: l1MessengerAddress,
-			},
-			l2: {
-				provider: ctx.l2.provider,
-				messengerAddress: l2MessengerAddress,
-			},
-		});
-		ctx.l1.watcher = ctx.l2.watcher = ctx.watcher;
-
-		watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress });
+		await setupOptimismWatchers({ ctx, providerUrl: hre.config.providerUrl });
 
 		await loadUsers({ ctx: ctx.l1 });
 		await loadUsers({ ctx: ctx.l2 });
