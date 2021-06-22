@@ -1,7 +1,6 @@
 'use strict';
 
-const w3utils = require('web3-utils');
-const Web3 = require('web3');
+const ethers = require('ethers');
 const { red, gray, green, yellow } = require('chalk');
 
 const {
@@ -54,10 +53,11 @@ const migrateBinaryOptionMarkets = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	web3.eth.accounts.wallet.add(privateKey);
-	const account = web3.eth.accounts.wallet[0].address;
-	console.log(gray(`Using account with public key ${yellow(account)}`));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	const wallet = new ethers.Wallet(privateKey, provider);
+	if (!wallet.address) wallet.address = wallet._address;
+
+	console.log(gray(`Using account with public key ${yellow(wallet.address)}`));
 
 	const { address: resolverAddress } = deployment.targets['AddressResolver'];
 	console.log(gray(`Using AddressResolver at ${yellow(resolverAddress)}.`));
@@ -65,13 +65,13 @@ const migrateBinaryOptionMarkets = async ({
 
 	const { source } = deployment.targets['BinaryOptionMarketManager'];
 
-	if (!w3utils.isAddress(sourceContractAddress)) {
+	if (!ethers.utils.isAddress(sourceContractAddress)) {
 		throw Error(
 			'Invalid address detected for source (please check your inputs): ',
 			sourceContractAddress
 		);
 	}
-	if (!w3utils.isAddress(targetContractAddress)) {
+	if (!ethers.utils.isAddress(targetContractAddress)) {
 		throw Error(
 			'Invalid address detected for target (please check your inputs): ',
 			targetContractAddress
@@ -89,11 +89,11 @@ const migrateBinaryOptionMarkets = async ({
 			gray(`Receiving into target BinaryOptionMarketManager at: ${yellow(targetContractAddress)}`)
 		);
 	}
-	const sourceContract = new web3.eth.Contract(abi, sourceContractAddress);
-	const targetContract = new web3.eth.Contract(abi, targetContractAddress);
+	const sourceContract = new ethers.Contract(sourceContractAddress, abi, wallet);
+	const targetContract = new ethers.Contract(targetContractAddress, abi, wallet);
 
-	const numActiveMarkets = parseInt(await sourceContract.methods.numActiveMarkets().call());
-	const numMaturedMarkets = parseInt(await sourceContract.methods.numMaturedMarkets().call());
+	const numActiveMarkets = parseInt(await sourceContract.numActiveMarkets());
+	const numMaturedMarkets = parseInt(await sourceContract.numMaturedMarkets());
 
 	console.log(
 		gray(
@@ -108,9 +108,7 @@ const migrateBinaryOptionMarkets = async ({
 	const fetchChunkSize = 100;
 
 	for (let i = 0; i < numActiveMarkets; i += fetchChunkSize) {
-		activeMarkets.push(
-			...(await sourceContract.methods.activeMarkets(i, i + fetchChunkSize).call())
-		);
+		activeMarkets.push(...(await sourceContract.activeMarkets(i, i + fetchChunkSize)));
 	}
 
 	if (activeMarkets.length !== numActiveMarkets) {
@@ -120,9 +118,7 @@ const migrateBinaryOptionMarkets = async ({
 	}
 
 	for (let i = 0; i < numMaturedMarkets; i += fetchChunkSize) {
-		maturedMarkets.push(
-			...(await sourceContract.methods.maturedMarkets(i, i + fetchChunkSize).call())
-		);
+		maturedMarkets.push(...(await sourceContract.maturedMarkets(i, i + fetchChunkSize)));
 	}
 
 	if (maturedMarkets.length !== numMaturedMarkets) {
@@ -158,13 +154,12 @@ const migrateBinaryOptionMarkets = async ({
 	console.log(
 		yellow(`Attempting action BinaryOptionMarket.setMigratingManager(${sourceContractAddress})`)
 	);
-	const { transactionHash } = await targetContract.methods
-		.setMigratingManager(sourceContractAddress)
-		.send({
-			from: account,
-			gasLimit: Number(gasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-		});
+	const tx = await targetContract.setMigratingManager(sourceContractAddress, {
+		gasLimit: ethers.BigNumber.from(gasLimit),
+		gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+	});
+	const { transactionHash } = await tx.wait();
+
 	console.log(
 		green(
 			`Successfully set migrating manager with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
@@ -201,11 +196,12 @@ const migrateBinaryOptionMarkets = async ({
 				`Attempting to invoke BinaryOptionMarketManager.rebuildMarketCaches(${stringify(chunk)}).`
 			)
 		);
-		let result = await sourceContract.methods.rebuildMarketCaches(chunk).send({
-			from: account,
-			gasLimit: Number(gasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		let tx = await sourceContract.rebuildMarketCaches(chunk, {
+			gasLimit: ethers.BigNumber.from(gasLimit),
+			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		});
+		let result = await tx.wait();
+
 		console.log(
 			green(
 				`Successfully synchronised markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`
@@ -219,11 +215,11 @@ const migrateBinaryOptionMarkets = async ({
 				)}).`
 			)
 		);
-		result = await sourceContract.methods.migrateMarkets(targetContractAddress, true, chunk).send({
-			from: account,
-			gasLimit: Number(gasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		tx = await sourceContract.migrateMarkets(targetContractAddress, true, chunk, {
+			gasLimit: ethers.BigNumber.from(gasLimit),
+			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		});
+		result = await tx.wait();
 		console.log(
 			green(
 				`Successfully migrated markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`
@@ -260,11 +256,11 @@ const migrateBinaryOptionMarkets = async ({
 				`Attempting to invoke BinaryOptionMarketManager.rebuildMarketCaches(${stringify(chunk)}).`
 			)
 		);
-		let result = await sourceContract.methods.rebuildMarketCaches(chunk).send({
-			from: account,
-			gasLimit: Number(gasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		let tx = await sourceContract.rebuildMarketCaches(chunk, {
+			gasLimit: ethers.BigNumber.from(gasLimit),
+			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		});
+		let result = await tx.wait();
 		console.log(
 			green(
 				`Successfully synchronised markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`
@@ -277,11 +273,11 @@ const migrateBinaryOptionMarkets = async ({
 				)}).`
 			)
 		);
-		result = await sourceContract.methods.migrateMarkets(targetContractAddress, false, chunk).send({
-			from: account,
-			gasLimit: Number(gasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		tx = await sourceContract.migrateMarkets(targetContractAddress, false, chunk, {
+			gasLimit: ethers.BigNumber.from(gasLimit),
+			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		});
+		result = await tx.wait();
 		console.log(
 			green(
 				`Successfully migrated markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`

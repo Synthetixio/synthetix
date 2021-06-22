@@ -18,7 +18,6 @@
 		"fork": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat node --target-network mainnet",
 		"test": "hardhat test",
 		"describe": "hardhat describe",
-		"test:gas": "hardhat test --gas --optimizer || cat test-gas-used.log",
 		"test:deployments": "mocha test/deployments -- --timeout 60000",
 		"test:etherscan": "node test/etherscan",
 		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --bail --timeout 240000\""
