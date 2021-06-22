@@ -37,8 +37,6 @@ contract FuturesMarketData {
         FuturesMarketData.Sides sides;
         uint marketDebt;
         int marketSkew;
-        int proportionalSkew;
-        int entryDebtCorrection;
     }
 
     struct PriceDetails {
@@ -197,14 +195,7 @@ contract FuturesMarketData {
                 FeeRates(parameters.takerFee, parameters.makerFee),
                 MarketLimits(parameters.maxLeverage, parameters.maxMarketValue),
                 _fundingParameters(parameters),
-                MarketSizeDetails(
-                    market.marketSize(),
-                    _marketSizes(market),
-                    marketDebt,
-                    market.marketSkew(),
-                    market.proportionalSkew(),
-                    market.entryDebtCorrection()
-                ),
+                MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
                 PriceDetails(price, market.currentRoundId(), invalid)
             );
     }

@@ -925,7 +925,7 @@ const setupAllContracts = async ({
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
 			contract: 'FuturesMarketBTC',
-			source: 'FuturesMarket',
+			source: 'TestableFuturesMarket',
 			deps: [
 				'Proxy',
 				'AddressResolver',
@@ -942,8 +942,8 @@ const setupAllContracts = async ({
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{
 			contract: 'FuturesMarketETH',
-			source: 'FuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
+			source: 'TestableFuturesMarket',
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
 		},
 		{ contract: 'FuturesMarketData', deps: [] },
 	];

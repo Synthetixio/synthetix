@@ -2,10 +2,9 @@ pragma solidity ^0.5.16;
 
 import "./SignedSafeMath.sol";
 
-
 // TODO: Test suite
 
-// https://docs.synthetix.io/contracts/SisngedSafeDecimalMath
+// https://docs.synthetix.io/contracts/SignedSafeDecimalMath
 library SignedSafeDecimalMath {
     using SignedSafeMath for int;
 
