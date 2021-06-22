@@ -2,6 +2,9 @@
 
 const { gray, red, yellow, redBright } = require('chalk');
 const {
+	utils: { parseBytes32String },
+} = require('ethers');
+const {
 	fromBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../../../..');
@@ -10,8 +13,10 @@ module.exports = async ({
 	addressOf,
 	compiled,
 	deployer,
+	generateSolidity,
 	limitPromise,
 	network,
+	newContractsBeingAdded,
 	runStep,
 	useOvm,
 }) => {
@@ -71,15 +76,28 @@ module.exports = async ({
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
 
 	// collect all resolver addresses required
+	const contractToDepMap = {};
 	const resolverAddressesRequired = (
 		await Promise.all(
-			contractsWithRebuildableCache.map(([, contract]) => {
-				return limitPromise(() => contract.methods.resolverAddressesRequired().call());
+			contractsWithRebuildableCache.map(([id, contract]) => {
+				return limitPromise(() =>
+					contract.methods.resolverAddressesRequired().call()
+				).then(result => [contract.options.address, result]);
 			})
 		)
-	).reduce((allAddresses, contractAddresses) => {
+	).reduce((allAddresses, [targetContractAddress, requiredAddressesForContract]) => {
+		// side-effect
+		for (const contractDepName of requiredAddressesForContract) {
+			const contractDepNameParsed = parseBytes32String(contractDepName);
+			// collect all contract maps
+			contractToDepMap[contractDepNameParsed] = []
+				.concat(contractToDepMap[contractDepNameParsed] || [])
+				.concat(targetContractAddress);
+		}
 		return allAddresses.concat(
-			contractAddresses.filter(contractAddress => !allAddresses.includes(contractAddress))
+			requiredAddressesForContract.filter(
+				contractAddress => !allAddresses.includes(contractAddress)
+			)
 		);
 	}, []);
 
@@ -103,23 +121,40 @@ module.exports = async ({
 	}
 
 	// now ensure all caches are rebuilt for those in need
-	const contractsToRebuildCache = [];
-	for (const [name, target] of contractsWithRebuildableCache) {
-		const isCached = await target.methods.isResolverCached().call();
-		if (!isCached) {
-			const requiredAddresses = await target.methods.resolverAddressesRequired().call();
+	let contractsToRebuildCache = [];
+	if (generateSolidity) {
+		// use set to dedupe
+		const contractsToRebuildCacheSet = new Set();
+		// when running in solidity generation mode, we cannot expect
+		// the address resolver to have been updated. Thus we have to compile a list
+		// of all possible contracts to update rather than relying on "isResolverCached"
+		for (const newContract of Object.values(newContractsBeingAdded)) {
+			if (Array.isArray(contractToDepMap[newContract])) {
+				// when the new contract is required by others, add them
+				contractToDepMap[newContract].forEach(entry => contractsToRebuildCacheSet.add(entry));
+			}
+		}
+		contractsToRebuildCache = Array.from(contractsToRebuildCacheSet);
+	} else {
+		for (const [name, target] of contractsWithRebuildableCache) {
+			const isCached = await target.methods.isResolverCached().call();
+			if (!isCached) {
+				const requiredAddresses = await target.methods.resolverAddressesRequired().call();
 
-			const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
-			if (unknownAddress) {
-				console.log(
-					redBright(
-						`WARNING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
-							unknownAddress
-						)} is unknown. This contract requires: ${requiredAddresses.map(id => fromBytes32(id))}`
-					)
-				);
-			} else {
-				contractsToRebuildCache.push(target.options.address);
+				const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
+				if (unknownAddress) {
+					console.log(
+						redBright(
+							`WARNING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
+								unknownAddress
+							)} is unknown. This contract requires: ${requiredAddresses.map(id =>
+								fromBytes32(id)
+							)}`
+						)
+					);
+				} else {
+					contractsToRebuildCache.push(target.options.address);
+				}
 			}
 		}
 	}

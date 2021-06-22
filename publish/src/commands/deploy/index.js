@@ -341,8 +341,10 @@ const deploy = async ({
 		addressOf,
 		compiled,
 		deployer,
+		generateSolidity,
 		limitPromise,
 		network,
+		newContractsBeingAdded,
 		runStep,
 		useOvm,
 	});
