@@ -39,8 +39,11 @@ contract('FuturesMarket', accounts => {
 	const baseAsset = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
+	const maxLeverage = toUnit('10');
 	const maxMarketValue = toUnit('100000');
 	const maxFundingRate = toUnit('0.1');
+	const maxFundingRateSkew = toUnit('1');
+	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
 	const liquidationFee = toUnit('20');
 
@@ -149,6 +152,18 @@ contract('FuturesMarket', accounts => {
 					'recomputeFunding',
 				],
 			});
+		});
+
+		it('static parameters are set properly at construction', async () => {
+			const parameters = await futuresMarket.parameters();
+			assert.equal(await futuresMarket.baseAsset(), baseAsset);
+			assert.bnEqual(parameters.takerFee, takerFee);
+			assert.bnEqual(parameters.makerFee, makerFee);
+			assert.bnEqual(parameters.maxLeverage, maxLeverage);
+			assert.bnEqual(parameters.maxMarketValue, maxMarketValue);
+			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
+			assert.bnEqual(parameters.maxFundingRateSkew, maxFundingRateSkew);
+			assert.bnEqual(parameters.maxFundingRateDelta, maxFundingRateDelta);
 		});
 
 		it('prices are properly fetched', async () => {

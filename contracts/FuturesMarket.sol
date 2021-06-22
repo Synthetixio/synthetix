@@ -184,10 +184,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return price;
     }
 
-    function assetPriceRequireNotInvalid() external view returns (uint) {
-        return _assetPriceRequireNotInvalid();
-    }
-
     function assetPrice() external view returns (uint price, bool invalid) {
         return _assetPrice(_exchangeRates());
     }
@@ -256,6 +252,22 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function proportionalSkew() external view returns (int) {
         return _proportionalSkew();
+    }
+
+    function parameters()
+        external
+        view
+        returns (
+            uint takerFee,
+            uint makerFee,
+            uint maxLeverage,
+            uint maxMarketValue,
+            uint maxFundingRate,
+            uint maxFundingRateSkew,
+            uint maxFundingRateDelta
+        )
+    {
+        return _marketSettings().getAllParameters(baseAsset);
     }
 
     function _currentFundingRatePerSecond() internal view returns (int) {
