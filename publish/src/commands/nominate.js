@@ -29,12 +29,7 @@ const nominate = async ({
 	privateKey,
 	providerUrl,
 	yes,
-	quiet,
 }) => {
-	if (quiet) {
-		console.log = () => {};
-	}
-
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
@@ -86,14 +81,16 @@ const nominate = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 	let wallet;
-	if (useFork) {
+	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		wallet = provider.getSigner(account);
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
 
-	console.log(gray(`Using account with public key ${wallet.address}`));
+	const signerAddress = await wallet.getAddress();
+
+	console.log(gray(`Using account with public key ${signerAddress}`));
 
 	if (!yes) {
 		try {
@@ -130,7 +127,7 @@ const nominate = async ({
 				`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
 			)
 		);
-		if (wallet.address.toLowerCase() !== currentOwner) {
+		if (signerAddress.toLowerCase() !== currentOwner) {
 			console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 			console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
@@ -178,7 +175,6 @@ module.exports = {
 				'-v, --private-key [value]',
 				'The private key to deploy with (only works in local mode, otherwise set in .env).'
 			)
-			.option('--quiet', 'Dont print logs.')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option(
 				'-c, --contracts [value]',

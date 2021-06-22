@@ -2,8 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const w3utils = require('web3-utils');
-const Web3 = require('web3');
+const ethers = require('ethers');
 const { red, gray, green, yellow } = require('chalk');
 
 const {
@@ -68,16 +67,17 @@ const importFeePeriods = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-
-	let account;
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	let wallet;
 	if (useFork) {
-		account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		wallet = provider.getSigner(account);
 	} else {
-		web3.eth.accounts.wallet.add(privateKey);
-		account = web3.eth.accounts.wallet[0].address;
+		wallet = new ethers.Wallet(privateKey, provider);
 	}
-	console.log(gray(`Using account with public key ${account}`));
+
+	if (!wallet.address) wallet.address = wallet._address;
+	console.log(gray(`Using account with public key ${wallet.address}`));
 
 	const { address: targetContractAddress, source } = deployment.targets['FeePool'];
 
@@ -93,11 +93,11 @@ const importFeePeriods = async ({
 		if (lastEntry.address !== targetContractAddress) {
 			sourceContractAddress = lastEntry.address;
 		} else if (secondLastEntry.address !== targetContractAddress) {
-			sourceContractAddress = targetContractAddress.address;
+			sourceContractAddress = secondLastEntry.address;
 		} else {
 			throw Error('Cannot determine which is the last version of FeePool for the network');
 		}
-	} else if (!w3utils.isAddress(sourceContractAddress)) {
+	} else if (!ethers.utils.isAddress(sourceContractAddress)) {
 		throw Error(
 			'Invalid address detected for source (please check your inputs): ',
 			sourceContractAddress
@@ -115,14 +115,15 @@ const importFeePeriods = async ({
 		console.log(gray(`Reading from old FeePool at: ${sourceContractAddress}`));
 		console.log(gray(`Importing into new FeePool at: ${targetContractAddress}`));
 	}
-	const sourceContract = new web3.eth.Contract(abi, sourceContractAddress);
-	const targetContract = new web3.eth.Contract(abi, targetContractAddress);
 
-	const feePeriodLength = await sourceContract.methods.FEE_PERIOD_LENGTH().call();
+	const sourceContract = new ethers.Contract(sourceContractAddress, abi, wallet);
+	const targetContract = new ethers.Contract(targetContractAddress, abi, wallet);
+
+	const feePeriodLength = await sourceContract.FEE_PERIOD_LENGTH();
 
 	// Check sources
 	for (let i = 0; i <= feePeriodLength - 1; i++) {
-		const period = await sourceContract.methods.recentFeePeriods(i).call();
+		const period = await sourceContract.recentFeePeriods(i);
 		if (!skipTimeCheck) {
 			if (period.feePeriodId === '0') {
 				throw Error(
@@ -138,21 +139,27 @@ const importFeePeriods = async ({
 		}
 
 		// remove redundant index keys (returned from struct calls)
+		const filteredPeriod = {};
 		Object.keys(period)
-			.filter(key => /^[0-9]+$/.test(key))
-			.forEach(key => delete period[key]);
-		feePeriods.push(period);
+			.filter(key => /^[0-9]+$/.test(key) === false)
+			.forEach(key => (filteredPeriod[key] = period[key]));
+
+		feePeriods.push(filteredPeriod);
 		console.log(
-			gray(`loaded feePeriod ${i} from FeePool (startTime: ${new Date(period.startTime * 1000)})`)
+			gray(
+				`loaded feePeriod ${i} from FeePool (startTime: ${new Date(
+					filteredPeriod.startTime * 1000
+				)})`
+			)
 		);
 	}
 
 	// Check target does not have existing periods
 	if (!override) {
 		for (let i = 0; i < feePeriodLength; i++) {
-			const period = await targetContract.methods.recentFeePeriods(i).call();
+			const period = await targetContract.recentFeePeriods(i);
 			// ignore any initial entry where feePeriodId is 1 as this is created by the FeePool constructor
-			if (period.feePeriodId !== '1' && period.startTime !== '0') {
+			if (period.feePeriodId.toString() !== '1' && period.startTime.toString() !== '0') {
 				throw Error(
 					`The new target FeePool already has imported fee periods (one or more entries has ` +
 						`startTime as 0. Please check to make sure you are using the latest FeePool ` +
@@ -204,11 +211,12 @@ const importFeePeriods = async ({
 			feePeriod.rewardsClaimed,
 		];
 		console.log(yellow(`Attempting action FeePool.importFeePeriod(${importArgs})`));
-		const { transactionHash } = await targetContract.methods.importFeePeriod(...importArgs).send({
-			from: account,
-			gasLimit: Number(gasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		const tx = await targetContract.importFeePeriod(...importArgs, {
+			gasLimit: ethers.BigNumber.from(gasLimit),
+			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		});
+		const { transactionHash } = await tx.wait();
+
 		index++;
 
 		console.log(

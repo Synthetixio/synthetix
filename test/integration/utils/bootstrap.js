@@ -1,12 +1,11 @@
 const hre = require('hardhat');
 const ethers = require('ethers');
-const axios = require('axios');
 const { loadUsers } = require('./users');
-const { Watcher } = require('@eth-optimism/watcher');
 const { connectContracts } = require('./contracts');
 const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
-const { approveBridge } = require('./bridge');
+const { setupOptimismWatchers, approveBridge } = require('./optimism');
+const { startOpsHeartbeat } = require('./optimism-temp');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -31,10 +30,25 @@ function bootstrapL1({ ctx }) {
 function bootstrapL2({ ctx }) {
 	before('bootstrap layer 2 instance', async () => {
 		ctx.useOvm = true;
+		ctx.l1mock = { useOvm: false };
 
-		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
+		/*
+		 * We also bootstrap an L1 provider on the assumption that the L2 integration tests
+		 * are running against an Optimism ops tool.
+		 * The L1 provider allows us to indirectly fast forward the L2 chain by fast forwarding
+		 * the L1 chain and waiting for the L2 chain to sync.
+		 * Direct fast forwarding on the L2 chain is not possible because the rpc does not support
+		 * the method evm_increaseTime.
+		 * */
+		ctx.l1mock.provider = _setupProvider({
+			url: `${hre.config.providerUrl}:${hre.config.providerPortL1}`,
+		});
+		ctx.provider = _setupProvider({
+			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
+		});
 		ctx.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
+		await loadUsers({ ctx: ctx.l1mock });
 		await loadUsers({ ctx });
 
 		connectContracts({ ctx });
@@ -46,6 +60,11 @@ function bootstrapL2({ ctx }) {
 			symbol: 'SNX',
 			user: ctx.users.owner,
 			balance: ethers.utils.parseEther('1000000'),
+		});
+
+		startOpsHeartbeat({
+			l1Wallet: ctx.l1mock.users.user9,
+			l2Wallet: ctx.users.user9,
 		});
 	});
 }
@@ -65,19 +84,7 @@ function bootstrapDual({ ctx }) {
 		});
 		ctx.l2.provider.getGasPrice = () => ethers.BigNumber.from('0');
 
-		const response = await axios.get(`${hre.config.providerUrl}:8080/addresses.json`);
-		const addresses = response.data;
-		ctx.watcher = new Watcher({
-			l1: {
-				provider: ctx.l1.provider,
-				messengerAddress: addresses['Proxy__OVM_L1CrossDomainMessenger'],
-			},
-			l2: {
-				provider: ctx.l2.provider,
-				messengerAddress: '0x4200000000000000000000000000000000000007',
-			},
-		});
-		ctx.l1.watcher = ctx.l2.watcher = ctx.watcher;
+		await setupOptimismWatchers({ ctx, providerUrl: hre.config.providerUrl });
 
 		await loadUsers({ ctx: ctx.l1 });
 		await loadUsers({ ctx: ctx.l2 });
@@ -96,12 +103,18 @@ function bootstrapDual({ ctx }) {
 			user: ctx.l2.users.owner,
 			balance: ethers.utils.parseEther('1000000'),
 		});
+
+		startOpsHeartbeat({
+			l1Wallet: ctx.l1.users.user9,
+			l2Wallet: ctx.l2.users.user9,
+		});
 	});
 }
 
 function _setupProvider({ url }) {
 	return new ethers.providers.JsonRpcProvider({
 		url,
+		pollingInterval: 50,
 		timeout: 600000,
 	});
 }

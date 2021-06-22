@@ -1,7 +1,8 @@
 [
 	{
 		"name": "sUSD",
-		"asset": "USD"
+		"asset": "USD",
+		"subclass": "MultiCollateralSynth"
 	},
 	{
 		"name": "sETH",

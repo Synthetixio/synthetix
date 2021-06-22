@@ -6,6 +6,7 @@ const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
+const { BigNumber } = require('ethers');
 
 const {
 	constants: {
@@ -35,7 +36,13 @@ const {
 });
 
 const { networks } = require('../..');
-const stringify = input => JSON.stringify(input, null, '\t') + '\n';
+const JSONreplacer = (key, value) => {
+	if (typeof value === 'object' && value.type && value.type === 'BigNumber') {
+		return BigNumber.from(value).toString();
+	}
+	return value;
+};
+const stringify = input => JSON.stringify(input, JSONreplacer, '\t') + '\n';
 
 const ensureNetwork = network => {
 	if (!networks.includes(network)) {
@@ -195,7 +202,7 @@ let _dryRunCounter = 0;
  *
  * @returns transaction hash if successful, true if user completed, or falsy otherwise
  */
-const performTransactionalStep = async ({
+const performTransactionalStepWeb3 = async ({
 	account,
 	contract,
 	target,
@@ -371,7 +378,7 @@ module.exports = {
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,
-	performTransactionalStep,
+	performTransactionalStepWeb3,
 	parameterNotice,
 	reportDeployedContracts,
 };

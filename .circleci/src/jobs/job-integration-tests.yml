@@ -5,19 +5,28 @@ steps:
   - checkout
   - attach_workspace:
       at: .
+  - restore_cache:
+      keys:
+        - v2-optimism-build-{{ checksum "package-lock.json" }}
   - run:
-      name: Build docker containers
+      name: Build docker containers if necessary
       command: |
-        npx hardhat ops --fresh --build --build-ops --optimism-path ./optimism
+        if [ ! -d ./optimism ]; then
+          npx hardhat ops --fresh --build --build-ops
+        fi;
+  - save_cache:
+      key: v2-optimism-build-{{ checksum "package-lock.json" }}
+      paths:
+        - ./optimism
   - run:
       name: Start docker chains
       background: true
       command: |
-        npx hardhat ops --start --optimism-path ./optimism
+        npx hardhat ops --start
   - cmd-wait-for-port:
-        port: 8545
+      port: 8545
   - cmd-wait-for-port:
-        port: 9545
+      port: 9545
   - run:
       name: Run isolated layer 1 integration tests
       command: |
