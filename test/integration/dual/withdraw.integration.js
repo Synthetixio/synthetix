@@ -1,4 +1,6 @@
 const ethers = require('ethers');
+const chalk = require('chalk');
+const { hre } = require('hardhat');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL1 } = require('../utils/optimism');
@@ -42,6 +44,17 @@ describe('withdraw() integration tests (L1, L2)', () => {
 		});
 
 		describe('when the withdrawal gets picked up in L1', () => {
+			before(function() {
+				if (!hre.config.debugOptimism) {
+					console.log(
+						chalk.yellow.bold(
+							'WARNING: Skipping until ops tool relayer is stable for L1>L2 finalizations'
+						)
+					);
+					this.skip();
+				}
+			});
+
 			before('target contracts and users', () => {
 				({ Synthetix } = ctx.l1.contracts);
 

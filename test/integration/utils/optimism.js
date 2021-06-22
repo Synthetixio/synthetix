@@ -1,5 +1,6 @@
 const chalk = require('chalk');
 const ethers = require('ethers');
+const { hre } = require('hardhat');
 const { wait } = require('../../test-utils/wait');
 const { dummyTx } = require('../../test-utils/rpc');
 const OptimismMessengerABI = require('@eth-optimism/contracts/artifacts/contracts/optimistic-ethereum/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol/iAbs_BaseCrossDomainMessenger.json')
@@ -70,7 +71,9 @@ async function startOpsHeartbeat({ l1Wallet, l2Wallet }) {
 
 		const l1Timestamp = (await l1Wallet.provider.getBlock()).timestamp;
 		const l2Timestamp = (await l2Wallet.provider.getBlock()).timestamp;
-		console.log(chalk.gray(`> Ops heartbeat - Timestamps: [${l1Timestamp}, ${l2Timestamp}]`));
+		if (hre.config.debugOptimism) {
+			console.log(chalk.gray(`> Ops heartbeat - Timestamps: [${l1Timestamp}, ${l2Timestamp}]`));
+		}
 
 		await heartbeat();
 	}
@@ -78,47 +81,40 @@ async function startOpsHeartbeat({ l1Wallet, l2Wallet }) {
 	await heartbeat();
 }
 
-function skipIfL2({ ctx, reason }) {
-	before('skip if running on :2', async function() {
-		if (!ctx.useOvm) {
-			return;
-		}
-
-		if (!reason) {
-			throw new Error('Please specify a reason when skipping L2 tests.');
-		}
-		console.log(chalk.yellow(`>> Skipping L2 tests because ${reason}`));
-
-		this.skip();
-	});
-}
-
 async function finalizationOnL1({ ctx, transactionHash }) {
 	const messageHashes = await ctx.watcher.getMessageHashesFromL2Tx(transactionHash);
-	console.log(chalk.gray(`> Awaiting for ${messageHashes} to finalize on L1...`));
+	if (hre.config.debugOptimism) {
+		console.log(chalk.gray(`> Awaiting for ${messageHashes} to finalize on L1...`));
+	}
 
 	const promises = messageHashes.map(messageHash =>
 		ctx.watcher.getL1TransactionReceipt(messageHash)
 	);
 
 	const receipts = await Promise.all(promises).catch(console.log);
-	receipts.map(receipt =>
-		console.log(chalk.gray(`> Tx finalized on L1: ${receipt.transactionHash}`))
-	);
+	if (hre.config.debugOptimism) {
+		receipts.map(receipt =>
+			console.log(chalk.gray(`> Tx finalized on L1: ${receipt.transactionHash}`))
+		);
+	}
 }
 
 async function finalizationOnL2({ ctx, transactionHash }) {
 	const messageHashes = await ctx.watcher.getMessageHashesFromL1Tx(transactionHash);
-	console.log(chalk.gray(`> Awaiting for ${messageHashes} to finalize on L2...`));
+	if (hre.config.debugOptimism) {
+		console.log(chalk.gray(`> Awaiting for ${messageHashes} to finalize on L2...`));
+	}
 
 	const promises = messageHashes.map(messageHash =>
 		ctx.watcher.getL2TransactionReceipt(messageHash)
 	);
 
 	const receipts = await Promise.all(promises).catch(console.log);
-	receipts.map(receipt =>
-		console.log(chalk.gray(`> Tx finalized on L2: ${receipt.transactionHash}`))
-	);
+	if (hre.config.debugOptimism) {
+		receipts.map(receipt =>
+			console.log(chalk.gray(`> Tx finalized on L2: ${receipt.transactionHash}`))
+		);
+	}
 }
 
 function _parseMessengerLog(log) {
@@ -129,7 +125,6 @@ function _parseMessengerLog(log) {
 
 function _printMessengerLog(log) {
 	const event = _parseMessengerLog(log);
-	// console.log(JSON.stringify(event, null, 2));
 	const argName = event.eventFragment.inputs[0].name;
 	const argType = event.eventFragment.inputs[0].type;
 	const argValue = event.args[0];
@@ -138,6 +133,10 @@ function _printMessengerLog(log) {
 
 let watchingBridges = false;
 function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }) {
+	if (!hre.config.debugOptimism) {
+		return;
+	}
+
 	if (watchingBridges) {
 		return;
 	}
@@ -264,8 +263,10 @@ class Watcher {
 		const successLogs = await layer.provider.getLogs(successFilter);
 		const failureLogs = await layer.provider.getLogs(failureFilter);
 		const logs = successLogs.concat(failureLogs);
-		console.log(chalk.yellow('Watcher.getTransactionReceipt - getLogs:'));
-		logs.map(log => _printMessengerLog(log));
+		if (hre.config.debugOptimism) {
+			console.log(chalk.yellow('Watcher.getTransactionReceipt - getLogs:'));
+			logs.map(log => _printMessengerLog(log));
+		}
 
 		const matches = logs.filter(log => log.data === msgHash);
 		if (matches.length > 0) {
@@ -281,8 +282,10 @@ class Watcher {
 
 		return new Promise(async (resolve, reject) => {
 			const handleEvent = async log => {
-				console.log(chalk.yellow('Watcher.getTransactionReceipt - handleEvent:'));
-				_printMessengerLog(log);
+				if (hre.config.debugOptimism) {
+					console.log(chalk.yellow('Watcher.getTransactionReceipt - handleEvent:'));
+					_printMessengerLog(log);
+				}
 
 				if (log.data === msgHash) {
 					try {
@@ -312,6 +315,5 @@ module.exports = {
 	finalizationOnL1,
 	finalizationOnL2,
 	Watcher,
-	skipIfL2,
 	startOpsHeartbeat,
 };
