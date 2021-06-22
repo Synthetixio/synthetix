@@ -1,5 +1,6 @@
-const ethers = require('ethers');
 const chalk = require('chalk');
+const ethers = require('ethers');
+const { restartRelayer } = require('../../../hardhat/tasks/task-ops');
 const OptimismMessengerABI = require('@eth-optimism/contracts/artifacts/contracts/optimistic-ethereum/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol/iAbs_BaseCrossDomainMessenger.json')
 	.abi;
 
@@ -50,18 +51,19 @@ async function approveBridge({ ctx, amount }) {
 	await tx.wait();
 }
 
-async function finalizationOnL2({ ctx, transactionHash }) {
-	const messageHashes = await ctx.watcher.getMessageHashesFromL1Tx(transactionHash);
-	console.log(chalk.gray(`> Awaiting for ${messageHashes} to finalize on L2...`));
+function skipIfL2({ ctx, reason }) {
+	before('skip if running on :2', async function() {
+		if (!ctx.useOvm) {
+			return;
+		}
 
-	const promises = messageHashes.map(messageHash =>
-		ctx.watcher.getL2TransactionReceipt(messageHash)
-	);
+		if (!reason) {
+			throw new Error('Please specify a reason when skipping L2 tests.');
+		}
+		console.log(chalk.yellow(`>> Skipping L2 tests because ${reason}`));
 
-	const receipts = await Promise.all(promises).catch(console.log);
-	receipts.map(receipt =>
-		console.log(chalk.gray(`> Tx finalized on L2: ${receipt.transactionHash}`))
-	);
+		this.skip();
+	});
 }
 
 async function finalizationOnL1({ ctx, transactionHash }) {
@@ -78,6 +80,20 @@ async function finalizationOnL1({ ctx, transactionHash }) {
 	);
 }
 
+async function finalizationOnL2({ ctx, transactionHash }) {
+	const messageHashes = await ctx.watcher.getMessageHashesFromL1Tx(transactionHash);
+	console.log(chalk.gray(`> Awaiting for ${messageHashes} to finalize on L2...`));
+
+	const promises = messageHashes.map(messageHash =>
+		ctx.watcher.getL2TransactionReceipt(messageHash)
+	);
+
+	const receipts = await Promise.all(promises).catch(console.log);
+	receipts.map(receipt =>
+		console.log(chalk.gray(`> Tx finalized on L2: ${receipt.transactionHash}`))
+	);
+}
+
 function _parseMessengerLog(log) {
 	const messengerInterface = new ethers.utils.Interface(OptimismMessengerABI);
 
@@ -91,23 +107,6 @@ function _printMessengerLog(log) {
 	const argType = event.eventFragment.inputs[0].type;
 	const argValue = event.args[0];
 	console.log(chalk.gray(`> ${event.name}(${argName}:${argType} = ${argValue})`));
-}
-
-// Block based
-function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }) {
-	if (watchingBridges) {
-		return;
-	}
-	watchingBridges = true;
-
-	ctx.l1.provider.on('block', block => {
-		console.log(chalk.green('L1 Messenger log emitted:'));
-		_printMessengerLog(log);
-	});
-	ctx.l2.provider.on(l2Filter, log => {
-		console.log(chalk.green('L2 Messenger log emitted:'));
-		_printMessengerLog(log);
-	});
 }
 
 function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }) {
@@ -177,13 +176,6 @@ function watchOptimismMessengers({ ctx, l1MessengerAddress, l2MessengerAddress }
 
 // Temp workaround until this issue is fixed:
 // https://github.com/ethereum-optimism/optimism/issues/1041
-// Remove and use Watcher directly when fixed.
-// class PatchedWatcher extends Watcher {
-// 	async getL1TransactionReceipt(l2ToL1MsgHash, pollForPending = true) {
-// 		return this.getTransactionReceipt(this.l1, l2ToL1MsgHash, pollForPending);
-// 	}
-// }
-
 class Watcher {
 	constructor(opts) {
 		this.NUM_BLOCKS_TO_FETCH = 10000000;
@@ -260,6 +252,10 @@ class Watcher {
 		}
 
 		return new Promise(async (resolve, reject) => {
+			const watchTimer = setInterval(async () => {
+				restartRelayer({ opsPath: './optimism' });
+			}, 60000);
+
 			const handleEvent = async log => {
 				console.log(chalk.yellow('Watcher.getTransactionReceipt - handleEvent:'));
 				_printMessengerLog(log);
@@ -267,14 +263,19 @@ class Watcher {
 				if (log.data === msgHash) {
 					try {
 						const txReceipt = await layer.provider.getTransactionReceipt(log.transactionHash);
+
 						layer.provider.off(successFilter);
 						layer.provider.off(failureFilter);
+
+						clearInterval(watchTimer);
 						resolve(txReceipt);
 					} catch (e) {
+						clearInterval(watchTimer);
 						reject(e);
 					}
 				}
 			};
+
 			layer.provider.on(successFilter, handleEvent);
 			layer.provider.on(failureFilter, handleEvent);
 		});
@@ -289,4 +290,5 @@ module.exports = {
 	finalizationOnL1,
 	finalizationOnL2,
 	Watcher,
+	skipIfL2,
 };

@@ -1,15 +1,11 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
-const { finalizationOnL1 } = require('../utils/bridge');
+const { finalizationOnL1 } = require('../utils/optimism');
 
 describe.only('withdraw() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
-
-	after('keep open', async () => {
-			await new Promise(() => {});
-	});
 
 	const amountToWithdraw = ethers.utils.parseEther('10');
 

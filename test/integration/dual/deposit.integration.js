@@ -1,10 +1,10 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
-const { finalizationOnL2 } = require('../utils/bridge');
+const { finalizationOnL2 } = require('../utils/optimism');
 const { approveIfNeeded } = require('../utils/approve');
 
-describe.only('deposit() integration tests (L1, L2)', () => {
+describe('deposit() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 

@@ -5,8 +5,7 @@ const { loadUsers } = require('./users');
 const { connectContracts } = require('./contracts');
 const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
-// const { Watcher } = require('@eth-optimism/core-utils'); // TODO: See ./bridge/Watcher.js comment. Replace when fixed.
-const { approveBridge, watchOptimismMessengers, Watcher } = require('./bridge');
+const { approveBridge, watchOptimismMessengers, Watcher } = require('./optimism');
 const { startOpsHeartbeat } = require('../../test-utils/rpc');
 
 function bootstrapL1({ ctx }) {

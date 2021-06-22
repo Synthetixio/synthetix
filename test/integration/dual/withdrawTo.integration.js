@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
-const { finalizationOnL1 } = require('../utils/bridge');
+const { finalizationOnL1 } = require('../utils/optimism');
 
 describe('withdrawTo() integration tests (L1, L2)', () => {
 	const ctx = this;
