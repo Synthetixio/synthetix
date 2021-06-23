@@ -293,9 +293,10 @@ const bootstrapConnection = ({
 	const { getUsers, getTarget, getSource } = wrap({ network, useOvm, fs, path });
 
 	let wallet;
-	if (useFork) {
+	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address;
 		wallet = provider.getSigner(account);
+		wallet.address = wallet._address;
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
