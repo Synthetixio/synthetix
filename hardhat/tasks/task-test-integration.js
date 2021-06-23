@@ -54,15 +54,18 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 	});
 
 task('test:integration:l2', 'run isolated layer 2 production tests')
+	.addFlag('debugOptimism', 'Debug Optimism activity')
 	.addFlag('compile', 'Compile an l2 instance before running the tests')
 	.addFlag('deploy', 'Deploy an l2 instance before running the tests')
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/l2/';
+		hre.config.debugOptimism = taskArguments.debugOptimism;
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
 
 		const providerUrl = (hre.config.providerUrl = 'http://localhost');
-		const providerPort = (hre.config.providerPort = '8545');
+		hre.config.providerPortL1 = '9545';
+		const providerPortL2 = (hre.config.providerPortL2 = '8545');
 		const useOvm = true;
 		const buildPath = path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`);
 
@@ -74,7 +77,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 			await deployInstance({
 				useOvm,
 				providerUrl,
-				providerPort,
+				providerPort: providerPortL2,
 				buildPath,
 			});
 		}
@@ -83,10 +86,12 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 	});
 
 task('test:integration:dual', 'run integrated layer 1 and layer 2 production tests')
+	.addFlag('debugOptimism', 'Debug Optimism activity')
 	.addFlag('compile', 'Compile the l1 instance before running the tests')
 	.addFlag('deploy', 'Deploy the l1 instance before running the tests')
 	.setAction(async (taskArguments, hre) => {
 		hre.config.paths.tests = './test/integration/dual/';
+		hre.config.debugOptimism = taskArguments.debugOptimism;
 
 		_commonIntegrationTestSettings({ hre, taskArguments });
 
@@ -117,7 +122,12 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 			});
 		}
 
-		await connectInstances({ providerUrl, providerPortL1, providerPortL2 });
+		await connectInstances({
+			providerUrl,
+			providerPortL1,
+			providerPortL2,
+			quiet: !taskArguments.debugOptimism,
+		});
 
 		await hre.run('test', taskArguments);
 	});
