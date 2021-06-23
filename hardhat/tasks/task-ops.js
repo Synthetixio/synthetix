@@ -31,7 +31,7 @@ task('ops', 'Run Optimism chain')
 		taskArguments.maxMemory = true;
 
 		const opsPath = taskArguments.optimismPath.replace('~', homedir);
-		const opsBranch = 'regenesis/0.4.0';
+		const opsBranch = taskArguments.optimismBranch;
 		const opsCommit = taskArguments.optimismCommit;
 		const opsDetached = taskArguments.detached ? '-d' : '';
 

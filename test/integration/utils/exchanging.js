@@ -13,6 +13,17 @@ async function exchangeSomething({ ctx }) {
 	await tx.wait();
 }
 
+async function exchangeSynths({ ctx, src, dest, amount, user }) {
+	let { Synthetix } = ctx.contracts;
+	Synthetix = Synthetix.connect(user);
+
+	await ensureBalance({ ctx, symbol: src, user, balance: amount });
+
+	const tx = await Synthetix.exchange(toBytes32(src), amount, toBytes32(dest));
+	await tx.wait();
+}
+
 module.exports = {
 	exchangeSomething,
+	exchangeSynths,
 };
