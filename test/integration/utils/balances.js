@@ -1,5 +1,5 @@
 const ethers = require('ethers');
-const { deposit } = require('./bridge');
+const { deposit } = require('./optimism');
 const { toBytes32 } = require('../../..');
 
 async function ensureBalance({ ctx, symbol, user, balance }) {

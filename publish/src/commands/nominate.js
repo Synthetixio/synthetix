@@ -84,11 +84,12 @@ const nominate = async ({
 	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
 
-	const signerAddress = await wallet.getAddress();
+	const signerAddress = wallet.address;
 
 	console.log(gray(`Using account with public key ${signerAddress}`));
 

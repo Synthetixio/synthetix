@@ -69,14 +69,14 @@ const importFeePeriods = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 	let wallet;
-	if (useFork) {
+	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
 
-	if (!wallet.address) wallet.address = wallet._address;
 	console.log(gray(`Using account with public key ${wallet.address}`));
 
 	const { address: targetContractAddress, source } = deployment.targets['FeePool'];

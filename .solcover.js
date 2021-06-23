@@ -11,6 +11,7 @@ module.exports = {
 		'EscrowChecker.sol',
 		'ExchangeRatesWithoutInvPricing.sol',
 		'IssuerWithoutLiquidations.sol',
+		'EmptyEtherWrapper.sol',
 	],
 	providerOptions: {
 		default_balance_ether: 10000000000000, // extra zero just in case (coverage consumes more gas)

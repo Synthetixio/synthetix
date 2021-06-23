@@ -47,15 +47,18 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 
 	await deployer.deployContract({
 		name: 'EtherWrapper',
+		source: useOvm ? 'EmptyEtherWrapper' : 'EtherWrapper',
 		deps: ['AddressResolver'],
-		args: [account, addressOf(ReadProxyAddressResolver), WETH_ADDRESS],
+		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver), WETH_ADDRESS],
 	});
 
-	await deployer.deployContract({
-		name: 'NativeEtherWrapper',
-		deps: ['AddressResolver'],
-		args: [account, addressOf(ReadProxyAddressResolver)],
-	});
+	if (!useOvm) {
+		await deployer.deployContract({
+			name: 'NativeEtherWrapper',
+			deps: ['AddressResolver'],
+			args: [account, addressOf(ReadProxyAddressResolver)],
+		});
+	}
 
 	// ----------------
 	// Multi Collateral System

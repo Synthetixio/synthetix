@@ -1,7 +1,7 @@
 const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
-const { finalizationOnL2 } = require('../utils/watchers');
+const { finalizationOnL2 } = require('../utils/optimism');
 const { approveIfNeeded } = require('../utils/approve');
 
 describe('depositReward() integration tests (L1, L2)', () => {

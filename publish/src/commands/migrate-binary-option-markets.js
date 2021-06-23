@@ -55,7 +55,6 @@ const migrateBinaryOptionMarkets = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 	const wallet = new ethers.Wallet(privateKey, provider);
-	if (!wallet.address) wallet.address = wallet._address;
 
 	console.log(gray(`Using account with public key ${yellow(wallet.address)}`));
 
