@@ -59,7 +59,8 @@ class Deployer {
 		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 		this.provider.ethers.provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-		if (useFork || (!privateKey && network === 'local')) {
+		// use the default owner when in a fork or in local mode and no private key supplied
+		if ((useFork || network === 'local') && !privateKey) {
 			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
 
 			this.provider.ethers.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
