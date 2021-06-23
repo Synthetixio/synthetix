@@ -149,6 +149,13 @@ contract Migration_${releaseName} is BaseMigration {
 
 	constructor() public BaseMigration(OWNER) {}
 
+	function contractsRequiringOwnership() external pure returns (address[] memory contracts) {
+		contracts = new address[](${contractsAddedToSolidity.length});
+		${contractsAddedToSolidity
+			.map((contract, i) => `contracts[${i}]= address(${contract.toLowerCase()}_i);`)
+			.join('\n\t')}
+	}
+
 	function migrate(address currentOwner) external onlyDeployer {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 

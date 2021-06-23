@@ -1,12 +1,13 @@
 pragma solidity ^0.5.16;
 
 import "./BaseMigration.sol";
+import "../ReadProxy.sol";
 import "../AddressResolver.sol";
 import "../ProxyERC20.sol";
 import "../Proxy.sol";
 import "../ExchangeState.sol";
 import "../SystemStatus.sol";
-import "../TokenState.sol";
+import "../legacy/LegacyTokenState.sol";
 import "../RewardEscrow.sol";
 import "../RewardsDistribution.sol";
 
@@ -17,26 +18,40 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_Alnitak is BaseMigration {
-    address public constant OWNER = 0x73570075092502472E4b61A7058Df1A4a1DB12f2;
+    address public constant OWNER = 0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
 
-    AddressResolver public constant addressresolver_i = AddressResolver(0x84f87E3636Aa9cC1080c07E6C61aDfDCc23c0db6);
+    ReadProxy public constant readproxyaddressresolver_i = ReadProxy(0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2);
+    AddressResolver public constant addressresolver_i = AddressResolver(0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83);
     ProxyERC20 public constant proxyerc20_i = ProxyERC20(0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F);
-    Proxy public constant proxysynthetix_i = Proxy(0x22f1ba6dB6ca0A065e1b7EAe6FC22b7E675310EF);
-    ExchangeState public constant exchangestate_i = ExchangeState(0xa3F59b8E28cABC4411198dDa2e65C380BD5d6Dfe);
-    SystemStatus public constant systemstatus_i = SystemStatus(0xcf8B3d452A56Dab495dF84905655047BC1Dc41Bc);
-    TokenState public constant tokenstatesynthetix_i = TokenState(0x46824bFAaFd049fB0Af9a45159A88e595Bbbb9f7);
-    RewardEscrow public constant rewardescrow_i = RewardEscrow(0x8c6680412e914932A9abC02B6c7cbf690e583aFA);
+    Proxy public constant proxysynthetix_i = Proxy(0xC011A72400E58ecD99Ee497CF89E3775d4bd732F);
+    ExchangeState public constant exchangestate_i = ExchangeState(0x545973f28950f50fc6c7F52AAb4Ad214A27C0564);
+    SystemStatus public constant systemstatus_i = SystemStatus(0x1c86B3CDF2a60Ae3a574f7f71d44E2C50BDdB87E);
+    LegacyTokenState public constant tokenstatesynthetix_i = LegacyTokenState(0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD);
+    RewardEscrow public constant rewardescrow_i = RewardEscrow(0xb671F2210B1F6621A2607EA63E6B2DC3e2464d1F);
     RewardsDistribution public constant rewardsdistribution_i =
-        RewardsDistribution(0xD29160e4f5D2e5818041f9Cd9192853BA349c47E);
+        RewardsDistribution(0x29C295B046a73Cde593f21f63091B072d407e3F2);
 
     constructor() public BaseMigration(OWNER) {}
+
+    function contractsRequiringOwnership() external pure returns (address[] memory contracts) {
+        contracts = new address[](9);
+        contracts[0] = address(readproxyaddressresolver_i);
+        contracts[1] = address(addressresolver_i);
+        contracts[2] = address(proxyerc20_i);
+        contracts[3] = address(proxysynthetix_i);
+        contracts[4] = address(exchangestate_i);
+        contracts[5] = address(systemstatus_i);
+        contracts[6] = address(tokenstatesynthetix_i);
+        contracts[7] = address(rewardescrow_i);
+        contracts[8] = address(rewardsdistribution_i);
+    }
 
     function migrate(address currentOwner) external onlyDeployer {
         require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
         // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        address new_Synthetix_contract = 0x042e4c83546a3F9971df5fE99f3f8c0dba0B8E87;
-        address new_Exchanger_contract = 0x601cdcC58A69F0cC474395F4d9f7921D5510A7B5;
+        address new_Synthetix_contract = 0xC4cED8762169d17FC5c10e4800fa2f88b20EB243;
+        address new_Exchanger_contract = 0x52dDE10B3eF5A817ccd0d2896876549ED9FaC8d0;
 
         require(
             ISynthetixNamedContract(new_Synthetix_contract).CONTRACT_NAME() == "Synthetix",
@@ -48,6 +63,7 @@ contract Migration_Alnitak is BaseMigration {
         );
 
         // ACCEPT OWNERSHIP for all contracts that require ownership to make changes
+        readproxyaddressresolver_i.acceptOwnership();
         addressresolver_i.acceptOwnership();
         proxyerc20_i.acceptOwnership();
         proxysynthetix_i.acceptOwnership();
@@ -58,76 +74,107 @@ contract Migration_Alnitak is BaseMigration {
         rewardsdistribution_i.acceptOwnership();
 
         // MIGRATION
+        // set the target of the address resolver proxy to the latest resolver;
+        readproxyaddressresolver_i.setTarget(0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83);
         // Import all new contracts into the address resolver;
-        bytes32[] memory addressresolver_importAddresses_0_0 = new bytes32[](2);
-        addressresolver_importAddresses_0_0[0] = bytes32("Synthetix");
-        addressresolver_importAddresses_0_0[1] = bytes32("Exchanger");
-        address[] memory addressresolver_importAddresses_0_1 = new address[](2);
-        addressresolver_importAddresses_0_1[0] = address(new_Synthetix_contract);
-        addressresolver_importAddresses_0_1[1] = address(new_Exchanger_contract);
-        addressresolver_i.importAddresses(addressresolver_importAddresses_0_0, addressresolver_importAddresses_0_1);
+        bytes32[] memory addressresolver_importAddresses_1_0 = new bytes32[](2);
+        addressresolver_importAddresses_1_0[0] = bytes32("Synthetix");
+        addressresolver_importAddresses_1_0[1] = bytes32("Exchanger");
+        address[] memory addressresolver_importAddresses_1_1 = new address[](2);
+        addressresolver_importAddresses_1_1[0] = address(new_Synthetix_contract);
+        addressresolver_importAddresses_1_1[1] = address(new_Exchanger_contract);
+        addressresolver_i.importAddresses(addressresolver_importAddresses_1_0, addressresolver_importAddresses_1_1);
         // Rebuild the resolver caches in all MixinResolver contracts - batch 1;
-        MixinResolver[] memory addressresolver_rebuildCaches_1_0 = new MixinResolver[](20);
-        addressresolver_rebuildCaches_1_0[0] = MixinResolver(0x64ac15AB583fFfA6a7401B83E3aA5cf4Ad1aA92A);
-        addressresolver_rebuildCaches_1_0[1] = MixinResolver(0x9880cfA7B81E8841e216ebB32687A2c9551ae333);
-        addressresolver_rebuildCaches_1_0[2] = MixinResolver(0x38635D2501F9ca46106A22bE4aF9B8C08C2B4823);
-        addressresolver_rebuildCaches_1_0[3] = MixinResolver(new_Exchanger_contract);
-        addressresolver_rebuildCaches_1_0[4] = MixinResolver(0xd3655A8e0b163E5ae3Bad37c35354050aa7C7694);
-        addressresolver_rebuildCaches_1_0[5] = MixinResolver(0xBBfAd9112203b943f26320B330B75BABF6e2aF2a);
-        addressresolver_rebuildCaches_1_0[6] = MixinResolver(0xD134Db47DDF5A6feB245452af17cCAf92ee53D3c);
-        addressresolver_rebuildCaches_1_0[7] = MixinResolver(0xC9985cAc4a69588Da66F74E42845B784798fe5aB);
-        addressresolver_rebuildCaches_1_0[8] = MixinResolver(new_Synthetix_contract);
-        addressresolver_rebuildCaches_1_0[9] = MixinResolver(0x3AD8366B716DEeA3F46730dEBFF537B713c76404);
-        addressresolver_rebuildCaches_1_0[10] = MixinResolver(0x253E60880f7393B02ef963fB98DD28eaC6a0026E);
-        addressresolver_rebuildCaches_1_0[11] = MixinResolver(0x0F126120C20A4d696D8D27516C579a605536ba16);
-        addressresolver_rebuildCaches_1_0[12] = MixinResolver(0x88021D729298B0D8F59581388b49eAaA2A5CE1D2);
-        addressresolver_rebuildCaches_1_0[13] = MixinResolver(0x2a6BCfE6Ef91a7679053875a540737636Ec30E4f);
-        addressresolver_rebuildCaches_1_0[14] = MixinResolver(0xeF71dd8EB832D574D35cCBD23cC9e5cde43f92De);
-        addressresolver_rebuildCaches_1_0[15] = MixinResolver(0xF7631453c32b8278a5c8bbcC9Fe4c3072d6c25B6);
-        addressresolver_rebuildCaches_1_0[16] = MixinResolver(0x857f40aa756e93816a9Fa5ce378762ec8bD13278);
-        addressresolver_rebuildCaches_1_0[17] = MixinResolver(0xc6Cd03C78f585076cdF8f6561B7D5FebeeBD9cC2);
-        addressresolver_rebuildCaches_1_0[18] = MixinResolver(0xA0544264Ea43FD5A536E5b8d43d7c76C3D6229a7);
-        addressresolver_rebuildCaches_1_0[19] = MixinResolver(0xa08868E26079c5e4c4334065a7E59192D6b3A33B);
-        addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_1_0);
-        // Rebuild the resolver caches in all MixinResolver contracts - batch 2;
         MixinResolver[] memory addressresolver_rebuildCaches_2_0 = new MixinResolver[](20);
-        addressresolver_rebuildCaches_2_0[0] = MixinResolver(0xce754192eE9265D71b6286Db05329a16F20291CD);
-        addressresolver_rebuildCaches_2_0[1] = MixinResolver(0xD6f913019bc26ab98911046FFE202141D9d7f2e6);
-        addressresolver_rebuildCaches_2_0[2] = MixinResolver(0x908b892d240220D9de9A21db4Fc2f66d0893FadE);
-        addressresolver_rebuildCaches_2_0[3] = MixinResolver(0x75408bdC4647Ac7EC3ec5B94a86bA65a91519Bb2);
-        addressresolver_rebuildCaches_2_0[4] = MixinResolver(0x550683599b2f8C031F1db911598d16C793B99E51);
-        addressresolver_rebuildCaches_2_0[5] = MixinResolver(0xC5301Eb1A4eD3552DFec9C21d966bD25dDe0aD40);
-        addressresolver_rebuildCaches_2_0[6] = MixinResolver(0xf4435125fEAC75600d8CC502710A7c4F702E4180);
-        addressresolver_rebuildCaches_2_0[7] = MixinResolver(0x63417fCE3a75eB4FA5Df2a26d8fD82BB952eE9C0);
-        addressresolver_rebuildCaches_2_0[8] = MixinResolver(0xD62933a82cDBba32b4CA51309CA2D7000445d0c5);
-        addressresolver_rebuildCaches_2_0[9] = MixinResolver(0xCC200785cea662a7fA66E033AA1a4a054022a197);
-        addressresolver_rebuildCaches_2_0[10] = MixinResolver(0xfFd76a5fE92Cfe681aEFDEA9FA5C22372D72B510);
-        addressresolver_rebuildCaches_2_0[11] = MixinResolver(0xEca41030226Ace8F54D0AF5DbD37C276E100055A);
-        addressresolver_rebuildCaches_2_0[12] = MixinResolver(0xbf075BF30c5Fc4929785f0E50eC42078B92DF869);
-        addressresolver_rebuildCaches_2_0[13] = MixinResolver(0x6A8a006786819D551eF4f0AbFA9264D2d2A7ff2f);
-        addressresolver_rebuildCaches_2_0[14] = MixinResolver(0x130613411D53076923Af9bA1d830205b34126d76);
-        addressresolver_rebuildCaches_2_0[15] = MixinResolver(0xEbCdeFe5F392eb16c71a4905fB2720f580e09B88);
-        addressresolver_rebuildCaches_2_0[16] = MixinResolver(0x6F4a1312a48D9887Aa8a05c282C387663528Fe05);
-        addressresolver_rebuildCaches_2_0[17] = MixinResolver(0xe9a2A90241f0474c460A1e6106b66F8DcB42c851);
-        addressresolver_rebuildCaches_2_0[18] = MixinResolver(0x9A71fC5AAa6716b66A44D11B4BBC04bD9F36AE8f);
-        addressresolver_rebuildCaches_2_0[19] = MixinResolver(0x75bA0dB0934665E37f57fD0FF2b677cc433696d4);
+        addressresolver_rebuildCaches_2_0[0] = MixinResolver(0xDA4eF8520b1A57D7d63f1E249606D1A459698876);
+        addressresolver_rebuildCaches_2_0[1] = MixinResolver(0xAD95C918af576c82Df740878C3E983CBD175daB6);
+        addressresolver_rebuildCaches_2_0[2] = MixinResolver(0xcf9E60005C9aca983caf65d3669a24fDd0775fc0);
+        addressresolver_rebuildCaches_2_0[3] = MixinResolver(new_Exchanger_contract);
+        addressresolver_rebuildCaches_2_0[4] = MixinResolver(0xB774711F0BC1306ce892ef8C02D0476dCccB46B7);
+        addressresolver_rebuildCaches_2_0[5] = MixinResolver(0x62922670313bf6b41C580143d1f6C173C5C20019);
+        addressresolver_rebuildCaches_2_0[6] = MixinResolver(0xCd9D4988C0AE61887B075bA77f08cbFAd2b65068);
+        addressresolver_rebuildCaches_2_0[7] = MixinResolver(0xd69b189020EF614796578AfE4d10378c5e7e1138);
+        addressresolver_rebuildCaches_2_0[8] = MixinResolver(new_Synthetix_contract);
+        addressresolver_rebuildCaches_2_0[9] = MixinResolver(0x9bB05EF2cA7DBAafFC3da1939D1492e6b00F39b8);
+        addressresolver_rebuildCaches_2_0[10] = MixinResolver(0x4D8dBD193d89b7B506BE5dC9Db75B91dA00D6a1d);
+        addressresolver_rebuildCaches_2_0[11] = MixinResolver(0xC61b352fCc311Ae6B0301459A970150005e74b3E);
+        addressresolver_rebuildCaches_2_0[12] = MixinResolver(0x388fD1A8a7d36e03eFA1ab100a1c5159a3A3d427);
+        addressresolver_rebuildCaches_2_0[13] = MixinResolver(0x37B648a07476F4941D3D647f81118AFd55fa8a04);
+        addressresolver_rebuildCaches_2_0[14] = MixinResolver(0xEF285D339c91aDf1dD7DE0aEAa6250805FD68258);
+        addressresolver_rebuildCaches_2_0[15] = MixinResolver(0xcf9bB94b5d65589039607BA66e3DAC686d3eFf01);
+        addressresolver_rebuildCaches_2_0[16] = MixinResolver(0xCeC4e038371d32212C6Dcdf36Fdbcb6F8a34C6d8);
+        addressresolver_rebuildCaches_2_0[17] = MixinResolver(0x5eDf7dd83fE2889D264fa9D3b93d0a6e6A45D6C6);
+        addressresolver_rebuildCaches_2_0[18] = MixinResolver(0x9745606DA6e162866DAD7bF80f2AbF145EDD7571);
+        addressresolver_rebuildCaches_2_0[19] = MixinResolver(0x2962EA4E749e54b10CFA557770D597027BA67cB3);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_2_0);
-        // Rebuild the resolver caches in all MixinResolver contracts - batch 3;
-        MixinResolver[] memory addressresolver_rebuildCaches_3_0 = new MixinResolver[](13);
-        addressresolver_rebuildCaches_3_0[0] = MixinResolver(0x95541c84A45d61Ff7aCf2912aa8cb3d7AdD1f6eE);
-        addressresolver_rebuildCaches_3_0[1] = MixinResolver(0x07d1503D736B5a5Ef7b19686f34dF6Ca360ce917);
-        addressresolver_rebuildCaches_3_0[2] = MixinResolver(0xA8A2Ef65e6E5df51fe30620d639edDCd2dE32A89);
-        addressresolver_rebuildCaches_3_0[3] = MixinResolver(0x22f1E84c484132D48dF1848c1D13Ad247d0dc30C);
-        addressresolver_rebuildCaches_3_0[4] = MixinResolver(0xc13E77E4F1a1aF9dF03B26DADd51a31A45eEa5D9);
-        addressresolver_rebuildCaches_3_0[5] = MixinResolver(0x99947fA8aeDD08838B4cBa632f590730dCDf808b);
-        addressresolver_rebuildCaches_3_0[6] = MixinResolver(0xf796f60c5feE6dEfC55720aE09a1212D0A1d7707);
-        addressresolver_rebuildCaches_3_0[7] = MixinResolver(0x75928A56B81876eEfE2cE762E06B939648D775Ec);
-        addressresolver_rebuildCaches_3_0[8] = MixinResolver(0xD3E46f5D15ED12f008C9E8727374A24A7F598605);
-        addressresolver_rebuildCaches_3_0[9] = MixinResolver(0xd748Fcbb98F1F1943C7d7b5D04e530d2040611FA);
-        addressresolver_rebuildCaches_3_0[10] = MixinResolver(0xdFd01d828D34982DFE882B9fDC6DC17fcCA33C25);
-        addressresolver_rebuildCaches_3_0[11] = MixinResolver(0x5AD5469D8A1Eee2cF7c8B8205CbeD95A032cdff3);
-        addressresolver_rebuildCaches_3_0[12] = MixinResolver(0x9712DdCC43F42402acC483e297eeFf650d18D354);
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 2;
+        MixinResolver[] memory addressresolver_rebuildCaches_3_0 = new MixinResolver[](20);
+        addressresolver_rebuildCaches_3_0[0] = MixinResolver(0xDB91E4B3b6E19bF22E810C43273eae48C9037e74);
+        addressresolver_rebuildCaches_3_0[1] = MixinResolver(0xab4e760fEEe20C5c2509061b995e06b542D3112B);
+        addressresolver_rebuildCaches_3_0[2] = MixinResolver(0xda3c83750b1FA31Fda838136ef3f853b41cb7a5a);
+        addressresolver_rebuildCaches_3_0[3] = MixinResolver(0x47bD14817d7684082E04934878EE2Dd3576Ae19d);
+        addressresolver_rebuildCaches_3_0[4] = MixinResolver(0x6F927644d55E32318629198081923894FbFe5c07);
+        addressresolver_rebuildCaches_3_0[5] = MixinResolver(0xe3D5E1c1bA874C0fF3BA31b999967F24d5ca04e5);
+        addressresolver_rebuildCaches_3_0[6] = MixinResolver(0xA962208CDC8588F9238fae169d0F63306c353F4F);
+        addressresolver_rebuildCaches_3_0[7] = MixinResolver(0xcd980Fc5CcdAe62B18A52b83eC64200121A929db);
+        addressresolver_rebuildCaches_3_0[8] = MixinResolver(0xAf090d6E583C082f2011908cf95c2518BE7A53ac);
+        addressresolver_rebuildCaches_3_0[9] = MixinResolver(0x21ee4afBd6c151fD9A69c1389598170B1d45E0e3);
+        addressresolver_rebuildCaches_3_0[10] = MixinResolver(0xcb6Cb218D558ae7fF6415f95BDA6616FCFF669Cb);
+        addressresolver_rebuildCaches_3_0[11] = MixinResolver(0x7B29C9e188De18563B19d162374ce6836F31415a);
+        addressresolver_rebuildCaches_3_0[12] = MixinResolver(0xC22e51FA362654ea453B4018B616ef6f6ab3b779);
+        addressresolver_rebuildCaches_3_0[13] = MixinResolver(0xaB38249f4f56Ef868F6b5E01D9cFa26B952c1270);
+        addressresolver_rebuildCaches_3_0[14] = MixinResolver(0xAa1b12E3e5F70aBCcd1714F4260A74ca21e7B17b);
+        addressresolver_rebuildCaches_3_0[15] = MixinResolver(0x0F393ce493d8FB0b83915248a21a3104932ed97c);
+        addressresolver_rebuildCaches_3_0[16] = MixinResolver(0xfD0435A588BF5c5a6974BA19Fa627b772833d4eb);
+        addressresolver_rebuildCaches_3_0[17] = MixinResolver(0x4287dac1cC7434991119Eba7413189A66fFE65cF);
+        addressresolver_rebuildCaches_3_0[18] = MixinResolver(0x34c76BC146b759E58886e821D62548AC1e0BA7Bc);
+        addressresolver_rebuildCaches_3_0[19] = MixinResolver(0x0E8Fa2339314AB7E164818F26207897bBe29C3af);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_3_0);
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 3;
+        MixinResolver[] memory addressresolver_rebuildCaches_4_0 = new MixinResolver[](20);
+        addressresolver_rebuildCaches_4_0[0] = MixinResolver(0xe615Df79AC987193561f37E77465bEC2aEfe9aDb);
+        addressresolver_rebuildCaches_4_0[1] = MixinResolver(0x3E2dA260B4A85782A629320EB027A3B7c28eA9f1);
+        addressresolver_rebuildCaches_4_0[2] = MixinResolver(0xc02DD182Ce029E6d7f78F37492DFd39E4FEB1f8b);
+        addressresolver_rebuildCaches_4_0[3] = MixinResolver(0x0d1c4e5C07B071aa4E6A14A604D4F6478cAAC7B4);
+        addressresolver_rebuildCaches_4_0[4] = MixinResolver(0x13D0F5B8630520eA04f694F17A001fb95eaFD30E);
+        addressresolver_rebuildCaches_4_0[5] = MixinResolver(0x815CeF3b7773f35428B4353073B086ecB658f73C);
+        addressresolver_rebuildCaches_4_0[6] = MixinResolver(0xb0e0BA880775B7F2ba813b3800b3979d719F0379);
+        addressresolver_rebuildCaches_4_0[7] = MixinResolver(0x8e082925e78538955bC0e2F363FC5d1Ab3be739b);
+        addressresolver_rebuildCaches_4_0[8] = MixinResolver(0x399BA516a6d68d6Ad4D5f3999902D0DeAcaACDdd);
+        addressresolver_rebuildCaches_4_0[9] = MixinResolver(0x9530FA32a3059114AC20A5812870Da12D97d1174);
+        addressresolver_rebuildCaches_4_0[10] = MixinResolver(0x249612F641111022f2f48769f3Df5D85cb3E26a2);
+        addressresolver_rebuildCaches_4_0[11] = MixinResolver(0x04720DbBD4599aD26811545595d97fB813E84964);
+        addressresolver_rebuildCaches_4_0[12] = MixinResolver(0x2acfe6265D358d982cB1c3B521199973CD443C71);
+        addressresolver_rebuildCaches_4_0[13] = MixinResolver(0x46A7Af405093B27DA6DeF193C508Bd9240A255FA);
+        addressresolver_rebuildCaches_4_0[14] = MixinResolver(0x8350d1b2d6EF5289179fe49E5b0F208165B4e32e);
+        addressresolver_rebuildCaches_4_0[15] = MixinResolver(0x29DD4A59F4D339226867e77aF211724eaBb45c02);
+        addressresolver_rebuildCaches_4_0[16] = MixinResolver(0xf7B8dF8b16dA302d85603B8e7F95111a768458Cc);
+        addressresolver_rebuildCaches_4_0[17] = MixinResolver(0x0517A56da8A517e3b2D484Cc5F1Da4BDCfE68ec3);
+        addressresolver_rebuildCaches_4_0[18] = MixinResolver(0x099CfAd1640fc7EA686ab1D83F0A285Ba0470882);
+        addressresolver_rebuildCaches_4_0[19] = MixinResolver(0x19cC1f63e344D74A87D955E3F3E95B28DDDc61d8);
+        addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_4_0);
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 4;
+        MixinResolver[] memory addressresolver_rebuildCaches_5_0 = new MixinResolver[](19);
+        addressresolver_rebuildCaches_5_0[0] = MixinResolver(0x4D50A0e5f068ACdC80A1da2dd1f0Ad48845df2F8);
+        addressresolver_rebuildCaches_5_0[1] = MixinResolver(0xb73c665825dAa926D6ef09417FbE5654473c1b49);
+        addressresolver_rebuildCaches_5_0[2] = MixinResolver(0x806A599d60B2FdBda379D5890287D2fba1026cC0);
+        addressresolver_rebuildCaches_5_0[3] = MixinResolver(0xCea42504874586a718954746A564B72bc7eba3E3);
+        addressresolver_rebuildCaches_5_0[4] = MixinResolver(0x947d5656725fB9A8f9c826A91b6082b07E2745B7);
+        addressresolver_rebuildCaches_5_0[5] = MixinResolver(0x186E56A62E7caCE1308f1A1B0dbb27f33F80f16f);
+        addressresolver_rebuildCaches_5_0[6] = MixinResolver(0x931c5516EE121a177bD2B60e0122Da5B27630ABc);
+        addressresolver_rebuildCaches_5_0[7] = MixinResolver(0x6Dc6a64724399524184C2c44a526A2cff1BaA507);
+        addressresolver_rebuildCaches_5_0[8] = MixinResolver(0x87eb6e935e3C7E3E3A0E31a5658498bC87dE646E);
+        addressresolver_rebuildCaches_5_0[9] = MixinResolver(0x53869BDa4b8d85aEDCC9C6cAcf015AF9447Cade7);
+        addressresolver_rebuildCaches_5_0[10] = MixinResolver(0x1cB27Ac646afAE192dF9928A2808C0f7f586Af7d);
+        addressresolver_rebuildCaches_5_0[11] = MixinResolver(0x3dD7b893c25025CabFBd290A5E06BaFF3DE335b8);
+        addressresolver_rebuildCaches_5_0[12] = MixinResolver(0x1A4505543C92084bE57ED80113eaB7241171e7a8);
+        addressresolver_rebuildCaches_5_0[13] = MixinResolver(0xF6ce55E09De0F9F97210aAf6DB88Ed6b6792Ca1f);
+        addressresolver_rebuildCaches_5_0[14] = MixinResolver(0xacAAB69C2BA65A2DB415605F309007e18D4F5E8C);
+        addressresolver_rebuildCaches_5_0[15] = MixinResolver(0x9A5Ea0D8786B8d17a70410A905Aed1443fae5A38);
+        addressresolver_rebuildCaches_5_0[16] = MixinResolver(0x5c8344bcdC38F1aB5EB5C1d4a35DdEeA522B5DfA);
+        addressresolver_rebuildCaches_5_0[17] = MixinResolver(0xaa03aB31b55DceEeF845C8d17890CC61cD98eD04);
+        addressresolver_rebuildCaches_5_0[18] = MixinResolver(0x1F2c3a1046c32729862fcB038369696e3273a516);
+        addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_5_0);
         // Ensure the SNX proxy has the correct Synthetix target set;
         proxyerc20_i.setTarget(Proxyable(new_Synthetix_contract));
         // Ensure the legacy SNX proxy has the correct Synthetix target set;
@@ -144,12 +191,13 @@ contract Migration_Alnitak is BaseMigration {
         rewardsdistribution_i.setAuthority(new_Synthetix_contract);
 
         // NOMINATE OWNERSHIP back to owner for aforementioned contracts
+        readproxyaddressresolver_i.nominateNewOwner(owner);
         addressresolver_i.nominateNewOwner(owner);
         proxyerc20_i.nominateNewOwner(owner);
         proxysynthetix_i.nominateNewOwner(owner);
         exchangestate_i.nominateNewOwner(owner);
         systemstatus_i.nominateNewOwner(owner);
-        tokenstatesynthetix_i.nominateNewOwner(owner);
+        tokenstatesynthetix_i.nominateOwner(owner);
         rewardescrow_i.nominateNewOwner(owner);
         rewardsdistribution_i.nominateNewOwner(owner);
     }
