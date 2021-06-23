@@ -178,7 +178,12 @@ class Deployer {
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
 			: '';
-		const existingABI = this.deployment.sources[source] ? this.deployment.sources[source].abi : '';
+		const existingSource = this.deployment.targets[name]
+			? this.deployment.targets[name].source
+			: '';
+		const existingABI = this.deployment.sources[existingSource]
+			? this.deployment.sources[existingSource].abi
+			: '';
 
 		let deployedContract;
 
@@ -322,18 +327,18 @@ class Deployer {
 					} ${gasUsed ? `used ${(gasUsed / 1e6).toFixed(1)}m in gas` : ''}`
 				)
 			);
+			// track the source file for potential usage
+			deployedContract.options.source = source;
 		} else if (existingAddress && existingABI) {
 			// get ABI from the deployment (not the compiled ABI which may be newer)
 			deployedContract = this.makeContract({ abi: existingABI, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
+			deployedContract.options.source = existingSource;
 		} else {
 			throw new Error(
 				`Settings for contract: ${name} specify an existing contract, but cannot find address or ABI.`
 			);
 		}
-
-		// track the source file for potential usage
-		deployedContract.options.source = source;
 
 		// append new deployedContract
 		this.deployedContracts[name] = deployedContract;
@@ -423,7 +428,7 @@ class Deployer {
 		// the local variable newContractsDeployed
 		await this._updateResults({
 			name,
-			source,
+			source: deployedContract.options.source,
 			deployed: deployedContract.options.deployed,
 			address: deployedContract.options.address,
 		});
