@@ -116,6 +116,7 @@ module.exports = async ({
 	const solidity = `
 pragma solidity ^0.5.16;
 
+import "./BaseMigration.sol";
 ${contractsAddedToSolidity
 	.map(contract => {
 		const contractSource = sourceOf(deployer.deployedContracts[contract]);
@@ -132,8 +133,8 @@ interface ISynthetixNamedContract {
 }
 
 // solhint-disable contract-name-camelcase
-contract Migration_${releaseName} {
-	address public constant owner = ${getUsers({ network, useOvm, user: 'owner' }).address};
+contract Migration_${releaseName} is BaseMigration {
+	address public constant OWNER = ${getUsers({ network, useOvm, user: 'owner' }).address};
 
 	${contractsAddedToSolidity
 		.map(
@@ -146,15 +147,9 @@ contract Migration_${releaseName} {
 		)
 		.join('\n\t')}
 
-	address public deployer;
+	constructor() public BaseMigration(OWNER) {}
 
-	constructor() public {
-		deployer = msg.sender;
-	}
-
-	function migrate(address currentOwner) external {
-        require(msg.sender == deployer, "Only the deployer can invoke this");
-
+	function migrate(address currentOwner) external onlyDeployer {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
 		// NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL

@@ -485,7 +485,7 @@ const getShortingRewards = ({
  * Retrieve the list of system user addresses
  */
 const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
-	const testnetOwner = '0x73570075092502472e4b61a7058df1a4a1db12f2';
+	const testnetOwner = '0x73570075092502472E4b61A7058Df1A4a1DB12f2';
 	const base = {
 		owner: testnetOwner,
 		deployer: testnetOwner,

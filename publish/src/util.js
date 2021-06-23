@@ -253,13 +253,24 @@ const performTransactionalStepWeb3 = async ({
 			}
 		}
 	}
+
+	// now if generate solidity mode, simply doing anything, a bit like a dry-run
+	if (generateSolidity) {
+		console.log(
+			green(
+				`[GENERATE_SOLIDITY_SIMULATION] Successfully completed ${action} number ${++_dryRunCounter}.`
+			)
+		);
+		return { mined: true };
+	}
+
 	// otherwise check the owner
 	const owner = await target.methods.owner().call();
 	if (owner === account || publiclyCallable) {
 		// perform action
 		let hash;
 		let gasUsed = 0;
-		if (dryRun || generateSolidity) {
+		if (dryRun) {
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
@@ -288,7 +299,7 @@ const performTransactionalStepWeb3 = async ({
 		console.log(
 			green(
 				`${
-					dryRun || generateSolidity ? gray('[SIMULATION] ') : ''
+					dryRun ? gray('[DRYRUN] ') : ''
 				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
 					2
 				)}m `
