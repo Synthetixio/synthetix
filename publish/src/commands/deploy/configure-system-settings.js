@@ -13,6 +13,7 @@ module.exports = async ({
 	deployer,
 	methodCallGasLimit,
 	useOvm,
+	generateSolidity,
 	getDeployParameter,
 	network,
 	runStep,
@@ -25,13 +26,22 @@ module.exports = async ({
 	if (SystemSettings) {
 		console.log(gray(`\n------ CONFIGURE SYSTEM SETTINGS ------\n`));
 
-		// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
-		// has populated all references).
-		// Note: this populates rates for new synths regardless of the addNewSynths flag
-		const synthRates = await Promise.all(
-			synths.map(({ name }) => SystemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
-		);
-
+		let synthRates = [];
+		try {
+			// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
+			// has populated all references).
+			// Note: this populates rates for new synths regardless of the addNewSynths flag
+			synthRates = await Promise.all(
+				synths.map(({ name }) => SystemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
+			);
+		} catch (err) {
+			// weird edge case: if a new SystemSettings is deployed and generate-solidity is on then
+			// this fails cause the resolver is not cached, so imitate this empty response to keep
+			// generating solidity code
+			if (!generateSolidity) {
+				throw err;
+			}
+		}
 		const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 
 		// override individual currencyKey / synths exchange rates

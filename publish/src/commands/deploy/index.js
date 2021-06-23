@@ -272,8 +272,7 @@ const deploy = async ({
 			ownerActionsFile,
 		});
 
-		// only add to solidity when forked and task perfomed and not skipped or when not forked
-		// and action pending and no solidity skipping
+		// only add to solidity steps when specific conditions are met
 		if (
 			(!opts.skipSolidity && (network === 'local' || useFork) && mined) ||
 			(!useFork && pending)
@@ -395,6 +394,7 @@ const deploy = async ({
 		deployer,
 		methodCallGasLimit,
 		useOvm,
+		generateSolidity,
 		getDeployParameter,
 		network,
 		runStep,

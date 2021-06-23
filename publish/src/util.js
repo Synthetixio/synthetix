@@ -231,13 +231,26 @@ const performTransactionalStepWeb3 = async ({
 	console.log(yellow(`Attempting action: ${action}`));
 
 	if (read) {
-		// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
-		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		const response = await target.methods[read](...argumentsForReadFunction).call();
+		try {
+			// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
+			const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
+			const response = await target.methods[read](...argumentsForReadFunction).call();
 
-		if (expected(response)) {
-			console.log(gray(`Nothing required for this action.`));
-			return { noop: true };
+			if (expected(response)) {
+				console.log(gray(`Nothing required for this action.`));
+				return { noop: true };
+			}
+		} catch (err) {
+			// Note: in the generate solidity mode where mutations are not performed, we allow exceptions here. This is so
+			// contracts like SystemSettings, which will not have its resolver cached, can still pass through here and
+			// return the remaining solidity steps
+			if (generateSolidity) {
+				console.log(
+					gray(`Error thrown reading state. Ignoring as this is generate-solidity mode.`)
+				);
+			} else {
+				throw err;
+			}
 		}
 	}
 	// otherwise check the owner
