@@ -146,7 +146,15 @@ contract Migration_${releaseName} {
 		)
 		.join('\n\t')}
 
+	address public deployer;
+
+	constructor() public {
+		deployer = msg.sender;
+	}
+
 	function migrate(address currentOwner) external {
+        require(msg.sender == deployer, "Only the deployer can invoke this");
+
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
 		// NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
