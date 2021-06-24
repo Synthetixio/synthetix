@@ -44,6 +44,7 @@ contract('FuturesMarketData', accounts => {
 				'ExchangeRates',
 				'SystemStatus',
 				'Synthetix',
+				'CollateralManager',
 			],
 		}));
 
