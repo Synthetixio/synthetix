@@ -19,6 +19,8 @@ const {
 	performTransactionalStepWeb3,
 } = require('../util');
 
+const { performTransactionalStep } = require('../command-utils/transact');
+
 const {
 	toBytes32,
 	constants: {
@@ -246,6 +248,18 @@ const deployShortingRewards = async ({
 		const manageNonces = deployer.manageNonces;
 
 		const runStep = async opts =>
+			performTransactionalStep({
+				gasLimit: methodCallGasLimit, // allow overriding of gasLimit
+				...opts,
+				deployer,
+				gasPrice,
+				etherscanLinkPrefix,
+				ownerActions,
+				ownerActionsFile,
+				nonceManager: manageNonces ? nonceManager : undefined,
+			});
+
+		const runStepWeb3 = async opts =>
 			performTransactionalStepWeb3({
 				gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 				...opts,
@@ -258,7 +272,7 @@ const deployShortingRewards = async ({
 			});
 
 		// Rebuild the cache so it knows about CollateralShort
-		await runStep({
+		await runStepWeb3({
 			account,
 			gasLimit: 6e6,
 			contract: shortingRewardNameFixed,

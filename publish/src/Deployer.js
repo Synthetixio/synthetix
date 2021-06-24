@@ -230,7 +230,7 @@ class Deployer {
 			if (dryRun) {
 				this._dryRunCounter++;
 				// use the existing version of a contract in a dry run
-				deployedContract = this.makeContract({ abi: compiled.abi, address: existingAddress });
+				deployedContract = this.makeContractWeb3({ abi: compiled.abi, address: existingAddress });
 				const { account } = this;
 				// but stub out all method calls except owner because it is needed to
 				// determine which actions can be performed directly or need to be added to ownerActions
@@ -323,7 +323,7 @@ class Deployer {
 			);
 		} else if (existingAddress && existingABI) {
 			// get ABI from the deployment (not the compiled ABI which may be newer)
-			deployedContract = this.makeContract({ abi: existingABI, address: existingAddress });
+			deployedContract = this.makeContractWeb3({ abi: existingABI, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
 		} else {
 			throw new Error(
@@ -427,8 +427,12 @@ class Deployer {
 		return deployedContract;
 	}
 
-	makeContract({ abi, address }) {
+	makeContractWeb3({ abi, address }) {
 		return new this.provider.web3.eth.Contract(abi, address);
+	}
+
+	makeContract({ abi, address }) {
+		return new ethers.Contract(address, abi, this.provider.ethers);
 	}
 
 	getExistingContract({ contract }) {
