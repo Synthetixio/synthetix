@@ -27,6 +27,7 @@ import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/feepool
 contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePool {
@@ -75,6 +76,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDSDISTRIBUTION = "RewardsDistribution";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
+    bytes32 private constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
 
     /* ========== ETERNAL STORAGE CONSTANTS ========== */
 
@@ -93,7 +95,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](13);
+        bytes32[] memory newAddresses = new bytes32[](14);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_FEEPOOLSTATE;
@@ -107,6 +109,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[10] = CONTRACT_REWARDSDISTRIBUTION;
         newAddresses[11] = CONTRACT_COLLATERALMANAGER;
         newAddresses[12] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[13] = CONTRACT_FUTURES_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -160,6 +163,10 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     function etherWrapper() internal view returns (IEtherWrapper) {
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
+    }
+
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -725,17 +732,19 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /* ========== Modifiers ========== */
-    modifier onlyInternalContracts {
-        bool isExchanger = msg.sender == address(exchanger());
-        bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
-        bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
-        bool isCollateral = collateralManager().hasCollateral(msg.sender);
-        bool isEtherWrapper = msg.sender == address(etherWrapper());
 
-        require(
-            isExchanger || isSynth || isEtherCollateralsUSD || isCollateral || isEtherWrapper,
-            "Only Internal Contracts"
-        );
+    function _isInternalContract(address account) internal view returns (bool) {
+        return
+            account == address(exchanger()) ||
+            issuer().synthsByAddress(account) != bytes32(0) ||
+            account == address(etherCollateralsUSD()) ||
+            collateralManager().hasCollateral(account) ||
+            account == address(etherWrapper()) ||
+            account == address(futuresMarketManager());
+    }
+
+    modifier onlyInternalContracts {
+        require(_isInternalContract(msg.sender), "Only Internal Contracts");
         _;
     }
 
