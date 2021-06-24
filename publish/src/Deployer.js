@@ -432,7 +432,7 @@ class Deployer {
 	}
 
 	makeContract({ abi, address }) {
-		return new ethers.Contract(address, abi, this.provider.ethers);
+		return new ethers.Contract(address, abi, this.provider.ethers.provider);
 	}
 
 	getExistingContract({ contract }) {

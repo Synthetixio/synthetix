@@ -57,7 +57,7 @@ module.exports = async ({
 		currentSynthetixSupply = await oldSynthetix.totalSupply();
 
 		// inflationSupplyToDate = total supply - 100m
-		const inflationSupplyToDate = parseUnits(currentSynthetixSupply, 'wei').sub(
+		const inflationSupplyToDate = currentSynthetixSupply.sub(
 			parseUnits((100e6).toString(), 'wei')
 		);
 
