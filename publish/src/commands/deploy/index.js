@@ -413,6 +413,7 @@ const deploy = async ({
 	await takeDebtSnapshotWhenRequired({
 		debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
 		deployer,
+		generateSolidity,
 		runStep,
 		useOvm,
 	});

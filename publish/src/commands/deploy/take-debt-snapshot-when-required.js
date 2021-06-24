@@ -5,7 +5,15 @@ const {
 	utils: { formatUnits },
 } = require('ethers');
 
-module.exports = async ({ debtSnapshotMaxDeviation, deployer, runStep, useOvm }) => {
+const { catchMissingResolverWhenGeneratingSolidity } = require('../../util');
+
+module.exports = async ({
+	debtSnapshotMaxDeviation,
+	deployer,
+	generateSolidity,
+	runStep,
+	useOvm,
+}) => {
 	const { DebtCache } = deployer.deployedContracts;
 
 	console.log(gray(`\n------ CHECKING DEBT CACHE ------\n`));
@@ -88,11 +96,15 @@ module.exports = async ({ debtSnapshotMaxDeviation, deployer, runStep, useOvm })
 		return false;
 	};
 
-	const performedSnapshot = await checkSnapshot();
+	try {
+		const performedSnapshot = await checkSnapshot();
 
-	if (performedSnapshot) {
-		console.log(gray('Snapshot complete.'));
-	} else {
-		console.log(gray('No snapshot required.'));
+		if (performedSnapshot) {
+			console.log(gray('Snapshot complete.'));
+		} else {
+			console.log(gray('No snapshot required.'));
+		}
+	} catch (err) {
+		catchMissingResolverWhenGeneratingSolidity({ contract: 'DebtSnapshot', err, generateSolidity });
 	}
 };

@@ -241,21 +241,7 @@ const performTransactionalStepWeb3 = async ({
 				return { noop: true };
 			}
 		} catch (err) {
-			// Note: in the generate solidity mode where mutations are not performed, we allow exceptions here. This is so
-			// contracts like SystemSettings, which will not have its resolver cached, can still pass through here and
-			// return the remaining solidity steps
-			if (
-				generateSolidity &&
-				/VM Exception while processing transaction: revert Missing address/.test(err.message)
-			) {
-				console.log(
-					gray(
-						`WARNING: Error thrown reading state with missing resolver addresses (expected for new SystemSettings contract for instance). Ignoring as this is generate-solidity mode.`
-					)
-				);
-			} else {
-				throw err;
-			}
+			catchMissingResolverWhenGeneratingSolidity({ contract, err, generateSolidity });
 		}
 	}
 
@@ -398,6 +384,21 @@ function reportDeployedContracts({ deployer }) {
 	}
 }
 
+const catchMissingResolverWhenGeneratingSolidity = ({ contract, err, generateSolidity }) => {
+	if (
+		generateSolidity &&
+		/VM Exception while processing transaction: revert Missing address/.test(err.message)
+	) {
+		console.log(
+			gray(
+				`WARNING: Error thrown reading state with missing resolver addresses (expected for new contracts that need their resolvers cached). Ignoring as this is generate-solidity mode.`
+			)
+		);
+	} else {
+		throw err;
+	}
+};
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -411,4 +412,5 @@ module.exports = {
 	performTransactionalStepWeb3,
 	parameterNotice,
 	reportDeployedContracts,
+	catchMissingResolverWhenGeneratingSolidity,
 };
