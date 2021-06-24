@@ -251,11 +251,27 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		FuturesMarket: [
-			tryGetAddressOf('ProxyFuturesMarket'),
+		FuturesMarketBTC: [
+			tryGetAddressOf('ProxyFuturesMarketBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset
+			toWei('0.003'), // 0.3% taker fee
+			toWei('0.001'), // 0.1% maker fee
+			toWei('10'), // 10x max leverage
+			toWei('100000'), // 100000 max market debt
+			toWei('100'), // 100 sUSD minimum initial margin
+			[
+				toWei('0.1'), // 10% max funding rate
+				toWei('1'), // 100% max funding rate skew
+				toWei('0.0125'), // 1.25% per hour max funding rate of change
+			],
+		],
+		FuturesMarketETH: [
+			tryGetAddressOf('ProxyFuturesMarketETH'),
+			owner,
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sETH'), // base asset
 			toWei('0.003'), // 0.3% taker fee
 			toWei('0.001'), // 0.1% maker fee
 			toWei('10'), // 10x max leverage
@@ -517,11 +533,20 @@ const setupContract = async ({
 				}),
 			]);
 		},
-		async FuturesMarket() {
+		async FuturesMarketBTC() {
 			await Promise.all([
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
-				cache['ProxyFuturesMarket'].setTarget(instance.address, { from: owner }),
-				instance.setProxy(cache['ProxyFuturesMarket'].address, {
+				cache['ProxyFuturesMarketBTC'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyFuturesMarketBTC'].address, {
+					from: owner,
+				}),
+			]);
+		},
+		async FuturesMarketETH() {
+			await Promise.all([
+				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
+				cache['ProxyFuturesMarketETH'].setTarget(instance.address, { from: owner }),
+				instance.setProxy(cache['ProxyFuturesMarketETH'].address, {
 					from: owner,
 				}),
 			]);
@@ -583,6 +608,15 @@ const setupContract = async ({
 						mock,
 						fncName: 'isSynthManaged',
 						returns: [false],
+					}),
+				]);
+			} else if (mock === 'FuturesMarketManager') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'totalDebt',
+						returns: ['0', false],
 					}),
 				]);
 			}
@@ -694,7 +728,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper'],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper', 'FuturesMarketManager'],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -833,6 +867,7 @@ const setupAllContracts = async ({
 				'EtherCollateralsUSD',
 				'CollateralManager',
 				'EtherWrapper',
+				'FuturesMarketManager',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
@@ -861,8 +896,18 @@ const setupAllContracts = async ({
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
 		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
-		{ contract: 'Proxy', forContract: 'FuturesMarket' },
-		{ contract: 'FuturesMarket', deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'] },
+		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
+		{
+			contract: 'FuturesMarketBTC',
+			source: 'TestableFuturesMarket',
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
+		},
+		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
+		{
+			contract: 'FuturesMarketETH',
+			source: 'TestableFuturesMarket',
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
+		},
 		{ contract: 'FuturesMarketData', deps: [] },
 	];
 

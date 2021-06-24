@@ -14,7 +14,6 @@ import "./SignedSafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IFeePool.sol";
 import "./interfaces/IERC20.sol";
 
 // Remaining Functionality
@@ -38,6 +37,8 @@ interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
     function burnSUSD(address account, uint amount) external;
+
+    function payFee(uint amount) external;
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarket
@@ -105,15 +106,15 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     uint public fundingLastRecomputed;
     int[] public fundingSequence;
 
-    /*
-     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.fundingIndex])}
-     * Then marketSkew * (_assetPrice() + _marketDebt()) + entryDebtCorrection yields the total system debt,
-     * which is equivalent to the sum of remaining margins in all positions.
-     */
-    int public entryDebtCorrection;
-
     mapping(address => Order) public orders;
     mapping(address => Position) public positions;
+
+    /*
+     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.fundingIndex])}
+     * Then marketSkew * (_assetPrice() + _marketDebt()) + _entryDebtCorrection yields the total system debt,
+     * which is equivalent to the sum of remaining margins in all positions.
+     */
+    int internal _entryDebtCorrection;
 
     uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
 
@@ -122,13 +123,13 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
-    bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
 
     /* ---------- Parameter Names ---------- */
 
     bytes32 internal constant PARAMETER_TAKERFEE = "takerFee";
     bytes32 internal constant PARAMETER_MAKERFEE = "makerFee";
+    bytes32 internal constant PARAMETER_CLOSUREFEE = "closureFee";
     bytes32 internal constant PARAMETER_MAXLEVERAGE = "maxLeverage";
     bytes32 internal constant PARAMETER_MAXMARKETVALUE = "maxMarketValue";
     bytes32 internal constant PARAMETER_MININITIALMARGIN = "minInitialMargin";
@@ -171,12 +172,11 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](4);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYNTHSUSD;
-        newAddresses[3] = CONTRACT_FEEPOOL;
-        newAddresses[4] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[3] = CONTRACT_FUTURESMARKETMANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -186,10 +186,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
-    }
-
-    function _feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function _sUSD() internal view returns (IERC20) {
@@ -259,7 +255,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     function _marketDebt(uint price) internal view returns (uint) {
         int totalDebt =
             marketSkew.multiplyDecimalRound(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
-                entryDebtCorrection
+                _entryDebtCorrection
             );
 
         return uint(_max(totalDebt, 0));
@@ -276,10 +272,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             return 0;
         }
         return marketSkew.divideDecimalRound(signedSize);
-    }
-
-    function proportionalSkew() external view returns (int) {
-        return _proportionalSkew();
     }
 
     function _currentFundingRatePerSecond() internal view returns (int) {
@@ -702,7 +694,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     function _applyDebtCorrection(Position memory newPosition, Position memory oldPosition) internal {
         int newCorrection = _positionDebtCorrection(newPosition);
         int oldCorrection = _positionDebtCorrection(oldPosition);
-        entryDebtCorrection = entryDebtCorrection.add(newCorrection).sub(oldCorrection);
+        _entryDebtCorrection = _entryDebtCorrection.add(newCorrection).sub(oldCorrection);
     }
 
     function _realiseMargin(
@@ -831,12 +823,13 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         int newSideSize;
         if (0 < newSize) {
-            // long case
+            // long case: marketSize + skew = 2 * longSize
             newSideSize = newMarketSize.add(newSkew);
         } else {
-            // short case
+            // short case: marketSize - skew = 2 * shortSize
             newSideSize = newMarketSize.sub(newSkew);
         }
+        // newSideSize still includes an extra factor of 2 here, so we will divide by 2 in the require statement.
 
         // We'll allow an extra little bit of value over and above the stated max to allow for
         // rounding errors, price movements, multiple orders etc.
@@ -966,7 +959,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         // Send the fee to the fee pool
         if (0 < order.fee) {
-            _manager().issueSUSD(_feePool().FEE_ADDRESS(), order.fee);
+            _manager().payFee(order.fee);
         }
 
         // Actually lodge the position and delete the order

@@ -13,17 +13,17 @@ const {
 const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 
 contract('FuturesMarketManager', accounts => {
-	let proxyFuturesMarketManager;
-	let futuresMarketManager;
-	let sUSD;
+	let proxyFuturesMarketManager, futuresMarketManager, sUSD, debtCache;
 	const owner = accounts[1];
 	const trader = accounts[2];
+	const initialMint = toUnit('100000');
 
 	before(async () => {
 		({
 			ProxyFuturesMarketManager: proxyFuturesMarketManager,
 			FuturesMarketManager: futuresMarketManager,
 			SynthsUSD: sUSD,
+			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
@@ -36,10 +36,12 @@ contract('FuturesMarketManager', accounts => {
 				'SystemStatus',
 				'SystemSettings',
 				'Synthetix',
+				'DebtCache',
+				'CollateralManager',
 			],
 		}));
 
-		await sUSD.issue(trader, toUnit('100000'), { from: owner });
+		await sUSD.issue(trader, initialMint, { from: owner });
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -54,7 +56,14 @@ contract('FuturesMarketManager', accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarketManager.abi,
 				ignoreParents: ['Owned', 'MixinResolver', 'Proxyable'],
-				expected: ['addMarkets', 'removeMarkets', 'removeMarketsByAsset', 'issueSUSD', 'burnSUSD'],
+				expected: [
+					'addMarkets',
+					'removeMarkets',
+					'removeMarketsByAsset',
+					'issueSUSD',
+					'burnSUSD',
+					'payFee',
+				],
 			});
 		});
 	});
@@ -324,12 +333,18 @@ contract('FuturesMarketManager', accounts => {
 		});
 
 		it('Aggregated debt updates properly as the debt values change', async () => {
+			const initialSystemDebt = (await debtCache.currentDebt())[0];
+
 			assert.bnEqual((await futuresMarketManager.totalDebt())[0], individualDebt.mul(toBN(3)));
+			assert.bnEqual(initialSystemDebt, individualDebt.mul(toBN(3)).add(initialMint));
 			await markets[0].setMarketDebt(toUnit('2500'));
 			await markets[1].setMarketDebt(toUnit('200'));
 			assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('3700'));
+			assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('700')));
+
 			await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
 			assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('2700'));
+			assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.sub(toUnit('300')));
 			const market = await setupContract({
 				accounts,
 				contract: 'MockFuturesMarket',
@@ -339,20 +354,25 @@ contract('FuturesMarketManager', accounts => {
 			await futuresMarketManager.addMarkets([market.address], { from: owner });
 
 			assert.bnEqual((await futuresMarketManager.totalDebt())[0], toUnit('6700'));
+			assert.bnEqual((await debtCache.currentDebt())[0], initialSystemDebt.add(toUnit('3700')));
 		});
 
 		it('Aggregated debt validity updates properly with the individual markets', async () => {
 			assert.isFalse((await futuresMarketManager.totalDebt())[1]);
+			assert.isFalse((await debtCache.currentDebt())[1]);
 
 			await markets[0].setInvalid(true);
 			assert.isTrue((await futuresMarketManager.totalDebt())[1]);
+			assert.isTrue((await debtCache.currentDebt())[1]);
 
 			await markets[0].setInvalid(false);
 			await markets[2].setInvalid(true);
 			assert.isTrue((await futuresMarketManager.totalDebt())[1]);
+			assert.isTrue((await debtCache.currentDebt())[1]);
 
 			await futuresMarketManager.removeMarkets([markets[2].address], { from: owner });
 			assert.isFalse((await futuresMarketManager.totalDebt())[1]);
+			assert.isFalse((await debtCache.currentDebt())[1]);
 		});
 	});
 });

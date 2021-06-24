@@ -278,7 +278,7 @@ contract('TradingRewards', accounts => {
 			describe('when executing an exchange with tracking', () => {
 				addSnapshotBeforeRestoreAfter();
 
-				describe('when a valid originator address is passed', () => {
+				describe('when a valid reward address is passed', () => {
 					before('execute exchange with tracking', async () => {
 						const exchangeTx = await synthetix.exchangeWithTracking(
 							sUSD,
@@ -303,13 +303,13 @@ contract('TradingRewards', accounts => {
 					});
 				});
 
-				describe('when no valid originator address is passed', () => {
+				describe('when no valid reward address is passed', () => {
 					before('execute exchange with tracking', async () => {
 						const exchangeTx = await synthetix.exchangeWithTracking(
 							sUSD,
 							toUnit('100'),
 							sETH,
-							zeroAddress, // No originator = 0x0
+							zeroAddress, // No reward address = 0x0
 							toBytes32('1INCH'),
 							{
 								from: account1,

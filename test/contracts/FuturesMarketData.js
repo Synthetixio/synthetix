@@ -27,7 +27,7 @@ contract('FuturesMarketData', accounts => {
 	before(async () => {
 		({
 			AddressResolver: addressResolver,
-			FuturesMarket: futuresMarket,
+			FuturesMarketBTC: futuresMarket,
 			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketData: futuresMarketData,
 			ExchangeRates: exchangeRates,
@@ -37,13 +37,14 @@ contract('FuturesMarketData', accounts => {
 			synths: ['sUSD'],
 			contracts: [
 				'FuturesMarketManager',
-				'FuturesMarket',
+				'FuturesMarketBTC',
 				'FuturesMarketData',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
 				'SystemStatus',
 				'Synthetix',
+				'CollateralManager',
 			],
 		}));
 
@@ -156,14 +157,6 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details.marketSizeDetails.sides.short, marketSizes.short);
 			assert.bnEqual(details.marketSizeDetails.marketDebt, (await futuresMarket.marketDebt()).debt);
 			assert.bnEqual(details.marketSizeDetails.marketSkew, await futuresMarket.marketSkew());
-			assert.bnEqual(
-				details.marketSizeDetails.proportionalSkew,
-				await futuresMarket.proportionalSkew()
-			);
-			assert.bnEqual(
-				details.marketSizeDetails.entryDebtCorrection,
-				await futuresMarket.entryDebtCorrection()
-			);
 
 			const assetPrice = await futuresMarket.assetPrice();
 			assert.bnEqual(details.priceDetails.price, assetPrice.price);

@@ -62,9 +62,6 @@
 	"Liquidations": {
 		"deploy": true
 	},
-	"SupplySchedule": {
-		"deploy": true
-	},
 	"Synthetix": {
 		"deploy": true
 	},
@@ -140,7 +137,31 @@
 	"EtherWrapper": {
 		"deploy": true
 	},
-	"NativeEtherWrapper": {
+	"ProxyFuturesMarketBTC": {
+		"deploy": true
+	},
+	"FuturesMarketBTC": {
+		"deploy": true
+	},
+	"ProxyFuturesMarketETH": {
+		"deploy": true
+	},
+	"FuturesMarketETH": {
+		"deploy": true
+	},
+	"ProxyFuturesMarketLINK": {
+		"deploy": true
+	},
+	"FuturesMarketLINK": {
+		"deploy": true
+	},
+	"ProxyFuturesMarketManager": {
+		"deploy": true
+	},
+	"FuturesMarketManager": {
+		"deploy": true
+	},
+	"FuturesMarketData": {
 		"deploy": true
 	}
 }
