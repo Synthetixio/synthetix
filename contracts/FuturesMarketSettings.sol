@@ -8,6 +8,10 @@ import "./interfaces/IFuturesMarketSettings.sol";
 // Internal references
 import "./interfaces/IFuturesMarket.sol";
 
+interface IFuturesMarketManagerForFuturesSettings {
+    function marketForAsset(bytes32) external returns (address);
+}
+
 // https://docs.synthetix.io/contracts/source/contracts/futuresMarketSettings
 contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
     // TODO: Convert funding rate from daily to per-second
@@ -26,6 +30,9 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     mapping(bytes32 => Parameters) public parameters;
     mapping(bytes32 => address) public markets;
 
+    /* ---------- Address Resolver Configuration ---------- */
+    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
+
     /* ---------- Parameter Names ---------- */
 
     bytes32 internal constant PARAMETER_TAKERFEE = "takerFee";
@@ -40,12 +47,22 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    /* ========== VIEWS ========== */
 
-    function connectMarket(bytes32 _baseAsset, address _marketAddress) external onlyOwner {
-        markets[_baseAsset] = _marketAddress;
-        emit MarketConnected(_baseAsset, _marketAddress);
+    /* ---------- External Contracts ---------- */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_FUTURESMARKETMANAGER;
+        addresses = combineArrays(existingAddresses, newAddresses);
     }
+
+    function _manager() internal view returns (IFuturesMarketManagerForFuturesSettings) {
+        return IFuturesMarketManagerForFuturesSettings(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+    }
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Setters ---------- */
 
@@ -72,19 +89,19 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     }
 
     function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) external onlyOwner {
-        IFuturesMarket(markets[_baseAsset]).recomputeFunding();
+        IFuturesMarket(_manager().marketForAsset(_baseAsset)).recomputeFunding();
         parameters[_baseAsset].maxFundingRate = _maxFundingRate;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATE, _maxFundingRate);
     }
 
     function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) external onlyOwner {
-        IFuturesMarket(markets[_baseAsset]).recomputeFunding();
+        IFuturesMarket(_manager().marketForAsset(_baseAsset)).recomputeFunding();
         parameters[_baseAsset].maxFundingRateSkew = _maxFundingRateSkew;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATESKEW, _maxFundingRateSkew);
     }
 
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) external onlyOwner {
-        IFuturesMarket(markets[_baseAsset]).recomputeFunding();
+        IFuturesMarket(_manager().marketForAsset(_baseAsset)).recomputeFunding();
         parameters[_baseAsset].maxFundingRateDelta = _maxFundingRateDelta;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATEDELTA, _maxFundingRateDelta);
     }

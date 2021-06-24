@@ -15,12 +15,11 @@ const {
 const BN = require('bn.js');
 
 contract('FuturesMarketSettings', accounts => {
-	let futuresMarketSettings;
+	let futuresMarketManager, futuresMarketSettings;
 
 	let mockFuturesMarketBTC;
 
 	const owner = accounts[1];
-	const randomAddress = accounts[2];
 
 	const baseAsset = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
@@ -33,10 +32,25 @@ contract('FuturesMarketSettings', accounts => {
 	const maxFundingRateDelta = toUnit('0.0125');
 
 	before(async () => {
-		({ FuturesMarketSettings: futuresMarketSettings } = await setupAllContracts({
+		({
+			FuturesMarketSettings: futuresMarketSettings,
+			FuturesMarketManager: futuresMarketManager,
+		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
-			contracts: ['FuturesMarketSettings', 'SystemStatus'],
+			contracts: [
+				'FuturesMarketSettings',
+				'FuturesMarketManager',
+				'ProxyFuturesMarketManager',
+				'AddressResolver',
+				'FeePool',
+				'ExchangeRates',
+				'SystemStatus',
+				'SystemSettings',
+				'Synthetix',
+				'DebtCache',
+				'CollateralManager',
+			],
 		}));
 
 		mockFuturesMarketBTC = await artifacts.require('GenericMock').new();
@@ -48,10 +62,15 @@ contract('FuturesMarketSettings', accounts => {
 			returns: ['0'],
 		});
 
-		// connect the market
-		await futuresMarketSettings.connectMarket(baseAsset, mockFuturesMarketBTC.address, {
-			from: owner,
+		mockGenericContractFnc({
+			instance: mockFuturesMarketBTC,
+			mock: 'FuturesMarket',
+			fncName: 'baseAsset',
+			returns: [toBytes32('sBTC')],
 		});
+
+		// add the market
+		futuresMarketManager.addMarkets([mockFuturesMarketBTC.address], { from: owner });
 	});
 
 	it('Only expected functions are mutative', () => {
@@ -59,7 +78,6 @@ contract('FuturesMarketSettings', accounts => {
 			abi: futuresMarketSettings.abi,
 			ignoreParents: ['Owned', 'MixinSystemSettings'],
 			expected: [
-				'connectMarket',
 				'setAllParameters',
 				'setTakerFee',
 				'setMakerFee',
@@ -69,39 +87,6 @@ contract('FuturesMarketSettings', accounts => {
 				'setMaxFundingRateSkew',
 				'setMaxFundingRateDelta',
 			],
-		});
-	});
-
-	describe('connectMarket', () => {
-		const asset = toBytes32('sUNI');
-		it('Only the owner can invoke', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketSettings.connectMarket,
-				args: [asset, randomAddress],
-				address: owner,
-				accounts,
-			});
-		});
-
-		describe('when invoked by the owner', () => {
-			let tx;
-			before(async () => {
-				tx = await futuresMarketSettings.connectMarket(asset, randomAddress, {
-					from: owner,
-				});
-			});
-
-			it('it should connect the market', async () => {
-				const marketAddress = await futuresMarketSettings.markets(toBytes32('sUNI'));
-				assert.equal(marketAddress, randomAddress);
-			});
-
-			it('it should emit an event', async () => {
-				assert.eventEqual(tx, 'MarketConnected', {
-					market: toBytes32('sUNI'),
-					marketAddress: randomAddress,
-				});
-			});
 		});
 	});
 
