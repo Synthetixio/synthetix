@@ -43,7 +43,7 @@ contract('FuturesMarket', accounts => {
 	const minInitialMargin = toUnit('100');
 	const maxFundingRate = toUnit('0.1');
 	const maxFundingRateSkew = toUnit('1');
-	const maxFundingRateDelta = toUnit('0.0125');
+	const maxFundingRateDelta = toUnit('100000'); // Move funding rate effectively instantly
 	const initialPrice = toUnit('100');
 	const liquidationFee = toUnit('20');
 
@@ -118,6 +118,9 @@ contract('FuturesMarket', accounts => {
 				'DebtCache',
 			],
 		}));
+
+		// Allow funding rate to change instantly to simplify testing calculations calculations
+		await futuresMarket.setMaxFundingRateDelta(maxFundingRateDelta, { from: owner });
 
 		// Update the rate so that it is not invalid
 		oracle = await exchangeRates.oracle();
@@ -1827,6 +1830,30 @@ contract('FuturesMarket', accounts => {
 		it.skip('A zero-size position accrues no funding', async () => {
 			assert.isTrue(false);
 		});
+
+		describe('Funding rate of change', async () => {
+			beforeEach(async () => {
+				// Slow down the funding rate speed, so that we can actually test it.
+				await futuresMarket.setMaxFundingRateDelta(toUnit('0.005'));
+			});
+
+			it.skip('Inducing skew, the target funding rate moves instantly, but the funding rate takes time', async () => {
+				assert.isTrue(false);
+			});
+
+			it.skip('Funding rate moves at a linear rate', async () => {
+				// Sample at evenly-spaced times and check that the deltas are constant
+				assert.isTrue(false);
+			});
+
+			it.skip('the funding rate slew can move past the market midpoint', async () => {
+				assert.isTrue(false);
+			});
+
+			it.skip('accrued funding is accurate', async () => {
+				assert.isTrue(false);
+			});
+		});
 	});
 
 	describe('Market Debt', () => {
@@ -2055,16 +2082,16 @@ contract('FuturesMarket', accounts => {
 				// trader 1 pays 30 * -0.05 = -1.5 base units of funding
 				// liquidation price = (20 - 1500 + 30 * 250) / (30 - 1.5) = 211.228...
 				let lPrice = await futuresMarket.liquidationPrice(trader, true);
-				assert.bnClose(lPrice[0], toUnit(211.228), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(211.228), toUnit(0.01));
 				lPrice = await futuresMarket.liquidationPrice(trader, false);
-				assert.bnClose(lPrice[0], preLPrice1, toUnit(0.001));
+				assert.bnClose(lPrice[0], preLPrice1, toUnit(0.01));
 
 				// trader2 receives -10 * -0.05 = 0.5 base units of funding
 				// liquidation price = (20 - 500 - 10 * 250) / (-10 + 0.5) = 313.684...
 				lPrice = await futuresMarket.liquidationPrice(trader2, true);
-				assert.bnClose(lPrice[0], toUnit(313.684), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(313.684), toUnit(0.01));
 				lPrice = await futuresMarket.liquidationPrice(trader2, false);
-				assert.bnClose(lPrice[0], preLPrice2, toUnit(0.001));
+				assert.bnClose(lPrice[0], preLPrice2, toUnit(0.01));
 			});
 
 			it('Liquidation price reports invalidity properly', async () => {

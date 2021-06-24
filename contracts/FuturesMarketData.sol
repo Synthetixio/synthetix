@@ -60,6 +60,7 @@ contract FuturesMarketData {
 
     struct FundingDetails {
         int currentFundingRate;
+        int targetFundingRate;
         int unrecordedFunding;
         uint fundingLastRecomputed;
     }
@@ -146,7 +147,7 @@ contract FuturesMarketData {
                 market.marketSize(),
                 market.marketSkew(),
                 debt,
-                market.currentFundingRate(),
+                market.targetFundingRate(),
                 FeeRates(parameters.takerFee, parameters.makerFee)
             );
         }

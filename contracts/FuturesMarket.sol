@@ -18,13 +18,12 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IERC20.sol";
 
 // Remaining Functionality
-//     Consider not exposing signs of short vs long positions
+//     Make it clear through naming that funding rates variables are per day
 //     Rename marketSize, marketSkew, marketDebt, profitLoss, accruedFunding -> size, skew, debt, profit, funding
 //     Consider reverting if things need to be liquidated rather than triggering it except by the
 //         liquidatePosition function
 //     Consider eliminating the fundingIndex param everywhere if we're always computing up to the current time.
 //     Move the minimum initial margin into a global setting within SystemSettings, and then set a maximum liquidation fee that is the current minimum initial margin (otherwise we could set a value that will immediately liquidate every position)
-//     Remove proportional skew from public interface
 
 /* Notes:
  *
@@ -33,6 +32,9 @@ import "./interfaces/IERC20.sol";
  *    - funding has already been recomputed up to the current time (hence unrecorded funding is nil);
  *    - the account being managed was not liquidated in the same transaction;
  */
+
+// TODO: Update market data contract with funding rate modifications.
+// TODO: Rename max FR delta to the rate of change or something.
 
 interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
@@ -102,7 +104,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
      * funding profit/loss on a given position, find the net profit per base unit since the position was
      * confirmed and multiply it by the position size.
      */
-    uint public fundingLastRecomputed;
+    uint public _fundingLastRecomputed;
     int[] public fundingSequence;
 
     /*
@@ -116,6 +118,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     mapping(address => Position) public positions;
 
     uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
+
+    int internal _lastFundingRate; // The funding rate computed at the last time the skew was modified
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -282,11 +286,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return _proportionalSkew();
     }
 
-    function _currentFundingRatePerSecond() internal view returns (int) {
-        return _currentFundingRate() / 1 days;
-    }
-
-    function _currentFundingRate() internal view returns (int) {
+    function _targetFundingRate() internal view returns (int) {
         int maxFundingRateSkew = int(parameters.maxFundingRateSkew);
         int maxFundingRate = int(parameters.maxFundingRate);
         if (maxFundingRateSkew == 0) {
@@ -298,13 +298,73 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return _min(_max(-_UNIT, -functionFraction), _UNIT).multiplyDecimalRound(maxFundingRate);
     }
 
-    function currentFundingRate() external view returns (int) {
-        return _currentFundingRate();
+    function targetFundingRate() external view returns (int) {
+        return _targetFundingRate();
     }
 
-    function _unrecordedFunding(uint price) internal view returns (int funding) {
-        int elapsed = int(block.timestamp.sub(fundingLastRecomputed));
-        return _currentFundingRatePerSecond().multiplyDecimalRound(int(price)).mul(elapsed);
+    function _targetFundingRateTime(
+        int lastFundingTime,
+        int lastFRPerSecond,
+        int targetFRPerSecond
+    ) internal view returns (uint) {
+        return
+            uint(
+                lastFundingTime.add(
+                    _signedAbs(lastFRPerSecond.sub(targetFRPerSecond))
+                        .divideDecimalRound(int(parameters.maxFundingRateDelta / 1 days))
+                        .div(_UNIT)
+                )
+            );
+    }
+
+    function currentFundingRate() external view returns (int) {
+        int lastFRPerSecond = _lastFundingRate.div(1 days);
+        int targetFR = _targetFundingRate();
+        int targetFRPerSecond = targetFR.div(1 days);
+        int lastFundingTime = int(_fundingLastRecomputed).mul(_UNIT);
+        int targetTime = int(_targetFundingRateTime(lastFundingTime, lastFRPerSecond, targetFRPerSecond)).mul(_UNIT);
+        int currentTime = int(block.timestamp).mul(_UNIT);
+
+        if (currentTime <= targetTime) {
+            return targetFR;
+        }
+
+        return
+            lastFRPerSecond
+                .multiplyDecimalRound(targetTime.sub(currentTime))
+                .add(targetFRPerSecond.multiplyDecimalRound(currentTime.sub(lastFundingTime)))
+                .mul(1 days);
+    }
+
+    function _unrecordedFunding(uint price) internal view returns (int) {
+        return _unrecordedBaseFunding().multiplyDecimalRound(int(price));
+    }
+
+    function _unrecordedBaseFunding() internal view returns (int) {
+        // Formula:
+        // If the current time is no later than the target time,
+        //          (time - _fundingLastRecomputed) * (lastFunding + targetFunding) / 2
+        // otherwise, we need to add on the extra part at targetFundingRate
+        //
+
+        int lastFundingTime = int(_fundingLastRecomputed);
+        int currentTime = int(block.timestamp);
+        int lastFR = _lastFundingRate / 1 days;
+        int targetFR = _targetFundingRate() / 1 days;
+
+        // The time when the funding rate will meet the target rate.
+        int targetTime = int(_targetFundingRateTime(lastFundingTime, lastFR, targetFR));
+
+        // Funding contributed while the funding rate is still moving.
+        int interpTime = _min(currentTime, targetTime);
+        int totalFunding = interpTime.sub(lastFundingTime).mul(lastFR.add(targetFR).div(2));
+
+        // Funding contributed after the target funding rate has been reached (if any).
+        if (interpTime == targetTime) {
+            return totalFunding.add(currentTime.sub(targetTime).mul(targetFR));
+        }
+
+        return totalFunding;
     }
 
     function unrecordedFunding() external view returns (int funding, bool invalid) {
@@ -445,7 +505,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             //     price         =  (lastPrice + (liquidationFee - margin) / positionSize - netAccrued) / (1 + netUnrecorded)
             // Where, if fundingIndex == sequenceLength:
             //     netAccrued    =  fundingSequence[fundingSequenceLength - 1] - fundingSequence[position.fundingIndex]
-            //     netUnrecorded =  currentFundingRate * (block.timestamp - fundingLastRecomputed)
+            //     netUnrecorded =  unrecordedFunding / price
             // And otherwise:
             //     netAccrued    =  fundingSequence[fundingIndex] - fundingSequence[position.fundingIndex]
             //     netUnrecorded =  0
@@ -454,7 +514,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             int denominator = _UNIT;
             if (fundingIndex == sequenceLength) {
                 fundingIndex = sequenceLength.sub(1);
-                denominator = _UNIT.add(_unrecordedFunding(currentPrice).divideDecimalRound(int(currentPrice)));
+                denominator = _UNIT.add(_unrecordedBaseFunding());
             }
             result = result
                 .sub(_netFundingPerUnit(position.fundingIndex, fundingIndex, sequenceLength, currentPrice))
@@ -667,7 +727,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         uint sequenceLength = fundingSequence.length;
 
         fundingSequence.push(_nextFundingEntry(sequenceLength, price));
-        fundingLastRecomputed = block.timestamp;
+        _fundingLastRecomputed = block.timestamp;
+        _lastFundingRate = _targetFundingRate();
 
         return sequenceLength;
     }
