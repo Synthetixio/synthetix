@@ -21,7 +21,7 @@ describe('deposit() integration tests (L1, L2)', () => {
 		before('target contracts and users', () => {
 			({ Synthetix, SynthetixBridgeToOptimism, SynthetixBridgeEscrow } = ctx.l1.contracts);
 
-			owner = ctx.l1.owner;
+			owner = ctx.l1.users.owner;
 		});
 
 		before('record balances', async () => {
@@ -61,7 +61,7 @@ describe('deposit() integration tests (L1, L2)', () => {
 			before('target contracts and users', () => {
 				({ Synthetix } = ctx.l2.contracts);
 
-				owner = ctx.l2.owner;
+				owner = ctx.l2.users.owner;
 			});
 
 			before('record balances', async () => {

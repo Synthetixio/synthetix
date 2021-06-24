@@ -38,7 +38,7 @@ const computePrices = (longs, shorts, debt, fee) => {
 	};
 };
 
-contract('BinaryOptionMarket @gas-skip', accounts => {
+contract('BinaryOptionMarket', accounts => {
 	const [initialBidder, newBidder, pauper] = accounts;
 
 	const ZERO_ADDRESS = '0x' + '0'.repeat(40);

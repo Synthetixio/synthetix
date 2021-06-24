@@ -106,15 +106,15 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     uint public fundingLastRecomputed;
     int[] public fundingSequence;
 
-    /*
-     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.fundingIndex])}
-     * Then marketSkew * (_assetPrice() + _marketDebt()) + entryDebtCorrection yields the total system debt,
-     * which is equivalent to the sum of remaining margins in all positions.
-     */
-    int public entryDebtCorrection;
-
     mapping(address => Order) public orders;
     mapping(address => Position) public positions;
+
+    /*
+     * This holds the value: sum_{p in positions}{p.margin - p.size * (p.lastPrice + fundingSequence[p.fundingIndex])}
+     * Then marketSkew * (_assetPrice() + _marketDebt()) + _entryDebtCorrection yields the total system debt,
+     * which is equivalent to the sum of remaining margins in all positions.
+     */
+    int internal _entryDebtCorrection;
 
     uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
 
@@ -255,7 +255,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     function _marketDebt(uint price) internal view returns (uint) {
         int totalDebt =
             marketSkew.multiplyDecimalRound(int(price).add(_nextFundingEntry(fundingSequence.length, price))).add(
-                entryDebtCorrection
+                _entryDebtCorrection
             );
 
         return uint(_max(totalDebt, 0));
@@ -272,10 +272,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             return 0;
         }
         return marketSkew.divideDecimalRound(signedSize);
-    }
-
-    function proportionalSkew() external view returns (int) {
-        return _proportionalSkew();
     }
 
     function _currentFundingRatePerSecond() internal view returns (int) {
@@ -678,7 +674,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     function _applyDebtCorrection(Position memory newPosition, Position memory oldPosition) internal {
         int newCorrection = _positionDebtCorrection(newPosition);
         int oldCorrection = _positionDebtCorrection(oldPosition);
-        entryDebtCorrection = entryDebtCorrection.add(newCorrection).sub(oldCorrection);
+        _entryDebtCorrection = _entryDebtCorrection.add(newCorrection).sub(oldCorrection);
     }
 
     function _realiseMargin(
@@ -814,12 +810,13 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         int newSideSize;
         if (0 < newSize) {
-            // long case
+            // long case: marketSize + skew = 2 * longSize
             newSideSize = newMarketSize.add(newSkew);
         } else {
-            // short case
+            // short case: marketSize - skew = 2 * shortSize
             newSideSize = newMarketSize.sub(newSkew);
         }
+        // newSideSize still includes an extra factor of 2 here, so we will divide by 2 in the require statement.
 
         // We'll allow an extra little bit of value over and above the stated max to allow for
         // rounding errors, price movements, multiple orders etc.

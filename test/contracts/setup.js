@@ -610,6 +610,15 @@ const setupContract = async ({
 						returns: [false],
 					}),
 				]);
+			} else if (mock === 'FuturesMarketManager') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'totalDebt',
+						returns: ['0', false],
+					}),
+				]);
 			}
 		},
 	};
@@ -719,7 +728,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper'],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper', 'FuturesMarketManager'],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -889,13 +898,13 @@ const setupAllContracts = async ({
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
 			contract: 'FuturesMarketBTC',
-			source: 'FuturesMarket',
+			source: 'TestableFuturesMarket',
 			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{
 			contract: 'FuturesMarketETH',
-			source: 'FuturesMarket',
+			source: 'TestableFuturesMarket',
 			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
 		},
 		{ contract: 'FuturesMarketData', deps: [] },

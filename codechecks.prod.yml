@@ -1,8 +1,0 @@
-checks:
-  - name: eth-gas-reporter/codechecks
-    options:
-      name: prod-test-gas-report
-settings:
-  branches:
-    - develop
-    - master
