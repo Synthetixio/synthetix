@@ -1281,7 +1281,9 @@ contract('FuturesMarket', accounts => {
 			const FEE_ADDRESS = await feePool.FEE_ADDRESS();
 			const preBalance = await sUSD.balanceOf(FEE_ADDRESS);
 			const preDistribution = (await feePool.recentFeePeriods(0))[3];
-			const fee = (await futuresMarket.orderFee(trader, toUnit('1000'), toUnit('10')))[0];
+			const fee = (
+				await futuresMarket.orderFeeWithMarginDelta(trader, toUnit('1000'), toUnit('10'))
+			)[0];
 			await modifyMarginSubmitAndConfirmOrder({
 				market: futuresMarket,
 				account: trader,
