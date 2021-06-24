@@ -243,8 +243,8 @@
 			"major": 2,
 			"minor": 46
 		},
-		"sources": ["Exchanger", "Synthetix"],
-		"sips": [138, 139, 140]
+		"sources": ["DebtCache", "Exchanger", "Synthetix"],
+		"sips": [138, 139, 140, 145, 150, 151]
 	},
 	{
 		"name": "Alnitak (Optimism)",
@@ -253,7 +253,7 @@
 			"minor": 46
 		},
 		"ovm": true,
-		"sources": ["Exchanger", "MintableSynthetix"],
-		"sips": [138, 139, 140]
+		"sources": ["DebtCache", "Exchanger", "Synthetix"],
+		"sips": [138, 139, 140, 145, 150]
 	}
 ]
