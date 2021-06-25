@@ -104,7 +104,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
      * funding profit/loss on a given position, find the net profit per base unit since the position was
      * confirmed and multiply it by the position size.
      */
-    uint public _fundingLastRecomputed;
+    uint public fundingLastRecomputed;
     int[] public fundingSequence;
 
     /*
@@ -321,7 +321,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         int lastFRPerSecond = _lastFundingRate.div(1 days);
         int targetFR = _targetFundingRate();
         int targetFRPerSecond = targetFR.div(1 days);
-        int lastFundingTime = int(_fundingLastRecomputed).mul(_UNIT);
+        int lastFundingTime = int(fundingLastRecomputed).mul(_UNIT);
         int targetTime = int(_targetFundingRateTime(lastFundingTime, lastFRPerSecond, targetFRPerSecond)).mul(_UNIT);
         int currentTime = int(block.timestamp).mul(_UNIT);
 
@@ -345,9 +345,8 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         // If the current time is no later than the target time,
         //          (time - _fundingLastRecomputed) * (lastFunding + targetFunding) / 2
         // otherwise, we need to add on the extra part at targetFundingRate
-        //
 
-        int lastFundingTime = int(_fundingLastRecomputed);
+        int lastFundingTime = int(fundingLastRecomputed);
         int currentTime = int(block.timestamp);
         int lastFR = _lastFundingRate / 1 days;
         int targetFR = _targetFundingRate() / 1 days;
@@ -727,7 +726,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         uint sequenceLength = fundingSequence.length;
 
         fundingSequence.push(_nextFundingEntry(sequenceLength, price));
-        _fundingLastRecomputed = block.timestamp;
+        fundingLastRecomputed = block.timestamp;
         _lastFundingRate = _targetFundingRate();
 
         return sequenceLength;

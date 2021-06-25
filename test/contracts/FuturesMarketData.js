@@ -146,9 +146,32 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details.limits.maxMarketValue, params.maxMarketValue);
 			assert.bnEqual(details.limits.minInitialMargin, params.minInitialMargin);
 
-			assert.bnEqual(details.fundingParameters.maxFundingRate, params.maxFundingRate);
-			assert.bnEqual(details.fundingParameters.maxFundingRateSkew, params.maxFundingRateSkew);
-			assert.bnEqual(details.fundingParameters.maxFundingRateDelta, params.maxFundingRateDelta);
+			assert.bnEqual(
+				details.fundingDetails.currentFundingRate,
+				await futuresMarket.currentFundingRate()
+			);
+			assert.bnEqual(
+				details.fundingDetails.targetFundingRate,
+				await futuresMarket.targetFundingRate()
+			);
+			assert.bnEqual(
+				details.fundingDetails.unrecordedFunding,
+				(await futuresMarket.unrecordedFunding())[0]
+			);
+			assert.bnEqual(
+				details.fundingDetails.fundingLastRecomputed,
+				await futuresMarket.fundingLastRecomputed()
+			);
+
+			assert.bnEqual(details.fundingDetails.parameters.maxFundingRate, params.maxFundingRate);
+			assert.bnEqual(
+				details.fundingDetails.parameters.maxFundingRateSkew,
+				params.maxFundingRateSkew
+			);
+			assert.bnEqual(
+				details.fundingDetails.parameters.maxFundingRateDelta,
+				params.maxFundingRateDelta
+			);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());
 			const marketSizes = await futuresMarket.marketSizes();

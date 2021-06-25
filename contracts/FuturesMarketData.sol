@@ -18,6 +18,7 @@ contract FuturesMarketData {
         int marketSkew;
         uint marketDebt;
         int currentFundingRate;
+        int targetFundingRate;
         FeeRates feeRates;
     }
 
@@ -47,15 +48,15 @@ contract FuturesMarketData {
         bool invalid;
     }
 
+    struct FeeRates {
+        uint takerFee;
+        uint makerFee;
+    }
+
     struct FundingParameters {
         uint maxFundingRate;
         uint maxFundingRateSkew;
         uint maxFundingRateDelta;
-    }
-
-    struct FeeRates {
-        uint takerFee;
-        uint makerFee;
     }
 
     struct FundingDetails {
@@ -63,6 +64,7 @@ contract FuturesMarketData {
         int targetFundingRate;
         int unrecordedFunding;
         uint fundingLastRecomputed;
+        FundingParameters parameters;
     }
 
     struct MarketData {
@@ -70,7 +72,7 @@ contract FuturesMarketData {
         bytes32 baseAsset;
         FuturesMarketData.FeeRates feeRates;
         FuturesMarketData.MarketLimits limits;
-        FuturesMarketData.FundingParameters fundingParameters;
+        FuturesMarketData.FundingDetails fundingDetails;
         FuturesMarketData.MarketSizeDetails marketSizeDetails;
         FuturesMarketData.PriceDetails priceDetails;
     }
@@ -147,6 +149,7 @@ contract FuturesMarketData {
                 market.marketSize(),
                 market.marketSkew(),
                 debt,
+                market.currentFundingRate(),
                 market.targetFundingRate(),
                 FeeRates(parameters.takerFee, parameters.makerFee)
             );
@@ -175,6 +178,22 @@ contract FuturesMarketData {
         return FundingParameters(parameters.maxFundingRate, parameters.maxFundingRateSkew, parameters.maxFundingRateDelta);
     }
 
+    function _fundingDetails(FuturesMarket market, FuturesMarket.Parameters memory parameters)
+        internal
+        view
+        returns (FundingDetails memory)
+    {
+        (int unrecordedFunding, ) = market.unrecordedFunding();
+        return
+            FundingDetails(
+                market.currentFundingRate(),
+                market.targetFundingRate(),
+                unrecordedFunding,
+                market.fundingLastRecomputed(),
+                _fundingParameters(parameters)
+            );
+    }
+
     function _marketSizes(FuturesMarket market) internal view returns (Sides memory) {
         (uint long, uint short) = market.marketSizes();
         return Sides(long, short);
@@ -192,7 +211,7 @@ contract FuturesMarketData {
                 market.baseAsset(),
                 FeeRates(parameters.takerFee, parameters.makerFee),
                 MarketLimits(parameters.maxLeverage, parameters.maxMarketValue, parameters.minInitialMargin),
-                _fundingParameters(parameters),
+                _fundingDetails(market, parameters),
                 MarketSizeDetails(
                     market.marketSize(),
                     _marketSizes(market),
