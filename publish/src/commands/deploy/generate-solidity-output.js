@@ -116,7 +116,7 @@ module.exports = async ({
 	const solidity = `
 pragma solidity ^0.5.16;
 
-import "./BaseMigration.sol";
+import "../BaseMigration.sol";
 ${contractsAddedToSolidity
 	.map(contract => {
 		const contractSource = sourceOf(deployer.deployedContracts[contract]);

@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-import "./BaseMigration.sol";
+import "../BaseMigration.sol";
 import "../AddressResolver.sol";
 import "../ProxyERC20.sol";
 import "../Proxy.sol";
