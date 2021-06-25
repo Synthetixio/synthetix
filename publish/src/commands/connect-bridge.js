@@ -149,8 +149,10 @@ const connectLayer = async ({
 
 	const params = {
 		gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
-		gas: gasLimit,
 	};
+	if (gasLimit) {
+		params.gasLimit = gasLimit;
+	}
 
 	let tx, receipt;
 
