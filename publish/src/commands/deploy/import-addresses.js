@@ -86,7 +86,6 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 			if (deployer.newContractsDeployed.length > 0) {
 				reportDeployedContracts({ deployer });
 			}
-			process.exit();
 		}
 	} else {
 		console.log(gray('Addresses are correctly set up.'));

@@ -243,7 +243,7 @@ const performTransactionalStepWeb3 = async ({
 				return { noop: true };
 			}
 		} catch (err) {
-			catchMissingResolverWhenGeneratingSolidity({ contract, err, generateSolidity });
+			catchMissingResolverWhenGeneratingSolidity({ contract, dryRun, err, generateSolidity });
 		}
 	}
 
@@ -386,9 +386,14 @@ function reportDeployedContracts({ deployer }) {
 	}
 }
 
-const catchMissingResolverWhenGeneratingSolidity = ({ contract, err, generateSolidity }) => {
+const catchMissingResolverWhenGeneratingSolidity = ({
+	contract,
+	dryRun,
+	err,
+	generateSolidity,
+}) => {
 	if (
-		generateSolidity &&
+		(generateSolidity || dryRun) &&
 		/VM Exception while processing transaction: revert Missing address/.test(err.message)
 	) {
 		console.log(
