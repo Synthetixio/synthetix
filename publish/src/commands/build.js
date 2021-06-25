@@ -27,13 +27,14 @@ const overrides = require('../contract-overrides');
 
 const build = async ({
 	buildPath = DEFAULTS.buildPath,
+	cleanBuild,
+	migrations,
 	optimizerRuns = DEFAULTS.optimizerRuns,
+	showContractSize,
+	showWarnings,
 	skipUnchanged,
 	testHelpers,
-	showWarnings,
-	showContractSize,
 	useOvm,
-	cleanBuild,
 } = {}) => {
 	console.log(gray(`Starting build${useOvm ? ' using OVM' : ''} at path ${buildPath}...`));
 
@@ -52,7 +53,9 @@ const build = async ({
 	const libraries = findSolFiles({ sourcePath: 'node_modules' });
 	const contracts = findSolFiles({
 		sourcePath: CONTRACTS_FOLDER,
-		ignore: [].concat(!testHelpers ? /^test-helpers\// : []),
+		ignore: []
+			.concat(!migrations ? /^migrations\// : [])
+			.concat(!testHelpers ? /^test-helpers\// : []),
 	});
 
 	if (useOvm) {

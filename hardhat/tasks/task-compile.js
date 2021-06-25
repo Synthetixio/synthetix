@@ -22,6 +22,7 @@ task('compile')
 	.addFlag('useOvm', 'Compile with the OVM Solidity compiler')
 	.addFlag('native', 'Compile with the native solc compiler')
 	.setAction(async (taskArguments, hre, runSuper) => {
+		console.log(require('util').inspect(hre, true, null, true));
 		if (taskArguments.useOvm) {
 			console.log(gray('Compiling with OVM Solidity compiler...'));
 
