@@ -393,7 +393,9 @@ const catchMissingResolverWhenGeneratingSolidity = ({ contract, err, generateSol
 	) {
 		console.log(
 			gray(
-				`WARNING: Error thrown reading state with missing resolver addresses (expected for new contracts that need their resolvers cached). Ignoring as this is generate-solidity mode.`
+				`WARNING: Error thrown reading state from ${yellow(
+					contract
+				)} with missing resolver addresses (expected for new contracts that need their resolvers cached). Ignoring as this is generate-solidity mode.`
 			)
 		);
 	} else {

@@ -9,6 +9,8 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../../../..');
 
+const { catchMissingResolverWhenGeneratingSolidity } = require('../../util');
+
 module.exports = async ({
 	deployer,
 	methodCallGasLimit,
@@ -38,9 +40,11 @@ module.exports = async ({
 			// weird edge case: if a new SystemSettings is deployed and generate-solidity is on then
 			// this fails cause the resolver is not cached, so imitate this empty response to keep
 			// generating solidity code
-			if (!generateSolidity) {
-				throw err;
-			}
+			catchMissingResolverWhenGeneratingSolidity({
+				contract: 'SystemSettings',
+				err,
+				generateSolidity,
+			});
 		}
 		const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 
