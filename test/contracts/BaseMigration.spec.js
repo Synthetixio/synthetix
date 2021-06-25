@@ -71,12 +71,12 @@ contract('BaseMigration', async accounts => {
 			beforeEach(async () => {
 				contractThatIsOwned = await TokenState.new(owner, owner);
 				legacyContractThatIsOwned = await LegacyTokenState.new(owner, owner);
-				// ensure both expose functions as expected
 			});
 			describe('when these contracts have the mock migration as their nominated owner', () => {
 				beforeEach(async () => {
 					await contractThatIsOwned.nominateNewOwner(instance.address, { from: owner });
 					await legacyContractThatIsOwned.nominateOwner(instance.address, { from: owner });
+					// ensure both expose functions as expected
 					assert.equal(await contractThatIsOwned.nominatedOwner(), instance.address);
 					assert.equal(await legacyContractThatIsOwned.nominatedOwner(), instance.address);
 				});
@@ -84,24 +84,23 @@ contract('BaseMigration', async accounts => {
 					beforeEach(async () => {
 						await instance.acceptOwnership(contractThatIsOwned.address);
 						await instance.acceptOwnership(legacyContractThatIsOwned.address);
+						// ensure acceptOwnership in the mock worked
+						assert.equal(await contractThatIsOwned.owner(), instance.address);
+						assert.equal(await legacyContractThatIsOwned.owner(), instance.address);
 					});
 					describe('when returnOwnership is invoked on a regular Owned', () => {
 						beforeEach(async () => {
-							await instance.returnOwnership(contractThatIsOwned.address, {
-								from: deployerAccount,
-							});
+							await instance.returnOwnership(contractThatIsOwned.address);
 						});
-						it('then the nominated owner is updatd', async () => {
+						it('then the nominated owner is updated', async () => {
 							assert.equal(await contractThatIsOwned.nominatedOwner(), owner);
 						});
 					});
 					describe('when returnOwnership is invoked on a legacy Owned', () => {
 						beforeEach(async () => {
-							await instance.returnOwnership(legacyContractThatIsOwned.address, {
-								from: deployerAccount,
-							});
+							await instance.returnOwnership(legacyContractThatIsOwned.address);
 						});
-						it('then the nominated owner is updatd', async () => {
+						it('then the nominated owner is updated', async () => {
 							assert.equal(await legacyContractThatIsOwned.nominatedOwner(), owner);
 						});
 					});
@@ -115,9 +114,7 @@ contract('BaseMigration', async accounts => {
 				});
 				it('then the function reverts', async () => {
 					await assert.revert(
-						instance.returnOwnership(forSomethingNotOwned.address, {
-							from: deployerAccount,
-						}),
+						instance.returnOwnership(forSomethingNotOwned.address),
 						'Legacy nomination failed'
 					);
 				});
