@@ -106,7 +106,7 @@ const deployShortingRewards = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 	});
 
@@ -251,7 +251,7 @@ const deployShortingRewards = async ({
 				...opts,
 				deployer,
 				gasPrice,
-				etherscanLinkPrefix,
+				explorerLinkPrefix,
 				ownerActions,
 				ownerActionsFile,
 				nonceManager: manageNonces ? nonceManager : undefined,
@@ -285,7 +285,7 @@ const deployShortingRewards = async ({
 	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
 		name,
 		address,
-		`${etherscanLinkPrefix}/address/${address}`,
+		`${explorerLinkPrefix}/address/${address}`,
 	]);
 	console.log();
 	if (tableData.length) {

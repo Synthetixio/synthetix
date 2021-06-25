@@ -174,10 +174,11 @@ const deploy = async ({
 	const {
 		providerUrl: envProviderUrl,
 		privateKey: envPrivateKey,
-		etherscanLinkPrefix,
+		explorerLinkPrefix,
 	} = loadConnections({
 		network,
 		useFork,
+		useOvm,
 	});
 
 	if (!providerUrl) {
@@ -264,7 +265,7 @@ const deploy = async ({
 			...opts,
 			account,
 			dryRun,
-			etherscanLinkPrefix,
+			explorerLinkPrefix,
 			gasPrice,
 			generateSolidity,
 			nonceManager: manageNonces ? nonceManager : undefined,
