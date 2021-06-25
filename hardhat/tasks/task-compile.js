@@ -22,7 +22,6 @@ task('compile')
 	.addFlag('useOvm', 'Compile with the OVM Solidity compiler')
 	.addFlag('native', 'Compile with the native solc compiler')
 	.setAction(async (taskArguments, hre, runSuper) => {
-		console.log(require('util').inspect(hre, true, null, true));
 		if (taskArguments.useOvm) {
 			console.log(gray('Compiling with OVM Solidity compiler...'));
 
@@ -97,6 +96,11 @@ internalTask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS, async (_, { config }, runSu
 
 			return !isIgnored;
 		});
+	}
+
+	if (config.paths.ignore) {
+		console.log(gray(`Ignoring paths`), yellow(config.paths.ignore));
+		filePaths = filePaths.filter(filePath => !config.paths.ignore.test(filePath));
 	}
 
 	return filePaths;
