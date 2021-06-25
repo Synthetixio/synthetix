@@ -63,7 +63,7 @@ module.exports = async ({
 		for (const [index, argument] of Object.entries(argumentsForWriteFunction)) {
 			const abiEntry = abi.find(({ name }) => name === write);
 
-			const { internalType } = abiEntry.inputs[index];
+			const { internalType, name: inputArgumentName } = abiEntry.inputs[index];
 
 			const decodeBytes32IfRequired = input =>
 				Array.isArray(input)
@@ -84,7 +84,8 @@ module.exports = async ({
 				// arrays needs to be created in memory
 				const typeOfArrayElement = internalType.replace(/\[|\]/g, '').replace(/^contract /, '');
 
-				const variableName = `${contract.toLowerCase()}_${write}_${runIndex}_${index}`;
+				const variableName = `${contract.toLowerCase()}_${write}_${inputArgumentName ||
+					runIndex}_${index}`;
 				instructions.push(
 					`${typeOfArrayElement}[] memory ${variableName} = new ${typeOfArrayElement}[](${argument.length})`
 				);
