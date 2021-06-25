@@ -56,7 +56,7 @@ contract FuturesMarketData {
     struct FundingParameters {
         uint maxFundingRate;
         uint maxFundingRateSkew;
-        uint maxFundingRateDelta;
+        uint fundingRateSlope;
     }
 
     struct FundingDetails {
@@ -175,7 +175,7 @@ contract FuturesMarketData {
         pure
         returns (FundingParameters memory)
     {
-        return FundingParameters(parameters.maxFundingRate, parameters.maxFundingRateSkew, parameters.maxFundingRateDelta);
+        return FundingParameters(parameters.maxFundingRate, parameters.maxFundingRateSkew, parameters.fundingRateSlope);
     }
 
     function _fundingDetails(FuturesMarket market, FuturesMarket.Parameters memory parameters)

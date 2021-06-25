@@ -168,10 +168,7 @@ contract('FuturesMarketData', accounts => {
 				details.fundingDetails.parameters.maxFundingRateSkew,
 				params.maxFundingRateSkew
 			);
-			assert.bnEqual(
-				details.fundingDetails.parameters.maxFundingRateDelta,
-				params.maxFundingRateDelta
-			);
+			assert.bnEqual(details.fundingDetails.parameters.fundingRateSlope, params.fundingRateSlope);
 
 			assert.bnEqual(details.marketSizeDetails.marketSize, await futuresMarket.marketSize());
 			const marketSizes = await futuresMarket.marketSizes();

@@ -18,10 +18,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IERC20.sol";
 
 // Remaining Functionality
-//     Make it clear through naming that funding rates variables are per day
 //     Rename marketSize, marketSkew, marketDebt, profitLoss, accruedFunding -> size, skew, debt, profit, funding
-//     Consider reverting if things need to be liquidated rather than triggering it except by the
-//         liquidatePosition function
 //     Consider eliminating the fundingIndex param everywhere if we're always computing up to the current time.
 //     Move the minimum initial margin into a global setting within SystemSettings, and then set a maximum liquidation fee that is the current minimum initial margin (otherwise we could set a value that will immediately liquidate every position)
 
@@ -33,7 +30,6 @@ import "./interfaces/IERC20.sol";
  *    - the account being managed was not liquidated in the same transaction;
  */
 
-// TODO: Update market data contract with funding rate modifications.
 // TODO: Rename max FR delta to the rate of change or something.
 
 interface IFuturesMarketManagerInternal {
@@ -75,16 +71,15 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         uint fundingIndex;
     }
 
-    // TODO: Convert funding rate from daily to per-second
     struct Parameters {
         uint takerFee;
         uint makerFee;
         uint maxLeverage;
         uint maxMarketValue;
         uint minInitialMargin;
-        uint maxFundingRate;
-        uint maxFundingRateSkew;
-        uint maxFundingRateDelta;
+        uint maxFundingRate; // Daily funding rate per base unit
+        uint maxFundingRateSkew; // The skew level that induces maximum funding
+        uint fundingRateSlope; // The rate of change of the 24h funding rate per day
     }
 
     /* ========== STATE VARIABLES ========== */
@@ -138,7 +133,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     bytes32 internal constant PARAMETER_MININITIALMARGIN = "minInitialMargin";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATE = "maxFundingRate";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATESKEW = "maxFundingRateSkew";
-    bytes32 internal constant PARAMETER_MAXFUNDINGRATEDELTA = "maxFundingRateDelta";
+    bytes32 internal constant PARAMETER_FUNDINGRATESLOPE = "fundingRateSlope";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -163,7 +158,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         parameters.minInitialMargin = _minInitialMargin;
         parameters.maxFundingRate = _fundingParameters[0];
         parameters.maxFundingRateSkew = _fundingParameters[1];
-        parameters.maxFundingRateDelta = _fundingParameters[2];
+        parameters.fundingRateSlope = _fundingParameters[2];
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
@@ -303,16 +298,19 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function _targetFundingRateTime(
-        int lastFundingTime,
+        uint lastFundingTime,
         int lastFRPerSecond,
         int targetFRPerSecond
     ) internal view returns (uint) {
         return
             uint(
                 lastFundingTime.add(
-                    _signedAbs(lastFRPerSecond.sub(targetFRPerSecond))
-                        .divideDecimalRound(int(parameters.maxFundingRateDelta / 1 days))
-                        .div(_UNIT)
+                    _abs(
+                        lastFRPerSecond
+                            .sub(targetFRPerSecond)
+                            .divideDecimalRound(int(parameters.fundingRateSlope / 1 days))
+                            .div(_UNIT) // Divide out the fixed point unit
+                    )
                 )
             );
     }
@@ -321,32 +319,29 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         int lastFRPerSecond = _lastFundingRate.div(1 days);
         int targetFR = _targetFundingRate();
         int targetFRPerSecond = targetFR.div(1 days);
-        int lastFundingTime = int(fundingLastRecomputed).mul(_UNIT);
-        int targetTime = int(_targetFundingRateTime(lastFundingTime, lastFRPerSecond, targetFRPerSecond)).mul(_UNIT);
-        int currentTime = int(block.timestamp).mul(_UNIT);
+        uint lastFundingTime = fundingLastRecomputed;
+        int lastFundingTimeDecimal = int(lastFundingTime).mul(_UNIT);
+        int targetTimeDecimal = int(_targetFundingRateTime(lastFundingTime, lastFRPerSecond, targetFRPerSecond)).mul(_UNIT);
+        int currentTimeDecimal = int(block.timestamp).mul(_UNIT);
 
-        if (currentTime <= targetTime) {
+        // If we've reached the target time, return the target funding rate.
+        if (targetTimeDecimal <= currentTimeDecimal) {
             return targetFR;
         }
 
+        // Otherwise, we're still linearly interpolating between the last rate and the target rate according to
+        // the formula:
+        // currentRate = (lastRate * (targetTime - now) + targetRate * (now - lastTime)) / (targetTime - lastTime)
         return
             lastFRPerSecond
-                .multiplyDecimalRound(targetTime.sub(currentTime))
-                .add(targetFRPerSecond.multiplyDecimalRound(currentTime.sub(lastFundingTime)))
-                .mul(1 days);
-    }
-
-    function _unrecordedFunding(uint price) internal view returns (int) {
-        return _unrecordedBaseFunding().multiplyDecimalRound(int(price));
+                .multiplyDecimalRound(targetTimeDecimal.sub(currentTimeDecimal))
+                .add(targetFRPerSecond.multiplyDecimalRound(currentTimeDecimal.sub(lastFundingTimeDecimal)))
+                .mul(1 days)
+                .divideDecimalRound(targetTimeDecimal.sub(lastFundingTimeDecimal));
     }
 
     function _unrecordedBaseFunding() internal view returns (int) {
-        // Formula:
-        // If the current time is no later than the target time,
-        //          (time - _fundingLastRecomputed) * (lastFunding + targetFunding) / 2
-        // otherwise, we need to add on the extra part at targetFundingRate
-
-        int lastFundingTime = int(fundingLastRecomputed);
+        uint lastFundingTime = fundingLastRecomputed;
         int currentTime = int(block.timestamp);
         int lastFR = _lastFundingRate / 1 days;
         int targetFR = _targetFundingRate() / 1 days;
@@ -354,16 +349,21 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         // The time when the funding rate will meet the target rate.
         int targetTime = int(_targetFundingRateTime(lastFundingTime, lastFR, targetFR));
 
-        // Funding contributed while the funding rate is still moving.
+        // Funding contributed while the funding rate is still moving;
+        // integrate over the funding rate for the interval from lastFundingTime until interpTime.
         int interpTime = _min(currentTime, targetTime);
-        int totalFunding = interpTime.sub(lastFundingTime).mul(lastFR.add(targetFR).div(2));
+        int totalFunding = interpTime.sub(int(lastFundingTime)).mul(lastFR.add(targetFR)).div(2);
 
-        // Funding contributed after the target funding rate has been reached (if any).
+        // Add on funding contributed after the target funding rate has been reached (if any).
         if (interpTime == targetTime) {
             return totalFunding.add(currentTime.sub(targetTime).mul(targetFR));
         }
 
         return totalFunding;
+    }
+
+    function _unrecordedFunding(uint price) internal view returns (int) {
+        return _unrecordedBaseFunding().multiplyDecimalRound(int(price));
     }
 
     function unrecordedFunding() external view returns (int funding, bool invalid) {
@@ -715,9 +715,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     // TODO: Setting this parameter should record funding first.
-    function setMaxFundingRateDelta(uint maxFundingRateDelta) external optionalProxy_onlyOwner {
-        parameters.maxFundingRateDelta = maxFundingRateDelta;
-        emitParameterUpdated(PARAMETER_MAXFUNDINGRATEDELTA, maxFundingRateDelta);
+    function setFundingRateSlope(uint fundingRateSlope) external optionalProxy_onlyOwner {
+        parameters.fundingRateSlope = fundingRateSlope;
+        emitParameterUpdated(PARAMETER_FUNDINGRATESLOPE, fundingRateSlope);
     }
 
     /* ---------- Market Operations ---------- */

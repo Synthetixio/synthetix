@@ -43,7 +43,7 @@ contract('FuturesMarket', accounts => {
 	const minInitialMargin = toUnit('100');
 	const maxFundingRate = toUnit('0.1');
 	const maxFundingRateSkew = toUnit('1');
-	const maxFundingRateDelta = toUnit('100000'); // Move funding rate effectively instantly
+	const fundingRateSlope = toUnit('100000'); // Move funding rate effectively instantly
 	const initialPrice = toUnit('100');
 	const liquidationFee = toUnit('20');
 
@@ -120,7 +120,7 @@ contract('FuturesMarket', accounts => {
 		}));
 
 		// Allow funding rate to change instantly to simplify testing calculations calculations
-		await futuresMarket.setMaxFundingRateDelta(maxFundingRateDelta, { from: owner });
+		await futuresMarket.setFundingRateSlope(fundingRateSlope, { from: owner });
 
 		// Update the rate so that it is not invalid
 		oracle = await exchangeRates.oracle();
@@ -149,7 +149,7 @@ contract('FuturesMarket', accounts => {
 					'setMinInitialMargin',
 					'setMaxFundingRate',
 					'setMaxFundingRateSkew',
-					'setMaxFundingRateDelta',
+					'setFundingRateSlope',
 					'modifyMargin',
 					'withdrawAllMargin',
 					'submitOrder',
@@ -172,7 +172,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(parameters.minInitialMargin, minInitialMargin);
 			assert.bnEqual(parameters.maxFundingRate, maxFundingRate);
 			assert.bnEqual(parameters.maxFundingRateSkew, maxFundingRateSkew);
-			assert.bnEqual(parameters.maxFundingRateDelta, maxFundingRateDelta);
+			assert.bnEqual(parameters.fundingRateSlope, fundingRateSlope);
 		});
 
 		it('prices are properly fetched', async () => {
@@ -195,7 +195,7 @@ contract('FuturesMarket', accounts => {
 				['minInitialMargin', '500', futuresMarket.setMinInitialMargin],
 				['maxFundingRate', '0.5', futuresMarket.setMaxFundingRate],
 				['maxFundingRateSkew', '0.5', futuresMarket.setMaxFundingRateSkew],
-				['maxFundingRateDelta', '0.02', futuresMarket.setMaxFundingRateDelta],
+				['fundingRateSlope', '0.02', futuresMarket.setFundingRateSlope],
 			];
 
 			for (const p of params) {
@@ -1389,6 +1389,8 @@ contract('FuturesMarket', accounts => {
 
 		describe('Remaining margin', async () => {
 			beforeEach(async () => {
+				// Set up orders with differing leverage/margin, but equal notional,
+				// which induces zero skew
 				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.submitOrder(toUnit('5'), { from: trader });
 				await futuresMarket.modifyMargin(toUnit('5000'), { from: trader2 });
@@ -1834,10 +1836,10 @@ contract('FuturesMarket', accounts => {
 		describe('Funding rate of change', async () => {
 			beforeEach(async () => {
 				// Slow down the funding rate speed, so that we can actually test it.
-				await futuresMarket.setMaxFundingRateDelta(toUnit('0.005'));
+				await futuresMarket.setFundingRateSlope(toUnit('0.005'));
 			});
 
-			it.skip('Inducing skew, the target funding rate moves instantly, but the funding rate takes time', async () => {
+			it.skip('Inducing skew, the target funding rate moves instantly, but the actual funding rate does not immediately respond', async () => {
 				assert.isTrue(false);
 			});
 
