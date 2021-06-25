@@ -75,7 +75,7 @@ const removeSynths = async ({
 		}
 	}
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 		useFork,
 	});
@@ -181,7 +181,7 @@ const removeSynths = async ({
 				writeArg: toBytes32(currencyKey),
 				gasLimit,
 				gasPrice,
-				etherscanLinkPrefix,
+				explorerLinkPrefix,
 				ownerActions,
 				ownerActionsFile,
 				encodeABI: network === 'mainnet',
