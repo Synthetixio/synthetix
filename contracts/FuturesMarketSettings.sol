@@ -38,6 +38,7 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     bytes32 internal constant PARAMETER_TAKERFEE = "takerFee";
     bytes32 internal constant PARAMETER_MAKERFEE = "makerFee";
     bytes32 internal constant PARAMETER_MAXLEVERAGE = "maxLeverage";
+    bytes32 internal constant PARAMETER_CLOSUREFEE = "closureFee"; // TODO: implement this
     bytes32 internal constant PARAMETER_MAXMARKETVALUE = "maxMarketValue";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATE = "maxFundingRate";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATESKEW = "maxFundingRateSkew";

@@ -134,13 +134,12 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYNTHSUSD;
-        newAddresses[3] = CONTRACT_FEEPOOL;
-        newAddresses[4] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[5] = CONTRACT_FUTURESMARKETSETTINGS;
+        newAddresses[3] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[4] = CONTRACT_FUTURESMARKETSETTINGS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
