@@ -912,7 +912,10 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemStatus', 'Issuer', 'ExchangeRates', 'DebtCache'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
-		{ contract: 'FuturesMarketManager', deps: ['AddressResolver', 'ProxyFuturesMarketManager'] },
+		{
+			contract: 'FuturesMarketManager',
+			deps: ['AddressResolver', 'ProxyFuturesMarketManager'],
+		},
 		{
 			contract: 'FuturesMarketSettings',
 			deps: ['AddressResolver', 'SystemSettings'],
@@ -921,24 +924,13 @@ const setupAllContracts = async ({
 		{
 			contract: 'FuturesMarketBTC',
 			source: 'TestableFuturesMarket',
-			deps: [
-				'Proxy',
-				'AddressResolver',
-				'FuturesMarketManager',
-				'FuturesMarketSettings',
-				'SystemSettings',
-				'ExchangeRates',
-				'FeePool',
-				'Issuer',
-				'SynthetixEscrow',
-				'Liquidations',
-			],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{
 			contract: 'FuturesMarketETH',
 			source: 'TestableFuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
 		},
 		{ contract: 'FuturesMarketData', deps: [] },
 	];
