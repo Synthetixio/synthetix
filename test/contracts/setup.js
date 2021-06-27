@@ -884,6 +884,7 @@ const setupAllContracts = async ({
 				'EtherCollateralsUSD',
 				'CollateralManager',
 				'EtherWrapper',
+				'FuturesMarketManager',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},

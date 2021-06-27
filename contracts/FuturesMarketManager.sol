@@ -13,6 +13,7 @@ import "./AddressSetLib.sol";
 // Internal references
 import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/ISynth.sol";
+import "./interfaces/IFeePool.sol";
 
 // TODO: Does this really need to be proxyable?
 contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarketManager {
@@ -27,6 +28,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -39,12 +41,17 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](1);
+        addresses = new bytes32[](2);
         addresses[0] = CONTRACT_SYNTHSUSD;
+        addresses[1] = CONTRACT_FEEPOOL;
     }
 
     function _sUSD() internal view returns (ISynth) {
         return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
+    }
+
+    function _feePool() internal view returns (IFeePool) {
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function markets(uint index, uint pageSize) external view returns (address[] memory) {
@@ -129,6 +136,12 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
 
     function burnSUSD(address account, uint amount) external onlyMarkets {
         _sUSD().burn(account, amount);
+    }
+
+    function payFee(uint amount) external onlyMarkets {
+        IFeePool pool = _feePool();
+        _sUSD().issue(pool.FEE_ADDRESS(), amount);
+        pool.recordFeePaid(amount);
     }
 
     /* ========== MODIFIERS ========== */

@@ -14,7 +14,6 @@ import "./SignedSafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IFeePool.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 
@@ -39,6 +38,8 @@ interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
     function burnSUSD(address account, uint amount) external;
+
+    function payFee(uint amount) external;
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarket
@@ -110,7 +111,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
-    bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
 
@@ -154,10 +154,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
-    }
-
-    function _feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function _sUSD() internal view returns (IERC20) {
@@ -908,7 +904,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         // Send the fee to the fee pool
         if (0 < order.fee) {
-            _manager().issueSUSD(_feePool().FEE_ADDRESS(), order.fee);
+            _manager().payFee(order.fee);
         }
 
         // Actually lodge the position and delete the order
