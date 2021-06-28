@@ -149,8 +149,10 @@ const connectLayer = async ({
 
 	const params = {
 		gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
-		gas: gasLimit,
 	};
+	if (gasLimit) {
+		params.gasLimit = gasLimit;
+	}
 
 	let tx, receipt;
 
@@ -293,9 +295,10 @@ const bootstrapConnection = ({
 	const { getUsers, getTarget, getSource } = wrap({ network, useOvm, fs, path });
 
 	let wallet;
-	if (useFork) {
+	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address;
 		wallet = provider.getSigner(account);
+		wallet.address = wallet._address;
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}

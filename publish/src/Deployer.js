@@ -5,7 +5,7 @@ const Web3 = require('web3');
 const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
-const { stringify, getEtherscanLinkPrefix } = require('./util');
+const { stringify, getExplorerLinkPrefix } = require('./util');
 const { getVersions, getUsers } = require('../..');
 
 class Deployer {
@@ -59,7 +59,8 @@ class Deployer {
 		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
 		this.provider.ethers.provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-		if (useFork || (!privateKey && network === 'local')) {
+		// use the default owner when in a fork or in local mode and no private key supplied
+		if ((useFork || network === 'local') && !privateKey) {
 			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
 
 			this.provider.ethers.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
@@ -344,12 +345,13 @@ class Deployer {
 			timestamp = this.deployment.targets[name].timestamp;
 			txn = this.deployment.targets[name].txn;
 		}
+		const { network, useOvm } = this;
 		// now update the deployed contract information
 		this.deployment.targets[name] = {
 			name,
 			address,
 			source,
-			link: `${getEtherscanLinkPrefix(this.network)}/address/${
+			link: `${getExplorerLinkPrefix({ network, useOvm })}/address/${
 				this.deployedContracts[name].options.address
 			}`,
 			timestamp,

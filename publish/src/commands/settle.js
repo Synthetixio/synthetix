@@ -59,7 +59,7 @@ const settle = async ({
 
 	console.log(gray('Using network:', yellow(network)));
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 		useFork,
 	});
@@ -71,14 +71,14 @@ const settle = async ({
 	console.log(gray('gasPrice'), yellow(gasPrice));
 	gasPrice = ethers.utils.parseUnits(gasPrice, 'gwei');
 
-	let deployer;
-	if (useFork) {
+	let wallet;
+	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
-		deployer = provider.getSigner(account);
+		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
 	} else {
-		deployer = new ethers.Wallet(privateKey, provider);
+		wallet = new ethers.Wallet(privateKey, provider);
 	}
-	deployer.address = deployer._address;
 
 	const user = new ethers.Wallet(privateKey, provider);
 
@@ -97,15 +97,15 @@ const settle = async ({
 		} else {
 			console.log(
 				green(`Sending ${yellow(ethToSeed)} ETH to address from`),
-				yellow(deployer.address)
+				yellow(wallet.address)
 			);
-			const { transactionHash } = await deployer.sendTransaction({
+			const { transactionHash } = await wallet.sendTransaction({
 				to: user.address,
 				value: ethers.utils.parseUnits(ethToSeed),
 				gasLimit,
 				gasPrice,
 			});
-			console.log(gray(`${etherscanLinkPrefix}/tx/${transactionHash}`));
+			console.log(gray(`${explorerLinkPrefix}/tx/${transactionHash}`));
 		}
 	}
 
@@ -328,7 +328,7 @@ const settle = async ({
 					});
 					const { transactionHash } = await tx.wait();
 
-					console.log(gray(`${etherscanLinkPrefix}/tx/${transactionHash}`));
+					console.log(gray(`${explorerLinkPrefix}/tx/${transactionHash}`));
 				} catch (err) {
 					console.log(red('Could not transact:', err));
 				}
