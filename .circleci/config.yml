@@ -48,16 +48,25 @@ jobs:
     machine:
       image: ubuntu-2004:202010-01
       docker_layer_caching: true
-    resource_class: large
+    resource_class: xlarge
     steps:
       - checkout
       - attach_workspace:
           at: .
+      - restore_cache:
+          keys:
+            - v4-optimism-build-
       - run:
           name: Build docker containers if necessary
           command: |
-            npx hardhat ops --fresh --build
-            npx hardhat ops --build-ops
+            if [ ! -d ./optimism ]; then
+              npx hardhat ops --fresh --build
+              npx hardhat ops --build-ops
+            fi;
+      - save_cache:
+          key: v4-optimism-build-
+          paths:
+            - ./optimism
       - run:
           name: Start docker chains
           background: true
