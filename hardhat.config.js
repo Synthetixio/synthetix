@@ -5,6 +5,7 @@ const path = require('path');
 
 require('./hardhat');
 require('@nomiclabs/hardhat-truffle5');
+require('@nomiclabs/hardhat-ethers');
 require('solidity-coverage');
 require('hardhat-gas-reporter');
 
@@ -60,11 +61,12 @@ module.exports = {
 	gasReporter: {
 		enabled: false,
 		showTimeSpent: true,
+		gasPrice: 20,
 		currency: 'USD',
 		maxMethodDiff: 25, // CI will fail if gas usage is > than this %
 		outputFile: 'test-gas-used.log',
 	},
 	mocha: {
-		timeout: 30e3, // 30s
+		timeout: 60e3, // 60s
 	},
 };

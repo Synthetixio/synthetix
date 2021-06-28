@@ -26,6 +26,67 @@ jobs:
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: rm -rf build # force a clean build
       - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
+  job-fork-tests:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npm run fork
+          background: true
+      - cmd-wait-for-port:
+          port: 8545
+      - run: npx hardhat test:integration:l1 --compile --deploy --use-fork
+  job-integration-tests:
+    working_directory: ~/repo
+    machine:
+      image: ubuntu-2004:202010-01
+      docker_layer_caching: true
+    resource_class: large
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            - v3-optimism-build-
+      - run:
+          name: Build docker containers if necessary
+          command: |
+            if [ ! -d ./optimism ]; then
+              npx hardhat ops --fresh --build --build-ops
+            fi;
+      - save_cache:
+          key: v3-optimism-build-
+          paths:
+            - ./optimism
+      - run:
+          name: Start docker chains
+          background: true
+          command: |
+            npx hardhat ops --start
+      - cmd-wait-for-port:
+          port: 8545
+      - cmd-wait-for-port:
+          port: 9545
+      - run:
+          name: Run isolated layer 1 integration tests
+          command: |
+            npx hardhat test:integration:l1 --compile --deploy --provider-port 9545
+      - run:
+          name: Run isolated layer 2 integration tests
+          command: |
+            npx hardhat test:integration:l2 --compile --deploy
+      - run:
+          name: Run dual layer 1 and layer 2 integration tests
+          command: |
+            npx hardhat test:integration:dual --deploy
   job-lint:
     working_directory: ~/repo
     docker:
@@ -73,100 +134,6 @@ jobs:
           root: .
           paths:
             - node_modules
-  job-prod-diff-tests-local-ovm:
-    working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:14.16-focal
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build --test-helpers
-      - run: npx hardhat compile --force
-      - run:
-          command: npx hardhat node
-          background: true
-      - cmd-wait-for-port:
-          port: 8545
-      - run: node publish deploy --network local --fresh-deploy --yes --use-ovm --ignore-safety-checks --ignore-custom-parameters --deployment-path ./publish/deployed/local-ovm
-      - run: npm run test:prod -- --no-compile --use-ovm --patch-fresh-deployment --deployment-path ./publish/deployed/local-ovm
-  job-prod-diff-tests-local:
-    working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:14.16-focal
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build --test-helpers
-      - run:
-          command: npx hardhat node
-          background: true
-      - cmd-wait-for-port:
-          port: 8545
-      - run: node publish deploy --network local --fresh-deploy --yes
-      - run: npm run test:prod -- --patch-fresh-deployment
-  job-prod-diff-tests:
-    working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:14.16-focal
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    resource_class: large
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: node publish build
-      - run:
-          command: npx hardhat node --target-network mainnet
-          background: true
-      - cmd-wait-for-port:
-          port: 8545
-      - run: node publish prepare-deploy --network mainnet
-      - run: node publish deploy --ignore-safety-checks --add-new-synths --use-fork --yes --network mainnet
-      - run: npm run test:prod:gas -- --target-network mainnet --patch-fresh-deployment
-      - run: npx codechecks codechecks.prod.yml
-      - store_artifacts:
-          path: test-gas-used-prod.log
-  job-prod-tests-ovm:
-    working_directory: ~/repo
-    machine:
-      image: ubuntu-2004:202010-01
-      docker_layer_caching: true
-    resource_class: large
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: echo Disabled until ops tool is fixed by Optimism
-  job-prod-tests:
-    working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:14.16-focal
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          command: npx hardhat node --target-network mainnet
-          background: true
-      - cmd-wait-for-port:
-          port: 8545
-      - run: npm run test:prod:gas -- --target-network mainnet
-      - run: npx codechecks codechecks.prod.yml
-      - store_artifacts:
-          path: test-gas-used-prod.log
   job-static-analysis:
     working_directory: ~/repo
     docker:
@@ -210,6 +177,22 @@ jobs:
       - store_artifacts:
           path: test/publish/test-log.html
           destination: test-log.html
+  job-unit-tests-coverage-report:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp/coverage
+      - run:
+          name: Upload coverage
+          command: |
+            cp -R /tmp/coverage/coverage-*.json .
+            bash <(curl -s https://codecov.io/bash)
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
@@ -218,12 +201,28 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
     resource_class: large
+    parallelism: 8
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: NODE_OPTIONS=--max_old_space_size=4096 npm run coverage
-      - run: bash <(curl -s https://codecov.io/bash)
+      - run:
+          name: Create shared coverage outputs folder
+          command: mkdir -p /tmp/coverage
+      - run:
+          name: Coverage
+          command: |
+            TEST_FILES="{$(circleci tests glob "test/contracts/*.js" | \
+              circleci tests split --split-by=timings | xargs | sed -e 's/ /,/g')}"
+            npm run coverage -- --testfiles "$TEST_FILES"
+      - run:
+          name: Save coverage
+          command: |
+            cp coverage.json /tmp/coverage/coverage-$CIRCLE_NODE_INDEX.json
+      - persist_to_workspace:
+          root: /tmp/coverage
+          paths:
+            - coverage-*.json
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
@@ -231,15 +230,17 @@ jobs:
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
-    resource_class: large
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run: npm run test:gas
-      - run: npx codechecks codechecks.unit.yml
+      - run:
+          name: Upload gas reports
+          command: |
+            npx hardhat test:merge-gas-reports gasReporterOutput-*.json
+            npx codechecks codechecks.unit.yml
       - store_artifacts:
-          path: test-gas-used.log
+          path: gasReporterOutput.json
   job-unit-tests:
     working_directory: ~/repo
     docker:
@@ -248,6 +249,7 @@ jobs:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
     resource_class: large
+    parallelism: 8
     steps:
       - checkout
       - attach_workspace:
@@ -257,11 +259,20 @@ jobs:
           name: Test and output gas used
           command: |
             set +e
-            npm test
+            circleci tests glob 'test/contracts/*.js' |
+            circleci tests split |
+            xargs npm test -- --gas
             EXIT_CODE=$?
-            cat test-gas-used.log
             printf "\\n"
             exit $EXIT_CODE
+      - run:
+          name: Save gas report
+          command: |
+            mv gasReporterOutput.json ./gasReporterOutput-$CIRCLE_NODE_INDEX.json
+      - persist_to_workspace:
+          root: .
+          paths:
+            - gasReporterOutput-*.json
   job-validate-deployments:
     working_directory: ~/repo
     docker:
@@ -273,6 +284,13 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - run:
+          name: Only run when publish/deployed/*/deployment.json changes
+          command: |
+            changes=$(git diff --name-status origin/develop | grep 'publish\/deployed\/[a-z0-9\-]*\/deployment\.json$' || true)
+            if [ -z "$changes" ]; then
+              circleci-agent step halt
+            fi;
       - run: npm run test:deployments
   job-validate-etherscan:
     working_directory: ~/repo
@@ -308,29 +326,21 @@ workflows:
       - job-unit-tests-coverage:
           requires:
             - job-prepare
+      - job-unit-tests-coverage-report:
+          requires:
+            - job-prepare
+            - job-unit-tests-coverage
       - job-unit-tests-gas-report:
           requires:
             - job-prepare
+            - job-unit-tests
       - job-test-deploy-script:
           requires:
             - job-prepare
-      - job-prod-tests:
+      - job-fork-tests:
           requires:
             - job-prepare
-      - job-prod-tests-ovm:
-          name: job-prod-tests-ovm
-          requires:
-            - job-prepare
-      - job-prod-diff-tests-local:
-          name: job-prod-diff-tests-local
-          requires:
-            - job-prepare
-      - job-prod-diff-tests-local-ovm:
-          name: job-prod-diff-tests-local-ovm
-          requires:
-            - job-prepare
-      - job-prod-diff-tests:
-          name: job-prod-diff-tests-mainnet
+      - job-integration-tests:
           requires:
             - job-prepare
       - job-pack-browser:

@@ -7,7 +7,6 @@ require('dotenv').config();
 
 require('./src/commands/build').cmd(program);
 require('./src/commands/connect-bridge').cmd(program);
-require('./src/commands/deploy-ovm-pair').cmd(program);
 require('./src/commands/deploy-staking-rewards').cmd(program);
 require('./src/commands/deploy').cmd(program);
 require('./src/commands/extract-staking-balances').cmd(program);

@@ -380,5 +380,29 @@
 		"sign": "",
 		"exchange": "NASDAQ",
 		"description": "Microsoft"
+	},
+	"LUNA": {
+		"asset": "LUNA",
+		"category": "crypto",
+		"sign": "",
+		"description": "Terra Luna"
+	},
+	"BOND": {
+		"asset": "BOND",
+		"category": "crypto",
+		"sign": "",
+		"description": "Barnbridge"
+	},
+	"CREAM": {
+		"asset": "CREAM",
+		"category": "crypto",
+		"sign": "",
+		"description": "Cream Finance"
+	},
+	"ALPHA": {
+		"asset": "ALPHA",
+		"category": "crypto",
+		"sign": "",
+		"description": "Alpha Finance"
 	}
 }

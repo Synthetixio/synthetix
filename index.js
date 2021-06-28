@@ -97,7 +97,7 @@ const constants = {
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 	ZERO_BYTES32: '0x' + '0'.repeat(64),
 
-	OVM_MAX_GAS_LIMIT: '8999999',
+	OVM_GAS_PRICE_GWEI: '0.0',
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
@@ -484,7 +484,7 @@ const getShortingRewards = ({
  * Retrieve the list of system user addresses
  */
 const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
-	const testnetOwner = '0x73570075092502472e4b61a7058df1a4a1db12f2';
+	const testnetOwner = '0x73570075092502472E4b61A7058Df1A4a1DB12f2';
 	const base = {
 		owner: testnetOwner,
 		deployer: testnetOwner,
@@ -566,6 +566,7 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 		1: 'System Upgrade',
 		2: 'Market Closure',
 		4: 'iSynth Reprice',
+		6: 'Index Rebalance',
 		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
 		99999: 'Emergency',
