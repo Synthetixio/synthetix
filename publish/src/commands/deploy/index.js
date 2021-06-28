@@ -427,6 +427,7 @@ const deploy = async ({
 		addressOf,
 		deployer,
 		deployment,
+		explorerLinkPrefix,
 		generateSolidity,
 		network,
 		newContractsBeingAdded,

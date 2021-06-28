@@ -23,6 +23,7 @@ const {
 module.exports = async ({
 	deployer,
 	deployment,
+	explorerLinkPrefix,
 	generateSolidity,
 	network,
 	newContractsBeingAdded,
@@ -114,6 +115,10 @@ module.exports = async ({
 
 	const releaseName = release.name.replace(/[^\w]/g, '');
 
+	const generateExplorerComment = ({ address }) => `// ${explorerLinkPrefix}/address/${address}`;
+
+	const ownerAddress = getUsers({ network, useOvm, user: 'owner' }).address;
+
 	const solidity = `
 pragma solidity ^0.5.16;
 
@@ -135,17 +140,17 @@ interface ISynthetixNamedContract {
 
 // solhint-disable contract-name-camelcase
 contract Migration_${releaseName} is BaseMigration {
-	address public constant OWNER = ${getUsers({ network, useOvm, user: 'owner' }).address};
+	${generateExplorerComment({ address: ownerAddress })};
+	address public constant OWNER = ${ownerAddress};
 
 	${contractsAddedToSolidity
-		.map(
-			contract =>
-				`${sourceOf(
-					deployer.deployedContracts[contract]
-				)} public constant ${contract.toLowerCase()}_i = ${sourceOf(
-					deployer.deployedContracts[contract]
-				)}(${addressOf(deployer.deployedContracts[contract])});`
-		)
+		.map(contract => {
+			const sourceContract = sourceOf(deployer.deployedContracts[contract]);
+			const address = addressOf(deployer.deployedContracts[contract]);
+			return `${generateExplorerComment({
+				address,
+			})}\n\t${sourceContract} public constant ${contract.toLowerCase()}_i = ${sourceContract}(${address});`;
+		})
 		.join('\n\t')}
 
 	constructor() public BaseMigration(OWNER) {}
@@ -154,7 +159,7 @@ contract Migration_${releaseName} is BaseMigration {
 		contracts = new address[](${contractsAddedToSolidity.length});
 		${contractsAddedToSolidity
 			.map((contract, i) => `contracts[${i}]= address(${contract.toLowerCase()}_i);`)
-			.join('\n\t')}
+			.join('\n\t\t')}
 	}
 
 	function migrate(address currentOwner) external onlyDeployer {
@@ -162,7 +167,12 @@ contract Migration_${releaseName} is BaseMigration {
 
 		// NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
 		${Object.entries(newContractsBeingAdded)
-			.map(([address, name]) => `address ${newContractVariableFunctor(name)} = ${address};`)
+			.map(
+				([address, name]) =>
+					`${generateExplorerComment({
+						address,
+					})}\n\t\taddress ${newContractVariableFunctor(name)} = ${address};`
+			)
 			.join('\n\t\t')}
 
 		${Object.entries(newContractsBeingAdded)
