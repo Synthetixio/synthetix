@@ -114,7 +114,7 @@ function bootstrapDual({ ctx }) {
 function _setupProvider({ url }) {
 	return new ethers.providers.JsonRpcProvider({
 		url,
-		pollingInterval: 50,
+		// pollingInterval: 50,
 		timeout: 600000,
 	});
 }
