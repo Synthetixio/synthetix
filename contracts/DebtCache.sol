@@ -39,9 +39,10 @@ contract DebtCache is BaseDebtCache {
 
         // Subtract out the excluded non-SNX backed debt from our total
         _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
-        _cachedDebt = snxCollateralDebt.floorsub(excludedDebt);
+        uint newDebt = snxCollateralDebt.floorsub(excludedDebt);
+        _cachedDebt = newDebt;
         _cacheTimestamp = block.timestamp;
-        emit DebtCacheUpdated(snxCollateralDebt);
+        emit DebtCacheUpdated(newDebt);
         emit DebtCacheSnapshotTaken(block.timestamp);
 
         // (in)validate the cache if necessary
@@ -129,6 +130,18 @@ contract DebtCache is BaseDebtCache {
             // debt snapshots.
             require(cachedSum <= debt, "Cached synth sum exceeds total debt");
             debt = debt.sub(cachedSum).add(currentSum);
+
+            // As of SIPS 136 and 150, this excluded debt section is unused.
+            // All callers of this function pass in false for `recomputeExcludedDebt`
+            // for performance reasons (_totalNonSnxBackedDebt is expensive)
+            // until we circle back when the debt calculation is refactored or discarded.
+            if (recomputeExcludedDebt) {
+                (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
+                anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
+                debt = debt.add(excludedDebt).floorsub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
+                _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
+            }
+
             _cachedDebt = debt;
             emit DebtCacheUpdated(debt);
         }

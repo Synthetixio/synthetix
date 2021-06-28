@@ -8,5 +8,5 @@ steps:
       command: npm run fork
       background: true
   - cmd-wait-for-port:
-        port: 8545
-  - run: npx hardhat test:integration:l1 --compile --deploy --fork
+      port: 8545
+  - run: npx hardhat test:integration:l1 --compile --deploy --use-fork

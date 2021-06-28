@@ -241,6 +241,4 @@ module.exports = async ({
 		deps: ['AddressResolver'],
 		args: [account],
 	});
-
-	return { readProxyForResolver };
 };

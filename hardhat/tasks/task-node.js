@@ -16,17 +16,20 @@ task('node', 'Run a node')
 				)
 			);
 		}
-		if (taskArguments.targetNetwork === 'mainnet') {
+		const network = taskArguments.targetNetwork;
+		if (network !== 'local') {
+			if (network === 'mainnet') {
+				taskArguments.fork = process.env.PROVIDER_URL_MAINNET;
+			}
 			taskArguments.fork =
-				process.env.PROVIDER_URL_MAINNET || process.env.PROVIDER_URL.replace('network', 'mainnet');
+				taskArguments.fork || process.env.PROVIDER_URL.replace('network', network);
 
-			console.log(yellow('Forking Mainnet...'));
+			console.log(yellow(`Forking ${network}...`));
 		}
 
 		subtask(TASK_NODE_SERVER_READY).setAction(async ({ provider }, hre, runSuper) => {
 			await runSuper();
 
-			const network = taskArguments.targetNetwork;
 			console.log(
 				yellow(`Targeting Synthetix in ${network}${taskArguments.fork ? ' (forked)' : ''}`)
 			);
