@@ -4,10 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const util = require('util');
 const { confirmAction, ensureNetwork, loadConnections } = require('../util');
-const { gray, yellow, red, green } = require('chalk');
-const ethers = require('ethers');
-const Web3 = require('web3');
-const w3utils = require('web3-utils');
+const { gray, yellow, red } = require('chalk');
+// const ethers = require('ethers');
 const axios = require('axios');
 const { schema } = require('@uniswap/token-lists');
 
@@ -40,7 +38,8 @@ const persistTokens = async ({
 }) => {
 	ensureNetwork(network);
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	// const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { privateKey: envPrivateKey } = loadConnections({
 		network,
 	});
 
@@ -146,10 +145,10 @@ const persistTokens = async ({
 		process.exit(1);
 	}
 
-	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-	const wallet = new ethers.Wallet(privateKey, provider);
-	if (!wallet.address) wallet.address = wallet._address;
-	console.log(gray(`Using account with public key ${wallet.address}`));
+	// const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	// const wallet = new ethers.Wallet(privateKey, provider);
+	// if (!wallet.address) wallet.address = wallet._address;
+	// console.log(gray(`Using account with public key ${wallet.address}`));
 
 	const ensName = 'synths.snx.eth';
 	const content = `ipfs://${hash}`;
@@ -163,29 +162,30 @@ const persistTokens = async ({
 		}
 	}
 
-	console.log(gray(`Using Gas Price: ${gasPrice} gwei`));
+	console.log(red('setContent not emitted. Not supported at the moment.'));
 
-	try {
-		// TODO Remove when setContentHash is replaced by ethers
-		const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-		web3.eth.accounts.wallet.add(privateKey);
-		const w3account = web3.eth.accounts.wallet[0].address;
-		// TODO Replace with ethers
-		const { transactionHash } = await web3.eth.ens.setContenthash(ensName, content, {
-			from: w3account,
-			gas: Number(gasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-		});
+	// Commented out since it will fail anyways
 
-		console.log(
-			green(
-				`Successfully emitted ens setContent with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
-			)
-		);
-	} catch (err) {
-		console.log(red(err));
-		process.exit(1);
-	}
+	// console.log(gray(`Using Gas Price: ${gasPrice} gwei`));
+	// try {
+	// 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	// 	web3.eth.accounts.wallet.add(privateKey);
+	// 	const w3account = web3.eth.accounts.wallet[0].address;
+	// 	const { transactionHash } = await web3.eth.ens.setContenthash(ensName, content, {
+	// 		from: w3account,
+	// 		gas: Number(gasLimit),
+	// 		gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+	// 	});
+
+	// 	console.log(
+	// 		green(
+	// 			`Successfully emitted ens setContent with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
+	// 		)
+	// 	);
+	// } catch (err) {
+	// 	console.log(red(err));
+	// 	process.exit(1);
+	// }
 };
 
 module.exports = {
