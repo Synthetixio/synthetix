@@ -25,7 +25,7 @@ These tests deploy a standalone instance of the system in L1 or an evm network. 
 
 These tests deploy a standalone instance of the system in L2 or an ovm network. They are located in `test/integration/l2`.
 
-Atm, the only way to run a local L2/ovm chain is using Optimism's ops tool, built on docker.
+Atm, the only way to run a local L2/ovm chain is using Optimism's ops tool, which requires docker to be installed.
 
 ### Running standalone L1 tests against the ops tool
 
@@ -83,3 +83,7 @@ Small details of a contract should be tested in unit tests, and integration test
 Some high level features of the system are expected to exist in both L1 and L2 instances, such as staking, or sUSD's ERC20 properties. So, instead of writing duplicate tests, we implement behaviors and use these behaviors to avoid test code duplication.
 
 Whenever writing tests for a feature that is expected to exist in both L1 and L2 instances, please use a behavior. If a feature previously existed on an instance but not in the other, please extract the tests to a behavior and use the behavior in both instances.
+
+### Utils
+
+Whenever a task is common in integration tests, such as ensuring that a user has SNX, the task should be abstracted from the test as much as possible, so that the test file remains to the point and easy to read. For example, if a behavior is testing exchange functionality, we wouldn't want to add 50 lines of code at the beginning of the test file to make sure that the user has SNX. Instead, we abstract it to a util and call `ensureBalance`. This way, someone coming to see why the integration test is failing, can immediately start reading lines of code directly related to the behavior at hand.
