@@ -54,7 +54,7 @@ module.exports = async ({
 		}
 		const { abi } = deployment.sources[sourceOf(target)];
 
-		// set of unique contracts
+		// set of unique contracts that have owner actions applied and will need to accept ownership
 		contractsAddedToSoliditySet.add(contract);
 
 		const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
