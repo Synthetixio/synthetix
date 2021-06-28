@@ -56,7 +56,8 @@ jobs:
       - run:
           name: Build docker containers if necessary
           command: |
-            npx hardhat ops --fresh --build --build-ops
+            npx hardhat ops --fresh --build
+            npx hardhat ops --build-ops
       - run:
           name: Start docker chains
           background: true
