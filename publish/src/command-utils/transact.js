@@ -21,7 +21,7 @@ const performTransactionalStep = async ({
 	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
 	gasPrice,
-	etherscanLinkPrefix,
+	explorerLinkPrefix,
 	ownerActions,
 	ownerActionsFile,
 	dryRun,
@@ -99,7 +99,7 @@ const performTransactionalStep = async ({
 		const appendOwnerAction = appendOwnerActionGenerator({
 			ownerActions,
 			ownerActionsFile,
-			etherscanLinkPrefix,
+			explorerLinkPrefix,
 		});
 
 		data = target.interface.encodeFunctionData(write, argumentsForWriteFunction);
