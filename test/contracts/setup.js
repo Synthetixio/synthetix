@@ -914,7 +914,7 @@ const setupAllContracts = async ({
 		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver', 'ProxyFuturesMarketManager'],
+			deps: ['AddressResolver'],
 		},
 		{
 			contract: 'FuturesMarketSettings',
