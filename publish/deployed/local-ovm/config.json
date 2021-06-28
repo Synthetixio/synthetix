@@ -161,6 +161,9 @@
 	"FuturesMarketManager": {
 		"deploy": true
 	},
+	"FuturesMarketSettings": {
+		"deploy": true
+	},
 	"FuturesMarketData": {
 		"deploy": true
 	}
