@@ -39,7 +39,7 @@ const persistTokens = async ({
 }) => {
 	ensureNetwork(network);
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 	});
 
@@ -173,7 +173,7 @@ const persistTokens = async ({
 
 		console.log(
 			green(
-				`Successfully emitted ens setContent with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
+				`Successfully emitted ens setContent with transaction: ${explorerLinkPrefix}/tx/${transactionHash}`
 			)
 		);
 	} catch (err) {

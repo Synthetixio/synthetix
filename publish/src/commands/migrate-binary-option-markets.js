@@ -44,7 +44,7 @@ const migrateBinaryOptionMarkets = async ({
 		network,
 	});
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 	});
 
@@ -55,7 +55,6 @@ const migrateBinaryOptionMarkets = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 	const wallet = new ethers.Wallet(privateKey, provider);
-	if (!wallet.address) wallet.address = wallet._address;
 
 	console.log(gray(`Using account with public key ${yellow(wallet.address)}`));
 
@@ -162,7 +161,7 @@ const migrateBinaryOptionMarkets = async ({
 
 	console.log(
 		green(
-			`Successfully set migrating manager with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
+			`Successfully set migrating manager with transaction: ${explorerLinkPrefix}/tx/${transactionHash}`
 		)
 	);
 
@@ -204,7 +203,7 @@ const migrateBinaryOptionMarkets = async ({
 
 		console.log(
 			green(
-				`Successfully synchronised markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`
+				`Successfully synchronised markets with transaction: ${explorerLinkPrefix}/tx/${result.transactionHash}`
 			)
 		);
 
@@ -222,7 +221,7 @@ const migrateBinaryOptionMarkets = async ({
 		result = await tx.wait();
 		console.log(
 			green(
-				`Successfully migrated markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`
+				`Successfully migrated markets with transaction: ${explorerLinkPrefix}/tx/${result.transactionHash}`
 			)
 		);
 	}
@@ -263,7 +262,7 @@ const migrateBinaryOptionMarkets = async ({
 		let result = await tx.wait();
 		console.log(
 			green(
-				`Successfully synchronised markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`
+				`Successfully synchronised markets with transaction: ${explorerLinkPrefix}/tx/${result.transactionHash}`
 			)
 		);
 		console.log(
@@ -280,7 +279,7 @@ const migrateBinaryOptionMarkets = async ({
 		result = await tx.wait();
 		console.log(
 			green(
-				`Successfully migrated markets with transaction: ${etherscanLinkPrefix}/tx/${result.transactionHash}`
+				`Successfully migrated markets with transaction: ${explorerLinkPrefix}/tx/${result.transactionHash}`
 			)
 		);
 	}
