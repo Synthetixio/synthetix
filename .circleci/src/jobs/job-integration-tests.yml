@@ -13,7 +13,6 @@ steps:
       command: |
         if [ ! -d ./optimism ]; then
           npx hardhat ops --fresh --build
-          npx hardhat ops --build-ops
         fi;
   - save_cache:
       key: v4-optimism-build-{{ checksum "package-lock.json" }}
