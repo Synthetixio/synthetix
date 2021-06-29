@@ -1775,29 +1775,99 @@ contract('FuturesMarket', accounts => {
 			});
 		}
 
-		describe.skip('Funding sequence', () => {
-			it('Funding sequence is recomputed by order submission', async () => {
+		describe('Funding sequence', () => {
+			const price = toUnit('100');
+			beforeEach(async () => {
+				// Set up some market skew so that funding is being incurred.
+				// Proportional Skew = 0.5, so funding rate is 0.05 per day.
+				await modifyMarginSubmitAndConfirmOrder({
+					market: futuresMarket,
+					account: trader,
+					fillPrice: price,
+					marginDelta: toUnit('1000'),
+					leverage: toUnit('9'),
+				});
+
+				await modifyMarginSubmitAndConfirmOrder({
+					market: futuresMarket,
+					account: trader2,
+					fillPrice: price,
+					marginDelta: toUnit('1000'),
+					leverage: toUnit('-3'),
+				});
+			});
+
+			it.skip('Funding sequence is recomputed by order submission', async () => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by order confirmation', async () => {
+			it.skip('Funding sequence is recomputed by order confirmation', async () => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by order cancellation', async () => {
+			it.skip('Funding sequence is recomputed by order cancellation', async () => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by position closure', async () => {
+			it.skip('Funding sequence is recomputed by position closure', async () => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by liquidation', async () => {
+			it.skip('Funding sequence is recomputed by liquidation', async () => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by margin modification', async () => {
+			it.skip('Funding sequence is recomputed by margin modification', async () => {
 				assert.isTrue(false);
+			});
+
+			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
+				assert.bnEqual(await futuresMarket.fundingSequenceLength(), toBN(5));
+				await fastForward(24 * 60 * 60);
+				await setPrice(baseAsset, toUnit('100'));
+				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('-5'), toUnit('0.01'));
+
+				await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.2'), { from: owner });
+				let time = await currentTime();
+
+				assert.bnEqual(await futuresMarket.fundingSequenceLength(), toBN(6));
+				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
+				assert.bnClose(await futuresMarket.fundingSequence(5), toUnit('-5'), toUnit('0.01'));
+				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('0'), toUnit('0.01'));
+
+				await fastForward(24 * 60 * 60);
+				await setPrice(baseAsset, toUnit('200'));
+				assert.bnClose(
+					(await futuresMarket.unrecordedFunding())[0],
+					toUnit('-20'),
+					toUnit('0.001')
+				);
+
+				await futuresMarketSettings.setMaxFundingRateSkew(baseAsset, toUnit('0.5'), {
+					from: owner,
+				});
+				time = await currentTime();
+
+				assert.bnEqual(await futuresMarket.fundingSequenceLength(), toBN(7));
+				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
+				assert.bnClose(await futuresMarket.fundingSequence(6), toUnit('-25'), toUnit('0.01'));
+
+				await fastForward(24 * 60 * 60);
+				await setPrice(baseAsset, toUnit('300'));
+				assert.bnClose(
+					(await futuresMarket.unrecordedFunding())[0],
+					toUnit('-60'),
+					toUnit('0.001')
+				);
+
+				await futuresMarketSettings.setMaxFundingRateDelta(baseAsset, toUnit('0.05'), {
+					from: owner,
+				});
+				time = await currentTime();
+
+				assert.bnEqual(await futuresMarket.fundingSequenceLength(), toBN(8));
+				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
+				assert.bnClose(await futuresMarket.fundingSequence(7), toUnit('-85'), toUnit('0.01'));
 			});
 		});
 
