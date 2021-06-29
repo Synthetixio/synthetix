@@ -10390,6 +10390,7 @@
 					"constant": false,
 					"inputs": [
 						{
+							"internalType": "contract ISynthetix",
 							"name": "_synthetixProxy",
 							"type": "address"
 						}
