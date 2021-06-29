@@ -376,13 +376,20 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return (_accruedFunding(positions[account], fundingSequence.length, price), isInvalid);
     }
 
+    function _marginPlusProfitFunding(
+        Position storage position,
+        uint endFundingIndex,
+        uint price
+    ) internal view returns (int) {
+        return int(position.margin).add(_profitLoss(position, price)).add(_accruedFunding(position, endFundingIndex, price));
+    }
+
     function _remainingMargin(
         Position storage position,
         uint endFundingIndex,
         uint price
     ) internal view returns (uint) {
-        int remaining =
-            int(position.margin).add(_profitLoss(position, price)).add(_accruedFunding(position, endFundingIndex, price));
+        int remaining = _marginPlusProfitFunding(position, endFundingIndex, price);
 
         // The margin went past zero and the position should have been liquidated - no remaining margin.
         if (remaining < 0) {
@@ -549,27 +556,40 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return _abs(fee);
     }
 
-    // TODO: Do we need this margin field?
-    // TODO: Perhaps we need a version of it which uses the account's remaining margin instead.
-    function orderFee(
+    function orderFee(address account, int leverage) external view returns (uint fee, bool invalid) {
+        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        Position storage position = positions[account];
+        uint margin = _remainingMargin(position, fundingSequence.length, price);
+        return (_orderFee(margin, leverage, position.size, price), isInvalid);
+    }
+
+    function orderFeeWithMarginDelta(
         address account,
-        uint margin,
+        int marginDelta,
         int leverage
     ) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        return (_orderFee(margin, leverage, positions[account].size, price), isInvalid);
+        Position storage position = positions[account];
+        int margin = _marginPlusProfitFunding(position, fundingSequence.length, price).add(marginDelta);
+        if (margin < 0) {
+            return (0, isInvalid);
+        }
+        return (_orderFee(uint(margin), leverage, position.size, price), isInvalid);
     }
 
     function canConfirmOrder(address account) external view returns (bool) {
         IExchangeRates exRates = _exchangeRates();
         (uint price, bool invalid) = _assetPrice(exRates);
         Order storage order = orders[account];
+        Position storage position = positions[account];
+        uint fundingSequenceIndex = fundingSequence.length;
         return
-            !invalid &&
+            !invalid && // Price is valid
             price != 0 &&
-            _orderPending(order) &&
-            order.roundId < _currentRoundId(exRates) &&
-            !_canLiquidate(positions[account], _liquidationFee(), fundingSequence.length, price, invalid);
+            _orderPending(order) && // There is actually an order
+            order.roundId < _currentRoundId(exRates) && // A new price has arrived
+            !_canLiquidate(position, _liquidationFee(), fundingSequenceIndex, price, invalid) && // No existing position can be liquidated
+            0 <= _marginPlusProfitFunding(position, fundingSequenceIndex, price).sub(int(order.fee)); // Margin has not dipped negative due to fees, profit, funding
     }
 
     /* ---------- Utilities ---------- */
@@ -634,10 +654,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         int marginDelta
     ) internal returns (uint) {
         // 1. Determine new margin, ensuring that the result is positive.
-        int newMargin =
-            int(position.margin).add(
-                marginDelta.add(_accruedFunding(position, currentFundingIndex, price)).add(_profitLoss(position, price))
-            );
+        int newMargin = _marginPlusProfitFunding(position, currentFundingIndex, price).add(marginDelta);
         require(0 <= newMargin, "Withdrawing more than margin");
         uint uMargin = uint(newMargin);
 
@@ -711,13 +728,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     function _cancelOrder(address account) internal {
         Order storage order = orders[account];
         require(_orderPending(order), "No pending order");
-
-        // Return the order fee to the user.
-        uint fee = order.fee;
-        if (0 < fee) {
-            _manager().issueSUSD(account, fee);
-        }
-
         emitOrderCancelled(order.id, account);
         delete orders[account];
     }
@@ -731,13 +741,16 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         uint price,
         uint margin,
         int desiredLeverage,
+        uint fee,
         bool sameSide
     ) internal view {
         int currentLeverage_ = _currentLeverage(position, price, margin);
 
         // We don't check the margin requirement if leverage is decreasing
         if (sameSide && _abs(currentLeverage_) <= _abs(desiredLeverage)) {
-            require(_minInitialMargin() <= margin, "Insufficient margin");
+            // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
+            // except that we get a nicer error message if fee > margin, rather than arithmetic overflow.
+            require(_minInitialMargin().add(fee) <= margin, "Insufficient margin");
         }
     }
 
@@ -793,8 +806,12 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         int size = position.size;
         bool sameSide = _sameSide(leverage, size);
 
+        // TODO: Charge this out of margin (also update _cancelOrder, and compute this before _checkMargin)
+        // Compute the fee owed, which will be charged to the margin after the order is confirmed.
+        uint fee = _orderFee(margin, leverage, size, price);
+
         // Check that the user has sufficient margin
-        _checkMargin(position, price, margin, leverage, sameSide);
+        _checkMargin(position, price, margin, leverage, fee, sameSide);
 
         // Check that the order isn't too large for the market
         // Note that this in principle allows several orders to be placed at once
@@ -811,14 +828,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         Order storage order = orders[sender];
         if (_orderPending(order)) {
             _cancelOrder(sender);
-        }
-
-        // TODO: Charge this out of margin (also update _cancelOrder, and compute this before _checkMargin)
-        // Compute the fee owed and check their sUSD balance is sufficient to cover it.
-        uint fee = _orderFee(margin, leverage, size, price);
-        if (0 < fee) {
-            require(fee <= _sUSD().balanceOf(sender), "Insufficient balance");
-            _manager().burnSUSD(sender, fee);
         }
 
         // Lodge the order, which can be confirmed at the next price update
@@ -845,7 +854,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         _submitOrder(0, price, fundingIndex, messageSender);
     }
 
-    // TODO: Do we really need this function?
     function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
@@ -874,8 +882,11 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         require(!_canLiquidate(position, _liquidationFee(), fundingIndex, price, invalid), "Position can be liquidated");
 
         // We weren't liquidated, so we realise the margin to compute the new position size.
-        uint margin = _realiseMargin(position, fundingIndex, price, 0);
-        int newSize = int(margin).multiplyDecimalRound(order.leverage).divideDecimalRound(int(price));
+        // The fee is deducted at this stage; the transaction will revert if the realised margin minus the fee is negative.
+        uint margin = _realiseMargin(position, fundingIndex, price, -int(order.fee));
+        // The order size is computed pre-fee, so the order size is accurate, though their leverage may
+        // be slightly higher than what was requested if the fee is nonzero.
+        int newSize = int(margin.add(order.fee)).multiplyDecimalRound(order.leverage).divideDecimalRound(int(price));
         int positionSize = position.size;
 
         // Before continuing, check that their order is actually allowed given the market size limit.
