@@ -28,6 +28,7 @@ const {
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
 		FUTURES_LIQUIDATION_FEE,
+		FUTURES_MIN_INITIAL_MARGIN,
 	},
 } = require('../../');
 
@@ -251,37 +252,18 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
+		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketBTC: [
 			tryGetAddressOf('ProxyFuturesMarketBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sBTC'), // base asset
-			toWei('0.003'), // 0.3% taker fee
-			toWei('0.001'), // 0.1% maker fee
-			toWei('10'), // 10x max leverage
-			toWei('100000'), // 100000 max market debt
-			toWei('100'), // 100 sUSD minimum initial margin
-			[
-				toWei('0.1'), // 10% max funding rate
-				toWei('1'), // 100% max funding rate skew
-				toWei('0.0125'), // 1.25% per hour max funding rate of change
-			],
 		],
 		FuturesMarketETH: [
 			tryGetAddressOf('ProxyFuturesMarketETH'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sETH'), // base asset
-			toWei('0.003'), // 0.3% taker fee
-			toWei('0.001'), // 0.1% maker fee
-			toWei('10'), // 10x max leverage
-			toWei('100000'), // 100000 max market debt
-			toWei('100'), // 100 sUSD minimum initial margin
-			[
-				toWei('0.1'), // 10% max funding rate
-				toWei('1'), // 100% max funding rate skew
-				toWei('0.0125'), // 1.25% per hour max funding rate of change
-			],
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 	};
@@ -535,6 +517,19 @@ const setupContract = async ({
 		},
 		async FuturesMarketBTC() {
 			await Promise.all([
+				cache['FuturesMarketSettings'].setAllParameters(
+					toBytes32('sBTC'),
+					toWei('0.003'), // 0.3% taker fee
+					toWei('0.001'), // 0.1% maker fee
+					toWei('10'), // 10x max leverage
+					toWei('100000'), // 100000 max market debt
+					[
+						toWei('0.1'), // 10% max funding rate
+						toWei('1'), // 100% max funding rate skew
+						toWei('0.0125'), // 1.25% per hour max funding rate of change
+					],
+					{ from: owner }
+				),
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 				cache['ProxyFuturesMarketBTC'].setTarget(instance.address, { from: owner }),
 				instance.setProxy(cache['ProxyFuturesMarketBTC'].address, {
@@ -544,6 +539,19 @@ const setupContract = async ({
 		},
 		async FuturesMarketETH() {
 			await Promise.all([
+				cache['FuturesMarketSettings'].setAllParameters(
+					toBytes32('sETH'),
+					toWei('0.003'), // 0.3% taker fee
+					toWei('0.001'), // 0.1% maker fee
+					toWei('10'), // 10x max leverage
+					toWei('100000'), // 100000 max market debt
+					[
+						toWei('0.1'), // 10% max funding rate
+						toWei('1'), // 100% max funding rate skew
+						toWei('0.0125'), // 1.25% per hour max funding rate of change
+					],
+					{ from: owner }
+				),
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 				cache['ProxyFuturesMarketETH'].setTarget(instance.address, { from: owner }),
 				instance.setProxy(cache['ProxyFuturesMarketETH'].address, {
@@ -617,6 +625,15 @@ const setupContract = async ({
 						mock,
 						fncName: 'totalDebt',
 						returns: ['0', false],
+					}),
+				]);
+			} else if (mock === 'FuturesMarket') {
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'recomputeFunding',
+						returns: ['0'],
 					}),
 				]);
 			}
@@ -895,18 +912,25 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemStatus', 'Issuer', 'ExchangeRates', 'DebtCache'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
-		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
+		{
+			contract: 'FuturesMarketManager',
+			deps: ['AddressResolver'],
+		},
+		{
+			contract: 'FuturesMarketSettings',
+			deps: ['AddressResolver', 'SystemSettings'],
+		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
 			contract: 'FuturesMarketBTC',
 			source: 'TestableFuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{
 			contract: 'FuturesMarketETH',
 			source: 'TestableFuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
 		},
 		{ contract: 'FuturesMarketData', deps: [] },
 	];
@@ -1096,6 +1120,9 @@ const setupAllContracts = async ({
 				from: owner,
 			}),
 			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setFuturesMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
 				from: owner,
 			}),
 			returnObj['SystemSettings'].setFuturesLiquidationFee(FUTURES_LIQUIDATION_FEE, {

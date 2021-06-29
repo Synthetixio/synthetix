@@ -7,28 +7,8 @@ contract TestableFuturesMarket is FuturesMarket {
         address payable _proxy,
         address _owner,
         address _resolver,
-        bytes32 _baseAsset,
-        uint _takerFee,
-        uint _makerFee,
-        uint _maxLeverage,
-        uint _maxMarketValue,
-        uint _minInitialMargin,
-        uint[3] memory _fundingParameters
-    )
-        public
-        FuturesMarket(
-            _proxy,
-            _owner,
-            _resolver,
-            _baseAsset,
-            _takerFee,
-            _makerFee,
-            _maxLeverage,
-            _maxMarketValue,
-            _minInitialMargin,
-            _fundingParameters
-        )
-    {}
+        bytes32 _baseAsset
+    ) public FuturesMarket(_proxy, _owner, _resolver, _baseAsset) {}
 
     function entryDebtCorrection() external view returns (int) {
         return _entryDebtCorrection;
