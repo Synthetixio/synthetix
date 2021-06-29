@@ -260,7 +260,7 @@ const deploy = async ({
 	const runSteps = [];
 
 	const runStep = async opts => {
-		const { pending, mined, ...rest } = await performTransactionalStepWeb3({
+		const { noop, ...rest } = await performTransactionalStepWeb3({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
@@ -273,15 +273,12 @@ const deploy = async ({
 			ownerActionsFile,
 		});
 
-		// only add to solidity steps when specific conditions are met
-		if (
-			(!opts.skipSolidity && (network === 'local' || useFork) && mined) ||
-			(!useFork && pending)
-		) {
+		// only add to solidity steps when the transaction is NOT a no-op
+		if (!noop) {
 			runSteps.push(opts);
 		}
 
-		return { ...rest };
+		return { noop, ...rest };
 	};
 
 	await deployCore({
@@ -423,18 +420,19 @@ const deploy = async ({
 
 	reportDeployedContracts({ deployer });
 
-	generateSolidityOutput({
-		addressOf,
-		deployer,
-		deployment,
-		explorerLinkPrefix,
-		generateSolidity,
-		network,
-		newContractsBeingAdded,
-		runSteps,
-		sourceOf,
-		useOvm,
-	});
+	if (generateSolidity) {
+		generateSolidityOutput({
+			addressOf,
+			deployer,
+			deployment,
+			explorerLinkPrefix,
+			network,
+			newContractsBeingAdded,
+			runSteps,
+			sourceOf,
+			useOvm,
+		});
+	}
 };
 
 module.exports = {

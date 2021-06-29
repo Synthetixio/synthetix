@@ -254,7 +254,7 @@ const performTransactionalStepWeb3 = async ({
 				`[GENERATE_SOLIDITY_SIMULATION] Successfully completed ${action} number ${++_dryRunCounter}.`
 			)
 		);
-		return { mined: true };
+		return {};
 	}
 
 	// otherwise check the owner
