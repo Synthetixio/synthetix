@@ -136,11 +136,13 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 	};
 };
 
-const getEtherscanLinkPrefix = network => {
-	return `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+const getExplorerLinkPrefix = ({ network, useOvm }) => {
+	return `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${
+		useOvm ? 'explorer.optimism' : 'etherscan'
+	}.io`;
 };
 
-const loadConnections = ({ network, useFork }) => {
+const loadConnections = ({ network, useFork, useOvm }) => {
 	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
 	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	let providerUrl;
@@ -162,9 +164,9 @@ const loadConnections = ({ network, useFork }) => {
 			? 'https://api.etherscan.io/api'
 			: `https://api-${network}.etherscan.io/api`;
 
-	const etherscanLinkPrefix = getEtherscanLinkPrefix(network);
+	const explorerLinkPrefix = getExplorerLinkPrefix({ network, useOvm });
 
-	return { providerUrl, privateKey, etherscanUrl, etherscanLinkPrefix };
+	return { providerUrl, privateKey, etherscanUrl, explorerLinkPrefix };
 };
 
 const confirmAction = prompt =>
@@ -178,7 +180,7 @@ const confirmAction = prompt =>
 		});
 	});
 
-const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanLinkPrefix }) => ({
+const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, explorerLinkPrefix }) => ({
 	key,
 	action,
 	target,
@@ -188,7 +190,7 @@ const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanL
 		target,
 		action,
 		complete: false,
-		link: `${etherscanLinkPrefix}/address/${target}#writeContract`,
+		link: `${explorerLinkPrefix}/address/${target}#writeContract`,
 		data,
 	};
 	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
@@ -213,7 +215,7 @@ const performTransactionalStepWeb3 = async ({
 	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
 	gasPrice,
-	etherscanLinkPrefix,
+	explorerLinkPrefix,
 	ownerActions,
 	ownerActionsFile,
 	dryRun,
@@ -292,7 +294,7 @@ const performTransactionalStepWeb3 = async ({
 		const appendOwnerAction = appendOwnerActionGenerator({
 			ownerActions,
 			ownerActionsFile,
-			etherscanLinkPrefix,
+			explorerLinkPrefix,
 		});
 
 		data = target.methods[write](...argumentsForWriteFunction).encodeABI();
@@ -373,7 +375,7 @@ module.exports = {
 	ensureDeploymentPath,
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
-	getEtherscanLinkPrefix,
+	getExplorerLinkPrefix,
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
