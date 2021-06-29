@@ -5,7 +5,6 @@ const path = require('path');
 const util = require('util');
 const { confirmAction, ensureNetwork, loadConnections } = require('../util');
 const { gray, yellow, red } = require('chalk');
-// const ethers = require('ethers');
 const axios = require('axios');
 const { schema } = require('@uniswap/token-lists');
 
@@ -38,7 +37,6 @@ const persistTokens = async ({
 }) => {
 	ensureNetwork(network);
 
-	// const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 	const { privateKey: envPrivateKey } = loadConnections({
 		network,
 	});
@@ -145,47 +143,16 @@ const persistTokens = async ({
 		process.exit(1);
 	}
 
-	// const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-	// const wallet = new ethers.Wallet(privateKey, provider);
-	// if (!wallet.address) wallet.address = wallet._address;
-	// console.log(gray(`Using account with public key ${wallet.address}`));
-
 	const ensName = 'synths.snx.eth';
 	const content = `ipfs://${hash}`;
 
-	if (!yes) {
-		try {
-			await confirmAction(yellow(`Do you want to set content on ${ensName} to ${content} (y/n) ?`));
-		} catch (err) {
-			console.log(gray('Operation cancelled'));
-			process.exit();
-		}
-	}
-
 	console.log(red('setContent not emitted. Not supported at the moment.'));
+	console.log(yellow(`Next step is to manually set content on ${ensName} to ${content} `));
 
-	// Commented out since it will fail anyways
-
-	// console.log(gray(`Using Gas Price: ${gasPrice} gwei`));
-	// try {
-	// 	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	// 	web3.eth.accounts.wallet.add(privateKey);
-	// 	const w3account = web3.eth.accounts.wallet[0].address;
-	// 	const { transactionHash } = await web3.eth.ens.setContenthash(ensName, content, {
-	// 		from: w3account,
-	// 		gas: Number(gasLimit),
-	// 		gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-	// 	});
-
-	// 	console.log(
-	// 		green(
-	// 			`Successfully emitted ens setContent with transaction: ${explorerLinkPrefix}/tx/${transactionHash}`
-	// 		)
-	// 	);
-	// } catch (err) {
-	// 	console.log(red(err));
-	// 	process.exit(1);
-	// }
+	/* Web3 fails to set the content via code ens.setContenthash(). 
+	setContent can be done using ethers.js CLI or we can interact with ENS contract to set the content.
+	TODO: implement ens.setContenthash() replacement using ethers and use it here
+	*/
 };
 
 module.exports = {
