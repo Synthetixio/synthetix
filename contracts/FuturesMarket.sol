@@ -15,6 +15,7 @@ import "./SignedSafeDecimalMath.sol";
 // Internal references
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/IFuturesMarketSettings.sol";
 
 // Remaining Functionality
 //     Consider not exposing signs of short vs long positions
@@ -74,22 +75,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         uint fundingIndex;
     }
 
-    // TODO: Convert funding rate from daily to per-second
-    struct Parameters {
-        uint takerFee;
-        uint makerFee;
-        uint maxLeverage;
-        uint maxMarketValue;
-        uint minInitialMargin;
-        uint maxFundingRate;
-        uint maxFundingRateSkew;
-        uint maxFundingRateDelta;
-    }
-
     /* ========== STATE VARIABLES ========== */
 
     bytes32 public baseAsset;
-    Parameters public parameters;
 
     uint public marketSize;
     int public marketSkew; // When positive, longs outweigh shorts. When negative, shorts outweigh longs.
@@ -124,18 +112,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
-
-    /* ---------- Parameter Names ---------- */
-
-    bytes32 internal constant PARAMETER_TAKERFEE = "takerFee";
-    bytes32 internal constant PARAMETER_MAKERFEE = "makerFee";
-    bytes32 internal constant PARAMETER_CLOSUREFEE = "closureFee";
-    bytes32 internal constant PARAMETER_MAXLEVERAGE = "maxLeverage";
-    bytes32 internal constant PARAMETER_MAXMARKETVALUE = "maxMarketValue";
-    bytes32 internal constant PARAMETER_MININITIALMARGIN = "minInitialMargin";
-    bytes32 internal constant PARAMETER_MAXFUNDINGRATE = "maxFundingRate";
-    bytes32 internal constant PARAMETER_MAXFUNDINGRATESKEW = "maxFundingRateSkew";
-    bytes32 internal constant PARAMETER_MAXFUNDINGRATEDELTA = "maxFundingRateDelta";
+    bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -143,24 +120,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         address payable _proxy,
         address _owner,
         address _resolver,
-        bytes32 _baseAsset,
-        uint _takerFee,
-        uint _makerFee,
-        uint _maxLeverage,
-        uint _maxMarketValue,
-        uint _minInitialMargin,
-        uint[3] memory _fundingParameters
+        bytes32 _baseAsset
     ) public Owned(_owner) Proxyable(_proxy) MixinSystemSettings(_resolver) {
         baseAsset = _baseAsset;
-
-        parameters.takerFee = _takerFee;
-        parameters.makerFee = _makerFee;
-        parameters.maxLeverage = _maxLeverage;
-        parameters.maxMarketValue = _maxMarketValue;
-        parameters.minInitialMargin = _minInitialMargin;
-        parameters.maxFundingRate = _fundingParameters[0];
-        parameters.maxFundingRateSkew = _fundingParameters[1];
-        parameters.maxFundingRateDelta = _fundingParameters[2];
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
@@ -172,16 +134,21 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
+        bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYNTHSUSD;
         newAddresses[3] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[4] = CONTRACT_FUTURESMARKETSETTINGS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function _manager() internal view returns (IFuturesMarketManagerInternal) {
         return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+    }
+
+    function _marketSettings() internal view returns (IFuturesMarketSettings) {
+        return IFuturesMarketSettings(requireAndGetAddress(CONTRACT_FUTURESMARKETSETTINGS));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
@@ -198,12 +165,16 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return getFuturesLiquidationFee();
     }
 
+    function _minInitialMargin() internal view returns (uint) {
+        return getFuturesMinInitialMargin();
+    }
+
     function _assetPrice(IExchangeRates exchangeRates) internal view returns (uint price, bool invalid) {
         return exchangeRates.rateAndInvalid(baseAsset);
     }
 
-    function _assetPriceRequireNotInvalid(IExchangeRates exchangeRates) internal view returns (uint) {
-        (uint price, bool invalid) = _assetPrice(exchangeRates);
+    function _assetPriceRequireNotInvalid() internal view returns (uint) {
+        (uint price, bool invalid) = _assetPrice(_exchangeRates());
         require(!invalid, "Invalid price");
         return price;
     }
@@ -233,7 +204,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function _maxOrderSizes(uint price) internal view returns (uint, uint) {
         (uint long, uint short) = _marketSizes();
-        int sizeLimit = int(parameters.maxMarketValue).divideDecimalRound(int(price));
+        int sizeLimit = int(_marketSettings().getMaxMarketValue(baseAsset)).divideDecimalRound(int(price));
         return (uint(sizeLimit.sub(_min(int(long), sizeLimit))), uint(sizeLimit.sub(_min(int(short), sizeLimit))));
     }
 
@@ -274,13 +245,30 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return marketSkew.divideDecimalRound(signedSize);
     }
 
+    function parameters()
+        external
+        view
+        returns (
+            uint takerFee,
+            uint makerFee,
+            uint maxLeverage,
+            uint maxMarketValue,
+            uint maxFundingRate,
+            uint maxFundingRateSkew,
+            uint maxFundingRateDelta
+        )
+    {
+        return _marketSettings().getAllParameters(baseAsset);
+    }
+
     function _currentFundingRatePerSecond() internal view returns (int) {
         return _currentFundingRate() / 1 days;
     }
 
     function _currentFundingRate() internal view returns (int) {
-        int maxFundingRateSkew = int(parameters.maxFundingRateSkew);
-        int maxFundingRate = int(parameters.maxFundingRate);
+        (, , , , uint uMaxFundingRate, uint uMaxFundingRateSkew, ) = _marketSettings().getAllParameters(baseAsset);
+        int maxFundingRate = int(uMaxFundingRate);
+        int maxFundingRateSkew = int(uMaxFundingRateSkew);
         if (maxFundingRateSkew == 0) {
             return maxFundingRate;
         }
@@ -537,14 +525,14 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         if (_sameSide(newNotional, skew)) {
             // If the order is submitted on the same side as the skew, increasing it.
             // The taker fee is charged on the increase.
-            return _abs(notionalDiff.multiplyDecimalRound(int(parameters.takerFee)));
+            return _abs(notionalDiff.multiplyDecimalRound(int(_marketSettings().getTakerFee(baseAsset))));
         }
 
         // Otherwise if the order is opposite to the skew,
         // the maker fee is charged on new notional value up to the size of the existing skew,
         // and the taker fee is charged on any new skew they induce on the order's side of the market.
 
-        int makerFee = int(parameters.makerFee);
+        int makerFee = int(_marketSettings().getMakerFee(baseAsset));
         int fee = notionalDiff.multiplyDecimalRound(makerFee);
 
         // The notional value of the skew after the order is filled
@@ -553,7 +541,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         // The order is sufficient to flip the skew, charge/rebate the difference in fees
         // between maker and taker on the new skew value.
         if (_sameSide(newNotional, postSkewNotional)) {
-            fee = fee.add(postSkewNotional.multiplyDecimalRound(int(parameters.takerFee).sub(makerFee)));
+            fee = fee.add(
+                postSkewNotional.multiplyDecimalRound(int(_marketSettings().getTakerFee(baseAsset)).sub(makerFee))
+            );
         }
 
         return _abs(fee);
@@ -608,51 +598,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* ---------- Setters ---------- */
-
-    function setTakerFee(uint takerFee) external optionalProxy_onlyOwner {
-        parameters.takerFee = takerFee;
-        emitParameterUpdated(PARAMETER_TAKERFEE, takerFee);
-    }
-
-    function setMakerFee(uint makerFee) external optionalProxy_onlyOwner {
-        parameters.makerFee = makerFee;
-        emitParameterUpdated(PARAMETER_MAKERFEE, makerFee);
-    }
-
-    function setMaxLeverage(uint maxLeverage) external optionalProxy_onlyOwner {
-        parameters.maxLeverage = maxLeverage;
-        emitParameterUpdated(PARAMETER_MAXLEVERAGE, maxLeverage);
-    }
-
-    function setMaxMarketValue(uint maxMarketValue) external optionalProxy_onlyOwner {
-        parameters.maxMarketValue = maxMarketValue;
-        emitParameterUpdated(PARAMETER_MAXMARKETVALUE, maxMarketValue);
-    }
-
-    function setMinInitialMargin(uint minInitialMargin) external optionalProxy_onlyOwner {
-        parameters.minInitialMargin = minInitialMargin;
-        emitParameterUpdated(PARAMETER_MININITIALMARGIN, minInitialMargin);
-    }
-
-    // TODO: Setting this parameter should record funding first.
-    function setMaxFundingRate(uint maxFundingRate) external optionalProxy_onlyOwner {
-        parameters.maxFundingRate = maxFundingRate;
-        emitParameterUpdated(PARAMETER_MAXFUNDINGRATE, maxFundingRate);
-    }
-
-    // TODO: Setting this parameter should record funding first.
-    function setMaxFundingRateSkew(uint maxFundingRateSkew) external optionalProxy_onlyOwner {
-        parameters.maxFundingRateSkew = maxFundingRateSkew;
-        emitParameterUpdated(PARAMETER_MAXFUNDINGRATESKEW, maxFundingRateSkew);
-    }
-
-    // TODO: Setting this parameter should record funding first.
-    function setMaxFundingRateDelta(uint maxFundingRateDelta) external optionalProxy_onlyOwner {
-        parameters.maxFundingRateDelta = maxFundingRateDelta;
-        emitParameterUpdated(PARAMETER_MAXFUNDINGRATEDELTA, maxFundingRateDelta);
-    }
-
     /* ---------- Market Operations ---------- */
 
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
@@ -662,6 +607,11 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         fundingLastRecomputed = block.timestamp;
 
         return sequenceLength;
+    }
+
+    function recomputeFunding() external returns (uint lastIndex) {
+        require(msg.sender == address(_marketSettings()), "Can be invoked by marketSettings only");
+        return _recomputeFunding(_assetPriceRequireNotInvalid());
     }
 
     function _positionDebtCorrection(Position memory position) internal view returns (int) {
@@ -728,9 +678,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         //     * the resulting margin would not be lower than the minimum margin
         //     * the resulting leverage is lower than the maximum leverage
         if (0 < position.size && marginDelta <= 0) {
-            require(parameters.minInitialMargin <= remainingMargin_, "Insufficient margin");
+            require(_minInitialMargin() <= remainingMargin_, "Insufficient margin");
             require(
-                _abs(_currentLeverage(position, price, remainingMargin_)) < parameters.maxLeverage,
+                _abs(_currentLeverage(position, price, remainingMargin_)) < _marketSettings().getMaxLeverage(baseAsset),
                 "Max leverage exceeded"
             );
         }
@@ -745,14 +695,14 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function modifyMargin(int marginDelta) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         _modifyMargin(marginDelta, price, fundingIndex, messageSender);
     }
 
     function withdrawAllMargin() external optionalProxy {
         address sender = messageSender;
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         int marginDelta = -int(_remainingMargin(positions[sender], fundingIndex, price));
         _modifyMargin(marginDelta, price, fundingIndex, sender);
@@ -787,7 +737,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         // We don't check the margin requirement if leverage is decreasing
         if (sameSide && _abs(currentLeverage_) <= _abs(desiredLeverage)) {
-            require(parameters.minInitialMargin <= margin, "Insufficient margin");
+            require(_minInitialMargin() <= margin, "Insufficient margin");
         }
     }
 
@@ -820,7 +770,10 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         // We'll allow an extra little bit of value over and above the stated max to allow for
         // rounding errors, price movements, multiple orders etc.
-        require(_abs(newSideSize.div(2)) <= parameters.maxMarketValue.add(play), "Max market size exceeded");
+        require(
+            _abs(newSideSize.div(2)) <= _marketSettings().getMaxMarketValue(baseAsset).add(play),
+            "Max market size exceeded"
+        );
     }
 
     function _submitOrder(
@@ -829,7 +782,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         uint fundingIndex,
         address sender
     ) internal {
-        require(_abs(leverage) <= parameters.maxLeverage, "Max leverage exceeded");
+        require(_abs(leverage) <= _marketSettings().getMaxLeverage(baseAsset), "Max leverage exceeded");
         Position storage position = positions[sender];
 
         // The order is not submitted if the user's existing position needed to be liquidated.
@@ -881,20 +834,20 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     }
 
     function submitOrder(int leverage) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         _submitOrder(leverage, price, fundingIndex, messageSender);
     }
 
     function closePosition() external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         _submitOrder(0, price, fundingIndex, messageSender);
     }
 
     // TODO: Do we really need this function?
     function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid(_exchangeRates());
+        uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         address sender = messageSender;
         _modifyMargin(marginDelta, price, fundingIndex, sender);
@@ -931,7 +884,9 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             positionSize,
             newSize,
             _sameSide(positionSize, newSize),
-            uint(int(parameters.maxMarketValue).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
+            uint(
+                int(_marketSettings().getMaxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR))
+            )
         );
 
         // Update the market size and skew, checking that the maximums are not exceeded
