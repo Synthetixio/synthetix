@@ -24,7 +24,6 @@ module.exports = async ({
 	deployer,
 	deployment,
 	explorerLinkPrefix,
-	generateSolidity,
 	network,
 	newContractsBeingAdded,
 	useOvm,
@@ -32,10 +31,6 @@ module.exports = async ({
 	sourceOf,
 	addressOf,
 }) => {
-	if (!generateSolidity) {
-		return;
-	}
-
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
 
