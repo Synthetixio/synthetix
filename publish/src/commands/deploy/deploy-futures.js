@@ -49,7 +49,7 @@ module.exports = async ({
 
 	const futuresMarketSettings = await deployer.deployContract({
 		name: 'FuturesMarketSettings',
-		args: useOvm[(account, addressOf(readProxyForResolver))],
+		args: [(account, addressOf(readProxyForResolver))],
 	});
 
 	const futuresAssets = ['BTC', 'ETH', 'LINK'];
