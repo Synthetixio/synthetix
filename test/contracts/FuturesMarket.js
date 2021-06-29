@@ -288,6 +288,34 @@ contract('FuturesMarket', accounts => {
 	describe('Order fees', () => {
 		const margin = toUnit('1000');
 
+		// In this section, where inscrutable numbers are being compared, we're
+		// following logic something like the following, to account for existing
+		// positions that users already have (and the fees charged against them)
+		// when placing a subsequent order.
+
+		// φ1 : fee rate after first order
+		// φ2 : fee rate after second order
+		// m : initial margin
+		// λ : leverage
+
+		// 1. User deposits margin m
+		//    remaining margin   = m
+
+		// 2. User submits an order at leverage λ. Fees are deducted from margin at this point.
+		//    notional value     = m λ
+		//    order fee          = m λ φ1
+		//    remaining margin   = m (1 - λ φ1)
+
+		// 3. User deposit additional β m margin.
+		//    remaining margin   = m (1 - λ φ1) + β m = m ((1+β) - λ φ1)
+
+		// 4. User has deleveraged by depositing more margin; submits a new order
+		//    to bring their leverage back to λ. The fee computed against the difference
+		//    between the new position and the previous one.
+		//    notional           = λ m ((1+β) - λ φ1)
+		//    change in notional = λ m ((1+β)- λ φ1) - λ m = λ m (β - λ φ1)
+		//    fee                = λ m φ2 (β - λ φ1)
+
 		for (const leverage of ['3.5', '-3.5'].map(toUnit)) {
 			const side = parseInt(leverage.toString()) > 0 ? 'long' : 'short';
 			const leveredMakerFee = multiplyDecimalRound(leverage.abs(), makerFee);
