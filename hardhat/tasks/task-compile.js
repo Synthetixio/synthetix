@@ -21,6 +21,7 @@ task('compile')
 	.addFlag('failOversize', 'Fail if any contract is oversize')
 	.addFlag('useOvm', 'Compile with the OVM Solidity compiler')
 	.addFlag('native', 'Compile with the native solc compiler')
+	.addFlag('everything', 'Compile all subfolders regardless of ignore patterns')
 	.setAction(async (taskArguments, hre, runSuper) => {
 		if (taskArguments.useOvm) {
 			console.log(gray('Compiling with OVM Solidity compiler...'));
@@ -34,6 +35,11 @@ task('compile')
 		}
 
 		optimizeIfRequired({ hre, taskArguments });
+
+		// remove ignore pattern if requested
+		if (taskArguments.everything) {
+			hre.config.paths.ignore = undefined;
+		}
 
 		await runSuper(taskArguments);
 
