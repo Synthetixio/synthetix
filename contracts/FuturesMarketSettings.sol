@@ -12,8 +12,6 @@ interface IFuturesMarketManagerInternal {
     function marketForAsset(bytes32) external returns (address);
 }
 
-// TODO: Convert this to a Mixin like MixinSystemSettings.
-
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketSettings
 contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
     struct Parameters {
