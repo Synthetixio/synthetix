@@ -171,10 +171,11 @@ const deploy = async ({
 	const {
 		providerUrl: envProviderUrl,
 		privateKey: envPrivateKey,
-		etherscanLinkPrefix,
+		explorerLinkPrefix,
 	} = loadConnections({
 		network,
 		useFork,
+		useOvm,
 	});
 
 	if (!providerUrl) {
@@ -257,11 +258,11 @@ const deploy = async ({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
+			dryRun,
 			gasPrice,
-			etherscanLinkPrefix,
+			explorerLinkPrefix,
 			ownerActions,
 			ownerActionsFile,
-			dryRun,
 			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 

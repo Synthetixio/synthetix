@@ -98,7 +98,7 @@ const replaceSynths = async ({
 		}
 	}
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 	});
 
@@ -225,7 +225,7 @@ const replaceSynths = async ({
 			account,
 			gasLimit: methodCallGasLimit,
 			gasPrice,
-			etherscanLinkPrefix,
+			explorerLinkPrefix,
 		});
 
 	for (const { currencyKey, Synth, Proxy, TokenState } of deployedSynths) {
