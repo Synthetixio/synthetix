@@ -46,7 +46,7 @@ function bootstrapL2({ ctx }) {
 		ctx.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
-		ctx.provider.getGasPrice = () => ethers.BigNumber.from('0');
+		ctx.provider.getGasPrice = async () => ethers.BigNumber.from('0');
 
 		await loadUsers({ ctx: ctx.l1mock });
 		await loadUsers({ ctx });
@@ -82,7 +82,7 @@ function bootstrapDual({ ctx }) {
 		ctx.l2.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
-		ctx.l2.provider.getGasPrice = () => ethers.BigNumber.from('0');
+		ctx.l2.provider.getGasPrice = async () => ethers.BigNumber.from('0');
 
 		await setupOptimismWatchers({ ctx, providerUrl: hre.config.providerUrl });
 
