@@ -8,13 +8,12 @@ import "./interfaces/IFuturesMarketSettings.sol";
 // Internal references
 import "./interfaces/IFuturesMarket.sol";
 
-interface IFuturesMarketManagerForFuturesSettings {
+interface IFuturesMarketManagerInternal {
     function marketForAsset(bytes32) external returns (address);
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresMarketSettings
 contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
-    // TODO: Convert funding rate from daily to per-second
     struct Parameters {
         uint takerFee;
         uint makerFee;
@@ -31,6 +30,7 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     mapping(bytes32 => address) public markets;
 
     /* ---------- Address Resolver Configuration ---------- */
+
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
 
     /* ---------- Parameter Names ---------- */
@@ -38,7 +38,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     bytes32 internal constant PARAMETER_TAKERFEE = "takerFee";
     bytes32 internal constant PARAMETER_MAKERFEE = "makerFee";
     bytes32 internal constant PARAMETER_MAXLEVERAGE = "maxLeverage";
-    bytes32 internal constant PARAMETER_CLOSUREFEE = "closureFee"; // TODO: implement this
     bytes32 internal constant PARAMETER_MAXMARKETVALUE = "maxMarketValue";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATE = "maxFundingRate";
     bytes32 internal constant PARAMETER_MAXFUNDINGRATESKEW = "maxFundingRateSkew";
@@ -59,8 +58,8 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _manager() internal view returns (IFuturesMarketManagerForFuturesSettings) {
-        return IFuturesMarketManagerForFuturesSettings(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+    function _manager() internal view returns (IFuturesMarketManagerInternal) {
+        return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -192,5 +191,4 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     /* ========== EVENTS ========== */
 
     event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
-    event MarketConnected(bytes32 indexed market, address marketAddress);
 }

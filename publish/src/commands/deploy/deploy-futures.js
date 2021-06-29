@@ -88,7 +88,7 @@ module.exports = async ({
 			deployedFuturesMarkets.push(addressOf(futuresMarket));
 		}
 
-		if (proxyFuturesMarket && futuresMarket) {
+		if (proxyFuturesMarket && futuresMarket && futuresMarketSettings) {
 			// set the parameters before deploying the markets
 			await runStep({
 				contract: futuresMarketSettings,
