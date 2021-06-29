@@ -278,7 +278,7 @@ const deploy = async ({
 			runSteps.push(opts);
 		}
 
-		return { ...rest };
+		return { noop, ...rest };
 	};
 
 	await deployCore({
@@ -420,18 +420,19 @@ const deploy = async ({
 
 	reportDeployedContracts({ deployer });
 
-	generateSolidityOutput({
-		addressOf,
-		deployer,
-		deployment,
-		explorerLinkPrefix,
-		generateSolidity,
-		network,
-		newContractsBeingAdded,
-		runSteps,
-		sourceOf,
-		useOvm,
-	});
+	if (generateSolidity) {
+		generateSolidityOutput({
+			addressOf,
+			deployer,
+			deployment,
+			explorerLinkPrefix,
+			network,
+			newContractsBeingAdded,
+			runSteps,
+			sourceOf,
+			useOvm,
+		});
+	}
 };
 
 module.exports = {
