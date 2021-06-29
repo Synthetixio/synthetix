@@ -85,8 +85,7 @@ module.exports = async ({
 				// arrays needs to be created in memory
 				const typeOfArrayElement = internalType.replace(/\[|\]/g, '').replace(/^contract /, '');
 
-				const variableName = `${contract.toLowerCase()}_${write}_${inputArgumentName ||
-					runIndex}_${index}`;
+				const variableName = `${contract.toLowerCase()}_${write}_${inputArgumentName}_${runIndex}_${index}`;
 				instructions.push(
 					`${typeOfArrayElement}[] memory ${variableName} = new ${typeOfArrayElement}[](${argument.length})`
 				);
