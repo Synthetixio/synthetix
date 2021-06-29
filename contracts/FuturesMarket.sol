@@ -14,7 +14,6 @@ import "./SignedSafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IFeePool.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 
@@ -39,6 +38,8 @@ interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
     function burnSUSD(address account, uint amount) external;
+
+    function payFee(uint amount) external;
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarket
@@ -110,7 +111,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
-    bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
 
@@ -134,13 +134,12 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_SYNTHSUSD;
-        newAddresses[3] = CONTRACT_FEEPOOL;
-        newAddresses[4] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[5] = CONTRACT_FUTURESMARKETSETTINGS;
+        newAddresses[3] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[4] = CONTRACT_FUTURESMARKETSETTINGS;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -154,10 +153,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
-    }
-
-    function _feePool() internal view returns (IFeePool) {
-        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     function _sUSD() internal view returns (IERC20) {
@@ -908,7 +903,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
 
         // Send the fee to the fee pool
         if (0 < order.fee) {
-            _manager().issueSUSD(_feePool().FEE_ADDRESS(), order.fee);
+            _manager().payFee(order.fee);
         }
 
         // Actually lodge the position and delete the order

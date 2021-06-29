@@ -517,9 +517,6 @@ const setupContract = async ({
 		},
 		async FuturesMarketBTC() {
 			await Promise.all([
-				cache['FuturesMarketSettings'].connectMarket(toBytes32('sBTC'), instance.address, {
-					from: owner,
-				}),
 				cache['FuturesMarketSettings'].setAllParameters(
 					toBytes32('sBTC'),
 					toWei('0.003'), // 0.3% taker fee
@@ -542,9 +539,6 @@ const setupContract = async ({
 		},
 		async FuturesMarketETH() {
 			await Promise.all([
-				cache['FuturesMarketSettings'].connectMarket(toBytes32('sETH'), instance.address, {
-					from: owner,
-				}),
 				cache['FuturesMarketSettings'].setAllParameters(
 					toBytes32('sETH'),
 					toWei('0.003'), // 0.3% taker fee
@@ -890,6 +884,7 @@ const setupAllContracts = async ({
 				'EtherCollateralsUSD',
 				'CollateralManager',
 				'EtherWrapper',
+				'FuturesMarketManager',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
@@ -917,7 +912,10 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemStatus', 'Issuer', 'ExchangeRates', 'DebtCache'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
-		{ contract: 'FuturesMarketManager', deps: ['AddressResolver'] },
+		{
+			contract: 'FuturesMarketManager',
+			deps: ['AddressResolver'],
+		},
 		{
 			contract: 'FuturesMarketSettings',
 			deps: ['AddressResolver', 'SystemSettings'],
@@ -926,24 +924,13 @@ const setupAllContracts = async ({
 		{
 			contract: 'FuturesMarketBTC',
 			source: 'TestableFuturesMarket',
-			deps: [
-				'Proxy',
-				'AddressResolver',
-				'FuturesMarketManager',
-				'FuturesMarketSettings',
-				'SystemSettings',
-				'ExchangeRates',
-				'FeePool',
-				'Issuer',
-				'SynthetixEscrow',
-				'Liquidations',
-			],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{
 			contract: 'FuturesMarketETH',
 			source: 'TestableFuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager'],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
 		},
 		{ contract: 'FuturesMarketData', deps: [] },
 	];

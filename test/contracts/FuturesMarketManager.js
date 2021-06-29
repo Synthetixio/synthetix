@@ -56,7 +56,14 @@ contract('FuturesMarketManager', accounts => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarketManager.abi,
 				ignoreParents: ['Owned', 'MixinResolver', 'Proxyable'],
-				expected: ['addMarkets', 'removeMarkets', 'removeMarketsByAsset', 'issueSUSD', 'burnSUSD'],
+				expected: [
+					'addMarkets',
+					'removeMarkets',
+					'removeMarketsByAsset',
+					'issueSUSD',
+					'burnSUSD',
+					'payFee',
+				],
 			});
 		});
 	});
