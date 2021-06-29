@@ -33,6 +33,7 @@ module.exports = {
 	},
 	paths: {
 		sources: './contracts',
+		ignore: /migrations\//,
 		tests: './test/contracts',
 		artifacts: path.join(BUILD_FOLDER, 'artifacts'),
 		cache: path.join(BUILD_FOLDER, CACHE_FOLDER),
