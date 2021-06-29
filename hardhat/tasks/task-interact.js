@@ -9,9 +9,6 @@ const autocomplete = require('inquirer-list-search-prompt');
 const { yellow, green, red, cyan, gray } = require('chalk');
 const synthetixPackage = require('../../package.json');
 const synthetix = require('../..');
-const { setupProvider } = require('../util/setupProvider');
-const { sendTx, confirmTx } = require('../util/runTx');
-const { logReceipt, logError } = require('../util/prettyLog');
 
 task('interact', 'Interact with a deployed Synthetix instance from the command line')
 	.addFlag('useFork', 'Use a local fork')
@@ -83,7 +80,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 		}
 
 		// Construct provider and signer
-		const { provider, wallet } = setupProvider({
+		const { provider, wallet } = _setupProvider({
 			providerUrl,
 			privateKey,
 			publicKey,
@@ -190,7 +187,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 					return `${inputPart}${outputPart}`;
 				}
 
-				const escItem = '‚Ü© BACK';
+				const escItem = '↩ BACK';
 
 				async function searchAbi(matches, query = '') {
 					return new Promise(resolve => {
@@ -349,14 +346,14 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 
 					console.log(gray(`  > Staging transaction... ${new Date()}`));
 					const txPromise = contract[abiItemName](...inputs, overrides);
-					result = await sendTx({
+					result = await _sendTx({
 						txPromise,
 						provider,
 					});
 
 					if (result.success) {
 						console.log(gray(`  > Sending transaction... ${result.tx.hash}`));
-						result = await confirmTx({
+						result = await _confirmTx({
 							tx: result.tx,
 							provider,
 						});
@@ -384,9 +381,9 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 				console.log(gray(`  > Transaction sent... ${new Date()}`));
 
 				if (error) {
-					logError(error);
+					_logError(error);
 				} else {
-					logReceipt(result, contract);
+					_logReceipt(result, contract);
 
 					if (
 						(abiItem.stateMutability === 'view' || abiItem.stateMutability === 'pure') &&
@@ -517,4 +514,144 @@ function _bytes32ify(value) {
 function _boolify(value) {
 	if (value === 'false' || value === '0') return 0;
 	return value;
+}
+
+function _logReceipt(receipt, contract) {
+	console.log(green('  ✅ Success'));
+	// console.log('receipt', JSON.stringify(receipt, null, 2));
+
+	// Print tx hash
+	if (receipt.transactionHash) console.log(gray(`    tx hash: ${receipt.transactionHash}`));
+
+	// Print gas used
+	if (receipt.gasUsed) {
+		console.log(gray(`    gas used: ${receipt.gasUsed.toString()}`));
+	}
+
+	// Print emitted events
+	if (contract && receipt.logs && receipt.logs.length > 0) {
+		for (let i = 0; i < receipt.logs.length; i++) {
+			const log = receipt.logs[i];
+
+			try {
+				const parsedLog = contract.interface.parseLog(log);
+				console.log(gray(`    log ${i}:`), cyan(parsedLog.name));
+			} catch (err) {
+				console.log(gray(`    log ${i}: unable to decode log - ${JSON.stringify(log)}`));
+			}
+		}
+	}
+}
+
+function _logError(error) {
+	console.log(red('  ❌ Error'));
+
+	function findReason(error) {
+		if (typeof error === 'string') {
+			return error;
+		} else {
+			if (error.hasOwnProperty('reason')) {
+				return error.reason;
+			} else if (error.hasOwnProperty('error')) {
+				return findReason(error.error);
+			}
+		}
+	}
+
+	const reason = findReason(error);
+	if (reason) console.log(red(`    Reason: ${reason}`));
+
+	console.log(gray(JSON.stringify(error, null, 2)));
+}
+
+function _setupProvider({ providerUrl, privateKey, publicKey }) {
+	let provider;
+	if (providerUrl) {
+		provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	} else {
+		// eslint-disable-next-line new-cap
+		provider = new ethers.getDefaultProvider();
+	}
+
+	let wallet;
+	if (publicKey) {
+		wallet = provider.getSigner(publicKey);
+		wallet.address = publicKey;
+	} else if (privateKey) {
+		wallet = new ethers.Wallet(privateKey, provider);
+	}
+
+	return {
+		provider,
+		wallet: wallet || undefined,
+	};
+}
+
+async function _sendTx({ txPromise }) {
+	try {
+		const tx = await txPromise;
+
+		return {
+			success: true,
+			tx,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			error,
+		};
+	}
+}
+
+async function _confirmTx({ tx, provider }) {
+	try {
+		const receipt = await tx.wait();
+
+		return {
+			success: true,
+			receipt,
+		};
+	} catch (error) {
+		try {
+			error.reason = await _getRevertReason({ tx, provider });
+
+			return {
+				success: false,
+				error,
+			};
+		} catch (suberror) {
+			error.error = suberror;
+
+			return {
+				success: false,
+				error,
+			};
+		}
+	}
+}
+
+function _hexToString(hex) {
+	let str = '';
+
+	const terminator = '**zÛ';
+	for (var i = 0; i < hex.length; i += 2) {
+		str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+
+		if (str.includes(terminator)) {
+			break;
+		}
+	}
+
+	return str.substring(0, str.length - 4);
+}
+
+async function _getRevertReason({ tx, provider }) {
+	const code = (await provider.call(tx)).substr(138);
+	const hex = `0x${code}`;
+
+	if (code.length === '64') {
+		return ethers.utils.parseBytes32String(hex);
+	} else {
+		return _hexToString(hex);
+	}
 }
