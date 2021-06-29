@@ -37,6 +37,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 			name: useOvm ? 'MockWETH' : 'WETH',
 			force: true,
 		});
+		weth.options.skipResolver = true;
 		WETH_ADDRESS = weth.options.address;
 	}
 

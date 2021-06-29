@@ -31,6 +31,7 @@ module.exports = async ({ addressOf, synths, feeds, deployer, runStep }) => {
 				expected: input => input === addressOf(synth),
 				write: 'setAssociatedContract',
 				writeArg: addressOf(synth),
+				comment: `Ensure the ${currencyKey} synth can write to its TokenState`,
 			});
 		}
 
@@ -43,6 +44,7 @@ module.exports = async ({ addressOf, synths, feeds, deployer, runStep }) => {
 				expected: input => input === addressOf(synth),
 				write: 'setTarget',
 				writeArg: addressOf(synth),
+				comment: `Ensure the ${currencyKey} synth Proxy is correctly connected to the Synth`,
 			});
 
 			// Migration Phrase 2: if there's a ProxyERC20sUSD then the Synth's proxy must use it
@@ -53,6 +55,7 @@ module.exports = async ({ addressOf, synths, feeds, deployer, runStep }) => {
 				expected: input => input === addressOf(proxyERC20ForSynth || proxyForSynth),
 				write: 'setProxy',
 				writeArg: addressOf(proxyERC20ForSynth || proxyForSynth),
+				comment: `Ensure the ${currencyKey} synth is connected to its Proxy`,
 			});
 
 			if (proxyERC20ForSynth) {
@@ -64,6 +67,7 @@ module.exports = async ({ addressOf, synths, feeds, deployer, runStep }) => {
 					expected: input => input === addressOf(synth),
 					write: 'setTarget',
 					writeArg: addressOf(synth),
+					comment: 'Ensure the special ERC20 proxy for sUSD has its target set to the Synth',
 				});
 			}
 		}
@@ -80,6 +84,7 @@ module.exports = async ({ addressOf, synths, feeds, deployer, runStep }) => {
 				expected: input => input === feed,
 				write: 'addAggregator',
 				writeArg: [currencyKeyInBytes, feed],
+				comment: `Ensure the ExchangeRates contract has the feed for ${currencyKey}`,
 			});
 		}
 	}
