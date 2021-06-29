@@ -7,10 +7,7 @@ import "./interfaces/IFuturesMarketSettings.sol";
 
 // Internal references
 import "./interfaces/IFuturesMarket.sol";
-
-interface IFuturesMarketManagerInternal {
-    function marketForAsset(bytes32) external returns (address);
-}
+import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketSettings
 contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
@@ -58,8 +55,8 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _manager() internal view returns (IFuturesMarketManagerInternal) {
-        return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+    function _manager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
