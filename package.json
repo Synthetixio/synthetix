@@ -132,6 +132,9 @@
 	"dependencies": {
 		"abi-decoder": "2.3.0",
 		"commander": "5.1.0",
+		"inquirer": "^6.5.2",
+		"inquirer-list-search-prompt": "^1.0.2",
+		"js-levenshtein": "^1.1.6",
 		"pretty-error": "^2.1.1",
 		"solidity-parser-antlr": "^0.4.11",
 		"web3-utils": "1.2.2"
