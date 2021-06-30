@@ -9,12 +9,19 @@ function itCanManageOwnedContracts({ ctx }) {
 	let owner, user;
 
 	describe('nomination functionality', () => {
+		// This behavior uses the actual nominate and owner scripts to change ownership,
+		// both of which are pretty rigid in terms of which wallet signs txs.
+		before('skip if running on a fork', async function() {
+			console.log('Skipping owned tests since theyre running on a fork');
+			this.skip();
+		});
+
 		before('identify users', async () => {
 			owner = ctx.users.owner;
 			user = ctx.users.someUser;
 		});
 
-		describe('when user is nominated to own all contracts', () => {
+		describe('when user is nominated to own some contracts', () => {
 			before('nominate user', async () => {
 				await nominateOwnership({ ctx, address: user.address, privateKey: owner.pk });
 			});
