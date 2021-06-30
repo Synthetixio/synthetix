@@ -26,6 +26,23 @@ jobs:
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: rm -rf build # force a clean build
       - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
+  job-fork-tests-no-update:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npm run fork:mainnet
+          background: true
+      - cmd-wait-for-port:
+          port: 8545
+      - run: npx hardhat test:integration:l1 --use-fork
   job-fork-tests:
     working_directory: ~/repo
     docker:
@@ -338,6 +355,9 @@ workflows:
           requires:
             - job-prepare
       - job-fork-tests:
+          requires:
+            - job-prepare
+      - job-fork-tests-no-update:
           requires:
             - job-prepare
       - job-integration-tests:

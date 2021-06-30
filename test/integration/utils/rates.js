@@ -17,7 +17,8 @@ async function updateExchangeRatesIfNeeded({ ctx }) {
 async function _simulateExchangeRates({ ctx }) {
 	const { Issuer } = ctx.contracts;
 	let { ExchangeRates } = ctx.contracts;
-	ExchangeRates = ExchangeRates.connect(ctx.users.owner);
+	const oracle = await ExchangeRates.oracle();
+	ExchangeRates = ExchangeRates.connect(ctx.provider.getSigner(oracle));
 
 	const currencyKeys = (await Issuer.availableCurrencyKeys())
 		.filter(key => key !== toBytes32('sUSD'))

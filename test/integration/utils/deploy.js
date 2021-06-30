@@ -37,7 +37,7 @@ async function deployInstance({
 	buildPath,
 	skipFeedChecks = true,
 }) {
-	const privateKey = getLocalPrivateKey({ index: 0 });
+	const privateKey = network === 'local' ? getLocalPrivateKey({ index: 0 }) : undefined;
 
 	await commands.deploy({
 		concurrency: 1,
