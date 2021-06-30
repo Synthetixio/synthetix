@@ -29,8 +29,6 @@ jobs:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-fork-tests:
       {{> require-prepare.yml}}
-  - job-fork-tests-no-update:
-      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Integration tests
