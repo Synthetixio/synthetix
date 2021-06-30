@@ -44,7 +44,6 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					providerUrl,
 					providerPort,
 					buildPath,
-					skipFeedChecks: true,
 				});
 			} else {
 				await deployInstance({ useOvm, providerUrl, providerPort, buildPath });
