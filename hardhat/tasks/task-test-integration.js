@@ -34,7 +34,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		}
 
 		if (taskArguments.deploy) {
-			if (taskArguments.fork) {
+			if (taskArguments.useFork) {
 				await prepareDeploy({ network: 'mainnet' });
 				await deployInstance({
 					useFork: true,
@@ -44,6 +44,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					providerUrl,
 					providerPort,
 					buildPath,
+					skipFeedChecks: true,
 				});
 			} else {
 				await deployInstance({ useOvm, providerUrl, providerPort, buildPath });
