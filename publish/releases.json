@@ -253,7 +253,13 @@
 			"minor": 46
 		},
 		"ovm": true,
-		"sources": ["DebtCache", "Exchanger", "Synthetix"],
+		"sources": [
+			"DebtCache",
+			"EtherWrapper",
+			"Exchanger",
+			"Synthetix",
+			"SystemSettings"
+		],
 		"sips": [138, 139, 140, 145, 150]
 	}
 ]
