@@ -164,7 +164,7 @@ module.exports = async ({
 	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
 		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
 		await runStep({
-			gasLimit: useOvm ? undefined : 7e6,
+			gasLimit: 7e6,
 			contract: `AddressResolver`,
 			target: AddressResolver,
 			publiclyCallable: true, // does not require owner
@@ -309,7 +309,7 @@ module.exports = async ({
 		for (let i = 0; i < binaryOptionMarketsToRebuildCacheOn.length; i += addressesChunkSize) {
 			const chunk = binaryOptionMarketsToRebuildCacheOn.slice(i, i + addressesChunkSize);
 			await runStep({
-				gasLimit: useOvm ? undefined : 7e6,
+				gasLimit: 7e6,
 				contract: `BinaryOptionMarketManager`,
 				target: BinaryOptionMarketManager,
 				publiclyCallable: true, // does not require owner

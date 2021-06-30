@@ -263,7 +263,8 @@ const deploy = async ({
 	const runStep = async opts => {
 		const { noop, ...rest } = await performTransactionalStepWeb3({
 			...opts,
-			gasLimit: useOvm ? undefined : methodCallGasLimit, // allow overriding of gasLimit
+			// no gas limit on OVM (use system limit), otherwise use provided limit or the methodCall amount
+			gasLimit: useOvm ? undefined : opts.gasLimit || methodCallGasLimit,
 			account,
 			dryRun,
 			explorerLinkPrefix,
