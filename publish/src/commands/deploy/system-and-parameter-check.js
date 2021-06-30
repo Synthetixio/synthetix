@@ -166,6 +166,7 @@ module.exports = async ({
 		await deployer.provider.web3.eth.sendTransaction({
 			from: accounts[0],
 			to: account,
+			gas: 50000,
 			value: parseUnits('10', 'ether').toString(),
 		});
 	} else if (deployerBalance < 5) {

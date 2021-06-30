@@ -34,8 +34,8 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		// Hardhat for the local-ovm environment, we must deploy
 		// our own.
 		const weth = await deployer.deployContract({
-			name: useOvm ? 'MockWETH' : 'WETH',
-			force: true,
+			name: 'WETH',
+			source: useOvm ? 'MockWETH' : 'WETH',
 		});
 		weth.options.skipResolver = true;
 		WETH_ADDRESS = weth.options.address;
