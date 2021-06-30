@@ -331,7 +331,7 @@ const deploy = async ({
 		dryRun,
 		limitPromise,
 		runStep,
-		useFork,
+		useOvm,
 	});
 
 	await rebuildResolverCaches({
