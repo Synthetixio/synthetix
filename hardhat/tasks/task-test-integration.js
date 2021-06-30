@@ -32,6 +32,9 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		if (taskArguments.compile) {
 			await compileInstance({ useOvm, buildPath });
 		}
+		if (taskArguments.useFork) {
+			hre.config.fork = true;
+		}
 
 		if (taskArguments.deploy) {
 			if (taskArguments.useFork) {
@@ -44,7 +47,6 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					providerUrl,
 					providerPort,
 					buildPath,
-					skipFeedChecks: true,
 				});
 			} else {
 				await deployInstance({ useOvm, providerUrl, providerPort, buildPath });
