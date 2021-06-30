@@ -56,12 +56,12 @@ contract Migration_Alnitak is BaseMigration {
         require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
         // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x52dDE10B3eF5A817ccd0d2896876549ED9FaC8d0
-        address new_Synthetix_contract = 0x52dDE10B3eF5A817ccd0d2896876549ED9FaC8d0;
-        // https://etherscan.io/address/0x678440Ce2D706809d5A0835Cf177F13d78ea66b9
-        address new_DebtCache_contract = 0x678440Ce2D706809d5A0835Cf177F13d78ea66b9;
-        // https://etherscan.io/address/0x93F96a5C9C6B703b3703B0Ca7Bd596CF5599dFf0
-        address new_Exchanger_contract = 0x93F96a5C9C6B703b3703B0Ca7Bd596CF5599dFf0;
+        // https://etherscan.io/address/0x43AE8037179a5746D618DA077A38DdeEa9640cBa
+        address new_Synthetix_contract = 0x43AE8037179a5746D618DA077A38DdeEa9640cBa;
+        // https://etherscan.io/address/0x5c296E9dCa708B5722257D775Cf92052f99Da63f
+        address new_DebtCache_contract = 0x5c296E9dCa708B5722257D775Cf92052f99Da63f;
+        // https://etherscan.io/address/0x613c773c7a1D85D2F1DCC051B0573D33470762Eb
+        address new_Exchanger_contract = 0x613c773c7a1D85D2F1DCC051B0573D33470762Eb;
 
         require(
             ISynthetixNamedContract(new_Synthetix_contract).CONTRACT_NAME() == "Synthetix",
