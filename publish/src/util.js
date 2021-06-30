@@ -215,6 +215,7 @@ const performTransactionalStepWeb3 = async ({
 	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
 	gasPrice,
+	generateSolidity,
 	explorerLinkPrefix,
 	ownerActions,
 	ownerActionsFile,
@@ -232,15 +233,30 @@ const performTransactionalStepWeb3 = async ({
 	console.log(yellow(`Attempting action: ${action}`));
 
 	if (read) {
-		// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
-		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		const response = await target.methods[read](...argumentsForReadFunction).call();
+		try {
+			// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
+			const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
+			const response = await target.methods[read](...argumentsForReadFunction).call();
 
-		if (expected(response)) {
-			console.log(gray(`Nothing required for this action.`));
-			return { noop: true };
+			if (expected(response)) {
+				console.log(gray(`Nothing required for this action.`));
+				return { noop: true };
+			}
+		} catch (err) {
+			catchMissingResolverWhenGeneratingSolidity({ contract, dryRun, err, generateSolidity });
 		}
 	}
+
+	// now if generate solidity mode, simply doing anything, a bit like a dry-run
+	if (generateSolidity) {
+		console.log(
+			green(
+				`[GENERATE_SOLIDITY_SIMULATION] Successfully completed ${action} number ${++_dryRunCounter}.`
+			)
+		);
+		return {};
+	}
+
 	// otherwise check the owner
 	const owner = await target.methods.owner().call();
 	if (owner === account || publiclyCallable) {
@@ -276,7 +292,7 @@ const performTransactionalStepWeb3 = async ({
 		console.log(
 			green(
 				`${
-					dryRun ? '[DRY RUN] ' : ''
+					dryRun ? gray('[DRYRUN] ') : ''
 				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
 					2
 				)}m `
@@ -370,6 +386,28 @@ function reportDeployedContracts({ deployer }) {
 	}
 }
 
+const catchMissingResolverWhenGeneratingSolidity = ({
+	contract,
+	dryRun,
+	err,
+	generateSolidity,
+}) => {
+	if (
+		(generateSolidity || dryRun) &&
+		/VM Exception while processing transaction: revert Missing address/.test(err.message)
+	) {
+		console.log(
+			gray(
+				`WARNING: Error thrown reading state from ${yellow(
+					contract
+				)} with missing resolver addresses (expected for new contracts that need their resolvers cached). Ignoring as this is generate-solidity mode.`
+			)
+		);
+	} else {
+		throw err;
+	}
+};
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -383,4 +421,5 @@ module.exports = {
 	performTransactionalStepWeb3,
 	parameterNotice,
 	reportDeployedContracts,
+	catchMissingResolverWhenGeneratingSolidity,
 };

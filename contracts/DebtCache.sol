@@ -10,6 +10,8 @@ import "./BaseDebtCache.sol";
 contract DebtCache is BaseDebtCache {
     using SafeDecimalMath for uint;
 
+    bytes32 public constant CONTRACT_NAME = "DebtCache";
+
     constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
     bytes32 internal constant EXCLUDED_DEBT_KEY = "EXCLUDED_DEBT";

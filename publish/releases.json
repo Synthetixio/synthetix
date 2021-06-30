@@ -244,7 +244,7 @@
 			"minor": 46
 		},
 		"sources": ["Exchanger", "Synthetix"],
-		"sips": [138, 139, 140]
+		"sips": [138, 139, 140, 151]
 	},
 	{
 		"name": "Alnitak (Optimism)",
@@ -253,7 +253,7 @@
 			"minor": 46
 		},
 		"ovm": true,
-		"sources": ["Exchanger", "MintableSynthetix"],
+		"sources": ["EtherWrapper", "Exchanger", "Synthetix", "SystemSettings"],
 		"sips": [138, 139, 140]
 	}
 ]

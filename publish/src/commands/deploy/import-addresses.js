@@ -5,7 +5,7 @@ const { toBytes32 } = require('../../../..');
 
 const { reportDeployedContracts } = require('../../util');
 
-module.exports = async ({ addressOf, deployer, limitPromise, runStep }) => {
+module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, useFork }) => {
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
@@ -20,30 +20,38 @@ module.exports = async ({ addressOf, deployer, limitPromise, runStep }) => {
 			expected: input => input === addressOf(AddressResolver),
 			write: 'setTarget',
 			writeArg: addressOf(AddressResolver),
+			comment: 'set the target of the address resolver proxy to the latest resolver',
 		});
 	}
 
 	let addressesAreImported = false;
+
+	const newContractsBeingAdded = {};
 
 	if (AddressResolver) {
 		const addressArgs = [[], []];
 
 		const allContracts = Object.entries(deployer.deployedContracts);
 		await Promise.all(
-			allContracts.map(([name, contract]) => {
-				return limitPromise(async () => {
-					const isImported = await AddressResolver.methods
-						.areAddressesImported([toBytes32(name)], [contract.options.address])
-						.call();
+			allContracts
+				// ignore adding contracts with the skipResolver option
+				.filter(([, contract]) => !contract.options.skipResolver)
+				.map(([name, contract]) => {
+					return limitPromise(async () => {
+						const isImported = await AddressResolver.methods
+							.areAddressesImported([toBytes32(name)], [contract.options.address])
+							.call();
 
-					if (!isImported) {
-						console.log(green(`${name} needs to be imported to the AddressResolver`));
+						if (!isImported) {
+							console.log(green(`${name} needs to be imported to the AddressResolver`));
 
-						addressArgs[0].push(toBytes32(name));
-						addressArgs[1].push(contract.options.address);
-					}
-				});
-			})
+							addressArgs[0].push(toBytes32(name));
+							addressArgs[1].push(contract.options.address);
+
+							newContractsBeingAdded[contract.options.address] = name;
+						}
+					});
+				})
 		);
 
 		const { pending } = await runStep({
@@ -55,6 +63,7 @@ module.exports = async ({ addressOf, deployer, limitPromise, runStep }) => {
 			expected: input => input,
 			write: 'importAddresses',
 			writeArg: addressArgs,
+			comment: 'Import all new contracts into the address resolver',
 		});
 
 		addressesAreImported = !pending;
@@ -73,12 +82,14 @@ module.exports = async ({ addressOf, deployer, limitPromise, runStep }) => {
 			)
 		);
 
-		if (deployer.newContractsDeployed.length > 0) {
-			reportDeployedContracts({ deployer });
+		if (!dryRun) {
+			if (deployer.newContractsDeployed.length > 0) {
+				reportDeployedContracts({ deployer });
+			}
 		}
-
-		process.exit();
 	} else {
 		console.log(gray('Addresses are correctly set up.'));
 	}
+
+	return { newContractsBeingAdded };
 };

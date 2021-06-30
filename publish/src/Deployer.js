@@ -175,54 +175,60 @@ class Deployer {
 			deploy = this.config[name].deploy;
 		}
 
-		const compiled = this.compiled[source];
-
-		if (!compiled) {
-			throw new Error(
-				`No compiled source for: ${name}. The source file is set to ${source}.sol - is that correct?`
-			);
-		}
-
-		if (!this.ignoreSafetyChecks) {
-			const compilerVersion = compiled.metadata.compiler.version;
-			const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
-			const compilerMismatch = (this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
-			if (compilerMismatch) {
-				if (this.useOvm) {
-					throw new Error(
-						`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
-					);
-				} else {
-					throw new Error(
-						`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
-					);
-				}
-			}
-		}
-
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
 			: '';
-		const existingABI = this.deployment.sources[source] ? this.deployment.sources[source].abi : '';
-
-		// Any contract after SafeDecimalMath can automatically get linked.
-		// Doing this with bytecode that doesn't require the library is a no-op.
-		let bytecode = compiled.evm.bytecode.object;
-		['SafeDecimalMath', 'Math'].forEach(contractName => {
-			if (this.deployedContracts[contractName]) {
-				bytecode = linker.linkBytecode(bytecode, {
-					[source + '.sol']: {
-						[contractName]: this.deployedContracts[contractName].options.address,
-					},
-				});
-			}
-		});
-
-		compiled.evm.bytecode.linkedObject = bytecode;
+		const existingSource = this.deployment.targets[name]
+			? this.deployment.targets[name].source
+			: '';
+		const existingABI = this.deployment.sources[existingSource]
+			? this.deployment.sources[existingSource].abi
+			: '';
 
 		let deployedContract;
 
 		if (deploy) {
+			// if deploying, do check of compiled sources
+			const compiled = this.compiled[source];
+
+			if (!compiled) {
+				throw new Error(
+					`No compiled source for: ${name}. The source file is set to ${source}.sol - is that correct?`
+				);
+			}
+
+			if (!this.ignoreSafetyChecks) {
+				const compilerVersion = compiled.metadata.compiler.version;
+				const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
+				const compilerMismatch =
+					(this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
+				if (compilerMismatch) {
+					if (this.useOvm) {
+						throw new Error(
+							`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+						);
+					} else {
+						throw new Error(
+							`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+						);
+					}
+				}
+			}
+
+			// Any contract after SafeDecimalMath can automatically get linked.
+			// Doing this with bytecode that doesn't require the library is a no-op.
+			let bytecode = compiled.evm.bytecode.object;
+			['SafeDecimalMath', 'Math'].forEach(contractName => {
+				if (this.deployedContracts[contractName]) {
+					bytecode = linker.linkBytecode(bytecode, {
+						[source + '.sol']: {
+							[contractName]: this.deployedContracts[contractName].options.address,
+						},
+					});
+				}
+			});
+
+			compiled.evm.bytecode.linkedObject = bytecode;
 			console.log(
 				gray(` - Attempting to deploy ${name}${name !== source ? ` (with source ${source})` : ''}`)
 			);
@@ -321,10 +327,13 @@ class Deployer {
 					} ${gasUsed ? `used ${(gasUsed / 1e6).toFixed(1)}m in gas` : ''}`
 				)
 			);
+			// track the source file for potential usage
+			deployedContract.options.source = source;
 		} else if (existingAddress && existingABI) {
 			// get ABI from the deployment (not the compiled ABI which may be newer)
 			deployedContract = this.makeContract({ abi: existingABI, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
+			deployedContract.options.source = existingSource;
 		} else {
 			throw new Error(
 				`Settings for contract: ${name} specify an existing contract, but cannot find address or ABI.`
@@ -420,7 +429,7 @@ class Deployer {
 		// the local variable newContractsDeployed
 		await this._updateResults({
 			name,
-			source,
+			source: deployedContract.options.source,
 			deployed: deployedContract.options.deployed,
 			address: deployedContract.options.address,
 		});

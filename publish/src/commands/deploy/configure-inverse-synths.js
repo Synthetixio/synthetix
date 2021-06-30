@@ -37,6 +37,7 @@ module.exports = async ({
 						freezeAtUpperLimit,
 						freezeAtLowerLimit,
 					],
+					comment: `Configure inverse pricing for ${currencyKey} in ExchangeRates`,
 				});
 
 			// when the oldExrates exists - meaning there is a valid ExchangeRates in the existing deployment.json
