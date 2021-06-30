@@ -38,8 +38,8 @@ const owner = async ({
 	network,
 	newOwner,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
-	gasLimit = DEFAULTS.gasLimit,
+	gasPrice,
+	gasLimit,
 	privateKey,
 	yes,
 	useOvm,
@@ -223,12 +223,16 @@ const owner = async ({
 				// track lastNonce submitted
 				lastNonce = newNonce;
 			} else {
-				const tx = await wallet.sendTransaction({
+				const params = {
 					to: target,
 					gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-					gasLimit: ethers.BigNumber.from(gasLimit),
 					data,
-				});
+				};
+				if (gasLimit) {
+					params.gasLimit = ethers.BigNumber.from(gasLimit);
+				}
+
+				const tx = await wallet.sendTransaction(params);
 				const receipt = await tx.wait();
 
 				logTx(receipt);
@@ -313,12 +317,16 @@ const owner = async ({
 					// track lastNonce submitted
 					lastNonce = newNonce;
 				} else {
-					const tx = await wallet.sendTransaction({
+					const params = {
 						to: deployedContract.address,
 						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-						gasLimit: ethers.BigNumber.from(gasLimit),
 						data: encodedData,
-					});
+					};
+					if (gasLimit) {
+						params.gasLimit = ethers.BigNumber.from(gasLimit);
+					}
+
+					const tx = await wallet.sendTransaction(params);
 					const receipt = await tx.wait();
 
 					logTx(receipt);
