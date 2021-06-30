@@ -75,20 +75,23 @@ const nominate = async ({
 	}
 
 	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
-	if (network !== 'local' && !privateKey) {
+	if (network !== 'local' && !privateKey && !useFork) {
 		privateKey = envPrivateKey;
 	}
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 	let wallet;
-	if (useFork) {
+	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
 
-	console.log(gray(`Using account with public key ${wallet.address}`));
+	const signerAddress = wallet.address;
+
+	console.log(gray(`Using account with public key ${signerAddress}`));
 
 	if (!yes) {
 		try {
@@ -125,16 +128,20 @@ const nominate = async ({
 				`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
 			)
 		);
-		if (wallet.address.toLowerCase() !== currentOwner) {
+		if (signerAddress.toLowerCase() !== currentOwner) {
 			console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
-			console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
+			// check for legacy function
+			const nominationFnc =
+				'nominateOwner' in deployedContract ? 'nominateOwner' : 'nominateNewOwner';
+
+			console.log(yellow(`Invoking ${contract}.${nominationFnc}(${newOwner})`));
 			const overrides = {
 				gasLimit,
 				gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 			};
 
-			const tx = await deployedContract.nominateNewOwner(newOwner, overrides);
+			const tx = await deployedContract[nominationFnc](newOwner, overrides);
 			await tx.wait();
 		} else {
 			console.log(gray('No change required.'));

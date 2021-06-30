@@ -31,7 +31,13 @@ const connectBridge = async ({
 	dryRun,
 	l1GasPrice,
 	l1GasLimit,
+	quiet,
 }) => {
+	const logger = console.log;
+	if (quiet) {
+		console.log = () => {};
+	}
+
 	// ---------------------------------
 	// Setup L1 instance
 	// ---------------------------------
@@ -101,6 +107,8 @@ const connectBridge = async ({
 		SynthetixBridge: SynthetixBridgeToBase,
 		dryRun,
 	});
+
+	console.log = logger;
 };
 
 const connectLayer = async ({
@@ -141,8 +149,10 @@ const connectLayer = async ({
 
 	const params = {
 		gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
-		gas: gasLimit,
 	};
+	if (gasLimit) {
+		params.gasLimit = gasLimit;
+	}
 
 	let tx, receipt;
 
@@ -285,9 +295,10 @@ const bootstrapConnection = ({
 	const { getUsers, getTarget, getSource } = wrap({ network, useOvm, fs, path });
 
 	let wallet;
-	if (useFork) {
+	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address;
 		wallet = provider.getSigner(account);
+		wallet.address = wallet._address;
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
@@ -339,6 +350,7 @@ module.exports = {
 			.option('--l1-gas-price <value>', 'Gas price to set when performing transfers in L1', 1)
 			.option('--l1-gas-limit <value>', 'Max gas to use when signing transactions to l1', 8000000)
 			.option('--dry-run', 'Do not execute any transactions')
+			.option('--quiet', 'Do not print stdout', false)
 			.action(async (...args) => {
 				try {
 					await connectBridge(...args);

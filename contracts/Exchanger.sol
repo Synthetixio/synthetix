@@ -78,6 +78,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint timestamp;
     }
 
+    bytes32 public constant CONTRACT_NAME = "Exchanger";
+
     bytes32 internal constant sUSD = "sUSD";
 
     // SIP-65: Decentralized circuit breaker

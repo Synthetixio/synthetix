@@ -43,8 +43,8 @@ const owner = async ({
 	privateKey,
 	yes,
 	useOvm,
-	providerUrl,
 	useFork,
+	providerUrl,
 	isContract,
 }) => {
 	ensureNetwork(network);
@@ -104,9 +104,10 @@ const owner = async ({
 	}
 
 	let wallet;
-	if (useFork) {
+	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
@@ -280,7 +281,7 @@ const owner = async ({
 			else console.log(yellow(`Calling acceptOwnership() on ${contract}...`));
 
 			try {
-				if (isContract) {
+				if (isContract && !useFork) {
 					const { txHash, newNonce } = await getNewTransactionHash({
 						safeContract: protocolDaoContract,
 						data: encodedData,
@@ -347,6 +348,11 @@ module.exports = {
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+			)
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
 			)
 			.option(
 				'-o, --new-owner <value>',

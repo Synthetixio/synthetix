@@ -42,30 +42,33 @@ module.exports = async ({
 
 	// now configure everything
 	if (network !== 'mainnet' && SystemStatus) {
-		// On testnet, give the deployer the rights to update status
+		// On testnet, give the owner of SystemStatus the rights to update status
+		const statusOwner = await SystemStatus.methods.owner().call();
 		await runStep({
 			contract: 'SystemStatus',
 			target: SystemStatus,
 			read: 'accessControl',
-			readArg: [toBytes32('System'), account],
+			readArg: [toBytes32('System'), statusOwner],
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControls',
 			writeArg: [
 				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth'].map(toBytes32),
-				[account, account, account, account, account],
+				[statusOwner, statusOwner, statusOwner, statusOwner, statusOwner],
 				[true, true, true, true, true],
 				[true, true, true, true, true],
 			],
+			comment: 'Ensure the owner can suspend and resume the protocol',
 		});
 	}
 	if (DelegateApprovals && DelegateApprovalsEternalStorage) {
 		await runStep({
-			contract: 'EternalStorage',
+			contract: 'DelegateApprovalsEternalStorage',
 			target: DelegateApprovalsEternalStorage,
 			read: 'associatedContract',
 			expected: input => input === addressOf(DelegateApprovals),
 			write: 'setAssociatedContract',
 			writeArg: addressOf(DelegateApprovals),
+			comment: 'Ensure that DelegateApprovals contract is allowed to write to its EternalStorage',
 		});
 	}
 
@@ -77,6 +80,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Liquidations),
 			write: 'setAssociatedContract',
 			writeArg: addressOf(Liquidations),
+			comment: 'Ensure the Liquidations contract is allowed to write to its EternalStorage',
 		});
 	}
 
@@ -88,6 +92,7 @@ module.exports = async ({
 			expected: input => input === addressOf(FeePool),
 			write: 'setTarget',
 			writeArg: addressOf(FeePool),
+			comment: 'Ensure the ProxyFeePool contract has the correct FeePool target set',
 		});
 	}
 
@@ -99,6 +104,7 @@ module.exports = async ({
 			expected: input => input === addressOf(FeePool),
 			write: 'setAssociatedContract',
 			writeArg: addressOf(FeePool),
+			comment: 'Ensure the FeePool contract can write to its EternalStorage',
 		});
 	}
 
@@ -111,6 +117,7 @@ module.exports = async ({
 			expected: input => input === addressOf(FeePool),
 			write: 'setFeePool',
 			writeArg: addressOf(FeePool),
+			comment: 'Ensure the FeePool contract can write to its State',
 		});
 	}
 
@@ -122,6 +129,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Synthetix),
 			write: 'setTarget',
 			writeArg: addressOf(Synthetix),
+			comment: 'Ensure the SNX proxy has the correct Synthetix target set',
 		});
 		await runStep({
 			contract: 'Synthetix',
@@ -130,6 +138,7 @@ module.exports = async ({
 			expected: input => input === addressOf(ProxyERC20),
 			write: 'setProxy',
 			writeArg: addressOf(ProxyERC20),
+			comment: 'Ensure the Synthetix contract has the correct ERC20 proxy set',
 		});
 	}
 
@@ -141,6 +150,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Synthetix),
 			write: 'setTarget',
 			writeArg: addressOf(Synthetix),
+			comment: 'Ensure the legacy SNX proxy has the correct Synthetix target set',
 		});
 	}
 
@@ -153,6 +163,7 @@ module.exports = async ({
 			expected: input => input === Exchanger.options.address,
 			write: 'setAssociatedContract',
 			writeArg: Exchanger.options.address,
+			comment: 'Ensure the Exchanger contract can write to its State',
 		});
 	}
 
@@ -166,6 +177,7 @@ module.exports = async ({
 			expected: ({ canSuspend } = {}) => canSuspend,
 			write: 'updateAccessControl',
 			writeArg: [toBytes32('Synth'), addressOf(Exchanger), true, false],
+			comment: 'Ensure the Exchanger contract can suspend synths - see SIP-65',
 		});
 	}
 
@@ -180,6 +192,8 @@ module.exports = async ({
 			expected: input => input === initialIssuance,
 			write: 'setBalanceOf',
 			writeArg: [account, initialIssuance],
+			comment:
+				'Ensure the TokenStateSynthetix contract has the correct initial issuance (WARNING: only for new deploys)',
 		});
 	}
 
@@ -191,6 +205,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Synthetix),
 			write: 'setAssociatedContract',
 			writeArg: addressOf(Synthetix),
+			comment: 'Ensure the Synthetix contract can write to its TokenState contract',
 		});
 	}
 
@@ -204,6 +219,7 @@ module.exports = async ({
 			expected: input => input === IssuerAddress,
 			write: 'setAssociatedContract',
 			writeArg: IssuerAddress,
+			comment: 'Ensure that Synthetix can write to its State contract',
 		});
 	}
 
@@ -216,6 +232,7 @@ module.exports = async ({
 			expected: input => input === addressOf(FeePool),
 			write: 'setFeePool',
 			writeArg: addressOf(FeePool),
+			comment: 'Ensure the FeePool contract can write to the SynthetixState contract',
 		});
 	}
 
@@ -227,6 +244,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Synthetix),
 			write: 'setSynthetix',
 			writeArg: addressOf(Synthetix),
+			comment: 'Ensure the legacy RewardEscrow contract is connected to the Synthetix contract',
 		});
 	}
 
@@ -238,6 +256,7 @@ module.exports = async ({
 			expected: input => input === addressOf(FeePool),
 			write: 'setFeePool',
 			writeArg: addressOf(FeePool),
+			comment: 'Ensure the legacy RewardEscrow contract is connected to the FeePool contract',
 		});
 	}
 
@@ -246,9 +265,10 @@ module.exports = async ({
 			contract: 'SupplySchedule',
 			target: SupplySchedule,
 			read: 'synthetixProxy',
-			expected: input => input === addressOf(ProxySynthetix),
+			expected: input => input === addressOf(ProxyERC20),
 			write: 'setSynthetixProxy',
-			writeArg: addressOf(ProxySynthetix),
+			writeArg: addressOf(ProxyERC20),
+			comment: 'Ensure the SupplySchedule is connected to the SNX proxy for reading',
 		});
 	}
 
@@ -260,6 +280,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Synthetix),
 			write: 'setAuthority',
 			writeArg: addressOf(Synthetix),
+			comment: 'Ensure the RewardsDistribution has Synthetix set as its authority for distribution',
 		});
 
 		await runStep({
@@ -269,6 +290,7 @@ module.exports = async ({
 			expected: input => input === addressOf(ProxyERC20),
 			write: 'setSynthetixProxy',
 			writeArg: addressOf(ProxyERC20),
+			comment: 'Ensure the RewardsDistribution can find the Synthetix proxy to read and transfer',
 		});
 	}
 
@@ -281,6 +303,7 @@ module.exports = async ({
 			expected: input => input === addressOf(RewardEscrowV2),
 			write: 'setRewardEscrow',
 			writeArg: addressOf(RewardEscrowV2),
+			comment: 'Ensure the RewardsDistribution can read the RewardEscrowV2 address',
 		});
 	}
 
@@ -300,6 +323,8 @@ module.exports = async ({
 				expected: input => input === addressOf(ProxyERC20),
 				write: 'setHavven',
 				writeArg: addressOf(ProxyERC20),
+				comment:
+					'Ensure the legacy token sale escrow can find the Synthetix proxy to read and transfer',
 			});
 		} else {
 			await runStep({
@@ -309,6 +334,7 @@ module.exports = async ({
 				expected: input => input === addressOf(ProxyERC20),
 				write: 'setSynthetix',
 				writeArg: addressOf(ProxyERC20),
+				comment: 'Ensure the token sale escrow can find the Synthetix proxy to read and transfer',
 			});
 		}
 	}

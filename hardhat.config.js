@@ -34,6 +34,7 @@ module.exports = {
 	},
 	paths: {
 		sources: './contracts',
+		ignore: /migrations\//,
 		tests: './test/contracts',
 		artifacts: path.join(BUILD_FOLDER, 'artifacts'),
 		cache: path.join(BUILD_FOLDER, CACHE_FOLDER),
@@ -62,6 +63,7 @@ module.exports = {
 	gasReporter: {
 		enabled: false,
 		showTimeSpent: true,
+		gasPrice: 20,
 		currency: 'USD',
 		maxMethodDiff: 25, // CI will fail if gas usage is > than this %
 		outputFile: 'test-gas-used.log',

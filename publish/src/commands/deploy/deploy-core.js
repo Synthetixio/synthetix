@@ -150,7 +150,7 @@ module.exports = async ({
 
 	const tokenStateSynthetix = await deployer.deployContract({
 		name: 'TokenStateSynthetix',
-		source: 'TokenState',
+		source: 'LegacyTokenState',
 		args: [account, account],
 	});
 

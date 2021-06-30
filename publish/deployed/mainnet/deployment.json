@@ -316,7 +316,7 @@
 		"TokenStateSynthetix": {
 			"name": "TokenStateSynthetix",
 			"address": "0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD",
-			"source": "TokenState",
+			"source": "LegacyTokenState",
 			"link": "https://etherscan.io/address/0x5b1b5fEa1b99D83aD479dF0C222F0492385381dD",
 			"network": "mainnet"
 		},
@@ -7857,6 +7857,7 @@
 					"constant": false,
 					"inputs": [
 						{
+							"internalType": "contract Proxyable",
 							"name": "_target",
 							"type": "address"
 						}
@@ -7964,6 +7965,7 @@
 					"name": "target",
 					"outputs": [
 						{
+							"internalType": "contract Proxyable",
 							"name": "",
 							"type": "address"
 						}
@@ -7994,6 +7996,7 @@
 					"inputs": [
 						{
 							"indexed": false,
+							"internalType": "contract Proxyable",
 							"name": "newTarget",
 							"type": "address"
 						}
@@ -9326,6 +9329,241 @@
 						{
 							"indexed": false,
 							"name": "associatedContract",
+							"type": "address"
+						}
+					],
+					"name": "AssociatedContractUpdated",
+					"type": "event",
+					"signature": "0x73f20cff579e8a4086fa607db83867595f1b6a798e718c0bfa0b94a404128e03"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"name": "newOwner",
+							"type": "address"
+						}
+					],
+					"name": "OwnerNominated",
+					"type": "event",
+					"signature": "0x906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce22"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"name": "oldOwner",
+							"type": "address"
+						},
+						{
+							"indexed": false,
+							"name": "newOwner",
+							"type": "address"
+						}
+					],
+					"name": "OwnerChanged",
+					"type": "event",
+					"signature": "0xb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c"
+				}
+			]
+		},
+		"LegacyTokenState": {
+			"bytecode": "0x608060405234801561001057600080fd5b50604051604080610b47833981018060405281019080805190602001909291908051906020019092919050505081806000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505080600260006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055507f73f20cff579e8a4086fa607db83867595f1b6a798e718c0bfa0b94a404128e0381604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a15050610a13806101346000396000f3006080604052600436106100a4576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806352f445ca146100a957806353a47bb7146100ec5780635b94db271461014357806370a082311461018657806379ba5097146101dd5780638da5cb5b146101f4578063aefc4ccb1461024b578063b46310f6146102a2578063da46098c146102ef578063dd62ed3e1461035c575b600080fd5b3480156100b557600080fd5b506100ea600480360381019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506103d3565b005b3480156100f857600080fd5b506101016104d5565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34801561014f57600080fd5b50610184600480360381019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506104fb565b005b34801561019257600080fd5b506101c7600480360381019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506105fd565b6040518082815260200191505060405180910390f35b3480156101e957600080fd5b506101f2610615565b005b34801561020057600080fd5b506102096107f1565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b34801561025757600080fd5b50610260610816565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b3480156102ae57600080fd5b506102ed600480360381019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019092919050505061083c565b005b3480156102fb57600080fd5b5061035a600480360381019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803590602001909291905050506108e0565b005b34801561036857600080fd5b506103bd600480360381019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190803573ffffffffffffffffffffffffffffffffffffffff1690602001909291905050506109c2565b6040518082815260200191505060405180910390f35b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614151561042e57600080fd5b80600260006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055507f73f20cff579e8a4086fa607db83867595f1b6a798e718c0bfa0b94a404128e0381604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a150565b600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614151561055657600080fd5b80600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055507f906a1c6bd7e3091ea86693dd029a831c19049ce77f1dce2ce0bab1cacbabce2281604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a150565b60036020528060005260406000206000915090505481565b600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614151561067157600080fd5b7fb532073b38c83145e3e5135377a08bf9aab55bc0fd7c1179cd4fb995d2a5159c6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff16600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019250505060405180910390a1600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff166000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055506000600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff160217905550565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b600260009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b600260009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614151561089857600080fd5b80600360008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020819055505050565b600260009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff1614151561093c57600080fd5b80600460008573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002081905550505050565b60046020528160005260406000206020528060005260406000206000915091505054815600a165627a7a7230582075e885147ce472e429b7afa787a02ccc5f81ae0af8bc28ba37737c00bdc0a6fd0029",
+			"abi": [
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"name": "_associatedContract",
+							"type": "address"
+						}
+					],
+					"name": "setAssociatedContract",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0x52f445ca"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "nominatedOwner",
+					"outputs": [
+						{
+							"name": "",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x53a47bb7"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"name": "_owner",
+							"type": "address"
+						}
+					],
+					"name": "nominateOwner",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0x5b94db27"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"name": "",
+							"type": "address"
+						}
+					],
+					"name": "balanceOf",
+					"outputs": [
+						{
+							"name": "",
+							"type": "uint256"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x70a08231"
+				},
+				{
+					"constant": false,
+					"inputs": [],
+					"name": "acceptOwnership",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0x79ba5097"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "owner",
+					"outputs": [
+						{
+							"name": "",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0x8da5cb5b"
+				},
+				{
+					"constant": true,
+					"inputs": [],
+					"name": "associatedContract",
+					"outputs": [
+						{
+							"name": "",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0xaefc4ccb"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"name": "account",
+							"type": "address"
+						},
+						{
+							"name": "value",
+							"type": "uint256"
+						}
+					],
+					"name": "setBalanceOf",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0xb46310f6"
+				},
+				{
+					"constant": false,
+					"inputs": [
+						{
+							"name": "tokenOwner",
+							"type": "address"
+						},
+						{
+							"name": "spender",
+							"type": "address"
+						},
+						{
+							"name": "value",
+							"type": "uint256"
+						}
+					],
+					"name": "setAllowance",
+					"outputs": [],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "function",
+					"signature": "0xda46098c"
+				},
+				{
+					"constant": true,
+					"inputs": [
+						{
+							"name": "",
+							"type": "address"
+						},
+						{
+							"name": "",
+							"type": "address"
+						}
+					],
+					"name": "allowance",
+					"outputs": [
+						{
+							"name": "",
+							"type": "uint256"
+						}
+					],
+					"payable": false,
+					"stateMutability": "view",
+					"type": "function",
+					"signature": "0xdd62ed3e"
+				},
+				{
+					"inputs": [
+						{
+							"name": "_owner",
+							"type": "address"
+						},
+						{
+							"name": "_associatedContract",
+							"type": "address"
+						}
+					],
+					"payable": false,
+					"stateMutability": "nonpayable",
+					"type": "constructor"
+				},
+				{
+					"anonymous": false,
+					"inputs": [
+						{
+							"indexed": false,
+							"name": "_associatedContract",
 							"type": "address"
 						}
 					],
@@ -13910,6 +14148,7 @@
 					"constant": false,
 					"inputs": [
 						{
+							"internalType": "contract IFeePool",
 							"name": "_feePool",
 							"type": "address"
 						}
@@ -14155,6 +14394,7 @@
 					"name": "synthetix",
 					"outputs": [
 						{
+							"internalType": "contract ISynthetix",
 							"name": "",
 							"type": "address"
 						}
@@ -14239,6 +14479,7 @@
 					"name": "feePool",
 					"outputs": [
 						{
+							"internalType": "contract IFeePool",
 							"name": "",
 							"type": "address"
 						}
@@ -14334,6 +14575,7 @@
 					"constant": false,
 					"inputs": [
 						{
+							"internalType": "contract ISynthetix",
 							"name": "_synthetix",
 							"type": "address"
 						}

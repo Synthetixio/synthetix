@@ -75,7 +75,7 @@ const purgeSynths = async ({
 		return;
 	}
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 		useFork,
 	});
@@ -89,14 +89,14 @@ const purgeSynths = async ({
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 	let wallet;
-	if (useFork) {
+	if (!privateKey) {
 		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
 	} else {
 		wallet = new ethers.Wallet(privateKey, provider);
 	}
-	console.log(wallet);
-	if (!wallet.address) wallet.address = wallet._address;
+
 	console.log(gray(`Using account with public key ${wallet.address}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
 
@@ -211,7 +211,7 @@ const purgeSynths = async ({
 					writeArg: [entries], // explicitly pass array of args so array not splat as params
 					gasLimit,
 					gasPrice,
-					etherscanLinkPrefix,
+					explorerLinkPrefix,
 					encodeABI: network === 'mainnet',
 				});
 			}
