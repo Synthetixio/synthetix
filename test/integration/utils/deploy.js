@@ -35,7 +35,7 @@ async function deployInstance({
 	freshDeploy = true,
 	ignoreCustomParameters = false,
 	buildPath,
-	skipFeedChecks = true
+	skipFeedChecks = true,
 }) {
 	const privateKey = getLocalPrivateKey({ index: 0 });
 
@@ -53,7 +53,7 @@ async function deployInstance({
 		contractDeploymentGasLimit: useOvm ? undefined : '9500000',
 		ignoreCustomParameters,
 		buildPath,
-		skipFeedChecks
+		skipFeedChecks,
 	});
 }
 
