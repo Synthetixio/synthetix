@@ -189,8 +189,9 @@ const deploy = async ({
 		providerUrl = envProviderUrl;
 	}
 
-	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
-	if (network !== 'local' && !privateKey) {
+	// when not in a local network, and not forking, and the privateKey isn't supplied,
+	// use the one from the .env file
+	if (network !== 'local' && !useFork && !privateKey) {
 		privateKey = envPrivateKey;
 	}
 
