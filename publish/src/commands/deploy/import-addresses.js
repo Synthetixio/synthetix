@@ -5,7 +5,7 @@ const { toBytes32 } = require('../../../..');
 
 const { reportDeployedContracts } = require('../../util');
 
-module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, useFork }) => {
+module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, useOvm }) => {
 	console.log(gray(`\n------ CONFIGURE ADDRESS RESOLVER ------\n`));
 
 	const { AddressResolver, ReadProxyAddressResolver } = deployer.deployedContracts;
@@ -55,7 +55,7 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 		);
 
 		const { pending } = await runStep({
-			gasLimit: 6e6, // higher gas required
+			gasLimit: useOvm ? undefined : 6e6, // higher gas required for mainnet
 			contract: `AddressResolver`,
 			target: AddressResolver,
 			read: 'areAddressesImported',

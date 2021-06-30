@@ -20,9 +20,8 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 	.addOptionalParam('providerUrl', 'The http provider to use for communicating with the blockchain')
 	.addOptionalParam('deploymentPath', 'Specify the path to the deployment data directory')
 	.setAction(async (taskArguments, hre) => {
-		const { useOvm, useFork, gasLimit, deploymentPath, targetNetwork } = taskArguments;
-		let { providerUrl, gasPrice, privateKey } = taskArguments;
-
+		const { useOvm, useFork, deploymentPath, targetNetwork } = taskArguments;
+		let { providerUrl, gasLimit, gasPrice, privateKey } = taskArguments;
 		// ------------------
 		// Default values per network
 		// ------------------
@@ -31,6 +30,10 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 		const defaults = DEFAULTS[key];
 		providerUrl = providerUrl || defaults.providerUrl;
 		gasPrice = gasPrice || defaults.gasPrice;
+		if (useOvm) {
+			gasPrice = synthetix.constants.OVM_GAS_PRICE_GWEI;
+			gasLimit = undefined;
+		}
 
 		// ------------------
 		// Setup
