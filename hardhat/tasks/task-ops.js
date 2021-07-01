@@ -143,16 +143,16 @@ function _fresh({ opsPath }) {
 
 function _build({ opsPath, opsCommit, opsBranch }) {
 	console.log(gray('  checkout commit:', opsCommit));
-	execa.sync('sh', ['-c', `cd ${opsPath} && git fetch `]);
-	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsBranch} `]);
-	execa.sync('sh', ['-c', `cd ${opsPath} && git pull origin ${opsBranch} `]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && git fetch`]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsBranch}`]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && git pull origin ${opsBranch}`]);
 	if (opsCommit) {
 		execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
 	}
 	console.log(gray('  get dependencies'));
-	execa.sync('sh', ['-c', `yarn `]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && yarn`]);
 	console.log(gray('  build'));
-	execa.sync('sh', ['-c', `yarn build `]);
+	execa.sync('sh', ['-c', `cd ${opsPath} && yarn build`]);
 }
 
 function _buildOps({ opsPath }) {
