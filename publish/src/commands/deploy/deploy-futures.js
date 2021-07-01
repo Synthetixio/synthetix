@@ -43,6 +43,11 @@ module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 		});
 	}
 
+	const futuresMarketSettings = await deployer.deployContract({
+		name: 'FuturesMarketSettings',
+		args: [(account, addressOf(ReadProxyAddressResolver))],
+	});
+
 	const futuresAssets = ['BTC', 'ETH', 'LINK'];
 	const deployedFuturesMarkets = [];
 
@@ -61,6 +66,7 @@ module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 	for (const asset of futuresAssets) {
 		const marketName = 'FuturesMarket' + asset;
 		const proxyName = 'Proxy' + marketName;
+		const baseAsset = toBytes32('s' + asset);
 
 		const proxyFuturesMarket = await deployer.deployContract({
 			name: proxyName,
@@ -75,22 +81,32 @@ module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 				addressOf(proxyFuturesMarket),
 				account,
 				addressOf(ReadProxyAddressResolver),
-				toBytes32('s' + asset),
-				takerFee,
-				makerFee,
-				maxLeverage,
-				maxMarketDebt,
-				minInitialMargin,
-				fundingParameters,
+				baseAsset,
 			],
-			deps: ['AddressResolver'],
 		});
 
 		if (futuresMarket) {
 			deployedFuturesMarkets.push(addressOf(futuresMarket));
 		}
 
-		if (proxyFuturesMarket && futuresMarket) {
+		if (proxyFuturesMarket && futuresMarket && futuresMarketSettings) {
+			// set the parameters before deploying the markets
+			await runStep({
+				contract: futuresMarketSettings,
+				target: futuresMarketSettings,
+				read: 'target',
+				write: 'setAllParameters',
+				writeArg: [
+					baseAsset,
+					takerFee,
+					makerFee,
+					maxLeverage,
+					maxMarketDebt,
+					minInitialMargin,
+					fundingParameters,
+				],
+			});
+
 			await runStep({
 				contract: proxyName,
 				target: proxyFuturesMarket,

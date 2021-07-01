@@ -11,6 +11,7 @@ const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
+	'local-ovm': require('./publish/deployed/local-ovm'),
 	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
 };
@@ -37,6 +38,10 @@ const chainIdMapping = Object.entries({
 	},
 	42: {
 		network: 'kovan',
+	},
+	420: {
+		network: 'local',
+		useOvm: true,
 	},
 
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
@@ -148,6 +153,7 @@ const defaults = {
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
 	FUTURES_LIQUIDATION_FEE: w3utils.toWei('20'), // 20 sUSD liquidation fee
+	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('100'), // minimum initial margin for all markets
 	AGGREGATOR_WARNING_FLAGS: {
 		mainnet: '0x4A5b9B4aD08616D11F3A402FF7cBEAcB732a76C6',
 		kovan: '0x6292aa9a6650ae14fbf974e5029f36f95a1848fd',
@@ -226,7 +232,7 @@ const getPathToNetwork = ({ network = 'mainnet', file = '', useOvm = false, path
 
 // Pass in fs and path to avoid webpack wrapping those
 const loadDeploymentFile = ({ network, path, fs, deploymentPath, useOvm = false }) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].deployment;
 	}
 	const pathToDeployment = deploymentPath
@@ -325,7 +331,7 @@ const getAST = ({ source, path, fs, match = /^contracts\// } = {}) => {
 const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) => {
 	let feeds;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		feeds = data[getFolderNameForNetwork({ network, useOvm })].feeds;
 	} else {
 		const pathToFeeds = deploymentPath
@@ -372,7 +378,7 @@ const getSynths = ({
 } = {}) => {
 	let synths;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		synths = data[getFolderNameForNetwork({ network, useOvm })].synths;
 	} else {
 		const pathToSynthList = deploymentPath
@@ -435,7 +441,7 @@ const getStakingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })].rewards;
 	}
 
@@ -463,7 +469,7 @@ const getShortingRewards = ({
 	fs,
 	deploymentPath,
 } = {}) => {
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		return data[getFolderNameForNetwork({ network, useOvm })]['shorting-rewards'];
 	}
 
@@ -515,6 +521,12 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			// Deterministic account #0 when using `npx hardhat node`
 			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 		}),
+		'local-ovm': Object.assign({}, base, {
+			// Deterministic account #0 when using `npx hardhat node`
+			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+			deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+			oracle: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		}),
 	};
 
 	const users = Object.entries(
@@ -534,7 +546,7 @@ const getVersions = ({
 } = {}) => {
 	let versions;
 
-	if (!deploymentPath && network !== 'local' && (!path || !fs)) {
+	if (!deploymentPath && (!path || !fs)) {
 		versions = data[getFolderNameForNetwork({ network, useOvm })].versions;
 	} else {
 		const pathToVersions = deploymentPath
