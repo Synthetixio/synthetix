@@ -7,7 +7,7 @@ steps:
       at: .
   - restore_cache:
       keys:
-        - v6-optimism-build-{{ checksum "package-lock.json" }}
+        - v7-optimism-build-{{ checksum "package-lock.json" }}
   - run:
       name: Build docker containers if necessary
       command: |
@@ -20,10 +20,13 @@ steps:
           git checkout dc4bd5381e4c75516e251cc1d1d81bcf1e4d2d7d
           yarn
           yarn build
-          export COMPOSE_DOCKER_CLI_BUILD=1 && export DOCKER_BUILDKIT=1 && docker-compose build
+          cd ops
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          export DOCKER_BUILDKIT=1
+          docker-compose build
         fi;
   - save_cache:
-      key: v6-optimism-build-{{ checksum "package-lock.json" }}
+      key: v7-optimism-build-{{ checksum "package-lock.json" }}
       paths:
         - ./optimism
   - run:
