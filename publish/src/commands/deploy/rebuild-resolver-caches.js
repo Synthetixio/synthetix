@@ -48,24 +48,22 @@ module.exports = async ({
 			return [`legacy_${name}`, target];
 		});
 
-		await Promise.all(
-			legacyContracts.map(async ([name, target]) => {
-				return runStep({
-					gasLimit: 7e6,
-					contract: name,
-					target,
-					read: 'isResolverCached',
-					expected: input => input,
-					publiclyCallable: true, // does not require owner
-					write: 'rebuildCache',
-					// these updates are tricky to Soliditize, and aren't
-					// owner required and aren't critical to the core, so
-					// let's skip them in the migration script
-					// and a re-run of the deploy script will catch them
-					skipSolidity: true,
-				});
-			})
-		);
+		for (const [name, target] of legacyContracts) {
+			await runStep({
+				gasLimit: 7e6,
+				contract: name,
+				target,
+				read: 'isResolverCached',
+				expected: input => input,
+				publiclyCallable: true, // does not require owner
+				write: 'rebuildCache',
+				// these updates are tricky to Soliditize, and aren't
+				// owner required and aren't critical to the core, so
+				// let's skip them in the migration script
+				// and a re-run of the deploy script will catch them
+				skipSolidity: true,
+			});
+		}
 	}
 
 	const filterTargetsWith = ({ prop }) =>
