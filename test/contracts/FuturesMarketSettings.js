@@ -174,11 +174,19 @@ contract('FuturesMarketSettings', accounts => {
 							accounts,
 						});
 					}
-					const fundingParams = [maxFundingRate, maxFundingRateSkew, maxFundingRateDelta];
 
 					await onlyGivenAddressCanInvoke({
 						fnc: futuresMarketSettings.setAllParameters,
-						args: [baseAsset, takerFee, makerFee, maxLeverage, maxMarketValue, fundingParams],
+						args: [
+							baseAsset,
+							takerFee,
+							makerFee,
+							maxLeverage,
+							maxMarketValue,
+							maxFundingRate,
+							maxFundingRateSkew,
+							maxFundingRateDelta,
+						],
 						address: owner,
 						accounts,
 					});
@@ -223,11 +231,6 @@ contract('FuturesMarketSettings', accounts => {
 					const newMaxFundingRate = maxFundingRate.mul(bn2);
 					const newMaxFundingRateSkew = maxFundingRateSkew.mul(bn2);
 					const newMaxFundingRateDelta = maxFundingRateDelta.mul(bn2);
-					const newFundingParams = [
-						newMaxFundingRate,
-						newMaxFundingRateSkew,
-						newMaxFundingRateDelta,
-					];
 					let tx;
 					before(
 						'should set the params accordingly and emit the corresponding events',
@@ -238,7 +241,9 @@ contract('FuturesMarketSettings', accounts => {
 								newMakerFee,
 								newMaxLeverage,
 								newMaxMarketValue,
-								newFundingParams,
+								newMaxFundingRate,
+								newMaxFundingRateSkew,
+								newMaxFundingRateDelta,
 								{ from: owner }
 							);
 						}
