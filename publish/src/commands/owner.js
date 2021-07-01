@@ -195,7 +195,7 @@ const owner = async ({
 				});
 
 				// sign txHash to get signature
-				const sig = getSafeSignature({
+				const sig = await getSafeSignature({
 					privateKey,
 					providerUrl,
 					contractTxHash: txHash,
@@ -289,7 +289,7 @@ const owner = async ({
 					});
 
 					// sign txHash to get signature
-					const sig = getSafeSignature({
+					const sig = await getSafeSignature({
 						privateKey,
 						providerUrl,
 						contractTxHash: txHash,
