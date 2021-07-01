@@ -56,20 +56,14 @@ contract Migration_Alnitak is BaseMigration {
         require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
         // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x52dDE10B3eF5A817ccd0d2896876549ED9FaC8d0
-        address new_Synthetix_contract = 0x52dDE10B3eF5A817ccd0d2896876549ED9FaC8d0;
-        // https://etherscan.io/address/0x678440Ce2D706809d5A0835Cf177F13d78ea66b9
-        address new_DebtCache_contract = 0x678440Ce2D706809d5A0835Cf177F13d78ea66b9;
-        // https://etherscan.io/address/0x93F96a5C9C6B703b3703B0Ca7Bd596CF5599dFf0
-        address new_Exchanger_contract = 0x93F96a5C9C6B703b3703B0Ca7Bd596CF5599dFf0;
+        // https://etherscan.io/address/0x43AE8037179a5746D618DA077A38DdeEa9640cBa
+        address new_Synthetix_contract = 0x43AE8037179a5746D618DA077A38DdeEa9640cBa;
+        // https://etherscan.io/address/0x613c773c7a1D85D2F1DCC051B0573D33470762Eb
+        address new_Exchanger_contract = 0x613c773c7a1D85D2F1DCC051B0573D33470762Eb;
 
         require(
             ISynthetixNamedContract(new_Synthetix_contract).CONTRACT_NAME() == "Synthetix",
             "Invalid contract supplied for Synthetix"
-        );
-        require(
-            ISynthetixNamedContract(new_DebtCache_contract).CONTRACT_NAME() == "DebtCache",
-            "Invalid contract supplied for DebtCache"
         );
         require(
             ISynthetixNamedContract(new_Exchanger_contract).CONTRACT_NAME() == "Exchanger",
@@ -88,14 +82,12 @@ contract Migration_Alnitak is BaseMigration {
 
         // MIGRATION
         // Import all new contracts into the address resolver;
-        bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](3);
+        bytes32[] memory addressresolver_importAddresses_names_0_0 = new bytes32[](2);
         addressresolver_importAddresses_names_0_0[0] = bytes32("Synthetix");
-        addressresolver_importAddresses_names_0_0[1] = bytes32("DebtCache");
-        addressresolver_importAddresses_names_0_0[2] = bytes32("Exchanger");
-        address[] memory addressresolver_importAddresses_destinations_0_1 = new address[](3);
+        addressresolver_importAddresses_names_0_0[1] = bytes32("Exchanger");
+        address[] memory addressresolver_importAddresses_destinations_0_1 = new address[](2);
         addressresolver_importAddresses_destinations_0_1[0] = address(new_Synthetix_contract);
-        addressresolver_importAddresses_destinations_0_1[1] = address(new_DebtCache_contract);
-        addressresolver_importAddresses_destinations_0_1[2] = address(new_Exchanger_contract);
+        addressresolver_importAddresses_destinations_0_1[1] = address(new_Exchanger_contract);
         addressresolver_i.importAddresses(
             addressresolver_importAddresses_names_0_0,
             addressresolver_importAddresses_destinations_0_1
@@ -111,7 +103,7 @@ contract Migration_Alnitak is BaseMigration {
         addressresolver_rebuildCaches_destinations_1_0[6] = MixinResolver(0xCd9D4988C0AE61887B075bA77f08cbFAd2b65068);
         addressresolver_rebuildCaches_destinations_1_0[7] = MixinResolver(0xd69b189020EF614796578AfE4d10378c5e7e1138);
         addressresolver_rebuildCaches_destinations_1_0[8] = MixinResolver(new_Synthetix_contract);
-        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(new_DebtCache_contract);
+        addressresolver_rebuildCaches_destinations_1_0[9] = MixinResolver(0x9bB05EF2cA7DBAafFC3da1939D1492e6b00F39b8);
         addressresolver_rebuildCaches_destinations_1_0[10] = MixinResolver(0x4D8dBD193d89b7B506BE5dC9Db75B91dA00D6a1d);
         addressresolver_rebuildCaches_destinations_1_0[11] = MixinResolver(0xC61b352fCc311Ae6B0301459A970150005e74b3E);
         addressresolver_rebuildCaches_destinations_1_0[12] = MixinResolver(0x388fD1A8a7d36e03eFA1ab100a1c5159a3A3d427);
