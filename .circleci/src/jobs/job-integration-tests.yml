@@ -7,9 +7,9 @@ steps:
       at: .
   - restore_cache:
       keys:
-        - v7-optimism-build-{{ checksum "package-lock.json" }}
+        - v8-optimism-build-{{ checksum "package-lock.json" }}
   - run:
-      name: Build docker containers if necessary
+      name: Pull optimism repo if necessary
       command: |
         if [ ! -d ./optimism ]; then
           git clone https://github.com/ethereum-optimism/optimism.git
@@ -20,15 +20,19 @@ steps:
           git checkout dc4bd5381e4c75516e251cc1d1d81bcf1e4d2d7d
           yarn
           yarn build
-          cd ops
-          export COMPOSE_DOCKER_CLI_BUILD=1
-          export DOCKER_BUILDKIT=1
-          docker-compose build
         fi;
   - save_cache:
-      key: v7-optimism-build-{{ checksum "package-lock.json" }}
+      key: v8-optimism-build-{{ checksum "package-lock.json" }}
       paths:
         - ./optimism
+  - run:
+      name: Build optimism docker image
+      command: |
+        cd optimism
+        cd ops
+        export COMPOSE_DOCKER_CLI_BUILD=1
+        export DOCKER_BUILDKIT=1
+        docker-compose build
   - run:
       name: Start docker chains
       background: true
