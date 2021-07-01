@@ -1,8 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const Web3 = require('web3');
+const ethers = require('ethers');
 const { gray, red, yellow } = require('chalk');
-const { wrap, toBytes32 } = require('../../..');
+const {
+	wrap,
+	toBytes32,
+	constants: { OVM_GAS_PRICE_GWEI },
+} = require('../../..');
 const { confirmAction } = require('../util');
 const {
 	ensureNetwork,
@@ -26,18 +30,23 @@ const connectBridge = async ({
 	l2Messenger,
 	dryRun,
 	l1GasPrice,
-	l2GasPrice,
-	gasLimit,
+	l1GasLimit,
+	quiet,
 }) => {
+	const logger = console.log;
+	if (quiet) {
+		console.log = () => {};
+	}
+
 	// ---------------------------------
 	// Setup L1 instance
 	// ---------------------------------
 
 	console.log(gray('* Setting up L1 instance...'));
 	const {
+		wallet: walletL1,
 		AddressResolver: AddressResolverL1,
 		SynthetixBridge: SynthetixBridgeToOptimism,
-		account: accountL1,
 	} = await setupInstance({
 		network: l1Network,
 		providerUrl: l1ProviderUrl,
@@ -54,9 +63,9 @@ const connectBridge = async ({
 
 	console.log(gray('* Setting up L2 instance...'));
 	const {
+		wallet: walletL2,
 		AddressResolver: AddressResolverL2,
 		SynthetixBridge: SynthetixBridgeToBase,
-		account: accountL2,
 	} = await setupInstance({
 		network: l2Network,
 		providerUrl: l2ProviderUrl,
@@ -73,11 +82,11 @@ const connectBridge = async ({
 
 	console.log(gray('* Connecting bridge on L1...'));
 	await connectLayer({
-		account: accountL1,
+		wallet: walletL1,
 		gasPrice: l1GasPrice,
-		gasLimit,
+		gasLimit: l1GasLimit,
 		names: ['ext:Messenger', 'ovm:SynthetixBridgeToBase'],
-		addresses: [l1Messenger, SynthetixBridgeToBase.options.address],
+		addresses: [l1Messenger, SynthetixBridgeToBase.address],
 		AddressResolver: AddressResolverL1,
 		SynthetixBridge: SynthetixBridgeToOptimism,
 		dryRun,
@@ -89,19 +98,21 @@ const connectBridge = async ({
 
 	console.log(gray('* Connecting bridge on L2...'));
 	await connectLayer({
-		account: accountL2,
-		gasPrice: l2GasPrice,
-		gasLimit,
+		wallet: walletL2,
+		gasPrice: OVM_GAS_PRICE_GWEI,
+		gasLimit: undefined,
 		names: ['ext:Messenger', 'base:SynthetixBridgeToOptimism'],
-		addresses: [l2Messenger, SynthetixBridgeToOptimism.options.address],
+		addresses: [l2Messenger, SynthetixBridgeToOptimism.address],
 		AddressResolver: AddressResolverL2,
 		SynthetixBridge: SynthetixBridgeToBase,
 		dryRun,
 	});
+
+	console.log = logger;
 };
 
 const connectLayer = async ({
-	account,
+	wallet,
 	gasPrice,
 	gasLimit,
 	names,
@@ -121,7 +132,7 @@ const connectLayer = async ({
 		const address = addresses[i];
 		console.log(gray(`  * Checking if ${name} is already set to ${address}`));
 
-		const readAddress = await AddressResolver.methods.getAddress(toBytes32(name)).call();
+		const readAddress = await AddressResolver.getAddress(toBytes32(name));
 
 		if (readAddress.toLowerCase() !== address.toLowerCase()) {
 			console.log(yellow(`    > ${name} is not set, including it...`));
@@ -137,12 +148,11 @@ const connectLayer = async ({
 	// ---------------------------------
 
 	const params = {
-		from: account,
-		gasPrice: Web3.utils.toWei(gasPrice.toString(), 'gwei'),
+		gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
 		gas: gasLimit,
 	};
 
-	let tx;
+	let tx, receipt;
 
 	if (needToImportAddresses) {
 		const ids = names.map(toBytes32);
@@ -155,25 +165,24 @@ const connectLayer = async ({
 				yellow.inverse(`  * CALLING AddressResolver.importAddresses([${ids}], [${addresses}])`)
 			);
 
-			const owner = await AddressResolver.methods.owner().call();
-			if (account.toLowerCase() !== owner.toLowerCase()) {
+			const owner = await AddressResolver.owner();
+			if (wallet.address.toLowerCase() !== owner.toLowerCase()) {
 				await confirmAction(
 					yellow(
-						`    ⚠️  AddressResolver is owned by ${owner} and the current signer is $${account}. Please execute the above transaction and press "y" when done.`
+						`    ⚠️  AddressResolver is owned by ${owner} and the current signer is $${wallet.address}. Please execute the above transaction and press "y" when done.`
 					)
 				);
 			} else {
-				tx = await AddressResolver.methods
-					.importAddresses(names.map(toBytes32), addresses)
-					.send(params);
-				console.log(gray(`    > tx hash: ${tx.transactionHash}`));
+				tx = await AddressResolver.importAddresses(names.map(toBytes32), addresses, params);
+				receipt = await tx.wait();
+				console.log(gray(`    > tx hash: ${receipt.transactionHash}`));
 			}
 		} else {
 			console.log(yellow('  * Skipping, since this is a DRY RUN'));
 		}
 	} else {
 		console.log(
-			gray('  * Bridge is already does not need to import any addresses in this layer. Skipping...')
+			gray('  * Bridge does not need to import any addresses in this layer. Skipping...')
 		);
 	}
 
@@ -183,7 +192,7 @@ const connectLayer = async ({
 
 	let needToSyncCacheOnBridge = needToImportAddresses;
 	if (!needToSyncCacheOnBridge) {
-		const isResolverCached = await SynthetixBridge.methods.isResolverCached().call();
+		const isResolverCached = await SynthetixBridge.isResolverCached();
 		if (!isResolverCached) {
 			needToSyncCacheOnBridge = true;
 		}
@@ -194,7 +203,8 @@ const connectLayer = async ({
 
 		if (!dryRun) {
 			console.log(yellow.inverse('  * CALLING SynthetixBridge.rebuildCache()...'));
-			tx = await SynthetixBridge.methods.rebuildCache().send(params);
+			tx = await SynthetixBridge.rebuildCache(params);
+			receipt = await tx.wait();
 			console.log(gray(`    > tx hash: ${tx.transactionHash}`));
 		} else {
 			console.log(yellow('  * Skipping, since this is a DRY RUN'));
@@ -218,7 +228,7 @@ const setupInstance = async ({
 	console.log(gray('  > useFork:', useFork));
 	console.log(gray('  > useOvm:', useOvm));
 
-	const { web3, getSource, getTarget, providerUrl, account } = bootstrapConnection({
+	const { wallet, provider, getSource, getTarget } = bootstrapConnection({
 		network,
 		providerUrl: specifiedProviderUrl,
 		deploymentPath,
@@ -226,17 +236,17 @@ const setupInstance = async ({
 		useFork,
 		useOvm,
 	});
-	console.log(gray('  > provider:', providerUrl));
-	console.log(gray('  > account:', account));
+	console.log(gray('  > provider:', provider.url));
+	console.log(gray('  > account:', wallet.address));
 
 	const AddressResolver = getContract({
 		contract: 'AddressResolver',
 		getTarget,
 		getSource,
 		deploymentPath,
-		web3,
+		wallet,
 	});
-	console.log(gray('  > AddressResolver:', AddressResolver.options.address));
+	console.log(gray('  > AddressResolver:', AddressResolver.address));
 
 	const bridgeName = useOvm ? 'SynthetixBridgeToBase' : 'SynthetixBridgeToOptimism';
 	const SynthetixBridge = getContract({
@@ -244,14 +254,14 @@ const setupInstance = async ({
 		getTarget,
 		getSource,
 		deploymentPath,
-		web3,
+		wallet,
 	});
-	console.log(gray(`  > ${bridgeName}:`, SynthetixBridge.options.address));
+	console.log(gray(`  > ${bridgeName}:`, SynthetixBridge.address));
 
 	return {
+		wallet,
 		AddressResolver,
 		SynthetixBridge,
-		account,
 	};
 };
 
@@ -278,31 +288,32 @@ const bootstrapConnection = ({
 	}
 
 	const providerUrl = specifiedProviderUrl || defaultProviderUrl;
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 	const { getUsers, getTarget, getSource } = wrap({ network, useOvm, fs, path });
 
-	let account;
-	if (useFork) {
-		account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+	let wallet;
+	if (!privateKey) {
+		const account = getUsers({ network, user: 'owner' }).address;
+		wallet = provider.getSigner(account);
+		wallet.address = wallet._address;
 	} else {
-		web3.eth.accounts.wallet.add(privateKey);
-		account = web3.eth.accounts.wallet[0].address;
+		wallet = new ethers.Wallet(privateKey, provider);
 	}
 
 	return {
 		deploymentPath,
 		providerUrl,
 		privateKey,
-		web3,
-		account,
+		provider,
+		wallet,
 		getTarget,
 		getSource,
 		getUsers,
 	};
 };
 
-const getContract = ({ contract, deploymentPath, getTarget, getSource, web3 }) => {
+const getContract = ({ contract, deploymentPath, getTarget, getSource, wallet }) => {
 	const target = getTarget({ deploymentPath, contract });
 	if (!target) {
 		throw new Error(`Unable to find deployed target for ${contract} in ${deploymentPath}`);
@@ -313,7 +324,7 @@ const getContract = ({ contract, deploymentPath, getTarget, getSource, web3 }) =
 		throw new Error(`Unable to find source for ${contract}`);
 	}
 
-	return new web3.eth.Contract(source.abi, target.address);
+	return new ethers.Contract(target.address, source.abi, wallet);
 };
 
 module.exports = {
@@ -334,10 +345,10 @@ module.exports = {
 			.option('--l2-use-fork', 'Wether to use a fork for the L2 connection', false)
 			.option('--l1-messenger <value>', 'L1 cross domain messenger to use')
 			.option('--l2-messenger <value>', 'L2 cross domain messenger to use')
-			.option('-g, --l1-gas-price <value>', 'Gas price to set when performing transfers in L1', 1)
-			.option('-g, --l2-gas-price <value>', 'Gas price to set when performing transfers in L2', 1)
-			.option('-l, --gas-limit <value>', 'Max gas to use when signing transactions', 8000000)
+			.option('--l1-gas-price <value>', 'Gas price to set when performing transfers in L1', 1)
+			.option('--l1-gas-limit <value>', 'Max gas to use when signing transactions to l1', 8000000)
 			.option('--dry-run', 'Do not execute any transactions')
+			.option('--quiet', 'Do not print stdout', false)
 			.action(async (...args) => {
 				try {
 					await connectBridge(...args);

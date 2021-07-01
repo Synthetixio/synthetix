@@ -2,7 +2,6 @@
 
 const path = require('path');
 const { gray, red } = require('chalk');
-const { constants } = require('ethers');
 const pLimit = require('p-limit');
 const Deployer = require('../../Deployer');
 const NonceManager = require('../../NonceManager');
@@ -14,12 +13,18 @@ const {
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
-	performTransactionalStep,
+	performTransactionalStepWeb3,
 	reportDeployedContracts,
 } = require('../../util');
 
 const {
-	constants: { BUILD_FOLDER, CONFIG_FILENAME, SYNTHS_FILENAME, DEPLOYMENT_FILENAME },
+	constants: {
+		BUILD_FOLDER,
+		CONFIG_FILENAME,
+		SYNTHS_FILENAME,
+		DEPLOYMENT_FILENAME,
+		OVM_GAS_PRICE_GWEI,
+	},
 } = require('../../../..');
 
 const performSafetyChecks = require('./perform-safety-checks');
@@ -79,9 +84,14 @@ const deploy = async ({
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
-	// OVM uses a gas price of 0 (unless --gas explicitely defined).
-	if (useOvm && gasPrice === DEFAULTS.gasPrice) {
-		gasPrice = constants.Zero;
+	// Gas price needs to be set to 0.015 gwei in Optimism,
+	// and gas limits need to be dynamically set by the provider.
+	// More info:
+	// https://www.notion.so/How-to-pay-Fees-in-Optimistic-Ethereum-f706f4e5b13e460fa5671af48ce9a695
+	if (useOvm) {
+		gasPrice = OVM_GAS_PRICE_GWEI;
+		methodCallGasLimit = undefined;
+		contractDeploymentGasLimit = undefined;
 	}
 
 	const limitPromise = pLimit(concurrency);
@@ -133,6 +143,7 @@ const deploy = async ({
 		ignoreSafetyChecks,
 		manageNonces,
 		methodCallGasLimit,
+		gasPrice,
 		network,
 		useOvm,
 	});
@@ -214,6 +225,7 @@ const deploy = async ({
 		oracleAddress,
 	} = await systemAndParameterCheck({
 		account,
+		buildPath,
 		addNewSynths,
 		concurrency,
 		config,
@@ -242,7 +254,7 @@ const deploy = async ({
 	);
 
 	const runStep = async opts =>
-		performTransactionalStep({
+		performTransactionalStepWeb3({
 			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
 			account,
@@ -254,7 +266,7 @@ const deploy = async ({
 			nonceManager: manageNonces ? nonceManager : undefined,
 		});
 
-	const { readProxyForResolver } = await deployCore({
+	await deployCore({
 		account,
 		addressOf,
 		currentLastMintEvent,
@@ -296,7 +308,6 @@ const deploy = async ({
 		account,
 		addressOf,
 		deployer,
-		readProxyForResolver,
 		runStep,
 		useOvm,
 	});

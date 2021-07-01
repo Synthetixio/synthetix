@@ -751,6 +751,24 @@ contract('DebtCache', async accounts => {
 				});
 			});
 
+			it('issuing sUSD updates the debt total when non-snx excluded debt exceeds the sUSD total supply', async () => {
+				// create 200 sUSD worth of excluded-debt sETH, so that it will exceed the sUSD supply
+				await etherCollateral.setCollateralizationRatio(toUnit('100'), { from: owner });
+				await etherCollateral.openLoan({
+					value: twoETH,
+					from: account1,
+				});
+				assert.bnGt((await debtCache.totalNonSnxBackedDebt())[0], await sUSDContract.totalSupply());
+
+				// Issue some sUSD and ensure that it is properly accounted for.
+				await debtCache.takeDebtSnapshot();
+				const issued = (await debtCache.cacheInfo())[0];
+				await synthetix.transfer(account2, toUnit('5000'), { from: owner });
+				const toIssue = toUnit('10');
+				await synthetix.issueSynths(toIssue, { from: account2 });
+				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(toIssue));
+			});
+
 			it('burning sUSD updates the debt total', async () => {
 				await debtCache.takeDebtSnapshot();
 				const synthsToIssue = toUnit('10');
@@ -1204,9 +1222,10 @@ contract('DebtCache', async accounts => {
 			});
 
 			describe('after the synths are exchanged into other synths', async () => {
+				let tx;
 				beforeEach(async () => {
 					// Swap some sETH into synthetic dollarydoos.
-					await synthetix.exchange(sETH, '5', sAUD, { from: account1 });
+					tx = await synthetix.exchange(sETH, '5', sAUD, { from: account1 });
 				});
 
 				it('non-SNX debt is unchanged', async () => {
@@ -1217,6 +1236,39 @@ contract('DebtCache', async accounts => {
 				});
 				it('currentDebt is unchanged', async () => {
 					assert.bnEqual(currentDebt, await debtCache.currentDebt());
+				});
+
+				it('cached debt is properly updated', async () => {
+					const logs = await getDecodedLogs({
+						hash: tx.tx,
+						contracts: [debtCache],
+					});
+
+					const cachedDebt = (await debtCache.cacheInfo())[0];
+					decodedEventEqual({
+						event: 'DebtCacheUpdated',
+						emittedFrom: debtCache.address,
+						args: [cachedDebt],
+						log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
+					});
+				});
+			});
+
+			it('is properly reflected in a snapshot', async () => {
+				const currentDebt = (await debtCache.currentDebt())[0];
+				const cachedDebt = (await debtCache.cacheInfo())[0];
+				assert.bnEqual(currentDebt, cachedDebt);
+				const tx = await debtCache.takeDebtSnapshot();
+				const logs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [debtCache],
+				});
+
+				decodedEventEqual({
+					event: 'DebtCacheUpdated',
+					emittedFrom: debtCache.address,
+					args: [cachedDebt],
+					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 				});
 			});
 		});

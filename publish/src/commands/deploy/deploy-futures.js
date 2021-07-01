@@ -4,14 +4,9 @@ const { gray } = require('chalk');
 const w3utils = require('web3-utils');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({
-	account,
-	addressOf,
-	deployer,
-	readProxyForResolver,
-	runStep,
-	useOvm,
-}) => {
+module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
+	const { ReadProxyAddressResolver } = deployer.deployedContracts;
+
 	// ----------------
 	// Futures market setup
 	// ----------------
@@ -28,8 +23,9 @@ module.exports = async ({
 		name: 'FuturesMarketManager',
 		source: useOvm ? 'FuturesMarketManager' : 'EmptyFuturesMarketManager',
 		args: useOvm
-			? [addressOf(proxyFuturesMarketManager), account, addressOf(readProxyForResolver)]
+			? [addressOf(proxyFuturesMarketManager), account, addressOf(ReadProxyAddressResolver)]
 			: [],
+		deps: ['AddressResolver'],
 	});
 
 	if (!useOvm) {
@@ -49,7 +45,7 @@ module.exports = async ({
 
 	const futuresMarketSettings = await deployer.deployContract({
 		name: 'FuturesMarketSettings',
-		args: [(account, addressOf(readProxyForResolver))],
+		args: [(account, addressOf(ReadProxyAddressResolver))],
 	});
 
 	const futuresAssets = ['BTC', 'ETH', 'LINK'];
@@ -81,7 +77,12 @@ module.exports = async ({
 		const futuresMarket = await deployer.deployContract({
 			name: marketName,
 			source: 'FuturesMarket',
-			args: [addressOf(proxyFuturesMarket), account, addressOf(readProxyForResolver), baseAsset],
+			args: [
+				addressOf(proxyFuturesMarket),
+				account,
+				addressOf(ReadProxyAddressResolver),
+				baseAsset,
+			],
 		});
 
 		if (futuresMarket) {
@@ -163,7 +164,7 @@ module.exports = async ({
 	// I've colocated it here for now.
 	await deployer.deployContract({
 		name: 'FuturesMarketData',
-		deps: ['ReadProxyAddressResolver'],
-		args: [addressOf(readProxyForResolver)],
+		args: [addressOf(ReadProxyAddressResolver)],
+		deps: ['AddressResolver'],
 	});
 };

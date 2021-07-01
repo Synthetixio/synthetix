@@ -1,10 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
-const BN = require('bn.js');
-const Web3 = require('web3');
+const ethers = require('ethers');
 const uniq = require('lodash.uniq');
-const { toBN, fromWei, toWei } = require('web3-utils');
 const {
 	wrap,
 	toBytes32,
@@ -29,7 +27,12 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	ensureDeploymentPath(deploymentPath);
 
 	// We're just using the ERC20 members `balanceOf` and `Transfer`, so any ERC20 contract will do.
-	const { getSource, getTarget, getVersions } = wrap({ network, deploymentPath, fs, path });
+	const { getSource, getTarget, getVersions } = wrap({
+		network,
+		deploymentPath,
+		fs,
+		path,
+	});
 
 	const { abi: snxABI } = getSource({ contract: 'Synthetix' });
 
@@ -82,42 +85,44 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 		yellow(deploymentBlock)
 	);
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	const ExchangeRates = new web3.eth.Contract(
+	const ExchangeRates = new ethers.Contract(
+		getTarget({ contract: 'ExchangeRates' }).address,
 		getSource({ contract: 'ExchangeRates' }).abi,
-		getTarget({ contract: 'ExchangeRates' }).address
+		provider
 	);
 
 	// The price at which the inverse synth was frozen, to compute how much users are owed after purging
-	const frozenPrice = await ExchangeRates.methods.rateForCurrency(toBytes32(synth)).call();
+	const frozenPrice = await ExchangeRates.rateForCurrency(toBytes32(synth));
 
-	console.log(`${synth} current price is `, yellow(web3.utils.fromWei(frozenPrice)));
+	console.log(`${synth} current price is `, yellow(ethers.utils.formatEther(frozenPrice)));
 
-	const isFrozen = await ExchangeRates.methods.rateIsFrozen(toBytes32(synth)).call();
+	const isFrozen = await ExchangeRates.rateIsFrozen(toBytes32(synth));
 
 	if (!isFrozen) {
 		throw new Error(`Error: ${synth} not frozen`);
 	}
 
-	const SystemSettings = new web3.eth.Contract(
+	const SystemSettings = new ethers.Contract(
+		getTarget({ contract: 'SystemSettings' }).address,
 		getSource({ contract: 'SystemSettings' }).abi,
-		getTarget({ contract: 'SystemSettings' }).address
+		provider
 	);
 
 	// The exchange fee incurred when users are purged into sUSD
-	const exchangeFee = await SystemSettings.methods.exchangeFeeRate(toBytes32('sUSD')).call();
+	const exchangeFee = await SystemSettings.exchangeFeeRate(toBytes32('sUSD'));
 
-	console.log(gray(`Exchange fee of sUSD is`), yellow(web3.utils.fromWei(exchangeFee)));
+	console.log(gray(`Exchange fee of sUSD is`), yellow(ethers.utils.formatEther(exchangeFee)));
 
 	/** *********** --------------------- *********** **/
 
 	// Fixed point multiplication utilities
 	function multiplyDecimal(x, y) {
-		const xBN = BN.isBN(x) ? x : toBN(x);
-		const yBN = BN.isBN(y) ? y : toBN(y);
+		const xBN = ethers.BigNumber.isBigNumber(x) ? x : ethers.BigNumber.from(x);
+		const yBN = ethers.BigNumber.isBigNumber(y) ? y : ethers.BigNumber.from(y);
 
-		const unit = toBN(toWei('1'));
+		const unit = ethers.utils.parseEther('1');
 		return xBN.mul(yBN).div(unit);
 	}
 
@@ -125,7 +130,7 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	async function getStakingBalance(stakingContract, account) {
 		return {
 			address: account,
-			balance: await stakingContract.methods.balanceOf(account).call(),
+			balance: await stakingContract.balanceOf(account),
 		};
 	}
 
@@ -149,11 +154,11 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 
 	// Looks for all transfers into the staking contract
 	async function fetchStakedBalances() {
-		const iSynth = new web3.eth.Contract(snxABI, iSynthAddress);
-		const stakingContract = new web3.eth.Contract(snxABI, stakingAddress);
+		const iSynth = new ethers.Contract(iSynthAddress, snxABI, provider);
+		const stakingContract = new ethers.Contract(stakingAddress, snxABI, provider);
 
-		const currentBlock = await web3.eth.getBlockNumber();
-		const deploymentBlockDetails = await web3.eth.getBlock(deploymentBlock);
+		const currentBlock = await provider.getBlockNumber();
+		const deploymentBlockDetails = await provider.getBlock(deploymentBlock);
 
 		console.log(`Querying all transfers into the staking contract to find candidate stakers.\n`);
 		console.log(`    Staking Contract: ${stakingAddress}`);
@@ -163,14 +168,18 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 				deploymentBlock} blocks ago at ${formatDate(deploymentBlockDetails.timestamp * 1000)})\n`
 		);
 
-		const transferEvents = await iSynth.getPastEvents('Transfer', {
-			filter: {
-				to: stakingAddress,
+		const transferEvents = await iSynth.queryFilter(
+			{
+				topics: [
+					ethers.utils.id('Transfer(address,address,uint256)'),
+					null,
+					ethers.utils.hexZeroPad(stakingAddress, 32),
+				],
 			},
-			fromBlock: deploymentBlock - 1,
-		});
+			deploymentBlock - 1
+		);
 
-		const candidates = uniq(transferEvents.map(e => e.returnValues.from));
+		const candidates = uniq(transferEvents.map(e => e.args.from));
 
 		const nonzero = [];
 
@@ -196,27 +205,34 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 	// Computes the balances owed to each account
 	function computeOwedBalances(balances) {
 		console.log(`\nComputing owed sUSD balances for accounts using parameters:`);
-		console.log(`    Price: ${fromWei(frozenPrice)}`);
-		console.log(`    Exchange Fee: ${fromWei(multiplyDecimal(exchangeFee, toWei('100')))}%`);
+		console.log(`    Price: ${ethers.utils.formatEther(frozenPrice)}`);
+		console.log(
+			`    Exchange Fee: ${ethers.utils.formatEther(
+				multiplyDecimal(exchangeFee, ethers.utils.parseEther('100'))
+			)}%`
+		);
 
-		const feeMultiplier = toBN(toWei('1')).sub(toBN(exchangeFee));
-
+		const feeMultiplier = ethers.utils.parseEther('1').sub(exchangeFee);
 		const result = balances.map(b => {
-			const owed = multiplyDecimal(multiplyDecimal(toBN(b.balance), frozenPrice), feeMultiplier);
+			const owed = multiplyDecimal(multiplyDecimal(b.balance, frozenPrice), feeMultiplier);
+
 			return {
 				address: b.address,
 				balance: b.balance,
 				owed: owed.toString(),
-				readableBalance: fromWei(b.balance),
-				readableOwed: fromWei(owed),
+				readableBalance: ethers.utils.formatEther(b.balance),
+				readableOwed: ethers.utils.formatEther(owed),
 			};
 		});
 
-		const totalStaked = result.reduce((total, curr) => total.add(toBN(curr.balance)), toBN(0));
-		const totalOwed = result.reduce((total, curr) => total.add(toBN(curr.owed)), toBN(0));
+		const totalStaked = result.reduce(
+			(total, curr) => total.add(curr.balance),
+			ethers.constants.Zero
+		);
+		const totalOwed = result.reduce((total, curr) => total.add(curr.owed), ethers.constants.Zero);
 
-		console.log(`\n${fromWei(totalStaked)} staked in total.`);
-		console.log(`${fromWei(totalOwed)} total sUSD owed.\n`);
+		console.log(`\n${ethers.utils.formatEther(totalStaked, 'ether')} staked in total.`);
+		console.log(`${ethers.utils.formatEther(totalOwed, 'ether')} total sUSD owed.\n`);
 		return result;
 	}
 
@@ -228,8 +244,8 @@ async function extractStakingBalances({ network = DEFAULTS.network, deploymentPa
 			csvString = csvString.concat(line);
 		}
 
-		csvString = csvString.concat(`\nPrice,${fromWei(frozenPrice)}\n`);
-		csvString = csvString.concat(`Exchange Fee,${fromWei(exchangeFee)}\n`);
+		csvString = csvString.concat(`\nPrice,${ethers.utils.formatEther(frozenPrice)}\n`);
+		csvString = csvString.concat(`Exchange Fee,${ethers.utils.formatEther(exchangeFee)}\n`);
 
 		console.log(`Saving results to ${owedFile}...`);
 		fs.writeFileSync(owedFile, csvString);

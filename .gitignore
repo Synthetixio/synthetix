@@ -40,3 +40,5 @@ process.yml
 *.csv
 
 .db
+
+optimism

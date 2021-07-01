@@ -1,8 +1,7 @@
 'use strict';
 
+const ethers = require('ethers');
 const { gray, yellow, red, cyan } = require('chalk');
-const w3utils = require('web3-utils');
-const Web3 = require('web3');
 
 const {
 	getUsers,
@@ -27,7 +26,9 @@ const nominate = async ({
 	gasPrice,
 	gasLimit,
 	useOvm,
+	privateKey,
 	providerUrl,
+	yes,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -37,7 +38,7 @@ const nominate = async ({
 		newOwner = getUsers({ network, useOvm, user: 'owner' }).address;
 	}
 
-	if (!newOwner || !w3utils.isAddress(newOwner)) {
+	if (!newOwner || !ethers.utils.isAddress(newOwner)) {
 		console.error(red('Invalid new owner to nominate. Please check the option and try again.'));
 		process.exit(1);
 	} else {
@@ -60,7 +61,7 @@ const nominate = async ({
 		contracts = Object.keys(config).filter(contract => contract !== 'DappMaintenance');
 	}
 
-	const { providerUrl: envProviderUrl, privateKey } = loadConnections({
+	const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
 		network,
 		useFork,
 	});
@@ -73,60 +74,71 @@ const nominate = async ({
 		providerUrl = envProviderUrl;
 	}
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	let account;
-	if (useFork) {
-		web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
-		account = web3.eth.defaultAccount;
-	} else {
-		web3.eth.accounts.wallet.add(privateKey);
-		account = web3.eth.accounts.wallet[0].address;
+	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
+	if (network !== 'local' && !privateKey) {
+		privateKey = envPrivateKey;
 	}
 
-	console.log(gray(`Using account with public key ${account}`));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	let wallet;
+	if (!privateKey) {
+		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
+	} else {
+		wallet = new ethers.Wallet(privateKey, provider);
+	}
 
-	try {
-		await confirmAction(
-			cyan(
-				`${yellow(
-					'WARNING'
-				)}: This action will nominate ${newOwner} as the owner in ${network} of the following contracts:\n- ${contracts.join(
-					'\n- '
-				)}`
-			) + '\nDo you want to continue? (y/n) '
-		);
-	} catch (err) {
-		console.log(gray('Operation cancelled'));
-		process.exit();
+	const signerAddress = wallet.address;
+
+	console.log(gray(`Using account with public key ${signerAddress}`));
+
+	if (!yes) {
+		try {
+			await confirmAction(
+				cyan(
+					`${yellow(
+						'WARNING'
+					)}: This action will nominate ${newOwner} as the owner in ${network} of the following contracts:\n- ${contracts.join(
+						'\n- '
+					)}`
+				) + '\nDo you want to continue? (y/n) '
+			);
+		} catch (err) {
+			console.log(gray('Operation cancelled'));
+			process.exit();
+		}
 	}
 
 	for (const contract of contracts) {
 		const { address, source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
-		const deployedContract = new web3.eth.Contract(abi, address);
+		const deployedContract = new ethers.Contract(address, abi, wallet);
 
 		// ignore contracts that don't support Owned
-		if (!deployedContract.methods.owner) {
+		if (!deployedContract.functions.owner) {
 			continue;
 		}
 
-		const currentOwner = (await deployedContract.methods.owner().call()).toLowerCase();
-		const nominatedOwner = (await deployedContract.methods.nominatedOwner().call()).toLowerCase();
+		const currentOwner = (await deployedContract.owner()).toLowerCase();
+		const nominatedOwner = (await deployedContract.nominatedOwner()).toLowerCase();
 
 		console.log(
 			gray(
 				`${contract} current owner is ${currentOwner}.\nCurrent nominated owner is ${nominatedOwner}.`
 			)
 		);
-		if (account.toLowerCase() !== currentOwner) {
+		if (signerAddress.toLowerCase() !== currentOwner) {
 			console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
 			console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
-			await deployedContract.methods.nominateNewOwner(newOwner).send({
-				from: account,
-				gas: gasLimit,
-				gasPrice: w3utils.toWei(gasPrice, 'gwei'),
-			});
+			const overrides = {
+				gasLimit,
+				gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+			};
+
+			const tx = await deployedContract.nominateNewOwner(newOwner, overrides);
+			await tx.wait();
 		} else {
 			console.log(gray('No change required.'));
 		}
@@ -160,6 +172,11 @@ module.exports = {
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
+			.option(
+				'-v, --private-key [value]',
+				'The private key to deploy with (only works in local mode, otherwise set in .env).'
+			)
+			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option(
 				'-c, --contracts [value]',
 				'The list of contracts. Applies to all contract by default',
