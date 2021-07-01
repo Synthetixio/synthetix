@@ -150,9 +150,9 @@ function _build({ opsPath, opsCommit, opsBranch }) {
 		execa.sync('sh', ['-c', `cd ${opsPath} && git checkout ${opsCommit}`]);
 	}
 	console.log(gray('  get dependencies'));
-	execa.sync('sh', ['-c', `cd ${opsPath} && yarn `]);
+	execa.sync('sh', ['-c', `yarn `]);
 	console.log(gray('  build'));
-	execa.sync('sh', ['-c', `cd ${opsPath} && yarn build `]);
+	execa.sync('sh', ['-c', `yarn build `]);
 }
 
 function _buildOps({ opsPath }) {
