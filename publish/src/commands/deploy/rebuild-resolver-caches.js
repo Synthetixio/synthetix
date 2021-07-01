@@ -27,7 +27,7 @@ module.exports = async ({
 	} = deployer.deployedContracts;
 
 	// Legacy contracts.
-	if (network === 'mainnet') {
+	if (network === 'mainnet' && !useOvm) {
 		// v2.35.2 contracts.
 		// TODO  -fetch these from getVersions()
 		const CollateralEth = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
