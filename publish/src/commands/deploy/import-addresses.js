@@ -55,7 +55,7 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 		);
 
 		const { pending } = await runStep({
-			gasLimit: useOvm ? undefined : 6e6, // higher gas required for mainnet
+			gasLimit: 6e6, // higher gas required for mainnet
 			contract: `AddressResolver`,
 			target: AddressResolver,
 			read: 'areAddressesImported',

@@ -72,7 +72,7 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - v3-optimism-build-
+            - v4-optimism-build-
       - run:
           name: Build docker containers if necessary
           command: |
@@ -80,7 +80,7 @@ jobs:
               npx hardhat ops --fresh --build --build-ops
             fi;
       - save_cache:
-          key: v3-optimism-build-
+          key: v4-optimism-build-
           paths:
             - ./optimism
       - run:
