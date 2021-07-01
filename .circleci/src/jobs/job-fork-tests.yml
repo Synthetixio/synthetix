@@ -5,7 +5,7 @@ steps:
   - attach_workspace:
       at: .
   - run:
-      command: npm run fork
+      command: npm run fork:mainnet
       background: true
   - cmd-wait-for-port:
       port: 8545

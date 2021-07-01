@@ -1,4 +1,6 @@
 const path = require('path');
+const isCI = require('is-ci');
+
 const {
 	constants: { BUILD_FOLDER },
 } = require('../..');
@@ -32,9 +34,12 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		if (taskArguments.compile) {
 			await compileInstance({ useOvm, buildPath });
 		}
+		if (taskArguments.useFork) {
+			hre.config.fork = true;
+		}
 
 		if (taskArguments.deploy) {
-			if (taskArguments.fork) {
+			if (taskArguments.useFork) {
 				await prepareDeploy({ network: 'mainnet' });
 				await deployInstance({
 					useFork: true,
@@ -135,7 +140,8 @@ task('test:integration:dual', 'run integrated layer 1 and layer 2 production tes
 function _commonIntegrationTestSettings({ hre, taskArguments }) {
 	const timeout = 600000; // 10m
 	hre.config.mocha.timeout = timeout;
-	hre.config.mocha.bail = true;
+	// stop on first error unless we're on CI
+	hre.config.mocha.bail = !isCI;
 	hre.config.networks.localhost.timeout = timeout;
 
 	taskArguments.maxMemory = true;
