@@ -1,4 +1,5 @@
 const ethers = require('ethers');
+const chalk = require('chalk');
 const { assert } = require('../../contracts/common');
 const { ensureBalance } = require('../utils/balances');
 
@@ -24,7 +25,7 @@ function itCanWrapETH({ ctx }) {
 			before(async function() {
 				const capacity = await EtherWrapper.capacity();
 				if (capacity.lt(amountToMint)) {
-					console.log('Skipping EtherWrapper.mint as insufficient capacity');
+					console.log(chalk.yellow('> Skipping EtherWrapper.mint as insufficient capacity'));
 					this.skip();
 				}
 			});
