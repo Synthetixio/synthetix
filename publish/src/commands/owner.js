@@ -38,13 +38,13 @@ const owner = async ({
 	network,
 	newOwner,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
-	gasLimit = DEFAULTS.gasLimit,
+	gasPrice,
+	gasLimit,
 	privateKey,
 	yes,
 	useOvm,
-	providerUrl,
 	useFork,
+	providerUrl,
 	isContract,
 }) => {
 	ensureNetwork(network);
@@ -223,12 +223,16 @@ const owner = async ({
 				// track lastNonce submitted
 				lastNonce = newNonce;
 			} else {
-				const tx = await wallet.sendTransaction({
+				const params = {
 					to: target,
 					gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-					gasLimit: ethers.BigNumber.from(gasLimit),
 					data,
-				});
+				};
+				if (gasLimit) {
+					params.gasLimit = ethers.BigNumber.from(gasLimit);
+				}
+
+				const tx = await wallet.sendTransaction(params);
 				const receipt = await tx.wait();
 
 				logTx(receipt);
@@ -281,7 +285,7 @@ const owner = async ({
 			else console.log(yellow(`Calling acceptOwnership() on ${contract}...`));
 
 			try {
-				if (isContract) {
+				if (isContract && !useFork) {
 					const { txHash, newNonce } = await getNewTransactionHash({
 						safeContract: protocolDaoContract,
 						data: encodedData,
@@ -313,12 +317,16 @@ const owner = async ({
 					// track lastNonce submitted
 					lastNonce = newNonce;
 				} else {
-					const tx = await wallet.sendTransaction({
+					const params = {
 						to: deployedContract.address,
 						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-						gasLimit: ethers.BigNumber.from(gasLimit),
 						data: encodedData,
-					});
+					};
+					if (gasLimit) {
+						params.gasLimit = ethers.BigNumber.from(gasLimit);
+					}
+
+					const tx = await wallet.sendTransaction(params);
 					const receipt = await tx.wait();
 
 					logTx(receipt);
@@ -348,6 +356,11 @@ module.exports = {
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+			)
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
 			)
 			.option(
 				'-o, --new-owner <value>',

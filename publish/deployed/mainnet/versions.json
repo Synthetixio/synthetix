@@ -3036,8 +3036,9 @@
 		"contracts": {
 			"Synthetix": {
 				"address": "0x97767D7D04Fd0dB0A1a2478DCd4BA85290556B48",
-				"status": "current",
-				"keccak256": "0x33cdbd8578a578cf81ba42b1a47fc9af81a7287b9dde01b81115b84851e4c2fe"
+				"status": "replaced",
+				"keccak256": "0x33cdbd8578a578cf81ba42b1a47fc9af81a7287b9dde01b81115b84851e4c2fe",
+				"replaced_in": "v2.46.0"
 			},
 			"SystemStatus": {
 				"address": "0x1c86B3CDF2a60Ae3a574f7f71d44E2C50BDdB87E",
@@ -3311,8 +3312,9 @@
 		"contracts": {
 			"Exchanger": {
 				"address": "0x585fD19eBa8F1a81F37C5eb322FD4b8D911367e8",
-				"status": "current",
-				"keccak256": "0x207bf8d21a4651525f8c2b0d90885d64a4c5f51c06ac5c20d842438a8950c5b9"
+				"status": "replaced",
+				"keccak256": "0x207bf8d21a4651525f8c2b0d90885d64a4c5f51c06ac5c20d842438a8950c5b9",
+				"replaced_in": "v2.46.0"
 			},
 			"TokenStates1INCH": {
 				"address": "0xeD1EfD716C7E2e821BBD4EC1480D649df7fb2279",
@@ -3603,6 +3605,26 @@
 				"address": "0x7A3d898b717e50a96fd8b232E9d15F0A547A7eeb",
 				"status": "current",
 				"keccak256": "0x0a6a96be15d65a9a904c514508fcf6b832c52675d8331f5427535616586d47c4"
+			}
+		}
+	},
+	"v2.46.0": {
+		"tag": "v2.46.0",
+		"fulltag": "v2.46.0",
+		"release": "Alnitak",
+		"network": "mainnet",
+		"date": "2021-06-30T19:26:47-06:00",
+		"commit": "19a7f66fe2da3f5dd9158f714d7ed84a729f176b",
+		"contracts": {
+			"Synthetix": {
+				"address": "0x43AE8037179a5746D618DA077A38DdeEa9640cBa",
+				"status": "current",
+				"keccak256": "0xfe96c3e453d25fd481a0ecec72538b1559b8fc15af09f695dfb643df219dddfb"
+			},
+			"Exchanger": {
+				"address": "0x613c773c7a1D85D2F1DCC051B0573D33470762Eb",
+				"status": "current",
+				"keccak256": "0x9007ad2f17c461a4cbc1532752b486825861822644e4f9b3e35382a7940d4acf"
 			}
 		}
 	}

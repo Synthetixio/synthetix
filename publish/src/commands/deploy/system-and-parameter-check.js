@@ -166,6 +166,7 @@ module.exports = async ({
 		await deployer.provider.web3.eth.sendTransaction({
 			from: accounts[0],
 			to: account,
+			gas: 50000,
 			value: parseUnits('10', 'ether').toString(),
 		});
 	} else if (deployerBalance < 5) {
@@ -215,7 +216,7 @@ module.exports = async ({
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Synthetix totalSupply': `${Math.round(formatUnits(currentSynthetixSupply) / 1e6)}m`,
-		'ExchangeRates Oracle': oracleExrates,
+		'ExchangeRates Oracle': oracleAddress,
 		'Last Mint Event': `${currentLastMintEvent} (${new Date(currentLastMintEvent * 1000)})`,
 		'Current Weeks Of Inflation': currentWeekOfInflation,
 		'Aggregated Prices': aggregatedPriceResults,
