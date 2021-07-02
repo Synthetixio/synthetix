@@ -318,6 +318,7 @@ workflows:
           requires:
             - job-prepare
       - job-integration-tests:
+          name: job-integration-tests-simplified
           requires:
             - job-prepare
       - job-pack-browser:
