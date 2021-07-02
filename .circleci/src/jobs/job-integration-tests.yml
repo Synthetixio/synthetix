@@ -6,41 +6,38 @@ steps:
   - checkout
   - attach_workspace:
       at: .
-  # - restore_cache:
-  #     keys:
-  #       - v4-optimism-build-{{ checksum "package-lock.json" }}
-  # - run:
-  #     name: Build docker containers if necessary
-  #     command: |
-  #       if [ ! -d ./optimism ]; then
-  #         npx hardhat ops --fresh --build --build-ops
-  #       fi;
-  # - save_cache:
-  #     key: v4-optimism-build-{{ checksum "package-lock.json" }}
-  #     paths:
-  #       - ./optimism
+  - restore_cache:
+      keys:
+        - v5-optimism-build-{{ checksum "package-lock.json" }}
+  - run:
+      name: Build docker containers if necessary
+      command: |
+        if [ ! -d ./optimism ]; then
+          npx hardhat ops --fresh --build --build-ops
+        fi;
+  - save_cache:
+      key: v5-optimism-build-{{ checksum "package-lock.json" }}
+      paths:
+        - ./optimism
   - run:
       name: Start docker chains
       background: true
       command: |
         docker --version
-        npx hardhat node
-        # npx hardhat ops --start
+        npx hardhat ops --start
   - cmd-wait-for-port:
       port: 8545
-  # - cmd-wait-for-port:
-  #     port: 9545
+  - cmd-wait-for-port:
+      port: 9545
   - run:
       name: Run isolated layer 1 integration tests
       command: |
-        # npx hardhat test:integration:l1 --compile --deploy --provider-port 9545
-        npx hardhat test:integration:l1 --compile --deploy
-  # TODO: Disabled until the ops tool becomes more stable
-  # - run:
-  #     name: Run isolated layer 2 integration tests
-  #     command: |
-  #       npx hardhat test:integration:l2 --compile --deploy
-  # - run:
-  #     name: Run dual layer 1 and layer 2 integration tests
-  #     command: |
-  #       npx hardhat test:integration:dual --deploy
+        npx hardhat test:integration:l1 --compile --deploy --provider-port 9545
+  - run:
+      name: Run isolated layer 2 integration tests
+      command: |
+        npx hardhat test:integration:l2 --compile --deploy
+  - run:
+      name: Run dual layer 1 and layer 2 integration tests
+      command: |
+        npx hardhat test:integration:dual --deploy

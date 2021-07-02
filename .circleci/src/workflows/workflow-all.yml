@@ -34,7 +34,7 @@ jobs:
   # Integration tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-integration-tests:
-      name: job-integration-tests-simplified
+      name: job-integration-tests
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

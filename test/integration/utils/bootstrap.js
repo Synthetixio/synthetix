@@ -85,7 +85,7 @@ function bootstrapDual({ ctx }) {
 		ctx.l2.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
-		ctx.provider.getGasPrice = () => ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
+		ctx.l2.provider.getGasPrice = () => ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
 
 		await setupOptimismWatchers({ ctx, providerUrl: hre.config.providerUrl });
 
