@@ -463,5 +463,8 @@
 	},
 	"FuturesMarketManager": {
 		"deploy": true
+	},
+	"WETH": {
+		"deploy": true
 	}
 }

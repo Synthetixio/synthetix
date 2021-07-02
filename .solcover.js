@@ -7,6 +7,7 @@ module.exports = {
 	skipFiles: [
 		'test-helpers',
 		'migrations',
+		'legacy',
 		'EscrowChecker.sol',
 		'ExchangeRatesWithoutInvPricing.sol',
 		'IssuerWithoutLiquidations.sol',

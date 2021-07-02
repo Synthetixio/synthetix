@@ -75,7 +75,7 @@ const nominate = async ({
 	}
 
 	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
-	if (network !== 'local' && !privateKey) {
+	if (network !== 'local' && !privateKey && !useFork) {
 		privateKey = envPrivateKey;
 	}
 
@@ -131,13 +131,17 @@ const nominate = async ({
 		if (signerAddress.toLowerCase() !== currentOwner) {
 			console.log(cyan(`Cannot nominateNewOwner for ${contract} as you aren't the owner!`));
 		} else if (currentOwner !== newOwner && nominatedOwner !== newOwner) {
-			console.log(yellow(`Invoking ${contract}.nominateNewOwner(${newOwner})`));
+			// check for legacy function
+			const nominationFnc =
+				'nominateOwner' in deployedContract ? 'nominateOwner' : 'nominateNewOwner';
+
+			console.log(yellow(`Invoking ${contract}.${nominationFnc}(${newOwner})`));
 			const overrides = {
 				gasLimit,
 				gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 			};
 
-			const tx = await deployedContract.nominateNewOwner(newOwner, overrides);
+			const tx = await deployedContract[nominationFnc](newOwner, overrides);
 			await tx.wait();
 		} else {
 			console.log(gray('No change required.'));

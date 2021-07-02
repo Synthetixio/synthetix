@@ -83,6 +83,7 @@ const networkToChainId = Object.entries(chainIdMapping).reduce(
 const constants = {
 	BUILD_FOLDER: 'build',
 	CONTRACTS_FOLDER: 'contracts',
+	MIGRATIONS_FOLDER: 'migrations',
 	COMPILED_FOLDER: 'compiled',
 	FLATTENED_FOLDER: 'flattened',
 	AST_FOLDER: 'ast',
@@ -102,7 +103,7 @@ const constants = {
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 	ZERO_BYTES32: '0x' + '0'.repeat(64),
 
-	OVM_GAS_PRICE_GWEI: '0.0',
+	OVM_GAS_PRICE_GWEI: '0.015',
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };

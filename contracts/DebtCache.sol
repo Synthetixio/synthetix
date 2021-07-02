@@ -10,6 +10,8 @@ import "./BaseDebtCache.sol";
 contract DebtCache is BaseDebtCache {
     using SafeDecimalMath for uint;
 
+    bytes32 public constant CONTRACT_NAME = "DebtCache";
+
     constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
     bytes32 internal constant EXCLUDED_DEBT_KEY = "EXCLUDED_DEBT";
@@ -105,24 +107,6 @@ contract DebtCache is BaseDebtCache {
             _cachedSynthDebt[key] = currentSynthDebt;
         }
 
-        // Unused code until we circle back to refactor the debt system
-        if (recomputeFuturesDebt) {
-            (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
-            anyRateIsInvalid = anyRateIsInvalid || futuresDebtIsInvalid;
-            cachedSum = cachedSum.add(_cachedSynthDebt[FUTURES_DEBT_KEY]);
-            currentSum = currentSum.add(futuresDebt);
-            _cachedSynthDebt[FUTURES_DEBT_KEY] = futuresDebt;
-        }
-
-        if (recomputeExcludedDebt) {
-            (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
-            anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
-            // TODO: This feels incorrect -- the diff needs to be computed against the total cached debt, not just the delta
-            cachedSum = cachedSum.floorsub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
-            currentSum = currentSum.floorsub(excludedDebt);
-            _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
-        }
-
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {
             uint debt = _cachedDebt;
@@ -130,6 +114,16 @@ contract DebtCache is BaseDebtCache {
             // debt snapshots.
             require(cachedSum <= debt, "Cached synth sum exceeds total debt");
             debt = debt.sub(cachedSum).add(currentSum);
+
+            // TODO: is this the right place to relocate this, @Anton?
+            // Unused code until we circle back to refactor the debt system
+            if (recomputeFuturesDebt) {
+                (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
+                anyRateIsInvalid = anyRateIsInvalid || futuresDebtIsInvalid;
+                cachedSum = cachedSum.add(_cachedSynthDebt[FUTURES_DEBT_KEY]);
+                currentSum = currentSum.add(futuresDebt);
+                _cachedSynthDebt[FUTURES_DEBT_KEY] = futuresDebt;
+            }
 
             // As of SIPS 136 and 150, this excluded debt section is unused.
             // All callers of this function pass in false for `recomputeExcludedDebt`

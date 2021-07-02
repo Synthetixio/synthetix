@@ -2,6 +2,9 @@
 
 const { gray, red, yellow, redBright } = require('chalk');
 const {
+	utils: { parseBytes32String },
+} = require('ethers');
+const {
 	fromBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../../../..');
@@ -10,8 +13,10 @@ module.exports = async ({
 	addressOf,
 	compiled,
 	deployer,
+	generateSolidity,
 	limitPromise,
 	network,
+	newContractsBeingAdded,
 	runStep,
 	useOvm,
 }) => {
@@ -22,37 +27,43 @@ module.exports = async ({
 	} = deployer.deployedContracts;
 
 	// Legacy contracts.
-	if (network === 'mainnet') {
+	if (network === 'mainnet' && !useOvm) {
 		// v2.35.2 contracts.
+		// TODO  -fetch these from getVersions()
 		const CollateralEth = '0x3FF5c0A14121Ca39211C95f6cEB221b86A90729E';
-		const CollateralErc20REN = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46';
+		const CollateralErc20 = '0x3B3812BB9f6151bEb6fa10783F1ae848a77a0d46'; // REN
 		const CollateralShort = '0x188C2274B04Ea392B21487b5De299e382Ff84246';
 
 		const legacyContracts = Object.entries({
 			CollateralEth,
-			CollateralErc20REN,
+			CollateralErc20,
 			CollateralShort,
 		}).map(([name, address]) => {
-			const contract = new deployer.provider.web3.eth.Contract(
+			const target = new deployer.provider.web3.eth.Contract(
 				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
 				address
 			);
-			return [`legacy:${name}`, contract];
+			target.options.source = name;
+			target.options.address = address;
+			return [`legacy_${name}`, target];
 		});
 
-		await Promise.all(
-			legacyContracts.map(async ([name, contract]) => {
-				return runStep({
-					gasLimit: 7e6,
-					contract: name,
-					target: contract,
-					read: 'isResolverCached',
-					expected: input => input,
-					publiclyCallable: true, // does not require owner
-					write: 'rebuildCache',
-				});
-			})
-		);
+		for (const [name, target] of legacyContracts) {
+			await runStep({
+				gasLimit: 7e6,
+				contract: name,
+				target,
+				read: 'isResolverCached',
+				expected: input => input,
+				publiclyCallable: true, // does not require owner
+				write: 'rebuildCache',
+				// these updates are tricky to Soliditize, and aren't
+				// owner required and aren't critical to the core, so
+				// let's skip them in the migration script
+				// and a re-run of the deploy script will catch them
+				skipSolidity: true,
+			});
+		}
 	}
 
 	const filterTargetsWith = ({ prop }) =>
@@ -63,15 +74,28 @@ module.exports = async ({
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
 
 	// collect all resolver addresses required
+	const contractToDepMap = {};
 	const resolverAddressesRequired = (
 		await Promise.all(
-			contractsWithRebuildableCache.map(([, contract]) => {
-				return limitPromise(() => contract.methods.resolverAddressesRequired().call());
+			contractsWithRebuildableCache.map(([id, contract]) => {
+				return limitPromise(() =>
+					contract.methods.resolverAddressesRequired().call()
+				).then(result => [contract.options.address, result]);
 			})
 		)
-	).reduce((allAddresses, contractAddresses) => {
+	).reduce((allAddresses, [targetContractAddress, requiredAddressesForContract]) => {
+		// side-effect
+		for (const contractDepName of requiredAddressesForContract) {
+			const contractDepNameParsed = parseBytes32String(contractDepName);
+			// collect all contract maps
+			contractToDepMap[contractDepNameParsed] = []
+				.concat(contractToDepMap[contractDepNameParsed] || [])
+				.concat(targetContractAddress);
+		}
 		return allAddresses.concat(
-			contractAddresses.filter(contractAddress => !allAddresses.includes(contractAddress))
+			requiredAddressesForContract.filter(
+				contractAddress => !allAddresses.includes(contractAddress)
+			)
 		);
 	}, []);
 
@@ -95,37 +119,56 @@ module.exports = async ({
 	}
 
 	// now ensure all caches are rebuilt for those in need
-	const contractsToRebuildCache = [];
-	for (const [name, target] of contractsWithRebuildableCache) {
-		const isCached = await target.methods.isResolverCached().call();
-		if (!isCached) {
-			const requiredAddresses = await target.methods.resolverAddressesRequired().call();
+	let contractsToRebuildCache = [];
+	if (generateSolidity) {
+		// use set to dedupe
+		const contractsToRebuildCacheSet = new Set();
+		// when running in solidity generation mode, we cannot expect
+		// the address resolver to have been updated. Thus we have to compile a list
+		// of all possible contracts to update rather than relying on "isResolverCached"
+		for (const newContract of Object.values(newContractsBeingAdded)) {
+			if (Array.isArray(contractToDepMap[newContract])) {
+				// when the new contract is required by others, add them
+				contractToDepMap[newContract].forEach(entry => contractsToRebuildCacheSet.add(entry));
+			}
+		}
+		contractsToRebuildCache = Array.from(contractsToRebuildCacheSet);
+	} else {
+		for (const [name, target] of contractsWithRebuildableCache) {
+			const isCached = await target.methods.isResolverCached().call();
+			if (!isCached) {
+				const requiredAddresses = await target.methods.resolverAddressesRequired().call();
 
-			const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
-			if (unknownAddress) {
-				console.log(
-					redBright(
-						`WARNING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
-							unknownAddress
-						)} is unknown. This contract requires: ${requiredAddresses.map(id => fromBytes32(id))}`
-					)
-				);
-			} else {
-				contractsToRebuildCache.push(target.options.address);
+				const unknownAddress = requiredAddresses.find(id => !isResolverAddressImported[id]);
+				if (unknownAddress) {
+					console.log(
+						redBright(
+							`WARNING: Not invoking ${name}.rebuildCache() because ${fromBytes32(
+								unknownAddress
+							)} is unknown. This contract requires: ${requiredAddresses.map(id =>
+								fromBytes32(id)
+							)}`
+						)
+					);
+				} else {
+					contractsToRebuildCache.push(target.options.address);
+				}
 			}
 		}
 	}
 
 	const addressesChunkSize = useOvm ? 7 : 20;
+	let batchCounter = 1;
 	for (let i = 0; i < contractsToRebuildCache.length; i += addressesChunkSize) {
 		const chunk = contractsToRebuildCache.slice(i, i + addressesChunkSize);
 		await runStep({
-			gasLimit: useOvm ? undefined : 7e6,
+			gasLimit: 7e6,
 			contract: `AddressResolver`,
 			target: AddressResolver,
 			publiclyCallable: true, // does not require owner
 			write: 'rebuildCaches',
 			writeArg: [chunk],
+			comment: `Rebuild the resolver caches in all MixinResolver contracts - batch ${batchCounter++}`,
 		});
 	}
 
@@ -140,6 +183,7 @@ module.exports = async ({
 				expected: input => input,
 				publiclyCallable: true, // does not require owner
 				write: 'rebuildCache',
+				skipSolidity: true, // this is a double check - we don't want solidity output for this
 			});
 		}
 	}
@@ -259,15 +303,17 @@ module.exports = async ({
 		);
 
 		const addressesChunkSize = useOvm ? 7 : 20;
+		let binaryOptionBatchCounter = 1;
 		for (let i = 0; i < binaryOptionMarketsToRebuildCacheOn.length; i += addressesChunkSize) {
 			const chunk = binaryOptionMarketsToRebuildCacheOn.slice(i, i + addressesChunkSize);
 			await runStep({
-				gasLimit: useOvm ? undefined : 7e6,
+				gasLimit: 7e6,
 				contract: `BinaryOptionMarketManager`,
 				target: BinaryOptionMarketManager,
 				publiclyCallable: true, // does not require owner
 				write: 'rebuildMarketCaches',
 				writeArg: [chunk],
+				comment: `Rebuild the caches of existing Binary Option Markets - batch ${binaryOptionBatchCounter++}`,
 			});
 		}
 	}
@@ -288,6 +334,8 @@ module.exports = async ({
 			expected: input => input,
 			write: 'setResolverAndSyncCache',
 			writeArg: addressOf(ReadProxyAddressResolver),
+			comment:
+				'Rebuild the resolver cache of contracts that use the legacy "setResolverAndSyncCache" function',
 		});
 	}
 
@@ -305,6 +353,7 @@ module.exports = async ({
 			expected: input => addressOf(ReadProxyAddressResolver),
 			write: 'setResolver',
 			writeArg: addressOf(ReadProxyAddressResolver),
+			comment: 'Rebuild the resolver cache of contracts that use the legacy "setResolver" function',
 		});
 	}
 
