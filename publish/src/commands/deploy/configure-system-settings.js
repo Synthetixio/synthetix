@@ -321,6 +321,15 @@ module.exports = async ({
 		await runStep({
 			contract: 'SystemSettings',
 			target: SystemSettings,
+			read: 'futuresMinInitialMargin',
+			expected: input => input !== '0', // only change if zero
+			write: 'setFuturesMinInitialMargin',
+			writeArg: await getDeployParameter('FUTURES_MIN_INITIAL_MARGIN'),
+			comment: 'Set the minimum margin to open a futures position (SIP-80)',
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
 			read: 'futuresLiquidationFee',
 			expected: input => input !== '0', // only change if zero
 			write: 'setFuturesLiquidationFee',
