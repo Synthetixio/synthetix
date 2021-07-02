@@ -54,12 +54,6 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Build docker containers if necessary
-          command: |
-            if [ ! -d ./optimism ]; then
-              npx hardhat ops --fresh --build --build-ops
-            fi;
-      - run:
           name: Start docker chains
           background: true
           command: |
