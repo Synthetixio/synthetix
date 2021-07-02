@@ -325,7 +325,7 @@ module.exports = async ({
 			expected: input => input !== '0', // only change if zero
 			write: 'setFuturesLiquidationFee',
 			writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE'),
-			// TODO merge
+			comment: 'Set the reward for liquidating a futures position (SIP-80)',
 		});
 	}
 };
