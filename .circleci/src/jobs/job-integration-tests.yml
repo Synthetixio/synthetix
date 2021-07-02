@@ -23,6 +23,7 @@ steps:
       name: Start docker chains
       background: true
       command: |
+        docker --version
         npx hardhat node
         # npx hardhat ops --start
   - cmd-wait-for-port:
