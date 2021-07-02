@@ -325,6 +325,7 @@ const deploy = async ({
 	await deployFutures({
 		account,
 		addressOf,
+		getDeployParameter,
 		deployer,
 		runStep,
 		useOvm,

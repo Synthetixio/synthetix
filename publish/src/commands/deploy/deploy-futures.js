@@ -4,7 +4,7 @@ const { gray } = require('chalk');
 const w3utils = require('web3-utils');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
+module.exports = async ({ account, addressOf, getDeployParameter, deployer, runStep, useOvm }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
 
 	// ----------------
@@ -48,7 +48,7 @@ module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 		args: [(account, addressOf(ReadProxyAddressResolver))],
 	});
 
-	const futuresAssets = ['BTC', 'ETH', 'LINK'];
+	const futuresAssets = (await getDeployParameter('FUTURES'))['ASSETS'];
 	const deployedFuturesMarkets = [];
 
 	// TODO: Perform this programmatically per-market
