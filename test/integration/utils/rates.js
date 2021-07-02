@@ -5,12 +5,16 @@ async function updateExchangeRatesIfNeeded({ ctx }) {
 	const { Synthetix, DebtCache } = ctx.contracts;
 
 	if (await Synthetix.anySynthOrSNXRateIsInvalid()) {
+		console.log('SIMULATING EXCHANGE RATES...');
 		await _simulateExchangeRates({ ctx });
+		console.log(await Synthetix.anySynthOrSNXRateIsInvalid());
 	}
 
 	const { isInvalid, isStale } = await DebtCache.cacheInfo();
 	if (isInvalid || isStale) {
+		console.log('UPDATING CACHE');
 		await _updateCache({ ctx });
+		console.log(await DebtCache.cacheInfo());
 	}
 }
 
@@ -29,7 +33,7 @@ async function _simulateExchangeRates({ ctx }) {
 	const { timestamp } = await ctx.provider.getBlock();
 	const rates = currencyKeys.map(key => {
 		if (key === toBytes32('SNX')) {
-			return ethers.utils.parseEther('2192');
+			return ethers.utils.parseEther('1');
 		} else {
 			return ethers.utils.parseEther('1');
 		}
