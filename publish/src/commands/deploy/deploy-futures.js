@@ -48,20 +48,26 @@ module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 		args: [(account, addressOf(ReadProxyAddressResolver))],
 	});
 
-	const futuresAssets = ['BTC', 'ETH', 'LINK'];
-	const deployedFuturesMarkets = [];
+	// This belongs in dapp-utils, but since we are only deploying futures on L2,
+	// I've colocated it here for now.
+	await deployer.deployContract({
+		name: 'FuturesMarketData',
+		args: [addressOf(ReadProxyAddressResolver)],
+		deps: ['AddressResolver'],
+	});
 
 	// TODO: Perform this programmatically per-market
-	const takerFee = w3utils.toWei('0.003');
-	const makerFee = w3utils.toWei('0.001');
-	const maxLeverage = w3utils.toWei('10');
-	const maxMarketDebt = w3utils.toWei('100000');
-	const minInitialMargin = w3utils.toWei('100');
-	const fundingParameters = [
-		w3utils.toWei('0.1'), // max funding rate per day
-		w3utils.toWei('1'), // max funding rate skew
-		w3utils.toWei('0.0125'), // max funding rate delta per hour
-	];
+	const futuresAssets = ['BTC', 'ETH', 'LINK'];
+	const deployedFuturesMarkets = [];
+	const settings = {
+		takerFee: w3utils.toWei('0.003'),
+		makerFee: w3utils.toWei('0.001'),
+		maxLeverage: w3utils.toWei('10'),
+		maxMarketValue: w3utils.toWei('100000'),
+		maxFundingRate: w3utils.toWei('0.1'),
+		maxFundingRateSkew: w3utils.toWei('1'),
+		maxFundingRateDelta: w3utils.toWei('0.0125'),
+	};
 
 	for (const asset of futuresAssets) {
 		const marketName = 'FuturesMarket' + asset;
@@ -89,24 +95,7 @@ module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 			deployedFuturesMarkets.push(addressOf(futuresMarket));
 		}
 
-		if (proxyFuturesMarket && futuresMarket && futuresMarketSettings) {
-			// set the parameters before deploying the markets
-			await runStep({
-				contract: futuresMarketSettings,
-				target: futuresMarketSettings,
-				read: 'target',
-				write: 'setAllParameters',
-				writeArg: [
-					baseAsset,
-					takerFee,
-					makerFee,
-					maxLeverage,
-					maxMarketDebt,
-					minInitialMargin,
-					fundingParameters,
-				],
-			});
-
+		if (proxyFuturesMarket && futuresMarket) {
 			await runStep({
 				contract: proxyName,
 				target: proxyFuturesMarket,
@@ -115,6 +104,23 @@ module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 				write: 'setTarget',
 				writeArg: addressOf(futuresMarket),
 			});
+		}
+
+		if (futuresMarketSettings) {
+			// set the parameters before deploying the markets
+
+			for (const setting in settings) {
+				const capSetting = setting.charAt(0).toUpperCase() + setting.slice(1);
+				const value = settings[setting];
+				await runStep({
+					contract: 'FuturesMarketSettings',
+					target: futuresMarketSettings,
+					read: `get${capSetting}`,
+					expected: input => input === value,
+					write: `set${capSetting}`,
+					writeArg: value,
+				});
+			}
 		}
 	}
 
@@ -159,12 +165,4 @@ module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 			});
 		}
 	}
-
-	// This belongs in dapp-utils, but since we are only deploying futures on L2,
-	// I've colocated it here for now.
-	await deployer.deployContract({
-		name: 'FuturesMarketData',
-		args: [addressOf(ReadProxyAddressResolver)],
-		deps: ['AddressResolver'],
-	});
 };
