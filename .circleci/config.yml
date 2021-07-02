@@ -9,7 +9,7 @@ commands:
       - run:
           shell: /bin/sh
           command: |
-            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 --tries 10000 http://localhost:<<parameters.port>>
+            wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:<<parameters.port>>
             :
 jobs:
   job-compile:
@@ -55,32 +55,17 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - v8-optimism-build-
+            - v4-optimism-build-
       - run:
-          name: Pull optimism repo if necessary
+          name: Build docker containers if necessary
           command: |
             if [ ! -d ./optimism ]; then
-              git clone https://github.com/ethereum-optimism/optimism.git
-              cd optimism
-              git fetch
-              git checkout master
-              git pull origin master
-              git checkout dc4bd5381e4c75516e251cc1d1d81bcf1e4d2d7d
-              yarn
-              yarn build
+              npx hardhat ops --fresh --build --build-ops
             fi;
       - save_cache:
-          key: v8-optimism-build-
+          key: v4-optimism-build-
           paths:
             - ./optimism
-      - run:
-          name: Build optimism docker image
-          command: |
-            cd optimism
-            cd ops
-            export COMPOSE_DOCKER_CLI_BUILD=1
-            export DOCKER_BUILDKIT=1
-            docker-compose build
       - run:
           name: Start docker chains
           background: true
