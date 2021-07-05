@@ -45,7 +45,7 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 
 	const futuresMarketSettings = await deployer.deployContract({
 		name: 'FuturesMarketSettings',
-		args: [(account, addressOf(ReadProxyAddressResolver))],
+		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
 	const futuresAssets = (await getDeployParameter('FUTURES'))['ASSETS'];
