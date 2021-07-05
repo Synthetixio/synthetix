@@ -46,7 +46,7 @@ jobs:
   job-integration-tests:
     working_directory: ~/repo
     machine:
-      image: ubuntu-2004:202010-01
+      image: ubuntu-2004:202104-01
       docker_layer_caching: true
     resource_class: large
     steps:
@@ -55,7 +55,7 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - v4-optimism-build-
+            - v5-optimism-build-
       - run:
           name: Build docker containers if necessary
           command: |
@@ -63,13 +63,14 @@ jobs:
               npx hardhat ops --fresh --build --build-ops
             fi;
       - save_cache:
-          key: v4-optimism-build-
+          key: v5-optimism-build-
           paths:
             - ./optimism
       - run:
           name: Start docker chains
           background: true
           command: |
+            docker --version
             npx hardhat ops --start
       - cmd-wait-for-port:
           port: 8545
@@ -341,6 +342,7 @@ workflows:
           requires:
             - job-prepare
       - job-integration-tests:
+          name: job-integration-tests
           requires:
             - job-prepare
       - job-pack-browser:
