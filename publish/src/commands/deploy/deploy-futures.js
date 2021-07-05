@@ -45,7 +45,7 @@ module.exports = async ({ account, addressOf, deployer, runStep, useOvm }) => {
 
 	const futuresMarketSettings = await deployer.deployContract({
 		name: 'FuturesMarketSettings',
-		args: [(account, addressOf(ReadProxyAddressResolver))],
+		args: [account, addressOf(ReadProxyAddressResolver)],
 	});
 
 	// This belongs in dapp-utils, but since we are only deploying futures on L2,
