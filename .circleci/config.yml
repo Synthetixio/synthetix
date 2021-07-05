@@ -26,6 +26,23 @@ jobs:
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: rm -rf build # force a clean build
       - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
+  job-fork-tests-no-update:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npm run fork:mainnet
+          background: true
+      - cmd-wait-for-port:
+          port: 8545
+      - run: npx hardhat test:integration:l1 --use-fork
   job-fork-tests:
     working_directory: ~/repo
     docker:
@@ -46,7 +63,7 @@ jobs:
   job-integration-tests:
     working_directory: ~/repo
     machine:
-      image: ubuntu-2004:202010-01
+      image: ubuntu-2004:202104-01
       docker_layer_caching: true
     resource_class: large
     steps:
@@ -55,7 +72,7 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - v4-optimism-build-
+            - v5-optimism-build-
       - run:
           name: Build docker containers if necessary
           command: |
@@ -63,13 +80,14 @@ jobs:
               npx hardhat ops --fresh --build --build-ops
             fi;
       - save_cache:
-          key: v4-optimism-build-
+          key: v5-optimism-build-
           paths:
             - ./optimism
       - run:
           name: Start docker chains
           background: true
           command: |
+            docker --version
             npx hardhat ops --start
       - cmd-wait-for-port:
           port: 8545
@@ -340,7 +358,11 @@ workflows:
       - job-fork-tests:
           requires:
             - job-prepare
+      - job-fork-tests-no-update:
+          requires:
+            - job-prepare
       - job-integration-tests:
+          name: job-integration-tests
           requires:
             - job-prepare
       - job-pack-browser:
