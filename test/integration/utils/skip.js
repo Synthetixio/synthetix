@@ -8,8 +8,6 @@ async function skipWaitingPeriod({ ctx }) {
 		ctx,
 		seconds: await getSystemSetting({ ctx, settingName: 'waitingPeriodSecs' }),
 	});
-
-	await updateExchangeRatesIfNeeded({ ctx });
 }
 
 async function skipFeePeriod({ ctx }) {
@@ -17,8 +15,6 @@ async function skipFeePeriod({ ctx }) {
 		ctx,
 		seconds: await getSystemSetting({ ctx, settingName: 'feePeriodDuration' }),
 	});
-
-	await updateExchangeRatesIfNeeded({ ctx });
 }
 
 async function skipMinimumStakeTime({ ctx }) {
@@ -26,8 +22,6 @@ async function skipMinimumStakeTime({ ctx }) {
 		ctx,
 		seconds: await getSystemSetting({ ctx, settingName: 'minimumStakeTime' }),
 	});
-
-	await updateExchangeRatesIfNeeded({ ctx });
 }
 
 /*
