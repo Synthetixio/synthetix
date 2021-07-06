@@ -1,7 +1,6 @@
 'use strict';
 
 const { gray } = require('chalk');
-// const w3utils = require('web3-utils');
 const { toBytes32 } = require('../../../..');
 
 module.exports = async ({ account, addressOf, getDeployParameter, deployer, runStep, useOvm }) => {
@@ -51,57 +50,37 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 		deps: ['AddressResolver'],
 	});
 
-	// TODO: Perform this programmatically per-market
-	// const settings = {
-	// 	takerFee: w3utils.toWei('0.003'),
-	// 	makerFee: w3utils.toWei('0.001'),
-	// 	maxLeverage: w3utils.toWei('10'),
-	// 	maxMarketValue: w3utils.toWei('100000'),
-	// 	maxFundingRate: w3utils.toWei('0.1'),
-	// 	maxFundingRateSkew: w3utils.toWei('1'),
-	// 	maxFundingRateDelta: w3utils.toWei('0.0125'),
-	// };
-
 	// NOTE: Disabled until we figure out an issue with the bytecode of this contract being unsafe.
 	//
-	// const futuresMarketSettings = await deployer.deployContract({
-	// 	name: 'FuturesMarketSettings',
-	// 	args: [account, addressOf(ReadProxyAddressResolver)],
-	// 	dryRun: true
-	// });
-	//
-	// for (const setting in settings) {
-	// 	const capSetting = setting.charAt(0).toUpperCase() + setting.slice(1);
-	// 	const value = settings[setting];
-	// 	await runStep({
-	// 		contract: 'FuturesMarketSettings',
-	// 		target: futuresMarketSettings,
-	// 		read: `get${capSetting}`,
-	// 		expected: input => input === value,
-	// 		write: `set${capSetting}`,
-	// 		writeArg: value,
-	// 	});
-	// }
+	const futuresMarketSettings = await deployer.deployContract({
+		name: 'FuturesMarketSettings',
+		args: [account, addressOf(ReadProxyAddressResolver)],
+	});
 
 	// FuturesMarketSettings will be deployed manually using Remix.
 	// The args for deployment are logged below.
 	// console.log([account, addressOf(ReadProxyAddressResolver)])
 
 	// Import the FuturesMarketSettings contract into the AddressResolver.
-	const importArgs = [
-		[toBytes32('FuturesMarketSettings')],
-		[deployer.deployment.targets['FuturesMarketSettings'].address],
-	];
-	await runStep({
-		gasLimit: 6e6, // higher gas required for mainnet
-		contract: `AddressResolver`,
-		target: AddressResolver,
-		read: 'areAddressesImported',
-		readArg: importArgs,
-		expected: input => input,
-		write: 'importAddresses',
-		writeArg: importArgs,
-	});
+	// if(0) {
+	// 	const importArgs = [
+	// 		[toBytes32('FuturesMarketSettings')],
+	// 		// [deployer.deployment.targets['FuturesMarketSettings'].address],
+	// 		['0x'+'1'.repeat(40)]
+	// 	];
+	// 	await runStep({
+	// 		gasLimit: 6e6, // higher gas required for mainnet
+	// 		contract: `AddressResolver`,
+	// 		target: AddressResolver,
+	// 		read: 'areAddressesImported',
+	// 		readArg: importArgs,
+	// 		expected: input => input,
+	// 		write: 'importAddresses',
+	// 		writeArg: importArgs,
+	// 	});
+	// } else {
+
+	// }
 
 	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
 	const deployedFuturesMarkets = [];
