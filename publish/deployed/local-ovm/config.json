@@ -162,7 +162,7 @@
 		"deploy": true
 	},
 	"FuturesMarketSettings": {
-		"deploy": true
+		"deploy": false
 	},
 	"FuturesMarketData": {
 		"deploy": true
