@@ -359,6 +359,14 @@ const deploy = async ({
 		useOvm,
 	});
 
+	await configureFutures({
+		addressOf,
+		deployer,
+		runStep,
+		getDeployParameter,
+		useOvm,
+	});
+
 	await configureLegacySettings({
 		account,
 		addressOf,
@@ -380,12 +388,6 @@ const deploy = async ({
 		addressOf,
 		synths,
 		feeds,
-		deployer,
-		runStep,
-	});
-
-	await configureFutures({
-		addressOf,
 		deployer,
 		runStep,
 	});
@@ -426,6 +428,7 @@ const deploy = async ({
 		runStep,
 		useEmptyCollateralManager,
 	});
+
 
 	await takeDebtSnapshotWhenRequired({
 		debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
