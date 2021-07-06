@@ -2,173 +2,140 @@
 	"SystemSettings": {
 		"deploy": true
 	},
-	"SynthetixBridgeToBase": {
-		"deploy": false
-	},
 	"AddressResolver": {
-		"deploy": false
+		"deploy": true
 	},
 	"ReadProxyAddressResolver": {
-		"deploy": false
-	},
-	"TradingRewards": {
-		"deploy": false
+		"deploy": true
 	},
 	"DebtCache": {
-		"deploy": false
+		"deploy": true
+	},
+	"Depot": {
+		"deploy": true
+	},
+	"TradingRewards": {
+		"deploy": true
 	},
 	"EscrowChecker": {
-		"deploy": false
+		"deploy": true
 	},
 	"ExchangeRates": {
-		"deploy": false
+		"deploy": true
 	},
 	"Exchanger": {
 		"deploy": true
 	},
 	"ExchangeState": {
-		"deploy": false
+		"deploy": true
 	},
 	"EtherCollateral": {
-		"deploy": false
+		"deploy": true
 	},
 	"EtherCollateralsUSD": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolEternalStorage": {
-		"deploy": false
+		"deploy": true
 	},
 	"FlexibleStorage": {
-		"deploy": false
+		"deploy": true
 	},
 	"DelegateApprovals": {
-		"deploy": false
+		"deploy": true
 	},
 	"DelegateApprovalsEternalStorage": {
-		"deploy": false
+		"deploy": true
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
-		"deploy": false
+		"deploy": true
 	},
 	"Liquidations": {
-		"deploy": false
+		"deploy": true
 	},
 	"Synthetix": {
 		"deploy": true
 	},
 	"SynthetixEscrow": {
-		"deploy": false
+		"deploy": true
 	},
 	"RewardEscrow": {
-		"deploy": false
-	},
-	"RewardsDistribution": {
-		"deploy": false
-	},
-	"SynthetixState": {
-		"deploy": false
-	},
-	"SystemStatus": {
-		"deploy": false
-	},
-	"SynthUtil": {
-		"deploy": false
-	},
-	"DappMaintenance": {
-		"deploy": false
-	},
-	"SynthsUSD": {
-		"deploy": false
-	},
-	"ProxyERC20": {
-		"deploy": false
-	},
-	"ProxyERC20sUSD": {
-		"deploy": false
-	},
-	"ProxyFeePool": {
-		"deploy": false
-	},
-	"ProxySynthetix": {
-		"deploy": false
-	},
-	"ProxysUSD": {
-		"deploy": false
-	},
-	"SafeDecimalMath": {
-		"deploy": false
-	},
-	"Math": {
-		"deploy": false
-	},
-	"TokenStateSynthetix": {
-		"deploy": false
-	},
-	"TokenStatesUSD": {
-		"deploy": false
-	},
-	"CollateralManager": {
-		"deploy": false
+		"deploy": true
 	},
 	"RewardEscrowV2": {
-		"deploy": false
+		"deploy": true
+	},
+	"RewardsDistribution": {
+		"deploy": true
+	},
+	"SynthetixState": {
+		"deploy": true
+	},
+	"SystemStatus": {
+		"deploy": true
+	},
+	"SynthUtil": {
+		"deploy": true
+	},
+	"DappMaintenance": {
+		"deploy": true
+	},
+	"SynthsUSD": {
+		"deploy": true
+	},
+	"ProxyERC20": {
+		"deploy": true
+	},
+	"ProxyERC20sUSD": {
+		"deploy": true
+	},
+	"ProxyFeePool": {
+		"deploy": true
+	},
+	"ProxySynthetix": {
+		"deploy": true
+	},
+	"ProxysUSD": {
+		"deploy": true
+	},
+	"SafeDecimalMath": {
+		"deploy": true
+	},
+	"Math": {
+		"deploy": true
+	},
+	"TokenStateSynthetix": {
+		"deploy": true
+	},
+	"TokenStatesUSD": {
+		"deploy": true
 	},
 	"TokenStatesETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxysETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsETH": {
-		"deploy": false
+		"deploy": true
 	},
-	"TokenStatesBTC": {
-		"deploy": false
+	"SynthetixBridgeToBase": {
+		"deploy": true
 	},
-	"ProxysBTC": {
-		"deploy": false
-	},
-	"SynthsBTC": {
-		"deploy": false
-	},
-	"TokenStatesLINK": {
-		"deploy": false
-	},
-	"ProxysLINK": {
-		"deploy": false
-	},
-	"SynthsLINK": {
-		"deploy": false
-	},
-	"TokenStatesUNI": {
-		"deploy": false
-	},
-	"ProxysUNI": {
-		"deploy": false
-	},
-	"SynthsUNI": {
-		"deploy": false
-	},
-	"TokenStatesAAVE": {
-		"deploy": false
-	},
-	"ProxysAAVE": {
-		"deploy": false
-	},
-	"SynthsAAVE": {
-		"deploy": false
+	"CollateralManager": {
+		"deploy": true
 	},
 	"EtherWrapper": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyFuturesMarketBTC": {
 		"deploy": true
@@ -194,10 +161,13 @@
 	"FuturesMarketManager": {
 		"deploy": true
 	},
+	"FuturesMarketSettings": {
+		"deploy": true
+	},
 	"FuturesMarketData": {
 		"deploy": true
 	},
-	"FuturesMarketSettings": {
+	"WETH": {
 		"deploy": true
 	}
 }
