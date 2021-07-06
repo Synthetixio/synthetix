@@ -1,0 +1,10 @@
+[
+	{
+		"name": "sUSD",
+		"asset": "USD"
+	},
+	{
+		"name": "sETH",
+		"asset": "ETH"
+	}
+]
