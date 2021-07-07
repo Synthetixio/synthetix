@@ -272,7 +272,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setMinCratio(uint minCratio, address collateral) external onlyOwner {
-        require(_minCratio > SafeDecimalMath.unit());
+        require(minCratio > SafeDecimalMath.unit());
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_MIN_CRATIO, collateral)),
