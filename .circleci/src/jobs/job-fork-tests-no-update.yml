@@ -1,4 +1,4 @@
-# Starts a fork of mainnet, deploys the latest release, and runs L1 integration tests
+# Starts a fork of mainnet and runs L1 integration tests
 {{> job-header.yml}}
 steps:
   - checkout
@@ -9,4 +9,4 @@ steps:
       background: true
   - cmd-wait-for-port:
       port: 8545
-  - run: npx hardhat test:integration:l1 --compile --deploy --use-fork
+  - run: npx hardhat test:integration:l1 --use-fork

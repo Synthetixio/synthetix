@@ -166,5 +166,8 @@
 	},
 	"SynthsAAVE": {
 		"deploy": false
+	},
+	"EtherWrapper": {
+		"deploy": false
 	}
 }

@@ -243,14 +243,8 @@
 			"major": 2,
 			"minor": 46
 		},
-		"sources": [
-			"ExchagneRates",
-			"DebtCache",
-			"Exchanger",
-			"Synthetix",
-			"SystemSettings"
-		],
-		"sips": [120, 138, 139, 140, 145, 150, 151]
+		"sources": ["Exchanger", "Synthetix"],
+		"sips": [138, 139, 140, 151]
 	},
 	{
 		"name": "Alnitak (Optimism)",
@@ -259,13 +253,7 @@
 			"minor": 46
 		},
 		"ovm": true,
-		"sources": [
-			"DebtCache",
-			"EtherWrapper",
-			"Exchanger",
-			"Synthetix",
-			"SystemSettings"
-		],
-		"sips": [138, 139, 140, 145, 150]
+		"sources": ["EtherWrapper", "Exchanger", "Synthetix", "SystemSettings"],
+		"sips": [138, 139, 140]
 	}
 ]

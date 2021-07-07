@@ -38,8 +38,8 @@ const owner = async ({
 	network,
 	newOwner,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
-	gasLimit = DEFAULTS.gasLimit,
+	gasPrice,
+	gasLimit,
 	privateKey,
 	yes,
 	useOvm,
@@ -103,14 +103,7 @@ const owner = async ({
 		}
 	}
 
-	let wallet;
-	if (!privateKey) {
-		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
-		wallet = provider.getSigner(account);
-		wallet.address = await wallet.getAddress();
-	} else {
-		wallet = new ethers.Wallet(privateKey, provider);
-	}
+	const wallet = new ethers.Wallet(privateKey, provider);
 	console.log(gray(`Using account with public key ${wallet.address}`));
 
 	if (!isContract && wallet.address.toLowerCase() !== newOwner.toLowerCase()) {
@@ -126,7 +119,7 @@ const owner = async ({
 	let currentSafeNonce;
 	if (isContract) {
 		// new owner should be gnosis safe proxy address
-		protocolDaoContract = getSafeInstance(providerUrl, newOwner);
+		protocolDaoContract = getSafeInstance({ provider, safeAddress: newOwner });
 
 		// get protocolDAO nonce
 		currentSafeNonce = await getSafeNonce(protocolDaoContract);
@@ -202,7 +195,7 @@ const owner = async ({
 				});
 
 				// sign txHash to get signature
-				const sig = getSafeSignature({
+				const sig = await getSafeSignature({
 					privateKey,
 					providerUrl,
 					contractTxHash: txHash,
@@ -223,12 +216,16 @@ const owner = async ({
 				// track lastNonce submitted
 				lastNonce = newNonce;
 			} else {
-				const tx = await wallet.sendTransaction({
+				const params = {
 					to: target,
 					gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-					gasLimit: ethers.BigNumber.from(gasLimit),
 					data,
-				});
+				};
+				if (gasLimit) {
+					params.gasLimit = ethers.BigNumber.from(gasLimit);
+				}
+
+				const tx = await wallet.sendTransaction(params);
 				const receipt = await tx.wait();
 
 				logTx(receipt);
@@ -266,7 +263,7 @@ const owner = async ({
 				// Check if similar one already staged and pending
 				const existingTx = checkExistingPendingTx({
 					stagedTransactions,
-					target: deployedContract.address,
+					target: address,
 					encodedData,
 					currentSafeNonce,
 				});
@@ -285,14 +282,14 @@ const owner = async ({
 					const { txHash, newNonce } = await getNewTransactionHash({
 						safeContract: protocolDaoContract,
 						data: encodedData,
-						to: deployedContract.address,
+						to: address,
 						sender: wallet.address,
 						network,
 						lastNonce,
 					});
 
 					// sign txHash to get signature
-					const sig = getSafeSignature({
+					const sig = await getSafeSignature({
 						privateKey,
 						providerUrl,
 						contractTxHash: txHash,
@@ -304,7 +301,7 @@ const owner = async ({
 						network,
 						data: encodedData,
 						nonce: newNonce,
-						to: deployedContract.address,
+						to: address,
 						sender: wallet.address,
 						transactionHash: txHash,
 						signature: sig,
@@ -313,12 +310,16 @@ const owner = async ({
 					// track lastNonce submitted
 					lastNonce = newNonce;
 				} else {
-					const tx = await wallet.sendTransaction({
-						to: deployedContract.address,
+					const params = {
+						to: address,
 						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-						gasLimit: ethers.BigNumber.from(gasLimit),
 						data: encodedData,
-					});
+					};
+					if (gasLimit) {
+						params.gasLimit = ethers.BigNumber.from(gasLimit);
+					}
+
+					const tx = await wallet.sendTransaction(params);
 					const receipt = await tx.wait();
 
 					logTx(receipt);

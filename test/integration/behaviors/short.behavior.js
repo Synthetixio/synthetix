@@ -1,4 +1,5 @@
 const ethers = require('ethers');
+const chalk = require('chalk');
 const {
 	utils: { parseEther },
 } = ethers;
@@ -42,6 +43,21 @@ function itCanOpenAndCloseShort({ ctx }) {
 			let tx, loan, loanId;
 
 			describe('opening a loan', () => {
+				before('skip if max borrowing power reached', async function() {
+					const maxBorrowingPowerReached = await CollateralShort.maxLoan(
+						amountToBorrow,
+						toBytes32('sETH')
+					);
+					if (maxBorrowingPowerReached) {
+						console.log(
+							chalk.yellow(
+								'> Skipping collateral checks because max borrowing power has been reached.'
+							)
+						);
+						this.skip();
+					}
+				});
+
 				before('approve the synths for collateral short', async () => {
 					await approveIfNeeded({
 						token: SynthsUSD,

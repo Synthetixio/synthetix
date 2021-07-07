@@ -29,11 +29,14 @@ jobs:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-fork-tests:
       {{> require-prepare.yml}}
+  - job-fork-tests-no-update:
+      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Integration tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-integration-tests:
+      name: job-integration-tests
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
