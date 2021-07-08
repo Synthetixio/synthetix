@@ -27,7 +27,7 @@ const {
 	getNewTransactionHash,
 	saveTransactionToApi,
 	getSafeSignature,
-} = require('../safe-utils');
+} = require('../command-utils/safe-utils');
 
 const DEFAULTS = {
 	gasPrice: '15',
@@ -181,7 +181,11 @@ const owner = async ({
 			if (existingTx) continue;
 		}
 
-		await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
+		await confirmOrEnd(
+			yes,
+			isContract,
+			yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`
+		);
 
 		try {
 			if (isContract) {
@@ -272,7 +276,7 @@ const owner = async ({
 			}
 
 			// continue if no pending tx found
-			await confirmOrEnd(yellow(`Confirm: ${contract}.acceptOwnership()?`));
+			await confirmOrEnd(yes, isContract, yellow(`Confirm: ${contract}.acceptOwnership()?`));
 
 			if (isContract) console.log(yellow(`Attempting action protocolDaoContract.approveHash()`));
 			else console.log(yellow(`Calling acceptOwnership() on ${contract}...`));
@@ -358,11 +362,6 @@ module.exports = {
 			.option(
 				'-o, --new-owner <value>',
 				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)'
-			)
-			.option(
-				'-k, --use-fork',
-				'Perform the deployment on a forked chain running on localhost (see fork command).',
-				false
 			)
 			.option('--is-contract', 'Wether the new owner is a contract wallet or an EOA', false)
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')

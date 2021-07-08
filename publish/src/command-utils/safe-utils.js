@@ -6,7 +6,7 @@ const { green, gray, red, yellow } = require('chalk');
 
 const {
 	constants: { ZERO_ADDRESS },
-} = require('../..');
+} = require('../../..');
 
 const CALL = 0;
 // const DELEGATE_CALL = 1;
