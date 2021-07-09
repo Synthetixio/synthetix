@@ -227,11 +227,11 @@
 		"sign": "",
 		"description": "KuCoin Shares"
 	},
-	"CEX": {
-		"asset": "CEX",
+	"CEFI": {
+		"asset": "CEFI",
 		"category": "index",
 		"sign": "",
-		"description": "Centralised Exchange Index"
+		"description": "Centralised Finance Index"
 	},
 	"DEFI": {
 		"asset": "DEFI",
@@ -404,5 +404,17 @@
 		"category": "crypto",
 		"sign": "",
 		"description": "Alpha Finance"
+	},
+	"CEL": {
+		"asset": "CEL",
+		"category": "crypto",
+		"sign": "",
+		"description": "Celsius Network"
+	},
+	"NEXO": {
+		"asset": "NEXO",
+		"category": "crypto",
+		"sign": "",
+		"description": "NEXO"
 	}
 }
