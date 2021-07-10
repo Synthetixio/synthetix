@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./ExchangeRates.sol";
 import "./interfaces/IDexTwapAggregator.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/ExchangeRatesWithDexPricing
+// https://docs.synthetix.io/contracts/source/contracts/exchangerateswithdexpricing
 contract ExchangeRatesWithDexPricing is ExchangeRates {
     // SIP-120 Atomic exchanges
     // Address of the external TWAP aggregator oracle
@@ -88,4 +88,8 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         // Final value is minimum output between P_CLBUF and P_TWAP
         value = Math.min(pClbufValue, pTwapValue);
     }
+
+    /* ========== EVENTS ========== */
+
+    event DexTwapAggregatorUpdated(address newDexTwapAggregator);
 }

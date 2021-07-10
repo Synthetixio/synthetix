@@ -4,7 +4,6 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
-import "./interfaces/IDexTwapAggregator.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
@@ -77,10 +76,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     function setOracle(address _oracle) external onlyOwner {
         oracle = _oracle;
         emit OracleUpdated(oracle);
-    }
-
-    function setDexTwapAggregator(IDexTwapAggregator) external onlyOwner {
-        _notImplemented();
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -756,5 +751,4 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     event InversePriceFrozen(bytes32 currencyKey, uint rate, uint roundId, address initiator);
     event AggregatorAdded(bytes32 currencyKey, address aggregator);
     event AggregatorRemoved(bytes32 currencyKey, address aggregator);
-    event DexTwapAggregatorUpdated(address newDexTwapAggregator);
 }

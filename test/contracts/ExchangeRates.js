@@ -78,22 +78,25 @@ contract('Exchange Rates', async accounts => {
 	let resolver;
 	let mockFlagsInterface;
 
-	const itIncludesCorrectMutativeFunctions = () => {
+	const itIncludesCorrectMutativeFunctions = contract => {
+		const baseFunctions = [
+			'addAggregator',
+			'deleteRate',
+			'freezeRate',
+			'removeAggregator',
+			'removeInversePricing',
+			'setInversePricing',
+			'setOracle',
+			'updateRates',
+		];
+		const withDexPricingFunctions = baseFunctions.concat(['setDexTwapAggregator']);
+
 		it('only expected functions should be mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: instance.abi,
 				ignoreParents: ['Owned', 'MixinResolver'],
-				expected: [
-					'addAggregator',
-					'deleteRate',
-					'freezeRate',
-					'removeAggregator',
-					'removeInversePricing',
-					'setDexTwapAggregator',
-					'setInversePricing',
-					'setOracle',
-					'updateRates',
-				],
+				expected:
+					contract === 'ExchangeRatesWithDexPricing' ? withDexPricingFunctions : baseFunctions,
 			});
 		});
 	};
@@ -3555,12 +3558,6 @@ contract('Exchange Rates', async accounts => {
 
 	const itDoesntReadAtomicPricesFromDex = () => {
 		describe('Atomic pricing', () => {
-			it('errors with not implemented when attempted to set dex twap aggregator', async () => {
-				await assert.revert(
-					instance.setDexTwapAggregator(accountOne, { from: owner }),
-					'Cannot be run on this layer'
-				);
-			});
 			it('errors with not implemented when attempted to fetch atomic rate', async () => {
 				await assert.revert(
 					instance.effectiveAtomicValueAndRates(sETH, toUnit('10'), sUSD),
@@ -3602,7 +3599,7 @@ contract('Exchange Rates', async accounts => {
 			timeSent = await currentTime();
 		});
 
-		itIncludesCorrectMutativeFunctions();
+		itIncludesCorrectMutativeFunctions(exchangeRatesContract);
 
 		itIsConstructedCorrectly(exchangeRatesContract);
 
@@ -3661,7 +3658,7 @@ contract('Exchange Rates', async accounts => {
 			timeSent = await currentTime();
 		});
 
-		itIncludesCorrectMutativeFunctions();
+		itIncludesCorrectMutativeFunctions(exchangeRatesContract);
 
 		itIsConstructedCorrectly(exchangeRatesContract);
 
