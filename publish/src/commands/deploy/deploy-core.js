@@ -47,7 +47,6 @@ module.exports = async ({
 
 	await deployer.deployContract({
 		name: 'SystemSettings',
-		source: useOvm ? 'SystemSettings' : 'SystemSettingsL1',
 		args: [account, addressOf(readProxyForResolver)],
 	});
 
