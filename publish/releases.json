@@ -255,5 +255,24 @@
 		"ovm": true,
 		"sources": ["EtherWrapper", "Exchanger", "Synthetix", "SystemSettings"],
 		"sips": [138, 139, 140]
+	},
+	{
+		"name": "TODO",
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
+		"sources": ["Exchanger", "ExchangeRates", "Synthetix", "SystemSettings"],
+		"sips": [120]
+	},
+	{
+		"name": "TODO (Optimism)",
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
+		"ovm": true,
+		"sources": ["Exchanger", "ExchangeRates", "Synthetix", "SystemSettings"],
+		"sips": [120]
 	}
 ]
