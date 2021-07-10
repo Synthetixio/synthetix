@@ -10,6 +10,7 @@
 	"CollateralShort",
 	"EtherCollateral",
 	"EtherCollateralsUSD",
+	"ExchangeRatesWithDexPricing",
 	"ExchangerWithVirtualSynth",
 	"FakeTradingRewards",
 	"MockBinaryOptionMarket",
