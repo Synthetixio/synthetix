@@ -416,7 +416,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         sourceAmountAfterSettlement = sourceAmount;
 
         // when settlement was required
-        // TODO: are refunds immediately added to the current exchange?
         if (numEntriesSettled > 0) {
             // ensure the sourceAmount takes this into account
             sourceAmountAfterSettlement = calculateAmountAfterSettlement(from, sourceCurrencyKey, sourceAmount, refunded);

@@ -164,6 +164,7 @@ contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
         // Ensure src/dest synth is sUSD and determine sUSD value of exchange
         uint sourceSusdValue;
         if (sourceCurrencyKey == sUSD) {
+            // Use after-settled amount as this is amount converted (not sourceAmount)
             sourceSusdValue = sourceAmountAfterSettlement;
         } else if (destinationCurrencyKey == sUSD) {
             // In this case the systemConvertedAmount would be the fee-free sUSD value of the source synth
