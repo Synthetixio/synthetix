@@ -116,7 +116,7 @@ module.exports = async ({
 			contract: 'SystemSettings',
 			target: SystemSettings,
 			read: 'waitingPeriodSecs',
-			expected: input => (waitingPeriodSecs === '0' ? true : input !== '0'),
+			expected: input => waitingPeriodSecs === '0' || input !== '0', // only change if setting to non-zero from zero
 			write: 'setWaitingPeriodSecs',
 			writeArg: waitingPeriodSecs,
 			comment: 'Set the fee reclamation (SIP-37) waiting period',
@@ -322,13 +322,14 @@ module.exports = async ({
 
 	if (!useOvm) {
 		// TODO: finish configuring new atomic exchange system settings
+		const atomicMaxVolumePerBlock = await getDeployParameter('ATOMIC_MAX_VOLUME_PER_BLOCK');
 		await runStep({
 			contract: 'SystemSettings',
 			target: SystemSettings,
 			read: 'atomicMaxVolumePerBlock',
-			expected: input => input !== '0', // only change if zero
+			expected: input => atomicMaxVolumePerBlock === '0' || input !== '0', // only change if setting to non-zero from zero
 			write: 'setAtomicMaxVolumePerBlock',
-			writeArg: await getDeployParameter('ATOMIC_MAX_VOLUME_PER_BLOCK'),
+			writeArg: atomicMaxVolumePerBlock,
 		});
 		await runStep({
 			contract: 'SystemSettings',
