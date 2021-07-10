@@ -157,7 +157,7 @@ const setupContract = async ({
 			owner,
 			oracle,
 			tryGetAddressOf('AddressResolver'),
-			[toBytes32('SNX')], // TODO: can we remove these initial rates?
+			[toBytes32('SNX')],
 			[toWei('0.2', 'ether')],
 		],
 		SynthetixState: [owner, ZERO_ADDRESS],
