@@ -203,10 +203,12 @@ contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
 
         // Note: As of this point, `fee` is denominated in sUSD.
 
-        // TODO: sanity checking, does this statement still hold true for atomic exchanges since the execution rate may differ from the system's current rate?
-        // Nothing changes as far as issuance data goes because the total value in the system hasn't changed.
-        // But we will update the debt snapshot in case exchange rates have fluctuated since the last exchange
-        // in these currencies
+        // Note: this update of the debt snapshot will not be accurate because the atomic exchange
+        // was executed with a different rate than the system rate. To be perfect, issuance data,
+        // priced in system rates, should have been adjusted on the src and dest synth.
+        // The debt pool is expected to be deprecated soon, and so we don't bother with being
+        // perfect here. For now, an inaccuracy will slowly accrue over time with increasing atomic
+        // exchange volume.
         _updateSNXIssuedDebtOnExchange(
             [sourceCurrencyKey, destinationCurrencyKey],
             [systemSourceRate, systemDestinationRate]
