@@ -2,13 +2,13 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./ExchangeRates.sol";
-import "./interfaces/IDexTwapAggregator.sol";
+import "./interfaces/IDexPriceAggregator.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerateswithdexpricing
 contract ExchangeRatesWithDexPricing is ExchangeRates {
     // SIP-120 Atomic exchanges
     // Address of the external TWAP aggregator oracle
-    IDexTwapAggregator public dexTwapAggregator;
+    IDexPriceAggregator public dexPriceAggregator;
 
     constructor(
         address _owner,
@@ -20,9 +20,9 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
     /* ========== SETTERS ========== */
 
-    function setDexTwapAggregator(IDexTwapAggregator _dexTwapAggregator) external onlyOwner {
-        dexTwapAggregator = _dexTwapAggregator;
-        emit DexTwapAggregatorUpdated(address(_dexTwapAggregator));
+    function setDexPriceAggregator(IDexPriceAggregator _dexPriceAggregator) external onlyOwner {
+        dexPriceAggregator = _dexPriceAggregator;
+        emit DexPriceAggregatorUpdated(address(_dexPriceAggregator));
     }
 
     /* ========== VIEWS ========== */
@@ -76,7 +76,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         uint sourceAmountInEquivalent = (sourceAmount * 10**uint(sourceEquivalent.decimals())) / SafeDecimalMath.unit();
         // TODO: add sanity check here to make sure the price window isn't 0?
         uint twapValueInEquivalent =
-            dexTwapAggregator.assetToAsset(
+            dexPriceAggregator.assetToAsset(
                 address(sourceEquivalent),
                 sourceAmountInEquivalent,
                 address(destEquivalent),
@@ -91,5 +91,5 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
     /* ========== EVENTS ========== */
 
-    event DexTwapAggregatorUpdated(address newDexTwapAggregator);
+    event DexPriceAggregatorUpdated(address newDexPriceAggregator);
 }

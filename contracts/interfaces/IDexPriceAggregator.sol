@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-interface IDexTwapAggregator {
+interface IDexPriceAggregator {
     function assetToAsset(
         address tokenIn,
         uint amountIn,

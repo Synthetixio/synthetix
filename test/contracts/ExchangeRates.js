@@ -56,7 +56,7 @@ const createRandomKeysAndRates = quantity => {
 };
 
 contract('Exchange Rates', async accounts => {
-	const [deployerAccount, owner, oracle, dexTwapAggregator, accountOne, accountTwo] = accounts;
+	const [deployerAccount, owner, oracle, dexPriceAggregator, accountOne, accountTwo] = accounts;
 	const [SNX, sJPY, sETH, sXTZ, sBNB, sUSD, sEUR, sAUD, fastGasPrice] = [
 		'SNX',
 		'sJPY',
@@ -89,7 +89,7 @@ contract('Exchange Rates', async accounts => {
 			'setOracle',
 			'updateRates',
 		];
-		const withDexPricingFunctions = baseFunctions.concat(['setDexTwapAggregator']);
+		const withDexPricingFunctions = baseFunctions.concat(['setDexPriceAggregator']);
 
 		it('only expected functions should be mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
@@ -2993,30 +2993,30 @@ contract('Exchange Rates', async accounts => {
 
 	// Atomic pricing via DEX
 	const itReadsAtomicPricesFromDex = () => {
-		describe('setDexTwapAggregator()', () => {
+		describe('setDexPriceAggregator()', () => {
 			it("only the owner should be able to change the dex twap aggregator's address", async () => {
 				await onlyGivenAddressCanInvoke({
-					fnc: instance.setDexTwapAggregator,
-					args: [dexTwapAggregator],
+					fnc: instance.setDexPriceAggregator,
+					args: [dexPriceAggregator],
 					address: owner,
 					accounts,
 					skipPassCheck: true,
 				});
 
-				await instance.setDexTwapAggregator(accountOne, { from: owner });
+				await instance.setDexPriceAggregator(accountOne, { from: owner });
 
-				assert.equal(await instance.dexTwapAggregator.call(), accountOne);
-				assert.notEqual(await instance.dexTwapAggregator.call(), dexTwapAggregator);
+				assert.equal(await instance.dexPriceAggregator.call(), accountOne);
+				assert.notEqual(await instance.dexPriceAggregator.call(), dexPriceAggregator);
 			});
 
 			it('should emit event on successful address update', async () => {
 				// Ensure oracle is set to intended address originally
-				await instance.setDexTwapAggregator(dexTwapAggregator, { from: owner });
-				assert.equal(await instance.dexTwapAggregator.call(), dexTwapAggregator);
+				await instance.setDexPriceAggregator(dexPriceAggregator, { from: owner });
+				assert.equal(await instance.dexPriceAggregator.call(), dexPriceAggregator);
 
-				const txn = await instance.setDexTwapAggregator(accountOne, { from: owner });
-				assert.eventEqual(txn, 'DexTwapAggregatorUpdated', {
-					newDexTwapAggregator: accountOne,
+				const txn = await instance.setDexPriceAggregator(accountOne, { from: owner });
+				assert.eventEqual(txn, 'DexPriceAggregatorUpdated', {
+					newDexPriceAggregator: accountOne,
 				});
 			});
 		});
@@ -3067,7 +3067,7 @@ contract('Exchange Rates', async accounts => {
 			const one = toUnit('1');
 			const unitIn8 = convertToDecimals(1, 8);
 
-			let dexTwapAggregator, ethAggregator;
+			let dexPriceAggregator, ethAggregator;
 			let susdDexEquivalentToken, sethDexEquivalentToken;
 
 			function itGivesTheCorrectRates({
@@ -3110,7 +3110,7 @@ contract('Exchange Rates', async accounts => {
 					};
 
 					beforeEach(async () => {
-						await dexTwapAggregator.setAssetToAssetRate(pTwap);
+						await dexPriceAggregator.setAssetToAssetRate(pTwap);
 						await ethAggregator.setLatestAnswer(pClInUsdIn8, await currentTime());
 
 						await systemSettings.setAtomicPriceBuffer(destToken, clBuffer, { from: owner });
@@ -3155,8 +3155,8 @@ contract('Exchange Rates', async accounts => {
 			beforeEach('set up mocks', async () => {
 				ethAggregator = await MockAggregator.new({ from: owner });
 
-				const MockDexTwapAggregator = artifacts.require('MockDexTwapAggregator');
-				dexTwapAggregator = await MockDexTwapAggregator.new();
+				const MockDexPriceAggregator = artifacts.require('MockDexPriceAggregator');
+				dexPriceAggregator = await MockDexPriceAggregator.new();
 
 				susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
 				sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
@@ -3168,7 +3168,7 @@ contract('Exchange Rates', async accounts => {
 				await instance.addAggregator(sETH, ethAggregator.address, {
 					from: owner,
 				});
-				await instance.setDexTwapAggregator(dexTwapAggregator.address, {
+				await instance.setDexPriceAggregator(dexPriceAggregator.address, {
 					from: owner,
 				});
 				await systemSettings.setAtomicEquivalentForDexPricing(
@@ -3220,9 +3220,9 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
-			describe('dexTwapAggregator reverts on assetToAsset', () => {
+			describe('dexPriceAggregator reverts on assetToAsset', () => {
 				beforeEach(async () => {
-					await dexTwapAggregator.setAssetToAssetShouldRevert(true);
+					await dexPriceAggregator.setAssetToAssetShouldRevert(true);
 				});
 				it('reverts', async () => {
 					await assert.revert(
@@ -3446,7 +3446,7 @@ contract('Exchange Rates', async accounts => {
 				const amountIn = toUnit('10');
 
 				beforeEach(async () => {
-					await dexTwapAggregator.setAssetToAssetRate(pTwap);
+					await dexPriceAggregator.setAssetToAssetRate(pTwap);
 					await ethAggregator.setLatestAnswer(pClAggregator, await currentTime());
 
 					await systemSettings.setAtomicPriceBuffer(sUSD, susdBuffer, { from: owner });
@@ -3493,14 +3493,14 @@ contract('Exchange Rates', async accounts => {
 					const amountIn6 = convertToDecimals(1000, 6); // in input token's decimals
 
 					beforeEach('set up rates', async () => {
-						await dexTwapAggregator.setAssetToAssetRate(rateIn8); // mock requires rate to be in output's decimals
+						await dexPriceAggregator.setAssetToAssetRate(rateIn8); // mock requires rate to be in output's decimals
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
 
 						await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
 					});
 
 					it('dex aggregator mock provides expected results', async () => {
-						const twapOutput = await dexTwapAggregator.assetToAsset(
+						const twapOutput = await dexPriceAggregator.assetToAsset(
 							susdDexEquivalentToken.address,
 							amountIn6,
 							sethDexEquivalentToken.address,
@@ -3529,14 +3529,14 @@ contract('Exchange Rates', async accounts => {
 					const unitIn6 = convertToDecimals(1, 6);
 
 					beforeEach('set up rates', async () => {
-						await dexTwapAggregator.setAssetToAssetRate(rateIn6); // mock requires rate to be in output's decimals
+						await dexPriceAggregator.setAssetToAssetRate(rateIn6); // mock requires rate to be in output's decimals
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
 
 						await systemSettings.setAtomicPriceBuffer(sETH, '0', { from: owner });
 					});
 
 					it('dex aggregator mock provides expected results', async () => {
-						const twapOutput = await dexTwapAggregator.assetToAsset(
+						const twapOutput = await dexPriceAggregator.assetToAsset(
 							sethDexEquivalentToken.address,
 							amountIn8,
 							susdDexEquivalentToken.address,

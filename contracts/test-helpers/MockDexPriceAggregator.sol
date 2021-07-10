@@ -1,11 +1,11 @@
 pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity-2.3.0/contracts/math/Math.sol";
-import "../interfaces/IDexTwapAggregator.sol";
+import "../interfaces/IDexPriceAggregator.sol";
 import "../interfaces/IERC20.sol";
 import "../SafeDecimalMath.sol";
 
-contract MockDexTwapAggregator is IDexTwapAggregator {
+contract MockDexPriceAggregator is IDexPriceAggregator {
     using SafeDecimalMath for uint;
 
     uint public rate;

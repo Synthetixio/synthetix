@@ -29,14 +29,14 @@ module.exports = async ({ deployer, runStep, standaloneFeeds, useOvm }) => {
 
 	if (!useOvm && ExchangeRates) {
 		/*
-			TODO: set up DEX TWAP oracle for exchange rates
+			TODO: set up DEX price oracle for exchange rates
 			await runStep({
 				contract: `ExchangeRates`,
 				target: ExchangeRates,
-				read: 'dexTwapAggregator',
-				expected: input => input === dexTwapAggregator,
-				write: 'setDexTwapAggregator',
-				writeArg: [dexTwapAggregator],
+				read: 'dexPriceAggregator',
+				expected: input => input === dexPriceAggregator,
+				write: 'setDexPriceAggregator',
+				writeArg: [dexPriceAggregator],
 			});
 			*/
 	}

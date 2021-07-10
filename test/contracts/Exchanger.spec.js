@@ -29,7 +29,7 @@ const BN = require('bn.js');
 const bnCloseVariance = '30';
 
 const MockAggregator = artifacts.require('MockAggregatorV2V3');
-const MockDexTwapAggregator = artifacts.require('MockDexTwapAggregator');
+const MockDexPriceAggregator = artifacts.require('MockDexPriceAggregator');
 const MockToken = artifacts.require('MockToken');
 
 contract('Exchanger (spec tests)', async accounts => {
@@ -2906,10 +2906,10 @@ contract('Exchanger (spec tests)', async accounts => {
 					const ethOnDex = toUnit('0.005'); // this should be chosen over the 100 (0.01) specified by default
 
 					beforeEach(async () => {
-						// DexTwapAggregator
-						const dexTwapAggregator = await MockDexTwapAggregator.new();
-						await dexTwapAggregator.setAssetToAssetRate(ethOnDex);
-						await exchangeRates.setDexTwapAggregator(dexTwapAggregator.address, { from: owner });
+						// DexPriceAggregator
+						const dexPriceAggregator = await MockDexPriceAggregator.new();
+						await dexPriceAggregator.setAssetToAssetRate(ethOnDex);
+						await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
 
 						// Synth equivalents (needs ability to read into decimals)
 						const susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
