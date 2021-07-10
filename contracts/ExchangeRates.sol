@@ -255,22 +255,6 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return getAggregatorWarningFlags();
     }
 
-    // TODO: should these be included in IExchangeRates?
-    function atomicTwapPriceWindow() external view returns (uint) {
-        // Not implemented
-        return 0;
-    }
-
-    function atomicEquivalentForDexPricing(bytes32) external view returns (address) {
-        // Not implemented
-        return address(0);
-    }
-
-    function atomicPriceBuffer(bytes32) external view returns (uint) {
-        // Not implemented
-        return 0;
-    }
-
     function rateAndUpdatedTime(bytes32 currencyKey) external view returns (uint rate, uint time) {
         RateAndUpdatedTime memory rateAndTime = _getRateAndUpdatedTime(currencyKey);
         return (rateAndTime.rate, rateAndTime.time);

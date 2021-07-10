@@ -3083,20 +3083,6 @@ contract('Exchanger (spec tests)', async accounts => {
 					'Cannot be run on this layer'
 				);
 			});
-
-			it('returns zeros for atomic exchange related getters', async () => {
-				const {
-					amountReceived,
-					fee,
-					exchangeFeeRate,
-				} = await exchanger.getAmountsForAtomicExchange(amountIssued, sUSD, sETH);
-				assert.equal(amountReceived, '0');
-				assert.equal(fee, '0');
-				assert.equal(exchangeFeeRate, '0');
-
-				const feeRate = await exchanger.feeRateForAtomicExchange(sUSD, sETH);
-				assert.equal(feeRate, '0');
-			});
 		});
 	};
 

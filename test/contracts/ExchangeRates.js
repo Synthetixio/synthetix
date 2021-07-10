@@ -3568,27 +3568,6 @@ contract('Exchange Rates', async accounts => {
 				);
 			});
 		});
-
-		describe('Atomic exchange configuration', () => {
-			const newPriceWindow = toBN(ATOMIC_TWAP_PRICE_WINDOW).add(toBN('1'));
-			const snxEquivalentAddr = accountOne;
-			const priceBuffer = toUnit('0.003');
-
-			before('setup configuration values', async () => {
-				await systemSettings.setAtomicTwapPriceWindow(newPriceWindow, { from: owner });
-				await systemSettings.setAtomicEquivalentForDexPricing(SNX, snxEquivalentAddr, {
-					from: owner,
-				});
-				await systemSettings.setAtomicPriceBuffer(SNX, priceBuffer, { from: owner });
-			});
-
-			it('returns zeros for atomic exchange related configuration', async () => {
-				// These all return zero despite being set through SystemSettings
-				assert.equal(await instance.atomicTwapPriceWindow(), '0');
-				assert.bnEqual(await instance.atomicEquivalentForDexPricing(SNX), ZERO_ADDRESS);
-				assert.bnEqual(await instance.atomicPriceBuffer(SNX), '0');
-			});
-		});
 	};
 
 	describe('Using ExchangeRates', () => {

@@ -743,11 +743,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
     }
 
-    function feeRateForAtomicExchange(bytes32, bytes32) external view returns (uint exchangeFeeRate) {
-        // Not implemented
-        return 0;
-    }
-
     function _feeRateForExchange(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) internal view returns (uint) {
         // Get the exchange fee rate as per destination currencyKey
         uint baseRate = getExchangeFeeRate(destinationCurrencyKey);
@@ -819,23 +814,6 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _deductFeesFromAmount(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
-    }
-
-    function getAmountsForAtomicExchange(
-        uint,
-        bytes32,
-        bytes32
-    )
-        external
-        view
-        returns (
-            uint amountReceived,
-            uint fee,
-            uint exchangeFeeRate
-        )
-    {
-        // Not implemented
-        return (0, 0, 0);
     }
 
     function _deductFeesFromAmount(uint destinationAmount, uint exchangeFeeRate)
