@@ -13,15 +13,17 @@ const {
 
 const [sUSD, sETH] = ['sUSD', 'sETH'].map(toBytes32);
 
-let ExchangerWithVirtualSynth;
+let ExchangerWithFeeReclamationAlternatives;
 
 module.exports = function({ accounts }) {
 	before(async () => {
-		ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+		ExchangerWithFeeReclamationAlternatives = artifacts.require(
+			'ExchangerWithFeeReclamationAlternatives'
+		);
 	});
 
 	before(async () => {
-		ExchangerWithVirtualSynth.link(await artifacts.require('SafeDecimalMath').new());
+		ExchangerWithFeeReclamationAlternatives.link(await artifacts.require('SafeDecimalMath').new());
 	});
 
 	beforeEach(async () => {
@@ -87,7 +89,10 @@ module.exports = function({ accounts }) {
 		whenInstantiated: ({ owner }, cb) => {
 			describe(`when instantiated`, () => {
 				beforeEach(async () => {
-					this.instance = await ExchangerWithVirtualSynth.new(owner, this.resolver.address);
+					this.instance = await ExchangerWithFeeReclamationAlternatives.new(
+						owner,
+						this.resolver.address
+					);
 					await this.instance.rebuildCache();
 				});
 				cb();

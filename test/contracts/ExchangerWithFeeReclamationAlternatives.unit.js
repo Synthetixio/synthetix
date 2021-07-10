@@ -17,9 +17,9 @@ const { getUsers, toBytes32 } = require('../..');
 
 const { toBN } = web3.utils;
 
-let ExchangerWithVirtualSynth;
+let ExchangerWithFeeReclamationAlternatives;
 
-contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
+contract('ExchangerWithFeeReclamationAlternatives (unit tests)', async accounts => {
 	const [, owner] = accounts;
 	const [sUSD, sETH, sBTC, iETH] = ['sUSD', 'sETH', 'sBTC', 'iETH'].map(toBytes32);
 	const maxAtomicValuePerBlock = toUnit('1000000');
@@ -28,17 +28,21 @@ contract('ExchangerWithVirtualSynth (unit tests)', async accounts => {
 	const amountIn = toUnit('100');
 
 	// ensure all of the behaviors are bound to "this" for sharing test state
-	const behaviors = require('./ExchangerWithVirtualSynth.behaviors').call(this, { accounts });
+	const behaviors = require('./ExchangerWithFeeReclamationAlternatives.behaviors').call(this, {
+		accounts,
+	});
 
 	const callAsSynthetix = args => [...args, { from: this.mocks.Synthetix.address }];
 
 	before(async () => {
-		ExchangerWithVirtualSynth = artifacts.require('ExchangerWithVirtualSynth');
+		ExchangerWithFeeReclamationAlternatives = artifacts.require(
+			'ExchangerWithFeeReclamationAlternatives'
+		);
 	});
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: ExchangerWithVirtualSynth.abi,
+			abi: ExchangerWithFeeReclamationAlternatives.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
 				'exchange',

@@ -170,7 +170,7 @@ const setupContract = async ({
 		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
 		Exchanger: [owner, tryGetAddressOf('AddressResolver')],
-		ExchangerWithVirtualSynth: [owner, tryGetAddressOf('AddressResolver')],
+		ExchangerWithFeeReclamationAlternatives: [owner, tryGetAddressOf('AddressResolver')],
 		SystemSettings: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeState: [owner, tryGetAddressOf('Exchanger')],
 		BaseSynthetix: [
@@ -484,7 +484,7 @@ const setupContract = async ({
 				),
 			]);
 		},
-		async ExchangerWithVirtualSynth() {
+		async ExchangerWithFeeReclamationAlternatives() {
 			await Promise.all([
 				cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner }),
 
@@ -718,7 +718,7 @@ const setupAllContracts = async ({
 			],
 		},
 		{
-			contract: 'ExchangerWithVirtualSynth',
+			contract: 'ExchangerWithFeeReclamationAlternatives',
 			resolverAlias: 'Exchanger',
 			mocks: ['Synthetix', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
 			deps: [

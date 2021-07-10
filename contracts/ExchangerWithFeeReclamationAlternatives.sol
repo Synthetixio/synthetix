@@ -8,8 +8,8 @@ import "./interfaces/IVirtualSynth.sol";
 import "./MinimalProxyFactory.sol";
 import "./VirtualSynth.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/exchangerwithvirtualsynth
-contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
+// https://docs.synthetix.io/contracts/source/contracts/exchangerwithfeereclamationalternatives
+contract ExchangerWithFeeReclamationAlternatives is MinimalProxyFactory, Exchanger {
     using SafeMath for uint;
 
     struct ExchangeVolumeAtPeriod {
