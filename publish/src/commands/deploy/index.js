@@ -429,7 +429,6 @@ const deploy = async ({
 		useEmptyCollateralManager,
 	});
 
-
 	await takeDebtSnapshotWhenRequired({
 		debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
 		deployer,

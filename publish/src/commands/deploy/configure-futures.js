@@ -2,7 +2,7 @@
 
 const { gray } = require('chalk');
 const {
-    utils: { isAddress, parseEther },
+	utils: { parseEther },
 } = require('ethers');
 const { toBytes32 } = require('../../../..');
 const w3utils = require('web3-utils');
@@ -10,61 +10,56 @@ const w3utils = require('web3-utils');
 module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 	console.log(gray(`\n------ CONFIGURE FUTURES MARKETS ------\n`));
 
-    if (!useOvm) return
+	if (!useOvm) return;
 
 	const {
-        FuturesMarketSettings: futuresMarketSettings,
-        ExchangeRates: exchangeRates
-    } = deployer.deployedContracts;
+		FuturesMarketSettings: futuresMarketSettings,
+		ExchangeRates: exchangeRates,
+	} = deployer.deployedContracts;
 
 	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
-    const currencyKeys = futuresAssets.map(asset => toBytes32(`s${asset}`))
+	const currencyKeys = futuresAssets.map(asset => toBytes32(`s${asset}`));
 
-    // 
-    // Update ExchangeRates for assets.
-    // 
-    
-    const { timestamp } = await deployer.provider.ethers.provider.getBlock();
-    const rates = currencyKeys.map(key => {
-        return parseEther('1').toString()
-    });
+	//
+	// Update ExchangeRates for assets.
+	//
 
-    console.log(gray(`Updating ExchangeRates for futures assets: ` + currencyKeys.join(', ')));
-    const writeArg = [currencyKeys, rates, ''+timestamp]
-    console.log(writeArg)
+	const { timestamp } = await deployer.provider.ethers.provider.getBlock();
+	const rates = currencyKeys.map(key => {
+		return parseEther('1').toString();
+	});
 
-    for (const key of currencyKeys) {
-        await runStep({
-            contract: 'ExchangeRates',
-            target: exchangeRates,
-            // read: `rateAndInvalid`,
-            // readArg: key,
-            // expected: (rate, invalid) => !invalid,
-            write: `updateRates`,
-            writeArg: [
-                [key],
-                [rates[0]],
-                '' + timestamp
-            ]
-        });
-    }
+	console.log(gray(`Updating ExchangeRates for futures assets: ` + currencyKeys.join(', ')));
+	const writeArg = [currencyKeys, rates, '' + timestamp];
+	console.log(writeArg);
 
-    // TODO: this failed. It appears it cannot handle the nested subarray.
-    // await runStep({
-    //     contract: 'ExchangeRates',
-    //     target: exchangeRates,
-    //     read: `ratesAndInvalidForCurrencies`,
-    //     readArg: [[currencyKeys]],
-    //     expected: (rates, anyRateIsInvalid) => !anyRateIsInvalid,
-    //     write: `updateRates`,
-    //     writeArg: [writeArg]
-    // });
+	for (const key of currencyKeys) {
+		await runStep({
+			contract: 'ExchangeRates',
+			target: exchangeRates,
+			// read: `rateAndInvalid`,
+			// readArg: key,
+			// expected: (rate, invalid) => !invalid,
+			write: `updateRates`,
+			writeArg: [[key], [rates[0]], '' + timestamp],
+		});
+	}
 
+	// TODO: this failed. It appears it cannot handle the nested subarray.
+	// await runStep({
+	//     contract: 'ExchangeRates',
+	//     target: exchangeRates,
+	//     read: `ratesAndInvalidForCurrencies`,
+	//     readArg: [[currencyKeys]],
+	//     expected: (rates, anyRateIsInvalid) => !anyRateIsInvalid,
+	//     write: `updateRates`,
+	//     writeArg: [writeArg]
+	// });
 
 	for (const asset of futuresAssets) {
 		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
 
-        const baseAsset = toBytes32(`s${asset}`);
+		const baseAsset = toBytes32(`s${asset}`);
 
 		// TODO: Perform this programmatically per-market
 		const settings = {
