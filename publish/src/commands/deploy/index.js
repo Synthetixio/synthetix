@@ -46,6 +46,7 @@ const configureInverseSynths = require('./configure-inverse-synths');
 const configureSystemSettings = require('./configure-system-settings');
 const configureLoans = require('./configure-loans');
 const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
+const generateSolidityOutput = require('./generate-solidity-output');
 
 const DEFAULTS = {
 	gasPrice: '1',
@@ -66,6 +67,7 @@ const deploy = async ({
 	forceUpdateInverseSynthsOnTestnet = false,
 	freshDeploy,
 	gasPrice = DEFAULTS.gasPrice,
+	generateSolidity = false,
 	ignoreCustomParameters,
 	ignoreSafetyChecks,
 	manageNonces,
@@ -115,6 +117,7 @@ const deploy = async ({
 	const getDeployParameter = getDeployParameterFactory({ params, yes, ignoreCustomParameters });
 
 	const addressOf = c => (c ? c.options.address : '');
+	const sourceOf = c => (c ? c.options.source : '');
 
 	// Mark contracts for deployment specified via an argument
 	if (specifyContracts) {
@@ -172,10 +175,11 @@ const deploy = async ({
 	const {
 		providerUrl: envProviderUrl,
 		privateKey: envPrivateKey,
-		etherscanLinkPrefix,
+		explorerLinkPrefix,
 	} = loadConnections({
 		network,
 		useFork,
+		useOvm,
 	});
 
 	if (!providerUrl) {
@@ -186,8 +190,9 @@ const deploy = async ({
 		providerUrl = envProviderUrl;
 	}
 
-	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
-	if (network !== 'local' && !privateKey) {
+	// when not in a local network, and not forking, and the privateKey isn't supplied,
+	// use the one from the .env file
+	if (network !== 'local' && !useFork && !privateKey) {
 		privateKey = envPrivateKey;
 	}
 
@@ -253,18 +258,31 @@ const deploy = async ({
 		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''}...`)
 	);
 
-	const runStep = async opts =>
-		performTransactionalStepWeb3({
-			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
+	// track for use with solidity output
+	const runSteps = [];
+
+	const runStep = async opts => {
+		const { noop, ...rest } = await performTransactionalStepWeb3({
 			...opts,
+			// no gas limit on OVM (use system limit), otherwise use provided limit or the methodCall amount
+			gasLimit: useOvm ? undefined : opts.gasLimit || methodCallGasLimit,
 			account,
+			dryRun,
+			explorerLinkPrefix,
 			gasPrice,
-			etherscanLinkPrefix,
+			generateSolidity,
+			nonceManager: manageNonces ? nonceManager : undefined,
 			ownerActions,
 			ownerActionsFile,
-			dryRun,
-			nonceManager: manageNonces ? nonceManager : undefined,
 		});
+
+		// only add to solidity steps when the transaction is NOT a no-op
+		if (!noop) {
+			runSteps.push(opts);
+		}
+
+		return { noop, ...rest };
+	};
 
 	await deployCore({
 		account,
@@ -307,6 +325,7 @@ const deploy = async ({
 	await deployFutures({
 		account,
 		addressOf,
+		getDeployParameter,
 		deployer,
 		runStep,
 		useOvm,
@@ -318,19 +337,23 @@ const deploy = async ({
 		deployer,
 	});
 
-	await importAddresses({
+	const { newContractsBeingAdded } = await importAddresses({
 		addressOf,
 		deployer,
+		dryRun,
 		limitPromise,
 		runStep,
+		useOvm,
 	});
 
 	await rebuildResolverCaches({
 		addressOf,
 		compiled,
 		deployer,
+		generateSolidity,
 		limitPromise,
 		network,
+		newContractsBeingAdded,
 		runStep,
 		useOvm,
 	});
@@ -381,6 +404,7 @@ const deploy = async ({
 		deployer,
 		methodCallGasLimit,
 		useOvm,
+		generateSolidity,
 		getDeployParameter,
 		network,
 		runStep,
@@ -399,6 +423,7 @@ const deploy = async ({
 	await takeDebtSnapshotWhenRequired({
 		debtSnapshotMaxDeviation: DEFAULTS.debtSnapshotMaxDeviation,
 		deployer,
+		generateSolidity,
 		runStep,
 		useOvm,
 	});
@@ -406,6 +431,20 @@ const deploy = async ({
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
 
 	reportDeployedContracts({ deployer });
+
+	if (generateSolidity) {
+		generateSolidityOutput({
+			addressOf,
+			deployer,
+			deployment,
+			explorerLinkPrefix,
+			network,
+			newContractsBeingAdded,
+			runSteps,
+			sourceOf,
+			useOvm,
+		});
+	}
 };
 
 module.exports = {
@@ -444,6 +483,7 @@ module.exports = {
 				'The address of the fee authority for this network (default is to use existing)'
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('--generate-solidity', 'Whether or not to output the migration as a Solidity file')
 			.option(
 				'-h, --fresh-deploy',
 				'Perform a "fresh" deploy, i.e. the first deployment on a network.'

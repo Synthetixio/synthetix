@@ -166,5 +166,8 @@
 	},
 	"FuturesMarketData": {
 		"deploy": true
+	},
+	"WETH": {
+		"deploy": true
 	}
 }

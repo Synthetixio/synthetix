@@ -22,6 +22,7 @@ module.exports = async ({ deployer, runStep, standaloneFeeds }) => {
 				expected: input => input === feed,
 				write: 'addAggregator',
 				writeArg: [toBytes32(asset), feed],
+				comment: `Ensure the ExchangeRates contract has the feed for ${asset}`,
 			});
 		}
 	}

@@ -10,6 +10,8 @@ import "./BaseDebtCache.sol";
 contract DebtCache is BaseDebtCache {
     using SafeDecimalMath for uint;
 
+    bytes32 public constant CONTRACT_NAME = "DebtCache";
+
     constructor(address _owner, address _resolver) public BaseDebtCache(_owner, _resolver) {}
 
     bytes32 internal constant EXCLUDED_DEBT_KEY = "EXCLUDED_DEBT";
@@ -112,15 +114,6 @@ contract DebtCache is BaseDebtCache {
             cachedSum = cachedSum.add(_cachedSynthDebt[FUTURES_DEBT_KEY]);
             currentSum = currentSum.add(futuresDebt);
             _cachedSynthDebt[FUTURES_DEBT_KEY] = futuresDebt;
-        }
-
-        if (recomputeExcludedDebt) {
-            (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
-            anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
-            // TODO: This feels incorrect -- the diff needs to be computed against the total cached debt, not just the delta
-            cachedSum = cachedSum.floorsub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
-            currentSum = currentSum.floorsub(excludedDebt);
-            _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
         }
 
         // Compute the difference and apply it to the snapshot

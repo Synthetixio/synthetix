@@ -243,9 +243,8 @@
 			"major": 2,
 			"minor": 46
 		},
-		"ovm": true,
-		"sources": ["Exchanger", "MintableSynthetix"],
-		"sips": [138, 139, 140]
+		"sources": ["Exchanger", "Synthetix"],
+		"sips": [138, 139, 140, 151]
 	},
 	{
 		"name": "Futures",

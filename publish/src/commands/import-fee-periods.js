@@ -57,7 +57,7 @@ const importFeePeriods = async ({
 		network,
 	});
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 		useFork,
 	});
@@ -127,13 +127,13 @@ const importFeePeriods = async ({
 		if (!skipTimeCheck) {
 			if (period.feePeriodId === '0') {
 				throw Error(
-					`Fee period at index ${i} has NOT been set. Are you sure this is the right FeePool source? ${etherscanLinkPrefix}/address/${sourceContractAddress} `
+					`Fee period at index ${i} has NOT been set. Are you sure this is the right FeePool source? ${explorerLinkPrefix}/address/${sourceContractAddress} `
 				);
 			} else if (i === 0 && period.startTime < Date.now() / 1000 - 3600 * 24 * 7) {
 				throw Error(
 					`The initial fee period is more than one week ago - this is likely an error. ` +
 						`Please check to make sure you are using the correct FeePool source (this should ` +
-						`be the one most recently replaced). Given: ${etherscanLinkPrefix}/address/${sourceContractAddress}`
+						`be the one most recently replaced). Given: ${explorerLinkPrefix}/address/${sourceContractAddress}`
 				);
 			}
 		}
@@ -163,7 +163,7 @@ const importFeePeriods = async ({
 				throw Error(
 					`The new target FeePool already has imported fee periods (one or more entries has ` +
 						`startTime as 0. Please check to make sure you are using the latest FeePool ` +
-						`(this should be the most recently deployed). Given: ${etherscanLinkPrefix}/address/${targetContractAddress}`
+						`(this should be the most recently deployed). Given: ${explorerLinkPrefix}/address/${targetContractAddress}`
 				);
 			}
 		}
@@ -221,7 +221,7 @@ const importFeePeriods = async ({
 
 		console.log(
 			green(
-				`Successfully emitted importFeePeriod with transaction: ${etherscanLinkPrefix}/tx/${transactionHash}`
+				`Successfully emitted importFeePeriod with transaction: ${explorerLinkPrefix}/tx/${transactionHash}`
 			)
 		);
 	}
