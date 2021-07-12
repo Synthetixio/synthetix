@@ -57,7 +57,7 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 	});
 
 	// TODO: Perform this programmatically per-market
-	const futuresAssets = ['BTC', 'ETH', 'LINK'];
+	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
 	const deployedFuturesMarkets = [];
 	const settings = {
 		takerFee: w3utils.toWei('0.003'),
