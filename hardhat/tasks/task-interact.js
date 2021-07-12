@@ -64,8 +64,12 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 				publicKey = getUsers({ user: 'owner' }).address;
 			}
 		}
-		if (!privateKey && process.env.PRIVATE_KEY) {
-			privateKey = process.env.PRIVATE_KEY;
+		const envPrivateKey =
+			targetNetwork === 'mainnet'
+				? process.env.DEPLOY_PRIVATE_KEY
+				: process.env.TESTNET_DEPLOY_PRIVATE_KEY;
+		if (!privateKey && envPrivateKey) {
+			privateKey = envPrivateKey;
 		}
 
 		// Determine provider url
