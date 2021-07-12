@@ -8,8 +8,7 @@ import "./MixinSystemSettings.sol";
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
-    // contract OwnerRelayOnEthereum is IOwnerRelay, MixinSystemSettings, Owned {
+contract OwnerRelayOnEthereum is IOwnerRelay, MixinSystemSettings, Owned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
