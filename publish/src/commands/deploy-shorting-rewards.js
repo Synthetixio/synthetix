@@ -253,7 +253,7 @@ const deployShortingRewards = async ({
 				...opts,
 				deployer,
 				gasPrice,
-				etherscanLinkPrefix,
+				explorerLinkPrefix,
 				ownerActions,
 				ownerActionsFile,
 				nonceManager: manageNonces ? nonceManager : undefined,
