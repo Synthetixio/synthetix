@@ -1,4 +1,5 @@
 # Starts optimism-integration L1 and L2 local chains and runs Optimism integration tests against them
+# TODO: The Optimism ops tool is currently unstable, thue the commented out code below.
 {{> job-header-machine.yml}}
 resource_class: large
 steps:
@@ -7,7 +8,7 @@ steps:
       at: .
   - restore_cache:
       keys:
-        - v3-optimism-build-{{ checksum "package-lock.json" }}
+        - v5-optimism-build-{{ checksum "package-lock.json" }}
   - run:
       name: Build docker containers if necessary
       command: |
@@ -15,13 +16,14 @@ steps:
           npx hardhat ops --fresh --build --build-ops
         fi;
   - save_cache:
-      key: v3-optimism-build-{{ checksum "package-lock.json" }}
+      key: v5-optimism-build-{{ checksum "package-lock.json" }}
       paths:
         - ./optimism
   - run:
       name: Start docker chains
       background: true
       command: |
+        docker --version
         npx hardhat ops --start
   - cmd-wait-for-port:
       port: 8545

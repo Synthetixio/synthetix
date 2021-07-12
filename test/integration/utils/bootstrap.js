@@ -6,6 +6,9 @@ const { updateExchangeRatesIfNeeded } = require('./rates');
 const { ensureBalance } = require('./balances');
 const { setupOptimismWatchers, approveBridge } = require('./optimism');
 const { startOpsHeartbeat } = require('./optimism-temp');
+const {
+	constants: { OVM_GAS_PRICE_GWEI },
+} = require('../../..');
 
 function bootstrapL1({ ctx }) {
 	before('bootstrap layer 1 instance', async () => {
@@ -15,6 +18,7 @@ function bootstrapL1({ ctx }) {
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
 		await loadUsers({ ctx });
+
 		if (ctx.fork) {
 			for (const user of Object.values(ctx.users)) {
 				await ensureBalance({ ctx, symbol: 'ETH', user, balance: ethers.utils.parseEther('50') });
@@ -46,7 +50,7 @@ function bootstrapL2({ ctx }) {
 		ctx.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
-		ctx.provider.getGasPrice = () => ethers.BigNumber.from('0');
+		ctx.provider.getGasPrice = () => ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
 
 		await loadUsers({ ctx: ctx.l1mock });
 		await loadUsers({ ctx });
@@ -82,7 +86,7 @@ function bootstrapDual({ ctx }) {
 		ctx.l2.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
 		});
-		ctx.l2.provider.getGasPrice = () => ethers.BigNumber.from('0');
+		ctx.l2.provider.getGasPrice = () => ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
 
 		await setupOptimismWatchers({ ctx, providerUrl: hre.config.providerUrl });
 
@@ -115,7 +119,7 @@ function _setupProvider({ url }) {
 	return new ethers.providers.JsonRpcProvider({
 		url,
 		pollingInterval: 50,
-		timeout: 600000,
+		timeout: 1200000, // 20 minutes
 	});
 }
 

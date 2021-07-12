@@ -125,14 +125,21 @@ class Deployer {
 	}
 
 	async sendDummyTx() {
-		await this.provider.web3.eth.sendTransaction({
+		const tx = {
 			from: this.account,
 			to: '0x0000000000000000000000000000000000000001',
 			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 			value: 0,
-			gas: 1000000,
 			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
-		});
+		};
+
+		if (this.useOvm) {
+			tx.gas = await this.provider.web3.eth.estimateGas(tx);
+		} else {
+			tx.gas = 1000000;
+		}
+
+		await this.provider.web3.eth.sendTransaction(tx);
 
 		if (this.nonceManager) {
 			this.nonceManager.incrementNonce();

@@ -35,8 +35,9 @@ async function deployInstance({
 	freshDeploy = true,
 	ignoreCustomParameters = false,
 	buildPath,
+	skipFeedChecks = true,
 }) {
-	const privateKey = getLocalPrivateKey({ index: 0 });
+	const privateKey = network === 'local' ? getLocalPrivateKey({ index: 0 }) : undefined;
 
 	await commands.deploy({
 		concurrency: 1,
@@ -52,6 +53,7 @@ async function deployInstance({
 		contractDeploymentGasLimit: useOvm ? undefined : '9500000',
 		ignoreCustomParameters,
 		buildPath,
+		skipFeedChecks,
 	});
 }
 

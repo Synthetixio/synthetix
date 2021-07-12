@@ -189,8 +189,9 @@ const deploy = async ({
 		providerUrl = envProviderUrl;
 	}
 
-	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
-	if (network !== 'local' && !privateKey) {
+	// when not in a local network, and not forking, and the privateKey isn't supplied,
+	// use the one from the .env file
+	if (network !== 'local' && !useFork && !privateKey) {
 		privateKey = envPrivateKey;
 	}
 
@@ -261,8 +262,9 @@ const deploy = async ({
 
 	const runStep = async opts => {
 		const { noop, ...rest } = await performTransactionalStepWeb3({
-			gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 			...opts,
+			// no gas limit on OVM (use system limit), otherwise use provided limit or the methodCall amount
+			gasLimit: useOvm ? undefined : opts.gasLimit || methodCallGasLimit,
 			account,
 			dryRun,
 			explorerLinkPrefix,
@@ -331,7 +333,7 @@ const deploy = async ({
 		dryRun,
 		limitPromise,
 		runStep,
-		useFork,
+		useOvm,
 	});
 
 	await rebuildResolverCaches({
