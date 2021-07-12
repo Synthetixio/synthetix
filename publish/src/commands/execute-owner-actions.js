@@ -46,21 +46,12 @@ const owner = async ({
 	useFork,
 	providerUrl,
 	isSafe,
-	isLegacy,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
-	if (isSafe && isLegacy) {
-		console.error(
-			red(
-				'Invalid kind of owner. Please select Gnosis Safe and Legacy Gnosis Multisig cannot go together.'
-			)
-		);
-		process.exit(1);
-	}
-	const signerKind = isSafe ? KIND.safe : isLegacy ? KIND.legacy : KIND.eoa;
+	const signerKind = isSafe ? KIND.safe : KIND.eoa;
 
 	if (!newOwner) {
 		newOwner = getUsers({ network, useOvm, user: 'owner' }).address;
@@ -204,7 +195,6 @@ module.exports = {
 				'The address of protocolDAO proxy contract as owner (please include the 0x prefix)'
 			)
 			.option('--is-safe', 'Wether the new owner is a gnosis safe wallet', false)
-			.option('--is-legacy', 'Wether the new owner is a gnosis legacy multisig (L2)', false)
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)

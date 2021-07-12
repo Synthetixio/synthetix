@@ -15,15 +15,7 @@ const {
 	getSafeSignature,
 } = require('./safe-utils');
 
-const {
-	getMultisigInstance,
-	getMultisigTransactionIds,
-	getMultisigTxCount,
-	checkMultisigExistingPendingTx,
-	submitMultisigTransaction,
-} = require('./multisig-utils');
-
-const KIND = { safe: 'SAFE', legacy: 'LEGACY', eoa: 'EAO' };
+const KIND = { safe: 'SAFE', eoa: 'EAO' };
 
 const getSignerData = async ({ signerKind, providerUrl, newOwner }) => {
 	const signerData = {};
@@ -44,10 +36,6 @@ const getSignerData = async ({ signerKind, providerUrl, newOwner }) => {
 		);
 	}
 
-	if (signerKind === KIND.legacy) {
-		signerData.multisigContract = getMultisigInstance({ providerUrl, newOwner });
-	}
-
 	return signerData;
 };
 
@@ -57,19 +45,6 @@ const getStagedTransactions = async ({ signerKind, signerData, network }) => {
 		stagedTransactions = await getSafeTransactions({
 			network,
 			safeAddress: signerData.protocolDaoContract.address,
-		});
-	}
-
-	if (signerKind === KIND.legacy) {
-		const lastTx = await getMultisigTxCount(signerData.multisigContract);
-
-		stagedTransactions = await getMultisigTransactionIds({
-			network,
-			multisigContract: signerData.multisigContract,
-			from: 0, // Do we need to get all from 0 or can we reduce the number?
-			to: lastTx,
-			pending: true, // Only getting pending transacions
-			executed: false,
 		});
 	}
 
@@ -90,16 +65,6 @@ const txAlreadyExists = async ({
 			encodedData,
 			currentSafeNonce: signerData.currentSafeNonce,
 		});
-	}
-
-	if (signerKind === KIND.legacy) {
-		const tx = await checkMultisigExistingPendingTx({
-			multisigContract: signerData.multisigContract,
-			stagedTransactions: signerData.stagedTransactions,
-			target,
-			encodedData,
-		});
-		return tx;
 	}
 
 	return false;
@@ -149,21 +114,6 @@ const acceptOwnershipBySigner = async ({
 
 		// track lastNonce submitted
 		signerData.lastNonce = newNonce;
-		return;
-	}
-
-	if (signerKind === KIND.legacy) {
-		const receipt = await submitMultisigTransaction({
-			multisigContract: signerData.multisigContract,
-			network,
-			wallet,
-			to,
-			value: ethers.constants.Zero,
-			data: encodedData,
-			gasPrice,
-			gasLimit,
-		});
-		logTx(receipt);
 		return;
 	}
 
