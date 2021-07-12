@@ -2,6 +2,7 @@
 
 const { gray } = require('chalk');
 const { toBytes32 } = require('../../../..');
+const w3utils = require('web3-utils');
 
 module.exports = async ({ account, addressOf, getDeployParameter, deployer, runStep, useOvm }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
@@ -41,11 +42,6 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 			writeArg: addressOf(futuresMarketManager),
 		});
 	}
-
-	const futuresMarketSettings = await deployer.deployContract({
-		name: 'FuturesMarketSettings',
-		args: [account, addressOf(ReadProxyAddressResolver)],
-	});
 
 	// This belongs in dapp-utils, but since we are only deploying futures on L2,
 	// I've colocated it here for now.

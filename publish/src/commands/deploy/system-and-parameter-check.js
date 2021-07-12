@@ -53,7 +53,7 @@ module.exports = async ({
 	let systemSuspendedReason;
 
 	// TODO(liamz): remove after FuturesMarketSettings bug is fixed.
-	freshDeploy = true
+	freshDeploy = true;
 
 	try {
 		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
