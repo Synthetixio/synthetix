@@ -12,7 +12,7 @@ contract OwnerRelayOnEthereum is IOwnerRelay, MixinSystemSettings, Owned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
-    bytes32 private constant CONTRACT_OVM_OWNER_RELAYER_ON_OPTIMISM = "ovm:OwnerRelayerOnOptimism";
+    bytes32 private constant CONTRACT_OVM_OWNER_RELAY_ON_OPTIMISM = "ovm:OwnerRelayOnOptimism";
 
     // ========== CONSTRUCTOR ==========
 
@@ -25,7 +25,7 @@ contract OwnerRelayOnEthereum is IOwnerRelay, MixinSystemSettings, Owned {
     }
 
     function ownerRelayOnOptimism() private view returns (address) {
-        return requireAndGetAddress(CONTRACT_OVM_OWNER_RELAYER_ON_OPTIMISM);
+        return requireAndGetAddress(CONTRACT_OVM_OWNER_RELAY_ON_OPTIMISM);
     }
 
     /* ========== VIEWS ========== */
@@ -34,7 +34,7 @@ contract OwnerRelayOnEthereum is IOwnerRelay, MixinSystemSettings, Owned {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
-        newAddresses[1] = CONTRACT_OVM_OWNER_RELAYER_ON_OPTIMISM;
+        newAddresses[1] = CONTRACT_OVM_OWNER_RELAY_ON_OPTIMISM;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 

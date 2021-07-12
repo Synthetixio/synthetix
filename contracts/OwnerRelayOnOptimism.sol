@@ -11,7 +11,7 @@ contract OwnerRelayOnOptimism is IOwnerRelay, MixinResolver {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
-    bytes32 private constant CONTRACT_BASE_OWNER_RELAYER_ON_ETHEREUM = "base:OwnerRelayerOnEthereum";
+    bytes32 private constant CONTRACT_BASE_OWNER_RELAY_ON_ETHEREUM = "base:OwnerRelayOnEthereum";
 
     /* ========== CONSTRUCTOR ============ */
 
@@ -26,7 +26,7 @@ contract OwnerRelayOnOptimism is IOwnerRelay, MixinResolver {
     }
 
     function ownerRelayOnEthereum() private view returns (address) {
-        return requireAndGetAddress(CONTRACT_BASE_OWNER_RELAYER_ON_ETHEREUM);
+        return requireAndGetAddress(CONTRACT_BASE_OWNER_RELAY_ON_ETHEREUM);
     }
 
     /* ========== VIEWS ========== */
@@ -34,7 +34,7 @@ contract OwnerRelayOnOptimism is IOwnerRelay, MixinResolver {
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](2);
         addresses[0] = CONTRACT_EXT_MESSENGER;
-        addresses[1] = CONTRACT_BASE_OWNER_RELAYER_ON_ETHEREUM;
+        addresses[1] = CONTRACT_BASE_OWNER_RELAY_ON_ETHEREUM;
     }
 
     /* ========== EXTERNAL ========== */
