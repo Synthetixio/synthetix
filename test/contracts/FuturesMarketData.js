@@ -62,11 +62,9 @@ contract('FuturesMarketData', accounts => {
 				toWei('0.001'), // 0.1% maker fee
 				toWei('5'), // 5x max leverage
 				toWei('1000000'), // 1000000 max total margin
-				[
-					toWei('0.2'), // 20% max funding rate
-					toWei('0.5'), // 50% max funding rate skew
-					toWei('0.025'), // 2.5% per hour max funding rate of change
-				],
+				toWei('0.2'), // 20% max funding rate
+				toWei('0.5'), // 50% max funding rate skew
+				toWei('0.025'), // 2.5% per hour max funding rate of change
 				{ from: owner }
 			);
 

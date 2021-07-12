@@ -109,7 +109,9 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         uint _makerFee,
         uint _maxLeverage,
         uint _maxMarketValue,
-        uint[3] calldata _fundingParameters
+        uint _maxFundingRate,
+        uint _maxFundingRateSkew,
+        uint _maxFundingRateDelta
     ) external onlyOwner {
         parameters[_baseAsset].takerFee = _takerFee;
         emit ParameterUpdated(_baseAsset, PARAMETER_TAKERFEE, _takerFee);
@@ -123,14 +125,14 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         parameters[_baseAsset].maxMarketValue = _maxMarketValue;
         emit ParameterUpdated(_baseAsset, PARAMETER_MAXMARKETVALUE, _maxMarketValue);
 
-        parameters[_baseAsset].maxFundingRate = _fundingParameters[0];
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATE, _fundingParameters[0]);
+        parameters[_baseAsset].maxFundingRate = _maxFundingRate;
+        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATE, _maxFundingRate);
 
-        parameters[_baseAsset].maxFundingRateSkew = _fundingParameters[1];
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATESKEW, _fundingParameters[1]);
+        parameters[_baseAsset].maxFundingRateSkew = _maxFundingRateSkew;
+        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATESKEW, _maxFundingRateSkew);
 
-        parameters[_baseAsset].maxFundingRateDelta = _fundingParameters[2];
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATEDELTA, _fundingParameters[2]);
+        parameters[_baseAsset].maxFundingRateDelta = _maxFundingRateDelta;
+        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATEDELTA, _maxFundingRateDelta);
     }
 
     /* ---------- Getters ---------- */
