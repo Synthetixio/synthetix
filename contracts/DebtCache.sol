@@ -107,6 +107,15 @@ contract DebtCache is BaseDebtCache {
             _cachedSynthDebt[key] = currentSynthDebt;
         }
 
+        // Unused code until we circle back to refactor the debt system
+        if (recomputeFuturesDebt) {
+            (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
+            anyRateIsInvalid = anyRateIsInvalid || futuresDebtIsInvalid;
+            cachedSum = cachedSum.add(_cachedSynthDebt[FUTURES_DEBT_KEY]);
+            currentSum = currentSum.add(futuresDebt);
+            _cachedSynthDebt[FUTURES_DEBT_KEY] = futuresDebt;
+        }
+
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {
             uint debt = _cachedDebt;
@@ -114,16 +123,6 @@ contract DebtCache is BaseDebtCache {
             // debt snapshots.
             require(cachedSum <= debt, "Cached synth sum exceeds total debt");
             debt = debt.sub(cachedSum).add(currentSum);
-
-            // TODO: is this the right place to relocate this, @Anton?
-            // Unused code until we circle back to refactor the debt system
-            if (recomputeFuturesDebt) {
-                (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
-                anyRateIsInvalid = anyRateIsInvalid || futuresDebtIsInvalid;
-                cachedSum = cachedSum.add(_cachedSynthDebt[FUTURES_DEBT_KEY]);
-                currentSum = currentSum.add(futuresDebt);
-                _cachedSynthDebt[FUTURES_DEBT_KEY] = futuresDebt;
-            }
 
             // As of SIPS 136 and 150, this excluded debt section is unused.
             // All callers of this function pass in false for `recomputeExcludedDebt`
