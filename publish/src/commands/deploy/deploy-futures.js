@@ -1,8 +1,8 @@
 'use strict';
 
 const { gray } = require('chalk');
-const w3utils = require('web3-utils');
 const { toBytes32 } = require('../../../..');
+const w3utils = require('web3-utils');
 
 module.exports = async ({ account, addressOf, getDeployParameter, deployer, runStep, useOvm }) => {
 	const { ReadProxyAddressResolver } = deployer.deployedContracts;
@@ -43,11 +43,6 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 		});
 	}
 
-	const futuresMarketSettings = await deployer.deployContract({
-		name: 'FuturesMarketSettings',
-		args: [account, addressOf(ReadProxyAddressResolver)],
-	});
-
 	// This belongs in dapp-utils, but since we are only deploying futures on L2,
 	// I've colocated it here for now.
 	await deployer.deployContract({
@@ -56,7 +51,38 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 		deps: ['AddressResolver'],
 	});
 
-	// TODO: Perform this programmatically per-market
+	// NOTE: Disabled until we figure out an issue with the bytecode of this contract being unsafe.
+	//
+	const futuresMarketSettings = await deployer.deployContract({
+		name: 'FuturesMarketSettings',
+		args: [account, addressOf(ReadProxyAddressResolver)],
+	});
+
+	// FuturesMarketSettings will be deployed manually using Remix.
+	// The args for deployment are logged below.
+	// console.log([account, addressOf(ReadProxyAddressResolver)])
+
+	// Import the FuturesMarketSettings contract into the AddressResolver.
+	// if(0) {
+	// 	const importArgs = [
+	// 		[toBytes32('FuturesMarketSettings')],
+	// 		// [deployer.deployment.targets['FuturesMarketSettings'].address],
+	// 		['0x'+'1'.repeat(40)]
+	// 	];
+	// 	await runStep({
+	// 		gasLimit: 6e6, // higher gas required for mainnet
+	// 		contract: `AddressResolver`,
+	// 		target: AddressResolver,
+	// 		read: 'areAddressesImported',
+	// 		readArg: importArgs,
+	// 		expected: input => input,
+	// 		write: 'importAddresses',
+	// 		writeArg: importArgs,
+	// 	});
+	// } else {
+
+	// }
+
 	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
 	const deployedFuturesMarkets = [];
 	const settings = {

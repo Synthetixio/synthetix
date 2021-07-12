@@ -41,6 +41,7 @@ const rebuildResolverCaches = require('./rebuild-resolver-caches');
 const configureLegacySettings = require('./configure-legacy-settings');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
+const configureFutures = require('./configure-futures');
 const addSynthsToProtocol = require('./add-synths-to-protocol');
 const configureInverseSynths = require('./configure-inverse-synths');
 const configureSystemSettings = require('./configure-system-settings');
@@ -355,6 +356,14 @@ const deploy = async ({
 		network,
 		newContractsBeingAdded,
 		runStep,
+		useOvm,
+	});
+
+	await configureFutures({
+		addressOf,
+		deployer,
+		runStep,
+		getDeployParameter,
 		useOvm,
 	});
 

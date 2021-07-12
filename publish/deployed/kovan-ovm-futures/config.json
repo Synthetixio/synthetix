@@ -2,19 +2,19 @@
 	"SystemSettings": {
 		"deploy": false
 	},
-	"SynthetixBridgeToBase": {
-		"deploy": false
-	},
 	"AddressResolver": {
 		"deploy": false
 	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
-	"TradingRewards": {
+	"DebtCache": {
 		"deploy": false
 	},
-	"DebtCache": {
+	"Depot": {
+		"deploy": false
+	},
+	"TradingRewards": {
 		"deploy": false
 	},
 	"EscrowChecker": {
@@ -71,6 +71,9 @@
 	"RewardEscrow": {
 		"deploy": false
 	},
+	"RewardEscrowV2": {
+		"deploy": false
+	},
 	"RewardsDistribution": {
 		"deploy": false
 	},
@@ -116,12 +119,6 @@
 	"TokenStatesUSD": {
 		"deploy": false
 	},
-	"CollateralManager": {
-		"deploy": false
-	},
-	"RewardEscrowV2": {
-		"deploy": false
-	},
 	"TokenStatesETH": {
 		"deploy": false
 	},
@@ -131,40 +128,46 @@
 	"SynthsETH": {
 		"deploy": false
 	},
-	"TokenStatesBTC": {
+	"SynthetixBridgeToBase": {
 		"deploy": false
 	},
-	"ProxysBTC": {
+	"CollateralManager": {
 		"deploy": false
 	},
-	"SynthsBTC": {
+	"EtherWrapper": {
 		"deploy": false
 	},
-	"TokenStatesLINK": {
+	"ProxyFuturesMarketBTC": {
 		"deploy": false
 	},
-	"ProxysLINK": {
+	"FuturesMarketBTC": {
 		"deploy": false
 	},
-	"SynthsLINK": {
+	"ProxyFuturesMarketETH": {
 		"deploy": false
 	},
-	"TokenStatesUNI": {
+	"FuturesMarketETH": {
 		"deploy": false
 	},
-	"ProxysUNI": {
+	"ProxyFuturesMarketLINK": {
 		"deploy": false
 	},
-	"SynthsUNI": {
+	"FuturesMarketLINK": {
 		"deploy": false
 	},
-	"TokenStatesAAVE": {
+	"ProxyFuturesMarketManager": {
 		"deploy": false
 	},
-	"ProxysAAVE": {
+	"FuturesMarketManager": {
 		"deploy": false
 	},
-	"SynthsAAVE": {
+	"FuturesMarketSettings": {
 		"deploy": false
+	},
+	"FuturesMarketData": {
+		"deploy": false
+	},
+	"WETH": {
+		"deploy": true
 	}
 }

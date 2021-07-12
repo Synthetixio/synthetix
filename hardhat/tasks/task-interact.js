@@ -441,6 +441,10 @@ const DEFAULTS = {
 		providerUrl: 'https://kovan.optimism.io',
 		gasPrice: 0,
 	},
+	'kovan-ovm-futures': {
+		providerUrl: 'https://kovan.optimism.io',
+		gasPrice: undefined,
+	},
 	local: {
 		gasPrice: 1,
 		providerUrl: 'http://localhost:9545',
