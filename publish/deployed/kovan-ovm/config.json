@@ -1,6 +1,6 @@
 {
 	"SystemSettings": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixBridgeToBase": {
 		"deploy": false
@@ -24,7 +24,7 @@
 		"deploy": false
 	},
 	"Exchanger": {
-		"deploy": true
+		"deploy": false
 	},
 	"ExchangeState": {
 		"deploy": false
@@ -63,7 +63,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": true
+		"deploy": false
 	},
 	"SynthetixEscrow": {
 		"deploy": false
@@ -166,38 +166,5 @@
 	},
 	"SynthsAAVE": {
 		"deploy": false
-	},
-	"EtherWrapper": {
-		"deploy": false
-	},
-	"ProxyFuturesMarketBTC": {
-		"deploy": true
-	},
-	"FuturesMarketBTC": {
-		"deploy": true
-	},
-	"ProxyFuturesMarketETH": {
-		"deploy": true
-	},
-	"FuturesMarketETH": {
-		"deploy": true
-	},
-	"ProxyFuturesMarketLINK": {
-		"deploy": true
-	},
-	"FuturesMarketLINK": {
-		"deploy": true
-	},
-	"ProxyFuturesMarketManager": {
-		"deploy": true
-	},
-	"FuturesMarketManager": {
-		"deploy": true
-	},
-	"FuturesMarketData": {
-		"deploy": true
-	},
-	"FuturesMarketSettings": {
-		"deploy": true
 	}
 }
