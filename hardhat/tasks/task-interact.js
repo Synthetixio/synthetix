@@ -64,8 +64,12 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 				publicKey = getUsers({ user: 'owner' }).address;
 			}
 		}
-		if (!privateKey && process.env.PRIVATE_KEY) {
-			privateKey = process.env.PRIVATE_KEY;
+		if (!privateKey) {
+			if (targetNetwork.includes('mainnet')) {
+				privateKey = process.env.DEPLOY_PRIVATE_KEY;
+			} else {
+				privateKey = process.env.TESTNET_DEPLOY_PRIVATE_KEY;
+			}
 		}
 
 		// Determine provider url
@@ -351,7 +355,6 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 					const txPromise = contract[abiItemName](...inputs, overrides);
 					result = await _sendTx({
 						txPromise,
-						provider,
 					});
 
 					if (result.success) {
