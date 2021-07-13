@@ -218,6 +218,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough synth balance");
     }
 
+    // Check the borrower has enough collateral to make the payment.
+    function _checkLoanPayableWithCollateral(
+        Loan memory _loan,
+        address payer,
+        uint amount
+    ) internal view {
+        require(_loan.account == payer, "Must be the borrower to repay with collateral");
+        require(_loan.collateral >= amount, "Not enough collateral");
+    }
+
     // We set the interest index to 0 to indicate the loan has been closed.
     function _checkLoanAvailable(Loan memory _loan) internal view {
         require(_loan.interestIndex > 0, "Loan does not exist");
@@ -591,8 +601,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address borrower,
         address repayer,
         uint id,
-        uint payment,
-        bool useCollateral
+        uint payment
     ) internal rateIsValid {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
@@ -610,16 +619,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loan = accrueInterest(loan);
 
         // 5. Check the repayer has enough synths or collateral to make the repayment.
-        if (useCollateral) {
-            require(repayer == borrower, "Repayer must be the borrower to repay with collateral");
-            require(loan.collateral >= payment, "Not enough collateral");
-        } else {
-            _checkSynthBalance(repayer, loan.currency, payment);
-        }
-
-        // TODO: Charge the exchange fee for sUSD -> borrowed synth + a configurable service fee (default 15 bps).
-
-        // TODO: Burn the collateral and reduce the borrowed synth units by the amount repaid (minus the exchange fees).
+        _checkSynthBalance(repayer, loan.currency, payment);
 
         // 6. Process the payment.
         loan = _processPayment(loan, payment);
@@ -636,6 +636,47 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 10. Emit the event.
         emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
+    }
+
+    function repayWithCollateralInternal(
+        address borrower,
+        address repayer,
+        uint id,
+        uint payment
+    ) internal rateIsValid {
+        // 0. Check the system is active.
+        _systemStatus().requireIssuanceActive();
+
+        // 1. Check the payment amount.
+        require(payment > 0, "Payment must be greater than 0");
+
+        // 2. Get loan
+        Loan memory loan = state.getLoan(borrower, id);
+
+        // 3. Check loan is open and last interaction time.
+        _checkLoanAvailable(loan);
+
+        // 4. Accrue interest.
+        loan = accrueInterest(loan);
+
+        // 5. Check the borrower has enough collateral to repay.
+        _checkLoanPayableWithCollateral(loan, repayer, payment);
+
+        // 6. Process the payment.
+        loan = _processPayment(loan, payment);
+
+        // 7. Update the last interaction time.
+        loan.lastInteraction = block.timestamp;
+
+        // TODO: 8. Charge the exchange fee for sUSD -> borrowed synth + a configurable service fee (default 15 bps).
+
+        // TODO: 9. Burn the collateral and reduce the borrowed synth units by the amount repaid (minus the exchange fees).
+
+        // // 10. Store the loan
+        // state.updateLoan(loan);
+
+        // // 11. Emit the event.
+        // emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
     }
 
     function drawInternal(uint id, uint amount) internal rateIsValid {

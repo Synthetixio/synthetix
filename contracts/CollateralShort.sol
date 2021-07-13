@@ -58,13 +58,12 @@ contract CollateralShort is Collateral {
         IERC20(address(_synthsUSD())).transfer(msg.sender, withdrawnAmount);
     }
 
-    function repay(
+    function repayWithCollateral(
         address borrower,
         uint id,
-        uint amount,
-        bool useCollateral
+        uint amount
     ) external {
-        repayInternal(borrower, msg.sender, id, amount, useCollateral);
+        repayWithCollateralInternal(borrower, msg.sender, id, amount);
     }
 
     function draw(uint id, uint amount) external {
