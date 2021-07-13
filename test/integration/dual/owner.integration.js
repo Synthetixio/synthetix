@@ -72,6 +72,10 @@ describe.only('owner relay integration tests (L1, L2)', () => {
 		describe('when changing an L2 system setting with an L1 tx', () => {
 			let minimumStakeTime;
 
+			before('store minimumStakeTime', async () => {
+				minimumStakeTime = await SystemSettingsL2.minimumStakeTime();
+			});
+
 			before('relay setMinimumStakeTime via the bridge', async () => {
 				OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(ownerL1);
 
@@ -79,10 +83,6 @@ describe.only('owner relay integration tests (L1, L2)', () => {
 
 				const tx = await OwnerRelayOnEthereum.relay(SystemSettingsL2.address, calldata);
 				relayReceipt = await tx.wait();
-			});
-
-			before('store minimumStakeTime', async () => {
-				minimumStakeTime = await SystemSettingsL2.minimumStakeTime();
 			});
 
 			before('wait for the relay to finalize on L2', async () => {
