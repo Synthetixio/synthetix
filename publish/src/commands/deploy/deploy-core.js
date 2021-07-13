@@ -241,4 +241,18 @@ module.exports = async ({
 		deps: ['AddressResolver'],
 		args: [account],
 	});
+
+	if (useOvm) {
+		await deployer.deployContract({
+			name: 'OwnerRelayOnOptimism',
+			deps: ['AddressResolver'],
+			args: [addressOf(readProxyForResolver)],
+		});
+	} else {
+		await deployer.deployContract({
+			name: 'OwnerRelayOnEthereum',
+			deps: ['AddressResolver'],
+			args: [addressOf(readProxyForResolver)],
+		});
+	}
 };

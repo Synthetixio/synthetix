@@ -793,5 +793,8 @@
 	},
 	"NativeEtherWrapper": {
 		"deploy": false
+	},
+	"OwnerRelayOnEthereum": {
+		"deploy": true
 	}
 }

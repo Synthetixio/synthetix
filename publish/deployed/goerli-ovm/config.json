@@ -115,5 +115,8 @@
 	},
 	"TokenStatesUSD": {
 		"deploy": false
+	},
+	"OwnerRelayOnOptimism": {
+		"deploy": true
 	}
 }

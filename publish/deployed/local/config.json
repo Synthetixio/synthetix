@@ -463,5 +463,8 @@
 	},
 	"WETH": {
 		"deploy": true
+	},
+	"OwnerRelayOnEthereum": {
+		"deploy": true
 	}
 }

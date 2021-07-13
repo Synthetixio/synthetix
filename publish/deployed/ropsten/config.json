@@ -493,5 +493,8 @@
 	},
 	"TradingRewards": {
 		"deploy": false
+	},
+	"OwnerRelayOnEthereum": {
+		"deploy": true
 	}
 }
