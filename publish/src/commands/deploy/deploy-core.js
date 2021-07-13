@@ -252,7 +252,7 @@ module.exports = async ({
 		await deployer.deployContract({
 			name: 'OwnerRelayOnEthereum',
 			deps: ['AddressResolver'],
-			args: [addressOf(readProxyForResolver)],
+			args: [account, addressOf(readProxyForResolver)],
 		});
 	}
 };

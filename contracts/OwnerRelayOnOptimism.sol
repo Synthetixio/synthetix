@@ -15,9 +15,7 @@ contract OwnerRelayOnOptimism is IOwnerRelay, MixinResolver {
 
     /* ========== CONSTRUCTOR ============ */
 
-    constructor(address _resolver) internal {
-        resolver = AddressResolver(_resolver);
-    }
+    constructor(address _resolver) public MixinResolver(_resolver) {}
 
     /* ========== INTERNALS ============ */
 
