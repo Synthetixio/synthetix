@@ -89,6 +89,10 @@ describe.only('owner relay integration tests (L1, L2)', () => {
 				await finalizationOnL2({ ctx, transactionHash: relayReceipt.transactionHash });
 			});
 
+			it('shows that the minimum stake time is now zero', async () => {
+				assert.equal((await SystemSettingsL2.minimumStakeTime()).toString(), '0');
+			});
+
 			after('restore minimumStakeTime', async () => {
 				OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(ownerL1);
 
@@ -100,8 +104,19 @@ describe.only('owner relay integration tests (L1, L2)', () => {
 				await finalizationOnL2({ ctx, transactionHash: relayReceipt.transactionHash });
 			});
 
-			it('shows that the minimum stake time is now zero', async () => {
-				assert.equal((await SystemSettingsL2.minimumStakeTime()).toString(), '0');
+			after('restore ownership to the EOA', async () => {
+				OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(ownerL1);
+
+				const calldata = SystemSettingsL2.interface.encodeFunctionData('nominateNewOwner', [ownerL2.address]);
+
+				let tx = await OwnerRelayOnEthereum.relay(SystemSettingsL2.address, calldata);
+				relayReceipt = await tx.wait();
+
+				await finalizationOnL2({ ctx, transactionHash: relayReceipt.transactionHash });
+
+				SystemSettingsL2 = SystemSettingsL2.connect(ownerL2);
+				tx = await SystemSettingsL2.acceptOwnership();
+				await tx.wait();
 			});
 		});
 	});
