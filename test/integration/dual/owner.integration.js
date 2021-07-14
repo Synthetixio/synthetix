@@ -25,7 +25,7 @@ describe.only('owner relay integration tests (L1, L2)', () => {
 			}
 		});
 
-		it('shows that the current owner of SystemSettings is the deployer', async () => {
+		it('shows that the current owner of SystemSettings is the EOA', async () => {
 			assert.equal(await SystemSettingsL2.owner(), ownerL2.address);
 		});
 
@@ -44,7 +44,7 @@ describe.only('owner relay integration tests (L1, L2)', () => {
 			describe('when the L2 relay accepts ownership via an L1 tx', () => {
 				let relayReceipt;
 
-				before('relay accept ownership via the bridge', async () => {
+				before('relay acceptOwnership() via the bridge', async () => {
 					OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(ownerL1);
 
 					const calldata = SystemSettingsL2.interface.encodeFunctionData('acceptOwnership', []);
@@ -65,21 +65,28 @@ describe.only('owner relay integration tests (L1, L2)', () => {
 	});
 
 	describe('when SystemSettings on L2 is owned by the relay', () => {
+		before('check ownership', async function () {
+			if (await SystemSettingsL2.owner() !== OwnerRelayOnOptimism.address) {
+				this.skip();
+			}
+		});
+
 		it('shows that the current owner of SystemSettings is the L2 relay', async () => {
 			assert.equal(await SystemSettingsL2.owner(), OwnerRelayOnOptimism.address);
 		});
 
 		describe('when changing an L2 system setting with an L1 tx', () => {
-			let minimumStakeTime;
+			let originalMinimumStakeTime;
+			const newMinimumStakeTime = '42';
 
 			before('store minimumStakeTime', async () => {
-				minimumStakeTime = await SystemSettingsL2.minimumStakeTime();
+				originalMinimumStakeTime = await SystemSettingsL2.minimumStakeTime();
 			});
 
 			before('relay setMinimumStakeTime via the bridge', async () => {
 				OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(ownerL1);
 
-				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [0]);
+				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [newMinimumStakeTime]);
 
 				const tx = await OwnerRelayOnEthereum.relay(SystemSettingsL2.address, calldata);
 				relayReceipt = await tx.wait();
@@ -89,34 +96,47 @@ describe.only('owner relay integration tests (L1, L2)', () => {
 				await finalizationOnL2({ ctx, transactionHash: relayReceipt.transactionHash });
 			});
 
-			it('shows that the minimum stake time is now zero', async () => {
-				assert.equal((await SystemSettingsL2.minimumStakeTime()).toString(), '0');
+			it(`shows that the minimum stake time is now ${newMinimumStakeTime}`, async () => {
+				assert.equal((await SystemSettingsL2.minimumStakeTime()).toString(), newMinimumStakeTime);
 			});
 
 			after('restore minimumStakeTime', async () => {
 				OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(ownerL1);
 
-				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [minimumStakeTime]);
+				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [originalMinimumStakeTime]);
 
 				const tx = await OwnerRelayOnEthereum.relay(SystemSettingsL2.address, calldata);
 				relayReceipt = await tx.wait();
 
 				await finalizationOnL2({ ctx, transactionHash: relayReceipt.transactionHash });
-			});
 
-			after('restore ownership to the EOA', async () => {
+				assert.bnEqual(await SystemSettingsL2.minimumStakeTime(), originalMinimumStakeTime);
+			});
+		});
+
+		describe('when the relay relinquishes ownership back to an EOA on L1', () => {
+			before('relay a tx to nominateNewOwner() from L1', async () => {
 				OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(ownerL1);
 
 				const calldata = SystemSettingsL2.interface.encodeFunctionData('nominateNewOwner', [ownerL2.address]);
 
-				let tx = await OwnerRelayOnEthereum.relay(SystemSettingsL2.address, calldata);
+				const tx = await OwnerRelayOnEthereum.relay(SystemSettingsL2.address, calldata);
 				relayReceipt = await tx.wait();
+			});
 
+			before('wait for the relay to finalize on L2', async () => {
 				await finalizationOnL2({ ctx, transactionHash: relayReceipt.transactionHash });
+			});
 
+			before('call acceptOwnership() directly on L2 with the EOA', async () => {
 				SystemSettingsL2 = SystemSettingsL2.connect(ownerL2);
-				tx = await SystemSettingsL2.acceptOwnership();
+
+				const tx = await SystemSettingsL2.acceptOwnership();
 				await tx.wait();
+			});
+
+			it('shows that the current owner of SystemSettings is the EOA', async () => {
+				assert.equal(await SystemSettingsL2.owner(), ownerL2.address);
 			});
 		});
 	});
