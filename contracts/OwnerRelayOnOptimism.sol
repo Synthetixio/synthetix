@@ -19,7 +19,7 @@ contract OwnerRelayOnOptimism is IOwnerRelay, MixinResolver {
 
     /* ========== INTERNALS ============ */
 
-    function messenger() internal view returns (iAbs_BaseCrossDomainMessenger) {
+    function messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
         return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
