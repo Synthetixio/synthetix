@@ -90,17 +90,14 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     }
 
     function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) external onlyOwner {
-        IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
     }
 
     function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) external onlyOwner {
-        IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW, _maxFundingRateSkew);
     }
 
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) external onlyOwner {
-        IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA, _maxFundingRateDelta);
     }
 

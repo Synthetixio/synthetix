@@ -20,45 +20,6 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
 	const currencyKeys = futuresAssets.map(asset => toBytes32(`s${asset}`));
 
-	//
-	// Update ExchangeRates for assets.
-	//
-
-	const { timestamp } = await deployer.provider.ethers.provider.getBlock();
-	const rates = currencyKeys.map(key => {
-		return parseEther('1').toString();
-	});
-
-	console.log(
-		gray(
-			`Updating ExchangeRates for futures assets: ` +
-				futuresAssets.map(asset => `s${asset}`).join(', ')
-		)
-	);
-
-	for (const key of currencyKeys) {
-		await runStep({
-			contract: 'ExchangeRates',
-			target: exchangeRates,
-			// read: `rateAndInvalid`,
-			// readArg: key,
-			// expected: (rate, invalid) => !invalid,
-			write: `updateRates`,
-			writeArg: [[key], [rates[0]], '' + timestamp],
-		});
-	}
-
-	// TODO: this failed. It appears it cannot handle the nested subarray.
-	// await runStep({
-	//     contract: 'ExchangeRates',
-	//     target: exchangeRates,
-	//     read: `ratesAndInvalidForCurrencies`,
-	//     readArg: [[currencyKeys]],
-	//     expected: (rates, anyRateIsInvalid) => !anyRateIsInvalid,
-	//     write: `updateRates`,
-	//     writeArg: [writeArg]
-	// });
-
 	for (const asset of futuresAssets) {
 		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
 
