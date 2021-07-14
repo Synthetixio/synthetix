@@ -29,9 +29,12 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 		return parseEther('1').toString();
 	});
 
-	console.log(gray(`Updating ExchangeRates for futures assets: ` + currencyKeys.join(', ')));
-	const writeArg = [currencyKeys, rates, '' + timestamp];
-	console.log(writeArg);
+	console.log(
+		gray(
+			`Updating ExchangeRates for futures assets: ` +
+				futuresAssets.map(asset => `s${asset}`).join(', ')
+		)
+	);
 
 	for (const key of currencyKeys) {
 		await runStep({
