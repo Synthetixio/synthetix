@@ -1,6 +1,0 @@
-{
-	"SNX": { "asset": "SNX", "feed": "0x0" },
-	"ETH": { "asset": "ETH", "feed": "0x0" },
-	"BTC": { "asset": "BTC", "feed": "0x0" },
-	"LINK": { "asset": "LINK", "feed": "0x0" }
-}

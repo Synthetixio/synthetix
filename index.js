@@ -14,7 +14,6 @@ const data = {
 	'local-ovm': require('./publish/deployed/local-ovm'),
 	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
-	'kovan-ovm-futures': require('./publish/deployed/kovan-ovm-futures'),
 };
 
 const assets = require('./publish/assets.json');
@@ -22,7 +21,7 @@ const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli', 'kovan-ovm-futures'];
+const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -162,7 +161,6 @@ const defaults = {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
 		rinkeby: '0xEDC0C23864B041607D624E2d9a67916B6cf40F7a',
-		'kovan-ovm-futures': constants.ZERO_ADDRESS,
 	},
 	WETH_ERC20_ADDRESSES: {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
@@ -172,7 +170,6 @@ const defaults = {
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'kovan-ovm': '0x4200000000000000000000000000000000000006',
-		'kovan-ovm-futures': '0x4200000000000000000000000000000000000006',
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
