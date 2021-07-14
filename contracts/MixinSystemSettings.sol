@@ -33,15 +33,6 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_FUTURES_LIQUIDATION_FEE = "futuresLiquidationFee";
     bytes32 internal constant SETTING_FUTURES_MIN_INITIAL_MARGIN = "futuresMinInitialMargin";
 
-    bytes32 internal constant SETTINGS_FUTURES_KEY = "futures";
-    bytes32 internal constant SETTINGS_FUTURES_TAKER_FEE = "takerFee";
-    bytes32 internal constant SETTINGS_FUTURES_MAKER_FEE = "makerFee";
-    bytes32 internal constant SETTINGS_FUTURES_MAX_LEVERAGE = "maxLeverage";
-    bytes32 internal constant SETTINGS_FUTURES_MAX_MARKET_VALUE = "maxMarketValue";
-    bytes32 internal constant SETTINGS_FUTURES_MAX_FUNDING_RATE = "maxFundingRate";
-    bytes32 internal constant SETTINGS_FUTURES_MAX_FUNDING_RATE_SKEW = "maxFundingRateSkew";
-    bytes32 internal constant SETTINGS_FUTURES_MAX_FUNDING_RATE_DELTA = "maxFundingRateDelta";
-
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     enum CrossDomainMessageGasLimits {Deposit, Escrow, Reward, Withdrawal}
@@ -156,61 +147,5 @@ contract MixinSystemSettings is MixinResolver {
 
     function getFuturesMinInitialMargin() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_MIN_INITIAL_MARGIN);
-    }
-
-    function getFuturesTakerFee(bytes32 _baseAsset) external view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_TAKER_FEE))
-            );
-    }
-
-    function getFuturesMakerFee(bytes32 _baseAsset) external view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAKER_FEE))
-            );
-    }
-
-    function getFuturesMaxLeverage(bytes32 _baseAsset) external view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_LEVERAGE))
-            );
-    }
-
-    function getFuturesMaxMarketValue(bytes32 _baseAsset) external view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_MARKET_VALUE))
-            );
-    }
-
-    function getFuturesMaxFundingRate(bytes32 _baseAsset) external view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_FUNDING_RATE))
-            );
-    }
-
-    function getFuturesMaxFundingRateSkew(bytes32 _baseAsset) external view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_FUNDING_RATE_SKEW))
-            );
-    }
-
-    function getFuturesMaxFundingRateDelta(bytes32 _baseAsset) external view returns (uint) {
-        return
-            flexibleStorage().getUIntValue(
-                SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_FUNDING_RATE_DELTA))
-            );
     }
 }

@@ -4,11 +4,20 @@ pragma experimental ABIEncoderV2;
 // Internal references
 import "./FuturesMarket.sol";
 import "./FuturesMarketManager.sol";
+import "./FuturesMarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
-import "./SystemSettings.sol";
 
 contract FuturesMarketData {
     /* ========== TYPES ========== */
+    struct Parameters {
+        uint takerFee;
+        uint makerFee;
+        uint maxLeverage;
+        uint maxMarketValue;
+        uint maxFundingRate;
+        uint maxFundingRateSkew;
+        uint maxFundingRateDelta;
+    }
 
     struct MarketSummary {
         address market;
@@ -102,24 +111,25 @@ contract FuturesMarketData {
             );
     }
 
-    function systemSettings() internal view returns (SystemSettings) {
+    function _futuresMarketSettings() internal view returns (FuturesMarketSettings) {
         return
-            SystemSettings(
-                resolverProxy.requireAndGetAddress("SystemSettings", "Missing SystemSettings Address")
+            FuturesMarketSettings(
+                resolverProxy.requireAndGetAddress("FuturesMarketSettings", "Missing FuturesMarketSettings Address")
             );
     }
 
-    function _getParameters(bytes32 _baseAsset) internal view returns (FuturesMarketSettings.Parameters memory) {
-        uint takerFee = systemSettings().futuresTakerFee(_baseAsset);
-        uint makerFee = systemSettings().futuresMakerFee(_baseAsset);
-        uint maxLeverage = systemSettings().futuresMaxLeverage(_baseAsset);
-        uint maxMarketValue = systemSettings().futuresMaxMarketValue(_baseAsset);
-        uint maxFundingRate = systemSettings().futuresMaxFundingRate(_baseAsset);
-        uint maxFundingRateSkew = systemSettings().futuresMaxFundingRateSkew(_baseAsset);
-        uint maxFundingRateDelta = systemSettings().futuresMaxFundingRateDelta(_baseAsset);
-        
+    function _getParameters(bytes32 baseAsset) internal view returns (Parameters memory) {
+        (
+            uint takerFee,
+            uint makerFee,
+            uint maxLeverage,
+            uint maxMarketValue,
+            uint maxFundingRate,
+            uint maxFundingRateSkew,
+            uint maxFundingRateDelta
+        ) = _futuresMarketSettings().getAllParameters(baseAsset);
         return
-            FuturesMarketSettings.Parameters(
+            Parameters(
                 takerFee,
                 makerFee,
                 maxLeverage,
@@ -136,12 +146,7 @@ contract FuturesMarketData {
         for (uint i; i < numMarkets; i++) {
             FuturesMarket market = FuturesMarket(markets[i]);
 
-            bytes32 baseAsset = market.baseAsset();
-            // FuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
-            uint takerFee = systemSettings().getFuturesTakerFee(baseAsset);
-            uint makerFee = systemSettings().getFuturesMakerFee(baseAsset);
-            uint maxLeverage = systemSettings().getFuturesMaxLeverage(baseAsset);
-
+            Parameters memory parameters = _getParameters(market.baseAsset());
             (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
 
@@ -173,11 +178,7 @@ contract FuturesMarketData {
         return _marketSummaries(_futuresMarketManager().allMarkets());
     }
 
-    function _fundingParameters(FuturesMarketSettings.Parameters memory parameters)
-        internal
-        pure
-        returns (FundingParameters memory)
-    {
+    function _fundingParameters(Parameters memory parameters) internal pure returns (FundingParameters memory) {
         return FundingParameters(parameters.maxFundingRate, parameters.maxFundingRateSkew, parameters.maxFundingRateDelta);
     }
 
@@ -190,7 +191,7 @@ contract FuturesMarketData {
         (uint price, bool invalid) = market.assetPrice();
         (uint marketDebt, ) = market.marketDebt();
 
-        FuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
+        Parameters memory parameters = _getParameters(market.baseAsset());
 
         return
             MarketData(
