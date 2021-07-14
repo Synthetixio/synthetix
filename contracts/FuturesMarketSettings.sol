@@ -50,11 +50,7 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
     }
 
-    // function flexibleStorage() internal view returns (IFlexibleStorage) {
-    //     return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
-    // }
-
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    /* ========== INTERNAL FUNCTIONS ========== */
 
     function _setParameter(
         bytes32 _baseAsset,
@@ -68,6 +64,8 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
     function _getParameter(bytes32 _baseAsset, bytes32 key) internal view returns (uint value) {
         value = flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)));
     }
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Setters ---------- */
 
