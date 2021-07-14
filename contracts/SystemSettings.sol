@@ -5,6 +5,7 @@ import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
 import "./interfaces/ISystemSettings.sol";
+import "./interfaces/IFuturesMarketManager.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -46,7 +47,21 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     uint public constant MAX_ETHER_WRAPPER_MINT_FEE_RATE = 1e18;
     uint public constant MAX_ETHER_WRAPPER_BURN_FEE_RATE = 1e18;
 
+    /* ---------- Address Resolver Configuration ---------- */
+    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
+
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_FUTURESMARKETMANAGER;
+        addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+    }
 
     // ========== VIEWS ==========
 
@@ -157,6 +172,34 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     // The fee for burning sETH and releasing ETH from the EtherWrapper.
     function etherWrapperBurnFeeRate() external view returns (uint) {
         return getEtherWrapperBurnFeeRate();
+    }
+
+    function futuresTakerFee(bytes32 _baseAsset) external view returns (uint) {
+        return getFuturesTakerFee(_baseAsset);
+    }
+
+    function futuresMakerFee(bytes32 _baseAsset) external view returns (uint) {
+        return getFuturesMakerFee(_baseAsset);
+    }
+
+    function futuresMaxLeverage(bytes32 _baseAsset) external view returns (uint) {
+        return getFuturesMaxLeverage(_baseAsset);
+    }
+
+    function futuresMaxMarketValue(bytes32 _baseAsset) external view returns (uint) {
+        return getFuturesMaxMarketValue(_baseAsset);
+    }
+
+    function futuresMaxFundingRate(bytes32 _baseAsset) external view returns (uint) {
+        return getFuturesMaxFundingRate(_baseAsset);
+    }
+
+    function futuresMaxFundingRateSkew(bytes32 _baseAsset) external view returns (uint) {
+        return getFuturesMaxFundingRateSkew(_baseAsset);
+    }
+
+    function futuresMaxFundingRateDelta(bytes32 _baseAsset) external view returns (uint) {
+        return getFuturesMaxFundingRateDelta(_baseAsset);
     }
 
     // ========== RESTRICTED ==========
@@ -325,6 +368,74 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
+    function setFuturesTakerFee(bytes32 _baseAsset, uint _takerFee) external onlyOwner {
+        require(_takerFee <= 1 ether, "taker fee greater than 1");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_TAKER_FEE)),
+            _takerFee
+        );
+        emit FuturesTakerFeeUpdated(_baseAsset, _takerFee);
+    }
+
+    function setFuturesMakerFee(bytes32 _baseAsset, uint _makerFee) external onlyOwner {
+        require(_makerFee <= 1 ether, "maker fee greater than 1");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAKER_FEE)),
+            _makerFee
+        );
+        emit FuturesMakerFeeUpdated(_baseAsset, _makerFee);
+    }
+
+    function setFuturesMaxLeverage(bytes32 _baseAsset, uint _maxLeverage) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_LEVERAGE)),
+            _maxLeverage
+        );
+        emit FuturesMaxLeverageUpdated(_baseAsset, _maxLeverage);
+    }
+
+    function setFuturesMaxMarketValue(bytes32 _baseAsset, uint _maxMarketValue) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_MARKET_VALUE)),
+            _maxMarketValue
+        );
+        emit FuturesMaxMarketValueUpdated(_baseAsset, _maxMarketValue);
+    }
+
+    function setFuturesMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) external onlyOwner {
+        IFuturesMarket(futuresMarketManager()().marketForAssetFutures(_baseAsset)).recomputeFunding();
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_FUNDING_RATE)),
+            _maxFundingRate
+        );
+        emit FuturesMaxFundingRateUpdated(_baseAsset, _maxFundingRate);
+    }
+
+    function setFuturesMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) external onlyOwner {
+        IFuturesMarket(futuresMarketManager()().marketForAssetFutures(_baseAsset)).recomputeFunding();
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_FUNDING_RATE_SKEW)),
+            _maxFundingRateSkew
+        );
+        emit FuturesMaxFundingRateSkewUpdated(_baseAsset, _maxFundingRateSkew);
+    }
+
+    function setFuturesMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) external onlyOwner {
+        IFuturesMarket(futuresMarketManager()().marketForAssetFutures(_baseAsset)).recomputeFunding();
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTINGS_FUTURES_KEY, _baseAsset, SETTINGS_FUTURES_MAX_FUNDING_RATE_DELTA)),
+            _maxFundingRateDelta
+        );
+        emit FuturesMaxFundingRateDeltaUpdated(_baseAsset, _maxFundingRateDelta);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
@@ -346,4 +457,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event FuturesTakerFeeUpdated(bytes32 baseAsset, uint takerFee);
+    event FuturesMakerFeeUpdated(bytes32 baseAsset, uint makerFee);
+    event FuturesMaxLeverageUpdated(bytes32 baseAsset, uint maxLeverage);
+    event FuturesMaxMarketValueUpdated(bytes32 baseAsset, uint maxMarketValue);
+    event FuturesMaxFundingRateUpdated(bytes32 baseAsset, uint maxFundingRate);
+    event FuturesMaxFundingRateSkewUpdated(bytes32 baseAsset, uint maxFundingRateSkew);
+    event FuturesMaxFundingRateDeltaUpdated(bytes32 baseAsset, uint maxFundingRateDelta);
 }

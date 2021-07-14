@@ -4,8 +4,8 @@ pragma experimental ABIEncoderV2;
 // Internal references
 import "./FuturesMarket.sol";
 import "./FuturesMarketManager.sol";
-import "./FuturesMarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
+import "./SystemSettings.sol";
 
 contract FuturesMarketData {
     /* ========== TYPES ========== */
@@ -102,23 +102,22 @@ contract FuturesMarketData {
             );
     }
 
-    function _futuresMarketSettings() internal view returns (FuturesMarketSettings) {
+    function systemSettings() internal view returns (SystemSettings) {
         return
-            FuturesMarketSettings(
-                resolverProxy.requireAndGetAddress("FuturesMarketSettings", "Missing FuturesMarketSettings Address")
+            SystemSettings(
+                resolverProxy.requireAndGetAddress("SystemSettings", "Missing SystemSettings Address")
             );
     }
 
-    function _getParameters(bytes32 baseAsset) internal view returns (FuturesMarketSettings.Parameters memory) {
-        (
-            uint takerFee,
-            uint makerFee,
-            uint maxLeverage,
-            uint maxMarketValue,
-            uint maxFundingRate,
-            uint maxFundingRateSkew,
-            uint maxFundingRateDelta
-        ) = _futuresMarketSettings().getAllParameters(baseAsset);
+    function _getParameters(bytes32 _baseAsset) internal view returns (FuturesMarketSettings.Parameters memory) {
+        uint takerFee = systemSettings().futuresTakerFee(_baseAsset);
+        uint makerFee = systemSettings().futuresMakerFee(_baseAsset);
+        uint maxLeverage = systemSettings().futuresMaxLeverage(_baseAsset);
+        uint maxMarketValue = systemSettings().futuresMaxMarketValue(_baseAsset);
+        uint maxFundingRate = systemSettings().futuresMaxFundingRate(_baseAsset);
+        uint maxFundingRateSkew = systemSettings().futuresMaxFundingRateSkew(_baseAsset);
+        uint maxFundingRateDelta = systemSettings().futuresMaxFundingRateDelta(_baseAsset);
+        
         return
             FuturesMarketSettings.Parameters(
                 takerFee,
@@ -137,7 +136,12 @@ contract FuturesMarketData {
         for (uint i; i < numMarkets; i++) {
             FuturesMarket market = FuturesMarket(markets[i]);
 
-            FuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
+            bytes32 baseAsset = market.baseAsset();
+            // FuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
+            uint takerFee = systemSettings().getFuturesTakerFee(baseAsset);
+            uint makerFee = systemSettings().getFuturesMakerFee(baseAsset);
+            uint maxLeverage = systemSettings().getFuturesMaxLeverage(baseAsset);
+
             (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
 
