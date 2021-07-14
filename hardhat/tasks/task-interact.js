@@ -397,22 +397,19 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 						result !== undefined
 					) {
 						if (Array.isArray(result) && result.length === 0) {
-							console.log(gray(`  ‚Ü™ Call returned no data`));
+							console.log(gray(`  ↪ Call returned no data`));
 						} else {
 							if (abiItem.outputs.length > 1) {
 								for (let i = 0; i < abiItem.outputs.length; i++) {
 									const output = abiItem.outputs[i];
 									console.log(
-										cyan(`  ‚Ü™${output.name}(${output.type}):`),
+										cyan(`  ↪${output.name}(${output.type}):`),
 										printReturnedValue(result[i])
 									);
 								}
 							} else {
 								const output = abiItem.outputs[0];
-								console.log(
-									cyan(`  ‚Ü™${output.name}(${output.type}):`),
-									printReturnedValue(result)
-								);
+								console.log(cyan(`  ↪${output.name}(${output.type}):`), printReturnedValue(result));
 							}
 						}
 					}
