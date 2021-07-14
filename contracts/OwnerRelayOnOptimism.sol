@@ -41,7 +41,7 @@ contract OwnerRelayOnOptimism is IOwnerRelay, MixinResolver {
         iAbs_BaseCrossDomainMessenger messenger = messenger();
 
         require(msg.sender == address(messenger), "Sender is not the messenger");
-        require(messenger.xDomainMessageSender() == ownerRelayOnEthereum(), "L1 sender is not the owner relayer");
+        require(messenger.xDomainMessageSender() == ownerRelayOnEthereum(), "L1 sender is not the owner relay");
 
         // solhint-disable avoid-low-level-calls
         (bool success, bytes memory result) = target.call(data);
