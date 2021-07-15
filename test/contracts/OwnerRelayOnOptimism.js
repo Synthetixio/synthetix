@@ -12,19 +12,26 @@ contract('OwnerRelayOnOptimism', () => {
 	let OwnerRelayOnOptimism;
 
 	// Mocked contracts
-	let MockedMessenger, MockedAddressResolver, MockedContractOnL2;
+	let MockedMessenger, MockedAddressResolver, MockedOwnedL2;
 
 	// Other mocked stuff
 	const mockedOwnerRelayOnEthereumAddress = hre.ethers.Wallet.createRandom().address;
 
 	before('initialize signers', async () => {
-		([owner] = await hre.ethers.getSigners());
+		[owner] = await hre.ethers.getSigners();
 	});
 
 	before('mock other contracts used by OwnerRelayOnOptimism', async () => {
-		MockedMessenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, hre.ethers.provider);
+		MockedMessenger = await smockit(
+			artifacts.require('iAbs_BaseCrossDomainMessenger').abi,
+			hre.ethers.provider
+		);
+		MockedOwnedL2 = await smockit(artifacts.require('Owned').abi, hre.ethers.provider);
 
-		MockedAddressResolver = await smockit(artifacts.require('AddressResolver').abi, hre.ethers.provider);
+		MockedAddressResolver = await smockit(
+			artifacts.require('AddressResolver').abi,
+			hre.ethers.provider
+		);
 		MockedAddressResolver.smocked.requireAndGetAddress.will.return.with(nameBytes => {
 			const name = hre.ethers.utils.toUtf8String(nameBytes);
 
@@ -39,7 +46,10 @@ contract('OwnerRelayOnOptimism', () => {
 	});
 
 	before('instantiate the contract', async () => {
-		const OwnerRelayOnOptimismFactory = await hre.ethers.getContractFactory('OwnerRelayOnOptimism', owner);
+		const OwnerRelayOnOptimismFactory = await hre.ethers.getContractFactory(
+			'OwnerRelayOnOptimism',
+			owner
+		);
 		OwnerRelayOnOptimism = await OwnerRelayOnOptimismFactory.deploy(MockedAddressResolver.address);
 
 		const tx = await OwnerRelayOnOptimism.rebuildCache();
@@ -51,28 +61,43 @@ contract('OwnerRelayOnOptimism', () => {
 
 		assert.equal(requiredAddresses.length, 2);
 		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ext:Messenger')));
-		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('base:OwnerRelayOnEthereum')));
+		assert.ok(
+			requiredAddresses.includes(hre.ethers.utils.formatBytes32String('base:OwnerRelayOnEthereum'))
+		);
 	});
 
 	it('shows that only the expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: artifacts.require('OwnerRelayOnOptimism').abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['finalizeRelay'],
+			expected: ['finalizeRelay', 'acceptOwnershipOn'],
 		});
 	});
 
 	describe('when attempting to finalize a relay from an account that is not the Optimism Messenger', () => {
 		it('reverts with the expected error', async () => {
-			OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(owner);
-
 			await assert.revert(
-				OwnerRelayOnOptimism.finalizeRelay(
+				OwnerRelayOnOptimism.connect(owner).finalizeRelay(
 					'0x0000000000000000000000000000000000000001', // Any address
-					'0xdeadbeef', // Any data
+					'0xdeadbeef' // Any data
 				),
 				'Sender is not the messenger'
 			);
+		});
+	});
+
+	describe('when accepting ownership by calling OwnerRelayOnOptimism directly', () => {
+		before('mock the target contract acceptOwnership() function', async () => {
+			MockedOwnedL2.smocked.acceptOwnership.will.return();
+		});
+
+		before('call the target acceptOwnership() function via OwnerRelayOnOptimism', async () => {
+			const tx = await OwnerRelayOnOptimism.connect(owner).acceptOwnershipOn(MockedOwnedL2.address);
+			await tx.wait();
+		});
+
+		it('called the function on the target contract', async () => {
+			assert.equal(MockedOwnedL2.smocked.acceptOwnership.calls.length, 1);
 		});
 	});
 
@@ -94,33 +119,45 @@ contract('OwnerRelayOnOptimism', () => {
 			await tx.wait();
 		}
 
-		before('mock a target contract on L2', async () => {
-			MockedContractOnL2 = await smockit(artifacts.require('Owned').abi, hre.ethers.provider);
-			MockedContractOnL2.smocked.nominateNewOwner.will.return.with(newOwner => {
+		before('mock the target contract nominateNewOwner(...) function', async () => {
+			// Allows us to record the data it receives
+			MockedOwnedL2.smocked.nominateNewOwner.will.return.with(newOwner => {
 				relayedMessageData = newOwner;
 			});
 		});
 
-		before('mock Messenger.sendMessage(...) to call OwnerRelayOnOptimism.finalizeRelay(...)', async () => {
-			const MockedMessengerSigner = MockedMessenger.wallet;
-			MockedMessenger.smocked.sendMessage.will.return.with(async () => {
-				const nominateNewOwnerCalldata = MockedContractOnL2.interface.encodeFunctionData('nominateNewOwner', [OwnerRelayOnOptimism.address]);
+		before(
+			'mock Messenger.sendMessage(...) to call OwnerRelayOnOptimism.finalizeRelay(...)',
+			async () => {
+				const MockedMessengerSigner = MockedMessenger.wallet;
+				MockedMessenger.smocked.sendMessage.will.return.with(async () => {
+					const nominateNewOwnerCalldata = MockedOwnedL2.interface.encodeFunctionData(
+						'nominateNewOwner',
+						[OwnerRelayOnOptimism.address]
+					);
 
-				try {
-					const tx = await OwnerRelayOnOptimism.connect(MockedMessengerSigner).finalizeRelay(MockedContractOnL2.address, nominateNewOwnerCalldata, {
-						gasPrice: 0,
-					});
+					try {
+						const tx = await OwnerRelayOnOptimism.connect(MockedMessengerSigner).finalizeRelay(
+							MockedOwnedL2.address,
+							nominateNewOwnerCalldata,
+							{
+								gasPrice: 0,
+							}
+						);
 
-					await tx.wait();
-				} catch (err) {
-					sendMessageError = err;
-				}
-			});
-		});
+						await tx.wait();
+					} catch (err) {
+						sendMessageError = err;
+					}
+				});
+			}
+		);
 
 		describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
 			before('mock the Messenger to report some random account as the L1 initiator', async () => {
-				MockedMessenger.smocked.xDomainMessageSender.will.return.with(hre.ethers.Wallet.createRandom().address);
+				MockedMessenger.smocked.xDomainMessageSender.will.return.with(
+					hre.ethers.Wallet.createRandom().address
+				);
 			});
 
 			before('attempt to finalize the relay', async () => {
@@ -128,7 +165,7 @@ contract('OwnerRelayOnOptimism', () => {
 			});
 
 			it('reverts with the expected error', async () => {
-				assert.ok(sendMessageError.toString().includes('revert L1 sender is not the owner relay'))
+				assert.ok(sendMessageError.toString().includes('revert L1 sender is not the owner relay'));
 			});
 		});
 
@@ -136,7 +173,9 @@ contract('OwnerRelayOnOptimism', () => {
 			let relayReceipt;
 
 			before('mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator', async () => {
-				MockedMessenger.smocked.xDomainMessageSender.will.return.with(mockedOwnerRelayOnEthereumAddress);
+				MockedMessenger.smocked.xDomainMessageSender.will.return.with(
+					mockedOwnerRelayOnEthereumAddress
+				);
 			});
 
 			before('finalize the relay', async () => {

@@ -21,15 +21,24 @@ contract('OwnerRelayOnEthereum', () => {
 	const mockedRelayData = '0xdeadbeef';
 
 	before('initialize signers', async () => {
-		([owner, user] = await hre.ethers.getSigners());
+		[owner, user] = await hre.ethers.getSigners();
 	});
 
 	before('mock other contracts used by OwnerRelayOnEthereum', async () => {
-		MockedMessenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, hre.ethers.provider);
+		MockedMessenger = await smockit(
+			artifacts.require('iAbs_BaseCrossDomainMessenger').abi,
+			hre.ethers.provider
+		);
 
-		MockedFlexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi, hre.ethers.provider);
+		MockedFlexibleStorage = await smockit(
+			artifacts.require('FlexibleStorage').abi,
+			hre.ethers.provider
+		);
 
-		MockedAddressResolver = await smockit(artifacts.require('AddressResolver').abi, hre.ethers.provider);
+		MockedAddressResolver = await smockit(
+			artifacts.require('AddressResolver').abi,
+			hre.ethers.provider
+		);
 		MockedAddressResolver.smocked.requireAndGetAddress.will.return.with(nameBytes => {
 			const name = hre.ethers.utils.toUtf8String(nameBytes);
 
@@ -46,8 +55,14 @@ contract('OwnerRelayOnEthereum', () => {
 	});
 
 	before('instantiate the contract', async () => {
-		const OwnerRelayOnEthereumFactory = await hre.ethers.getContractFactory('OwnerRelayOnEthereum', owner);
-		OwnerRelayOnEthereum = await OwnerRelayOnEthereumFactory.deploy(owner.address, MockedAddressResolver.address);
+		const OwnerRelayOnEthereumFactory = await hre.ethers.getContractFactory(
+			'OwnerRelayOnEthereum',
+			owner
+		);
+		OwnerRelayOnEthereum = await OwnerRelayOnEthereumFactory.deploy(
+			owner.address,
+			MockedAddressResolver.address
+		);
 
 		const tx = await OwnerRelayOnEthereum.rebuildCache();
 		await tx.wait();
@@ -59,7 +74,9 @@ contract('OwnerRelayOnEthereum', () => {
 		assert.equal(requiredAddresses.length, 3);
 		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('FlexibleStorage')));
 		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ext:Messenger')));
-		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ovm:OwnerRelayOnOptimism')));
+		assert.ok(
+			requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ovm:OwnerRelayOnOptimism'))
+		);
 	});
 
 	it('shows that only the expected functions are mutative', async () => {
@@ -72,12 +89,10 @@ contract('OwnerRelayOnEthereum', () => {
 
 	describe('when attempting to initiate a relay from a non-owner account', () => {
 		it('reverts with the expected error', async () => {
-			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(user);
-
 			await assert.revert(
-				OwnerRelayOnEthereum.initiateRelay(
+				OwnerRelayOnEthereum.connect(user).initiateRelay(
 					mockedContractAddressOnL2,
-					mockedRelayData,
+					mockedRelayData
 				),
 				'Only the contract owner may perform this action'
 			);
@@ -96,30 +111,39 @@ contract('OwnerRelayOnEthereum', () => {
 
 		before('mock Optimism Messenger.sendMessage(...)', async () => {
 			// Allows us to record what Messenger.sendMessage gets called with
-			MockedMessenger.smocked.sendMessage.will.return.with((contractOnL2, messageData, crossDomainGasLimit) => {
-				relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
-			});
+			MockedMessenger.smocked.sendMessage.will.return.with(
+				(contractOnL2, messageData, crossDomainGasLimit) => {
+					relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
+				}
+			);
 		});
 
 		before('mock SystemSettings.getCrossDomainMessageGasLimit(...)', async () => {
-			MockedFlexibleStorage.smocked.getUIntValue.will.return.with((contractNameBytes, valueNameBytes) => {
-				const contractName = hre.ethers.utils.toUtf8String(contractNameBytes);
-				const valueName = hre.ethers.utils.toUtf8String(valueNameBytes);
+			MockedFlexibleStorage.smocked.getUIntValue.will.return.with(
+				(contractNameBytes, valueNameBytes) => {
+					const contractName = hre.ethers.utils.toUtf8String(contractNameBytes);
+					const valueName = hre.ethers.utils.toUtf8String(valueNameBytes);
 
-				if (contractName.includes('SystemSettings') && valueName.includes('crossDomainRelayGasLimit')) {
-					return mockedCrossDomainRelayGasLimit;
-				} else {
-					console.log(chalk.red(`Mocked FlexibleStorage will not be able to resolve ${contractName}:${valueName}`));
+					if (
+						contractName.includes('SystemSettings') &&
+						valueName.includes('crossDomainRelayGasLimit')
+					) {
+						return mockedCrossDomainRelayGasLimit;
+					} else {
+						console.log(
+							chalk.red(
+								`Mocked FlexibleStorage will not be able to resolve ${contractName}:${valueName}`
+							)
+						);
+					}
 				}
-			});
+			);
 		});
 
 		before('initiate the relay', async () => {
-			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(owner);
-
-			relayTx = await OwnerRelayOnEthereum.initiateRelay(
+			relayTx = await OwnerRelayOnEthereum.connect(owner).initiateRelay(
 				mockedContractAddressOnL2,
-				mockedRelayData,
+				mockedRelayData
 			);
 			relayReceipt = await relayTx.wait();
 		});

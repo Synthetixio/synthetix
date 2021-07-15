@@ -6,6 +6,10 @@ import "./MixinResolver.sol";
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
+interface IOwned {
+    function acceptOwnership() external;
+}
+
 contract OwnerRelayOnOptimism is MixinResolver {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -35,6 +39,10 @@ contract OwnerRelayOnOptimism is MixinResolver {
     }
 
     /* ========== EXTERNAL ========== */
+
+    function acceptOwnershipOn(address target) external {
+        IOwned(target).acceptOwnership();
+    }
 
     function finalizeRelay(address target, bytes calldata data) external {
         iAbs_BaseCrossDomainMessenger messenger = messenger();
