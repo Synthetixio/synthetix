@@ -52,10 +52,10 @@ function itCanOpenAndCloseShort({ ctx }) {
 			await CollateralShortAsOwner.setInteractionDelay(interactionDelay);
 		});
 
-		describe('open, close, deposit, withdraw a short', async () => {
+		describe('open, close, deposit, withdraw, draw a short', async () => {
 			let tx, loan, loanId;
 
-			describe('open a loan and deposit, and withdraw from a loan', () => {
+			describe('open a loan, deposit and withdraw collateral, draw, and close the loan', () => {
 				before('skip if max borrowing power reached', async function() {
 					const maxBorrowingPower = await CollateralShort.maxLoan(
 						amountToBorrow,
@@ -114,8 +114,19 @@ function itCanOpenAndCloseShort({ ctx }) {
 					loan = await CollateralStateShort.getLoan(user.address, loanId);
 				});
 
-				it('shows the loan amount and collateral are correct when opened', async () => {
-					assert.bnEqual(loan.amount, parseEther('1'));
+				before('draw down the loan', async () => {
+					tx = await CollateralShort.draw(loanId, parseEther('1'));
+
+					const { events } = await tx.wait();
+
+					const event = events.find(l => l.event === 'LoanDrawnDown');
+					loanId = event.args.id;
+
+					loan = await CollateralStateShort.getLoan(user.address, loanId);
+				});
+
+				it('shows the loan amount and collateral are correct', async () => {
+					assert.bnEqual(loan.amount, parseEther('2'));
 					assert.bnEqual(loan.collateral, parseEther('1500'));
 				});
 
