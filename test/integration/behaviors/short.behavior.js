@@ -52,15 +52,17 @@ function itCanOpenAndCloseShort({ ctx }) {
 			await CollateralShortAsOwner.setInteractionDelay(interactionDelay);
 		});
 
-		describe('open, close, depsosit, withdraw a short', async () => {
+		describe('open, close, deposit, withdraw a short', async () => {
 			let tx, loan, loanId;
 
 			describe('open a loan and deposit, and withdraw from a loan', () => {
 				before('skip if max borrowing power reached', async function() {
-					const maxBorrowingPowerReached = await CollateralShort.maxLoan(
+					const maxBorrowingPower = await CollateralShort.maxLoan(
 						amountToBorrow,
 						toBytes32('sETH')
 					);
+					const maxBorrowingPowerReached = maxBorrowingPower <= amountToBorrow;
+
 					if (maxBorrowingPowerReached) {
 						console.log(
 							chalk.yellow(
