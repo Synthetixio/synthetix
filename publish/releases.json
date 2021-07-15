@@ -264,7 +264,7 @@
 		},
 		"ovm": true,
 		"sources": ["OwnerRelayOnEthereum"],
-		"sips": [999]
+		"sips": [167]
 	},
 	{
 		"name": "Mirfak (Optimism)",
@@ -274,6 +274,6 @@
 		},
 		"ovm": true,
 		"sources": ["OwnerRelayOnOptimism"],
-		"sips": [999]
+		"sips": [167]
 	}
 ]
