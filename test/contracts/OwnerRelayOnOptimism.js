@@ -118,9 +118,7 @@ contract('OwnerRelayOnOptimism', () => {
 
 		describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
 			before('mock the Messenger to report some random account as the L1 initiator', async () => {
-				MockedMessenger.smocked.xDomainMessageSender.will.return.with(() => {
-					return '0x0000000000000000000000000000000000000044';
-				});
+				MockedMessenger.smocked.xDomainMessageSender.will.return.with('0x0000000000000000000000000000000000000044');
 			});
 
 			before('attempt to finalize the relay', async () => {
@@ -136,9 +134,7 @@ contract('OwnerRelayOnOptimism', () => {
 			let relayReceipt;
 
 			before('mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator', async () => {
-				MockedMessenger.smocked.xDomainMessageSender.will.return.with(() => {
-					return mockedOwnerRelayOnEthereumAddress;
-				});
+				MockedMessenger.smocked.xDomainMessageSender.will.return.with(mockedOwnerRelayOnEthereumAddress);
 			});
 
 			before('finalize the relay', async () => {
