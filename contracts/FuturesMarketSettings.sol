@@ -3,6 +3,7 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
+import "./MixinFuturesMarketSettings.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 
 // Internal references
@@ -10,9 +11,7 @@ import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketSettings
-contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
-    bytes32 internal constant SETTINGS_CONTRACT_NAME = "FuturesMarketSettings";
-
+contract FuturesMarketSettings is Owned, MixinSystemSettings, MixinFuturesMarketSettings, IFuturesMarketSettings {
     /* ========== STATE VARIABLES ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
@@ -33,7 +32,7 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinFuturesMarketSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
 
@@ -57,15 +56,63 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
         bytes32 key,
         uint value
     ) internal {
-        flexibleStorage().setUIntValue(SETTINGS_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)), value);
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)), value);
         emit ParameterUpdated(_baseAsset, key, value);
     }
 
-    function _getParameter(bytes32 _baseAsset, bytes32 key) internal view returns (uint value) {
-        value = flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)));
-    }
+    /* ---------- Getters ---------- */
 
     /* ========== MUTATIVE FUNCTIONS ========== */
+
+    function takerFee(bytes32 _baseAsset) external view returns (uint) {
+        return getTakerFee(_baseAsset);
+    }
+
+    function makerFee(bytes32 _baseAsset) public view returns (uint) {
+        return getMakerFee(_baseAsset);
+    }
+
+    function maxLeverage(bytes32 _baseAsset) public view returns (uint) {
+        return getMaxLeverage(_baseAsset);
+    }
+
+    function maxMarketValue(bytes32 _baseAsset) public view returns (uint) {
+        return getMaxMarketValue(_baseAsset);
+    }
+
+    function maxFundingRate(bytes32 _baseAsset) public view returns (uint) {
+        return getMaxFundingRate(_baseAsset);
+    }
+
+    function maxFundingRateSkew(bytes32 _baseAsset) public view returns (uint) {
+        return getMaxFundingRateSkew(_baseAsset);
+    }
+
+    function maxFundingRateDelta(bytes32 _baseAsset) public view returns (uint) {
+        return getMaxFundingRateDelta(_baseAsset);
+    }
+
+    function allParameters(bytes32 _baseAsset)
+        external
+        view
+        returns (
+            uint _takerFee,
+            uint _makerFee,
+            uint _maxLeverage,
+            uint _maxMarketValue,
+            uint _maxFundingRate,
+            uint _maxFundingRateSkew,
+            uint _maxFundingRateDelta
+        )
+    {
+        _takerFee = getTakerFee(_baseAsset);
+        _makerFee = getMakerFee(_baseAsset);
+        _maxLeverage = getMaxLeverage(_baseAsset);
+        _maxMarketValue = getMaxMarketValue(_baseAsset);
+        _maxFundingRate = getMaxFundingRate(_baseAsset);
+        _maxFundingRateSkew = getMaxFundingRateSkew(_baseAsset);
+        _maxFundingRateDelta = getMaxFundingRateDelta(_baseAsset);
+    }
 
     /* ---------- Setters ---------- */
 
@@ -97,58 +144,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSett
 
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) external onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA, _maxFundingRateDelta);
-    }
-
-    /* ---------- Getters ---------- */
-
-    function getTakerFee(bytes32 _baseAsset) public view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_TAKER_FEE);
-    }
-
-    function getMakerFee(bytes32 _baseAsset) public view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAKER_FEE);
-    }
-
-    function getMaxLeverage(bytes32 _baseAsset) public view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_LEVERAGE);
-    }
-
-    function getMaxMarketValue(bytes32 _baseAsset) public view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE);
-    }
-
-    function getMaxFundingRate(bytes32 _baseAsset) public view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE);
-    }
-
-    function getMaxFundingRateSkew(bytes32 _baseAsset) public view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW);
-    }
-
-    function getMaxFundingRateDelta(bytes32 _baseAsset) public view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA);
-    }
-
-    function getAllParameters(bytes32 _baseAsset)
-        external
-        view
-        returns (
-            uint takerFee,
-            uint makerFee,
-            uint maxLeverage,
-            uint maxMarketValue,
-            uint maxFundingRate,
-            uint maxFundingRateSkew,
-            uint maxFundingRateDelta
-        )
-    {
-        takerFee = getTakerFee(_baseAsset);
-        makerFee = getMakerFee(_baseAsset);
-        maxLeverage = getMaxLeverage(_baseAsset);
-        maxMarketValue = getMaxMarketValue(_baseAsset);
-        maxFundingRate = getMaxFundingRate(_baseAsset);
-        maxFundingRateSkew = getMaxFundingRateSkew(_baseAsset);
-        maxFundingRateDelta = getMaxFundingRateDelta(_baseAsset);
     }
 
     /* ========== EVENTS ========== */

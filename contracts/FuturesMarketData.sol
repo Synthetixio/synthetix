@@ -127,7 +127,7 @@ contract FuturesMarketData {
             uint maxFundingRate,
             uint maxFundingRateSkew,
             uint maxFundingRateDelta
-        ) = _futuresMarketSettings().getAllParameters(baseAsset);
+        ) = _futuresMarketSettings().allParameters(baseAsset);
         return
             Parameters(
                 takerFee,
