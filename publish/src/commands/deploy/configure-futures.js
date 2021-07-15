@@ -1,9 +1,6 @@
 'use strict';
 
 const { gray } = require('chalk');
-const {
-	utils: { parseEther },
-} = require('ethers');
 const { toBytes32 } = require('../../../..');
 const w3utils = require('web3-utils');
 
@@ -12,13 +9,9 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 
 	if (!useOvm) return;
 
-	const {
-		FuturesMarketSettings: futuresMarketSettings,
-		ExchangeRates: exchangeRates,
-	} = deployer.deployedContracts;
+	const { FuturesMarketSettings: futuresMarketSettings } = deployer.deployedContracts;
 
 	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
-	const currencyKeys = futuresAssets.map(asset => toBytes32(`s${asset}`));
 
 	for (const asset of futuresAssets) {
 		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
