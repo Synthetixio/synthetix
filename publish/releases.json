@@ -255,5 +255,14 @@
 		"ovm": true,
 		"sources": ["EtherWrapper", "Exchanger", "Synthetix", "SystemSettings"],
 		"sips": [138, 139, 140]
+	},
+	{
+		"name": "Dubhe",
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
+		"sources": [],
+		"sips": [166]
 	}
 ]
