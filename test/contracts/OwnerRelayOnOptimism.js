@@ -42,7 +42,7 @@ contract('OwnerRelayOnOptimism', () => {
 			sendMessageError = undefined;
 			try {
 				OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(MockedMessengerSigner);
-				const tx = await OwnerRelayOnOptimism.relay(MockedContractOnL2.address, nominateNewOwnerCalldata, {
+				const tx = await OwnerRelayOnOptimism.finalizeRelay(MockedContractOnL2.address, nominateNewOwnerCalldata, {
 					gasPrice: 0,
 				});
 
@@ -100,16 +100,16 @@ contract('OwnerRelayOnOptimism', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: artifacts.require('OwnerRelayOnOptimism').abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['relay'],
+			expected: ['finalizeRelay'],
 		});
 	});
 
 	describe('when attempting to relay a tx from an account that is not the Optimism Messenger', () => {
-		it('reverts', async () => {
+		it('reverts with the expected error', async () => {
 			OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(owner);
 
 			await assert.revert(
-				OwnerRelayOnOptimism.relay(
+				OwnerRelayOnOptimism.finalizeRelay(
 					MockedContractOnL2.address,
 					sampleRelayData,
 				),
@@ -124,10 +124,10 @@ contract('OwnerRelayOnOptimism', () => {
 				xDomainMesssageSenderReturnedByMessenger = '0x0000000000000000000000000000000000000044';
 			});
 
-			it('reverts', async () => {
+			it('reverts with the expected error', async () => {
 				MockedMessenger = MockedMessenger.connect(owner);
 
-				// This is causes the MockedMessenger to make a call to OwnerRelayOnOptimism.relay(...),
+				// This is causes the MockedMessenger to make a call to OwnerRelayOnOptimism.finalizeRelay(...),
 				// which reverts and populates "sendMessageError".
 				const tx = await MockedMessenger.sendMessage(OwnerRelayOnOptimism.address, sampleRelayData, 42);
 				await tx.wait();
@@ -144,7 +144,7 @@ contract('OwnerRelayOnOptimism', () => {
 			it('can relay a message to a contract on L2, e.g. contract.nominateNewOwner(...)', async () => {
 				MockedMessenger = MockedMessenger.connect(owner);
 
-				// This causes the MockedMessenger to make a call to OwnerRelayOnOptimism.relay(...),
+				// This causes the MockedMessenger to make a call to OwnerRelayOnOptimism.finalizeRelay(...),
 				// which should now succeed and ultimately populate relayedMessageData.
 				const tx = await MockedMessenger.sendMessage(OwnerRelayOnOptimism.address, sampleRelayData, 42);
 				await tx.wait();

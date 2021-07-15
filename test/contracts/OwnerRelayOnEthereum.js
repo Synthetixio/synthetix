@@ -92,16 +92,16 @@ contract('OwnerRelayOnEthereum', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: artifacts.require('OwnerRelayOnEthereum').abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['relay'],
+			expected: ['initiateRelay'],
 		});
 	});
 
 	describe('when attempting to relay a tx from a non-owner account', () => {
-		it('reverts', async () => {
+		it('reverts with the expected error', async () => {
 			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(user);
 
 			await assert.revert(
-				OwnerRelayOnEthereum.relay(
+				OwnerRelayOnEthereum.initiateRelay(
 					mockedContractAddressOnL2,
 					mockedRelayData,
 				),
@@ -114,7 +114,7 @@ contract('OwnerRelayOnEthereum', () => {
 		it('relays the expected data', async () => {
 			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(owner);
 
-			const tx = await OwnerRelayOnEthereum.relay(
+			const tx = await OwnerRelayOnEthereum.initiateRelay(
 				mockedContractAddressOnL2,
 				mockedRelayData,
 			);
@@ -123,7 +123,8 @@ contract('OwnerRelayOnEthereum', () => {
 			// Verify that Messenger.sendMessage(...) relayed the expected data.
 			assert.equal(relayedMessage.contractOnL2, mockedOwnerRelayOnOptimismAddress);
 			assert.equal(relayedMessage.crossDomainGasLimit, mockedCrossDomainRelayGasLimit);
-			assert.equal(relayedMessage.messageData, tx.data);
+			// The data should only differ on the selector
+			assert.equal(relayedMessage.messageData.substr(10), tx.data.substr(10));
 		});
 	});
 });

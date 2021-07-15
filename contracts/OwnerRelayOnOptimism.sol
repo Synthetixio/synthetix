@@ -1,13 +1,12 @@
 pragma solidity ^0.5.16;
 
 // Inheritance
-import "./interfaces/IOwnerRelay.sol";
 import "./MixinResolver.sol";
 
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-contract OwnerRelayOnOptimism is IOwnerRelay, MixinResolver {
+contract OwnerRelayOnOptimism is MixinResolver {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -37,7 +36,7 @@ contract OwnerRelayOnOptimism is IOwnerRelay, MixinResolver {
 
     /* ========== EXTERNAL ========== */
 
-    function relay(address target, bytes calldata data) external {
+    function finalizeRelay(address target, bytes calldata data) external {
         iAbs_BaseCrossDomainMessenger messenger = messenger();
 
         require(msg.sender == address(messenger), "Sender is not the messenger");
@@ -47,5 +46,11 @@ contract OwnerRelayOnOptimism is IOwnerRelay, MixinResolver {
         (bool success, bytes memory result) = target.call(data);
 
         require(success, string(abi.encode("xChain call failed:", result)));
+
+        emit RelayFinalized(target, data);
     }
+
+    /* ========== EVENTS ========== */
+
+    event RelayFinalized(address target, bytes data);
 }
