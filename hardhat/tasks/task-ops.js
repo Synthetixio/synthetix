@@ -111,11 +111,7 @@ function _isRunning({ opsPath }) {
 				result = false;
 			}
 		} catch (err) {
-			if (err.exitCode === 1) {
-				result = false;
-			}
-			if (err.exitCode === 2) {
-				// Usually the grep cmd failed because there's no output from docker-compose ps -q ...
+			if (err.exitCode) {
 				result = false;
 			}
 		}
