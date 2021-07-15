@@ -15,8 +15,8 @@ contract('OwnerRelayOnEthereum', () => {
 	let MockedMessenger, MockedAddressResolver, MockedFlexibleStorage;
 
 	// Other mocked stuff
-	const mockedOwnerRelayOnOptimismAddress = '0x0000000000000000000000000000000000000042';
-	const mockedContractAddressOnL2 = '0x0000000000000000000000000000000000000043';
+	const mockedOwnerRelayOnOptimismAddress = hre.ethers.Wallet.createRandom().address;
+	const mockedContractAddressOnL2 = hre.ethers.Wallet.createRandom().address;
 	const mockedCrossDomainRelayGasLimit = 42;
 	const mockedRelayData = '0xdeadbeef';
 

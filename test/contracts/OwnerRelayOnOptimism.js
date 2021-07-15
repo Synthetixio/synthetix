@@ -15,7 +15,7 @@ contract('OwnerRelayOnOptimism', () => {
 	let MockedMessenger, MockedAddressResolver, MockedContractOnL2;
 
 	// Other mocked stuff
-	const mockedOwnerRelayOnEthereumAddress = '0x0000000000000000000000000000000000000042';
+	const mockedOwnerRelayOnEthereumAddress = hre.ethers.Wallet.createRandom().address;
 
 	before('initialize signers', async () => {
 		([owner] = await hre.ethers.getSigners());
@@ -68,7 +68,7 @@ contract('OwnerRelayOnOptimism', () => {
 
 			await assert.revert(
 				OwnerRelayOnOptimism.finalizeRelay(
-					'0x0000000000000000000000000000000000000045', // Any address
+					'0x0000000000000000000000000000000000000001', // Any address
 					'0xdeadbeef', // Any data
 				),
 				'Sender is not the messenger'
@@ -82,9 +82,11 @@ contract('OwnerRelayOnOptimism', () => {
 
 		async function triggerSendMessage() {
 			// Calls Messenger.sendMessage(...) with dummy data,
-			// which doesn't matter since we mock the function below.
+			// because the ABI requires it.
+			// The data doesn't matter since we mock the function below,
+			// and this data will be ignored.
 			const tx = await MockedMessenger.connect(owner).sendMessage(
-				'0x0000000000000000000000000000000000000046',
+				'0x0000000000000000000000000000000000000001',
 				'0xdeadbeef',
 				42
 			);
@@ -118,7 +120,7 @@ contract('OwnerRelayOnOptimism', () => {
 
 		describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
 			before('mock the Messenger to report some random account as the L1 initiator', async () => {
-				MockedMessenger.smocked.xDomainMessageSender.will.return.with('0x0000000000000000000000000000000000000044');
+				MockedMessenger.smocked.xDomainMessageSender.will.return.with(hre.ethers.Wallet.createRandom().address);
 			});
 
 			before('attempt to finalize the relay', async () => {
