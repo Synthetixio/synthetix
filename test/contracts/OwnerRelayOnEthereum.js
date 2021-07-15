@@ -1,5 +1,5 @@
-const hre = require('hardhat');
 const chalk = require('chalk');
+const { ethers, contract, artifacts } = require('hardhat');
 const { assert } = require('./common');
 const { smockit } = require('@eth-optimism/smock');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
@@ -15,32 +15,32 @@ contract('OwnerRelayOnEthereum', () => {
 	let MockedMessenger, MockedAddressResolver, MockedFlexibleStorage;
 
 	// Other mocked stuff
-	const mockedOwnerRelayOnOptimismAddress = hre.ethers.Wallet.createRandom().address;
-	const mockedContractAddressOnL2 = hre.ethers.Wallet.createRandom().address;
+	const mockedOwnerRelayOnOptimismAddress = ethers.Wallet.createRandom().address;
+	const mockedContractAddressOnL2 = ethers.Wallet.createRandom().address;
 	const mockedCrossDomainRelayGasLimit = 42;
 	const mockedRelayData = '0xdeadbeef';
 
 	before('initialize signers', async () => {
-		[owner, user] = await hre.ethers.getSigners();
+		[owner, user] = await ethers.getSigners();
 	});
 
 	before('mock other contracts used by OwnerRelayOnEthereum', async () => {
 		MockedMessenger = await smockit(
 			artifacts.require('iAbs_BaseCrossDomainMessenger').abi,
-			hre.ethers.provider
+			ethers.provider
 		);
 
 		MockedFlexibleStorage = await smockit(
 			artifacts.require('FlexibleStorage').abi,
-			hre.ethers.provider
+			ethers.provider
 		);
 
 		MockedAddressResolver = await smockit(
 			artifacts.require('AddressResolver').abi,
-			hre.ethers.provider
+			ethers.provider
 		);
 		MockedAddressResolver.smocked.requireAndGetAddress.will.return.with(nameBytes => {
-			const name = hre.ethers.utils.toUtf8String(nameBytes);
+			const name = ethers.utils.toUtf8String(nameBytes);
 
 			if (name.includes('ext:Messenger')) {
 				return MockedMessenger.address;
@@ -55,7 +55,7 @@ contract('OwnerRelayOnEthereum', () => {
 	});
 
 	before('instantiate the contract', async () => {
-		const OwnerRelayOnEthereumFactory = await hre.ethers.getContractFactory(
+		const OwnerRelayOnEthereumFactory = await ethers.getContractFactory(
 			'OwnerRelayOnEthereum',
 			owner
 		);
@@ -72,10 +72,10 @@ contract('OwnerRelayOnEthereum', () => {
 		const requiredAddresses = await OwnerRelayOnEthereum.resolverAddressesRequired();
 
 		assert.equal(requiredAddresses.length, 3);
-		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('FlexibleStorage')));
-		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ext:Messenger')));
+		assert.ok(requiredAddresses.includes(ethers.utils.formatBytes32String('FlexibleStorage')));
+		assert.ok(requiredAddresses.includes(ethers.utils.formatBytes32String('ext:Messenger')));
 		assert.ok(
-			requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ovm:OwnerRelayOnOptimism'))
+			requiredAddresses.includes(ethers.utils.formatBytes32String('ovm:OwnerRelayOnOptimism'))
 		);
 	});
 
@@ -121,8 +121,8 @@ contract('OwnerRelayOnEthereum', () => {
 		before('mock SystemSettings.getCrossDomainMessageGasLimit(...)', async () => {
 			MockedFlexibleStorage.smocked.getUIntValue.will.return.with(
 				(contractNameBytes, valueNameBytes) => {
-					const contractName = hre.ethers.utils.toUtf8String(contractNameBytes);
-					const valueName = hre.ethers.utils.toUtf8String(valueNameBytes);
+					const contractName = ethers.utils.toUtf8String(contractNameBytes);
+					const valueName = ethers.utils.toUtf8String(valueNameBytes);
 
 					if (
 						contractName.includes('SystemSettings') &&

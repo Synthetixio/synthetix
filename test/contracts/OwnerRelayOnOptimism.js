@@ -1,4 +1,4 @@
-const hre = require('hardhat');
+const { ethers, contract, artifacts } = require('hardhat');
 const chalk = require('chalk');
 const { assert } = require('./common');
 const { smockit } = require('@eth-optimism/smock');
@@ -15,25 +15,25 @@ contract('OwnerRelayOnOptimism', () => {
 	let MockedMessenger, MockedAddressResolver, MockedOwnedL2;
 
 	// Other mocked stuff
-	const mockedOwnerRelayOnEthereumAddress = hre.ethers.Wallet.createRandom().address;
+	const mockedOwnerRelayOnEthereumAddress = ethers.Wallet.createRandom().address;
 
 	before('initialize signers', async () => {
-		[owner] = await hre.ethers.getSigners();
+		[owner] = await ethers.getSigners();
 	});
 
 	before('mock other contracts used by OwnerRelayOnOptimism', async () => {
 		MockedMessenger = await smockit(
 			artifacts.require('iAbs_BaseCrossDomainMessenger').abi,
-			hre.ethers.provider
+			ethers.provider
 		);
-		MockedOwnedL2 = await smockit(artifacts.require('Owned').abi, hre.ethers.provider);
+		MockedOwnedL2 = await smockit(artifacts.require('Owned').abi, ethers.provider);
 
 		MockedAddressResolver = await smockit(
 			artifacts.require('AddressResolver').abi,
-			hre.ethers.provider
+			ethers.provider
 		);
 		MockedAddressResolver.smocked.requireAndGetAddress.will.return.with(nameBytes => {
-			const name = hre.ethers.utils.toUtf8String(nameBytes);
+			const name = ethers.utils.toUtf8String(nameBytes);
 
 			if (name.includes('ext:Messenger')) {
 				return MockedMessenger.address;
@@ -46,7 +46,7 @@ contract('OwnerRelayOnOptimism', () => {
 	});
 
 	before('instantiate the contract', async () => {
-		const OwnerRelayOnOptimismFactory = await hre.ethers.getContractFactory(
+		const OwnerRelayOnOptimismFactory = await ethers.getContractFactory(
 			'OwnerRelayOnOptimism',
 			owner
 		);
@@ -60,9 +60,9 @@ contract('OwnerRelayOnOptimism', () => {
 		const requiredAddresses = await OwnerRelayOnOptimism.resolverAddressesRequired();
 
 		assert.equal(requiredAddresses.length, 2);
-		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ext:Messenger')));
+		assert.ok(requiredAddresses.includes(ethers.utils.formatBytes32String('ext:Messenger')));
 		assert.ok(
-			requiredAddresses.includes(hre.ethers.utils.formatBytes32String('base:OwnerRelayOnEthereum'))
+			requiredAddresses.includes(ethers.utils.formatBytes32String('base:OwnerRelayOnEthereum'))
 		);
 	});
 
@@ -157,7 +157,7 @@ contract('OwnerRelayOnOptimism', () => {
 		describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
 			before('mock the Messenger to report some random account as the L1 initiator', async () => {
 				MockedMessenger.smocked.xDomainMessageSender.will.return.with(
-					hre.ethers.Wallet.createRandom().address
+					ethers.Wallet.createRandom().address
 				);
 			});
 
