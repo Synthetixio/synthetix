@@ -4,11 +4,6 @@ const { assert } = require('./common');
 const { smockit } = require('@eth-optimism/smock');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const MessengerArtifacts = artifacts.require('iAbs_BaseCrossDomainMessenger');
-const OwnerRelayOnEthereumArtifacts = artifacts.require('OwnerRelayOnEthereum');
-const AddressResolverArtifacts = artifacts.require('AddressResolver');
-const FlexibleStorageArtifacts = artifacts.require('FlexibleStorage');
-
 contract('OwnerRelayOnEthereum', () => {
 	// Signers
 	let owner, user;
@@ -23,29 +18,30 @@ contract('OwnerRelayOnEthereum', () => {
 	const mockedOwnerRelayOnOptimismAddress = '0x0000000000000000000000000000000000000042';
 	const mockedContractAddressOnL2 = '0x0000000000000000000000000000000000000043';
 	const mockedCrossDomainRelayGasLimit = 42;
+	const mockedRelayData = '0xdeadbeef';
 
-	// Used to capture call parameters to mocked Messenger.sendMessage(...)
+	// Optimism's MockedMessenger will populate this object.
 	let relayedMessage = {
-		targetAddress: undefined,
+		contractOnL2: undefined,
 		messageData: undefined,
 		crossDomainGasLimit: undefined,
 	};
-
-	const sampleRelayData = '0xdeadbeef';
 
 	before('initialize signers', async () => {
 		([owner, user] = await hre.ethers.getSigners());
 	});
 
 	before('mock other contracts needed by the contract', async () => {
-		// OptimismMesseneger
-		MockedMessenger = await smockit(MessengerArtifacts.abi, hre.ethers.provider);
-		MockedMessenger.smocked.sendMessage.will.return.with((targetAddress, messageData, crossDomainGasLimit) => {
-			relayedMessage = { targetAddress, messageData, crossDomainGasLimit };
+		// Messeneger (Optimism)
+		MockedMessenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, hre.ethers.provider);
+		// Messenger.sendMessage(...)
+		MockedMessenger.smocked.sendMessage.will.return.with((contractOnL2, messageData, crossDomainGasLimit) => {
+			relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
 		});
 
 		// FlexibleStorage
-		MockedFlexibleStorage = await smockit(FlexibleStorageArtifacts.abi, hre.ethers.provider);
+		MockedFlexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi, hre.ethers.provider);
+		// FlexibleStorage.getUIntValue(...)
 		MockedFlexibleStorage.smocked.getUIntValue.will.return.with((contractNameBytes, valueNameBytes) => {
 			const contractName = hre.ethers.utils.toUtf8String(contractNameBytes);
 			const valueName = hre.ethers.utils.toUtf8String(valueNameBytes);
@@ -58,7 +54,8 @@ contract('OwnerRelayOnEthereum', () => {
 		});
 
 		// AddressResolver
-		MockedAddressResolver = await smockit(AddressResolverArtifacts.abi, hre.ethers.provider);
+		MockedAddressResolver = await smockit(artifacts.require('AddressResolver').abi, hre.ethers.provider);
+		// AddressResolver.requireAndGetAddress(...)
 		MockedAddressResolver.smocked.requireAndGetAddress.will.return.with(nameBytes => {
 			const name = hre.ethers.utils.toUtf8String(nameBytes);
 
@@ -82,41 +79,49 @@ contract('OwnerRelayOnEthereum', () => {
 		await tx.wait();
 	});
 
-	describe('when checking which functions are mutative', () => {
-		it('shows that only the expected ones are mutative', async () => {
-			ensureOnlyExpectedMutativeFunctions({
-				abi: OwnerRelayOnEthereumArtifacts.abi,
-				ignoreParents: ['Owned', 'MixinResolver'],
-				expected: ['relay'],
-			});
+	it('requires the expected contracts', async () => {
+		const requiredAddresses = await OwnerRelayOnEthereum.resolverAddressesRequired();
+
+		assert.equal(requiredAddresses.length, 3);
+		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('FlexibleStorage')));
+		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ext:Messenger')));
+		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ovm:OwnerRelayOnOptimism')));
+	});
+
+	it('shows that only the expected functions are mutative', async () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: artifacts.require('OwnerRelayOnEthereum').abi,
+			ignoreParents: ['Owned', 'MixinResolver'],
+			expected: ['relay'],
 		});
 	});
 
-	describe('when attempting to relay with an non-owner EOA', () => {
+	describe('when attempting to relay a tx from a non-owner account', () => {
 		it('reverts', async () => {
 			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(user);
 
 			await assert.revert(
 				OwnerRelayOnEthereum.relay(
 					mockedContractAddressOnL2,
-					sampleRelayData,
+					mockedRelayData,
 				),
 				'Only the contract owner may perform this action'
 			);
 		});
 	});
 
-	describe('when calling relay with the owner EOA', () => {
+	describe('when relaying a tx from the owner account', () => {
 		it('relays the expected values', async () => {
 			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(owner);
 
 			const tx = await OwnerRelayOnEthereum.relay(
 				mockedContractAddressOnL2,
-				sampleRelayData,
+				mockedRelayData,
 			);
 			await tx.wait();
 
-			assert.equal(relayedMessage.targetAddress, mockedOwnerRelayOnOptimismAddress);
+			// Verify that Messenger.sendMessage(...) relayed the expexted data.
+			assert.equal(relayedMessage.contractOnL2, mockedOwnerRelayOnOptimismAddress);
 			assert.equal(relayedMessage.crossDomainGasLimit, mockedCrossDomainRelayGasLimit);
 			assert.equal(relayedMessage.messageData, tx.data);
 		});
