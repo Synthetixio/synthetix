@@ -4,11 +4,6 @@ const { assert } = require('./common');
 const { smockit } = require('@eth-optimism/smock');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
-const MessengerArtifacts = artifacts.require('iAbs_BaseCrossDomainMessenger');
-const OwnerRelayOnOptimismArtifacts = artifacts.require('OwnerRelayOnOptimism');
-const AddressResolverArtifacts = artifacts.require('AddressResolver');
-const OwnedArtifacts = artifacts.require('Owned');
-
 contract('OwnerRelayOnOptimism', () => {
 	// Signers
 	let owner, user;
@@ -20,35 +15,34 @@ contract('OwnerRelayOnOptimism', () => {
 	let MockedMessenger, MockedAddressResolver, MockedContractOnL2;
 
 	// Other mocked stuff
-	const mockedOwnerRelayOnEthereumAddress = '0x0000000000000000000000000000000000000042';
-
-	let activeCrossDomainMessageSender;
-	let acceptOwnershipCalldata;
-
-	let sendMessageData;
-	let sendMessageError;
-
 	const sampleRelayData = '0xdeadbeef';
+	const mockedOwnerRelayOnEthereumAddress = '0x0000000000000000000000000000000000000042';
+	// Allows us to control what Messenger.xDomainMessageSender() returns
+	let xDomainMesssageSenderReturnedByMessenger;
+	// Allows us to catch Messenger.sendMessage(...) errors
+	let sendMessageError;
+	// This will be populated by OwnerRelayOnOptimism's target calldata
+	// on a successful relay.
+	let relayedMessageData;
 
 	before('initialize signers', async () => {
 		([owner] = await hre.ethers.getSigners());
 	});
 
 	before('mock other contracts needed by the contract', async () => {
-		// OptimismMesseneger
-		MockedMessenger = await smockit(MessengerArtifacts.abi, hre.ethers.provider);
+		// Messeneger (Optimism)
+		MockedMessenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, hre.ethers.provider);
+		// This will allow us to initiate txs from js code,
+		// with msg.sender = MockedMessenger.address.
 		const MockedMessengerSigner = MockedMessenger.wallet;
-		MockedMessenger.smocked.xDomainMessageSender.will.return.with(() => {
-			return activeCrossDomainMessageSender;
-		});
+		// Messenger.sendMessage(...)
 		MockedMessenger.smocked.sendMessage.will.return.with(async () => {
-			OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(MockedMessengerSigner);
-
-			const relayData = MockedContractOnL2.interface.encodeFunctionData('nominateNewOwner', [OwnerRelayOnOptimism.address]);
+			const nominateNewOwnerCalldata = MockedContractOnL2.interface.encodeFunctionData('nominateNewOwner', [OwnerRelayOnOptimism.address]);
 
 			sendMessageError = undefined;
 			try {
-				const tx = await OwnerRelayOnOptimism.relay(MockedContractOnL2.address, relayData, {
+				OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(MockedMessengerSigner);
+				const tx = await OwnerRelayOnOptimism.relay(MockedContractOnL2.address, nominateNewOwnerCalldata, {
 					gasPrice: 0,
 				});
 
@@ -57,10 +51,15 @@ contract('OwnerRelayOnOptimism', () => {
 				sendMessageError = err;
 			}
 		});
-		activeCrossDomainMessageSender = mockedOwnerRelayOnEthereumAddress;
+		// Messenger.xDomainMessageSender()
+		MockedMessenger.smocked.xDomainMessageSender.will.return.with(() => {
+			return xDomainMesssageSenderReturnedByMessenger;
+		});
+		xDomainMesssageSenderReturnedByMessenger = mockedOwnerRelayOnEthereumAddress;
 
 		// AddressResolver
-		MockedAddressResolver = await smockit(AddressResolverArtifacts.abi, hre.ethers.provider);
+		MockedAddressResolver = await smockit(artifacts.require('AddressResolver').abi, hre.ethers.provider);
+		// AddressResolver.requireAndGetAddress(...)
 		MockedAddressResolver.smocked.requireAndGetAddress.will.return.with(nameBytes => {
 			const name = hre.ethers.utils.toUtf8String(nameBytes);
 
@@ -74,9 +73,10 @@ contract('OwnerRelayOnOptimism', () => {
 		});
 
 		// Some contract on L2
-		MockedContractOnL2 = await smockit(OwnedArtifacts.abi, hre.ethers.provider);
+		MockedContractOnL2 = await smockit(artifacts.require('Owned').abi, hre.ethers.provider);
+		// Owned.nominateNewOwner(...)
 		MockedContractOnL2.smocked.nominateNewOwner.will.return.with(newOwner => {
-			sendMessageData = newOwner;
+			relayedMessageData = newOwner;
 		});
 	});
 
@@ -88,17 +88,23 @@ contract('OwnerRelayOnOptimism', () => {
 		await tx.wait();
 	});
 
-	describe('when checking which functions are mutative', () => {
-		it('shows that only the expected ones are mutative', async () => {
-			ensureOnlyExpectedMutativeFunctions({
-				abi: OwnerRelayOnOptimismArtifacts.abi,
-				ignoreParents: ['Owned', 'MixinResolver'],
-				expected: ['relay'],
-			});
+	it('requires the expected contracts', async () => {
+		const requiredAddresses = await OwnerRelayOnOptimism.resolverAddressesRequired();
+
+		assert.equal(requiredAddresses.length, 2);
+		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('ext:Messenger')));
+		assert.ok(requiredAddresses.includes(hre.ethers.utils.formatBytes32String('base:OwnerRelayOnEthereum')));
+	});
+
+	it('shows that only the expected functions are mutative', async () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: artifacts.require('OwnerRelayOnOptimism').abi,
+			ignoreParents: ['Owned', 'MixinResolver'],
+			expected: ['relay'],
 		});
 	});
 
-	describe('when calling relay() directly with an EOA on L2', () => {
+	describe('when attempting to relay a tx from an account that is not the Optimism Messenger', () => {
 		it('reverts', async () => {
 			OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(owner);
 
@@ -112,10 +118,10 @@ contract('OwnerRelayOnOptimism', () => {
 		});
 	});
 
-	describe('when relay() is called by the optimism messenger', () => {
-		describe('when the L1 transaction was initiated by a random address', () => {
+	describe('when a tx is relayed from the Optimism Messenger', () => {
+		describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
 			before('cause the cross domain message sender to be some random address', async () => {
-				activeCrossDomainMessageSender = '0x0000000000000000000000000000000000000044';
+				xDomainMesssageSenderReturnedByMessenger = '0x0000000000000000000000000000000000000044';
 			});
 
 			it('reverts', async () => {
@@ -130,15 +136,16 @@ contract('OwnerRelayOnOptimism', () => {
 			});
 		});
 
-		describe('when the L1 transaction was initiated by the OwnerRelayOnOptimism', () => {
+		describe('when the initiator on L1 is the OwnerRelayOnOptimism', () => {
 			before('cause the cross domain message sender to be OwnerRelayOnEthereum', async () => {
-				activeCrossDomainMessageSender = mockedOwnerRelayOnEthereumAddress;
+				xDomainMesssageSenderReturnedByMessenger = mockedOwnerRelayOnEthereumAddress;
 			});
 
-			it('can relay a message to a contract on L2, e.g. contract.nominateNewOwner()', async () => {
+			it('can relay a message to a contract on L2, e.g. contract.nominateNewOwner(...)', async () => {
 				MockedMessenger = MockedMessenger.connect(owner);
 
-				// This is causes the MockedMessenger to make a call to OwnerRelayOnOptimism.relay(...)
+				// This causes the MockedMessenger to make a call to OwnerRelayOnOptimism.relay(...),
+				// which should now succeed and ultimately populate relayedMessageData.
 				const tx = await MockedMessenger.sendMessage(OwnerRelayOnOptimism.address, sampleRelayData, 42);
 				await tx.wait();
 
@@ -146,7 +153,7 @@ contract('OwnerRelayOnOptimism', () => {
 				assert.notOk(sendMessageError);
 
 				// Should have received the relayed data
-				assert.equal(sendMessageData, OwnerRelayOnOptimism.address);
+				assert.equal(relayedMessageData, OwnerRelayOnOptimism.address);
 			});
 		});
 	});

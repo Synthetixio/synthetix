@@ -111,7 +111,7 @@ contract('OwnerRelayOnEthereum', () => {
 	});
 
 	describe('when relaying a tx from the owner account', () => {
-		it('relays the expected values', async () => {
+		it('relays the expected data', async () => {
 			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(owner);
 
 			const tx = await OwnerRelayOnEthereum.relay(
@@ -120,7 +120,7 @@ contract('OwnerRelayOnEthereum', () => {
 			);
 			await tx.wait();
 
-			// Verify that Messenger.sendMessage(...) relayed the expexted data.
+			// Verify that Messenger.sendMessage(...) relayed the expected data.
 			assert.equal(relayedMessage.contractOnL2, mockedOwnerRelayOnOptimismAddress);
 			assert.equal(relayedMessage.crossDomainGasLimit, mockedCrossDomainRelayGasLimit);
 			assert.equal(relayedMessage.messageData, tx.data);
