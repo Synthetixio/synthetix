@@ -104,7 +104,7 @@ contract('OwnerRelayOnOptimism', () => {
 		});
 	});
 
-	describe('when attempting to relay a tx from an account that is not the Optimism Messenger', () => {
+	describe('when attempting to finalize a relay from an account that is not the Optimism Messenger', () => {
 		it('reverts with the expected error', async () => {
 			OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(owner);
 
@@ -118,7 +118,7 @@ contract('OwnerRelayOnOptimism', () => {
 		});
 	});
 
-	describe('when a tx is relayed from the Optimism Messenger', () => {
+	describe('when finalizing a relay from the Optimism Messenger', () => {
 		describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
 			before('cause the cross domain message sender to be some random address', async () => {
 				xDomainMesssageSenderReturnedByMessenger = '0x0000000000000000000000000000000000000044';
@@ -137,22 +137,27 @@ contract('OwnerRelayOnOptimism', () => {
 		});
 
 		describe('when the initiator on L1 is the OwnerRelayOnOptimism', () => {
+			let relayReceipt;
+
 			before('cause the cross domain message sender to be OwnerRelayOnEthereum', async () => {
 				xDomainMesssageSenderReturnedByMessenger = mockedOwnerRelayOnEthereumAddress;
 			});
 
-			it('can relay a message to a contract on L2, e.g. contract.nominateNewOwner(...)', async () => {
+			before('finalize the relay', async () => {
 				MockedMessenger = MockedMessenger.connect(owner);
 
 				// This causes the MockedMessenger to make a call to OwnerRelayOnOptimism.finalizeRelay(...),
 				// which should now succeed and ultimately populate relayedMessageData.
 				const tx = await MockedMessenger.sendMessage(OwnerRelayOnOptimism.address, sampleRelayData, 42);
-				await tx.wait();
+				relayReceipt = await tx.wait();
+			});
 
+			it('did not produce an internal tx error', async () => {
 				// Error should be undefined, i.e. no error
 				assert.notOk(sendMessageError);
+			});
 
-				// Should have received the relayed data
+			it('should ultimately relayed contract.nominateNewOwner(...) with the correct data', async () => {
 				assert.equal(relayedMessageData, OwnerRelayOnOptimism.address);
 			});
 		});

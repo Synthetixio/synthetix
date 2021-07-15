@@ -96,7 +96,7 @@ contract('OwnerRelayOnEthereum', () => {
 		});
 	});
 
-	describe('when attempting to relay a tx from a non-owner account', () => {
+	describe('when attempting to initiate a relay from a non-owner account', () => {
 		it('reverts with the expected error', async () => {
 			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(user);
 
@@ -110,21 +110,40 @@ contract('OwnerRelayOnEthereum', () => {
 		});
 	});
 
-	describe('when relaying a tx from the owner account', () => {
-		it('relays the expected data', async () => {
+	describe('when initiating a relay from the owner account', () => {
+		let relayTx;
+		let relayReceipt;
+
+		before('initiate the relay', async () => {
 			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(owner);
 
-			const tx = await OwnerRelayOnEthereum.initiateRelay(
+			relayTx = await OwnerRelayOnEthereum.initiateRelay(
 				mockedContractAddressOnL2,
 				mockedRelayData,
 			);
-			await tx.wait();
+			relayReceipt = await relayTx.wait();
+		});
 
-			// Verify that Messenger.sendMessage(...) relayed the expected data.
+		it('relayed a message to OwnerRelayOnOptimism', async () => {
 			assert.equal(relayedMessage.contractOnL2, mockedOwnerRelayOnOptimismAddress);
+		});
+
+		it('relayed the message with the expected crossDomainGasLimit', async () => {
 			assert.equal(relayedMessage.crossDomainGasLimit, mockedCrossDomainRelayGasLimit);
-			// The data should only differ on the selector
-			assert.equal(relayedMessage.messageData.substr(10), tx.data.substr(10));
+		});
+
+		it('relayed the correct data', async () => {
+			// The data should only differ on the selector:
+			// We called initiateRelay, but the encoding
+			// should target the finalizeRelay selector with the same data.
+			assert.equal(relayedMessage.messageData.substr(10), relayTx.data.substr(10));
+		});
+
+		it('emited a RelayInitiated event', async () => {
+			const event = relayReceipt.events.find(e => e.event === 'RelayInitiated');
+
+			assert.equal(event.args.target, mockedContractAddressOnL2);
+			assert.equal(event.args.data, mockedRelayData);
 		});
 	});
 });
