@@ -6,7 +6,7 @@ const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 contract('OwnerRelayOnOptimism', () => {
 	// Signers
-	let owner, user;
+	let owner;
 
 	// Real contracts
 	let OwnerRelayOnOptimism;
@@ -104,6 +104,8 @@ contract('OwnerRelayOnOptimism', () => {
 	describe('when finalizing a relay from the Optimism Messenger', () => {
 		let sendMessageError;
 		let relayedMessageData;
+		let nominateNewOwnerCalldata;
+		let relayReceipt;
 
 		async function triggerSendMessage() {
 			// Calls Messenger.sendMessage(...) with dummy data,
@@ -115,7 +117,6 @@ contract('OwnerRelayOnOptimism', () => {
 				'0xdeadbeef',
 				42
 			);
-
 			await tx.wait();
 		}
 
@@ -131,7 +132,7 @@ contract('OwnerRelayOnOptimism', () => {
 			async () => {
 				const MockedMessengerSigner = MockedMessenger.wallet;
 				MockedMessenger.smocked.sendMessage.will.return.with(async () => {
-					const nominateNewOwnerCalldata = MockedOwnedL2.interface.encodeFunctionData(
+					nominateNewOwnerCalldata = MockedOwnedL2.interface.encodeFunctionData(
 						'nominateNewOwner',
 						[OwnerRelayOnOptimism.address]
 					);
@@ -145,7 +146,7 @@ contract('OwnerRelayOnOptimism', () => {
 							}
 						);
 
-						await tx.wait();
+						relayReceipt = await tx.wait();
 					} catch (err) {
 						sendMessageError = err;
 					}
@@ -170,8 +171,6 @@ contract('OwnerRelayOnOptimism', () => {
 		});
 
 		describe('when the initiator on L1 is the OwnerRelayOnOptimism', () => {
-			let relayReceipt;
-
 			before('mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator', async () => {
 				MockedMessenger.smocked.xDomainMessageSender.will.return.with(
 					mockedOwnerRelayOnEthereumAddress
@@ -184,6 +183,13 @@ contract('OwnerRelayOnOptimism', () => {
 
 			it('should ultimately relayed contract.nominateNewOwner(...) with the correct data', async () => {
 				assert.equal(relayedMessageData, OwnerRelayOnOptimism.address);
+			});
+
+			it('emited a RelayFinalized event', async () => {
+				const event = relayReceipt.events.find(e => e.event === 'RelayFinalized');
+
+				assert.equal(event.args.target, MockedOwnedL2.address);
+				assert.equal(event.args.data, nominateNewOwnerCalldata);
 			});
 		});
 	});

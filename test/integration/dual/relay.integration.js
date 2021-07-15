@@ -1,14 +1,18 @@
-const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL2 } = require('../utils/optimism');
 
-describe.only('owner relay integration tests (L1, L2)', () => {
+describe('owner relay integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
+	// Signers
 	let ownerL1, ownerL2;
+
+	// Contracts
 	let OwnerRelayOnEthereum, OwnerRelayOnOptimism, SystemSettingsL2;
+
+	let relayReceipt;
 
 	before('target contracts and users', () => {
 		({ OwnerRelayOnEthereum } = ctx.l1.contracts);
@@ -42,8 +46,6 @@ describe.only('owner relay integration tests (L1, L2)', () => {
 			});
 
 			describe('when the L2 relay accepts ownership', () => {
-				let relayReceipt;
-
 				before('call acceptOwnershipOn() directly on OwnerRelayOnOptimism', async () => {
 					const tx = await OwnerRelayOnOptimism.connect(ownerL2).acceptOwnershipOn(
 						SystemSettingsL2.address
