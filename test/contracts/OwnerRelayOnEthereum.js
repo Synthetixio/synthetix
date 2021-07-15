@@ -20,42 +20,16 @@ contract('OwnerRelayOnEthereum', () => {
 	const mockedCrossDomainRelayGasLimit = 42;
 	const mockedRelayData = '0xdeadbeef';
 
-	// Optimism's MockedMessenger will populate this object.
-	let relayedMessage = {
-		contractOnL2: undefined,
-		messageData: undefined,
-		crossDomainGasLimit: undefined,
-	};
-
 	before('initialize signers', async () => {
 		([owner, user] = await hre.ethers.getSigners());
 	});
 
-	before('mock other contracts needed by the contract', async () => {
-		// Messeneger (Optimism)
+	before('mock other contracts used by OwnerRelayOnEthereum', async () => {
 		MockedMessenger = await smockit(artifacts.require('iAbs_BaseCrossDomainMessenger').abi, hre.ethers.provider);
-		// Messenger.sendMessage(...)
-		MockedMessenger.smocked.sendMessage.will.return.with((contractOnL2, messageData, crossDomainGasLimit) => {
-			relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
-		});
 
-		// FlexibleStorage
 		MockedFlexibleStorage = await smockit(artifacts.require('FlexibleStorage').abi, hre.ethers.provider);
-		// FlexibleStorage.getUIntValue(...)
-		MockedFlexibleStorage.smocked.getUIntValue.will.return.with((contractNameBytes, valueNameBytes) => {
-			const contractName = hre.ethers.utils.toUtf8String(contractNameBytes);
-			const valueName = hre.ethers.utils.toUtf8String(valueNameBytes);
 
-			if (contractName.includes('SystemSettings') && valueName.includes('crossDomainRelayGasLimit')) {
-				return mockedCrossDomainRelayGasLimit;
-			} else {
-				console.log(chalk.red(`Mocked FlexibleStorage will not be able to resolve ${contractName}:${valueName}`));
-			}
-		});
-
-		// AddressResolver
 		MockedAddressResolver = await smockit(artifacts.require('AddressResolver').abi, hre.ethers.provider);
-		// AddressResolver.requireAndGetAddress(...)
 		MockedAddressResolver.smocked.requireAndGetAddress.will.return.with(nameBytes => {
 			const name = hre.ethers.utils.toUtf8String(nameBytes);
 
@@ -113,6 +87,32 @@ contract('OwnerRelayOnEthereum', () => {
 	describe('when initiating a relay from the owner account', () => {
 		let relayTx;
 		let relayReceipt;
+
+		let relayedMessage = {
+			contractOnL2: undefined,
+			messageData: undefined,
+			crossDomainGasLimit: undefined,
+		};
+
+		before('mock Optimism Messenger.sendMessage(...)', async () => {
+			// Allows us to record what Messenger.sendMessage gets called with
+			MockedMessenger.smocked.sendMessage.will.return.with((contractOnL2, messageData, crossDomainGasLimit) => {
+				relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
+			});
+		});
+
+		before('mock SystemSettings.getCrossDomainMessageGasLimit(...)', async () => {
+			MockedFlexibleStorage.smocked.getUIntValue.will.return.with((contractNameBytes, valueNameBytes) => {
+				const contractName = hre.ethers.utils.toUtf8String(contractNameBytes);
+				const valueName = hre.ethers.utils.toUtf8String(valueNameBytes);
+
+				if (contractName.includes('SystemSettings') && valueName.includes('crossDomainRelayGasLimit')) {
+					return mockedCrossDomainRelayGasLimit;
+				} else {
+					console.log(chalk.red(`Mocked FlexibleStorage will not be able to resolve ${contractName}:${valueName}`));
+				}
+			});
+		});
 
 		before('initiate the relay', async () => {
 			OwnerRelayOnEthereum = OwnerRelayOnEthereum.connect(owner);
