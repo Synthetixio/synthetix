@@ -1120,13 +1120,18 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
 				from: owner,
 			}),
-			returnObj['SystemSettings'].setFuturesMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setFuturesLiquidationFee(FUTURES_LIQUIDATION_FEE, {
-				from: owner,
-			}),
 		]);
+
+		if (returnObj['FuturesMarketSettings']) {
+			await Promise.all([
+				returnObj['FuturesMarketSettings'].setFuturesMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
+					from: owner,
+				}),
+				returnObj['FuturesMarketSettings'].setFuturesLiquidationFee(FUTURES_LIQUIDATION_FEE, {
+					from: owner,
+				}),
+			]);
+		}
 	}
 
 	// finally if any of our contracts have setSystemStatus (from MockSynth), then invoke it
