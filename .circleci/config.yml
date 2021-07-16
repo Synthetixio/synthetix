@@ -358,9 +358,6 @@ workflows:
       - job-fork-tests:
           requires:
             - job-prepare
-      - job-fork-tests-no-update:
-          requires:
-            - job-prepare
       - job-integration-tests:
           name: job-integration-tests
           requires:
@@ -369,5 +366,18 @@ workflows:
           requires:
             - job-prepare
       - job-validate-deployments:
+          requires:
+            - job-prepare
+  workflow-master:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - job-prepare
+      - job-fork-tests-no-update:
           requires:
             - job-prepare

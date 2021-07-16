@@ -1,0 +1,16 @@
+# Runs regularly every 24hs,
+# without the need of a commit.
+triggers:
+  - schedule:
+      cron: "0 0 * * *"
+      filters:
+        branches:
+          only:
+            - master
+jobs:
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Fork tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-prepare
+  - job-fork-tests-no-update:
+      {{> require-prepare.yml}}

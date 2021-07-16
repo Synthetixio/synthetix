@@ -29,8 +29,6 @@ jobs:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-fork-tests:
       {{> require-prepare.yml}}
-  - job-fork-tests-no-update:
-      {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Integration tests
@@ -50,27 +48,3 @@ jobs:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-validate-deployments:
       {{> require-prepare.yml}}
-
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Etherscan validations
-  # NOTE: Currently disabled because our Etherscan test
-  # needs to be smarter. It needs to be able to handle multiple
-  # versioned ABIs per contract.
-  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # - job-validate-etherscan:
-  #     name: job-validate-etherscan-mainnet
-  #     network: mainnet
-  #     {{> require-prepare.yml}}
-  # - job-validate-etherscan:
-  #     name: job-validate-etherscan-rinkeby
-  #     network: rinkeby
-  #     {{> require-prepare.yml}}
-  # - job-validate-etherscan:
-  #     name: job-validate-etherscan-kovan
-  #     network: kovan
-  #     {{> require-prepare.yml}}
-  # - job-validate-etherscan:
-  #     name: job-validate-etherscan-ropsten
-  #     network: ropsten
-  #     {{> require-prepare.yml}}
-
