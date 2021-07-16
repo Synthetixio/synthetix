@@ -46,6 +46,9 @@ const getStagedTransactions = async ({ signerKind, signerData, network }) => {
 			network,
 			safeAddress: signerData.protocolDaoContract.address,
 		});
+	} else {
+		// catch everything else
+		throw Error('Unsupported Signer kind');
 	}
 
 	return stagedTransactions;
@@ -65,9 +68,10 @@ const txAlreadyExists = async ({
 			encodedData,
 			currentSafeNonce: signerData.currentSafeNonce,
 		});
+	} else {
+		// catch everything else
+		throw Error('Unsupported Signer kind');
 	}
-
-	return false;
 };
 
 const acceptOwnershipBySigner = async ({
@@ -117,7 +121,7 @@ const acceptOwnershipBySigner = async ({
 		return;
 	}
 
-	// SignerKind is not contract type or using fork for Gnosis Safe
+	// SignerKind is not contract type (safe) or using fork for Gnosis Safe
 	const params = {
 		to,
 		gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
