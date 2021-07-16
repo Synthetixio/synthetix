@@ -46,6 +46,8 @@ const getStagedTransactions = async ({ signerKind, signerData, network }) => {
 			network,
 			safeAddress: signerData.protocolDaoContract.address,
 		});
+	} else if (signerKind === SIGNER_KIND.eoa) {
+		// Do nothing stagedTransaction remains undefined
 	} else {
 		// catch everything else
 		throw Error('Unsupported Signer kind');
@@ -68,6 +70,9 @@ const txAlreadyExists = async ({
 			encodedData,
 			currentSafeNonce: signerData.currentSafeNonce,
 		});
+	} else if (signerKind === SIGNER_KIND.eoa) {
+		// Do nothing
+		return false;
 	} else {
 		// catch everything else
 		throw Error('Unsupported Signer kind');

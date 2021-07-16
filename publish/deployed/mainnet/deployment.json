@@ -148,11 +148,11 @@
 		},
 		"Synthetix": {
 			"name": "Synthetix",
-			"address": "0x43AE8037179a5746D618DA077A38DdeEa9640cBa",
+			"address": "0xb01850a6c664FEfF9945c6f74ff86572794A2a1f",
 			"source": "Synthetix",
-			"link": "https://etherscan.io/address/0x43AE8037179a5746D618DA077A38DdeEa9640cBa",
-			"timestamp": "2021-06-30T04:12:58.000Z",
-			"txn": "https://etherscan.io/tx/0xc53844027fe190a7c983f147d82817e167fe72186e500a01a58a91442056f03e",
+			"link": "https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f",
+			"timestamp": "2021-07-14T00:08:39.579Z",
+			"txn": "",
 			"network": "mainnet"
 		},
 		"SynthetixEscrow": {
@@ -916,11 +916,11 @@
 		},
 		"Exchanger": {
 			"name": "Exchanger",
-			"address": "0x613c773c7a1D85D2F1DCC051B0573D33470762Eb",
+			"address": "0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914",
 			"source": "ExchangerWithVirtualSynth",
-			"link": "https://etherscan.io/address/0x613c773c7a1D85D2F1DCC051B0573D33470762Eb",
-			"timestamp": "2021-06-30T04:13:30.000Z",
-			"txn": "https://etherscan.io/tx/0x2592e9f58bd6327c9ad575947283a221cca413fa2494b6a07f9da60982c3a8f6",
+			"link": "https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914",
+			"timestamp": "2021-07-14T00:08:40.315Z",
+			"txn": "",
 			"network": "mainnet"
 		},
 		"ExchangeState": {
