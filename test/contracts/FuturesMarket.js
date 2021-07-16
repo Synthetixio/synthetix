@@ -19,8 +19,7 @@ const {
 } = require('./helpers');
 
 contract('FuturesMarket', accounts => {
-	let systemSettings,
-		proxyFuturesMarket,
+	let proxyFuturesMarket,
 		futuresMarketSettings,
 		futuresMarket,
 		exchangeRates,
@@ -100,7 +99,6 @@ contract('FuturesMarket', accounts => {
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSD,
 			FeePool: feePool,
-			SystemSettings: systemSettings,
 			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
@@ -114,7 +112,6 @@ contract('FuturesMarket', accounts => {
 				'FeePool',
 				'ExchangeRates',
 				'SystemStatus',
-				'SystemSettings',
 				'Synthetix',
 				'CollateralManager',
 				'DebtCache',
@@ -139,7 +136,7 @@ contract('FuturesMarket', accounts => {
 		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarket.abi,
-				ignoreParents: ['Owned', 'Proxyable', 'MixinSystemSettings'],
+				ignoreParents: ['Owned', 'Proxyable', 'MixinFuturesMarketSettings'],
 				expected: [
 					'modifyMargin',
 					'withdrawAllMargin',
@@ -2167,7 +2164,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await systemSettings.setFuturesLiquidationFee(toUnit('100'), { from: owner });
+				await futuresMarketSettings.setFuturesLiquidationFee(toUnit('100'), { from: owner });
 
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
@@ -2180,7 +2177,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await systemSettings.setFuturesLiquidationFee(toUnit('0'), { from: owner });
+				await futuresMarketSettings.setFuturesLiquidationFee(toUnit('0'), { from: owner });
 
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
@@ -2505,7 +2502,7 @@ contract('FuturesMarket', accounts => {
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 
 				// raise the liquidation fee
-				await systemSettings.setFuturesLiquidationFee(toUnit('100'), { from: owner });
+				await futuresMarketSettings.setFuturesLiquidationFee(toUnit('100'), { from: owner });
 
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 				price = (await futuresMarket.liquidationPrice(trader, true)).price;

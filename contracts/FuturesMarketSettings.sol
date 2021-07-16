@@ -108,34 +108,53 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     /* ---------- Setters ---------- */
 
-    function setTakerFee(bytes32 _baseAsset, uint _takerFee) external onlyOwner {
+    function setTakerFee(bytes32 _baseAsset, uint _takerFee) public onlyOwner {
         require(_takerFee <= 1 ether, "taker fee greater than 1");
         _setParameter(_baseAsset, PARAMETER_TAKER_FEE, _takerFee);
     }
 
-    function setMakerFee(bytes32 _baseAsset, uint _makerFee) external onlyOwner {
+    function setMakerFee(bytes32 _baseAsset, uint _makerFee) public onlyOwner {
         require(_makerFee <= 1 ether, "maker fee greater than 1");
         _setParameter(_baseAsset, PARAMETER_MAKER_FEE, _makerFee);
     }
 
-    function setMaxLeverage(bytes32 _baseAsset, uint _maxLeverage) external onlyOwner {
+    function setMaxLeverage(bytes32 _baseAsset, uint _maxLeverage) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
 
-    function setMaxMarketValue(bytes32 _baseAsset, uint _maxMarketValue) external onlyOwner {
+    function setMaxMarketValue(bytes32 _baseAsset, uint _maxMarketValue) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE, _maxMarketValue);
     }
 
-    function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) external onlyOwner {
+    function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
     }
 
-    function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) external onlyOwner {
+    function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW, _maxFundingRateSkew);
     }
 
-    function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) external onlyOwner {
+    function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA, _maxFundingRateDelta);
+    }
+
+    function setAllParameters(
+        bytes32 _baseAsset,
+        uint _takerFee,
+        uint _makerFee,
+        uint _maxLeverage,
+        uint _maxMarketValue,
+        uint _maxFundingRate,
+        uint _maxFundingRateSkew,
+        uint _maxFundingRateDelta
+    ) external onlyOwner {
+        setTakerFee(_baseAsset, _takerFee);
+        setMakerFee(_baseAsset, _makerFee);
+        setMaxLeverage(_baseAsset, _maxLeverage);
+        setMaxMarketValue(_baseAsset, _maxMarketValue);
+        setMaxFundingRate(_baseAsset, _maxFundingRate);
+        setMaxFundingRateSkew(_baseAsset, _maxFundingRateSkew);
+        setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);
     }
 
     function setFuturesLiquidationFee(uint _sUSD) external onlyOwner {
