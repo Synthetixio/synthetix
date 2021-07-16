@@ -27,4 +27,8 @@ interface IFuturesMarketSettings {
             uint _maxFundingRateSkew,
             uint _maxFundingRateDelta
         );
+
+    function futuresLiquidationFee() external view returns (uint);
+
+    function futuresMinInitialMargin() external view returns (uint);
 }

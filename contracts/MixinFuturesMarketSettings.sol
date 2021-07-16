@@ -1,12 +1,11 @@
 pragma solidity ^0.5.16;
 
 import "./MixinResolver.sol";
-import "./MixinSystemSettings.sol";
 
 // Internal references
 import "./interfaces/IFlexibleStorage.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/mixinsystemsettings
+// https://docs.synthetix.io/contracts/source/contracts/MixinFuturesMarketSettings
 contract MixinFuturesMarketSettings is MixinResolver {
     bytes32 internal constant SETTING_CONTRACT_NAME = "FuturesMarketSettings";
 

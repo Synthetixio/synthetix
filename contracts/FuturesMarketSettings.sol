@@ -3,11 +3,9 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./MixinFuturesMarketSettings.sol";
-import "./interfaces/IFuturesMarketSettings.sol";
 
 // Internal references
-import "./interfaces/IFuturesMarket.sol";
-import "./interfaces/IFuturesMarketManager.sol";
+import "./interfaces/IFuturesMarketSettings.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketSettings
 contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMarketSettings {
