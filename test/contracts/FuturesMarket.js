@@ -1911,7 +1911,8 @@ contract('FuturesMarket', accounts => {
 				assert.isTrue(false);
 			});
 
-			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
+			// TODO(liamz): Skip this for now until we have a better idea on where to push price updates.
+			it.skip('Funding sequence is recomputed by setting funding rate parameters', async () => {
 				assert.bnEqual(await futuresMarket.fundingSequenceLength(), toBN(5));
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('100'));
