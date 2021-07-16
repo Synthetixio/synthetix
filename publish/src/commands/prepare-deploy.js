@@ -7,7 +7,7 @@ const { red, gray, yellow } = require('chalk');
 
 const {
 	constants: { CONFIG_FILENAME },
-	unreleased,
+	releases,
 } = require('../../../.');
 
 const DEFAULTS = {
@@ -23,15 +23,17 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 	ensureDeploymentPath(deploymentPath);
 
 	// Pick required ovm releases that need to be prepared
-	const releases = unreleased.filter(release => (useOvm ? release.ovm : !release.ovm));
+	const unreleased = releases.filter(
+		release => (useOvm ? release.ovm : !release.ovm) && release.released !== true
+	);
 
-	if (releases.length === 0) {
+	if (unreleased.length === 0) {
 		console.log(gray('There are no releases that need to be prepared'));
 		return;
 	}
 
 	// Pick the oldest one to prepare
-	const [release] = releases;
+	const [release] = unreleased;
 
 	console.log(gray(`Preparing release for ${release.name} on network ${network}...`));
 
