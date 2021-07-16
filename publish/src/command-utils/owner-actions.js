@@ -15,11 +15,11 @@ const {
 	getSafeSignature,
 } = require('./safe-utils');
 
-const KIND = { safe: 'SAFE', eoa: 'EAO' };
+const SIGNER_KIND = { safe: 'SAFE', eoa: 'EOA' };
 
 const getSignerData = async ({ signerKind, providerUrl, newOwner }) => {
 	const signerData = {};
-	if (signerKind === KIND.safe) {
+	if (signerKind === SIGNER_KIND.safe) {
 		// new owner should be gnosis safe proxy address
 		signerData.protocolDaoContract = getSafeInstance(providerUrl, newOwner);
 
@@ -28,7 +28,7 @@ const getSignerData = async ({ signerKind, providerUrl, newOwner }) => {
 
 		if (!signerData.currentSafeNonce) {
 			console.log(gray('Cannot access safe. Exiting.'));
-			process.exit();
+			process.exit(1);
 		}
 
 		console.log(
@@ -41,7 +41,7 @@ const getSignerData = async ({ signerKind, providerUrl, newOwner }) => {
 
 const getStagedTransactions = async ({ signerKind, signerData, network }) => {
 	let stagedTransactions;
-	if (signerKind === KIND.safe) {
+	if (signerKind === SIGNER_KIND.safe) {
 		stagedTransactions = await getSafeTransactions({
 			network,
 			safeAddress: signerData.protocolDaoContract.address,
@@ -58,7 +58,7 @@ const txAlreadyExists = async ({
 	target,
 	encodedData,
 }) => {
-	if (signerKind === KIND.safe) {
+	if (signerKind === SIGNER_KIND.safe) {
 		return checkExistingPendingTx({
 			stagedTransactions,
 			target,
@@ -83,7 +83,7 @@ const acceptOwnershipBySigner = async ({
 	gasLimit,
 	gasPrice,
 }) => {
-	if (signerKind === KIND.safe && !useFork) {
+	if (signerKind === SIGNER_KIND.safe && !useFork) {
 		const { txHash, newNonce } = await getNewTransactionHash({
 			safeContract: signerData.protocolDaoContract,
 			data: encodedData,
@@ -134,7 +134,7 @@ const acceptOwnershipBySigner = async ({
 };
 
 module.exports = {
-	KIND,
+	SIGNER_KIND,
 	getSignerData,
 	getStagedTransactions,
 	txAlreadyExists,

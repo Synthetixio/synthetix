@@ -20,7 +20,7 @@ const {
 } = require('../util');
 
 const {
-	KIND,
+	SIGNER_KIND,
 	getSignerData,
 	getStagedTransactions,
 	txAlreadyExists,
@@ -51,7 +51,7 @@ const owner = async ({
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
-	const signerKind = isSafe ? KIND.safe : KIND.eoa;
+	const signerKind = isSafe ? SIGNER_KIND.safe : SIGNER_KIND.eoa;
 
 	if (!newOwner) {
 		newOwner = getUsers({ network, useOvm, user: 'owner' }).address;
@@ -64,7 +64,7 @@ const owner = async ({
 		newOwner = newOwner.toLowerCase();
 	}
 
-	if (signerKind === KIND.eoa && !yes) {
+	if (signerKind === SIGNER_KIND.eoa && !yes) {
 		try {
 			await confirmAction(
 				yellow(
@@ -112,7 +112,7 @@ const owner = async ({
 	}
 	console.log(gray(`Using account with public key ${wallet.address}`));
 
-	if (signerKind === KIND.eoa && wallet.address.toLowerCase() !== newOwner.toLowerCase()) {
+	if (signerKind === SIGNER_KIND.eoa && wallet.address.toLowerCase() !== newOwner.toLowerCase()) {
 		throw new Error(
 			`New owner is ${newOwner} and signer is ${wallet.address}. The signer needs to be the new owner in order to be able to claim ownership and/or execute owner actions.`
 		);
@@ -145,7 +145,7 @@ const owner = async ({
 
 		await confirmOrEnd(
 			yes,
-			signerKind !== KIND.eoa,
+			signerKind !== SIGNER_KIND.eoa,
 			yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`
 		);
 
