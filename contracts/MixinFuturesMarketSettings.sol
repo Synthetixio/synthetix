@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 
 import "./MixinResolver.sol";
+import "./MixinSystemSettings.sol";
 
 // Internal references
 import "./interfaces/IFlexibleStorage.sol";
@@ -25,9 +26,12 @@ contract MixinFuturesMarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_SKEW = "maxFundingRateSkew";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_DELTA = "maxFundingRateDelta";
 
+    bytes32 internal constant SETTING_FUTURES_LIQUIDATION_FEE = "futuresLiquidationFee";
+    bytes32 internal constant SETTING_FUTURES_MIN_INITIAL_MARGIN = "futuresMinInitialMargin";
+
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
-    constructor(address _resolver) internal {}
+    constructor(address _resolver) internal MixinResolver(_resolver) {}
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](1);
@@ -92,5 +96,13 @@ contract MixinFuturesMarketSettings is MixinResolver {
         maxFundingRate = getMaxFundingRate(_baseAsset);
         maxFundingRateSkew = getMaxFundingRateSkew(_baseAsset);
         maxFundingRateDelta = getMaxFundingRateDelta(_baseAsset);
+    }
+
+    function getFuturesLiquidationFee() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_LIQUIDATION_FEE);
+    }
+
+    function getFuturesMinInitialMargin() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_MIN_INITIAL_MARGIN);
     }
 }

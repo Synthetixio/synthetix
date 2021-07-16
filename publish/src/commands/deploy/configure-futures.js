@@ -11,6 +11,26 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 
 	const { FuturesMarketSettings: futuresMarketSettings } = deployer.deployedContracts;
 
+	await runStep({
+		contract: 'FuturesMarketSettings',
+		target: futuresMarketSettings,
+		read: 'futuresMinInitialMargin',
+		expected: input => input !== '0', // only change if zero
+		write: 'setFuturesMinInitialMargin',
+		writeArg: await getDeployParameter('FUTURES_MIN_INITIAL_MARGIN'),
+		comment: 'Set the minimum margin to open a futures position (SIP-80)',
+	});
+
+	await runStep({
+		contract: 'FuturesMarketSettings',
+		target: futuresMarketSettings,
+		read: 'futuresLiquidationFee',
+		expected: input => input !== '0', // only change if zero
+		write: 'setFuturesLiquidationFee',
+		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE'),
+		comment: 'Set the reward for liquidating a futures position (SIP-80)',
+	});
+
 	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
 
 	for (const asset of futuresAssets) {
@@ -35,7 +55,7 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 			await runStep({
 				contract: 'FuturesMarketSettings',
 				target: futuresMarketSettings,
-				read: `get${capSetting}`,
+				read: setting,
 				readArg: [baseAsset],
 				expected: input => input === value,
 				write: `set${capSetting}`,

@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinSystemSettings.sol";
 import "./MixinFuturesMarketSettings.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 
@@ -11,7 +10,7 @@ import "./interfaces/IFuturesMarket.sol";
 import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketSettings
-contract FuturesMarketSettings is Owned, MixinSystemSettings, MixinFuturesMarketSettings, IFuturesMarketSettings {
+contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMarketSettings {
     /* ========== STATE VARIABLES ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
@@ -35,19 +34,6 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, MixinFuturesMarket
     constructor(address _owner, address _resolver) public Owned(_owner) MixinFuturesMarketSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
-
-    /* ---------- External Contracts ---------- */
-
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_FUTURES_MARKET_MANAGER;
-        addresses = combineArrays(existingAddresses, newAddresses);
-    }
-
-    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
-        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
-    }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
@@ -114,6 +100,14 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, MixinFuturesMarket
         _maxFundingRateDelta = getMaxFundingRateDelta(_baseAsset);
     }
 
+    function futuresLiquidationFee() external view returns (uint) {
+        return getFuturesLiquidationFee();
+    }
+
+    function futuresMinInitialMargin() external view returns (uint) {
+        return getFuturesMinInitialMargin();
+    }
+
     /* ---------- Setters ---------- */
 
     function setTakerFee(bytes32 _baseAsset, uint _takerFee) external onlyOwner {
@@ -146,7 +140,21 @@ contract FuturesMarketSettings is Owned, MixinSystemSettings, MixinFuturesMarket
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA, _maxFundingRateDelta);
     }
 
+    function setFuturesLiquidationFee(uint _sUSD) external onlyOwner {
+        require(_sUSD <= getFuturesMinInitialMargin(), "fee is greater than min margin");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_LIQUIDATION_FEE, _sUSD);
+        emit FuturesLiquidationFeeUpdated(_sUSD);
+    }
+
+    function setFuturesMinInitialMargin(uint _minMargin) external onlyOwner {
+        require(getFuturesLiquidationFee() <= _minMargin, "fee is greater than min margin");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_MIN_INITIAL_MARGIN, _minMargin);
+        emit FuturesMinInitialMarginUpdated(_minMargin);
+    }
+
     /* ========== EVENTS ========== */
 
     event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
+    event FuturesLiquidationFeeUpdated(uint sUSD);
+    event FuturesMinInitialMarginUpdated(uint minMargin);
 }

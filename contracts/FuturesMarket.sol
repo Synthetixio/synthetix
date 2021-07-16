@@ -3,8 +3,6 @@ pragma solidity ^0.5.16;
 // Inheritance
 import "./Owned.sol";
 import "./Proxyable.sol";
-import "./MixinResolver.sol";
-import "./MixinSystemSettings.sol";
 import "./MixinFuturesMarketSettings.sol";
 import "./interfaces/IFuturesMarket.sol";
 
@@ -44,7 +42,7 @@ interface IFuturesMarketManagerInternal {
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarket
-contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, MixinFuturesMarketSettings, IFuturesMarket {
+contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFuturesMarket {
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -122,7 +120,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, MixinFuturesMar
         address _owner,
         address _resolver,
         bytes32 _baseAsset
-    ) public Owned(_owner) Proxyable(_proxy) MixinSystemSettings(_resolver) {
+    ) public Owned(_owner) Proxyable(_proxy) MixinFuturesMarketSettings(_resolver) {
         baseAsset = _baseAsset;
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
@@ -134,7 +132,7 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, MixinFuturesMar
     /* ---------- External Contracts ---------- */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = MixinFuturesMarketSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](5);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXRATES;
