@@ -39,7 +39,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     // Stores loans
     CollateralState public state;
 
-    address public manager;
+    ICollateralManager public manager;
 
     // The synths that this contract can issue.
     bytes32[] public synths;
@@ -84,7 +84,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     constructor(
         CollateralState _state,
         address _owner,
-        address _manager,
+        ICollateralManager _manager,
         address _resolver,
         bytes32 _collateralKey,
         uint _minCratio,
@@ -138,10 +138,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function _feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
-    }
-
-    function _manager() internal view returns (ICollateralManager) {
-        return ICollateralManager(manager);
     }
 
     function _issuer() internal view returns (IIssuer) {
@@ -287,7 +283,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         emit InteractionDelayUpdated(interactionDelay);
     }
 
-    function setManager(address _newManager) external onlyOwner {
+    function setManager(ICollateralManager _newManager) external onlyOwner {
         manager = _newManager;
         emit ManagerUpdated(manager);
     }
@@ -323,7 +319,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(state.getNumLoans(msg.sender) < maxLoansPerAccount, "Max loans exceeded");
 
         // 5. Check we haven't hit the debt cap for non snx collateral.
-        (bool canIssue, bool anyRateIsInvalid) = _manager().exceedsDebtLimit(amount, currency);
+        (bool canIssue, bool anyRateIsInvalid) = manager.exceedsDebtLimit(amount, currency);
 
         require(canIssue && !anyRateIsInvalid, "Debt limit or invalid rate");
 
@@ -337,7 +333,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint loanAmountMinusFee = amount.sub(issueFee);
 
         // 9. Get a Loan ID
-        id = _manager().getNewLoanId();
+        id = manager.getNewLoanId();
 
         // 10. Create the loan struct.
         Loan memory loan =
@@ -365,14 +361,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 14. If its short, convert back to sUSD, otherwise issue the loan.
         if (short) {
             _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(currency, loanAmountMinusFee, sUSD));
-            _manager().incrementShorts(currency, amount);
+            manager.incrementShorts(currency, amount);
 
             if (shortingRewards[currency] != address(0)) {
                 IShortingRewards(shortingRewards[currency]).enrol(msg.sender, amount);
             }
         } else {
             _synth(synthsByKey[currency]).issue(msg.sender, loanAmountMinusFee);
-            _manager().incrementLongs(currency, amount);
+            manager.incrementLongs(currency, amount);
         }
 
         // 15. Emit event
@@ -404,13 +400,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 7. Tell the manager.
         if (loan.short) {
-            _manager().decrementShorts(loan.currency, loan.amount);
+            manager.decrementShorts(loan.currency, loan.amount);
 
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).withdraw(borrower, loan.amount);
             }
         } else {
-            _manager().decrementLongs(loan.currency, loan.amount);
+            manager.decrementLongs(loan.currency, loan.amount);
         }
 
         // 8. Assign the collateral to be returned.
@@ -451,13 +447,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 5. Tell the manager.
         if (loan.short) {
-            _manager().decrementShorts(loan.currency, loan.amount);
+            manager.decrementShorts(loan.currency, loan.amount);
 
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).withdraw(borrower, loan.amount);
             }
         } else {
-            _manager().decrementLongs(loan.currency, loan.amount);
+            manager.decrementLongs(loan.currency, loan.amount);
         }
 
         // 6. Pay fees
@@ -730,14 +726,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 8. If its short, let the child handle it, otherwise issue the synths.
         if (loan.short) {
-            _manager().incrementShorts(loan.currency, amount);
+            manager.incrementShorts(loan.currency, amount);
             _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
 
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).enrol(msg.sender, amount);
             }
         } else {
-            _manager().incrementLongs(loan.currency, amount);
+            manager.incrementLongs(loan.currency, amount);
             _synth(synthsByKey[loan.currency]).issue(msg.sender, amountMinusFee);
         }
 
@@ -761,12 +757,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 1. Get the rates we need.
         (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) =
             loan.short
-                ? _manager().getShortRatesAndTime(loan.currency, loan.interestIndex)
-                : _manager().getRatesAndTime(loan.interestIndex);
+                ? manager.getShortRatesAndTime(loan.currency, loan.interestIndex)
+                : manager.getRatesAndTime(loan.interestIndex);
 
         // 2. Get the instantaneous rate.
-        (uint rate, bool invalid) =
-            loan.short ? _manager().getShortRate(synthsByKey[loan.currency]) : _manager().getBorrowRate();
+        (uint rate, bool invalid) = loan.short ? manager.getShortRate(synthsByKey[loan.currency]) : manager.getBorrowRate();
 
         require(!invalid, "Invalid rates");
 
@@ -780,9 +775,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative.sub(entryRate));
 
         // 7. Update rates with the lastest cumulative rate. This also updates the time.
-        loan.short
-            ? _manager().updateShortRates(loan.currency, latestCumulative)
-            : _manager().updateBorrowRates(latestCumulative);
+        loan.short ? manager.updateShortRates(loan.currency, latestCumulative) : manager.updateBorrowRates(latestCumulative);
 
         // 8. Update loan
         loanAfter.accruedInterest = loan.accruedInterest.add(interest);
@@ -808,13 +801,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
             // And get the manager to reduce the total long/short balance.
             if (loanAfter.short) {
-                _manager().decrementShorts(loanAfter.currency, payment);
+                manager.decrementShorts(loanAfter.currency, payment);
 
                 if (shortingRewards[loanAfter.currency] != address(0)) {
                     IShortingRewards(shortingRewards[loanAfter.currency]).withdraw(loanAfter.account, payment);
                 }
             } else {
-                _manager().decrementLongs(loanAfter.currency, payment);
+                manager.decrementLongs(loanAfter.currency, payment);
             }
         }
     }
@@ -848,7 +841,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     event IssueFeeRateUpdated(uint issueFeeRate);
     event MaxLoansPerAccountUpdated(uint maxLoansPerAccount);
     event InteractionDelayUpdated(uint interactionDelay);
-    event ManagerUpdated(address manager);
+    event ManagerUpdated(ICollateralManager manager);
     event CanOpenLoansUpdated(bool canOpenLoans);
 
     // Loans
