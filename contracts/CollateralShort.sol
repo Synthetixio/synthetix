@@ -24,10 +24,7 @@ contract CollateralShort is Collateral {
         uint amount,
         bytes32 currency
     ) external {
-        require(
-            collateral <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)),
-            "Allowance not high enough"
-        );
+        require(collateral <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance too low");
 
         openInternal(collateral, amount, currency, true);
 
@@ -45,7 +42,7 @@ contract CollateralShort is Collateral {
         uint id,
         uint amount
     ) external {
-        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance not high enough");
+        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance too low");
 
         IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), amount);
 
