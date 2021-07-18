@@ -144,6 +144,10 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
+    function _issuer() internal view returns (IIssuer) {
+        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
+    }
+
     /* ---------- Public Views ---------- */
 
     function collateralRatio(Loan memory loan) public view returns (uint cratio) {
@@ -599,7 +603,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 4. Accrue interest.
         loan = accrueInterest(loan);
 
-        // 5. Check the repayer has enough synths or collateral to make the repayment.
+        // 5. Check the spender has enough synths to make the repayment
         _checkSynthBalance(repayer, loan.currency, payment);
 
         // 6. Process the payment.
