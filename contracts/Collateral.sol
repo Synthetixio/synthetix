@@ -686,7 +686,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or settlement owing");
         _synth(synthsByKey[loan.currency]).burn(repayer, amountReceived);
 
-        // Remit the fee if required.
+        // 11. Remit the fee if required.
         if (fee > 0) {
             // Normalize fee to sUSD
             // Note: `fee` is being reused to avoid stack too deep errors.
@@ -699,10 +699,10 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             _feePool().recordFeePaid(fee);
         }
 
-        // 10. Store the loan
+        // 12. Store the loan
         state.updateLoan(loan);
 
-        // 11. Emit the event.
+        // 13. Emit the event.
         emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
     }
 
