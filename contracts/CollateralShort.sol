@@ -79,10 +79,4 @@ contract CollateralShort is Collateral {
 
         IERC20(address(_synthsUSD())).transfer(msg.sender, collateralLiquidated);
     }
-
-    function getReward(bytes32 currency, address account) external {
-        if (shortingRewards[currency] != address(0)) {
-            IShortingRewards(shortingRewards[currency]).getReward(account);
-        }
-    }
 }
