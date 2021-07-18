@@ -241,7 +241,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address payer,
         uint amount
     ) internal view {
-        require(_loan.account == payer, "Must be the borrower to repay with collateral");
+        require(_loan.account == payer, "Must be borrower");
         require(_loan.collateral >= amount, "Not enough collateral");
     }
 
