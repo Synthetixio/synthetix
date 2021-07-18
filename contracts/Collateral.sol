@@ -222,7 +222,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         bytes32 key,
         uint amount
     ) internal view {
-        require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough synth balance");
+        require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough synths");
     }
 
     // Check the borrower has enough collateral to make the payment.
@@ -231,14 +231,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address payer,
         uint amount
     ) internal view {
-        require(_loan.account == payer, "Must be the borrower to repay with collateral");
+        require(_loan.account == payer, "Must be borrower");
         require(_loan.collateral >= amount, "Not enough collateral");
     }
 
     // We set the interest index to 0 to indicate the loan has been closed.
     function _checkLoanAvailable(Loan memory _loan) internal view {
         require(_loan.interestIndex > 0, "Loan does not exist");
-        require(_loan.lastInteraction.add(interactionDelay) <= block.timestamp, "Loan recently interacted with");
+        require(_loan.lastInteraction.add(interactionDelay) <= block.timestamp, "Recently interacted");
     }
 
     function issuanceRatio() internal view returns (uint ratio) {
@@ -250,7 +250,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ---------- Synths ---------- */
 
     function addSynths(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys) external onlyOwner {
-        require(_synthNamesInResolver.length == _synthKeys.length, "Input array length mismatch");
+        require(_synthNamesInResolver.length == _synthKeys.length, "Array length mismatch");
 
         for (uint i = 0; i < _synthNamesInResolver.length; i++) {
             bytes32 synthName = _synthNamesInResolver[i];
@@ -271,7 +271,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ---------- SETTERS ---------- */
 
     function setMinCratio(uint _minCratio) external onlyOwner {
-        require(_minCratio > SafeDecimalMath.unit(), "Must be greater than 1");
+        require(_minCratio > SafeDecimalMath.unit(), "Must be above 1");
         minCratio = _minCratio;
         emit MinCratioRatioUpdated(minCratio);
     }
@@ -308,16 +308,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
 
-        require(canOpenLoans, "Opening is disabled");
+        require(canOpenLoans, "Open disabled");
 
         // 1. We can only issue certain synths.
-        require(synthsByKey[currency] > 0, "Not allowed to issue this synth");
+        require(synthsByKey[currency] > 0, "Not allowed to issue");
 
         // 2. Make sure the synth rate is not invalid.
-        require(!_exchangeRates().rateIsInvalid(currency), "Currency rate is invalid");
+        require(!_exchangeRates().rateIsInvalid(currency), "Invalid rate");
 
         // 3. Collateral >= minimum collateral size.
-        require(collateral >= minCollateral, "Not enough collateral to open");
+        require(collateral >= minCollateral, "Not enough collateral");
 
         // 4. Cap the number of loans so that the array doesn't get too big.
         require(state.getNumLoans(msg.sender) < maxLoansPerAccount, "Max loans exceeded");
@@ -328,7 +328,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(canIssue && !anyRateIsInvalid, "Debt limit or invalid rate");
 
         // 6. Require requested loan < max loan
-        require(amount <= maxLoan(collateral, currency), "Exceeds max borrowing power");
+        require(amount <= maxLoan(collateral, currency), "Exceed max borrow power");
 
         // 7. This fee is denominated in the currency of the loan
         uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
@@ -399,10 +399,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _checkSynthBalance(loan.account, loan.currency, total);
 
         // 6. Burn the synths
-        require(
-            !_exchanger().hasWaitingPeriodOrSettlementOwing(borrower, loan.currency),
-            "Waiting secs or settlement owing"
-        );
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(borrower, loan.currency), "Waiting or owing");
         _synth(synthsByKey[loan.currency]).burn(borrower, total);
 
         // 7. Tell the manager.
@@ -449,7 +446,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         collateral = loan.collateral;
 
         // 4. Burn the synths
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, loan.currency), "Waiting or settlement owing");
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(liquidator, loan.currency), "Waiting or owing");
         _synth(synthsByKey[loan.currency]).burn(liquidator, total);
 
         // 5. Tell the manager.
@@ -487,7 +484,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. They sent some value > 0
-        require(amount > 0, "Deposit must be greater than 0");
+        require(amount > 0, "Must be above 0");
 
         // 2. Get the loan
         Loan memory loan = state.getLoan(account, id);
@@ -552,7 +549,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. Check the payment amount.
-        require(payment > 0, "Payment must be greater than 0");
+        require(payment > 0, "Must be above 0");
 
         // 2. Get the loan.
         Loan memory loan = state.getLoan(borrower, id);
@@ -567,7 +564,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _checkSynthBalance(msg.sender, loan.currency, payment);
 
         // 6. Check they are eligible for liquidation.
-        require(collateralRatio(loan) < minCratio, "Cratio above liquidation ratio");
+        require(collateralRatio(loan) < minCratio, "Cratio above liq ratio");
 
         // 7. Determine how much needs to be liquidated to fix their c ratio.
         uint liqAmount = liquidationAmount(loan);
@@ -594,7 +591,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loan.lastInteraction = block.timestamp;
 
         // 14. Burn the synths from the liquidator.
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(msg.sender, loan.currency), "Waiting or settlement owing");
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(msg.sender, loan.currency), "Waiting or owing");
         _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
 
         // 15. Store the loan.
@@ -614,7 +611,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. Check the payment amount.
-        require(payment > 0, "Payment must be greater than 0");
+        require(payment > 0, "Must be above 0");
 
         // 2. Get loan
         Loan memory loan = state.getLoan(borrower, id);
@@ -635,7 +632,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loan.lastInteraction = block.timestamp;
 
         // 8. Burn synths from the payer
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or settlement owing");
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or owing");
         _synth(synthsByKey[loan.currency]).burn(repayer, payment);
 
         // 9. Store the loan
@@ -655,7 +652,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. Check the payment amount.
-        require(payment > 0, "Payment must be greater than 0");
+        require(payment > 0, "Must be above 0");
 
         // 2. Get loan
         Loan memory loan = state.getLoan(borrower, id);
@@ -679,11 +676,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         (uint amountReceived, uint fee, ) = _exchanger().getAmountsForExchange(payment, sUSD, loan.currency);
 
         // 9. Reduce the collateral used for paymewnt.
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, sUSD), "Waiting or settlement owing");
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, sUSD), "Waiting or owing");
         loan.collateral = loan.collateral.sub(payment);
 
         // 10. Burn the borrowed synth units by the amount repaid (minus the exchange fees).
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or settlement owing");
+        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or owing");
         _synth(synthsByKey[loan.currency]).burn(repayer, amountReceived);
 
         // 11. Remit the fee if required.
@@ -771,7 +768,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         (uint rate, bool invalid) =
             loan.short ? _manager().getShortRate(synthsByKey[loan.currency]) : _manager().getBorrowRate();
 
-        require(!invalid, "Rates are invalid");
+        require(!invalid, "Invalid rates");
 
         // 3. Get the time since we last updated the rate.
         uint timeDelta = block.timestamp.sub(lastUpdated).mul(SafeDecimalMath.unit());
@@ -841,7 +838,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     function _requireRateIsValid() private view {
-        require(!_exchangeRates().rateIsInvalid(collateralKey), "Collateral rate is invalid");
+        require(!_exchangeRates().rateIsInvalid(collateralKey), "Invalid rate");
     }
 
     // ========== EVENTS ==========
