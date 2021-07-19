@@ -7,7 +7,7 @@ import "./Owned.sol";
 import "./AddressResolver.sol";
 import "./ReadProxy.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/mixinresolver
+// https://docs.synthetix.io/contracts/source/contracts/MixinResolver
 contract MixinResolver {
     AddressResolver public resolver;
 
