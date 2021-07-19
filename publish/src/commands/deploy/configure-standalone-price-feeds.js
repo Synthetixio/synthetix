@@ -6,7 +6,7 @@ const {
 } = require('ethers');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ deployer, runStep, standaloneFeeds }) => {
+module.exports = async ({ deployer, runStep, standaloneFeeds, useOvm }) => {
 	console.log(gray(`\n------ CONFIGURE STANDLONE FEEDS ------\n`));
 
 	// Setup remaining price feeds (that aren't synths)
@@ -25,5 +25,19 @@ module.exports = async ({ deployer, runStep, standaloneFeeds }) => {
 				comment: `Ensure the ExchangeRates contract has the feed for ${asset}`,
 			});
 		}
+	}
+
+	if (!useOvm && ExchangeRates) {
+		/*
+			TODO: set up DEX price oracle for exchange rates
+			await runStep({
+				contract: `ExchangeRates`,
+				target: ExchangeRates,
+				read: 'dexPriceAggregator',
+				expected: input => input === dexPriceAggregator,
+				write: 'setDexPriceAggregator',
+				writeArg: [dexPriceAggregator],
+			});
+			*/
 	}
 };

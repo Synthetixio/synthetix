@@ -90,6 +90,7 @@ contract('BaseSynthetix', async accounts => {
 				'emitExchangeReclaim',
 				'emitExchangeTracking',
 				'exchange',
+				'exchangeAtomically',
 				'exchangeOnBehalf',
 				'exchangeOnBehalfWithTracking',
 				'exchangeWithTracking',
@@ -160,6 +161,15 @@ contract('BaseSynthetix', async accounts => {
 				fnc: baseSynthetix.exchangeWithTrackingForInitiator,
 				accounts,
 				args: [sUSD, amount, sAUD, owner, toBytes32('AGGREGATOR')],
+				reason: 'Cannot be run on this layer',
+			});
+		});
+
+		it('ExchangeAtomically should revert no matter who the caller is', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: baseSynthetix.exchangeAtomically,
+				accounts,
+				args: [sUSD, amount, sETH, toBytes32('AGGREGATOR')],
 				reason: 'Cannot be run on this layer',
 			});
 		});

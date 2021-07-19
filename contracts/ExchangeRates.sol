@@ -4,9 +4,11 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
 // Libraries
+import "openzeppelin-solidity-2.3.0/contracts/math/Math.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
@@ -337,6 +339,24 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         )
     {
         return _effectiveValueAndRates(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    function effectiveAtomicValueAndRates(
+        bytes32,
+        uint,
+        bytes32
+    )
+        external
+        view
+        returns (
+            uint,
+            uint,
+            uint,
+            uint
+        )
+    {
+        _notImplemented();
     }
 
     function rateForCurrency(bytes32 currencyKey) external view returns (uint) {
@@ -705,6 +725,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             return false;
         }
         return flags.getFlag(aggregator);
+    }
+
+    function _notImplemented() internal pure {
+        revert("Cannot be run on this layer");
     }
 
     /* ========== MODIFIERS ========== */

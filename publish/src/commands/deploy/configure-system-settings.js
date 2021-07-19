@@ -116,7 +116,7 @@ module.exports = async ({
 			contract: 'SystemSettings',
 			target: SystemSettings,
 			read: 'waitingPeriodSecs',
-			expected: input => (waitingPeriodSecs === '0' ? true : input !== '0'),
+			expected: input => waitingPeriodSecs === '0' || input !== '0', // only change if setting to non-zero from zero
 			write: 'setWaitingPeriodSecs',
 			writeArg: waitingPeriodSecs,
 			comment: 'Set the fee reclamation (SIP-37) waiting period',
@@ -317,6 +317,27 @@ module.exports = async ({
 			write: 'setEtherWrapperBurnFeeRate',
 			writeArg: await getDeployParameter('ETHER_WRAPPER_BURN_FEE_RATE'),
 			comment: 'Set the fee rate for burning sETH for ETH in the EtherWrapper (SIP-112)',
+		});
+	}
+
+	if (!useOvm) {
+		// TODO: finish configuring new atomic exchange system settings
+		const atomicMaxVolumePerBlock = await getDeployParameter('ATOMIC_MAX_VOLUME_PER_BLOCK');
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'atomicMaxVolumePerBlock',
+			expected: input => atomicMaxVolumePerBlock === '0' || input !== '0', // only change if setting to non-zero from zero
+			write: 'setAtomicMaxVolumePerBlock',
+			writeArg: atomicMaxVolumePerBlock,
+		});
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'atomicTwapPriceWindow',
+			expected: input => input !== '0', // only change if zero
+			write: 'setAtomicTwapPriceWindow',
+			writeArg: await getDeployParameter('ATOMIC_TWAP_PRICE_WINDOW'),
 		});
 	}
 };

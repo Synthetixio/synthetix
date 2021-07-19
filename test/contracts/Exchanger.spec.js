@@ -21,7 +21,7 @@ const {
 
 const {
 	toBytes32,
-	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR },
+	defaults: { WAITING_PERIOD_SECS, PRICE_DEVIATION_THRESHOLD_FACTOR, ATOMIC_MAX_VOLUME_PER_BLOCK },
 } = require('../..');
 
 const BN = require('bn.js');
@@ -29,6 +29,8 @@ const BN = require('bn.js');
 const bnCloseVariance = '30';
 
 const MockAggregator = artifacts.require('MockAggregatorV2V3');
+const MockDexPriceAggregator = artifacts.require('MockDexPriceAggregator');
+const MockToken = artifacts.require('MockToken');
 
 contract('Exchanger (spec tests)', async accounts => {
 	const [sUSD, sAUD, sEUR, SNX, sBTC, iBTC, sETH, iETH] = [
@@ -2867,6 +2869,223 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
+	const itFailsToExchangeWithVirtual = () => {
+		describe('it cannot use exchangeWithVirtual()', () => {
+			it('errors with not implemented when attempted to exchange', async () => {
+				await assert.revert(
+					synthetix.exchangeWithVirtual(sUSD, amountIssued, sAUD, toBytes32(), {
+						from: account1,
+					}),
+					'Cannot be run on this layer'
+				);
+			});
+		});
+	};
+
+	const itExchangesAtomically = () => {
+		describe('exchangeAtomically()', () => {
+			describe('atomicMaxVolumePerBlock()', () => {
+				it('the default is configured correctly', async () => {
+					// Note: this only tests the effectiveness of the setup script, not the deploy script,
+					assert.equal(await exchanger.atomicMaxVolumePerBlock(), ATOMIC_MAX_VOLUME_PER_BLOCK);
+				});
+
+				describe('when atomic max volume per block is changed in the system settings', () => {
+					const maxVolumePerBlock = new BN(ATOMIC_MAX_VOLUME_PER_BLOCK).add(new BN('100'));
+					beforeEach(async () => {
+						await systemSettings.setAtomicMaxVolumePerBlock(maxVolumePerBlock, { from: owner });
+					});
+					it('then atomicMaxVolumePerBlock() is correctly updated', async () => {
+						assert.bnEqual(await exchanger.atomicMaxVolumePerBlock(), maxVolumePerBlock);
+					});
+				});
+			});
+
+			describe('when a user has 1000 sUSD', () => {
+				describe('when the necessary configuration been set', () => {
+					const ethOnDex = toUnit('0.005'); // this should be chosen over the 100 (0.01) specified by default
+
+					beforeEach(async () => {
+						// DexPriceAggregator
+						const dexPriceAggregator = await MockDexPriceAggregator.new();
+						await dexPriceAggregator.setAssetToAssetRate(ethOnDex);
+						await exchangeRates.setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
+
+						// Synth equivalents (needs ability to read into decimals)
+						const susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
+						const sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
+						await systemSettings.setAtomicEquivalentForDexPricing(
+							sUSD,
+							susdDexEquivalentToken.address,
+							{
+								from: owner,
+							}
+						);
+						await systemSettings.setAtomicEquivalentForDexPricing(
+							sETH,
+							sethDexEquivalentToken.address,
+							{
+								from: owner,
+							}
+						);
+					});
+
+					describe('when the user exchanges into sETH using an atomic exchange with a tracking code', () => {
+						const amountIn = toUnit('100');
+						const atomicTrackingCode = toBytes32('ATOMIC_AGGREGATOR');
+
+						let logs;
+						let amountReceived;
+						let amountFee;
+						let exchangeFeeRate;
+
+						beforeEach(async () => {
+							const txn = await synthetix.exchangeAtomically(
+								sUSD,
+								amountIn,
+								sETH,
+								atomicTrackingCode,
+								{
+									from: account1,
+								}
+							);
+
+							({
+								amountReceived,
+								exchangeFeeRate,
+								fee: amountFee,
+							} = await exchanger.getAmountsForAtomicExchange(amountIn, sUSD, sETH));
+
+							logs = await getDecodedLogs({
+								hash: txn.tx,
+								contracts: [synthetix, exchanger, sUSDContract, issuer, flexibleStorage, debtCache],
+							});
+						});
+
+						it('completed the exchange atomically', async () => {
+							assert.bnEqual(await sUSDContract.balanceOf(account1), amountIssued.sub(amountIn));
+							assert.bnEqual(await sETHContract.balanceOf(account1), amountReceived);
+						});
+
+						it('used the correct atomic exchange rate', async () => {
+							const expectedAmountWithoutFees = multiplyDecimal(amountIn, ethOnDex); // should have chosen the dex rate
+							const expectedAmount = expectedAmountWithoutFees.sub(amountFee);
+							assert.bnEqual(amountReceived, expectedAmount);
+						});
+
+						it('used correct fee rate', async () => {
+							const expectedFeeRate = await exchanger.feeRateForAtomicExchange(sUSD, sETH);
+							assert.bnEqual(exchangeFeeRate, expectedFeeRate);
+							assert.bnEqual(
+								multiplyDecimal(amountReceived.add(amountFee), exchangeFeeRate),
+								amountFee
+							);
+						});
+
+						it('emits an SynthExchange directly to the user', async () => {
+							decodedEventEqual({
+								log: logs.find(({ name }) => name === 'SynthExchange'),
+								event: 'SynthExchange',
+								emittedFrom: await synthetix.proxy(),
+								args: [account1, sUSD, amountIn, sETH, amountReceived, account1],
+								bnCloseVariance: '0',
+							});
+						});
+
+						it('emits an ExchangeTracking event with the correct code', async () => {
+							const usdFeeAmount = await exchangeRates.effectiveValue(sETH, amountFee, sUSD);
+							decodedEventEqual({
+								log: logs.find(({ name }) => name === 'ExchangeTracking'),
+								event: 'ExchangeTracking',
+								emittedFrom: await synthetix.proxy(),
+								args: [atomicTrackingCode, sETH, amountReceived, usdFeeAmount],
+								bnCloseVariance: '0',
+							});
+						});
+
+						it('created no new entries and user has no fee reclamation entires', async () => {
+							const {
+								reclaimAmount,
+								rebateAmount,
+								numEntries: settleEntries,
+							} = await exchanger.settlementOwing(owner, sETH);
+							assert.bnEqual(reclaimAmount, '0');
+							assert.bnEqual(rebateAmount, '0');
+							assert.bnEqual(settleEntries, '0');
+
+							const stateEntries = await exchangeState.getLengthOfEntries(owner, sETH);
+							assert.bnEqual(stateEntries, '0');
+						});
+					});
+
+					describe('when a fee override has been set for atomic exchanges', () => {
+						const amountIn = toUnit('100');
+						const feeRateOverride = toUnit('0.01');
+
+						let amountReceived;
+						let amountFee;
+						let exchangeFeeRate;
+
+						beforeEach(async () => {
+							await systemSettings.setAtomicExchangeFeeRate(sETH, feeRateOverride, {
+								from: owner,
+							});
+						});
+
+						beforeEach(async () => {
+							await synthetix.exchangeAtomically(sUSD, amountIn, sETH, toBytes32(), {
+								from: account1,
+							});
+
+							({
+								amountReceived,
+								exchangeFeeRate,
+								fee: amountFee,
+							} = await exchanger.getAmountsForAtomicExchange(amountIn, sUSD, sETH));
+						});
+
+						it('used correct fee rate', async () => {
+							assert.bnEqual(exchangeFeeRate, feeRateOverride);
+							assert.bnEqual(
+								multiplyDecimal(amountReceived.add(amountFee), exchangeFeeRate),
+								amountFee
+							);
+						});
+					});
+
+					describe('when a user exchanges without a tracking code', () => {
+						let txn;
+						beforeEach(async () => {
+							txn = await synthetix.exchangeAtomically(sUSD, toUnit('10'), sETH, toBytes32(), {
+								from: account1,
+							});
+						});
+						it('then no ExchangeTracking is emitted (as no tracking code supplied)', async () => {
+							const logs = await getDecodedLogs({
+								hash: txn.tx,
+								contracts: [synthetix, exchanger],
+							});
+							assert.notOk(logs.find(({ name }) => name === 'ExchangeTracking'));
+						});
+					});
+				});
+			});
+		});
+	};
+
+	const itFailsToExchangeAtomically = () => {
+		describe('it cannot exchange atomically', () => {
+			it('errors with not implemented when attempted to exchange', async () => {
+				await assert.revert(
+					synthetix.exchangeAtomically(sUSD, amountIssued, sETH, toBytes32(), {
+						from: account1,
+					}),
+					'Cannot be run on this layer'
+				);
+			});
+		});
+	};
+
 	const itSetsLastExchangeRateForSynth = () => {
 		describe('setLastExchangeRateForSynth() SIP-78', () => {
 			it('cannot be invoked by any user', async () => {
@@ -3729,7 +3948,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
-	describe('When using Synthetix', () => {
+	describe('With L1 configuration (Synthetix, ExchangerWithFeeReclamationAlternatives, ExchangeRatesWithDexPricing)', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
 
@@ -3756,14 +3975,16 @@ contract('Exchanger (spec tests)', async accounts => {
 				accounts,
 				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
 				contracts: [
-					'Exchanger',
+					// L1 specific
+					'Synthetix',
+					'ExchangerWithFeeReclamationAlternatives',
+					'ExchangeRatesWithDexPricing',
+					// Same between L1 and L2
 					'ExchangeState',
-					'ExchangeRates',
 					'DebtCache',
 					'Issuer', // necessary for synthetix transfers to succeed
 					'FeePool',
 					'FeePoolEternalStorage',
-					'Synthetix',
 					'SystemStatus',
 					'SystemSettings',
 					'DelegateApprovals',
@@ -3829,6 +4050,8 @@ contract('Exchanger (spec tests)', async accounts => {
 
 		itExchangesWithVirtual();
 
+		itExchangesAtomically();
+
 		itSetsLastExchangeRateForSynth();
 
 		itPricesSpikeDeviation();
@@ -3836,7 +4059,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		itSetsExchangeFeeRateForSynths();
 	});
 
-	describe('When using MintableSynthetix', () => {
+	describe('With L2 configuration (MintableSynthetix, Exchanger, ExchangeRates)', () => {
 		before(async () => {
 			({
 				Exchanger: exchanger,
@@ -3861,14 +4084,16 @@ contract('Exchanger (spec tests)', async accounts => {
 				accounts,
 				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
 				contracts: [
+					// L2 specific
+					'MintableSynthetix',
 					'Exchanger',
-					'ExchangeState',
 					'ExchangeRates',
+					// Same between L1 and L2
+					'ExchangeState',
 					'DebtCache',
 					'Issuer', // necessary for synthetix transfers to succeed
 					'FeePool',
 					'FeePoolEternalStorage',
-					'MintableSynthetix',
 					'SystemStatus',
 					'SystemSettings',
 					'DelegateApprovals',
@@ -3927,6 +4152,10 @@ contract('Exchanger (spec tests)', async accounts => {
 		itCalculatesAmountAfterSettlement();
 
 		itExchanges();
+
+		itFailsToExchangeWithVirtual();
+
+		itFailsToExchangeAtomically();
 
 		itSetsLastExchangeRateForSynth();
 

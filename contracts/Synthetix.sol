@@ -99,6 +99,23 @@ contract Synthetix is BaseSynthetix {
         );
     }
 
+    function exchangeAtomically(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        bytes32 trackingCode
+    ) external exchangeActive(sourceCurrencyKey, destinationCurrencyKey) optionalProxy returns (uint amountReceived) {
+        return
+            exchanger().exchangeAtomically(
+                messageSender,
+                sourceCurrencyKey,
+                sourceAmount,
+                destinationCurrencyKey,
+                messageSender,
+                trackingCode
+            );
+    }
+
     function settle(bytes32 currencyKey)
         external
         optionalProxy

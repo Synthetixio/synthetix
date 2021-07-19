@@ -4,6 +4,7 @@ require('dotenv').config();
 const path = require('path');
 
 require('./hardhat');
+require('@nomiclabs/hardhat-ethers');
 require('@nomiclabs/hardhat-truffle5');
 require('@nomiclabs/hardhat-ethers');
 require('solidity-coverage');

@@ -51,6 +51,8 @@ const {
 		MINIMUM_STAKE_TIME,
 		TRADING_REWARDS_ENABLED,
 		DEBT_SNAPSHOT_STALE_TIME,
+		ATOMIC_MAX_VOLUME_PER_BLOCK,
+		ATOMIC_TWAP_PRICE_WINDOW,
 	},
 	wrap,
 } = snx;
@@ -279,6 +281,10 @@ describe('publish scripts', () => {
 						PRICE_DEVIATION_THRESHOLD_FACTOR
 					);
 					assert.strictEqual(await Exchanger.tradingRewardsEnabled(), TRADING_REWARDS_ENABLED);
+					assert.strictEqual(
+						(await Exchanger.atomicMaxVolumePerBlock()).toString(),
+						ATOMIC_MAX_VOLUME_PER_BLOCK
+					);
 					assert.strictEqual((await Issuer.issuanceRatio()).toString(), ISSUANCE_RATIO);
 					assert.strictEqual((await FeePool.feePeriodDuration()).toString(), FEE_PERIOD_DURATION);
 					assert.strictEqual(
@@ -293,6 +299,10 @@ describe('publish scripts', () => {
 						LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
+					assert.strictEqual(
+						(await ExchangeRates.atomicTwapPriceWindow()).toString(),
+						ATOMIC_TWAP_PRICE_WINDOW
+					);
 					assert.strictEqual(
 						(await DebtCache.debtSnapshotStaleTime()).toString(),
 						DEBT_SNAPSHOT_STALE_TIME
@@ -317,6 +327,7 @@ describe('publish scripts', () => {
 				describe('when defaults are changed', () => {
 					let newWaitingPeriod;
 					let newPriceDeviation;
+					let newAtomicMaxVolumePerBlock;
 					let newIssuanceRatio;
 					let newFeePeriodDuration;
 					let newTargetThreshold;
@@ -324,6 +335,7 @@ describe('publish scripts', () => {
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
 					let newRateStalePeriod;
+					let newAtomicTwapPriceWindow;
 					let newRateForsUSD;
 					let newMinimumStakeTime;
 					let newDebtSnapshotStaleTime;
@@ -331,6 +343,7 @@ describe('publish scripts', () => {
 					beforeEach(async () => {
 						newWaitingPeriod = '10';
 						newPriceDeviation = ethers.utils.parseEther('0.45').toString();
+						newAtomicMaxVolumePerBlock = ethers.utils.parseEther('1000').toString();
 						newIssuanceRatio = ethers.utils.parseEther('0.25').toString();
 						newFeePeriodDuration = (3600 * 24 * 3).toString(); // 3 days
 						newTargetThreshold = '6';
@@ -338,6 +351,7 @@ describe('publish scripts', () => {
 						newLiquidationsRatio = ethers.utils.parseEther('0.6').toString(); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
 						newRateStalePeriod = '3400';
+						newAtomicTwapPriceWindow = '1800';
 						newRateForsUSD = ethers.utils.parseEther('0.1').toString();
 						newMinimumStakeTime = '3999';
 						newDebtSnapshotStaleTime = '43200'; // Half a day
@@ -349,6 +363,12 @@ describe('publish scripts', () => {
 
 						tx = await SystemSettings.setPriceDeviationThresholdFactor(
 							newPriceDeviation,
+							overrides
+						);
+						await tx.wait();
+
+						tx = await SystemSettings.setAtomicMaxVolumePerBlock(
+							newAtomicMaxVolumePerBlock,
 							overrides
 						);
 						await tx.wait();
@@ -369,6 +389,9 @@ describe('publish scripts', () => {
 						await tx.wait();
 
 						tx = await SystemSettings.setLiquidationPenalty(newLiquidationsPenalty, overrides);
+						await tx.wait();
+
+						tx = await SystemSettings.setAtomicTwapPriceWindow(newAtomicTwapPriceWindow, overrides);
 						await tx.wait();
 
 						tx = await SystemSettings.setRateStalePeriod(newRateStalePeriod, overrides);
@@ -415,6 +438,10 @@ describe('publish scripts', () => {
 								(await Exchanger.priceDeviationThresholdFactor()).toString(),
 								newPriceDeviation
 							);
+							assert.strictEqual(
+								(await Exchanger.atomicMaxVolumePerBlock()).toString(),
+								newAtomicMaxVolumePerBlock
+							);
 							assert.strictEqual((await Issuer.issuanceRatio()).toString(), newIssuanceRatio);
 							assert.strictEqual(
 								(await FeePool.feePeriodDuration()).toString(),
@@ -439,6 +466,10 @@ describe('publish scripts', () => {
 							assert.strictEqual(
 								(await ExchangeRates.rateStalePeriod()).toString(),
 								newRateStalePeriod
+							);
+							assert.strictEqual(
+								(await ExchangeRates.atomicTwapPriceWindow()).toString(),
+								newAtomicTwapPriceWindow
 							);
 							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
 							assert.strictEqual(

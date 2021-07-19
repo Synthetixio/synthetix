@@ -363,6 +363,7 @@ const deploy = async ({
 		deployer,
 		runStep,
 		standaloneFeeds,
+		useOvm,
 	});
 
 	await configureSynths({
