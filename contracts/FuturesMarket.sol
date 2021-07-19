@@ -18,13 +18,8 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 
 // Remaining Functionality
-//     Consider not exposing signs of short vs long positions
 //     Rename marketSize, marketSkew, marketDebt, profitLoss, accruedFunding -> size, skew, debt, profit, funding
-//     Consider reverting if things need to be liquidated rather than triggering it except by the
-//         liquidatePosition function
 //     Consider eliminating the fundingIndex param everywhere if we're always computing up to the current time.
-//     Move the minimum initial margin into a global setting within SystemSettings, and then set a maximum liquidation fee that is the current minimum initial margin (otherwise we could set a value that will immediately liquidate every position)
-//     Remove proportional skew from public interface
 
 /* Notes:
  *
