@@ -19,7 +19,6 @@ import "./interfaces/IFuturesMarketSettings.sol";
 
 // Remaining Functionality
 //     Rename marketSize, marketSkew, marketDebt, profitLoss, accruedFunding -> size, skew, debt, profit, funding
-//     Consider eliminating the fundingIndex param everywhere if we're always computing up to the current time.
 
 /* Notes:
  *
@@ -45,30 +44,11 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
     using SignedSafeMath for int;
     using SignedSafeDecimalMath for int;
 
+    /* ========== CONSTANTS ========== */
+
     int private constant _UNIT = int(10**uint(18));
-    // TODO: Move this into a market setting?
+    // Orders can potentially move the market past its configured max by up to 2 %
     uint private constant _MAX_MARKET_VALUE_PLAY_FACTOR = (2 * uint(_UNIT)) / 100;
-
-    /* ========== TYPES ========== */
-
-    // TODO: Move these into interface
-
-    enum Side {Long, Short}
-
-    struct Order {
-        uint id;
-        int leverage;
-        uint fee;
-        uint roundId;
-    }
-
-    // If margin/size are positive, the position is long; if negative then it is short.
-    struct Position {
-        uint margin;
-        int size;
-        uint lastPrice;
-        uint fundingIndex;
-    }
 
     /* ========== STATE VARIABLES ========== */
 
@@ -333,6 +313,21 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
         return _orderPending(orders[account]);
     }
 
+    function canConfirmOrder(address account) external view returns (bool) {
+        IExchangeRates exRates = _exchangeRates();
+        (uint price, bool invalid) = _assetPrice(exRates);
+        Order storage order = orders[account];
+        Position storage position = positions[account];
+        uint fundingSequenceIndex = fundingSequence.length;
+        return
+            !invalid && // Price is valid
+            price != 0 &&
+            _orderPending(order) && // There is actually an order
+            order.roundId < _currentRoundId(exRates) && // A new price has arrived
+            !_canLiquidate(position, _liquidationFee(), fundingSequenceIndex, price) && // No existing position can be liquidated
+            0 <= _marginPlusProfitFunding(position, fundingSequenceIndex, price).sub(int(order.fee)); // Margin has not dipped negative due to fees, profit, funding
+    }
+
     function _notionalValue(Position storage position, uint price) internal view returns (int value) {
         return position.size.multiplyDecimalRound(int(price));
     }
@@ -564,21 +559,6 @@ contract FuturesMarket is Owned, Proxyable, MixinSystemSettings, IFuturesMarket 
             return (0, isInvalid);
         }
         return (_orderFee(uint(margin), leverage, position.size, price), isInvalid);
-    }
-
-    function canConfirmOrder(address account) external view returns (bool) {
-        IExchangeRates exRates = _exchangeRates();
-        (uint price, bool invalid) = _assetPrice(exRates);
-        Order storage order = orders[account];
-        Position storage position = positions[account];
-        uint fundingSequenceIndex = fundingSequence.length;
-        return
-            !invalid && // Price is valid
-            price != 0 &&
-            _orderPending(order) && // There is actually an order
-            order.roundId < _currentRoundId(exRates) && // A new price has arrived
-            !_canLiquidate(position, _liquidationFee(), fundingSequenceIndex, price) && // No existing position can be liquidated
-            0 <= _marginPlusProfitFunding(position, fundingSequenceIndex, price).sub(int(order.fee)); // Margin has not dipped negative due to fees, profit, funding
     }
 
     /* ---------- Utilities ---------- */

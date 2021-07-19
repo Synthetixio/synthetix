@@ -11,16 +11,6 @@ import "./interfaces/IFuturesMarketManager.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketSettings
 contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
-    struct Parameters {
-        uint takerFee;
-        uint makerFee;
-        uint maxLeverage;
-        uint maxMarketValue;
-        uint maxFundingRate;
-        uint maxFundingRateSkew;
-        uint maxFundingRateDelta;
-    }
-
     /* ========== STATE VARIABLES ========== */
 
     mapping(bytes32 => Parameters) public parameters;

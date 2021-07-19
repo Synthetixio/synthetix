@@ -1,6 +1,16 @@
 pragma solidity ^0.5.16;
 
 interface IFuturesMarketSettings {
+    struct Parameters {
+        uint takerFee;
+        uint makerFee;
+        uint maxLeverage;
+        uint maxMarketValue;
+        uint maxFundingRate;
+        uint maxFundingRateSkew;
+        uint maxFundingRateDelta;
+    }
+
     function getTakerFee(bytes32 _baseAsset) external view returns (uint);
 
     function getMakerFee(bytes32 _baseAsset) external view returns (uint);
