@@ -80,7 +80,8 @@ describe('owner relay integration tests (L1, L2)', () => {
 
 				const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelay(
 					SystemSettingsL2.address,
-					calldata
+					calldata,
+					0
 				);
 				relayReceipt = await tx.wait();
 			});
@@ -100,7 +101,8 @@ describe('owner relay integration tests (L1, L2)', () => {
 
 				const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelay(
 					SystemSettingsL2.address,
-					calldata
+					calldata,
+					0
 				);
 				relayReceipt = await tx.wait();
 
@@ -118,7 +120,8 @@ describe('owner relay integration tests (L1, L2)', () => {
 
 				const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelay(
 					SystemSettingsL2.address,
-					calldata
+					calldata,
+					3e6
 				);
 				relayReceipt = await tx.wait();
 			});
