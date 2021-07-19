@@ -144,7 +144,7 @@ contract('FuturesMarketData', accounts => {
 		it('By address', async () => {
 			const details = await futuresMarketData.marketDetails(futuresMarket.address);
 
-			const params = await futuresMarketSettings.getAllParameters(baseAsset);
+			const params = await futuresMarketData.getAllParameters(baseAsset);
 
 			assert.equal(details.market, futuresMarket.address);
 			assert.equal(details.baseAsset, baseAsset);
@@ -224,7 +224,7 @@ contract('FuturesMarketData', accounts => {
 				await futuresMarketData.marketSummariesForAssets([toBytes32('sETH')])
 			)[0];
 
-			const params = await futuresMarketSettings.getAllParameters(newAsset); // sETH
+			const params = await futuresMarketData.getAllParameters(newAsset); // sETH
 
 			assert.equal(sETHSummary.market, sethMarket.address);
 			assert.equal(sETHSummary.asset, newAsset);
@@ -256,7 +256,7 @@ contract('FuturesMarketData', accounts => {
 			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
 			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
 
-			const fmParams = await futuresMarketSettings.getAllParameters(baseAsset);
+			const fmParams = await futuresMarketData.getAllParameters(baseAsset);
 
 			assert.equal(sBTCSummary.market, futuresMarket.address);
 			assert.equal(sBTCSummary.asset, baseAsset);
@@ -269,7 +269,7 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sBTCSummary.feeRates.takerFee, fmParams.takerFee);
 			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
 
-			const sETHParams = await futuresMarketSettings.getAllParameters(newAsset); // sETH
+			const sETHParams = await futuresMarketData.getAllParameters(newAsset); // sETH
 
 			assert.equal(sETHSummary.market, sethMarket.address);
 			assert.equal(sETHSummary.asset, newAsset);

@@ -89,13 +89,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint _maxFundingRateDelta
         )
     {
-        _takerFee = getTakerFee(_baseAsset);
-        _makerFee = getMakerFee(_baseAsset);
-        _maxLeverage = getMaxLeverage(_baseAsset);
-        _maxMarketValue = getMaxMarketValue(_baseAsset);
-        _maxFundingRate = getMaxFundingRate(_baseAsset);
-        _maxFundingRateSkew = getMaxFundingRateSkew(_baseAsset);
-        _maxFundingRateDelta = getMaxFundingRateDelta(_baseAsset);
+        return getAllParameters(_baseAsset);
     }
 
     function futuresLiquidationFee() external view returns (uint) {

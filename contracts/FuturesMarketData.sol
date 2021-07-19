@@ -118,6 +118,10 @@ contract FuturesMarketData {
             );
     }
 
+    function getAllParameters(bytes32 baseAsset) public view returns (Parameters memory) {
+        return _getParameters(baseAsset);
+    }
+
     function _getParameters(bytes32 baseAsset) internal view returns (Parameters memory) {
         (
             uint takerFee,
