@@ -130,8 +130,5 @@
 	},
 	"SynthsETH": {
 		"deploy": false
-	},
-	"OwnerRelayOnEthereum": {
-		"deploy": true
 	}
 }

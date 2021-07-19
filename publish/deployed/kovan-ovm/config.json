@@ -169,8 +169,5 @@
 	},
 	"EtherWrapper": {
 		"deploy": false
-	},
-	"OwnerRelayOnOptimism": {
-		"deploy": true
 	}
 }
