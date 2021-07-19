@@ -54,6 +54,13 @@ module.exports = async ({
 		const { timestamp } = await deployer.provider.ethers.provider.getBlock();
 		const DUMMY_PRICE = parseEther('1').toString();
 
+		console.log(
+			gray(
+				`Updating ExchangeRates for futures assets: ` +
+					futuresAssets.map(asset => `s${asset}`).join(', ')
+			)
+		);
+
 		for (const key of currencyKeys) {
 			await runStep({
 				contract: 'ExchangeRates',
