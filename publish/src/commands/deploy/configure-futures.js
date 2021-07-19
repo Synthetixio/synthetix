@@ -3,13 +3,26 @@
 const { gray } = require('chalk');
 const { toBytes32 } = require('../../../..');
 const w3utils = require('web3-utils');
+const {
+	utils: { parseEther },
+} = require('ethers');
 
-module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
+module.exports = async ({
+	deployer,
+	getDeployParameter,
+	runStep,
+	useOvm,
+	freshDeploy,
+	network,
+}) => {
 	console.log(gray(`\n------ CONFIGURE FUTURES MARKETS ------\n`));
 
 	if (!useOvm) return;
 
-	const { FuturesMarketSettings: futuresMarketSettings } = deployer.deployedContracts;
+	const {
+		FuturesMarketSettings: futuresMarketSettings,
+		ExchangeRates: exchangeRates,
+	} = deployer.deployedContracts;
 
 	await runStep({
 		contract: 'FuturesMarketSettings',
@@ -32,6 +45,28 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 	});
 
 	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
+	const currencyKeys = futuresAssets.map(asset => toBytes32(`s${asset}`));
+
+	// Some market parameters invoke a recomputation of the funding rate, and
+	// thus require exchange rates to be fresh. We assume production networks
+	// have fresh funding rates at the time of deployment.
+	if (freshDeploy || network === 'local') {
+		const { timestamp } = await deployer.provider.ethers.provider.getBlock();
+		const DUMMY_PRICE = parseEther('1').toString();
+
+		for (const key of currencyKeys) {
+			await runStep({
+				contract: 'ExchangeRates',
+				target: exchangeRates,
+				write: `updateRates`,
+				writeArg: [[key], [DUMMY_PRICE], timestamp],
+			});
+		}
+	}
+
+	//
+	// Configure parameters for each market.
+	//
 
 	for (const asset of futuresAssets) {
 		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
@@ -52,6 +87,7 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 		for (const setting in settings) {
 			const capSetting = setting.charAt(0).toUpperCase() + setting.slice(1);
 			const value = settings[setting];
+
 			await runStep({
 				contract: 'FuturesMarketSettings',
 				target: futuresMarketSettings,

@@ -6,6 +6,8 @@ import "./MixinFuturesMarketSettings.sol";
 
 // Internal references
 import "./interfaces/IFuturesMarketSettings.sol";
+import "./interfaces/IFuturesMarketManager.sol";
+import "./interfaces/IFuturesMarket.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketSettings
 contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMarketSettings {
@@ -32,6 +34,17 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     constructor(address _owner, address _resolver) public Owned(_owner) MixinFuturesMarketSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinFuturesMarketSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_FUTURES_MARKET_MANAGER;
+        addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
+    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
+    }
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
@@ -122,14 +135,17 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
+        IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
     }
 
     function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW, _maxFundingRateSkew);
+        IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
     }
 
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) public onlyOwner {
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA, _maxFundingRateDelta);
+        IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
     }
 
     function setAllParameters(
