@@ -1,6 +1,7 @@
 [
 	{
 		"name": "Pollux",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 27
@@ -20,6 +21,7 @@
 	},
 	{
 		"name": "Formalhaut",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 28
@@ -35,6 +37,7 @@
 	},
 	{
 		"name": "Deneb",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 30
@@ -44,6 +47,7 @@
 	},
 	{
 		"name": "Mimosa",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 31
@@ -59,6 +63,7 @@
 	},
 	{
 		"name": "Regulus",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 32
@@ -68,6 +73,7 @@
 	},
 	{
 		"name": "Adhara",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 34
@@ -77,6 +83,7 @@
 	},
 	{
 		"name": "Shaula",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 35
@@ -109,6 +116,7 @@
 	},
 	{
 		"name": "Castor",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 36
@@ -131,6 +139,7 @@
 	},
 	{
 		"name": "Gacrux",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 37
@@ -141,6 +150,7 @@
 	},
 	{
 		"name": "Bellatrix",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 38
@@ -150,6 +160,7 @@
 	},
 	{
 		"name": "Elnath",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 39
@@ -159,6 +170,7 @@
 	},
 	{
 		"name": "L2 Phase 1 OVM (Kovan)",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 40
@@ -169,6 +181,7 @@
 	},
 	{
 		"name": "Miaplacidus",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 41
@@ -178,6 +191,7 @@
 	},
 	{
 		"name": "Alnilam",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 42
@@ -187,6 +201,7 @@
 	},
 	{
 		"name": "Regora",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 43
@@ -196,6 +211,7 @@
 	},
 	{
 		"name": "Alnair",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 44
@@ -205,6 +221,7 @@
 	},
 	{
 		"name": "Alnair (Optimism)",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 44
@@ -221,6 +238,7 @@
 	},
 	{
 		"name": "Alioth",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 45
@@ -239,6 +257,7 @@
 	},
 	{
 		"name": "Alnitak",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 46
@@ -248,6 +267,7 @@
 	},
 	{
 		"name": "Alnitak (Optimism)",
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 46
