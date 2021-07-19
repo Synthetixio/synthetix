@@ -282,7 +282,6 @@
 			"major": 2,
 			"minor": 999
 		},
-		"ovm": true,
 		"sources": ["OwnerRelayOnEthereum"],
 		"sips": [167]
 	},
