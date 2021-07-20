@@ -174,43 +174,53 @@
 		"asset": "MSFT"
 	},
 	{
-		"name": "sCEX",
-		"asset": "CEX",
+		"name": "sCEFI",
+		"asset": "CEFI",
 		"index": [
 			{
 				"asset": "BNB",
-				"units": 12.88,
-				"weight": 29.15
-			},
-			{
-				"asset": "CRO",
-				"units": 1303.31,
-				"weight": 24.3
-			},
-			{
-				"asset": "LEO",
-				"units": 94.54,
-				"weight": 13.42
-			},
-			{
-				"asset": "HT",
-				"units": 23.06,
-				"weight": 11.73
-			},
-			{
-				"asset": "FTT",
-				"units": 9.36,
-				"weight": 3.56
+				"units": 1.0008,
+				"weight": 30.7
 			},
 			{
 				"asset": "OKB",
-				"units": 25.72,
-				"weight": 16.97
+				"units": 9.6777,
+				"weight": 9.61
+			},
+			{
+				"asset": "CRO",
+				"units": 848.1976,
+				"weight": 9.52
+			},
+			{
+				"asset": "CEL",
+				"units": 14.5683,
+				"weight": 9.28
+			},
+			{
+				"asset": "FTT",
+				"units": 3.1631,
+				"weight": 8.98
+			},
+			{
+				"asset": "HT",
+				"units": 8.5282,
+				"weight": 8.46
+			},
+			{
+				"asset": "LEO",
+				"units": 27.7352,
+				"weight": 7.96
+			},
+			{
+				"asset": "NEXO",
+				"units": 49.367,
+				"weight": 7.8
 			},
 			{
 				"asset": "KCS",
-				"units": 9.18,
-				"weight": 0.87
+				"units": 6.2776,
+				"weight": 7.69
 			}
 		],
 		"subclass": "PurgeableSynth"
@@ -450,17 +460,6 @@
 			"entryPoint": 0.977,
 			"upperLimit": 1.466,
 			"lowerLimit": 0.489
-		}
-	},
-	{
-		"name": "iCEX",
-		"asset": "CEX",
-		"index": "sCEX",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 4946,
-			"upperLimit": 7419,
-			"lowerLimit": 2437
 		}
 	},
 	{

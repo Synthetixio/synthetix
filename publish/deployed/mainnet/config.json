@@ -793,5 +793,14 @@
 	},
 	"NativeEtherWrapper": {
 		"deploy": false
+	},
+	"TokenStatesCEFI": {
+		"deploy": false
+	},
+	"ProxysCEFI": {
+		"deploy": false
+	},
+	"SynthsCEFI": {
+		"deploy": false
 	}
 }

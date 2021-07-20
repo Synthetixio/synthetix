@@ -83,8 +83,8 @@
 		"asset": "ADA",
 		"feed": "0xAE48c91dF1fE419994FFDa27da09D5aC69c30f55"
 	},
-	"CEX": {
-		"asset": "CEX",
+	"CEFI": {
+		"asset": "CEFI",
 		"feed": "0x283D433435cFCAbf00263beEF6A362b7cc5ed9f2"
 	},
 	"DEFI": {
