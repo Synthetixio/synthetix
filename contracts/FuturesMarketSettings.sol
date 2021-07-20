@@ -17,18 +17,6 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
 
-    /* ---------- Parameter Names ---------- */
-
-    bytes32 internal constant PARAMETER_TAKER_FEE = "takerFee";
-    bytes32 internal constant PARAMETER_MAKER_FEE = "makerFee";
-    bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
-    bytes32 internal constant PARAMETER_MAX_MARKET_VALUE = "maxMarketValue";
-    bytes32 internal constant PARAMETER_MAX_FUNDING_RATE = "maxFundingRate";
-    bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_SKEW = "maxFundingRateSkew";
-    bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_DELTA = "maxFundingRateDelta";
-
-    bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinFuturesMarketSettings(_resolver) {}
