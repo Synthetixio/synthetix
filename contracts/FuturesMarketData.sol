@@ -139,7 +139,7 @@ contract FuturesMarketData {
         uint numMarkets = markets.length;
         MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
         for (uint i; i < numMarkets; i++) {
-            FuturesMarket market = IFuturesMarket(markets[i]);
+            IFuturesMarket market = IFuturesMarket(markets[i]);
             bytes32 baseAsset = market.baseAsset();
             IFuturesMarketSettings.Parameters memory params = _parameters(baseAsset);
 
