@@ -448,6 +448,10 @@ class Deployer {
 		return new this.provider.web3.eth.Contract(abi, address);
 	}
 
+	makeContractEthers({ abi, address }) {
+		return new ethers.Contract(address, abi, this.provider.ethers.provider);
+	}
+
 	getExistingContract({ contract }) {
 		let address;
 		if (this.network === 'local') {
@@ -464,7 +468,7 @@ class Deployer {
 
 		const { source } = this.deployment.targets[contract];
 		const { abi } = this.deployment.sources[source];
-		return this.makeContract({ abi, address });
+		return this.makeContractEthers({ abi, address });
 	}
 }
 

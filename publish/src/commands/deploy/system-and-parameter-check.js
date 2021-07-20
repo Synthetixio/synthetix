@@ -54,12 +54,10 @@ module.exports = async ({
 
 	try {
 		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
-		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
+		currentSynthetixSupply = await oldSynthetix.totalSupply();
 
 		// inflationSupplyToDate = total supply - 100m
-		const inflationSupplyToDate = parseUnits(currentSynthetixSupply, 'wei').sub(
-			parseUnits((100e6).toString(), 'wei')
-		);
+		const inflationSupplyToDate = currentSynthetixSupply.sub(parseUnits((100e6).toString(), 'wei'));
 
 		// current weekly inflation 75m / 52
 		const weeklyInflation = parseUnits((75e6 / 52).toString()).toString();
@@ -94,7 +92,7 @@ module.exports = async ({
 	try {
 		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
 		if (!oracleExrates) {
-			oracleAddress = await oldExrates.methods.oracle().call();
+			oracleAddress = await oldExrates.oracle();
 		}
 	} catch (err) {
 		if (freshDeploy) {
@@ -113,7 +111,7 @@ module.exports = async ({
 	try {
 		const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
 
-		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
+		const systemSuspensionStatus = await oldSystemStatus.systemSuspension();
 
 		systemSuspended = systemSuspensionStatus.suspended;
 		systemSuspendedReason = systemSuspensionStatus.reason;
