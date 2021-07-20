@@ -85,8 +85,9 @@ contract('FuturesMarketSettings', accounts => {
 				'setMaxFundingRate',
 				'setMaxFundingRateSkew',
 				'setMaxFundingRateDelta',
-				'setFuturesLiquidationFee',
-				'setFuturesMinInitialMargin',
+				'setParameters',
+				'setLiquidationFee',
+				'setMinInitialMargin',
 			],
 		});
 	});
@@ -178,13 +179,13 @@ contract('FuturesMarketSettings', accounts => {
 		});
 	});
 
-	describe('setFuturesMinInitialMargin()', () => {
+	describe('setMinInitialMargin()', () => {
 		it('should be able to change the futures min initial margin', async () => {
 			const initialMargin = toUnit('200');
 
-			const originalInitialMargin = await futuresMarketSettings.futuresMinInitialMargin.call();
-			await futuresMarketSettings.setFuturesMinInitialMargin(initialMargin, { from: owner });
-			const newInitialMargin = await futuresMarketSettings.futuresMinInitialMargin.call();
+			const originalInitialMargin = await futuresMarketSettings.minInitialMargin.call();
+			await futuresMarketSettings.setMinInitialMargin(initialMargin, { from: owner });
+			const newInitialMargin = await futuresMarketSettings.minInitialMargin.call();
 			assert.bnEqual(newInitialMargin, initialMargin);
 			assert.bnNotEqual(newInitialMargin, originalInitialMargin);
 		});
@@ -193,7 +194,7 @@ contract('FuturesMarketSettings', accounts => {
 			const initialMargin = toUnit('200');
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketSettings.setFuturesMinInitialMargin,
+				fnc: futuresMarketSettings.setMinInitialMargin,
 				args: [initialMargin.toString()],
 				address: owner,
 				accounts,
@@ -204,27 +205,27 @@ contract('FuturesMarketSettings', accounts => {
 		it('should emit event on successful min initial margin change', async () => {
 			const initialMargin = toUnit('250');
 
-			const txn = await futuresMarketSettings.setFuturesMinInitialMargin(initialMargin, {
+			const txn = await futuresMarketSettings.setMinInitialMargin(initialMargin, {
 				from: owner,
 			});
-			assert.eventEqual(txn, 'FuturesMinInitialMarginUpdated', {
+			assert.eventEqual(txn, 'MinInitialMarginUpdated', {
 				minMargin: initialMargin,
 			});
 		});
 	});
 
-	describe('setFuturesLiquidationFee()', () => {
+	describe('setLiquidationFee()', () => {
 		let minInitialMargin;
 		beforeEach(async () => {
-			minInitialMargin = await futuresMarketSettings.futuresMinInitialMargin.call();
+			minInitialMargin = await futuresMarketSettings.minInitialMargin.call();
 		});
 		it('should be able to change the futures liquidation fee', async () => {
 			// fee <= minInitialMargin
 			const liquidationFee = minInitialMargin;
 
-			const originalLiquidationFee = await futuresMarketSettings.futuresLiquidationFee.call();
-			await futuresMarketSettings.setFuturesLiquidationFee(liquidationFee, { from: owner });
-			const newLiquidationFee = await futuresMarketSettings.futuresLiquidationFee.call();
+			const originalLiquidationFee = await futuresMarketSettings.liquidationFee.call();
+			await futuresMarketSettings.setLiquidationFee(liquidationFee, { from: owner });
+			const newLiquidationFee = await futuresMarketSettings.liquidationFee.call();
 			assert.bnEqual(newLiquidationFee, liquidationFee);
 			assert.bnNotEqual(newLiquidationFee, originalLiquidationFee);
 		});
@@ -233,7 +234,7 @@ contract('FuturesMarketSettings', accounts => {
 			const liquidationFee = toUnit('100');
 
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketSettings.setFuturesLiquidationFee,
+				fnc: futuresMarketSettings.setLiquidationFee,
 				args: [liquidationFee.toString()],
 				address: owner,
 				accounts,
@@ -243,18 +244,18 @@ contract('FuturesMarketSettings', accounts => {
 
 		it('should revert if the fee is greater than the min initial margin', async () => {
 			await assert.revert(
-				futuresMarketSettings.setFuturesLiquidationFee(minInitialMargin.add(new BN(1)), {
+				futuresMarketSettings.setLiquidationFee(minInitialMargin.add(new BN(1)), {
 					from: owner,
 				}),
-				'fee is greater than min margin'
+				'min margin < liquidation fee'
 			);
 
-			const currentLiquidationFee = await futuresMarketSettings.futuresLiquidationFee.call();
+			const currentLiquidationFee = await futuresMarketSettings.liquidationFee.call();
 			await assert.revert(
-				futuresMarketSettings.setFuturesMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
+				futuresMarketSettings.setMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
 					from: owner,
 				}),
-				'fee is greater than min margin'
+				'min margin < liquidation fee'
 			);
 		});
 
@@ -262,10 +263,10 @@ contract('FuturesMarketSettings', accounts => {
 			// fee <= minInitialMargin
 			const liquidationFee = minInitialMargin.sub(new BN(1));
 
-			const txn = await futuresMarketSettings.setFuturesLiquidationFee(liquidationFee, {
+			const txn = await futuresMarketSettings.setLiquidationFee(liquidationFee, {
 				from: owner,
 			});
-			assert.eventEqual(txn, 'FuturesLiquidationFeeUpdated', {
+			assert.eventEqual(txn, 'LiquidationFeeUpdated', {
 				sUSD: liquidationFee,
 			});
 		});
