@@ -131,19 +131,26 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _setParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE, _maxMarketValue);
     }
 
+    // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
+    // must be recomputed, otherwise already-accrued but unrealised funding in the market can change.
+
+    function _recomputeFunding(bytes32 _baseAsset) internal {
+        IFuturesMarket(_futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
+    }
+
     function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) public onlyOwner {
+        _recomputeFunding(_baseAsset);
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
-        IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
     }
 
     function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) public onlyOwner {
+        _recomputeFunding(_baseAsset);
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW, _maxFundingRateSkew);
-        IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
     }
 
     function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) public onlyOwner {
+        _recomputeFunding(_baseAsset);
         _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA, _maxFundingRateDelta);
-        IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
     }
 
     function setParameters(
@@ -156,6 +163,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         uint _maxFundingRateSkew,
         uint _maxFundingRateDelta
     ) external onlyOwner {
+        _recomputeFunding(_baseAsset);
         setTakerFee(_baseAsset, _takerFee);
         setMakerFee(_baseAsset, _makerFee);
         setMaxLeverage(_baseAsset, _maxLeverage);
