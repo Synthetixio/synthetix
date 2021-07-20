@@ -9,6 +9,7 @@ import "./interfaces/IAddressResolver.sol";
 
 contract FuturesMarketData {
     /* ========== TYPES ========== */
+
     struct Parameters {
         uint takerFee;
         uint makerFee;
@@ -118,11 +119,11 @@ contract FuturesMarketData {
             );
     }
 
-    function getAllParameters(bytes32 baseAsset) public view returns (Parameters memory) {
-        return _getParameters(baseAsset);
+    function parameters(bytes32 baseAsset) public view returns (Parameters memory) {
+        return _parameters(baseAsset);
     }
 
-    function _getParameters(bytes32 baseAsset) internal view returns (Parameters memory) {
+    function _parameters(bytes32 baseAsset) internal view returns (Parameters memory) {
         (
             uint takerFee,
             uint makerFee,
@@ -131,7 +132,7 @@ contract FuturesMarketData {
             uint maxFundingRate,
             uint maxFundingRateSkew,
             uint maxFundingRateDelta
-        ) = _futuresMarketSettings().allParameters(baseAsset);
+        ) = _futuresMarketSettings().parameters(baseAsset);
         return
             Parameters(
                 takerFee,
@@ -149,21 +150,21 @@ contract FuturesMarketData {
         MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
         for (uint i; i < numMarkets; i++) {
             FuturesMarket market = FuturesMarket(markets[i]);
-
-            Parameters memory parameters = _getParameters(market.baseAsset());
+            bytes32 baseAsset = market.baseAsset();
+            Parameters memory params = _parameters(baseAsset);
             (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
 
             summaries[i] = MarketSummary(
                 address(market),
-                market.baseAsset(),
-                parameters.maxLeverage,
+                baseAsset,
+                params.maxLeverage,
                 price,
                 market.marketSize(),
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                FeeRates(parameters.takerFee, parameters.makerFee)
+                FeeRates(params.takerFee, params.makerFee)
             );
         }
 
@@ -182,8 +183,8 @@ contract FuturesMarketData {
         return _marketSummaries(_futuresMarketManager().allMarkets());
     }
 
-    function _fundingParameters(Parameters memory parameters) internal pure returns (FundingParameters memory) {
-        return FundingParameters(parameters.maxFundingRate, parameters.maxFundingRateSkew, parameters.maxFundingRateDelta);
+    function _fundingParameters(Parameters memory params) internal pure returns (FundingParameters memory) {
+        return FundingParameters(params.maxFundingRate, params.maxFundingRateSkew, params.maxFundingRateDelta);
     }
 
     function _marketSizes(FuturesMarket market) internal view returns (Sides memory) {
@@ -194,16 +195,17 @@ contract FuturesMarketData {
     function _marketDetails(FuturesMarket market) internal view returns (MarketData memory) {
         (uint price, bool invalid) = market.assetPrice();
         (uint marketDebt, ) = market.marketDebt();
+        bytes32 baseAsset = market.baseAsset();
 
-        Parameters memory parameters = _getParameters(market.baseAsset());
+        Parameters memory params = _parameters(baseAsset);
 
         return
             MarketData(
                 address(market),
-                market.baseAsset(),
-                FeeRates(parameters.takerFee, parameters.makerFee),
-                MarketLimits(parameters.maxLeverage, parameters.maxMarketValue),
-                _fundingParameters(parameters),
+                baseAsset,
+                FeeRates(params.takerFee, params.makerFee),
+                MarketLimits(params.maxLeverage, params.maxMarketValue),
+                _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
                 PriceDetails(price, market.currentRoundId(), invalid)
             );

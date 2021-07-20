@@ -160,14 +160,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /* ---------- Market Details ---------- */
 
-    function _liquidationFee() internal view returns (uint) {
-        return getFuturesLiquidationFee();
-    }
-
-    function _minInitialMargin() internal view returns (uint) {
-        return getFuturesMinInitialMargin();
-    }
-
     function _assetPrice(IExchangeRates exchangeRates) internal view returns (uint price, bool invalid) {
         return exchangeRates.rateAndInvalid(baseAsset);
     }
@@ -203,7 +195,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function _maxOrderSizes(uint price) internal view returns (uint, uint) {
         (uint long, uint short) = _marketSizes();
-        int sizeLimit = int(getMaxMarketValue(baseAsset)).divideDecimalRound(int(price));
+        int sizeLimit = int(_maxMarketValue(baseAsset)).divideDecimalRound(int(price));
         return (uint(sizeLimit.sub(_min(int(long), sizeLimit))), uint(sizeLimit.sub(_min(int(short), sizeLimit))));
     }
 
@@ -257,7 +249,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             uint maxFundingRateDelta
         )
     {
-        return getAllParameters(baseAsset);
+        return _parameters(baseAsset);
     }
 
     function _currentFundingRatePerSecond() internal view returns (int) {
@@ -265,7 +257,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function _currentFundingRate() internal view returns (int) {
-        (, , , , uint uMaxFundingRate, uint uMaxFundingRateSkew, ) = getAllParameters(baseAsset);
+        (, , , , uint uMaxFundingRate, uint uMaxFundingRateSkew, ) = _parameters(baseAsset);
         int maxFundingRate = int(uMaxFundingRate);
         int maxFundingRateSkew = int(uMaxFundingRateSkew);
         if (maxFundingRateSkew == 0) {
@@ -531,14 +523,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         if (_sameSide(newNotional, skew)) {
             // If the order is submitted on the same side as the skew, increasing it.
             // The taker fee is charged on the increase.
-            return _abs(notionalDiff.multiplyDecimalRound(int(getTakerFee(baseAsset))));
+            return _abs(notionalDiff.multiplyDecimalRound(int(_takerFee(baseAsset))));
         }
 
         // Otherwise if the order is opposite to the skew,
         // the maker fee is charged on new notional value up to the size of the existing skew,
         // and the taker fee is charged on any new skew they induce on the order's side of the market.
 
-        int makerFee = int(getMakerFee(baseAsset));
+        int makerFee = int(_makerFee(baseAsset));
         int fee = notionalDiff.multiplyDecimalRound(makerFee);
 
         // The notional value of the skew after the order is filled
@@ -547,7 +539,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // The order is sufficient to flip the skew, charge/rebate the difference in fees
         // between maker and taker on the new skew value.
         if (_sameSide(newNotional, postSkewNotional)) {
-            fee = fee.add(postSkewNotional.multiplyDecimalRound(int(getTakerFee(baseAsset)).sub(makerFee)));
+            fee = fee.add(postSkewNotional.multiplyDecimalRound(int(_takerFee(baseAsset)).sub(makerFee)));
         }
 
         return _abs(fee);
@@ -694,7 +686,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         if (0 < position.size && marginDelta <= 0) {
             require(_minInitialMargin() <= remainingMargin_, "Insufficient margin");
             require(
-                _abs(_currentLeverage(position, price, remainingMargin_)) < getMaxLeverage(baseAsset),
+                _abs(_currentLeverage(position, price, remainingMargin_)) < _maxLeverage(baseAsset),
                 "Max leverage exceeded"
             );
         }
@@ -780,7 +772,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // We'll allow an extra little bit of value over and above the stated max to allow for
         // rounding errors, price movements, multiple orders etc.
-        require(_abs(newSideSize.div(2)) <= getMaxMarketValue(baseAsset).add(play), "Max market size exceeded");
+        require(_abs(newSideSize.div(2)) <= _maxMarketValue(baseAsset).add(play), "Max market size exceeded");
     }
 
     function _submitOrder(
@@ -789,7 +781,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint fundingIndex,
         address sender
     ) internal {
-        require(_abs(leverage) <= getMaxLeverage(baseAsset), "Max leverage exceeded");
+        require(_abs(leverage) <= _maxLeverage(baseAsset), "Max leverage exceeded");
         Position storage position = positions[sender];
 
         // The order is not submitted if the user's existing position needed to be liquidated.
@@ -889,7 +881,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             positionSize,
             newSize,
             _sameSide(positionSize, newSize),
-            uint(int(getMaxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
+            uint(int(_maxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
         );
 
         // Update the market size and skew, checking that the maximums are not exceeded
