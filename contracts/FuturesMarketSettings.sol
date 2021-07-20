@@ -11,7 +11,7 @@ import "./interfaces/IFuturesMarket.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketSettings
 contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMarketSettings {
-    /* ========== STATE VARIABLES ========== */
+    /* ========== CONSTANTS ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -42,54 +42,41 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function futuresMarketManager() internal view returns (IFuturesMarketManager) {
+    function _futuresMarketManager() internal view returns (IFuturesMarketManager) {
         return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
-    }
-
-    /* ========== INTERNAL FUNCTIONS ========== */
-
-    function _setParameter(
-        bytes32 _baseAsset,
-        bytes32 key,
-        uint value
-    ) internal {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)), value);
-        emit ParameterUpdated(_baseAsset, key, value);
     }
 
     /* ---------- Getters ---------- */
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
     function takerFee(bytes32 _baseAsset) external view returns (uint) {
-        return getTakerFee(_baseAsset);
+        return _takerFee(_baseAsset);
     }
 
     function makerFee(bytes32 _baseAsset) public view returns (uint) {
-        return getMakerFee(_baseAsset);
+        return _makerFee(_baseAsset);
     }
 
     function maxLeverage(bytes32 _baseAsset) public view returns (uint) {
-        return getMaxLeverage(_baseAsset);
+        return _maxLeverage(_baseAsset);
     }
 
     function maxMarketValue(bytes32 _baseAsset) public view returns (uint) {
-        return getMaxMarketValue(_baseAsset);
+        return _maxMarketValue(_baseAsset);
     }
 
     function maxFundingRate(bytes32 _baseAsset) public view returns (uint) {
-        return getMaxFundingRate(_baseAsset);
+        return _maxFundingRate(_baseAsset);
     }
 
     function maxFundingRateSkew(bytes32 _baseAsset) public view returns (uint) {
-        return getMaxFundingRateSkew(_baseAsset);
+        return _maxFundingRateSkew(_baseAsset);
     }
 
     function maxFundingRateDelta(bytes32 _baseAsset) public view returns (uint) {
-        return getMaxFundingRateDelta(_baseAsset);
+        return _maxFundingRateDelta(_baseAsset);
     }
 
-    function allParameters(bytes32 _baseAsset)
+    function parameters(bytes32 _baseAsset)
         external
         view
         returns (
@@ -102,18 +89,29 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
             uint _maxFundingRateDelta
         )
     {
-        return getAllParameters(_baseAsset);
+        return _parameters(_baseAsset);
     }
 
-    function futuresLiquidationFee() external view returns (uint) {
-        return getFuturesLiquidationFee();
+    function liquidationFee() external view returns (uint) {
+        return _liquidationFee();
     }
 
-    function futuresMinInitialMargin() external view returns (uint) {
-        return getFuturesMinInitialMargin();
+    function minInitialMargin() external view returns (uint) {
+        return _minInitialMargin();
     }
 
-    /* ---------- Setters ---------- */
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /* ---------- Setters --------- */
+
+    function _setParameter(
+        bytes32 _baseAsset,
+        bytes32 key,
+        uint value
+    ) internal {
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)), value);
+        emit ParameterUpdated(_baseAsset, key, value);
+    }
 
     function setTakerFee(bytes32 _baseAsset, uint _takerFee) public onlyOwner {
         require(_takerFee <= 1 ether, "taker fee greater than 1");
@@ -148,7 +146,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         IFuturesMarket(futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
     }
 
-    function setAllParameters(
+    function setParameters(
         bytes32 _baseAsset,
         uint _takerFee,
         uint _makerFee,
@@ -167,21 +165,21 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);
     }
 
-    function setFuturesLiquidationFee(uint _sUSD) external onlyOwner {
-        require(_sUSD <= getFuturesMinInitialMargin(), "fee is greater than min margin");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_LIQUIDATION_FEE, _sUSD);
-        emit FuturesLiquidationFeeUpdated(_sUSD);
+    function setLiquidationFee(uint _sUSD) external onlyOwner {
+        require(_sUSD <= _minInitialMargin(), "min margin < liquidation fee");
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE, _sUSD);
+        emit LiquidationFeeUpdated(_sUSD);
     }
 
-    function setFuturesMinInitialMargin(uint _minMargin) external onlyOwner {
-        require(getFuturesLiquidationFee() <= _minMargin, "fee is greater than min margin");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_MIN_INITIAL_MARGIN, _minMargin);
-        emit FuturesMinInitialMarginUpdated(_minMargin);
+    function setMinInitialMargin(uint _minMargin) external onlyOwner {
+        require(_liquidationFee() <= _minMargin, "min margin < liquidation fee");
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN, _minMargin);
+        emit MinInitialMarginUpdated(_minMargin);
     }
 
     /* ========== EVENTS ========== */
 
     event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
-    event FuturesLiquidationFeeUpdated(uint sUSD);
-    event FuturesMinInitialMarginUpdated(uint minMargin);
+    event LiquidationFeeUpdated(uint sUSD);
+    event MinInitialMarginUpdated(uint minMargin);
 }

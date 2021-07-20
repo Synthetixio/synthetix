@@ -15,7 +15,7 @@ interface IFuturesMarketSettings {
 
     function maxFundingRateDelta(bytes32 _baseAsset) external view returns (uint);
 
-    function allParameters(bytes32 _baseAsset)
+    function parameters(bytes32 _baseAsset)
         external
         view
         returns (
@@ -28,7 +28,7 @@ interface IFuturesMarketSettings {
             uint _maxFundingRateDelta
         );
 
-    function futuresLiquidationFee() external view returns (uint);
+    function liquidationFee() external view returns (uint);
 
-    function futuresMinInitialMargin() external view returns (uint);
+    function minInitialMargin() external view returns (uint);
 }
