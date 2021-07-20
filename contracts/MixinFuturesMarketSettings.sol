@@ -9,14 +9,11 @@ import "./interfaces/IFlexibleStorage.sol";
 contract MixinFuturesMarketSettings is MixinResolver {
     bytes32 internal constant SETTING_CONTRACT_NAME = "FuturesMarketSettings";
 
-    /* ========== STATE VARIABLES ========== */
-
-    /* ---------- Address Resolver Configuration ---------- */
-
-    bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
+    /* ========== CONSTANTS ========== */
 
     /* ---------- Parameter Names ---------- */
 
+    // Per-market settings
     bytes32 internal constant PARAMETER_TAKER_FEE = "takerFee";
     bytes32 internal constant PARAMETER_MAKER_FEE = "makerFee";
     bytes32 internal constant PARAMETER_MAX_LEVERAGE = "maxLeverage";
@@ -25,57 +22,64 @@ contract MixinFuturesMarketSettings is MixinResolver {
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_SKEW = "maxFundingRateSkew";
     bytes32 internal constant PARAMETER_MAX_FUNDING_RATE_DELTA = "maxFundingRateDelta";
 
-    bytes32 internal constant SETTING_FUTURES_LIQUIDATION_FEE = "futuresLiquidationFee";
-    bytes32 internal constant SETTING_FUTURES_MIN_INITIAL_MARGIN = "futuresMinInitialMargin";
+    // Global settings
+    bytes32 internal constant SETTING_LIQUIDATION_FEE = "futuresLiquidationFee";
+    bytes32 internal constant SETTING_MIN_INITIAL_MARGIN = "futuresMinInitialMargin";
+
+    /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
+    /* ========== CONSTRUCTOR ========== */
+
     constructor(address _resolver) internal MixinResolver(_resolver) {}
+
+    /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](1);
         addresses[0] = CONTRACT_FLEXIBLESTORAGE;
     }
 
-    function flexibleStorage() internal view returns (IFlexibleStorage) {
+    function _flexibleStorage() internal view returns (IFlexibleStorage) {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
     }
 
-    function _getParameter(bytes32 _baseAsset, bytes32 key) internal view returns (uint value) {
-        value = flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)));
+    /* ---------- Internals ---------- */
+
+    function _parameter(bytes32 _baseAsset, bytes32 key) internal view returns (uint value) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)));
     }
 
-    /* ---------- Getters ---------- */
-
-    function getTakerFee(bytes32 _baseAsset) internal view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_TAKER_FEE);
+    function _takerFee(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_TAKER_FEE);
     }
 
-    function getMakerFee(bytes32 _baseAsset) internal view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAKER_FEE);
+    function _makerFee(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MAKER_FEE);
     }
 
-    function getMaxLeverage(bytes32 _baseAsset) internal view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_LEVERAGE);
+    function _maxLeverage(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MAX_LEVERAGE);
     }
 
-    function getMaxMarketValue(bytes32 _baseAsset) internal view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE);
+    function _maxMarketValue(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE);
     }
 
-    function getMaxFundingRate(bytes32 _baseAsset) internal view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE);
+    function _maxFundingRate(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE);
     }
 
-    function getMaxFundingRateSkew(bytes32 _baseAsset) internal view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW);
+    function _maxFundingRateSkew(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW);
     }
 
-    function getMaxFundingRateDelta(bytes32 _baseAsset) internal view returns (uint) {
-        return _getParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA);
+    function _maxFundingRateDelta(bytes32 _baseAsset) internal view returns (uint) {
+        return _parameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA);
     }
 
-    function getAllParameters(bytes32 _baseAsset)
+    function _parameters(bytes32 _baseAsset)
         internal
         view
         returns (
@@ -88,20 +92,20 @@ contract MixinFuturesMarketSettings is MixinResolver {
             uint maxFundingRateDelta
         )
     {
-        takerFee = getTakerFee(_baseAsset);
-        makerFee = getMakerFee(_baseAsset);
-        maxLeverage = getMaxLeverage(_baseAsset);
-        maxMarketValue = getMaxMarketValue(_baseAsset);
-        maxFundingRate = getMaxFundingRate(_baseAsset);
-        maxFundingRateSkew = getMaxFundingRateSkew(_baseAsset);
-        maxFundingRateDelta = getMaxFundingRateDelta(_baseAsset);
+        takerFee = _takerFee(_baseAsset);
+        makerFee = _makerFee(_baseAsset);
+        maxLeverage = _maxLeverage(_baseAsset);
+        maxMarketValue = _maxMarketValue(_baseAsset);
+        maxFundingRate = _maxFundingRate(_baseAsset);
+        maxFundingRateSkew = _maxFundingRateSkew(_baseAsset);
+        maxFundingRateDelta = _maxFundingRateDelta(_baseAsset);
     }
 
-    function getFuturesLiquidationFee() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_LIQUIDATION_FEE);
+    function _liquidationFee() internal view returns (uint) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE);
     }
 
-    function getFuturesMinInitialMargin() internal view returns (uint) {
-        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_FUTURES_MIN_INITIAL_MARGIN);
+    function _minInitialMargin() internal view returns (uint) {
+        return _flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN);
     }
 }
