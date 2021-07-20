@@ -109,7 +109,11 @@ contract FuturesMarketData {
             );
     }
 
-    function _getParameters(bytes32 baseAsset) internal view returns (IFuturesMarketSettings.Parameters memory) {
+    function parameters(bytes32 baseAsset) external view returns (IFuturesMarketSettings.Parameters memory) {
+        return _parameters(baseAsset);
+    }
+
+    function _parameters(bytes32 baseAsset) internal view returns (IFuturesMarketSettings.Parameters memory) {
         (
             uint takerFee,
             uint makerFee,
@@ -118,7 +122,7 @@ contract FuturesMarketData {
             uint maxFundingRate,
             uint maxFundingRateSkew,
             uint maxFundingRateDelta
-        ) = _futuresMarketSettings().getAllParameters(baseAsset);
+        ) = _futuresMarketSettings().parameters(baseAsset);
         return
             IFuturesMarketSettings.Parameters(
                 takerFee,
@@ -136,21 +140,22 @@ contract FuturesMarketData {
         MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
         for (uint i; i < numMarkets; i++) {
             IFuturesMarket market = IFuturesMarket(markets[i]);
+            bytes32 baseAsset = market.baseAsset();
+            IFuturesMarketSettings.Parameters memory params = _parameters(baseAsset);
 
-            IFuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
             (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
 
             summaries[i] = MarketSummary(
                 address(market),
-                market.baseAsset(),
-                parameters.maxLeverage,
+                baseAsset,
+                params.maxLeverage,
                 price,
                 market.marketSize(),
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                FeeRates(parameters.takerFee, parameters.makerFee)
+                FeeRates(params.takerFee, params.makerFee)
             );
         }
 
@@ -169,12 +174,12 @@ contract FuturesMarketData {
         return _marketSummaries(_futuresMarketManager().allMarkets());
     }
 
-    function _fundingParameters(IFuturesMarketSettings.Parameters memory parameters)
+    function _fundingParameters(IFuturesMarketSettings.Parameters memory params)
         internal
         pure
         returns (FundingParameters memory)
     {
-        return FundingParameters(parameters.maxFundingRate, parameters.maxFundingRateSkew, parameters.maxFundingRateDelta);
+        return FundingParameters(params.maxFundingRate, params.maxFundingRateSkew, params.maxFundingRateDelta);
     }
 
     function _marketSizes(IFuturesMarket market) internal view returns (Sides memory) {
@@ -185,16 +190,17 @@ contract FuturesMarketData {
     function _marketDetails(IFuturesMarket market) internal view returns (MarketData memory) {
         (uint price, bool invalid) = market.assetPrice();
         (uint marketDebt, ) = market.marketDebt();
+        bytes32 baseAsset = market.baseAsset();
 
-        IFuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
+        IFuturesMarketSettings.Parameters memory params = _parameters(baseAsset);
 
         return
             MarketData(
                 address(market),
-                market.baseAsset(),
-                FeeRates(parameters.takerFee, parameters.makerFee),
-                MarketLimits(parameters.maxLeverage, parameters.maxMarketValue),
-                _fundingParameters(parameters),
+                baseAsset,
+                FeeRates(params.takerFee, params.makerFee),
+                MarketLimits(params.maxLeverage, params.maxMarketValue),
+                _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
                 PriceDetails(price, market.currentRoundId(), invalid)
             );

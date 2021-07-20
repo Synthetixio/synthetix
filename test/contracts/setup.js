@@ -3,7 +3,7 @@
 const { artifacts, web3, log } = require('hardhat');
 
 const { toWei } = web3.utils;
-const { toUnit } = require('../utils')();
+const { toUnit, currentTime } = require('../utils')();
 const {
 	toBytes32,
 	getUsers,
@@ -517,17 +517,6 @@ const setupContract = async ({
 		},
 		async FuturesMarketBTC() {
 			await Promise.all([
-				cache['FuturesMarketSettings'].setAllParameters(
-					toBytes32('sBTC'),
-					toWei('0.003'), // 0.3% taker fee
-					toWei('0.001'), // 0.1% maker fee
-					toWei('10'), // 10x max leverage
-					toWei('100000'), // 100000 max market debt
-					toWei('0.1'), // 10% max funding rate
-					toWei('1'), // 100% max funding rate skew
-					toWei('0.0125'), // 1.25% per hour max funding rate of change
-					{ from: owner }
-				),
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 				cache['ProxyFuturesMarketBTC'].setTarget(instance.address, { from: owner }),
 				instance.setProxy(cache['ProxyFuturesMarketBTC'].address, {
@@ -537,19 +526,6 @@ const setupContract = async ({
 		},
 		async FuturesMarketETH() {
 			await Promise.all([
-				cache['FuturesMarketSettings'].setAllParameters(
-					toBytes32('sETH'),
-					toWei('0.003'), // 0.3% taker fee
-					toWei('0.001'), // 0.1% maker fee
-					toWei('10'), // 10x max leverage
-					toWei('100000'), // 100000 max market debt
-					[
-						toWei('0.1'), // 10% max funding rate
-						toWei('1'), // 100% max funding rate skew
-						toWei('0.0125'), // 1.25% per hour max funding rate of change
-					],
-					{ from: owner }
-				),
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 				cache['ProxyFuturesMarketETH'].setTarget(instance.address, { from: owner }),
 				instance.setProxy(cache['ProxyFuturesMarketETH'].address, {
@@ -653,7 +629,7 @@ const setupAllContracts = async ({
 	contracts = [],
 	synths = [],
 }) => {
-	const [, owner] = accounts;
+	const [, owner, oracle] = accounts;
 
 	// Copy mocks into the return object, this allows us to include them in the
 	// AddressResolver
@@ -914,23 +890,23 @@ const setupAllContracts = async ({
 			contract: 'FuturesMarketManager',
 			deps: ['AddressResolver'],
 		},
-		{
-			contract: 'FuturesMarketSettings',
-			deps: ['AddressResolver', 'SystemSettings'],
-		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{
 			contract: 'FuturesMarketBTC',
 			source: 'TestableFuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FlexibleStorage'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketETH' },
 		{
 			contract: 'FuturesMarketETH',
 			source: 'TestableFuturesMarket',
-			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FuturesMarketSettings'],
+			deps: ['Proxy', 'AddressResolver', 'FuturesMarketManager', 'FlexibleStorage'],
 		},
-		{ contract: 'FuturesMarketData', deps: [] },
+		{
+			contract: 'FuturesMarketSettings',
+			deps: ['AddressResolver', 'FlexibleStorage'],
+		},
+		{ contract: 'FuturesMarketData', deps: ['FuturesMarketSettings'] },
 	];
 
 	// get deduped list of all required base contracts
@@ -1120,13 +1096,49 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
 				from: owner,
 			}),
-			returnObj['SystemSettings'].setFuturesMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setFuturesLiquidationFee(FUTURES_LIQUIDATION_FEE, {
-				from: owner,
-			}),
 		]);
+
+		if (returnObj['FuturesMarketSettings']) {
+			const time = await currentTime();
+			const promises = [
+				returnObj['FuturesMarketSettings'].setMinInitialMargin(FUTURES_MIN_INITIAL_MARGIN, {
+					from: owner,
+				}),
+				returnObj['FuturesMarketSettings'].setLiquidationFee(FUTURES_LIQUIDATION_FEE, {
+					from: owner,
+				}),
+			];
+
+			// TODO: fetch settings per-market programmatically
+			const setupFuturesMarket = async asset => {
+				const assetKey = toBytes32(asset);
+				await Promise.all([
+					returnObj['ExchangeRates'].updateRates([assetKey], [toUnit('1')], time, {
+						from: oracle,
+					}),
+					returnObj['FuturesMarketSettings'].setParameters(
+						assetKey,
+						toWei('0.003'), // 0.3% taker fee
+						toWei('0.001'), // 0.1% maker fee
+						toWei('10'), // 10x max leverage
+						toWei('100000'), // 100000 max market debt
+						toWei('0.1'), // 10% max funding rate
+						toWei('1'), // 100% max funding rate skew
+						toWei('0.0125'), // 1.25% per hour max funding rate of change
+						{ from: owner }
+					),
+				]);
+			};
+
+			if (returnObj['FuturesMarketBTC']) {
+				promises.push(setupFuturesMarket('sBTC'));
+			}
+			if (returnObj['FuturesMarketETH']) {
+				promises.push(setupFuturesMarket('sETH'));
+			}
+
+			await Promise.all(promises);
+		}
 	}
 
 	// finally if any of our contracts have setSystemStatus (from MockSynth), then invoke it

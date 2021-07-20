@@ -19,8 +19,7 @@ const {
 } = require('./helpers');
 
 contract('FuturesMarket', accounts => {
-	let systemSettings,
-		proxyFuturesMarket,
+	let proxyFuturesMarket,
 		futuresMarketSettings,
 		futuresMarket,
 		exchangeRates,
@@ -46,6 +45,8 @@ contract('FuturesMarket', accounts => {
 	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
 	const liquidationFee = toUnit('20');
+
+	const initialFundingIndex = toBN(4);
 
 	async function setPrice(asset, price) {
 		await exchangeRates.updateRates([asset], [price], await currentTime(), {
@@ -100,7 +101,6 @@ contract('FuturesMarket', accounts => {
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSD,
 			FeePool: feePool,
-			SystemSettings: systemSettings,
 			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
@@ -109,12 +109,12 @@ contract('FuturesMarket', accounts => {
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
 				'ProxyFuturesMarketBTC',
+				'ProxyFuturesMarketETH',
 				'FuturesMarketBTC',
 				'AddressResolver',
 				'FeePool',
 				'ExchangeRates',
 				'SystemStatus',
-				'SystemSettings',
 				'Synthetix',
 				'CollateralManager',
 				'DebtCache',
@@ -139,7 +139,7 @@ contract('FuturesMarket', accounts => {
 		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: futuresMarket.abi,
-				ignoreParents: ['Owned', 'Proxyable', 'MixinSystemSettings'],
+				ignoreParents: ['Owned', 'Proxyable', 'MixinFuturesMarketSettings'],
 				expected: [
 					'modifyMargin',
 					'withdrawAllMargin',
@@ -1174,7 +1174,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(position.margin, margin.sub(fee));
 			assert.bnEqual(position.size, size);
 			assert.bnEqual(position.lastPrice, price);
-			assert.bnEqual(position.fundingIndex, toBN(3)); // margin deposit, submission, and confirmation
+			assert.bnEqual(position.fundingIndex, initialFundingIndex.add(toBN(3))); // margin deposit, submission, and confirmation
 
 			// Skew, size, entry notional sum, pending order value are updated.
 			assert.bnEqual(await futuresMarket.marketSkew(), size);
@@ -1915,7 +1915,10 @@ contract('FuturesMarket', accounts => {
 			});
 
 			it('Funding sequence is recomputed by setting funding rate parameters', async () => {
-				assert.bnEqual(await futuresMarket.fundingSequenceLength(), toBN(5));
+				assert.bnEqual(
+					await futuresMarket.fundingSequenceLength(),
+					initialFundingIndex.add(toBN(5))
+				);
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('100'));
 				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('-5'), toUnit('0.01'));
@@ -1923,9 +1926,16 @@ contract('FuturesMarket', accounts => {
 				await futuresMarketSettings.setMaxFundingRate(baseAsset, toUnit('0.2'), { from: owner });
 				let time = await currentTime();
 
-				assert.bnEqual(await futuresMarket.fundingSequenceLength(), toBN(6));
+				assert.bnEqual(
+					await futuresMarket.fundingSequenceLength(),
+					initialFundingIndex.add(toBN(6))
+				);
 				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
-				assert.bnClose(await futuresMarket.fundingSequence(5), toUnit('-5'), toUnit('0.01'));
+				assert.bnClose(
+					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(5))),
+					toUnit('-5'),
+					toUnit('0.01')
+				);
 				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('0'), toUnit('0.01'));
 
 				await fastForward(24 * 60 * 60);
@@ -1941,26 +1951,36 @@ contract('FuturesMarket', accounts => {
 				});
 				time = await currentTime();
 
-				assert.bnEqual(await futuresMarket.fundingSequenceLength(), toBN(7));
+				assert.bnEqual(
+					await futuresMarket.fundingSequenceLength(),
+					initialFundingIndex.add(toBN(7))
+				);
 				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
-				assert.bnClose(await futuresMarket.fundingSequence(6), toUnit('-25'), toUnit('0.01'));
+				assert.bnClose(
+					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(6))),
+					toUnit('-25'),
+					toUnit('0.01')
+				);
 
 				await fastForward(24 * 60 * 60);
 				await setPrice(baseAsset, toUnit('300'));
-				assert.bnClose(
-					(await futuresMarket.unrecordedFunding())[0],
-					toUnit('-60'),
-					toUnit('0.001')
-				);
+				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('-60'), toUnit('0.01'));
 
 				await futuresMarketSettings.setMaxFundingRateDelta(baseAsset, toUnit('0.05'), {
 					from: owner,
 				});
 				time = await currentTime();
 
-				assert.bnEqual(await futuresMarket.fundingSequenceLength(), toBN(8));
+				assert.bnEqual(
+					await futuresMarket.fundingSequenceLength(),
+					initialFundingIndex.add(toBN(8))
+				);
 				assert.bnEqual(await futuresMarket.fundingLastRecomputed(), time);
-				assert.bnClose(await futuresMarket.fundingSequence(7), toUnit('-85'), toUnit('0.01'));
+				assert.bnClose(
+					await futuresMarket.fundingSequence(initialFundingIndex.add(toBN(7))),
+					toUnit('-85'),
+					toUnit('0.01')
+				);
 			});
 		});
 
@@ -2167,7 +2187,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await systemSettings.setFuturesLiquidationFee(toUnit('100'), { from: owner });
+				await futuresMarketSettings.setLiquidationFee(toUnit('100'), { from: owner });
 
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
@@ -2180,7 +2200,7 @@ contract('FuturesMarket', accounts => {
 					toUnit('0.001')
 				);
 
-				await systemSettings.setFuturesLiquidationFee(toUnit('0'), { from: owner });
+				await futuresMarketSettings.setLiquidationFee(toUnit('0'), { from: owner });
 
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader, true)).price,
@@ -2437,7 +2457,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.margin, toUnit(0));
 				assert.bnEqual(position.size, toUnit(0));
 				assert.bnEqual(position.lastPrice, toUnit(0));
-				assert.bnEqual(position.fundingIndex, 0);
+				assert.bnEqual(position.fundingIndex, toBN(0));
 
 				assert.bnEqual(await sUSD.balanceOf(noBalance), liquidationFee);
 
@@ -2473,7 +2493,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(position.margin, toUnit(0));
 				assert.bnEqual(position.size, toUnit(0));
 				assert.bnEqual(position.lastPrice, toUnit(0));
-				assert.bnEqual(position.fundingIndex, 0);
+				assert.bnEqual(position.fundingIndex, toBN(0));
 
 				assert.bnEqual(await sUSD.balanceOf(noBalance), liquidationFee);
 
@@ -2505,7 +2525,7 @@ contract('FuturesMarket', accounts => {
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 
 				// raise the liquidation fee
-				await systemSettings.setFuturesLiquidationFee(toUnit('100'), { from: owner });
+				await futuresMarketSettings.setLiquidationFee(toUnit('100'), { from: owner });
 
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 				price = (await futuresMarket.liquidationPrice(trader, true)).price;

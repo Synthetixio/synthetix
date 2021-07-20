@@ -76,9 +76,8 @@ contract('FuturesMarketSettings', accounts => {
 	it('Only expected functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: futuresMarketSettings.abi,
-			ignoreParents: ['Owned', 'MixinSystemSettings'],
+			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
-				'setAllParameters',
 				'setTakerFee',
 				'setMakerFee',
 				'setMaxLeverage',
@@ -86,6 +85,9 @@ contract('FuturesMarketSettings', accounts => {
 				'setMaxFundingRate',
 				'setMaxFundingRateSkew',
 				'setMaxFundingRateDelta',
+				'setParameters',
+				'setLiquidationFee',
+				'setMinInitialMargin',
 			],
 		});
 	});
@@ -94,50 +96,18 @@ contract('FuturesMarketSettings', accounts => {
 		let params;
 
 		before('init params', async () => {
-			params = [
-				[
-					'takerFee',
-					takerFee,
-					futuresMarketSettings.setTakerFee,
-					futuresMarketSettings.getTakerFee,
-				],
-				[
-					'makerFee',
-					makerFee,
-					futuresMarketSettings.setMakerFee,
-					futuresMarketSettings.getMakerFee,
-				],
-				[
-					'maxLeverage',
-					maxLeverage,
-					futuresMarketSettings.setMaxLeverage,
-					futuresMarketSettings.getMaxLeverage,
-				],
-				[
-					'maxMarketValue',
-					maxMarketValue,
-					futuresMarketSettings.setMaxMarketValue,
-					futuresMarketSettings.getMaxMarketValue,
-				],
-				[
-					'maxFundingRate',
-					maxFundingRate,
-					futuresMarketSettings.setMaxFundingRate,
-					futuresMarketSettings.getMaxFundingRate,
-				],
-				[
-					'maxFundingRateSkew',
-					maxFundingRateSkew,
-					futuresMarketSettings.setMaxFundingRateSkew,
-					futuresMarketSettings.getMaxFundingRateSkew,
-				],
-				[
-					'maxFundingRateDelta',
-					maxFundingRateDelta,
-					futuresMarketSettings.setMaxFundingRateDelta,
-					futuresMarketSettings.getMaxFundingRateDelta,
-				],
-			];
+			params = Object.entries({
+				takerFee,
+				makerFee,
+				maxLeverage,
+				maxMarketValue,
+				maxFundingRate,
+				maxFundingRateSkew,
+				maxFundingRateDelta,
+			}).map(([key, val]) => {
+				const capKey = key.charAt(0).toUpperCase() + key.slice(1);
+				return [key, val, futuresMarketSettings[`set${capKey}`], futuresMarketSettings[`${key}`]];
+			});
 		});
 
 		describe('bounds checking', async () => {
@@ -174,22 +144,6 @@ contract('FuturesMarketSettings', accounts => {
 							accounts,
 						});
 					}
-
-					await onlyGivenAddressCanInvoke({
-						fnc: futuresMarketSettings.setAllParameters,
-						args: [
-							baseAsset,
-							takerFee,
-							makerFee,
-							maxLeverage,
-							maxMarketValue,
-							maxFundingRate,
-							maxFundingRateSkew,
-							maxFundingRateDelta,
-						],
-						address: owner,
-						accounts,
-					});
 				});
 			});
 
@@ -208,12 +162,12 @@ contract('FuturesMarketSettings', accounts => {
 								hash: tx.tx,
 								contracts: [futuresMarketSettings],
 							});
-							assert.equal(decodedLogs.length, 1);
+							assert.equal(decodedLogs.length, 2);
 							decodedEventEqual({
 								event: 'ParameterUpdated',
 								emittedFrom: futuresMarketSettings.address,
 								args: [baseAsset, param, value],
-								log: decodedLogs[0],
+								log: decodedLogs[1],
 							});
 
 							// And the parameter was actually set properly
@@ -221,57 +175,99 @@ contract('FuturesMarketSettings', accounts => {
 						}
 					});
 				});
+			});
+		});
+	});
 
-				describe('SetAllParameters', async () => {
-					const bn2 = new BN(2);
-					const newTakerFee = takerFee.mul(bn2);
-					const newMakerFee = makerFee.mul(bn2);
-					const newMaxLeverage = maxLeverage.mul(bn2);
-					const newMaxMarketValue = maxMarketValue.mul(bn2);
-					const newMaxFundingRate = maxFundingRate.mul(bn2);
-					const newMaxFundingRateSkew = maxFundingRateSkew.mul(bn2);
-					const newMaxFundingRateDelta = maxFundingRateDelta.mul(bn2);
-					let tx;
-					before(
-						'should set the params accordingly and emit the corresponding events',
-						async () => {
-							tx = await futuresMarketSettings.setAllParameters(
-								baseAsset,
-								newTakerFee,
-								newMakerFee,
-								newMaxLeverage,
-								newMaxMarketValue,
-								newMaxFundingRate,
-								newMaxFundingRateSkew,
-								newMaxFundingRateDelta,
-								{ from: owner }
-							);
-						}
-					);
-					it('should set the params accordingly and emit the corresponding events', async () => {
-						const newParams = await futuresMarketSettings.getAllParameters(baseAsset);
+	describe('setMinInitialMargin()', () => {
+		it('should be able to change the futures min initial margin', async () => {
+			const initialMargin = toUnit('200');
 
-						const decodedLogs = await getDecodedLogs({
-							hash: tx.tx,
-							contracts: [futuresMarketSettings],
-						});
-						assert.equal(decodedLogs.length, 7);
+			const originalInitialMargin = await futuresMarketSettings.minInitialMargin.call();
+			await futuresMarketSettings.setMinInitialMargin(initialMargin, { from: owner });
+			const newInitialMargin = await futuresMarketSettings.minInitialMargin.call();
+			assert.bnEqual(newInitialMargin, initialMargin);
+			assert.bnNotEqual(newInitialMargin, originalInitialMargin);
+		});
 
-						for (const p of params) {
-							const param = toBytes32(p[0]);
-							const value = p[1].mul(bn2);
+		it('only owner is permitted to change the futures min initial margin', async () => {
+			const initialMargin = toUnit('200');
 
-							decodedEventEqual({
-								event: 'ParameterUpdated',
-								emittedFrom: futuresMarketSettings.address,
-								args: [baseAsset, param, value],
-								log: decodedLogs[params.indexOf(p)],
-							});
+			await onlyGivenAddressCanInvoke({
+				fnc: futuresMarketSettings.setMinInitialMargin,
+				args: [initialMargin.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
 
-							assert.bnEqual(await newParams[p[0]], value.toString());
-						}
-					});
-				});
+		it('should emit event on successful min initial margin change', async () => {
+			const initialMargin = toUnit('250');
+
+			const txn = await futuresMarketSettings.setMinInitialMargin(initialMargin, {
+				from: owner,
+			});
+			assert.eventEqual(txn, 'MinInitialMarginUpdated', {
+				minMargin: initialMargin,
+			});
+		});
+	});
+
+	describe('setLiquidationFee()', () => {
+		let minInitialMargin;
+		beforeEach(async () => {
+			minInitialMargin = await futuresMarketSettings.minInitialMargin.call();
+		});
+		it('should be able to change the futures liquidation fee', async () => {
+			// fee <= minInitialMargin
+			const liquidationFee = minInitialMargin;
+
+			const originalLiquidationFee = await futuresMarketSettings.liquidationFee.call();
+			await futuresMarketSettings.setLiquidationFee(liquidationFee, { from: owner });
+			const newLiquidationFee = await futuresMarketSettings.liquidationFee.call();
+			assert.bnEqual(newLiquidationFee, liquidationFee);
+			assert.bnNotEqual(newLiquidationFee, originalLiquidationFee);
+		});
+
+		it('only owner is permitted to change the futures liquidation fee', async () => {
+			const liquidationFee = toUnit('100');
+
+			await onlyGivenAddressCanInvoke({
+				fnc: futuresMarketSettings.setLiquidationFee,
+				args: [liquidationFee.toString()],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		it('should revert if the fee is greater than the min initial margin', async () => {
+			await assert.revert(
+				futuresMarketSettings.setLiquidationFee(minInitialMargin.add(new BN(1)), {
+					from: owner,
+				}),
+				'min margin < liquidation fee'
+			);
+
+			const currentLiquidationFee = await futuresMarketSettings.liquidationFee.call();
+			await assert.revert(
+				futuresMarketSettings.setMinInitialMargin(currentLiquidationFee.sub(new BN(1)), {
+					from: owner,
+				}),
+				'min margin < liquidation fee'
+			);
+		});
+
+		it('should emit event on successful liquidation fee change', async () => {
+			// fee <= minInitialMargin
+			const liquidationFee = minInitialMargin.sub(new BN(1));
+
+			const txn = await futuresMarketSettings.setLiquidationFee(liquidationFee, {
+				from: owner,
+			});
+			assert.eventEqual(txn, 'LiquidationFeeUpdated', {
+				sUSD: liquidationFee,
 			});
 		});
 	});

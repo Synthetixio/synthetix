@@ -11,30 +11,34 @@ interface IFuturesMarketSettings {
         uint maxFundingRateDelta;
     }
 
-    function getTakerFee(bytes32 _baseAsset) external view returns (uint);
+    function takerFee(bytes32 _baseAsset) external view returns (uint);
 
-    function getMakerFee(bytes32 _baseAsset) external view returns (uint);
+    function makerFee(bytes32 _baseAsset) external view returns (uint);
 
-    function getMaxLeverage(bytes32 _baseAsset) external view returns (uint);
+    function maxLeverage(bytes32 _baseAsset) external view returns (uint);
 
-    function getMaxMarketValue(bytes32 _baseAsset) external view returns (uint);
+    function maxMarketValue(bytes32 _baseAsset) external view returns (uint);
 
-    function getMaxFundingRate(bytes32 _baseAsset) external view returns (uint);
+    function maxFundingRate(bytes32 _baseAsset) external view returns (uint);
 
-    function getMaxFundingRateSkew(bytes32 _baseAsset) external view returns (uint);
+    function maxFundingRateSkew(bytes32 _baseAsset) external view returns (uint);
 
-    function getMaxFundingRateDelta(bytes32 _baseAsset) external view returns (uint);
+    function maxFundingRateDelta(bytes32 _baseAsset) external view returns (uint);
 
-    function getAllParameters(bytes32 _baseAsset)
+    function parameters(bytes32 _baseAsset)
         external
         view
         returns (
-            uint takerFee,
-            uint makerFee,
-            uint maxLeverage,
-            uint maxMarketValue,
-            uint maxFundingRate,
-            uint maxFundingRateSkew,
-            uint maxFundingRateDelta
+            uint _takerFee,
+            uint _makerFee,
+            uint _maxLeverage,
+            uint _maxMarketValue,
+            uint _maxFundingRate,
+            uint _maxFundingRateSkew,
+            uint _maxFundingRateDelta
         );
+
+    function liquidationFee() external view returns (uint);
+
+    function minInitialMargin() external view returns (uint);
 }

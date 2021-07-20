@@ -1,7 +1,6 @@
 'use strict';
 
 const { gray } = require('chalk');
-const w3utils = require('web3-utils');
 const { toBytes32 } = require('../../../..');
 
 module.exports = async ({ account, addressOf, getDeployParameter, deployer, runStep, useOvm }) => {
@@ -25,7 +24,7 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 		args: useOvm
 			? [addressOf(proxyFuturesMarketManager), account, addressOf(ReadProxyAddressResolver)]
 			: [],
-		deps: ['AddressResolver'],
+		deps: ['ReadProxyAddressResolver'],
 	});
 
 	if (!useOvm) {
@@ -43,11 +42,6 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 		});
 	}
 
-	const futuresMarketSettings = await deployer.deployContract({
-		name: 'FuturesMarketSettings',
-		args: [account, addressOf(ReadProxyAddressResolver)],
-	});
-
 	// This belongs in dapp-utils, but since we are only deploying futures on L2,
 	// I've colocated it here for now.
 	await deployer.deployContract({
@@ -56,18 +50,13 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 		deps: ['AddressResolver'],
 	});
 
-	// TODO: Perform this programmatically per-market
+	await deployer.deployContract({
+		name: 'FuturesMarketSettings',
+		args: [account, addressOf(ReadProxyAddressResolver)],
+	});
+
 	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
 	const deployedFuturesMarkets = [];
-	const settings = {
-		takerFee: w3utils.toWei('0.003'),
-		makerFee: w3utils.toWei('0.001'),
-		maxLeverage: w3utils.toWei('10'),
-		maxMarketValue: w3utils.toWei('100000'),
-		maxFundingRate: w3utils.toWei('0.1'),
-		maxFundingRateSkew: w3utils.toWei('1'),
-		maxFundingRateDelta: w3utils.toWei('0.0125'),
-	};
 
 	for (const asset of futuresAssets) {
 		const marketName = 'FuturesMarket' + asset;
@@ -104,23 +93,6 @@ module.exports = async ({ account, addressOf, getDeployParameter, deployer, runS
 				write: 'setTarget',
 				writeArg: addressOf(futuresMarket),
 			});
-		}
-
-		if (futuresMarketSettings) {
-			// set the parameters before deploying the markets
-
-			for (const setting in settings) {
-				const capSetting = setting.charAt(0).toUpperCase() + setting.slice(1);
-				const value = settings[setting];
-				await runStep({
-					contract: 'FuturesMarketSettings',
-					target: futuresMarketSettings,
-					read: `get${capSetting}`,
-					expected: input => input === value,
-					write: `set${capSetting}`,
-					writeArg: value,
-				});
-			}
 		}
 	}
 

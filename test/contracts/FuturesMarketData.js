@@ -52,27 +52,16 @@ contract('FuturesMarketData', accounts => {
 			],
 		}));
 
-		// Add a couple of additional markets.
-		const marketsToAdd = [];
-		for (const key of ['sETH', 'sLINK']) {
-			// first set the all the params
-			futuresMarketSettings.setAllParameters(
-				toBytes32(key),
-				toWei('0.005'), // 0.5% taker fee
-				toWei('0.001'), // 0.1% maker fee
-				toWei('5'), // 5x max leverage
-				toWei('1000000'), // 1000000 max total margin
-				toWei('0.2'), // 20% max funding rate
-				toWei('0.5'), // 50% max funding rate skew
-				toWei('0.025'), // 2.5% per hour max funding rate of change
-				{ from: owner }
-			);
+		oracle = await exchangeRates.oracle();
 
+		// Add a couple of additional markets.
+		for (const key of ['sETH', 'sLINK']) {
 			const proxy = await setupContract({
 				accounts,
 				contract: 'ProxyFuturesMarket' + key,
 				source: 'Proxy',
 				args: [accounts[1]],
+				cache: { FuturesMarketManager: futuresMarketManager },
 			});
 
 			const market = await setupContract({
@@ -87,21 +76,32 @@ contract('FuturesMarketData', accounts => {
 				],
 			});
 
-			await proxy.setTarget(market.address, { from: accounts[1] });
-			await addressResolver.rebuildCaches([market.address]);
-			marketsToAdd.push(market.address);
-		}
+			await proxy.setTarget(market.address, { from: owner });
+			await addressResolver.rebuildCaches([market.address], { from: owner });
+			await futuresMarketManager.addMarkets([market.address], { from: owner });
 
-		await futuresMarketManager.addMarkets(marketsToAdd, { from: accounts[1] });
+			await exchangeRates.updateRates([toBytes32(key)], [toUnit(1000)], await currentTime(), {
+				from: oracle,
+			});
+
+			// Now that the market exists we can set the all its parameters
+			await futuresMarketSettings.setParameters(
+				toBytes32(key),
+				toWei('0.005'), // 0.5% taker fee
+				toWei('0.001'), // 0.1% maker fee
+				toWei('5'), // 5x max leverage
+				toWei('1000000'), // 1000000 max total margin
+				toWei('0.2'), // 20% max funding rate
+				toWei('0.5'), // 50% max funding rate skew
+				toWei('0.025'), // 2.5% per hour max funding rate of change
+				{ from: owner }
+			);
+		}
 
 		baseAsset = await futuresMarket.baseAsset();
 
 		// Update the rates to ensure they aren't stale
-		oracle = await exchangeRates.oracle();
 		await exchangeRates.updateRates([baseAsset], [toUnit(100)], await currentTime(), {
-			from: oracle,
-		});
-		await exchangeRates.updateRates([newAsset], [toUnit(1000)], await currentTime(), {
 			from: oracle,
 		});
 
@@ -144,7 +144,7 @@ contract('FuturesMarketData', accounts => {
 		it('By address', async () => {
 			const details = await futuresMarketData.marketDetails(futuresMarket.address);
 
-			const params = await futuresMarketSettings.getAllParameters(baseAsset);
+			const params = await futuresMarketData.parameters(baseAsset);
 
 			assert.equal(details.market, futuresMarket.address);
 			assert.equal(details.baseAsset, baseAsset);
@@ -224,7 +224,7 @@ contract('FuturesMarketData', accounts => {
 				await futuresMarketData.marketSummariesForAssets([toBytes32('sETH')])
 			)[0];
 
-			const params = await futuresMarketSettings.getAllParameters(newAsset); // sETH
+			const params = await futuresMarketData.parameters(newAsset); // sETH
 
 			assert.equal(sETHSummary.market, sethMarket.address);
 			assert.equal(sETHSummary.asset, newAsset);
@@ -256,7 +256,7 @@ contract('FuturesMarketData', accounts => {
 			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
 			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
 
-			const fmParams = await futuresMarketSettings.getAllParameters(baseAsset);
+			const fmParams = await futuresMarketData.parameters(baseAsset);
 
 			assert.equal(sBTCSummary.market, futuresMarket.address);
 			assert.equal(sBTCSummary.asset, baseAsset);
@@ -269,7 +269,7 @@ contract('FuturesMarketData', accounts => {
 			assert.equal(sBTCSummary.feeRates.takerFee, fmParams.takerFee);
 			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
 
-			const sETHParams = await futuresMarketSettings.getAllParameters(newAsset); // sETH
+			const sETHParams = await futuresMarketData.parameters(newAsset); // sETH
 
 			assert.equal(sETHSummary.market, sethMarket.address);
 			assert.equal(sETHSummary.asset, newAsset);
@@ -288,7 +288,7 @@ contract('FuturesMarketData', accounts => {
 			);
 			assert.equal(sLINKSummary.asset, toBytes32('sLINK'));
 			assert.equal(sLINKSummary.maxLeverage, toUnit(5));
-			assert.equal(sLINKSummary.price, toUnit(0));
+			assert.equal(sLINKSummary.price, toUnit(1000));
 			assert.equal(sLINKSummary.marketSize, toUnit(0));
 			assert.equal(sLINKSummary.marketSkew, toUnit(0));
 			assert.equal(sLINKSummary.currentFundingRate, toUnit(0));
