@@ -5,8 +5,6 @@ import "./Synth.sol";
 
 // Internal references
 import "./interfaces/ICollateralManager.sol";
-import "./interfaces/IEtherCollateralsUSD.sol";
-import "./interfaces/IEtherCollateral.sol";
 import "./interfaces/IEtherWrapper.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/multicollateralsynth
@@ -14,8 +12,6 @@ contract MultiCollateralSynth is Synth {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
-    bytes32 private constant CONTRACT_ETH_COLLATERAL = "EtherCollateral";
-    bytes32 private constant CONTRACT_ETH_COLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
 
     /* ========== CONSTRUCTOR ========== */
@@ -35,14 +31,6 @@ contract MultiCollateralSynth is Synth {
 
     function collateralManager() internal view returns (ICollateralManager) {
         return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
-    }
-
-    function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETH_COLLATERAL));
-    }
-
-    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETH_COLLATERAL_SUSD));
     }
 
     function etherWrapper() internal view returns (IEtherWrapper) {
@@ -86,20 +74,12 @@ contract MultiCollateralSynth is Synth {
         bool isFeePool = msg.sender == address(feePool());
         bool isExchanger = msg.sender == address(exchanger());
         bool isIssuer = msg.sender == address(issuer());
-        bool isEtherCollateral = msg.sender == address(etherCollateral());
-        bool isEtherCollateralsUSD = msg.sender == address(etherCollateralsUSD());
         bool isEtherWrapper = msg.sender == address(etherWrapper());
         bool isMultiCollateral = collateralManager().hasCollateral(msg.sender);
 
         require(
-            isFeePool ||
-                isExchanger ||
-                isIssuer ||
-                isEtherCollateral ||
-                isEtherCollateralsUSD ||
-                isEtherWrapper ||
-                isMultiCollateral,
-            "Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed"
+            isFeePool || isExchanger || isIssuer || isEtherWrapper || isMultiCollateral,
+            "Only FeePool, Exchanger, Issuer, MultiCollateral allowed"
         );
         _;
     }
