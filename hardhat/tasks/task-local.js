@@ -1,11 +1,13 @@
-const { types, task, subtask } = require('hardhat/config');
-const { gray, yellow } = require('chalk');
-const snx = require('../../index');
+const { task } = require('hardhat/config');
+const { yellow } = require('chalk');
 const { toBytes32 } = require('../../index');
 
 const fs = require('fs');
 const path = require('path');
 const ethers = require('ethers');
+const {
+	utils: { formatEther },
+} = ethers;
 const {
 	getSource,
 	getTarget,
@@ -35,10 +37,7 @@ async function _getSNXForOwnerOnL2ByHackMinting({ ctx, amount }) {
 
 	const bridgeName = toBytes32('SynthetixBridgeToBase');
 	let bridgeAddress = ZERO_ADDRESS;
-	try {
-		bridgeAddress = await AddressResolver.getAddress(bridgeName);
-	} catch (ex) {}
-	console.log(1);
+	bridgeAddress = await AddressResolver.getAddress(bridgeName);
 
 	let tx;
 	AddressResolver = AddressResolver.connect(owner);
@@ -55,6 +54,8 @@ async function _getSNXForOwnerOnL2ByHackMinting({ ctx, amount }) {
 	await tx.wait();
 	tx = await AddressResolver.rebuildCaches([Synthetix.address]);
 	await tx.wait();
+
+	console.log(`New balance: `, formatEther(await Synthetix.balanceOf(owner.address)), `SNX`);
 }
 
 function _setupProvider({ url }) {
@@ -67,7 +68,7 @@ function _setupProvider({ url }) {
 
 const { loadUsers } = require('../../test/integration/utils/users');
 
-task('bootstrap-local-l2')
+task('get-snx-local-l2')
 	.addOptionalParam('account', 'The account to fund with SNX')
 	.setAction(async (taskArguments, hre, runSuper) => {
 		const { account } = taskArguments;
@@ -75,7 +76,7 @@ task('bootstrap-local-l2')
 
 		const ctx = {};
 		ctx.network = 'local';
-		ctx.useOvm = false;
+		ctx.useOvm = true;
 
 		ctx.provider = _setupProvider({ url: `http://localhost:8545` });
 
@@ -83,5 +84,6 @@ task('bootstrap-local-l2')
 
 		connectContracts({ ctx });
 
-		_getSNXForOwnerOnL2ByHackMinting({ ctx, amount: ethers.utils.parseEther('5000000') });
+		// SNX go brrrrrrrrrrr.
+		await _getSNXForOwnerOnL2ByHackMinting({ ctx, amount: ethers.utils.parseEther('5000000') });
 	});
