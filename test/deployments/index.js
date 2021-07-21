@@ -80,20 +80,16 @@ describe('deployments', () => {
 									// Legacy contracts have a different method name
 									// to get staking tokens and rewards token
 									if (
-										!(stakingTokenMethod in stakingRewardsContract.methods) ||
-										!(rewardsTokenMethod in stakingRewardsContract.methods)
+										!(stakingTokenMethod in stakingRewardsContract.functions) ||
+										!(rewardsTokenMethod in stakingRewardsContract.functions)
 									) {
 										({ stakingTokenMethod, rewardsTokenMethod } = methodMappings[
 											stakingRewardsTarget.source
 										]);
 									}
 
-									const stakingTokenAddress = await stakingRewardsContract.methods[
-										stakingTokenMethod
-									]().call();
-									const rewardTokenAddress = await stakingRewardsContract.methods[
-										rewardsTokenMethod
-									]().call();
+									const stakingTokenAddress = await stakingRewardsContract[stakingTokenMethod]();
+									const rewardTokenAddress = await stakingRewardsContract[rewardsTokenMethod]();
 
 									const tokens = [
 										{ token: stakingToken, tokenAddress: stakingTokenAddress },
@@ -115,7 +111,7 @@ describe('deployments', () => {
 												sources['ProxyERC20'].abi,
 												tokenAddress
 											);
-											const tokenName = await tokenContract.methods.name().call();
+											const tokenName = await tokenContract.name();
 
 											if (token === 'Synthetix' || token === 'ProxyERC20') {
 												assert.strictEqual(tokenName, 'Synthetix Network Token');
@@ -136,17 +132,13 @@ describe('deployments', () => {
 						const synths = getSynths();
 
 						it(`The number of available synths in Synthetix matches the number of synths in the JSON file: ${synths.length}`, async () => {
-							const availableSynths = await contracts.Synthetix.methods
-								.availableCurrencyKeys()
-								.call();
+							const availableSynths = await contracts.Synthetix.availableCurrencyKeys();
 							assert.strictEqual(availableSynths.length, synths.length);
 						});
 						synths.forEach(({ name, inverted, feed, index }) => {
 							describe(name, () => {
 								it('Synthetix has the synth added', async () => {
-									const foundSynth = await contracts.Synthetix.methods
-										.synths(toBytes32(name))
-										.call();
+									const foundSynth = await contracts.Synthetix.synths(toBytes32(name));
 									assert.strictEqual(foundSynth, targets[`Synth${name}`].address);
 								});
 								if (inverted) {
@@ -159,9 +151,7 @@ describe('deployments', () => {
 											entryPoint,
 											upperLimit,
 											lowerLimit,
-										} = await contracts.ExchangeRates.methods
-											.inversePricing(toBytes32(name))
-											.call();
+										} = await contracts.ExchangeRates.inversePricing(toBytes32(name));
 										assert.strictEqual(entryPoint, toWei(inverted.entryPoint.toString()));
 										assert.strictEqual(upperLimit, toWei(inverted.upperLimit.toString()));
 										assert.strictEqual(lowerLimit, toWei(inverted.lowerLimit.toString()));
@@ -173,9 +163,9 @@ describe('deployments', () => {
 								}
 								if (feed) {
 									it(`checking aggregator of ${name}`, async () => {
-										const aggregatorActual = await contracts.ExchangeRates.methods
-											.aggregators(toBytes32(name))
-											.call();
+										const aggregatorActual = await contracts.ExchangeRates.aggregators(
+											toBytes32(name)
+										);
 										assert.strictEqual(aggregatorActual, feed);
 									});
 								}
@@ -245,7 +235,7 @@ describe('deployments', () => {
 										if (!targets[name]) {
 											console.log(`Skipping ${name} in ${network} as it isnt found`);
 										} else {
-											const actual = await resolver.methods.getAddress(toBytes32(name)).call();
+											const actual = await resolver.getAddress(toBytes32(name));
 											assert.strictEqual(actual, targets[name].address);
 										}
 									});
@@ -266,7 +256,7 @@ describe('deployments', () => {
 										source,
 										target,
 									});
-									foundResolver = await Contract.methods.resolver().call();
+									foundResolver = await Contract.resolver();
 								});
 								it(`${target} has correct address resolver`, async () => {
 									assert.ok(
@@ -278,15 +268,13 @@ describe('deployments', () => {
 								it(`${target} isResolverCached is true`, async () => {
 									// not every contract with a resolver will actually be a MixinResolver, so
 									// only check those with the MixinResolver.isResolverCached function
-									if ('isResolverCached' in Contract.methods) {
+									if ('isResolverCached' in Contract.functions) {
 										// prior to Shaula (v2.35.x), contracts with isResolverCached took the old resolver as an argument
-										const usesLegacy = !!Contract.options.jsonInterface.find(
+										const usesLegacy = !!Contract.jsonInterface.find(
 											({ name }) => name === 'isResolverCached'
 										).inputs.length;
 										assert.ok(
-											await Contract.methods
-												.isResolverCached(...[].concat(usesLegacy ? foundResolver : []))
-												.call()
+											await Contract.isResolverCached(...[].concat(usesLegacy ? foundResolver : []))
 										);
 									}
 								});

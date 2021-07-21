@@ -29,9 +29,9 @@ module.exports = async ({
 			contract: 'CollateralStateShort',
 			target: CollateralStateShort,
 			read: 'associatedContract',
-			expected: input => input === CollateralShort.options.address,
+			expected: input => input === CollateralShort.address,
 			write: 'setAssociatedContract',
-			writeArg: CollateralShort.options.address,
+			writeArg: CollateralShort.address,
 			comment: 'Ensure the CollateralShort contract can write to its state',
 		});
 	}

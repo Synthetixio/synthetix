@@ -5,7 +5,6 @@ const fs = require('fs');
 const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
 const { table } = require('table');
-const w3utils = require('web3-utils');
 const { BigNumber } = require('ethers');
 
 const {
@@ -226,7 +225,7 @@ const performTransactionalStepWeb3 = async ({
 }) => {
 	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
-		arg.length === 66 ? w3utils.hexToAscii(arg) : arg
+		arg.length === 66 ? ethers.utils.toUtfString(arg) : arg
 	)})`;
 
 	// check to see if action required
@@ -236,7 +235,7 @@ const performTransactionalStepWeb3 = async ({
 		try {
 			// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
 			const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-			const response = await target.methods[read](...argumentsForReadFunction).call();
+			const response = await target[read](...argumentsForReadFunction);
 
 			if (expected(response)) {
 				console.log(gray(`Nothing required for this action.`));
@@ -258,7 +257,7 @@ const performTransactionalStepWeb3 = async ({
 	}
 
 	// otherwise check the owner
-	const owner = await target.methods.owner().call();
+	const owner = await target.owner();
 	if (owner === account || publiclyCallable) {
 		// perform action
 		let hash;
@@ -267,22 +266,21 @@ const performTransactionalStepWeb3 = async ({
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
-			const params = {
+			const overrides = {
 				from: account,
-				gas:
-					Number(gasLimit) ||
-					(await target.methods[write](...argumentsForWriteFunction).estimateGas()),
-				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+				gasLimit,
+				gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
 			};
 
 			if (nonceManager) {
 				params.nonce = await nonceManager.getNonce();
 			}
 
-			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
+			const tx = await target[write](...argumentsForWriteFunction, overrides);
+			const receipt = tx.wait();
 
-			hash = txn.transactionHash;
-			gasUsed = txn.gasUsed;
+			hash = receipt.transactionHash;
+			gasUsed = receipt.gasUsed;
 
 			if (nonceManager) {
 				nonceManager.incrementNonce();
@@ -313,11 +311,11 @@ const performTransactionalStepWeb3 = async ({
 			explorerLinkPrefix,
 		});
 
-		data = target.methods[write](...argumentsForWriteFunction).encodeABI();
+		data = target.interface.encodeFunctionData(write, argumentsForWriteFunction);
 
 		const ownerAction = {
 			key: action,
-			target: target.options.address,
+			target: target.address,
 			action: `${write}(${argumentsForWriteFunction})`,
 			data: data,
 		};
@@ -333,16 +331,16 @@ const performTransactionalStepWeb3 = async ({
 	} else {
 		// otherwise wait for owner in real time
 		try {
-			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
+			data = target.interface.encodeFunctionData(write, argumentsForWriteFunction);
 			if (encodeABI) {
-				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
+				console.log(green(`Tx payload for target address ${target.address} - ${data}`));
 				return { pending: true };
 			}
 
 			await confirmAction(
 				redBright(
 					`Confirm: Invoke ${write}(${argumentsForWriteFunction}) via https://gnosis-safe.io/app/#/safes/${owner}/transactions` +
-						`to recipient ${target.options.address}` +
+						`to recipient ${target.address}` +
 						`with data: ${data}`
 				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
 			);

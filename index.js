@@ -1,6 +1,5 @@
 'use strict';
 
-const w3utils = require('web3-utils');
 const abiDecoder = require('abi-decoder');
 
 // load the data in explicitly (not programmatically) so webpack knows what to bundle
@@ -126,25 +125,24 @@ const knownAccounts = {
 // numbers are converted to strings and those with 18 decimals are also converted to wei amounts
 const defaults = {
 	WAITING_PERIOD_SECS: (60 * 5).toString(), // 5 mins
-	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
+	PRICE_DEVIATION_THRESHOLD_FACTOR: ethers.utils.parseEther('3'),
 	TRADING_REWARDS_ENABLED: false,
-	ISSUANCE_RATIO: w3utils
-		.toBN(1)
-		.mul(w3utils.toBN(1e18))
-		.div(w3utils.toBN(6))
+	ISSUANCE_RATIO: ethers.BigNumber.from('1')
+		.mul(ethers.BigNumber.from('1e18'))
+		.div(ethers.BigNumber.from('6'))
 		.toString(), // 1/6 = 0.16666666667
 	FEE_PERIOD_DURATION: (3600 * 24 * 7).toString(), // 1 week
 	TARGET_THRESHOLD: '1', // 1% target threshold (it will be converted to a decimal when set)
 	LIQUIDATION_DELAY: (3600 * 24 * 3).toString(), // 3 days
-	LIQUIDATION_RATIO: w3utils.toWei('0.5'), // 200% cratio
-	LIQUIDATION_PENALTY: w3utils.toWei('0.1'), // 10% penalty
+	LIQUIDATION_RATIO: ethers.utils.parseEther('0.5'), // 200% cratio
+	LIQUIDATION_PENALTY: ethers.utils.parseEther('0.1'), // 10% penalty
 	RATE_STALE_PERIOD: (3600 * 25).toString(), // 25 hours
 	EXCHANGE_FEE_RATES: {
-		forex: w3utils.toWei('0.003'),
-		commodity: w3utils.toWei('0.003'),
-		equities: w3utils.toWei('0.003'),
-		crypto: w3utils.toWei('0.01'),
-		index: w3utils.toWei('0.01'),
+		forex: ethers.utils.parseEther('0.003'),
+		commodity: ethers.utils.parseEther('0.003'),
+		equities: ethers.utils.parseEther('0.003'),
+		crypto: ethers.utils.parseEther('0.01'),
+		index: ethers.utils.parseEther('0.01'),
 	},
 	MINIMUM_STAKE_TIME: (3600 * 24).toString(), // 1 days
 	DEBT_SNAPSHOT_STALE_TIME: (43800).toString(), // 12 hour heartbeat + 10 minutes mining time
@@ -166,7 +164,7 @@ const defaults = {
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'kovan-ovm': '0x4200000000000000000000000000000000000006',
 	},
-	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
+	INITIAL_ISSUANCE: ethers.utils.parseEther(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
 	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
 	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${3e6}`,
@@ -178,40 +176,40 @@ const defaults = {
 			{ long: 'sBTC', short: 'iBTC' },
 			{ long: 'sETH', short: 'iETH' },
 		],
-		MAX_DEBT: w3utils.toWei('75000000'), // 75 million sUSD
+		MAX_DEBT: ethers.utils.parseEther('75000000'), // 75 million sUSD
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
 	COLLATERAL_ETH: {
 		SYNTHS: ['sUSD', 'sETH'],
-		MIN_CRATIO: w3utils.toWei('1.3'),
-		MIN_COLLATERAL: w3utils.toWei('2'),
-		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
+		MIN_CRATIO: ethers.utils.parseEther('1.3'),
+		MIN_COLLATERAL: ethers.utils.parseEther('2'),
+		ISSUE_FEE_RATE: ethers.utils.parseEther('0.001'),
 	},
 	COLLATERAL_RENBTC: {
 		SYNTHS: ['sUSD', 'sBTC'],
-		MIN_CRATIO: w3utils.toWei('1.3'),
-		MIN_COLLATERAL: w3utils.toWei('0.05'),
-		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
+		MIN_CRATIO: ethers.utils.parseEther('1.3'),
+		MIN_COLLATERAL: ethers.utils.parseEther('0.05'),
+		ISSUE_FEE_RATE: ethers.utils.parseEther('0.001'),
 	},
 	COLLATERAL_SHORT: {
 		SYNTHS: ['sBTC', 'sETH'],
-		MIN_CRATIO: w3utils.toWei('1.2'),
-		MIN_COLLATERAL: w3utils.toWei('1000'),
-		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
+		MIN_CRATIO: ethers.utils.parseEther('1.2'),
+		MIN_COLLATERAL: ethers.utils.parseEther('1000'),
+		ISSUE_FEE_RATE: ethers.utils.parseEther('0.005'),
 		INTERACTION_DELAY: '3600', // 1 hour in secs
 	},
 
-	ETHER_WRAPPER_MAX_ETH: w3utils.toWei('5000'),
-	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
-	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
+	ETHER_WRAPPER_MAX_ETH: ethers.utils.parseEther('5000'),
+	ETHER_WRAPPER_MINT_FEE_RATE: ethers.utils.parseEther('0.02'), // 200 bps
+	ETHER_WRAPPER_BURN_FEE_RATE: ethers.utils.parseEther('0.0005'), // 5 bps
 };
 
 /**
  * Converts a string into a hex representation of bytes32, with right padding
  */
-const toBytes32 = key => w3utils.rightPad(w3utils.asciiToHex(key), 64);
-const fromBytes32 = key => w3utils.hexToAscii(key);
+const toBytes32 = key => ethers.utils.formatBytes32String(key);
+const fromBytes32 = key => ethers.utils.toUtf8String(key);
 
 const getFolderNameForNetwork = ({ network, useOvm = false }) => {
 	if (network.includes('ovm')) {

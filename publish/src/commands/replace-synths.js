@@ -3,7 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 const { gray, yellow, red, cyan } = require('chalk');
-const w3utils = require('web3-utils');
 
 const { loadCompiledFiles } = require('../solidity');
 const Deployer = require('../Deployer');
@@ -144,7 +143,7 @@ const replaceSynths = async ({
 
 	const currentGasPrice = await web3.eth.getGasPrice();
 	console.log(
-		gray(`Current gas price is approx: ${w3utils.fromWei(currentGasPrice, 'gwei')} GWEI`)
+		gray(`Current gas price is approx: ${ethers.utils.formatUnits(currentGasPrice, 'gwei')} GWEI`)
 	);
 
 	// convert the list of synths into a list of deployed contracts
@@ -179,7 +178,7 @@ const replaceSynths = async ({
 	const totalSupplies = {};
 	try {
 		const totalSupplyList = await Promise.all(
-			deployedSynths.map(({ Synth }) => Synth.methods.totalSupply().call())
+			deployedSynths.map(({ Synth }) => Synth.totalSupply())
 		);
 		totalSupplyList.forEach(
 			(supply, i) => (totalSupplies[synthsToReplace[i]] = totalSupplyList[i])
@@ -201,7 +200,8 @@ const replaceSynths = async ({
 						'⚠ WARNING'
 					)}: This action will replace the following synths into ${subclass} on ${network}:\n- ${synthsToReplace
 						.map(
-							synth => synth + ' (totalSupply of: ' + w3utils.fromWei(totalSupplies[synth]) + ')'
+							synth =>
+								synth + ' (totalSupply of: ' + ethers.utils.formatEther(totalSupplies[synth]) + ')'
 						)
 						.join('\n- ')}`
 				) + '\nDo you want to continue? (y/n) '
@@ -216,7 +216,7 @@ const replaceSynths = async ({
 	const { abi: issuerABI } = deployment.sources[source];
 	const Issuer = new web3.eth.Contract(issuerABI, issuerAddress);
 
-	const resolverAddress = await Issuer.methods.resolver().call();
+	const resolverAddress = await Issuer.resolver();
 	const updatedSynths = JSON.parse(fs.readFileSync(synthsFile));
 
 	const runStep = async opts =>
@@ -260,8 +260,8 @@ const replaceSynths = async ({
 			source: subclass,
 			force: true,
 			args: [
-				Proxy.options.address,
-				TokenState.options.address,
+				Proxy.address,
+				TokenState.address,
 				`Synth ${currencyKey}`,
 				currencyKey,
 				account,
@@ -272,11 +272,11 @@ const replaceSynths = async ({
 		});
 
 		// Ensure this new synth has its resolver cache set
-		await replacementSynth.methods.rebuildCache().send({
-			from: account,
-			gas: Number(methodCallGasLimit),
-			gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
+		const tx = await replacementSynth.rebuildCache({
+			gasLimit: Number(methodCallGasLimit),
+			gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
 		});
+		await tx.wait();
 
 		// 4. Issuer.addSynth(newone) // owner
 		await runStep({
@@ -284,9 +284,9 @@ const replaceSynths = async ({
 			target: Issuer,
 			read: 'synths',
 			readArg: currencyKeyInBytes,
-			expected: input => input === replacementSynth.options.address,
+			expected: input => input === replacementSynth.address,
 			write: 'addSynth',
-			writeArg: replacementSynth.options.address,
+			writeArg: replacementSynth.address,
 		});
 
 		// 5. old TokenState.setAssociatedContract(newone) // owner
@@ -294,9 +294,9 @@ const replaceSynths = async ({
 			contract: `TokenState${currencyKey}`,
 			target: TokenState,
 			read: 'associatedContract',
-			expected: input => input === replacementSynth.options.address,
+			expected: input => input === replacementSynth.address,
 			write: 'setAssociatedContract',
-			writeArg: replacementSynth.options.address,
+			writeArg: replacementSynth.address,
 		});
 
 		// 6. old Proxy.setTarget(newone) // owner
@@ -304,9 +304,9 @@ const replaceSynths = async ({
 			contract: `Proxy${currencyKey}`,
 			target: Proxy,
 			read: 'target',
-			expected: input => input === replacementSynth.options.address,
+			expected: input => input === replacementSynth.address,
 			write: 'setTarget',
-			writeArg: replacementSynth.options.address,
+			writeArg: replacementSynth.address,
 		});
 
 		// Update the synths.json file

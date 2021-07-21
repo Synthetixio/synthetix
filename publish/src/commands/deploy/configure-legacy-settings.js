@@ -43,7 +43,7 @@ module.exports = async ({
 	// now configure everything
 	if (network !== 'mainnet' && SystemStatus) {
 		// On testnet, give the owner of SystemStatus the rights to update status
-		const statusOwner = await SystemStatus.methods.owner().call();
+		const statusOwner = await SystemStatus.owner();
 		await runStep({
 			contract: 'SystemStatus',
 			target: SystemStatus,
@@ -160,9 +160,9 @@ module.exports = async ({
 			contract: 'ExchangeState',
 			target: ExchangeState,
 			read: 'associatedContract',
-			expected: input => input === Exchanger.options.address,
+			expected: input => input === Exchanger.address,
 			write: 'setAssociatedContract',
-			writeArg: Exchanger.options.address,
+			writeArg: Exchanger.address,
 			comment: 'Ensure the Exchanger contract can write to its State',
 		});
 	}
@@ -313,7 +313,7 @@ module.exports = async ({
 
 	// Skip setting unless redeploying either of these,
 	if (config['Synthetix'].deploy || config['SynthetixEscrow'].deploy) {
-		// Note: currently on mainnet SynthetixEscrow.methods.Synthetix() does NOT exist
+		// Note: currently on mainnet SynthetixEscrow.Synthetix() does NOT exist
 		// it is "havven" and the ABI we have here is not sufficient
 		if (network === 'mainnet' && !useOvm) {
 			await runStep({

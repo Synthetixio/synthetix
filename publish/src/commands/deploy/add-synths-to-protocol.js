@@ -13,7 +13,7 @@ module.exports = async ({ addressOf, deployer, runStep, synthsToAdd }) => {
 	console.log(gray('Filtering synths to add to the issuer.'));
 	const filteredSynths = [];
 	for (const synth of synthsToAdd) {
-		const issuerSynthAddress = await Issuer.methods.synths(synth.currencyKeyInBytes).call();
+		const issuerSynthAddress = await Issuer.synths(synth.currencyKeyInBytes);
 		const currentSynthAddress = addressOf(synth.synth);
 		if (issuerSynthAddress === currentSynthAddress) {
 			console.log(gray(`${currentSynthAddress} requires no action`));

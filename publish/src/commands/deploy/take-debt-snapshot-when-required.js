@@ -41,8 +41,8 @@ module.exports = async ({
 
 	const checkSnapshot = async () => {
 		const [cacheInfo, currentDebt] = await Promise.all([
-			DebtCache.methods.cacheInfo().call(),
-			DebtCache.methods.currentDebt().call(),
+			DebtCache.cacheInfo(),
+			DebtCache.currentDebt(),
 		]);
 
 		// Check if the snapshot is stale and can be fixed.
