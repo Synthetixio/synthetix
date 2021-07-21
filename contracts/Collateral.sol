@@ -12,6 +12,7 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./CollateralState.sol";
+import "./interfaces/ICollateralUtil.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
@@ -78,6 +79,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
+    bytes32 private constant CONTRACT_COLLATERALUTIL = "CollateralUtil";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -101,13 +103,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](6);
+        bytes32[] memory newAddresses = new bytes32[](7);
         newAddresses[0] = CONTRACT_FEEPOOL;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_EXCHANGER;
         newAddresses[3] = CONTRACT_SYSTEMSTATUS;
         newAddresses[4] = CONTRACT_SYNTHSUSD;
         newAddresses[5] = CONTRACT_ISSUER;
+        newAddresses[6] = CONTRACT_COLLATERALUTIL;
 
         bytes32[] memory combined = combineArrays(existingAddresses, newAddresses);
 
@@ -144,48 +147,19 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
+    function _collateralUtil() internal view returns (ICollateralUtil) {
+        return ICollateralUtil(requireAndGetAddress(CONTRACT_COLLATERALUTIL));
+    }
+
     /* ---------- Public Views ---------- */
 
     function collateralRatio(Loan memory loan) public view returns (uint cratio) {
-        uint cvalue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
-        uint dvalue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
-        cratio = cvalue.divideDecimal(dvalue);
+        return _collateralUtil().getCollateralRatio(loan, collateralKey);
     }
 
     // The maximum number of synths issuable for this amount of collateral
     function maxLoan(uint amount, bytes32 currency) public view returns (uint max) {
-        max = issuanceRatio().multiplyDecimal(_exchangeRates().effectiveValue(collateralKey, amount, currency));
-    }
-
-    /**
-     * r = target issuance ratio
-     * D = debt value in sUSD
-     * V = collateral value in sUSD
-     * P = liquidation penalty
-     * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
-     * Note: if you pass a loan in here that is not eligible for liquidation it will revert.
-     * We check the ratio first in liquidateInternal and only pass eligible loans in.
-     */
-    function liquidationAmount(Loan memory loan) public view returns (uint amount) {
-        uint liquidationPenalty = getLiquidationPenalty();
-        uint debtValue = _exchangeRates().effectiveValue(loan.currency, loan.amount.add(loan.accruedInterest), sUSD);
-        uint collateralValue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);
-        uint unit = SafeDecimalMath.unit();
-
-        uint dividend = debtValue.sub(collateralValue.divideDecimal(minCratio));
-        uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(minCratio));
-
-        uint sUSDamount = dividend.divideDecimal(divisor);
-
-        return _exchangeRates().effectiveValue(sUSD, sUSDamount, loan.currency);
-    }
-
-    // amount is the amount of synths we are liquidating
-    function collateralRedeemed(bytes32 currency, uint amount) public view returns (uint collateral) {
-        uint liquidationPenalty = getLiquidationPenalty();
-        collateral = _exchangeRates().effectiveValue(currency, amount, collateralKey);
-
-        collateral = collateral.multiplyDecimal(SafeDecimalMath.unit().add(liquidationPenalty));
+        return _collateralUtil().maxLoan(amount, currency, minCratio, collateralKey);
     }
 
     function areSynthsAndCurrenciesSet(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys)
@@ -560,10 +534,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _checkSynthBalance(msg.sender, loan.currency, payment);
 
         // 6. Check they are eligible for liquidation.
-        require(collateralRatio(loan) < minCratio, "Cratio above liq ratio");
+        // Note: this will revert if collateral is 0, however that should only be possible if the loan amount is 0.
+        require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio);
 
         // 7. Determine how much needs to be liquidated to fix their c ratio.
-        uint liqAmount = liquidationAmount(loan);
+        uint liqAmount = _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
 
         // 8. Only allow them to liquidate enough to fix the c ratio.
         uint amountToLiquidate = liqAmount < payment ? liqAmount : payment;
@@ -580,7 +555,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loan = _processPayment(loan, amountToLiquidate);
 
         // 12. Work out how much collateral to redeem.
-        collateralLiquidated = collateralRedeemed(loan.currency, amountToLiquidate);
+        collateralLiquidated = _collateralUtil().collateralRedeemed(loan.currency, amountToLiquidate, collateralKey);
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
         // 13. Update the last interaction time.
