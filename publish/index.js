@@ -26,5 +26,6 @@ require('./src/commands/verify').cmd(program);
 require('./src/commands/versions-history').cmd(program);
 require('./src/commands/versions-update').cmd(program);
 require('./src/commands/deploy-shorting-rewards').cmd(program);
+require('./src/commands/accept-relay-owner').cmd(program);
 
 program.parse(process.argv);
