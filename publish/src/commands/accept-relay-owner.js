@@ -4,7 +4,7 @@ const ethers = require('ethers');
 const { gray, yellow, red, cyan } = require('chalk');
 
 const {
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, OVM_GAS_PRICE_GWEI },
 } = require('../../..');
 
 const {
@@ -16,33 +16,12 @@ const {
 	confirmAction,
 } = require('../util');
 
-const DEFAULTS = {
-	gasPrice: '15',
-};
-
-const acceptRelayOwner = async ({
-	network,
-	deploymentPath,
-	gasPrice,
-	yes,
-	useOvm,
-	useFork,
-	providerUrl,
-}) => {
+const acceptRelayOwner = async ({ network, deploymentPath, yes, useFork, providerUrl }) => {
+	const useOvm = true;
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
-	function logTx(tx) {
-		console.log(gray(`  > tx hash: ${tx.transactionHash}`));
-	}
-
-	if (!useOvm) {
-		console.error(red('Only runnable in ovm'));
-		process.exit(1);
-	}
-
-	// ensure all nominated owners are accepted
 	const { config, deployment } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
@@ -63,18 +42,37 @@ const acceptRelayOwner = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	const wallet = provider.getSigner();
+	const wallet = ethers.Wallet.createRandom().connect(provider);
 	console.log(gray(`Using account with public key ${await wallet.getAddress()}`));
 
-	console.log(gray(`Gas Price: ${gasPrice} gwei`));
-
 	// Get OwnerRelayOnOptimism contract and connect to wallet
+	if (!deployment.targets['OwnerRelayOnOptimism']) {
+		console.log(
+			red('OwnerRelayOnOptimism not present in deployment targets. Check it was alredy deployed.')
+		);
+		process.exit(1);
+	}
 	const { address: relayAddress, source: relaySource } = deployment.targets['OwnerRelayOnOptimism'];
 	let OwnerRelayOnOptimism = new ethers.Contract(
 		relayAddress,
 		deployment.sources[relaySource],
 		provider
 	);
+
+	// Check the right resolver is set
+	const relayResolverAddress = await OwnerRelayOnOptimism.resolver();
+	if (
+		relayResolverAddress.toLowerCase() !==
+		deployment.targets['AddressResolver'].address.toLowerCase()
+	) {
+		console.log(
+			red(
+				`Wrong AddressResolver configuration for OwnerRelayOnOptimism. Expected: ${deployment.targets['AddressResolver'].address} Current: ${relayResolverAddress}`
+			)
+		);
+		process.exit(1);
+	}
+
 	OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(wallet);
 
 	try {
@@ -129,11 +127,10 @@ const acceptRelayOwner = async ({
 
 			try {
 				const tx = await OwnerRelayOnOptimism.acceptOwnershipOn(address, {
-					gasLimit: undefined, // Only run on optimism
-					gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+					gasPrice: ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei'),
 				});
 				const receipt = await tx.wait();
-				logTx(receipt);
+				console.log(gray(`  > tx hash: ${receipt.transactionHash}`));
 			} catch (err) {
 				console.log(gray(`Transaction failed - ${err}`));
 				return;
@@ -165,10 +162,8 @@ module.exports = {
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
 				false
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
-			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 			.option(
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
