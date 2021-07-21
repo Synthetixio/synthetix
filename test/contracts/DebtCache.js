@@ -39,6 +39,7 @@ contract('DebtCache', async accounts => {
 
 	const oneETH = toUnit('1.0');
 	const twoETH = toUnit('2.0');
+	const threeETH = toUnit('3.0');
 
 	let synthetix,
 		systemStatus,
@@ -55,9 +56,6 @@ contract('DebtCache', async accounts => {
 		synths,
 		addressResolver,
 		exchanger,
-		// EtherCollateral tests.
-		etherCollateral,
-		etherCollateralsUSD,
 		// MultiCollateral tests.
 		ceth,
 		// Short tests.
@@ -256,8 +254,6 @@ contract('DebtCache', async accounts => {
 			Issuer: issuer,
 			AddressResolver: addressResolver,
 			Exchanger: exchanger,
-			EtherCollateral: etherCollateral,
-			EtherCollateralsUSD: etherCollateralsUSD,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -277,8 +273,6 @@ contract('DebtCache', async accounts => {
 				'FlexibleStorage',
 				'CollateralManager',
 				'RewardEscrowV2', // necessary for issuer._collateral()
-				'EtherCollateral',
-				'EtherCollateralsUSD',
 			],
 		}));
 	});
@@ -731,11 +725,11 @@ contract('DebtCache', async accounts => {
 
 			it('issuing sUSD updates the debt total when non-snx excluded debt exceeds the sUSD total supply', async () => {
 				// create 200 sUSD worth of excluded-debt sETH, so that it will exceed the sUSD supply
-				await etherCollateral.setCollateralizationRatio(toUnit('100'), { from: owner });
-				await etherCollateral.openLoan({
-					value: twoETH,
+				await ceth.open(twoETH, sETH, {
+					value: threeETH,
 					from: account1,
 				});
+
 				assert.bnGt((await debtCache.totalNonSnxBackedDebt())[0], await sUSDContract.totalSupply());
 
 				// Issue some sUSD and ensure that it is properly accounted for.
@@ -1248,60 +1242,6 @@ contract('DebtCache', async accounts => {
 					args: [cachedDebt],
 					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 				});
-			});
-		});
-
-		describe('when EtherCollateral loans are opened', async () => {
-			let rate;
-
-			beforeEach(async () => {
-				({ rate } = await exchangeRates.rateAndInvalid(sETH));
-
-				// Collateralization is 100%, meaning we mint the full value in
-				// sETH.
-				await etherCollateral.setCollateralizationRatio(toUnit('100'), { from: owner });
-				await etherCollateral.openLoan({
-					value: oneETH,
-					from: account1,
-				});
-			});
-
-			it('increases non-SNX debt', async () => {
-				assert.bnEqual(
-					totalNonSnxBackedDebt.add(multiplyDecimalRound(oneETH, rate)),
-					await getTotalNonSnxBackedDebt()
-				);
-			});
-			it('is excluded from currentDebt', async () => {
-				assert.bnEqual(currentDebt, await debtCache.currentDebt());
-			});
-		});
-
-		describe('when EtherCollateralsUSD loans are opened', async () => {
-			let rate;
-			const amount = toUnit('1');
-
-			beforeEach(async () => {
-				// ETH rate must be updated.
-				await exchangeRates.updateRates([ETH], ['200'].map(toUnit), timestamp, { from: oracle });
-
-				({ rate } = await exchangeRates.rateAndInvalid(ETH));
-
-				// Collateralization is 100%, meaning we mint the full value in
-				// sETH.
-				await etherCollateralsUSD.setCollateralizationRatio(toUnit('100'), { from: owner });
-				await etherCollateralsUSD.setIssueFeeRate(toUnit('0'), { from: owner });
-				await etherCollateralsUSD.openLoan(amount, {
-					value: rate,
-					from: account1,
-				});
-			});
-
-			it('increases non-SNX debt', async () => {
-				assert.bnEqual(totalNonSnxBackedDebt.add(amount), await getTotalNonSnxBackedDebt());
-			});
-			it('is excluded from currentDebt', async () => {
-				assert.bnEqual(currentDebt, await debtCache.currentDebt());
 			});
 		});
 

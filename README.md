@@ -158,7 +158,6 @@ snx.getAST({ source: 'Synthetix.sol' });
      'contracts/interfaces/IERC20.sol',
      'contracts/interfaces/ISystemStatus.sol',
      'contracts/interfaces/IExchanger.sol',
-     'contracts/interfaces/IEtherCollateral.sol',
      'contracts/interfaces/IIssuer.sol',
      'contracts/interfaces/ISynthetixState.sol',
      'contracts/interfaces/IExchangeRates.sol',
