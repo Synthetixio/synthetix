@@ -215,13 +215,12 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
             if (entry.escrowAmount != 0) {
                 uint256 quantity = _claimableAmount(entry);
 
-                /* update entry to remove escrowAmount */
                 if (quantity > 0) {
+                    /* update entry to remove escrowAmount */
                     entry.escrowAmount = 0;
+                    /* add quantity to total */
+                    total = total.add(quantity);
                 }
-
-                /* add quantity to total */
-                total = total.add(quantity);
             }
         }
 
