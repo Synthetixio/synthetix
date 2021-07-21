@@ -554,6 +554,9 @@
 	"CollateralShort": {
 		"deploy": false
 	},
+	"CollateralUtil": {
+		"deploy": false
+	},
 	"RewardEscrowV2": {
 		"deploy": false
 	},
