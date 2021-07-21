@@ -91,7 +91,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](13);
+        bytes32[] memory newAddresses = new bytes32[](12);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_SYNTHETIX;
         newAddresses[2] = CONTRACT_FEEPOOLSTATE;
@@ -101,10 +101,9 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         newAddresses[6] = CONTRACT_SYNTHETIXSTATE;
         newAddresses[7] = CONTRACT_REWARDESCROW_V2;
         newAddresses[8] = CONTRACT_DELEGATEAPPROVALS;
-        newAddresses[9] = CONTRACT_ETH_COLLATERAL_SUSD;
-        newAddresses[10] = CONTRACT_REWARDSDISTRIBUTION;
-        newAddresses[11] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[12] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[9] = CONTRACT_REWARDSDISTRIBUTION;
+        newAddresses[10] = CONTRACT_COLLATERALMANAGER;
+        newAddresses[11] = CONTRACT_ETHER_WRAPPER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 

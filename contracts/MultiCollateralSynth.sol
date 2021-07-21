@@ -39,11 +39,9 @@ contract MultiCollateralSynth is Synth {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Synth.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](4);
+        bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[1] = CONTRACT_ETH_COLLATERAL;
-        newAddresses[2] = CONTRACT_ETH_COLLATERAL_SUSD;
-        newAddresses[3] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[1] = CONTRACT_ETHER_WRAPPER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
