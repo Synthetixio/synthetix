@@ -44,6 +44,10 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         return _makerFee(_baseAsset);
     }
 
+    function closureFee(bytes32 _baseAsset) public view returns (uint) {
+        return _closureFee(_baseAsset);
+    }
+
     function maxLeverage(bytes32 _baseAsset) public view returns (uint) {
         return _maxLeverage(_baseAsset);
     }
@@ -70,6 +74,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         returns (
             uint _takerFee,
             uint _makerFee,
+            uint _closureFee,
             uint _maxLeverage,
             uint _maxMarketValue,
             uint _maxFundingRate,
@@ -102,13 +107,18 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
     }
 
     function setTakerFee(bytes32 _baseAsset, uint _takerFee) public onlyOwner {
-        require(_takerFee <= 1 ether, "taker fee greater than 1");
+        require(_takerFee <= 1e18, "taker fee greater than 1");
         _setParameter(_baseAsset, PARAMETER_TAKER_FEE, _takerFee);
     }
 
     function setMakerFee(bytes32 _baseAsset, uint _makerFee) public onlyOwner {
-        require(_makerFee <= 1 ether, "maker fee greater than 1");
+        require(_makerFee <= 1e18, "maker fee greater than 1");
         _setParameter(_baseAsset, PARAMETER_MAKER_FEE, _makerFee);
+    }
+
+    function setClosureFee(bytes32 _baseAsset, uint _closureFee) public onlyOwner {
+        require(_closureFee <= 1e18, "closure fee greater than 1");
+        _setParameter(_baseAsset, PARAMETER_CLOSURE_FEE, _closureFee);
     }
 
     function setMaxLeverage(bytes32 _baseAsset, uint _maxLeverage) public onlyOwner {
@@ -145,6 +155,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         bytes32 _baseAsset,
         uint _takerFee,
         uint _makerFee,
+        uint _closureFee,
         uint _maxLeverage,
         uint _maxMarketValue,
         uint _maxFundingRate,
@@ -154,6 +165,7 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         _recomputeFunding(_baseAsset);
         setTakerFee(_baseAsset, _takerFee);
         setMakerFee(_baseAsset, _makerFee);
+        setClosureFee(_baseAsset, _closureFee);
         setMaxLeverage(_baseAsset, _maxLeverage);
         setMaxMarketValue(_baseAsset, _maxMarketValue);
         setMaxFundingRate(_baseAsset, _maxFundingRate);

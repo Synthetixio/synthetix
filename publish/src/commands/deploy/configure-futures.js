@@ -84,6 +84,7 @@ module.exports = async ({
 		const settings = {
 			takerFee: w3utils.toWei('0.003'),
 			makerFee: w3utils.toWei('0.001'),
+			closureFee: w3utils.toWei('0'),
 			maxLeverage: w3utils.toWei('10'),
 			maxMarketValue: w3utils.toWei('100000'),
 			maxFundingRate: w3utils.toWei('0.1'),

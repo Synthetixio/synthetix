@@ -217,6 +217,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         returns (
             uint takerFee,
             uint makerFee,
+            uint closureFee,
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
@@ -232,9 +233,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function _currentFundingRate() internal view returns (int) {
-        (, , , , uint uMaxFundingRate, uint uMaxFundingRateSkew, ) = _parameters(baseAsset);
-        int maxFundingRate = int(uMaxFundingRate);
-        int maxFundingRateSkew = int(uMaxFundingRateSkew);
+        int maxFundingRate = int(_maxFundingRate(baseAsset));
+        int maxFundingRateSkew = int(_maxFundingRateSkew(baseAsset));
         if (maxFundingRateSkew == 0) {
             return maxFundingRate;
         }
@@ -484,19 +484,21 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         int existingSize,
         uint price
     ) internal view returns (uint) {
-        // Charge nothing if closing a position.
+        int existingNotional = existingSize.multiplyDecimalRound(int(price));
+
+        // Charge the closure fee if closing a position entirely.
         if (margin == 0 || leverage == 0) {
-            return 0;
+            return _abs(existingNotional.multiplyDecimalRound(int(_closureFee(baseAsset))));
         }
 
-        int existingNotional = existingSize.multiplyDecimalRound(int(price));
         int newNotional = int(margin).multiplyDecimalRound(leverage);
         int notionalDiff = newNotional;
         if (_sameSide(newNotional, existingNotional)) {
-            // If decreasing a position, charge nothing.
+            // If decreasing a position, charge the closure fee.
             if (_abs(newNotional) <= _abs(existingNotional)) {
-                return 0;
+                return _abs(existingNotional.sub(newNotional).multiplyDecimalRound(int(_closureFee(baseAsset))));
             }
+
             // We now know |existingNotional| < |newNotional|, provided the new order is on the same side as an existing position,
             // The existing position's notional may be larger if it is on the other side, but we neglect this,
             // and take the delta in the notional to be the entire new notional size, as the existing position is closing.
@@ -545,7 +547,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         Position storage position = positions[account];
         int margin = _marginPlusProfitFunding(position, fundingSequence.length, price).add(marginDelta);
         if (margin < 0) {
-            return (0, isInvalid);
+            margin = 0;
         }
         return (_orderFee(uint(margin), leverage, position.size, price), isInvalid);
     }

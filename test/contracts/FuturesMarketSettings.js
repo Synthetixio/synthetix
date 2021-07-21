@@ -24,6 +24,7 @@ contract('FuturesMarketSettings', accounts => {
 	const baseAsset = toBytes32('sBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
+	const closureFee = toUnit('0');
 	const maxLeverage = toUnit('10');
 	const maxMarketValue = toUnit('100000');
 
@@ -80,6 +81,7 @@ contract('FuturesMarketSettings', accounts => {
 			expected: [
 				'setTakerFee',
 				'setMakerFee',
+				'setClosureFee',
 				'setMaxLeverage',
 				'setMaxMarketValue',
 				'setMaxFundingRate',
@@ -99,6 +101,7 @@ contract('FuturesMarketSettings', accounts => {
 			params = Object.entries({
 				takerFee,
 				makerFee,
+				closureFee,
 				maxLeverage,
 				maxMarketValue,
 				maxFundingRate,
@@ -119,12 +122,22 @@ contract('FuturesMarketSettings', accounts => {
 					'maker fee greater than 1'
 				);
 			});
+
 			it('should revert if taker fee is greater than 1', async () => {
 				await assert.revert(
 					futuresMarketSettings.setTakerFee(baseAsset, toUnit('1').add(new BN(1)), {
 						from: owner,
 					}),
 					'taker fee greater than 1'
+				);
+			});
+
+			it('should revert if closure fee is greater than 1', async () => {
+				await assert.revert(
+					futuresMarketSettings.setClosureFee(baseAsset, toUnit('1').add(new BN(1)), {
+						from: owner,
+					}),
+					'closure fee greater than 1'
 				);
 			});
 		});

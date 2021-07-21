@@ -546,15 +546,15 @@ contract('FuturesMarket', accounts => {
 
 					assert.bnEqual((await futuresMarket.orderFee(trader, toBN(0)))[0], toBN(0));
 					assert.bnEqual(
-						(await futuresMarket.orderFeeWithMarginDelta(trader, toBN(0), leverage))[0],
-						toBN(0)
-					);
-					assert.bnEqual(
-						(await futuresMarket.orderFeeWithMarginDelta(trader, margin, toBN(0)))[0],
+						(await futuresMarket.orderFeeWithMarginDelta(trader, margin.neg(), leverage))[0],
 						toBN(0)
 					);
 					assert.bnEqual(
 						(await futuresMarket.orderFeeWithMarginDelta(trader, toBN(0), toBN(0)))[0],
+						toBN(0)
+					);
+					assert.bnEqual(
+						(await futuresMarket.orderFeeWithMarginDelta(trader, margin.neg(), toBN(0)))[0],
 						toBN(0)
 					);
 				});
@@ -578,15 +578,15 @@ contract('FuturesMarket', accounts => {
 
 					assert.bnEqual((await futuresMarket.orderFee(trader, toBN(0)))[0], toBN(0));
 					assert.bnEqual(
-						(await futuresMarket.orderFeeWithMarginDelta(trader, toBN(0), leverage.neg()))[0],
-						toBN(0)
-					);
-					assert.bnEqual(
-						(await futuresMarket.orderFeeWithMarginDelta(trader, margin, toBN(0)))[0],
+						(await futuresMarket.orderFeeWithMarginDelta(trader, margin.neg(), leverage.neg()))[0],
 						toBN(0)
 					);
 					assert.bnEqual(
 						(await futuresMarket.orderFeeWithMarginDelta(trader, toBN(0), toBN(0)))[0],
+						toBN(0)
+					);
+					assert.bnEqual(
+						(await futuresMarket.orderFeeWithMarginDelta(trader, margin.neg(), toBN(0)))[0],
 						toBN(0)
 					);
 				});
@@ -751,6 +751,162 @@ contract('FuturesMarket', accounts => {
 						(await futuresMarket.orderFeeWithMarginDelta(trader, margin, leverage.neg()))[0],
 						fee
 					);
+				});
+
+				describe('...with non-zero closure fee', () => {
+					const fee = toUnit('0.001'); // 10 bp fee
+					beforeEach(async () => {
+						await futuresMarketSettings.setClosureFee(await futuresMarket.baseAsset(), fee, {
+							from: owner,
+						});
+					});
+
+					it('reduce an existing position on the side of the skew', async () => {
+						await modifyMarginSubmitAndConfirmOrder({
+							market: futuresMarket,
+							account: trader,
+							fillPrice: toUnit('100'),
+							marginDelta: margin,
+							leverage,
+						});
+
+						const expectedFee = multiplyDecimalRound(leverage, margin)
+							.div(toBN(2))
+							.div(toBN(1000))
+							.abs();
+
+						assert.bnClose(
+							(await futuresMarket.orderFee(trader, leverage.div(toBN(2))))[0],
+							expectedFee,
+							toUnit('0.1')
+						);
+
+						assert.bnClose(
+							(
+								await futuresMarket.orderFeeWithMarginDelta(
+									trader,
+									margin.div(toBN(2)).neg(),
+									leverage
+								)
+							)[0],
+							expectedFee,
+							toUnit('0.1')
+						);
+					});
+
+					it('reduce an existing position opposite to the skew', async () => {
+						await modifyMarginSubmitAndConfirmOrder({
+							market: futuresMarket,
+							account: trader2,
+							fillPrice: toUnit('100'),
+							marginDelta: margin.mul(toBN(2)),
+							leverage,
+						});
+
+						await modifyMarginSubmitAndConfirmOrder({
+							market: futuresMarket,
+							account: trader,
+							fillPrice: toUnit('100'),
+							marginDelta: margin,
+							leverage: leverage.neg(),
+						});
+
+						const expectedFee = multiplyDecimalRound(leverage, margin)
+							.div(toBN(2))
+							.div(toBN(1000))
+							.abs();
+
+						assert.bnClose(
+							(await futuresMarket.orderFee(trader, leverage.neg().div(toBN(2))))[0],
+							expectedFee,
+							toUnit('0.1')
+						);
+
+						assert.bnClose(
+							(
+								await futuresMarket.orderFeeWithMarginDelta(
+									trader,
+									margin.div(toBN(2)).neg(),
+									leverage.neg()
+								)
+							)[0],
+							expectedFee,
+							toUnit('0.1')
+						);
+					});
+
+					it('close an existing position on the side of the skew', async () => {
+						await modifyMarginSubmitAndConfirmOrder({
+							market: futuresMarket,
+							account: trader,
+							fillPrice: toUnit('100'),
+							marginDelta: margin,
+							leverage,
+						});
+
+						const expectedFee = multiplyDecimalRound(leverage, margin)
+							.div(toBN(1000))
+							.abs();
+
+						assert.bnClose(
+							(await futuresMarket.orderFee(trader, toBN(0)))[0],
+							expectedFee,
+							toUnit('0.1')
+						);
+						assert.bnClose(
+							(await futuresMarket.orderFeeWithMarginDelta(trader, margin.neg(), leverage))[0],
+							expectedFee,
+							toUnit('0.1')
+						);
+						assert.bnClose(
+							(await futuresMarket.orderFeeWithMarginDelta(trader, toBN(0), toBN(0)))[0],
+							expectedFee,
+							toUnit('0.1')
+						);
+						assert.bnClose(
+							(await futuresMarket.orderFeeWithMarginDelta(trader, margin.neg(), toBN(0)))[0],
+							expectedFee,
+							toUnit('0.1')
+						);
+					});
+
+					it('close an existing position opposite to the skew', async () => {
+						await modifyMarginSubmitAndConfirmOrder({
+							market: futuresMarket,
+							account: trader2,
+							fillPrice: toUnit('100'),
+							marginDelta: margin.mul(toBN(2)),
+							leverage,
+						});
+
+						await modifyMarginSubmitAndConfirmOrder({
+							market: futuresMarket,
+							account: trader,
+							fillPrice: toUnit('100'),
+							marginDelta: margin,
+							leverage: leverage.neg(),
+						});
+
+						const expectedFee = multiplyDecimalRound(leverage, margin)
+							.div(toBN(1000))
+							.abs();
+
+						assert.bnEqual((await futuresMarket.orderFee(trader, toBN(0)))[0], expectedFee);
+						assert.bnEqual(
+							(
+								await futuresMarket.orderFeeWithMarginDelta(trader, margin.neg(), leverage.neg())
+							)[0],
+							expectedFee
+						);
+						assert.bnEqual(
+							(await futuresMarket.orderFeeWithMarginDelta(trader, toBN(0), toBN(0)))[0],
+							expectedFee
+						);
+						assert.bnEqual(
+							(await futuresMarket.orderFeeWithMarginDelta(trader, margin.neg(), toBN(0)))[0],
+							expectedFee
+						);
+					});
 				});
 			});
 		}

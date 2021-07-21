@@ -89,6 +89,7 @@ contract('FuturesMarketData', accounts => {
 				toBytes32(key),
 				toWei('0.005'), // 0.5% taker fee
 				toWei('0.001'), // 0.1% maker fee
+				toWei('0'), // nil closure fee
 				toWei('5'), // 5x max leverage
 				toWei('1000000'), // 1000000 max total margin
 				toWei('0.2'), // 20% max funding rate
