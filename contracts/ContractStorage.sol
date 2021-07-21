@@ -3,7 +3,7 @@ pragma solidity ^0.5.16;
 // Internal References
 import "./interfaces/IAddressResolver.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/contractstorage
+// https://docs.synthetix.io/contracts/source/contracts/ContractStorage
 contract ContractStorage {
     IAddressResolver public resolverProxy;
 

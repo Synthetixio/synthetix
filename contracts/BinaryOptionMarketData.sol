@@ -6,7 +6,7 @@ import "./BinaryOption.sol";
 import "./BinaryOptionMarket.sol";
 import "./BinaryOptionMarketManager.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/binaryoptionmarketdata
+// https://docs.synthetix.io/contracts/source/contracts/BinaryOptionMarketData
 contract BinaryOptionMarketData {
     struct OptionValues {
         uint long;

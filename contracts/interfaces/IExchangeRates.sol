@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-// https://docs.synthetix.io/contracts/source/interfaces/iexchangerates
+// https://docs.synthetix.io/contracts/source/interfaces/IExchangeRates
 interface IExchangeRates {
     // Structs
     struct RateAndUpdatedTime {

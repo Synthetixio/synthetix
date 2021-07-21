@@ -8,7 +8,7 @@ import "./interfaces/IVirtualSynth.sol";
 import "./MinimalProxyFactory.sol";
 import "./VirtualSynth.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/exchangerwithvirtualsynth
+// https://docs.synthetix.io/contracts/source/contracts/ExchangerWithVirtualSynth
 contract ExchangerWithVirtualSynth is MinimalProxyFactory, Exchanger {
     constructor(address _owner, address _resolver) public MinimalProxyFactory() Exchanger(_owner, _resolver) {}
 

@@ -20,7 +20,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/debtcache
+// https://docs.synthetix.io/contracts/source/contracts/DebtCache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

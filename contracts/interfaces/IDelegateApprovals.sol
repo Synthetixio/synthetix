@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-// https://docs.synthetix.io/contracts/source/interfaces/idelegateapprovals
+// https://docs.synthetix.io/contracts/source/interfaces/IDelegateApprovals
 interface IDelegateApprovals {
     // Views
     function canBurnFor(address authoriser, address delegate) external view returns (bool);

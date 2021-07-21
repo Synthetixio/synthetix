@@ -10,7 +10,7 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./BinaryOptionMarket.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/binaryoption
+// https://docs.synthetix.io/contracts/source/contracts/BinaryOption
 contract BinaryOption is IERC20, IBinaryOption {
     /* ========== LIBRARIES ========== */
 

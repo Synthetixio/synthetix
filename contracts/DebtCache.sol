@@ -6,7 +6,7 @@ import "./SafeDecimalMath.sol";
 // Inheritance
 import "./BaseDebtCache.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/debtcache
+// https://docs.synthetix.io/contracts/source/contracts/DebtCache
 contract DebtCache is BaseDebtCache {
     using SafeDecimalMath for uint;
 

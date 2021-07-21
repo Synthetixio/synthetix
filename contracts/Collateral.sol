@@ -21,6 +21,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IShortingRewards.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/Collateral
 contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;

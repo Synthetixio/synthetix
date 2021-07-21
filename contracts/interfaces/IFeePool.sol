@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-// https://docs.synthetix.io/contracts/source/interfaces/ifeepool
+// https://docs.synthetix.io/contracts/source/interfaces/IFeePool
 interface IFeePool {
     // Views
 

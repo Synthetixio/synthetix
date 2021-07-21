@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-// https://docs.synthetix.io/contracts/source/interfaces/iethercollateralsusd
+// https://docs.synthetix.io/contracts/source/interfaces/IEtherCollateralsUSD
 interface IEtherCollateralsUSD {
     // Views
     function totalIssuedSynths() external view returns (uint256);

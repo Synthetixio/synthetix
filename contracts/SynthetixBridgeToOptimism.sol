@@ -12,6 +12,7 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynthetixBridgeToBase.sol";
 import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L2DepositedToken.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/SynthetixBridgeToOptimism
 contract SynthetixBridgeToOptimism is BaseSynthetixBridge, ISynthetixBridgeToOptimism, iOVM_L1TokenGateway {
     using SafeERC20 for IERC20;
 

@@ -8,6 +8,7 @@ import "./Collateral.sol";
 // Internal references
 import "./CollateralState.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/CollateralShort
 contract CollateralShort is Collateral {
     constructor(
         CollateralState _state,

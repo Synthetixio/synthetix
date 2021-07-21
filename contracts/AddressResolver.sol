@@ -8,7 +8,7 @@ import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/addressresolver
+// https://docs.synthetix.io/contracts/source/contracts/AddressResolver
 contract AddressResolver is Owned, IAddressResolver {
     mapping(bytes32 => address) public repository;
 

@@ -1,7 +1,7 @@
 pragma solidity ^0.5.16;
 
 // Empty contract for ether collateral placeholder for OVM
-// https://docs.synthetix.io/contracts/source/contracts/emptyethercollateral
+// https://docs.synthetix.io/contracts/source/contracts/EmptyEtherCollateral
 contract EmptyEtherCollateral {
     function totalIssuedSynths() external pure returns (uint) {
         return 0;

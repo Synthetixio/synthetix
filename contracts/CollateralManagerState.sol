@@ -9,6 +9,7 @@ import "./State.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/CollateralManagerState
 contract CollateralManagerState is Owned, State {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

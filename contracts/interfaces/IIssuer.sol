@@ -2,7 +2,7 @@ pragma solidity >=0.4.24;
 
 import "../interfaces/ISynth.sol";
 
-// https://docs.synthetix.io/contracts/source/interfaces/iissuer
+// https://docs.synthetix.io/contracts/source/interfaces/IIssuer
 interface IIssuer {
     // Views
     function anySynthOrSNXRateIsInvalid() external view returns (bool anyRateInvalid);

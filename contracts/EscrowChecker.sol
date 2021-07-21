@@ -6,7 +6,7 @@ interface ISynthetixEscrow {
     function getVestingScheduleEntry(address account, uint index) external view returns (uint[2] memory);
 }
 
-// https://docs.synthetix.io/contracts/source/contracts/escrowchecker
+// https://docs.synthetix.io/contracts/source/contracts/EscrowChecker
 contract EscrowChecker {
     ISynthetixEscrow public synthetix_escrow;
 

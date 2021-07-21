@@ -18,7 +18,7 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
 // ETH Collateral v0.3 (sUSD)
-// https://docs.synthetix.io/contracts/source/contracts/ethercollateralsusd
+// https://docs.synthetix.io/contracts/source/contracts/EtherCollateralsUSD
 contract EtherCollateralsUSD is Owned, Pausable, ReentrancyGuard, MixinResolver, IEtherCollateralsUSD {
     using SafeMath for uint256;
     using SafeDecimalMath for uint256;

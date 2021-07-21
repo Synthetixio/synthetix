@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./EternalStorage.sol";
 import "./LimitedSetup.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/feepooleternalstorage
+// https://docs.synthetix.io/contracts/source/contracts/FeePoolEternalStorage
 contract FeePoolEternalStorage is EternalStorage, LimitedSetup {
     bytes32 internal constant LAST_FEE_WITHDRAWAL = "last_fee_withdrawal";
 

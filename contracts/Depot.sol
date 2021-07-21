@@ -14,7 +14,7 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/depot
+// https://docs.synthetix.io/contracts/source/contracts/Depot
 contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

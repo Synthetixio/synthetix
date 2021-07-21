@@ -6,7 +6,7 @@ import "./Owned.sol";
 // Internal references
 import "./Proxyable.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/proxy
+// https://docs.synthetix.io/contracts/source/contracts/Proxy
 contract Proxy is Owned {
     Proxyable public target;
 

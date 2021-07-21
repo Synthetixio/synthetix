@@ -11,6 +11,7 @@ import "./CollateralState.sol";
 import "./interfaces/IERC20.sol";
 
 // This contract handles the specific ERC20 implementation details of managing a loan.
+// https://docs.synthetix.io/contracts/source/contracts/CollateralErc20
 contract CollateralErc20 is ICollateralErc20, Collateral {
     // The underlying asset for this ERC20 collateral
     address public underlyingContract;

@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-// https://docs.synthetix.io/contracts/source/interfaces/itradingrewards
+// https://docs.synthetix.io/contracts/source/interfaces/ITradingRewards
 interface ITradingRewards {
     /* ========== VIEWS ========== */
 

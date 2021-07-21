@@ -3,7 +3,7 @@ pragma solidity >=0.4.24;
 import "../interfaces/IBinaryOptionMarket.sol";
 import "../interfaces/IERC20.sol";
 
-// https://docs.synthetix.io/contracts/source/interfaces/ibinaryoption
+// https://docs.synthetix.io/contracts/source/interfaces/IBinaryOption
 interface IBinaryOption {
     /* ========== VIEWS / VARIABLES ========== */
 

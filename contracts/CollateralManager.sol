@@ -18,6 +18,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ISynth.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/CollateralManager
 contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;

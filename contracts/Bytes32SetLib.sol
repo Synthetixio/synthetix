@@ -1,6 +1,6 @@
 pragma solidity ^0.5.16;
 
-// https://docs.synthetix.io/contracts/source/libraries/bytes32setlib/
+// https://docs.synthetix.io/contracts/source/libraries/Bytes32SetLib/
 library Bytes32SetLib {
     struct Bytes32Set {
         bytes32[] elements;

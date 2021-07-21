@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./State.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/eternalstorage
+// https://docs.synthetix.io/contracts/source/contracts/EternalStorage
 /**
  * @notice  This contract is based on the code available from this blog
  * https://blog.colony.io/writing-upgradeable-contracts-in-solidity-6743f0eecc88/
