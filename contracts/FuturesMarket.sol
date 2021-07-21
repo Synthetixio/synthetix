@@ -217,6 +217,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         returns (
             uint takerFee,
             uint makerFee,
+            uint closureFee,
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
@@ -232,9 +233,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function _currentFundingRate() internal view returns (int) {
-        (, , , , uint uMaxFundingRate, uint uMaxFundingRateSkew, ) = _parameters(baseAsset);
-        int maxFundingRate = int(uMaxFundingRate);
-        int maxFundingRateSkew = int(uMaxFundingRateSkew);
+        int maxFundingRate = int(_maxFundingRate(baseAsset));
+        int maxFundingRateSkew = int(_maxFundingRateSkew(baseAsset));
         if (maxFundingRateSkew == 0) {
             return maxFundingRate;
         }

@@ -117,6 +117,7 @@ contract FuturesMarketData {
         (
             uint takerFee,
             uint makerFee,
+            uint closureFee,
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
@@ -127,6 +128,7 @@ contract FuturesMarketData {
             IFuturesMarketSettings.Parameters(
                 takerFee,
                 makerFee,
+                closureFee,
                 maxLeverage,
                 maxMarketValue,
                 maxFundingRate,
