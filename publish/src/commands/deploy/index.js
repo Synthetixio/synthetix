@@ -115,8 +115,8 @@ const deploy = async ({
 
 	const getDeployParameter = getDeployParameterFactory({ params, yes, ignoreCustomParameters });
 
-	const addressOf = c => (c ? c.options.address : '');
-	const sourceOf = c => (c ? c.options.source : '');
+	const addressOf = c => (c ? c.address : '');
+	const sourceOf = c => (c ? c.source : '');
 
 	// Mark contracts for deployment specified via an argument
 	if (specifyContracts) {

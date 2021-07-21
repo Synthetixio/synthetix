@@ -1,5 +1,4 @@
 'use strict';
-const w3utils = require('web3-utils');
 const { artifacts, contract } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupContract } = require('./setup');
@@ -15,7 +14,7 @@ contract('EternalStorage', accounts => {
 	const [deployerAccount, owner, associatedContract, account1] = accounts;
 	let eternalStorage;
 
-	const toBytes = key => w3utils.asciiToHex(key);
+	const toBytes = key => ethers.utils.formatBytes32String(key);
 
 	before(async () => {
 		eternalStorage = await setupContract({
