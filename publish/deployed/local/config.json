@@ -47,6 +47,9 @@
 	"CollateralStateShort": {
 		"deploy": true
 	},
+	"CollateralUtil": {
+		"deploy": true
+	},
 	"DebtCache": {
 		"deploy": true
 	},
