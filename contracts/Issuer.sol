@@ -17,8 +17,6 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IEtherCollateral.sol";
-import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
@@ -78,8 +76,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
-    bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
@@ -98,8 +94,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[3] = CONTRACT_SYNTHETIXSTATE;
         newAddresses[4] = CONTRACT_FEEPOOL;
         newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
-        newAddresses[6] = CONTRACT_ETHERCOLLATERAL;
-        newAddresses[7] = CONTRACT_ETHERCOLLATERAL_SUSD;
         newAddresses[8] = CONTRACT_REWARDESCROW_V2;
         newAddresses[9] = CONTRACT_SYNTHETIXESCROW;
         newAddresses[10] = CONTRACT_LIQUIDATIONS;
@@ -134,14 +128,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
-    }
-
-    function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL));
-    }
-
-    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD));
     }
 
     function collateralManager() internal view returns (ICollateralManager) {
@@ -336,8 +322,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (, anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(_availableCurrencyKeysWithOptionalSNX(true));
     }
 
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint totalIssued) {
-        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeEtherCollateral);
+    function totalIssuedSynths(bytes32 currencyKey, bool excludeOtherCollateral) external view returns (uint totalIssued) {
+        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeOtherCollateral);
     }
 
     function lastIssueEvent(address account) external view returns (uint) {

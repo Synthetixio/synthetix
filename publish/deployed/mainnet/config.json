@@ -29,9 +29,6 @@
 	"EscrowChecker": {
 		"deploy": false
 	},
-	"EtherCollateral": {
-		"deploy": false
-	},
 	"ExchangeRates": {
 		"deploy": false
 	},
@@ -507,9 +504,6 @@
 		"deploy": false
 	},
 	"TradingRewards": {
-		"deploy": false
-	},
-	"EtherCollateralsUSD": {
 		"deploy": false
 	},
 	"TokenStatesOIL": {

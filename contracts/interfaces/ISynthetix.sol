@@ -39,7 +39,7 @@ interface ISynthetix {
 
     function totalIssuedSynths(bytes32 currencyKey) external view returns (uint);
 
-    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) external view returns (uint);
+    function totalIssuedSynthsExcludeOtherCollateral(bytes32 currencyKey) external view returns (uint);
 
     function transferableSynthetix(address account) external view returns (uint transferable);
 

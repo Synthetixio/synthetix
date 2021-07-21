@@ -89,7 +89,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
 
     // TODO: refactor the name of this function. It also incorporates the exclusion of
     // issued sETH by the EtherWrapper.
-    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) external view returns (uint) {
+    function totalIssuedSynthsExcludeOtherCollateral(bytes32 currencyKey) external view returns (uint) {
         return issuer().totalIssuedSynths(currencyKey, true);
     }
 

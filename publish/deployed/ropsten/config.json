@@ -29,9 +29,6 @@
 	"EscrowChecker": {
 		"deploy": false
 	},
-	"EtherCollateral": {
-		"deploy": false
-	},
 	"ExchangeRates": {
 		"deploy": false
 	},
