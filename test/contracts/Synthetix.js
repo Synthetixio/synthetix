@@ -24,9 +24,9 @@ const {
 } = require('../..');
 
 contract('Synthetix', async accounts => {
-	const [sAUD, sEUR] = ['sAUD', 'sEUR'].map(toBytes32);
+	const [sAUD, sEUR, sUSD, sETH] = ['sAUD', 'sEUR', 'sUSD', 'sETH'].map(toBytes32);
 
-	const [, owner, account1, account2] = accounts;
+	const [, owner, account1, account2, account3] = accounts;
 
 	let synthetix,
 		exchangeRates,
@@ -36,7 +36,9 @@ contract('Synthetix', async accounts => {
 		rewardEscrowV2,
 		oracle,
 		addressResolver,
-		systemStatus;
+		systemStatus,
+		sUSDContract,
+		sETHContract;
 
 	before(async () => {
 		({
@@ -48,6 +50,8 @@ contract('Synthetix', async accounts => {
 			RewardEscrow: rewardEscrow,
 			RewardEscrowV2: rewardEscrowV2,
 			SupplySchedule: supplySchedule,
+			SynthsUSD: sUSDContract,
+			SynthsETH: sETHContract,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD', 'sETH', 'sEUR', 'sAUD'],
@@ -104,7 +108,7 @@ contract('Synthetix', async accounts => {
 		let smockExchanger;
 		beforeEach(async () => {
 			smockExchanger = await smockit(artifacts.require('Exchanger').abi);
-			smockExchanger.smocked.exchangeWithVirtual.will.return.with(() => ['1', account1]);
+			smockExchanger.smocked.exchange.will.return.with(() => ['1', account1]);
 			await addressResolver.importAddresses(
 				['Exchanger'].map(toBytes32),
 				[smockExchanger.address],
@@ -121,14 +125,37 @@ contract('Synthetix', async accounts => {
 
 		it('exchangeWithVirtual is called with the right arguments ', async () => {
 			await synthetix.exchangeWithVirtual(currencyKey1, amount1, currencyKey2, trackingCode, {
-				from: owner,
+				from: msgSender,
 			});
-			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][0], msgSender);
-			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][1], currencyKey1);
-			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][2].toString(), amount1);
-			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][3], currencyKey2);
-			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][4], msgSender);
-			assert.equal(smockExchanger.smocked.exchangeWithVirtual.calls[0][5], trackingCode);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][0], msgSender);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][1], msgSender);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][2], currencyKey1);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][3].toString(), amount1);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][4], currencyKey2);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][5], msgSender);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][6], true);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][7], msgSender);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][8], trackingCode);
+		});
+
+		it('exchangeWithTrackingForInitiator is called with the right arguments ', async () => {
+			await synthetix.exchangeWithTrackingForInitiator(
+				currencyKey1,
+				amount1,
+				currencyKey2,
+				account2,
+				trackingCode,
+				{ from: account3 }
+			);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][0], account3);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][1], account3);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][2], currencyKey1);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][3].toString(), amount1);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][4], currencyKey2);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][5], account3); // destination address (tx.origin)
+			assert.equal(smockExchanger.smocked.exchange.calls[0][6], false);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][7], account2);
+			assert.equal(smockExchanger.smocked.exchange.calls[0][8], trackingCode);
 		});
 	});
 
@@ -388,6 +415,60 @@ contract('Synthetix', async accounts => {
 
 			// rewardEscrow should have 0 balance
 			assert.bnEqual(await synthetix.balanceOf(rewardEscrow.address), 0);
+		});
+	});
+
+	describe('Using a contract to invoke exchangeWithTrackingForInitiator', () => {
+		describe('when a third party contract is setup to exchange synths', () => {
+			let contractExample;
+			let amountOfsUSD;
+			beforeEach(async () => {
+				amountOfsUSD = toUnit('100');
+
+				const MockThirdPartyExchangeContract = artifacts.require('MockThirdPartyExchangeContract');
+
+				// create a contract
+				contractExample = await MockThirdPartyExchangeContract.new(addressResolver.address);
+
+				// ensure rates are set
+				await updateRatesWithDefaults({ exchangeRates, oracle, debtCache });
+
+				// issue sUSD from the owner
+				await synthetix.issueSynths(amountOfsUSD, { from: owner });
+
+				// transfer the sUSD to the contract
+				await sUSDContract.transfer(contractExample.address, toUnit('100'), { from: owner });
+			});
+
+			describe('when Barrie invokes the exchange function on the contract', () => {
+				let txn;
+				beforeEach(async () => {
+					// Barrie has no sETH to start
+					assert.equal(await sETHContract.balanceOf(account3), '0');
+
+					txn = await contractExample.exchange(sUSD, amountOfsUSD, sETH, { from: account3 });
+				});
+				it('then Barrie has the synths in her account', async () => {
+					assert.bnGt(await sETHContract.balanceOf(account3), toUnit('0.01'));
+				});
+				it('and the contract has none', async () => {
+					assert.equal(await sETHContract.balanceOf(contractExample.address), '0');
+				});
+				it('and the event emitted indicates that Barrie was the destinationAddress', async () => {
+					const logs = artifacts.require('Synthetix').decodeLogs(txn.receipt.rawLogs);
+					assert.eventEqual(
+						logs.find(log => log.event === 'SynthExchange'),
+						'SynthExchange',
+						{
+							account: contractExample.address,
+							fromCurrencyKey: sUSD,
+							fromAmount: amountOfsUSD,
+							toCurrencyKey: sETH,
+							toAddress: account3,
+						}
+					);
+				});
+			});
 		});
 	});
 });

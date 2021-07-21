@@ -1,12 +1,12 @@
 'use strict';
 
 const fs = require('fs');
-const { gray, yellow, red, cyan } = require('chalk');
-const Web3 = require('web3');
-const w3utils = require('web3-utils');
+const { gray, yellow, red, cyan, green } = require('chalk');
+const ethers = require('ethers');
 
 const {
 	toBytes32,
+	getUsers,
 	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
 } = require('../../..');
 
@@ -18,8 +18,9 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
-	performTransactionalStep,
 } = require('../util');
+
+const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
 	network: 'kovan',
@@ -34,6 +35,8 @@ const removeSynths = async ({
 	gasLimit = DEFAULTS.gasLimit,
 	synthsToRemove = [],
 	yes,
+	useFork,
+	dryRun = false,
 	privateKey,
 }) => {
 	ensureNetwork(network);
@@ -72,8 +75,9 @@ const removeSynths = async ({
 		}
 	}
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
+		useFork,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -81,11 +85,20 @@ const removeSynths = async ({
 		privateKey = envPrivateKey;
 	}
 
-	const web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
-	web3.eth.accounts.wallet.add(privateKey);
-	const account = web3.eth.accounts.wallet[0].address;
-	console.log(gray(`Using account with public key ${account}`));
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+	let wallet;
+	if (!privateKey) {
+		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
+	} else {
+		wallet = new ethers.Wallet(privateKey, provider);
+	}
+
+	console.log(gray(`Using account with public key ${wallet.address}`));
 	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
+
+	console.log(gray('Dry-run:'), dryRun ? green('yes') : yellow('no'));
 
 	if (!yes) {
 		try {
@@ -104,14 +117,16 @@ const removeSynths = async ({
 		}
 	}
 
-	const Synthetix = new web3.eth.Contract(
+	const Synthetix = new ethers.Contract(
+		deployment.targets['Synthetix'].address,
 		deployment.sources['Synthetix'].abi,
-		deployment.targets['Synthetix'].address
+		wallet
 	);
 
-	const Issuer = new web3.eth.Contract(
+	const Issuer = new ethers.Contract(
+		deployment.targets['Issuer'].address,
 		deployment.sources['Issuer'].abi,
-		deployment.targets['Issuer'].address
+		wallet
 	);
 
 	// deep clone these configurations so we can mutate and persist them
@@ -124,9 +139,9 @@ const removeSynths = async ({
 			`Synth${currencyKey}`
 		];
 		const { abi: synthABI } = deployment.sources[synthSource];
-		const Synth = new web3.eth.Contract(synthABI, synthAddress);
+		const Synth = new ethers.Contract(synthAddress, synthABI, wallet);
 
-		const currentSynthInSNX = await Synthetix.methods.synths(toBytes32(currencyKey)).call();
+		const currentSynthInSNX = await Synthetix.synths(toBytes32(currencyKey));
 
 		if (synthAddress !== currentSynthInSNX) {
 			console.error(
@@ -141,7 +156,7 @@ const removeSynths = async ({
 		}
 
 		// now check total supply (is required in Synthetix.removeSynth)
-		const totalSupply = w3utils.fromWei(await Synth.methods.totalSupply().call());
+		const totalSupply = ethers.utils.formatEther(await Synth.totalSupply());
 		if (Number(totalSupply) > 0) {
 			console.error(
 				red(
@@ -155,32 +170,36 @@ const removeSynths = async ({
 		}
 
 		// perform transaction if owner of Synthetix or append to owner actions list
-		await performTransactionalStep({
-			account,
-			contract: 'Issuer',
-			target: Issuer,
-			write: 'removeSynth',
-			writeArg: toBytes32(currencyKey),
-			gasLimit,
-			gasPrice,
-			etherscanLinkPrefix,
-			ownerActions,
-			ownerActionsFile,
-			encodeABI: network === 'mainnet',
-		});
+		if (dryRun) {
+			console.log(green('Would attempt to remove the synth:', currencyKey));
+		} else {
+			await performTransactionalStep({
+				account: wallet,
+				contract: 'Issuer',
+				target: Issuer,
+				write: 'removeSynth',
+				writeArg: toBytes32(currencyKey),
+				gasLimit,
+				gasPrice,
+				explorerLinkPrefix,
+				ownerActions,
+				ownerActionsFile,
+				encodeABI: network === 'mainnet',
+			});
 
-		// now update the config and deployment JSON files
-		const contracts = ['Proxy', 'TokenState', 'Synth'].map(name => `${name}${currencyKey}`);
-		for (const contract of contracts) {
-			delete updatedConfig[contract];
-			delete updatedDeployment.targets[contract];
+			// now update the config and deployment JSON files
+			const contracts = ['Proxy', 'TokenState', 'Synth'].map(name => `${name}${currencyKey}`);
+			for (const contract of contracts) {
+				delete updatedConfig[contract];
+				delete updatedDeployment.targets[contract];
+			}
+			fs.writeFileSync(configFile, stringify(updatedConfig));
+			fs.writeFileSync(deploymentFile, stringify(updatedDeployment));
+
+			// and update the synths.json file
+			updatedSynths = updatedSynths.filter(({ name }) => name !== currencyKey);
+			fs.writeFileSync(synthsFile, stringify(updatedSynths));
 		}
-		fs.writeFileSync(configFile, stringify(updatedConfig));
-		fs.writeFileSync(deploymentFile, stringify(updatedDeployment));
-
-		// and update the synths.json file
-		updatedSynths = updatedSynths.filter(({ name }) => name !== currencyKey);
-		fs.writeFileSync(synthsFile, stringify(updatedSynths));
 	}
 };
 
@@ -197,6 +216,13 @@ module.exports = {
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', 1)
 			.option('-l, --gas-limit <value>', 'Gas limit', 1e6)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-r, --dry-run', 'Dry run - no changes transacted')
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
+			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option(
 				'-s, --synths-to-remove <value>',
 				'The list of synths to remove',

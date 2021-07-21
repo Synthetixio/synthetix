@@ -2,10 +2,10 @@
 
 const linker = require('solc/linker');
 const Web3 = require('web3');
-const RLP = require('rlp');
+const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const fs = require('fs');
-const { stringify, getEtherscanLinkPrefix } = require('./util');
+const { stringify, getExplorerLinkPrefix } = require('./util');
 const { getVersions, getUsers } = require('../..');
 
 class Deployer {
@@ -47,16 +47,31 @@ class Deployer {
 		this.useOvm = useOvm;
 		this.ignoreSafetyChecks = ignoreSafetyChecks;
 
-		// Configure Web3 so we can sign transactions and connect to the network.
-		this.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+		/*
+		 provider is defined here to hold backwards compatible web3 component as well as ethers
+		 while the migration is completed. After all web3 references are replaced by ethers,
+		 web3 provider will be removed. The aim is to get rid of all references to web3 and web3_utils
+		 in the project.
 
-		if (useFork || (!privateKey && network === 'local')) {
-			this.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		 web3 and/or ethers is needed to interact with the contracts and sing transactions
+		 */
+		this.provider = { web3: {}, ethers: {} };
+		this.provider.web3 = new Web3(new Web3.providers.HttpProvider(providerUrl));
+		this.provider.ethers.provider = new ethers.providers.JsonRpcProvider(providerUrl);
+
+		// use the default owner when in a fork or in local mode and no private key supplied
+		if ((useFork || network === 'local') && !privateKey) {
+			this.provider.web3.eth.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
+
+			this.provider.ethers.defaultAccount = getUsers({ network, user: 'owner' }).address; // protocolDAO
 		} else {
-			this.web3.eth.accounts.wallet.add(privateKey);
-			this.web3.eth.defaultAccount = this.web3.eth.accounts.wallet[0].address;
+			this.provider.web3.eth.accounts.wallet.add(privateKey);
+			this.provider.web3.eth.defaultAccount = this.provider.web3.eth.accounts.wallet[0].address;
+
+			this.provider.ethers.wallet = new ethers.Wallet(privateKey, this.provider.ethers.provider);
+			this.provider.ethers.defaultAccount = this.provider.ethers.wallet.address;
 		}
-		this.account = this.web3.eth.defaultAccount;
+		this.account = this.provider.ethers.defaultAccount;
 		this.deployedContracts = {};
 		this._dryRunCounter = 0;
 
@@ -68,9 +83,9 @@ class Deployer {
 	}
 
 	async evaluateNextDeployedContractAddress() {
-		const nonce = await this.web3.eth.getTransactionCount(this.account);
-		const rlpEncoded = RLP.encode([this.account, nonce]);
-		const hashed = this.web3.utils.sha3(rlpEncoded);
+		const nonce = await this.provider.web3.eth.getTransactionCount(this.account);
+		const rlpEncoded = ethers.utils.RLP.encode([this.account, ethers.utils.hexlify(nonce)]);
+		const hashed = ethers.utils.keccak256(rlpEncoded); // const hashed = this.web3.utils.sha3(rlpEncoded);
 
 		return `0x${hashed.slice(12).substring(14)}`;
 	}
@@ -106,18 +121,25 @@ class Deployer {
 		}
 
 		const types = inputs.map(input => input.type);
-		return this.web3.eth.abi.encodeParameters(types, params);
+		return this.provider.web3.eth.abi.encodeParameters(types, params);
 	}
 
 	async sendDummyTx() {
-		await this.web3.eth.sendTransaction({
+		const tx = {
 			from: this.account,
 			to: '0x0000000000000000000000000000000000000001',
 			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 			value: 0,
-			gas: 1000000,
-			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
-		});
+			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
+		};
+
+		if (this.useOvm) {
+			tx.gas = await this.provider.web3.eth.estimateGas(tx);
+		} else {
+			tx.gas = 1000000;
+		}
+
+		await this.provider.web3.eth.sendTransaction(tx);
 
 		if (this.nonceManager) {
 			this.nonceManager.incrementNonce();
@@ -125,10 +147,16 @@ class Deployer {
 	}
 
 	async sendParameters(type = 'method-call') {
+		const gas = this.useOvm
+			? undefined
+			: type === 'method-call'
+			? this.methodCallGasLimit
+			: this.contractDeploymentGasLimit;
+
 		const params = {
 			from: this.account,
-			gas: type === 'method-call' ? this.methodCallGasLimit : this.contractDeploymentGasLimit,
-			gasPrice: this.web3.utils.toWei(this.gasPrice, 'gwei'),
+			gas,
+			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		};
 
 		if (this.nonceManager) {
@@ -154,54 +182,60 @@ class Deployer {
 			deploy = this.config[name].deploy;
 		}
 
-		const compiled = this.compiled[source];
-
-		if (!compiled) {
-			throw new Error(
-				`No compiled source for: ${name}. The source file is set to ${source}.sol - is that correct?`
-			);
-		}
-
-		if (!this.ignoreSafetyChecks) {
-			const compilerVersion = compiled.metadata.compiler.version;
-			const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
-			const compilerMismatch = (this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
-			if (compilerMismatch) {
-				if (this.useOvm) {
-					throw new Error(
-						`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
-					);
-				} else {
-					throw new Error(
-						`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
-					);
-				}
-			}
-		}
-
 		const existingAddress = this.deployment.targets[name]
 			? this.deployment.targets[name].address
 			: '';
-		const existingABI = this.deployment.sources[source] ? this.deployment.sources[source].abi : '';
-
-		// Any contract after SafeDecimalMath can automatically get linked.
-		// Doing this with bytecode that doesn't require the library is a no-op.
-		let bytecode = compiled.evm.bytecode.object;
-		['SafeDecimalMath', 'Math'].forEach(contractName => {
-			if (this.deployedContracts[contractName]) {
-				bytecode = linker.linkBytecode(bytecode, {
-					[source + '.sol']: {
-						[contractName]: this.deployedContracts[contractName].options.address,
-					},
-				});
-			}
-		});
-
-		compiled.evm.bytecode.linkedObject = bytecode;
+		const existingSource = this.deployment.targets[name]
+			? this.deployment.targets[name].source
+			: '';
+		const existingABI = this.deployment.sources[existingSource]
+			? this.deployment.sources[existingSource].abi
+			: '';
 
 		let deployedContract;
 
 		if (deploy) {
+			// if deploying, do check of compiled sources
+			const compiled = this.compiled[source];
+
+			if (!compiled) {
+				throw new Error(
+					`No compiled source for: ${name}. The source file is set to ${source}.sol - is that correct?`
+				);
+			}
+
+			if (!this.ignoreSafetyChecks) {
+				const compilerVersion = compiled.metadata.compiler.version;
+				const compiledForOvm = compiled.metadata.compiler.version.includes('ovm');
+				const compilerMismatch =
+					(this.useOvm && !compiledForOvm) || (!this.useOvm && compiledForOvm);
+				if (compilerMismatch) {
+					if (this.useOvm) {
+						throw new Error(
+							`You are deploying on Optimism, but the artifacts were not compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+						);
+					} else {
+						throw new Error(
+							`You are deploying on Ethereum, but the artifacts were compiled for Optimism, using solc version ${compilerVersion} instead. Please use the correct compiler and try again.`
+						);
+					}
+				}
+			}
+
+			// Any contract after SafeDecimalMath can automatically get linked.
+			// Doing this with bytecode that doesn't require the library is a no-op.
+			let bytecode = compiled.evm.bytecode.object;
+			['SafeDecimalMath', 'Math'].forEach(contractName => {
+				if (this.deployedContracts[contractName]) {
+					bytecode = linker.linkBytecode(bytecode, {
+						[source + '.sol']: {
+							[contractName]: this.deployedContracts[contractName].options.address,
+						},
+					});
+				}
+			});
+
+			compiled.evm.bytecode.linkedObject = bytecode;
 			console.log(
 				gray(` - Attempting to deploy ${name}${name !== source ? ` (with source ${source})` : ''}`)
 			);
@@ -257,18 +291,23 @@ class Deployer {
 					});
 					if (!this.checkBytesAreSafeForOVM(encodedParameters)) {
 						throw new Error(
-							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. ${encodedParameters}`
+							`Attempting to deploy a contract with unsafe constructor parameters in OVM. Aborting. Encoded parameters: ${encodedParameters} - parameters: ${args}`
 						);
 					}
 				}
 
-				const newContract = new this.web3.eth.Contract(compiled.abi);
-				deployedContract = await newContract
-					.deploy({
-						data: '0x' + bytecode,
-						arguments: args,
-					})
-					.send(await this.sendParameters('contract-deployment'))
+				const newContract = new this.provider.web3.eth.Contract(compiled.abi);
+
+				const deploymentTx = await newContract.deploy({
+					data: '0x' + bytecode,
+					arguments: args,
+				});
+
+				const params = await this.sendParameters('contract-deployment');
+				params.gas = await deploymentTx.estimateGas();
+
+				deployedContract = await deploymentTx
+					.send(params)
 					.on('receipt', receipt => (gasUsed = receipt.gasUsed));
 
 				if (this.nonceManager) {
@@ -280,8 +319,8 @@ class Deployer {
 			// Deployment in OVM could result in empty bytecode if
 			// the contract's constructor parameters are unsafe.
 			// This check is probably redundant given the previous check, but just in case...
-			if (this.useOvm) {
-				const code = await this.web3.eth.getCode(deployedContract.options.address);
+			if (this.useOvm && !dryRun) {
+				const code = await this.provider.web3.eth.getCode(deployedContract.options.address);
 
 				if (code.length === 2) {
 					throw new Error(`Contract deployment resulted in a contract with no bytecode: ${code}`);
@@ -295,10 +334,13 @@ class Deployer {
 					} ${gasUsed ? `used ${(gasUsed / 1e6).toFixed(1)}m in gas` : ''}`
 				)
 			);
+			// track the source file for potential usage
+			deployedContract.options.source = source;
 		} else if (existingAddress && existingABI) {
 			// get ABI from the deployment (not the compiled ABI which may be newer)
 			deployedContract = this.makeContract({ abi: existingABI, address: existingAddress });
 			console.log(gray(` - Reusing instance of ${name} at ${existingAddress}`));
+			deployedContract.options.source = existingSource;
 		} else {
 			throw new Error(
 				`Settings for contract: ${name} specify an existing contract, but cannot find address or ABI.`
@@ -319,12 +361,13 @@ class Deployer {
 			timestamp = this.deployment.targets[name].timestamp;
 			txn = this.deployment.targets[name].txn;
 		}
+		const { network, useOvm } = this;
 		// now update the deployed contract information
 		this.deployment.targets[name] = {
 			name,
 			address,
 			source,
-			link: `${getEtherscanLinkPrefix(this.network)}/address/${
+			link: `${getExplorerLinkPrefix({ network, useOvm })}/address/${
 				this.deployedContracts[name].options.address
 			}`,
 			timestamp,
@@ -377,7 +420,7 @@ class Deployer {
 				arg.toLowerCase() === forbiddenAddress.toLowerCase()
 			) {
 				throw Error(
-					`new ${name}(): Cannot use the AddressResolver as a constructor arg. Use ReadProxyForResolver instead.`
+					`new ${name}(): Cannot use the AddressResolver as a constructor arg. Use ReadProxyAddressResolver instead.`
 				);
 			}
 		}
@@ -393,7 +436,7 @@ class Deployer {
 		// the local variable newContractsDeployed
 		await this._updateResults({
 			name,
-			source,
+			source: deployedContract.options.source,
 			deployed: deployedContract.options.deployed,
 			address: deployedContract.options.address,
 		});
@@ -402,7 +445,7 @@ class Deployer {
 	}
 
 	makeContract({ abi, address }) {
-		return new this.web3.eth.Contract(abi, address);
+		return new this.provider.web3.eth.Contract(abi, address);
 	}
 
 	getExistingContract({ contract }) {

@@ -6,6 +6,7 @@ const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
 const { table } = require('table');
 const w3utils = require('web3-utils');
+const { BigNumber } = require('ethers');
 
 const {
 	constants: {
@@ -35,7 +36,13 @@ const {
 });
 
 const { networks } = require('../..');
-const stringify = input => JSON.stringify(input, null, '\t') + '\n';
+const JSONreplacer = (key, value) => {
+	if (typeof value === 'object' && value.type && value.type === 'BigNumber') {
+		return BigNumber.from(value).toString();
+	}
+	return value;
+};
+const stringify = input => JSON.stringify(input, JSONreplacer, '\t') + '\n';
 
 const ensureNetwork = network => {
 	if (!networks.includes(network)) {
@@ -59,7 +66,7 @@ const ensureDeploymentPath = deploymentPath => {
 };
 
 // Load up all contracts in the flagged source, get their deployed addresses (if any) and compiled sources
-const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
+const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
 	const synths = getSynths({ network, deploymentPath });
@@ -97,6 +104,11 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	}
 	const deployment = JSON.parse(fs.readFileSync(deploymentFile));
 
+	if (freshDeploy) {
+		deployment.targets = {};
+		deployment.sources = {};
+	}
+
 	const ownerActionsFile = path.join(deploymentPath, OWNER_ACTIONS_FILENAME);
 	if (!fs.existsSync(ownerActionsFile)) {
 		fs.writeFileSync(ownerActionsFile, stringify({}));
@@ -124,11 +136,13 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	};
 };
 
-const getEtherscanLinkPrefix = network => {
-	return `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+const getExplorerLinkPrefix = ({ network, useOvm }) => {
+	return `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${
+		useOvm ? 'explorer.optimism' : 'etherscan'
+	}.io`;
 };
 
-const loadConnections = ({ network, useFork }) => {
+const loadConnections = ({ network, useFork, useOvm }) => {
 	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
 	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	let providerUrl;
@@ -150,9 +164,9 @@ const loadConnections = ({ network, useFork }) => {
 			? 'https://api.etherscan.io/api'
 			: `https://api-${network}.etherscan.io/api`;
 
-	const etherscanLinkPrefix = getEtherscanLinkPrefix(network);
+	const explorerLinkPrefix = getExplorerLinkPrefix({ network, useOvm });
 
-	return { providerUrl, privateKey, etherscanUrl, etherscanLinkPrefix };
+	return { providerUrl, privateKey, etherscanUrl, explorerLinkPrefix };
 };
 
 const confirmAction = prompt =>
@@ -166,7 +180,7 @@ const confirmAction = prompt =>
 		});
 	});
 
-const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanLinkPrefix }) => ({
+const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, explorerLinkPrefix }) => ({
 	key,
 	action,
 	target,
@@ -176,7 +190,7 @@ const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanL
 		target,
 		action,
 		complete: false,
-		link: `${etherscanLinkPrefix}/address/${target}#writeContract`,
+		link: `${explorerLinkPrefix}/address/${target}#writeContract`,
 		data,
 	};
 	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
@@ -190,7 +204,7 @@ let _dryRunCounter = 0;
  *
  * @returns transaction hash if successful, true if user completed, or falsy otherwise
  */
-const performTransactionalStep = async ({
+const performTransactionalStepWeb3 = async ({
 	account,
 	contract,
 	target,
@@ -201,7 +215,8 @@ const performTransactionalStep = async ({
 	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
 	gasPrice,
-	etherscanLinkPrefix,
+	generateSolidity,
+	explorerLinkPrefix,
 	ownerActions,
 	ownerActionsFile,
 	dryRun,
@@ -218,15 +233,30 @@ const performTransactionalStep = async ({
 	console.log(yellow(`Attempting action: ${action}`));
 
 	if (read) {
-		// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
-		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		const response = await target.methods[read](...argumentsForReadFunction).call();
+		try {
+			// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
+			const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
+			const response = await target.methods[read](...argumentsForReadFunction).call();
 
-		if (expected(response)) {
-			console.log(gray(`Nothing required for this action.`));
-			return { noop: true };
+			if (expected(response)) {
+				console.log(gray(`Nothing required for this action.`));
+				return { noop: true };
+			}
+		} catch (err) {
+			catchMissingResolverWhenGeneratingSolidity({ contract, dryRun, err, generateSolidity });
 		}
 	}
+
+	// now if generate solidity mode, simply doing anything, a bit like a dry-run
+	if (generateSolidity) {
+		console.log(
+			green(
+				`[GENERATE_SOLIDITY_SIMULATION] Successfully completed ${action} number ${++_dryRunCounter}.`
+			)
+		);
+		return {};
+	}
+
 	// otherwise check the owner
 	const owner = await target.methods.owner().call();
 	if (owner === account || publiclyCallable) {
@@ -239,7 +269,9 @@ const performTransactionalStep = async ({
 		} else {
 			const params = {
 				from: account,
-				gas: Number(gasLimit),
+				gas:
+					Number(gasLimit) ||
+					(await target.methods[write](...argumentsForWriteFunction).estimateGas()),
 				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
 			};
 
@@ -260,7 +292,7 @@ const performTransactionalStep = async ({
 		console.log(
 			green(
 				`${
-					dryRun ? '[DRY RUN] ' : ''
+					dryRun ? gray('[DRYRUN] ') : ''
 				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
 					2
 				)}m `
@@ -278,7 +310,7 @@ const performTransactionalStep = async ({
 		const appendOwnerAction = appendOwnerActionGenerator({
 			ownerActions,
 			ownerActionsFile,
-			etherscanLinkPrefix,
+			explorerLinkPrefix,
 		});
 
 		data = target.methods[write](...argumentsForWriteFunction).encodeABI();
@@ -354,17 +386,40 @@ function reportDeployedContracts({ deployer }) {
 	}
 }
 
+const catchMissingResolverWhenGeneratingSolidity = ({
+	contract,
+	dryRun,
+	err,
+	generateSolidity,
+}) => {
+	if (
+		(generateSolidity || dryRun) &&
+		/VM Exception while processing transaction: revert Missing address/.test(err.message)
+	) {
+		console.log(
+			gray(
+				`WARNING: Error thrown reading state from ${yellow(
+					contract
+				)} with missing resolver addresses (expected for new contracts that need their resolvers cached). Ignoring as this is generate-solidity mode.`
+			)
+		);
+	} else {
+		throw err;
+	}
+};
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
-	getEtherscanLinkPrefix,
+	getExplorerLinkPrefix,
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,
-	performTransactionalStep,
+	performTransactionalStepWeb3,
 	parameterNotice,
 	reportDeployedContracts,
+	catchMissingResolverWhenGeneratingSolidity,
 };

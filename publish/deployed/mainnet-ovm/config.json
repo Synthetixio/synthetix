@@ -118,5 +118,8 @@
 	},
 	"RewardEscrowV2": {
 		"deploy": false
+	},
+	"EtherWrapper": {
+		"deploy": false
 	}
 }

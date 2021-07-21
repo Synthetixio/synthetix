@@ -62,9 +62,6 @@
 	"Liquidations": {
 		"deploy": true
 	},
-	"SupplySchedule": {
-		"deploy": true
-	},
 	"Synthetix": {
 		"deploy": true
 	},
@@ -135,6 +132,12 @@
 		"deploy": true
 	},
 	"CollateralManager": {
+		"deploy": true
+	},
+	"EtherWrapper": {
+		"deploy": true
+	},
+	"WETH": {
 		"deploy": true
 	}
 }

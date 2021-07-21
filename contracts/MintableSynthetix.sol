@@ -16,7 +16,6 @@ contract MintableSynthetix is BaseSynthetix {
     ) public BaseSynthetix(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
 
     /* ========== INTERNALS =================== */
-
     function _mintSecondary(address account, uint amount) internal {
         tokenState.setBalanceOf(account, tokenState.balanceOf(account).add(amount));
         emitTransfer(address(this), account, amount);

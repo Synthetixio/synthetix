@@ -17,27 +17,24 @@ jobs:
       {{> require-prepare.yml}}
   - job-unit-tests-coverage:
       {{> require-prepare.yml}}
+  - job-unit-tests-coverage-report:
+      {{> require-unit-tests-coverage.yml}}
   - job-unit-tests-gas-report:
-      {{> require-prepare.yml}}
+      {{> require-unit-tests.yml}}
   - job-test-deploy-script:
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Prod tests
+  # Fork tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-prod-tests:
+  - job-fork-tests:
       {{> require-prepare.yml}}
-  - job-prod-tests-ovm:
-      name: job-prod-tests-ovm
-      {{> require-prepare.yml}}
-  - job-prod-diff-tests-local:
-      name: job-prod-diff-tests-local
-      {{> require-prepare.yml}}
-  - job-prod-diff-tests-local-ovm:
-      name: job-prod-diff-tests-local-ovm
-      {{> require-prepare.yml}}
-  - job-prod-diff-tests:
-      name: job-prod-diff-tests-mainnet
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Integration tests
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-integration-tests:
+      name: job-integration-tests
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

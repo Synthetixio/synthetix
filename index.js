@@ -78,6 +78,7 @@ const networkToChainId = Object.entries(chainIdMapping).reduce(
 const constants = {
 	BUILD_FOLDER: 'build',
 	CONTRACTS_FOLDER: 'contracts',
+	MIGRATIONS_FOLDER: 'migrations',
 	COMPILED_FOLDER: 'compiled',
 	FLATTENED_FOLDER: 'flattened',
 	AST_FOLDER: 'ast',
@@ -97,7 +98,7 @@ const constants = {
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 	ZERO_BYTES32: '0x' + '0'.repeat(64),
 
-	OVM_MAX_GAS_LIMIT: '8999999',
+	OVM_GAS_PRICE_GWEI: '0.015',
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00Z
 };
@@ -156,6 +157,15 @@ const defaults = {
 		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
 		rinkeby: '0xEDC0C23864B041607D624E2d9a67916B6cf40F7a',
 	},
+	WETH_ERC20_ADDRESSES: {
+		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+		kovan: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+		rinkeby: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
+		ropsten: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
+		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
+		'kovan-ovm': '0x4200000000000000000000000000000000000006',
+	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
 	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
@@ -191,6 +201,10 @@ const defaults = {
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
 		INTERACTION_DELAY: '3600', // 1 hour in secs
 	},
+
+	ETHER_WRAPPER_MAX_ETH: w3utils.toWei('5000'),
+	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
+	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
 };
 
 /**
@@ -471,7 +485,7 @@ const getShortingRewards = ({
  * Retrieve the list of system user addresses
  */
 const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
-	const testnetOwner = '0x73570075092502472e4b61a7058df1a4a1db12f2';
+	const testnetOwner = '0x73570075092502472E4b61A7058Df1A4a1DB12f2';
 	const base = {
 		owner: testnetOwner,
 		deployer: testnetOwner,
@@ -553,6 +567,7 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 		1: 'System Upgrade',
 		2: 'Market Closure',
 		4: 'iSynth Reprice',
+		6: 'Index Rebalance',
 		55: 'Circuit Breaker (Phase one)', // https://sips.synthetix.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.synthetix.io/SIPS/sip-65
 		99999: 'Emergency',

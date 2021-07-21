@@ -21,11 +21,12 @@ task('compile')
 	.addFlag('failOversize', 'Fail if any contract is oversize')
 	.addFlag('useOvm', 'Compile with the OVM Solidity compiler')
 	.addFlag('native', 'Compile with the native solc compiler')
+	.addFlag('everything', 'Compile all subfolders regardless of ignore patterns')
 	.setAction(async (taskArguments, hre, runSuper) => {
 		if (taskArguments.useOvm) {
 			console.log(gray('Compiling with OVM Solidity compiler...'));
 
-			require('@eth-optimism/plugins/hardhat/compiler');
+			require('@eth-optimism/hardhat-ovm');
 			hre.config.ignoreNonOvmContracts = true;
 		}
 
@@ -34,6 +35,11 @@ task('compile')
 		}
 
 		optimizeIfRequired({ hre, taskArguments });
+
+		// remove ignore pattern if requested
+		if (taskArguments.everything) {
+			hre.config.paths.ignore = undefined;
+		}
 
 		await runSuper(taskArguments);
 
@@ -96,6 +102,11 @@ internalTask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS, async (_, { config }, runSu
 
 			return !isIgnored;
 		});
+	}
+
+	if (config.paths.ignore) {
+		console.log(gray(`Ignoring paths`), yellow(config.paths.ignore));
+		filePaths = filePaths.filter(filePath => !config.paths.ignore.test(filePath));
 	}
 
 	return filePaths;

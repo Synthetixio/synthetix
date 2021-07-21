@@ -1,6 +1,6 @@
 'use strict';
 
-const w3utils = require('web3-utils');
+const ethers = require('ethers');
 const axios = require('axios');
 const { green, gray, red, yellow } = require('chalk');
 
@@ -59,17 +59,17 @@ const abi = [
 ];
 
 const safeTransactionApi = ({ network, safeAddress }) => {
-	const address = w3utils.toChecksumAddress(safeAddress);
+	const address = ethers.utils.getAddress(safeAddress);
 	return `https://safe-transaction.${network}.gnosis.io/api/v1/safes/${address}/multisig-transactions/`;
 };
 
-const getSafeInstance = (web3, safeAddress) => {
-	return new web3.eth.Contract(abi, safeAddress);
+const getSafeInstance = ({ provider, safeAddress }) => {
+	return new ethers.Contract(safeAddress, abi, provider);
 };
 
 const getSafeNonce = async safeContract => {
 	try {
-		const nonce = await safeContract.methods.nonce().call();
+		const nonce = await safeContract.nonce();
 		return nonce;
 	} catch (err) {
 		console.error(red('Cannot fetch safe nonce. Is the owner contract a Gnosis safe?'));
@@ -101,9 +101,7 @@ const getLastTx = async ({ network, safeAddress }) => {
 
 const getNewTxNonce = async ({ lastTx, safeContract }) => {
 	// use current's safe nonce as fallback
-	return lastTx === undefined
-		? (await safeContract.methods.nonce().call()).toString()
-		: `${lastTx.nonce + 1}`;
+	return lastTx === undefined ? (await safeContract.nonce()).toString() : `${lastTx.nonce + 1}`;
 };
 
 const saveTransactionToApi = async ({
@@ -124,11 +122,11 @@ const saveTransactionToApi = async ({
 	transactionHash,
 	signature,
 }) => {
-	const safeAddress = safeContract.options.address;
+	const safeAddress = safeContract.address;
 	const endpoint = safeTransactionApi({ network, safeAddress });
 
 	const postData = {
-		to: w3utils.toChecksumAddress(to),
+		to: ethers.utils.getAddress(to),
 		value: valueInWei,
 		data,
 		operation,
@@ -139,7 +137,7 @@ const saveTransactionToApi = async ({
 		refundReceiver,
 		nonce: Number(nonce),
 		contractTransactionHash: transactionHash,
-		sender: w3utils.toChecksumAddress(sender),
+		sender: ethers.utils.getAddress(sender),
 		signature,
 		origin,
 	};
@@ -173,20 +171,18 @@ const getTransactionHash = async ({
 	to,
 	valueInWei = 0,
 }) => {
-	const txHash = await safeContract.methods
-		.getTransactionHash(
-			to,
-			valueInWei,
-			data,
-			operation,
-			safeTxGas,
-			baseGas,
-			gasPrice,
-			gasToken,
-			refundReceiver,
-			nonce
-		)
-		.call();
+	const txHash = await safeContract.getTransactionHash(
+		to,
+		valueInWei,
+		data,
+		operation,
+		safeTxGas,
+		baseGas,
+		gasPrice,
+		gasToken,
+		refundReceiver,
+		nonce
+	);
 	return txHash;
 };
 
@@ -212,7 +208,7 @@ const getNewTransactionHash = async ({ safeContract, data, to, sender, network, 
 	// get latest nonce of the gnosis safe
 	let lastTx = await getLastTx({
 		network,
-		safeAddress: safeContract.options.address,
+		safeAddress: safeContract.address,
 	});
 
 	let newNonce = await getNewTxNonce({ lastTx, safeContract });
@@ -226,7 +222,7 @@ const getNewTransactionHash = async ({ safeContract, data, to, sender, network, 
 
 		lastTx = await getLastTx({
 			network,
-			safeAddress: safeContract.options.address,
+			safeAddress: safeContract.address,
 		});
 		newNonce = await getNewTxNonce({ lastTx, safeContract });
 	}
@@ -239,9 +235,14 @@ const getNewTransactionHash = async ({ safeContract, data, to, sender, network, 
 	return { txHash, newNonce };
 };
 
-const getSafeSignature = ({ signer, contractTxHash }) => {
+const getSafeSignature = async ({ signer, privateKey, providerUrl, contractTxHash }) => {
+	if (!signer) {
+		const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+		signer = new ethers.Wallet(privateKey, provider);
+	}
+
 	// sign txHash to get signature
-	const { signature } = signer.sign(contractTxHash);
+	const signature = await signer.signMessage(contractTxHash);
 
 	// For ethereum valid V is 27 or 28
 	// Adding 4 is required to make signature valid for safe contracts:
