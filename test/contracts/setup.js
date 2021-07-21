@@ -558,6 +558,25 @@ const setupContract = async ({
 				]);
 			}
 		},
+		async CollateralUtil() {
+			await cache['AddressResolver'].setAssociatedContract(instance.address, {
+				from: owner,
+			});
+		},
+
+		async Collateral() {
+			await Promise.all([
+				cache['CollateralState'].setAssociatedContract(instance.address, { from: owner }),
+				cache['CollateralManager'].setAssociatedContract(instance.address, { from: owner }),
+				cache['AddressResolver'].setAssociatedContract(instance.address, { from: owner }),
+			]);
+		},
+
+		async CollateralState() {
+			await cache['Collateral'].setAssociatedContract(instance.address, {
+				from: owner,
+			});
+		},
 	};
 
 	// now run any postDeploy tasks (connecting contracts together)
