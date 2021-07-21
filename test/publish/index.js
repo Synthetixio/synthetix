@@ -1564,6 +1564,8 @@ describe('publish scripts', () => {
 									// address here we should look up all required contracts and ignore any that have
 									// ':' in it
 									.filter(([contract]) => !/^SynthetixBridge/.test(contract))
+									// Same applies to the owner relays
+									.filter(([contract]) => !/^OwnerRelay/.test(contract))
 									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checked
 									.filter(([contract]) => !/^VirtualSynthMastercopy/.test(contract))
 									.filter(([, { source }]) =>

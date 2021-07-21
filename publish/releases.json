@@ -275,5 +275,24 @@
 		"ovm": true,
 		"sources": ["EtherWrapper", "Exchanger", "Synthetix", "SystemSettings"],
 		"sips": [138, 139, 140]
+	},
+	{
+		"name": "Mirfak",
+		"version": {
+			"major": 2,
+			"minor": 999
+		},
+		"sources": ["OwnerRelayOnEthereum"],
+		"sips": [167]
+	},
+	{
+		"name": "Mirfak (Optimism)",
+		"version": {
+			"major": 2,
+			"minor": 999
+		},
+		"ovm": true,
+		"sources": ["OwnerRelayOnOptimism"],
+		"sips": [167]
 	}
 ]

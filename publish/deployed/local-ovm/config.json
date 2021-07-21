@@ -139,5 +139,8 @@
 	},
 	"WETH": {
 		"deploy": true
+	},
+	"OwnerRelayOnOptimism": {
+		"deploy": true
 	}
 }
