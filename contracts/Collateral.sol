@@ -238,35 +238,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         shortingRewards[synth] = rewardsContract;
     }
 
-    /* ---------- SETTERS ---------- */
-
-    function setMinCratio(uint _minCratio) external onlyOwner {
-        require(_minCratio > SafeDecimalMath.unit(), "Must be above 1");
-        minCratio = _minCratio;
-        emit MinCratioRatioUpdated(minCratio);
-    }
-
-    function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
-        issueFeeRate = _issueFeeRate;
-        emit IssueFeeRateUpdated(issueFeeRate);
-    }
-
-    function setInteractionDelay(uint _interactionDelay) external onlyOwner {
-        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
-        interactionDelay = _interactionDelay;
-        emit InteractionDelayUpdated(interactionDelay);
-    }
-
-    function setManager(ICollateralManager _newManager) external onlyOwner {
-        manager = _newManager;
-        emit ManagerUpdated(manager);
-    }
-
-    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
-        canOpenLoans = _canOpenLoans;
-        emit CanOpenLoansUpdated(canOpenLoans);
-    }
-
     /* ---------- LOAN INTERACTIONS ---------- */
 
     function openInternal(
