@@ -142,7 +142,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 							ctx,
 							src: 'sUSD',
 							dest: 'sETH',
-							amount: parseEther('10000'),
+							amount: parseEther('15000'),
 							user,
 						});
 
