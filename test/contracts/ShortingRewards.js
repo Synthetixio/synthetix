@@ -104,6 +104,14 @@ contract('ShortingRewards', accounts => {
 		await sETHSynth.issue(receiver, issueAmount, { from: owner });
 	};
 
+	const deployUtil = async ({ resolver }) => {
+		return setupContract({
+			accounts,
+			contract: 'CollateralUtil',
+			args: [resolver],
+		});
+	};
+
 	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
@@ -171,6 +179,10 @@ contract('ShortingRewards', accounts => {
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
 		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+
+		await deployUtil({
+			resolver: addressResolver.address,
+		});
 
 		short = await deployShort({
 			state: state.address,
