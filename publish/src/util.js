@@ -233,7 +233,7 @@ const performTransactionalStepWeb3 = async ({
 
 	if (read) {
 		try {
-			// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
+			// Filter out undefined arguments
 			const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
 			const response = await target[read](...argumentsForReadFunction);
 

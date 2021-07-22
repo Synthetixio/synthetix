@@ -132,7 +132,7 @@ const replaceSynths = async ({
 	};
 
 	const { account } = deployer;
-	const web3 = deployer.provider.web3;
+	const provider = deployer.provider;
 
 	console.log(gray(`Using account with public key ${account}`));
 	console.log(
@@ -141,7 +141,7 @@ const replaceSynths = async ({
 		)
 	);
 
-	const currentGasPrice = await web3.eth.getGasPrice();
+	const currentGasPrice = await provider.getGasPrice();
 	console.log(
 		gray(`Current gas price is approx: ${ethers.utils.formatUnits(currentGasPrice, 'gwei')} GWEI`)
 	);
@@ -162,9 +162,9 @@ const replaceSynths = async ({
 		const { abi: tokenStateABI } = deployment.sources[tokenStateSource];
 		const { abi: proxyABI } = deployment.sources[proxySource];
 
-		const Synth = new web3.eth.Contract(synthABI, synthAddress);
-		const TokenState = new web3.eth.Contract(tokenStateABI, tokenStateAddress);
-		const Proxy = new web3.eth.Contract(proxyABI, proxyAddress);
+		const Synth = new ethers.Contract(synthAddress, synthABI, provider);
+		const TokenState = new ethers.Contract(tokenStateAddress, tokenStateABI, provider);
+		const Proxy = new ethers.Contract(proxyAddress, tokenStateABI, provider);
 
 		return {
 			Synth,
@@ -214,7 +214,7 @@ const replaceSynths = async ({
 
 	const { address: issuerAddress, source } = deployment.targets['Issuer'];
 	const { abi: issuerABI } = deployment.sources[source];
-	const Issuer = new web3.eth.Contract(issuerABI, issuerAddress);
+	const Issuer = new ethers.Contract(issuerAddress, tokenStateABI, provider);
 
 	const resolverAddress = await Issuer.resolver();
 	const updatedSynths = JSON.parse(fs.readFileSync(synthsFile));

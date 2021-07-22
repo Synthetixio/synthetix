@@ -156,19 +156,16 @@ module.exports = async ({
 	}
 
 	const deployerBalance = parseInt(
-		formatUnits(await deployer.provider.web3.eth.getBalance(account), 'ether'),
+		formatUnits(await deployer.provider.getBalance(account), 'ether'),
 		10
 	);
 	if (useFork) {
-		// Make sure the pwned account has ETH when using a fork
-		const accounts = await deployer.provider.web3.eth.getAccounts();
-
-		await deployer.provider.web3.eth.sendTransaction({
-			from: accounts[0],
+		const response = await deployer.signer.sendTransaction({
 			to: account,
-			gas: 50000,
+			gasLimit: 50000,
 			value: parseUnits('10', 'ether').toString(),
 		});
+		await response.wait();
 	} else if (deployerBalance < 5) {
 		console.log(
 			yellow(`⚠ WARNING: Deployer account balance could be too low: ${deployerBalance} ETH`)

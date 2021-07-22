@@ -39,9 +39,10 @@ module.exports = async ({
 			CollateralErc20,
 			CollateralShort,
 		}).map(([name, address]) => {
-			const target = new deployer.provider.web3.eth.Contract(
+			const target = new ethers.Contract(
+				address,
 				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
-				address
+				deployer.provider,
 			);
 			target.source = name;
 			target.address = address;
@@ -224,9 +225,10 @@ module.exports = async ({
 				// wrap them in a contract via the deployer
 				const markets = marketAddresses.map(
 					binaryOptionMarket =>
-						new deployer.provider.web3.eth.Contract(
+						new ethers.Contract(
+							binaryOptionMarket,
 							compiled['BinaryOptionMarket'].abi,
-							binaryOptionMarket
+							deployer.provider,
 						)
 				);
 
@@ -275,9 +277,10 @@ module.exports = async ({
 					},
 				];
 
-				const oldBinaryOptionMarket = new deployer.provider.web3.eth.Contract(
+				const oldBinaryOptionMarket = new ethers.Contract(
+					addressOf(market),
 					oldBinaryOptionMarketABI,
-					addressOf(market)
+					deployer.provider,
 				);
 
 				const isCached = await oldBinaryOptionMarket.isResolverCached(addressOf(ReadProxyAddressResolver));
