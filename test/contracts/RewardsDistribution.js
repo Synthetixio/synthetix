@@ -312,7 +312,11 @@ contract('RewardsDistribution', async accounts => {
 			assert.equal(authorityAddress, authorityAddress);
 
 			// Transfer SNX to the RewardsDistribution contract address
-			await synthetix.transfer(rewardsDistribution.address, totalToDistribute);
+			await synthetix.methods['transfer(address,uint256)'](
+				rewardsDistribution.address,
+				totalToDistribute,
+				{ from: owner }
+			);
 
 			// Check RewardsDistribution balance
 			const balanceOfRewardsContract = await synthetix.balanceOf(rewardsDistribution.address);
