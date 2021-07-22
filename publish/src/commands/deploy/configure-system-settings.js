@@ -318,23 +318,5 @@ module.exports = async ({
 			writeArg: await getDeployParameter('ETHER_WRAPPER_BURN_FEE_RATE'),
 			comment: 'Set the fee rate for burning sETH for ETH in the EtherWrapper (SIP-112)',
 		});
-		await runStep({
-			contract: 'SystemSettings',
-			target: SystemSettings,
-			read: 'futuresMinInitialMargin',
-			expected: input => input !== '0', // only change if zero
-			write: 'setFuturesMinInitialMargin',
-			writeArg: await getDeployParameter('FUTURES_MIN_INITIAL_MARGIN'),
-			comment: 'Set the minimum margin to open a futures position (SIP-80)',
-		});
-		await runStep({
-			contract: 'SystemSettings',
-			target: SystemSettings,
-			read: 'futuresLiquidationFee',
-			expected: input => input !== '0', // only change if zero
-			write: 'setFuturesLiquidationFee',
-			writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE'),
-			comment: 'Set the reward for liquidating a futures position (SIP-80)',
-		});
 	}
 };

@@ -2,192 +2,192 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./Owned.sol";
-import "./MixinSystemSettings.sol";
-import "./interfaces/IFuturesMarketSettings.sol";
+import "./MixinFuturesMarketSettings.sol";
 
 // Internal references
-import "./interfaces/IFuturesMarket.sol";
+import "./interfaces/IFuturesMarketSettings.sol";
 import "./interfaces/IFuturesMarketManager.sol";
+import "./interfaces/IFuturesMarket.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarketSettings
-contract FuturesMarketSettings is Owned, MixinSystemSettings, IFuturesMarketSettings {
-    struct Parameters {
-        uint takerFee;
-        uint makerFee;
-        uint maxLeverage;
-        uint maxMarketValue;
-        uint maxFundingRate;
-        uint maxFundingRateSkew;
-        uint maxFundingRateDelta;
-    }
-
-    /* ========== STATE VARIABLES ========== */
-
-    mapping(bytes32 => Parameters) public parameters;
-    mapping(bytes32 => address) public markets;
+contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMarketSettings {
+    /* ========== CONSTANTS ========== */
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
-
-    /* ---------- Parameter Names ---------- */
-
-    bytes32 internal constant PARAMETER_TAKERFEE = "takerFee";
-    bytes32 internal constant PARAMETER_MAKERFEE = "makerFee";
-    bytes32 internal constant PARAMETER_MAXLEVERAGE = "maxLeverage";
-    bytes32 internal constant PARAMETER_MAXMARKETVALUE = "maxMarketValue";
-    bytes32 internal constant PARAMETER_MAXFUNDINGRATE = "maxFundingRate";
-    bytes32 internal constant PARAMETER_MAXFUNDINGRATESKEW = "maxFundingRateSkew";
-    bytes32 internal constant PARAMETER_MAXFUNDINGRATEDELTA = "maxFundingRateDelta";
+    bytes32 internal constant CONTRACT_FUTURES_MARKET_MANAGER = "FuturesMarketManager";
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
+    constructor(address _owner, address _resolver) public Owned(_owner) MixinFuturesMarketSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
 
-    /* ---------- External Contracts ---------- */
-
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory existingAddresses = MixinFuturesMarketSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[0] = CONTRACT_FUTURES_MARKET_MANAGER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function _manager() internal view returns (IFuturesMarketManager) {
-        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+    function _futuresMarketManager() internal view returns (IFuturesMarketManager) {
+        return IFuturesMarketManager(requireAndGetAddress(CONTRACT_FUTURES_MARKET_MANAGER));
+    }
+
+    /* ---------- Getters ---------- */
+
+    function takerFee(bytes32 _baseAsset) external view returns (uint) {
+        return _takerFee(_baseAsset);
+    }
+
+    function makerFee(bytes32 _baseAsset) public view returns (uint) {
+        return _makerFee(_baseAsset);
+    }
+
+    function closureFee(bytes32 _baseAsset) public view returns (uint) {
+        return _closureFee(_baseAsset);
+    }
+
+    function maxLeverage(bytes32 _baseAsset) public view returns (uint) {
+        return _maxLeverage(_baseAsset);
+    }
+
+    function maxMarketValue(bytes32 _baseAsset) public view returns (uint) {
+        return _maxMarketValue(_baseAsset);
+    }
+
+    function maxFundingRate(bytes32 _baseAsset) public view returns (uint) {
+        return _maxFundingRate(_baseAsset);
+    }
+
+    function maxFundingRateSkew(bytes32 _baseAsset) public view returns (uint) {
+        return _maxFundingRateSkew(_baseAsset);
+    }
+
+    function maxFundingRateDelta(bytes32 _baseAsset) public view returns (uint) {
+        return _maxFundingRateDelta(_baseAsset);
+    }
+
+    function parameters(bytes32 _baseAsset)
+        external
+        view
+        returns (
+            uint _takerFee,
+            uint _makerFee,
+            uint _closureFee,
+            uint _maxLeverage,
+            uint _maxMarketValue,
+            uint _maxFundingRate,
+            uint _maxFundingRateSkew,
+            uint _maxFundingRateDelta
+        )
+    {
+        return _parameters(_baseAsset);
+    }
+
+    function liquidationFee() external view returns (uint) {
+        return _liquidationFee();
+    }
+
+    function minInitialMargin() external view returns (uint) {
+        return _minInitialMargin();
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* ---------- Setters ---------- */
+    /* ---------- Setters --------- */
 
-    function setTakerFee(bytes32 _baseAsset, uint _takerFee) external onlyOwner {
-        require(_takerFee <= 1 ether, "taker fee greater than 1");
-        parameters[_baseAsset].takerFee = _takerFee;
-        emit ParameterUpdated(_baseAsset, PARAMETER_TAKERFEE, _takerFee);
+    function _setParameter(
+        bytes32 _baseAsset,
+        bytes32 key,
+        uint value
+    ) internal {
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, keccak256(abi.encodePacked(_baseAsset, key)), value);
+        emit ParameterUpdated(_baseAsset, key, value);
     }
 
-    function setMakerFee(bytes32 _baseAsset, uint _makerFee) external onlyOwner {
-        require(_makerFee <= 1 ether, "maker fee greater than 1");
-        parameters[_baseAsset].makerFee = _makerFee;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAKERFEE, _makerFee);
+    function setTakerFee(bytes32 _baseAsset, uint _takerFee) public onlyOwner {
+        require(_takerFee <= 1e18, "taker fee greater than 1");
+        _setParameter(_baseAsset, PARAMETER_TAKER_FEE, _takerFee);
     }
 
-    function setMaxLeverage(bytes32 _baseAsset, uint _maxLeverage) external onlyOwner {
-        parameters[_baseAsset].maxLeverage = _maxLeverage;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXLEVERAGE, _maxLeverage);
+    function setMakerFee(bytes32 _baseAsset, uint _makerFee) public onlyOwner {
+        require(_makerFee <= 1e18, "maker fee greater than 1");
+        _setParameter(_baseAsset, PARAMETER_MAKER_FEE, _makerFee);
     }
 
-    function setMaxMarketValue(bytes32 _baseAsset, uint _maxMarketValue) external onlyOwner {
-        parameters[_baseAsset].maxMarketValue = _maxMarketValue;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXMARKETVALUE, _maxMarketValue);
+    function setClosureFee(bytes32 _baseAsset, uint _closureFee) public onlyOwner {
+        require(_closureFee <= 1e18, "closure fee greater than 1");
+        _setParameter(_baseAsset, PARAMETER_CLOSURE_FEE, _closureFee);
     }
 
-    function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) external onlyOwner {
-        IFuturesMarket(_manager().marketForAsset(_baseAsset)).recomputeFunding();
-        parameters[_baseAsset].maxFundingRate = _maxFundingRate;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATE, _maxFundingRate);
+    function setMaxLeverage(bytes32 _baseAsset, uint _maxLeverage) public onlyOwner {
+        _setParameter(_baseAsset, PARAMETER_MAX_LEVERAGE, _maxLeverage);
     }
 
-    function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) external onlyOwner {
-        IFuturesMarket(_manager().marketForAsset(_baseAsset)).recomputeFunding();
-        parameters[_baseAsset].maxFundingRateSkew = _maxFundingRateSkew;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATESKEW, _maxFundingRateSkew);
+    function setMaxMarketValue(bytes32 _baseAsset, uint _maxMarketValue) public onlyOwner {
+        _setParameter(_baseAsset, PARAMETER_MAX_MARKET_VALUE, _maxMarketValue);
     }
 
-    function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) external onlyOwner {
-        IFuturesMarket(_manager().marketForAsset(_baseAsset)).recomputeFunding();
-        parameters[_baseAsset].maxFundingRateDelta = _maxFundingRateDelta;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATEDELTA, _maxFundingRateDelta);
+    // Before altering parameters relevant to funding rates, outstanding funding on the underlying market
+    // must be recomputed, otherwise already-accrued but unrealised funding in the market can change.
+
+    function _recomputeFunding(bytes32 _baseAsset) internal {
+        IFuturesMarket(_futuresMarketManager().marketForAsset(_baseAsset)).recomputeFunding();
     }
 
-    function setAllParameters(
+    function setMaxFundingRate(bytes32 _baseAsset, uint _maxFundingRate) public onlyOwner {
+        _recomputeFunding(_baseAsset);
+        _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE, _maxFundingRate);
+    }
+
+    function setMaxFundingRateSkew(bytes32 _baseAsset, uint _maxFundingRateSkew) public onlyOwner {
+        _recomputeFunding(_baseAsset);
+        _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_SKEW, _maxFundingRateSkew);
+    }
+
+    function setMaxFundingRateDelta(bytes32 _baseAsset, uint _maxFundingRateDelta) public onlyOwner {
+        _recomputeFunding(_baseAsset);
+        _setParameter(_baseAsset, PARAMETER_MAX_FUNDING_RATE_DELTA, _maxFundingRateDelta);
+    }
+
+    function setParameters(
         bytes32 _baseAsset,
         uint _takerFee,
         uint _makerFee,
+        uint _closureFee,
         uint _maxLeverage,
         uint _maxMarketValue,
         uint _maxFundingRate,
         uint _maxFundingRateSkew,
         uint _maxFundingRateDelta
     ) external onlyOwner {
-        parameters[_baseAsset].takerFee = _takerFee;
-        emit ParameterUpdated(_baseAsset, PARAMETER_TAKERFEE, _takerFee);
-
-        parameters[_baseAsset].makerFee = _makerFee;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAKERFEE, _makerFee);
-
-        parameters[_baseAsset].maxLeverage = _maxLeverage;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXLEVERAGE, _maxLeverage);
-
-        parameters[_baseAsset].maxMarketValue = _maxMarketValue;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXMARKETVALUE, _maxMarketValue);
-
-        parameters[_baseAsset].maxFundingRate = _maxFundingRate;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATE, _maxFundingRate);
-
-        parameters[_baseAsset].maxFundingRateSkew = _maxFundingRateSkew;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATESKEW, _maxFundingRateSkew);
-
-        parameters[_baseAsset].maxFundingRateDelta = _maxFundingRateDelta;
-        emit ParameterUpdated(_baseAsset, PARAMETER_MAXFUNDINGRATEDELTA, _maxFundingRateDelta);
+        _recomputeFunding(_baseAsset);
+        setTakerFee(_baseAsset, _takerFee);
+        setMakerFee(_baseAsset, _makerFee);
+        setClosureFee(_baseAsset, _closureFee);
+        setMaxLeverage(_baseAsset, _maxLeverage);
+        setMaxMarketValue(_baseAsset, _maxMarketValue);
+        setMaxFundingRate(_baseAsset, _maxFundingRate);
+        setMaxFundingRateSkew(_baseAsset, _maxFundingRateSkew);
+        setMaxFundingRateDelta(_baseAsset, _maxFundingRateDelta);
     }
 
-    /* ---------- Getters ---------- */
-
-    function getTakerFee(bytes32 _baseAsset) external view returns (uint) {
-        return parameters[_baseAsset].takerFee;
+    function setLiquidationFee(uint _sUSD) external onlyOwner {
+        require(_sUSD <= _minInitialMargin(), "min margin < liquidation fee");
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_FEE, _sUSD);
+        emit LiquidationFeeUpdated(_sUSD);
     }
 
-    function getMakerFee(bytes32 _baseAsset) external view returns (uint) {
-        return parameters[_baseAsset].makerFee;
-    }
-
-    function getMaxLeverage(bytes32 _baseAsset) external view returns (uint) {
-        return parameters[_baseAsset].maxLeverage;
-    }
-
-    function getMaxMarketValue(bytes32 _baseAsset) external view returns (uint) {
-        return parameters[_baseAsset].maxMarketValue;
-    }
-
-    function getMaxFundingRate(bytes32 _baseAsset) external view returns (uint) {
-        return parameters[_baseAsset].maxFundingRate;
-    }
-
-    function getMaxFundingRateSkew(bytes32 _baseAsset) external view returns (uint) {
-        return parameters[_baseAsset].maxFundingRateSkew;
-    }
-
-    function getMaxFundingRateDelta(bytes32 _baseAsset) external view returns (uint) {
-        return parameters[_baseAsset].maxFundingRateDelta;
-    }
-
-    function getAllParameters(bytes32 _baseAsset)
-        external
-        view
-        returns (
-            uint takerFee,
-            uint makerFee,
-            uint maxLeverage,
-            uint maxMarketValue,
-            uint maxFundingRate,
-            uint maxFundingRateSkew,
-            uint maxFundingRateDelta
-        )
-    {
-        takerFee = parameters[_baseAsset].takerFee;
-        makerFee = parameters[_baseAsset].makerFee;
-        maxLeverage = parameters[_baseAsset].maxLeverage;
-        maxMarketValue = parameters[_baseAsset].maxMarketValue;
-        maxFundingRate = parameters[_baseAsset].maxFundingRate;
-        maxFundingRateSkew = parameters[_baseAsset].maxFundingRateSkew;
-        maxFundingRateDelta = parameters[_baseAsset].maxFundingRateDelta;
+    function setMinInitialMargin(uint _minMargin) external onlyOwner {
+        require(_liquidationFee() <= _minMargin, "min margin < liquidation fee");
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_INITIAL_MARGIN, _minMargin);
+        emit MinInitialMarginUpdated(_minMargin);
     }
 
     /* ========== EVENTS ========== */
 
     event ParameterUpdated(bytes32 indexed asset, bytes32 indexed parameter, uint value);
+    event LiquidationFeeUpdated(uint sUSD);
+    event MinInitialMarginUpdated(uint minMargin);
 }

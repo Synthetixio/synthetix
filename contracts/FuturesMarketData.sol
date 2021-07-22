@@ -2,9 +2,9 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 // Internal references
-import "./FuturesMarket.sol";
-import "./FuturesMarketManager.sol";
-import "./FuturesMarketSettings.sol";
+import "./interfaces/IFuturesMarket.sol";
+import "./interfaces/IFuturesMarketManager.sol";
+import "./interfaces/IFuturesMarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
 
 contract FuturesMarketData {
@@ -73,9 +73,9 @@ contract FuturesMarketData {
     }
 
     struct PositionData {
-        FuturesMarket.Order order;
+        IFuturesMarket.Order order;
         bool orderPending;
-        FuturesMarket.Position position;
+        IFuturesMarket.Position position;
         int notionalValue;
         int profitLoss;
         int accruedFunding;
@@ -95,34 +95,40 @@ contract FuturesMarketData {
 
     /* ========== VIEWS ========== */
 
-    function _futuresMarketManager() internal view returns (FuturesMarketManager) {
+    function _futuresMarketManager() internal view returns (IFuturesMarketManager) {
         return
-            FuturesMarketManager(
+            IFuturesMarketManager(
                 resolverProxy.requireAndGetAddress("FuturesMarketManager", "Missing FuturesMarketManager Address")
             );
     }
 
-    function _futuresMarketSettings() internal view returns (FuturesMarketSettings) {
+    function _futuresMarketSettings() internal view returns (IFuturesMarketSettings) {
         return
-            FuturesMarketSettings(
+            IFuturesMarketSettings(
                 resolverProxy.requireAndGetAddress("FuturesMarketSettings", "Missing FuturesMarketSettings Address")
             );
     }
 
-    function _getParameters(bytes32 baseAsset) internal view returns (FuturesMarketSettings.Parameters memory) {
+    function parameters(bytes32 baseAsset) external view returns (IFuturesMarketSettings.Parameters memory) {
+        return _parameters(baseAsset);
+    }
+
+    function _parameters(bytes32 baseAsset) internal view returns (IFuturesMarketSettings.Parameters memory) {
         (
             uint takerFee,
             uint makerFee,
+            uint closureFee,
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
             uint maxFundingRateSkew,
             uint maxFundingRateDelta
-        ) = _futuresMarketSettings().getAllParameters(baseAsset);
+        ) = _futuresMarketSettings().parameters(baseAsset);
         return
-            FuturesMarketSettings.Parameters(
+            IFuturesMarketSettings.Parameters(
                 takerFee,
                 makerFee,
+                closureFee,
                 maxLeverage,
                 maxMarketValue,
                 maxFundingRate,
@@ -135,22 +141,23 @@ contract FuturesMarketData {
         uint numMarkets = markets.length;
         MarketSummary[] memory summaries = new MarketSummary[](numMarkets);
         for (uint i; i < numMarkets; i++) {
-            FuturesMarket market = FuturesMarket(markets[i]);
+            IFuturesMarket market = IFuturesMarket(markets[i]);
+            bytes32 baseAsset = market.baseAsset();
+            IFuturesMarketSettings.Parameters memory params = _parameters(baseAsset);
 
-            FuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
             (uint price, ) = market.assetPrice();
             (uint debt, ) = market.marketDebt();
 
             summaries[i] = MarketSummary(
                 address(market),
-                market.baseAsset(),
-                parameters.maxLeverage,
+                baseAsset,
+                params.maxLeverage,
                 price,
                 market.marketSize(),
                 market.marketSkew(),
                 debt,
                 market.currentFundingRate(),
-                FeeRates(parameters.takerFee, parameters.makerFee)
+                FeeRates(params.takerFee, params.makerFee)
             );
         }
 
@@ -169,71 +176,72 @@ contract FuturesMarketData {
         return _marketSummaries(_futuresMarketManager().allMarkets());
     }
 
-    function _fundingParameters(FuturesMarketSettings.Parameters memory parameters)
+    function _fundingParameters(IFuturesMarketSettings.Parameters memory params)
         internal
         pure
         returns (FundingParameters memory)
     {
-        return FundingParameters(parameters.maxFundingRate, parameters.maxFundingRateSkew, parameters.maxFundingRateDelta);
+        return FundingParameters(params.maxFundingRate, params.maxFundingRateSkew, params.maxFundingRateDelta);
     }
 
-    function _marketSizes(FuturesMarket market) internal view returns (Sides memory) {
+    function _marketSizes(IFuturesMarket market) internal view returns (Sides memory) {
         (uint long, uint short) = market.marketSizes();
         return Sides(long, short);
     }
 
-    function _marketDetails(FuturesMarket market) internal view returns (MarketData memory) {
+    function _marketDetails(IFuturesMarket market) internal view returns (MarketData memory) {
         (uint price, bool invalid) = market.assetPrice();
         (uint marketDebt, ) = market.marketDebt();
+        bytes32 baseAsset = market.baseAsset();
 
-        FuturesMarketSettings.Parameters memory parameters = _getParameters(market.baseAsset());
+        IFuturesMarketSettings.Parameters memory params = _parameters(baseAsset);
 
         return
             MarketData(
                 address(market),
-                market.baseAsset(),
-                FeeRates(parameters.takerFee, parameters.makerFee),
-                MarketLimits(parameters.maxLeverage, parameters.maxMarketValue),
-                _fundingParameters(parameters),
+                baseAsset,
+                FeeRates(params.takerFee, params.makerFee),
+                MarketLimits(params.maxLeverage, params.maxMarketValue),
+                _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
                 PriceDetails(price, market.currentRoundId(), invalid)
             );
     }
 
-    function marketDetails(FuturesMarket market) external view returns (MarketData memory) {
+    function marketDetails(IFuturesMarket market) external view returns (MarketData memory) {
         return _marketDetails(market);
     }
 
     function marketDetailsForAsset(bytes32 asset) external view returns (MarketData memory) {
-        return _marketDetails(FuturesMarket(_futuresMarketManager().marketForAsset(asset)));
+        return _marketDetails(IFuturesMarket(_futuresMarketManager().marketForAsset(asset)));
     }
 
-    function _notionalValue(FuturesMarket market, address account) internal view returns (int) {
+    function _notionalValue(IFuturesMarket market, address account) internal view returns (int) {
         (int value, ) = market.notionalValue(account);
         return value;
     }
 
-    function _profitLoss(FuturesMarket market, address account) internal view returns (int) {
+    function _profitLoss(IFuturesMarket market, address account) internal view returns (int) {
         (int value, ) = market.profitLoss(account);
         return value;
     }
 
-    function _accruedFunding(FuturesMarket market, address account) internal view returns (int) {
+    function _accruedFunding(IFuturesMarket market, address account) internal view returns (int) {
         (int value, ) = market.accruedFunding(account);
         return value;
     }
 
-    function _remainingMargin(FuturesMarket market, address account) internal view returns (uint) {
+    function _remainingMargin(IFuturesMarket market, address account) internal view returns (uint) {
         (uint value, ) = market.remainingMargin(account);
         return value;
     }
 
-    function _order(FuturesMarket market, address account) internal view returns (FuturesMarket.Order memory) {
+    function _order(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Order memory) {
         (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId) = market.orders(account);
-        return FuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId);
+        return IFuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId);
     }
 
-    function _positionDetails(FuturesMarket market, address account) internal view returns (PositionData memory) {
+    function _positionDetails(IFuturesMarket market, address account) internal view returns (PositionData memory) {
         (uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
             market.positions(account);
         (uint liquidationPrice, ) = market.liquidationPrice(account, true);
@@ -241,7 +249,7 @@ contract FuturesMarketData {
             PositionData(
                 _order(market, account),
                 market.orderPending(account),
-                FuturesMarket.Position(positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
+                IFuturesMarket.Position(positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
                 _notionalValue(market, account),
                 _profitLoss(market, account),
                 _accruedFunding(market, account),
@@ -250,11 +258,11 @@ contract FuturesMarketData {
             );
     }
 
-    function positionDetails(FuturesMarket market, address account) external view returns (PositionData memory) {
+    function positionDetails(IFuturesMarket market, address account) external view returns (PositionData memory) {
         return _positionDetails(market, account);
     }
 
     function positionDetailsForAsset(bytes32 asset, address account) external view returns (PositionData memory) {
-        return _positionDetails(FuturesMarket(_futuresMarketManager().marketForAsset(asset)), account);
+        return _positionDetails(IFuturesMarket(_futuresMarketManager().marketForAsset(asset)), account);
     }
 }
