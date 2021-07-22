@@ -723,24 +723,6 @@ contract('DebtCache', async accounts => {
 				});
 			});
 
-			it('issuing sUSD updates the debt total when non-snx excluded debt exceeds the sUSD total supply', async () => {
-				// create 200 sUSD worth of excluded-debt sETH, so that it will exceed the sUSD supply
-				await ceth.open(twoETH, sETH, {
-					value: threeETH,
-					from: account1,
-				});
-
-				assert.bnGt((await debtCache.totalNonSnxBackedDebt())[0], await sUSDContract.totalSupply());
-
-				// Issue some sUSD and ensure that it is properly accounted for.
-				await debtCache.takeDebtSnapshot();
-				const issued = (await debtCache.cacheInfo())[0];
-				await synthetix.transfer(account2, toUnit('5000'), { from: owner });
-				const toIssue = toUnit('10');
-				await synthetix.issueSynths(toIssue, { from: account2 });
-				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(toIssue));
-			});
-
 			it('burning sUSD updates the debt total', async () => {
 				await debtCache.takeDebtSnapshot();
 				const synthsToIssue = toUnit('10');
@@ -1181,6 +1163,24 @@ contract('DebtCache', async accounts => {
 					value: twoETH,
 					from: account1,
 				});
+			});
+
+			it('issuing sUSD updates the debt total when non-snx excluded debt exceeds the sUSD total supply', async () => {
+				// create 200 sUSD worth of excluded-debt sETH, so that it will exceed the sUSD supply
+				await ceth.open(twoETH, sETH, {
+					value: threeETH,
+					from: account1,
+				});
+
+				assert.bnGt((await debtCache.totalNonSnxBackedDebt())[0], await sUSDContract.totalSupply());
+
+				// Issue some sUSD and ensure that it is properly accounted for.
+				await debtCache.takeDebtSnapshot();
+				const issued = (await debtCache.cacheInfo())[0];
+				await synthetix.transfer(account2, toUnit('5000'), { from: owner });
+				const toIssue = toUnit('10');
+				await synthetix.issueSynths(toIssue, { from: account2 });
+				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(toIssue));
 			});
 
 			it('increases non-SNX debt', async () => {
