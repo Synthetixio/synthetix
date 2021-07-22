@@ -75,6 +75,7 @@ interface IFuturesMarket {
         returns (
             uint takerFee,
             uint makerFee,
+            uint closureFee,
             uint maxLeverage,
             uint maxMarketValue,
             uint maxFundingRate,
