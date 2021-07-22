@@ -71,8 +71,6 @@ module.exports = async ({
 		// track the original supply if we're deploying a new synth contract for an existing synth
 		let originalTotalSupply = 0;
 
-		// TODO(liamz): remove after FuturesMarketSettings bug is fixed.
-		const freshDeploy = true;
 		if (synthConfig.deploy) {
 			try {
 				const oldSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
