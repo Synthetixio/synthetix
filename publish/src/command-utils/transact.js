@@ -43,7 +43,15 @@ const performTransactionalStep = async ({
 
 	if (read) {
 		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		const response = await target[read](...argumentsForReadFunction);
+		let response = await target[read](...argumentsForReadFunction);
+
+		// Ethers returns uints as BigNumber objects, while web3 stringified them.
+		// This can cause BigNumber(0) !== '0' and make runStep think there is nothing to do
+		// in some edge cases.
+		// To avoid using .toString() on runStep calls, we do the check here.
+		if (ethers.BigNumber.isBigNumber(response)) {
+			response = response.toString();
+		}
 
 		if (expected(response)) {
 			console.log(gray(`Nothing required for this action.`));
@@ -71,18 +79,18 @@ const performTransactionalStep = async ({
 			_dryRunCounter++;
 			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
 		} else {
-			const params = {
+			const overrides = {
 				gasLimit,
 				gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
 			};
 
 			if (nonceManager) {
-				params.nonce = await nonceManager.getNonce();
+				overrides.nonce = await nonceManager.getNonce();
 			}
 
 			target = target.connect(signer);
 
-			const tx = await target[write](...argumentsForWriteFunction, params);
+			const tx = await target[write](...argumentsForWriteFunction, overrides);
 			const receipt = await tx.wait();
 
 			hash = receipt.transactionHash;
