@@ -77,7 +77,7 @@ contract MultiCollateralSynth is Synth {
 
         require(
             isFeePool || isExchanger || isIssuer || isEtherWrapper || isMultiCollateral,
-            "Only FeePool, Exchanger, Issuer, MultiCollateral allowed"
+            "Only FeePool, Exchanger, Issuer, MultiCollateral contracts allowed"
         );
         _;
     }
