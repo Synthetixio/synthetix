@@ -135,9 +135,7 @@ module.exports = async ({
 		contractsToRebuildCache = Array.from(contractsToRebuildCacheSet);
 	} else {
 		for (const [name, target] of contractsWithRebuildableCache) {
-			console.log(`Calling ${name}.isResolverCached...`)
 			const isCached = await target.isResolverCached();
-			console.log('CALLED!')
 			if (!isCached) {
 				const requiredAddresses = await target.resolverAddressesRequired();
 

@@ -35,6 +35,9 @@ const performTransactionalStep = async ({
 		arg.length === 66 ? ethers.utils.toUtf8String(arg) : arg
 	)})`;
 
+	const signer = target.provider.getSigner(account);
+	signer.address = account;
+
 	// check to see if action required
 	console.log(yellow(`Attempting action: ${action}`));
 
@@ -60,7 +63,7 @@ const performTransactionalStep = async ({
 
 	// otherwise check the owner
 	const owner = await target.owner();
-	if (owner === account.address || publiclyCallable) {
+	if (owner === signer.address || publiclyCallable) {
 		// perform action
 		let hash;
 		let gasUsed = 0;
@@ -77,7 +80,7 @@ const performTransactionalStep = async ({
 				params.nonce = await nonceManager.getNonce();
 			}
 
-			target = target.connect(account);
+			target = target.connect(signer);
 
 			const tx = await target[write](...argumentsForWriteFunction, params);
 			const receipt = await tx.wait();
@@ -102,7 +105,7 @@ const performTransactionalStep = async ({
 
 		return { mined: true, hash };
 	} else {
-		console.log(gray(`  > Account ${account.address} is not owner ${owner}`));
+		console.log(gray(`  > Account ${signer.address} is not owner ${owner}`));
 	}
 
 	let data;
