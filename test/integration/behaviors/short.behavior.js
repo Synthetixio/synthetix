@@ -58,7 +58,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 			describe('open a loan, deposit and withdraw collateral, draw, and close the loan', () => {
 				before('skip if max borrowing power reached', async function() {
 					const maxBorrowingPower = await CollateralShort.maxLoan(
-						amountToBorrow,
+						amountToDeposit,
 						toBytes32('sETH')
 					);
 					const maxBorrowingPowerReached = maxBorrowingPower <= amountToBorrow;
