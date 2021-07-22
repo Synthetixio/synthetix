@@ -222,7 +222,7 @@ class Deployer {
 			compiled.evm.bytecode.linkedObject = bytecode;
 			console.log(
 				gray(` - Attempting to deploy ${name}${name !== source ? ` (with source ${source})` : ''}`)
-			)
+			);
 			let gasUsed;
 			if (dryRun) {
 				this._dryRunCounter++;
@@ -284,7 +284,7 @@ class Deployer {
 
 				const overrides = await this.sendOverrides('contract-deployment');
 
-				deployedContract = await factory.deploy(...args, overrides)
+				deployedContract = await factory.deploy(...args, overrides);
 				const receipt = await deployedContract.deployTransaction.wait();
 
 				gasUsed = receipt.gasUsed;

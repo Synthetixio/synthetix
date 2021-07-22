@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const ethers = require('ethers');
 const { gray, yellow, red, cyan } = require('chalk');
 
 const { loadCompiledFiles } = require('../solidity');
@@ -164,7 +165,7 @@ const replaceSynths = async ({
 
 		const Synth = new ethers.Contract(synthAddress, synthABI, provider);
 		const TokenState = new ethers.Contract(tokenStateAddress, tokenStateABI, provider);
-		const Proxy = new ethers.Contract(proxyAddress, tokenStateABI, provider);
+		const Proxy = new ethers.Contract(proxyAddress, proxyABI, provider);
 
 		return {
 			Synth,
@@ -214,7 +215,7 @@ const replaceSynths = async ({
 
 	const { address: issuerAddress, source } = deployment.targets['Issuer'];
 	const { abi: issuerABI } = deployment.sources[source];
-	const Issuer = new ethers.Contract(issuerAddress, tokenStateABI, provider);
+	const Issuer = new ethers.Contract(issuerAddress, issuerABI, provider);
 
 	const resolverAddress = await Issuer.resolver();
 	const updatedSynths = JSON.parse(fs.readFileSync(synthsFile));

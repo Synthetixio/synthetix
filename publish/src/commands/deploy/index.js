@@ -15,6 +15,7 @@ const {
 	loadConnections,
 	reportDeployedContracts,
 } = require('../../util');
+const { performTransactionalStep } = require('../../command-utils/transact');
 
 const {
 	constants: {

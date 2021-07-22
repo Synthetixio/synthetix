@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const { table } = require('table');
 const Deployer = require('../Deployer');

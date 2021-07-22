@@ -1,9 +1,7 @@
 'use strict';
 
 const { gray, red, yellow, redBright } = require('chalk');
-const {
-	utils: { parseBytes32String },
-} = require('ethers');
+const ethers = require('ethers');
 const {
 	fromBytes32,
 	constants: { ZERO_ADDRESS },
@@ -42,7 +40,7 @@ module.exports = async ({
 			const target = new ethers.Contract(
 				address,
 				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
-				deployer.provider,
+				deployer.provider
 			);
 			target.source = name;
 			target.address = address;
@@ -79,15 +77,16 @@ module.exports = async ({
 	const resolverAddressesRequired = (
 		await Promise.all(
 			contractsWithRebuildableCache.map(([id, contract]) => {
-				return limitPromise(() =>
-					contract.resolverAddressesRequired()
-				).then(result => [contract.address, result]);
+				return limitPromise(() => contract.resolverAddressesRequired()).then(result => [
+					contract.address,
+					result,
+				]);
 			})
 		)
 	).reduce((allAddresses, [targetContractAddress, requiredAddressesForContract]) => {
 		// side-effect
 		for (const contractDepName of requiredAddressesForContract) {
-			const contractDepNameParsed = parseBytes32String(contractDepName);
+			const contractDepNameParsed = ethers.utils.parseBytes32String(contractDepName);
 			// collect all contract maps
 			contractToDepMap[contractDepNameParsed] = []
 				.concat(contractToDepMap[contractDepNameParsed] || [])
@@ -197,7 +196,7 @@ module.exports = async ({
 		const binaryOptionsFetchPageSize = 100;
 		for (const marketType of ['Active', 'Matured']) {
 			const numBinaryOptionMarkets = Number(
-				await BinaryOptionMarketManager.[`num${marketType}Markets`]()
+				await BinaryOptionMarketManager[`num${marketType}Markets`]()
 			);
 			console.log(
 				gray('Found'),
@@ -228,7 +227,7 @@ module.exports = async ({
 						new ethers.Contract(
 							binaryOptionMarket,
 							compiled['BinaryOptionMarket'].abi,
-							deployer.provider,
+							deployer.provider
 						)
 				);
 
@@ -280,10 +279,12 @@ module.exports = async ({
 				const oldBinaryOptionMarket = new ethers.Contract(
 					addressOf(market),
 					oldBinaryOptionMarketABI,
-					deployer.provider,
+					deployer.provider
 				);
 
-				const isCached = await oldBinaryOptionMarket.isResolverCached(addressOf(ReadProxyAddressResolver));
+				const isCached = await oldBinaryOptionMarket.isResolverCached(
+					addressOf(ReadProxyAddressResolver)
+				);
 				if (!isCached) {
 					binaryOptionMarketsToRebuildCacheOn.push(addressOf(market));
 				}
