@@ -111,6 +111,52 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getExchangeFeeRate(currencyKey);
     }
 
+    function setMinCratio(uint minCratio, address collateral) external onlyOwner {
+        require(minCratio > SafeDecimalMath.unit());
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_MIN_CRATIO, collateral)),
+            minCratio
+        );
+        emit MinCratioRatioUpdated(minCratio);
+    }
+
+    function setIssueFeeRate(uint issueFeeRate, address collateral) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ISSUE_FEE_RATE, collateral)),
+            issueFeeRate
+        );
+        emit IssueFeeRateUpdated(issueFeeRate);
+    }
+
+    function setCollateralManager(address newCollateralManager, address collateral) external onlyOwner {
+        flexibleStorage().setAddressValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, collateral)),
+            newCollateralManager
+        );
+        emit CollateralManagerUpdated(newCollateralManager);
+    }
+
+    function setCanOpenLoans(bool canOpenLoans, address collateral) external onlyOwner {
+        flexibleStorage().setBoolValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral)),
+            canOpenLoans
+        );
+        emit CanOpenLoansUpdated(canOpenLoans);
+    }
+
+    function setInteractionDelay(uint interactionDelay, address collateral) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral)),
+            interactionDelay
+        );
+        emit InteractionDelayUpdated(interactionDelay);
+    }
+
     function minimumStakeTime() external view returns (uint) {
         return getMinimumStakeTime();
     }
@@ -324,4 +370,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event MinCratioRatioUpdated(uint minCratio);
+    event IssueFeeRateUpdated(uint issueFeeRate);
+    event CollateralManagerUpdated(address newCollateralManager);
+    event CanOpenLoansUpdated(bool canOpenLoans);
+    event InteractionDelayUpdated(uint interactionDelay);
 }
