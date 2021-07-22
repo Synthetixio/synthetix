@@ -111,7 +111,6 @@ class Deployer {
 
 	async sendDummyTx() {
 		const tx = {
-			from: this.account,
 			to: '0x0000000000000000000000000000000000000001',
 			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 			value: 0,
@@ -138,7 +137,6 @@ class Deployer {
 			: this.contractDeploymentGasLimit;
 
 		const params = {
-			from: this.account,
 			gasLimit,
 			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		};

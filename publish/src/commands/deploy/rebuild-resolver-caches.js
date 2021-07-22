@@ -66,9 +66,9 @@ module.exports = async ({
 	}
 
 	const filterTargetsWith = ({ prop }) =>
-		Object.entries(deployer.deployedContracts).filter(([, target]) =>
-			target.jsonInterface.find(({ name }) => name === prop)
-		);
+		Object.entries(deployer.deployedContracts).filter(([, target]) => {
+			return target.functions[prop] !== undefined;
+		});
 
 	const contractsWithRebuildableCache = filterTargetsWith({ prop: 'rebuildCache' });
 
@@ -135,7 +135,9 @@ module.exports = async ({
 		contractsToRebuildCache = Array.from(contractsToRebuildCacheSet);
 	} else {
 		for (const [name, target] of contractsWithRebuildableCache) {
+			console.log(`Calling ${name}.isResolverCached...`)
 			const isCached = await target.isResolverCached();
+			console.log('CALLED!')
 			if (!isCached) {
 				const requiredAddresses = await target.resolverAddressesRequired();
 
