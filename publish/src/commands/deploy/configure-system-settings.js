@@ -70,7 +70,7 @@ module.exports = async ({
 			.map((synth, i) =>
 				Object.assign(
 					{
-						currentRate: parseUnits(synthRates[i] || '0').toString(),
+						currentRate: parseUnits(synthRates[i].toString() || '0').toString(),
 						targetRate:
 							synth.name in synthExchangeRateOverride
 								? synthExchangeRateOverride[synth.name]
