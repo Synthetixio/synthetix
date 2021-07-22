@@ -275,5 +275,23 @@
 		"ovm": true,
 		"sources": ["EtherWrapper", "Exchanger", "Synthetix", "SystemSettings"],
 		"sips": [138, 139, 140]
+	},
+	{
+		"name": "Mirfak",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
+		"ovm": true,
+		"sources": [
+			"Synthetix",
+			"Issuer",
+			"Synthetix",
+			"DebtCache",
+			"SynthsUSD",
+			"SynthsETH"
+		],
+		"sips": [142]
 	}
 ]
