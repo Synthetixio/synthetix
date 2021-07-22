@@ -16,14 +16,20 @@ function itCanOpenAndCloseShort({ ctx }) {
 		const amountToBorrow = parseEther('1'); // sETH
 
 		let user;
-		let CollateralShort, SynthsUSD, CollateralStateShort, CollateralShortAsOwner, interactionDelay;
+		let CollateralShort,
+			Synthetix,
+			SynthsUSD,
+			CollateralStateShort,
+			CollateralShortAsOwner,
+			interactionDelay;
 
 		before('target contracts and users', () => {
-			({ CollateralShort, SynthsUSD, CollateralStateShort } = ctx.contracts);
+			({ CollateralShort, Synthetix, SynthsUSD, CollateralStateShort } = ctx.contracts);
 
 			user = ctx.users.someUser;
 
 			CollateralShort = CollateralShort.connect(user);
+			Synthetix = Synthetix.connect(user);
 		});
 
 		before('ensure user should have sUSD', async () => {
@@ -137,18 +143,27 @@ function itCanOpenAndCloseShort({ ctx }) {
 				});
 
 				describe('closing a loan', () => {
-					before('close the loan', async () => {
+					before('exchange synths', async () => {
 						await exchangeSynths({
 							ctx,
 							src: 'sUSD',
 							dest: 'sETH',
-							amount: parseEther('20000'),
+							amount: parseEther('50000'),
 							user,
 						});
+					});
 
+					before('skip waiting period', async () => {
 						// Ignore settlement period for sUSD --> sETH closing the loan
 						await skipWaitingPeriod({ ctx });
+					});
 
+					before('settle', async () => {
+						const tx = await Synthetix.settle(toBytes32('sETH'));
+						await tx.wait();
+					});
+
+					before('close the loan', async () => {
 						tx = await CollateralShort.close(loanId);
 						loan = await CollateralStateShort.getLoan(user.address, loanId);
 					});
