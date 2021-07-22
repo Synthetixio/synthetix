@@ -104,7 +104,10 @@ contract Migration_Dubhe is BaseMigration {
             systemsettings_setExchangeFeeRateForSynths_exchangeFeeRates_3_1
         );
 
-        // Remove iCEX
+        // Purge iCEX
+
+        // TODO SynthiCEX must be replaced with the latest PurgeableSynth.sol
+        //  run through replace-synth for iCEX
 
         // old ProxyiCEX holders: https://api.ethplorer.io/getTopTokenHolders/0xAE7F21C0dFe5481ca77d538b5609938a51850942?apiKey=freekey&limit=100
         address[] memory icex_purge_addresses = new address[](2);
@@ -114,6 +117,11 @@ contract Migration_Dubhe is BaseMigration {
         icexsynth_i.purge(icex_purge_addresses);
 
         require(icexsynth_i.totalSupply() == 0, "iCEX total supply is non-zero");
+
+        // Purge sCEX
+
+        // TODO SynthsCEX must be replaced with the latest PurgeableSynth.sol
+        //  run through replace-synth for iCEX
 
         // scex holders https://api.ethplorer.io/getTopTokenHolders/0xeABACD844A196D7Faf3CE596edeBF9900341B420?apiKey=freekey&limit=100
         // old scex holders https://api.ethplorer.io/getTopTokenHolders/0xb91B114a24a1c16834F1217cC3B9eE117b6c817A?apiKey=freekey&limit=100
@@ -172,6 +180,8 @@ contract Migration_Dubhe is BaseMigration {
         scexsynth_i.purge(scex_purge_addresses);
 
         require(scexsynth_i.totalSupply() == 0, "sCEX total supply is non-zero");
+
+        // REMOVE sCEX and iCEX
 
         // now remove the synths
         bytes32[] memory synthsToRemove = new bytes32[](2);
