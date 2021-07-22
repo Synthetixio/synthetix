@@ -359,14 +359,6 @@ const deploy = async ({
 		useOvm,
 	});
 
-	await configureFutures({
-		addressOf,
-		deployer,
-		runStep,
-		getDeployParameter,
-		useOvm,
-	});
-
 	await configureLegacySettings({
 		account,
 		addressOf,
@@ -427,6 +419,16 @@ const deploy = async ({
 		getDeployParameter,
 		runStep,
 		useEmptyCollateralManager,
+	});
+
+	await configureFutures({
+		addressOf,
+		deployer,
+		runStep,
+		getDeployParameter,
+		useOvm,
+		freshDeploy,
+		network,
 	});
 
 	await takeDebtSnapshotWhenRequired({

@@ -1,13 +1,20 @@
 'use strict';
 
 const { gray } = require('chalk');
+const { toBytes32 } = require('../../../..');
+const w3utils = require('web3-utils');
 const {
 	utils: { parseEther },
 } = require('ethers');
-const { toBytes32 } = require('../../../..');
-const w3utils = require('web3-utils');
 
-module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
+module.exports = async ({
+	deployer,
+	getDeployParameter,
+	runStep,
+	useOvm,
+	freshDeploy,
+	network,
+}) => {
 	console.log(gray(`\n------ CONFIGURE FUTURES MARKETS ------\n`));
 
 	if (!useOvm) return;
@@ -17,44 +24,56 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 		ExchangeRates: exchangeRates,
 	} = deployer.deployedContracts;
 
+	await runStep({
+		contract: 'FuturesMarketSettings',
+		target: futuresMarketSettings,
+		read: 'minInitialMargin',
+		expected: input => input !== '0', // only change if zero
+		write: 'setMinInitialMargin',
+		writeArg: await getDeployParameter('FUTURES_MIN_INITIAL_MARGIN'),
+		comment: 'Set the minimum margin to open a futures position (SIP-80)',
+	});
+
+	await runStep({
+		contract: 'FuturesMarketSettings',
+		target: futuresMarketSettings,
+		read: 'liquidationFee',
+		expected: input => input !== '0', // only change if zero
+		write: 'setLiquidationFee',
+		writeArg: await getDeployParameter('FUTURES_LIQUIDATION_FEE'),
+		comment: 'Set the reward for liquidating a futures position (SIP-80)',
+	});
+
 	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
 	const currencyKeys = futuresAssets.map(asset => toBytes32(`s${asset}`));
 
-	//
-	// Update ExchangeRates for assets.
-	//
+	// Some market parameters invoke a recomputation of the funding rate, and
+	// thus require exchange rates to be fresh. We assume production networks
+	// have fresh funding rates at the time of deployment.
+	if (freshDeploy || network === 'local') {
+		const { timestamp } = await deployer.provider.ethers.provider.getBlock();
+		const DUMMY_PRICE = parseEther('1').toString();
 
-	const { timestamp } = await deployer.provider.ethers.provider.getBlock();
-	const rates = currencyKeys.map(key => {
-		return parseEther('1').toString();
-	});
+		console.log(
+			gray(
+				`Updating ExchangeRates for futures assets: ` +
+					futuresAssets.map(asset => `s${asset}`).join(', ')
+			)
+		);
 
-	console.log(gray(`Updating ExchangeRates for futures assets: ` + currencyKeys.join(', ')));
-	const writeArg = [currencyKeys, rates, '' + timestamp];
-	console.log(writeArg);
-
-	for (const key of currencyKeys) {
-		await runStep({
-			contract: 'ExchangeRates',
-			target: exchangeRates,
-			// read: `rateAndInvalid`,
-			// readArg: key,
-			// expected: (rate, invalid) => !invalid,
-			write: `updateRates`,
-			writeArg: [[key], [rates[0]], '' + timestamp],
-		});
+		for (const key of currencyKeys) {
+			await runStep({
+				contract: 'ExchangeRates',
+				target: exchangeRates,
+				write: `updateRates`,
+				writeArg: [[key], [DUMMY_PRICE], timestamp],
+			});
+		}
 	}
 
-	// TODO: this failed. It appears it cannot handle the nested subarray.
-	// await runStep({
-	//     contract: 'ExchangeRates',
-	//     target: exchangeRates,
-	//     read: `ratesAndInvalidForCurrencies`,
-	//     readArg: [[currencyKeys]],
-	//     expected: (rates, anyRateIsInvalid) => !anyRateIsInvalid,
-	//     write: `updateRates`,
-	//     writeArg: [writeArg]
-	// });
+	//
+	// Configure parameters for each market.
+	//
 
 	for (const asset of futuresAssets) {
 		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
@@ -65,6 +84,7 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 		const settings = {
 			takerFee: w3utils.toWei('0.003'),
 			makerFee: w3utils.toWei('0.001'),
+			closureFee: w3utils.toWei('0'),
 			maxLeverage: w3utils.toWei('10'),
 			maxMarketValue: w3utils.toWei('100000'),
 			maxFundingRate: w3utils.toWei('0.1'),
@@ -75,10 +95,11 @@ module.exports = async ({ deployer, getDeployParameter, runStep, useOvm }) => {
 		for (const setting in settings) {
 			const capSetting = setting.charAt(0).toUpperCase() + setting.slice(1);
 			const value = settings[setting];
+
 			await runStep({
 				contract: 'FuturesMarketSettings',
 				target: futuresMarketSettings,
-				read: `get${capSetting}`,
+				read: setting,
 				readArg: [baseAsset],
 				expected: input => input === value,
 				write: `set${capSetting}`,
