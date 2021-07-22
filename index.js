@@ -22,7 +22,7 @@ const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli', 'kovan-ovm'];
+const networks = ['kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli', 'kovan-ovm'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -40,10 +40,10 @@ const chainIdMapping = Object.entries({
 	42: {
 		network: 'kovan',
 	},
-	420: {
-		network: 'local',
-		useOvm: true,
-	},
+	// 420: {
+	// 	network: 'local',
+	// 	useOvm: true,
+	// },
 
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
@@ -523,16 +523,16 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		ropsten: Object.assign({}, base),
 		goerli: Object.assign({}, base),
 		'goerli-ovm': Object.assign({}, base),
-		local: Object.assign({}, base, {
-			// Deterministic account #0 when using `npx hardhat node`
-			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-		}),
-		'local-ovm': Object.assign({}, base, {
-			// Deterministic account #0 when using `npx hardhat node`
-			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-			deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-			oracle: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-		}),
+		// local: Object.assign({}, base, {
+		// 	// Deterministic account #0 when using `npx hardhat node`
+		// 	owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		// }),
+		// 'local-ovm': Object.assign({}, base, {
+		// 	// Deterministic account #0 when using `npx hardhat node`
+		// 	owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		// 	deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		// 	oracle: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		// }),
 	};
 
 	const users = Object.entries(
