@@ -12,7 +12,7 @@ const { skipWaitingPeriod } = require('../utils/skip');
 
 function itCanOpenAndCloseShort({ ctx }) {
 	describe('shorting', () => {
-		const amountToDeposit = parseEther('1000'); // sUSD
+		const amountToDeposit = parseEther('10000'); // sUSD
 		const amountToBorrow = parseEther('1'); // sETH
 
 		let user;
@@ -27,7 +27,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 		});
 
 		before('ensure user should have sUSD', async () => {
-			await ensureBalance({ ctx, symbol: 'sUSD', user, balance: parseEther('10000') });
+			await ensureBalance({ ctx, symbol: 'sUSD', user, balance: parseEther('100000') });
 		});
 
 		before('ensure sETH supply exists', async () => {
@@ -78,7 +78,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 						token: SynthsUSD,
 						owner: user,
 						beneficiary: CollateralShort,
-						amount: parseEther('10000'), // sUSD
+						amount: parseEther('100000'), // sUSD
 					});
 				});
 
@@ -93,7 +93,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 				});
 
 				before('deposit more collateral', async () => {
-					assert.bnEqual(loan.collateral, parseEther('1000'));
+					assert.bnEqual(loan.collateral, parseEther('10000'));
 					tx = await CollateralShort.deposit(user.address, loanId, amountToDeposit);
 
 					const { events } = await tx.wait();
@@ -102,12 +102,12 @@ function itCanOpenAndCloseShort({ ctx }) {
 					loanId = event.args.id;
 
 					loan = await CollateralStateShort.getLoan(user.address, loanId);
-					assert.bnEqual(loan.collateral, parseEther('2000'));
+					assert.bnEqual(loan.collateral, parseEther('20000'));
 				});
 
 				before('withdraw some collateral', async () => {
-					assert.bnEqual(loan.collateral, parseEther('2000'));
-					tx = await CollateralShort.withdraw(loanId, parseEther('500'));
+					assert.bnEqual(loan.collateral, parseEther('20000'));
+					tx = await CollateralShort.withdraw(loanId, parseEther('5000'));
 
 					const { events } = await tx.wait();
 
@@ -115,7 +115,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					loanId = event.args.id;
 
 					loan = await CollateralStateShort.getLoan(user.address, loanId);
-					assert.bnEqual(loan.collateral, parseEther('1500'));
+					assert.bnEqual(loan.collateral, parseEther('15000'));
 				});
 
 				before('draw down the loan', async () => {
@@ -133,7 +133,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 
 				it('shows the loan amount and collateral are correct', async () => {
 					assert.bnEqual(loan.amount, parseEther('2'));
-					assert.bnEqual(loan.collateral, parseEther('1500'));
+					assert.bnEqual(loan.collateral, parseEther('15000'));
 				});
 
 				describe('closing a loan', () => {
@@ -142,7 +142,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 							ctx,
 							src: 'sUSD',
 							dest: 'sETH',
-							amount: parseEther('1000'),
+							amount: parseEther('10000'),
 							user,
 						});
 
