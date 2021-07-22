@@ -57,8 +57,7 @@
 		"publish/deployed/mainnet/*",
 		"publish/deployed/mainnet-ovm/*",
 		"publish/deployed/goerli/*",
-		"publish/deployed/goerli-ovm/*",
-		"publish/deployed/local-ovm/*"
+		"publish/deployed/goerli-ovm/*"
 	],
 	"bin": {
 		"snx": "bin.js"
