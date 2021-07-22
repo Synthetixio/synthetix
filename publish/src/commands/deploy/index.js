@@ -13,7 +13,6 @@ const {
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
-	performTransactionalStepWeb3,
 	reportDeployedContracts,
 } = require('../../util');
 
@@ -261,7 +260,7 @@ const deploy = async ({
 	const runSteps = [];
 
 	const runStep = async opts => {
-		const { noop, ...rest } = await performTransactionalStepWeb3({
+		const { noop, ...rest } = await performTransactionalStep({
 			...opts,
 			// no gas limit on OVM (use system limit), otherwise use provided limit or the methodCall amount
 			gasLimit: useOvm ? undefined : opts.gasLimit || methodCallGasLimit,

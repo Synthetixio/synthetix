@@ -21,8 +21,8 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
-	performTransactionalStepWeb3,
 } = require('../util');
+const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
@@ -220,7 +220,7 @@ const replaceSynths = async ({
 	const updatedSynths = JSON.parse(fs.readFileSync(synthsFile));
 
 	const runStep = async opts =>
-		performTransactionalStepWeb3({
+		performTransactionalStep({
 			...opts,
 			account,
 			gasLimit: methodCallGasLimit,

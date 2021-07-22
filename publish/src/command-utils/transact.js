@@ -21,6 +21,7 @@ const performTransactionalStep = async ({
 	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
 	gasPrice,
+	generateSolidity,
 	explorerLinkPrefix,
 	ownerActions,
 	ownerActionsFile,
@@ -46,6 +47,17 @@ const performTransactionalStep = async ({
 			return { noop: true };
 		}
 	}
+
+	// now if generate solidity mode, simply doing anything, a bit like a dry-run
+	if (generateSolidity) {
+		console.log(
+			green(
+				`[GENERATE_SOLIDITY_SIMULATION] Successfully completed ${action} number ${++_dryRunCounter}.`
+			)
+		);
+		return {};
+	}
+
 	// otherwise check the owner
 	const owner = await target.owner();
 	if (owner === account.address || publiclyCallable) {
