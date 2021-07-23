@@ -76,7 +76,7 @@
 		"@eth-optimism/contracts": "0.3.4",
 		"@eth-optimism/core-utils": "~0.4.5",
 		"@eth-optimism/hardhat-ovm": "0.2.2",
-		"@eth-optimism/smock": "1.1.4",
+		"@eth-optimism/smock": "1.1.9",
 		"@eth-optimism/solc": "0.5.16-alpha.7",
 		"@nomiclabs/hardhat-ethers": "^2.0.2",
 		"@nomiclabs/hardhat-truffle5": "2.0.0",
