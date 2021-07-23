@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const util = require('util');
 
-const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
+const { getSuspensionReasons, networks, toBytes32, wrap, releases } = require('./index');
 
 const {
 	decode,
@@ -180,6 +180,18 @@ program
 	.action(async ({ network, useOvm, byContract }) => {
 		const versions = getVersions({ network, useOvm, byContract });
 		console.log(JSON.stringify(versions, null, 2));
+	});
+
+program
+	.command('releases')
+	.description('Get the list of releases')
+	.option('--no-released', 'Only retreive the unreleased ones.')
+	.action(async ({ released }) => {
+		const result = releases.filter(release => release.released === released);
+
+		if (result.length > 0) {
+			console.log(JSON.stringify(result, null, 2));
+		}
 	});
 
 // perform as CLI tool if args given
