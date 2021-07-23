@@ -130,7 +130,7 @@ const replaceSynths = async ({
 		address: getTarget({ contract: 'SafeDecimalMath' }).address,
 	};
 
-	const { account } = deployer;
+	const { account, signer } = deployer;
 	const provider = deployer.provider;
 
 	console.log(gray(`Using account with public key ${account}`));
@@ -221,7 +221,7 @@ const replaceSynths = async ({
 	const runStep = async opts =>
 		performTransactionalStep({
 			...opts,
-			account,
+			signer,
 			gasLimit: methodCallGasLimit,
 			gasPrice,
 			explorerLinkPrefix,

@@ -11,7 +11,7 @@ let _dryRunCounter = 0;
  * @returns transaction hash if successful, true if user completed, or falsy otherwise
  */
 const performTransactionalStep = async ({
-	account,
+	signer,
 	contract,
 	target,
 	read,
@@ -34,9 +34,6 @@ const performTransactionalStep = async ({
 	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
 		arg.length === 66 ? ethers.utils.toUtf8String(arg) : arg
 	)})`;
-
-	const signer = target.provider.getSigner(account);
-	signer.address = account;
 
 	// check to see if action required
 	console.log(yellow(`Attempting action: ${action}`));

@@ -138,7 +138,7 @@ const deployShortingRewards = async ({
 		dryRun,
 	});
 
-	const { account } = deployer;
+	const { account, signer } = deployer;
 
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
@@ -249,6 +249,7 @@ const deployShortingRewards = async ({
 			performTransactionalStep({
 				gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 				...opts,
+				signer,
 				deployer,
 				gasPrice,
 				explorerLinkPrefix,

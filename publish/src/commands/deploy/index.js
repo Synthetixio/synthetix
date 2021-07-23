@@ -216,7 +216,7 @@ const deploy = async ({
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
-	const { account } = deployer;
+	const { account, signer } = deployer;
 
 	nonceManager.provider = deployer.provider;
 	nonceManager.account = account;
@@ -265,7 +265,7 @@ const deploy = async ({
 			...opts,
 			// no gas limit on OVM (use system limit), otherwise use provided limit or the methodCall amount
 			gasLimit: useOvm ? undefined : opts.gasLimit || methodCallGasLimit,
-			account,
+			signer,
 			dryRun,
 			explorerLinkPrefix,
 			gasPrice,
