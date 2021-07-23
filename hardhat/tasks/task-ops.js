@@ -111,7 +111,7 @@ function _isRunning({ opsPath }) {
 				result = false;
 			}
 		} catch (err) {
-			if (err.exitCode === 1) {
+			if (err.exitCode) {
 				result = false;
 			}
 		}
