@@ -13,7 +13,6 @@ const {
 	getDeploymentPathForNetwork,
 	ensureDeploymentPath,
 	loadAndCheckRequiredSources,
-	// loadConnections,
 	confirmAction,
 } = require('../util');
 
@@ -47,6 +46,27 @@ const relayedNominate = async ({
 	} else {
 		newOwner = newOwner.toLowerCase();
 	}
+
+	// @TODO: get network provider urls using loadConnections method
+	// (but right now this would break the posibility of setting a custom network for L2 on manual tests)
+	//
+	// const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
+	// 	network,
+	// 	useFork,
+	// });
+
+	// if (!providerUrl) {
+	// 	if (!envProviderUrl) {
+	// 		throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
+	// 	}
+
+	// 	providerUrl = envProviderUrl;
+	// }
+
+	// // if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
+	// if (network !== 'local' && !privateKey && !useFork) {
+	// 	privateKey = envPrivateKey;
+	// }
 
 	const { config: l2Config, deployment: l2Deployment } = loadAndCheckRequiredSources({
 		deploymentPath: l2DeploymentPath,
@@ -97,8 +117,6 @@ const relayedNominate = async ({
 		contractsToNominate.push({ contract, address: deployedContract.address, calldata });
 	}
 
-	console.log(contractsToNominate);
-
 	if (!contractsToNominate.length) {
 		console.log(gray('No contracts to assign.'));
 		process.exit();
@@ -130,6 +148,34 @@ const relayedNominate = async ({
 		l1Wallet.address = await l1Wallet.getAddress();
 	} else {
 		l1Wallet = new ethers.Wallet(l1PrivateKey, l1Provider);
+	}
+
+	const getL1Contract = contract => {
+		const { address, source } = l2Deployment.targets[contract];
+		const { abi } = l2Deployment.sources[source];
+		return new ethers.Contract(address, abi, l1Wallet);
+	};
+
+	const OwnerRelayOnEthereum = getL1Contract('OwnerRelayOnEthereum');
+
+	const relayOwner = await OwnerRelayOnEthereum.owner().then(o => o.toLowerCase());
+
+	if (relayOwner !== l1Wallet.address) {
+		console.log(red('The given L1 wallet is not owner of the OwnerRelayOnEthereum contract'));
+		process.exit(1);
+	}
+
+	const overrides = {
+		gasLimit,
+		gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+	};
+
+	for (const contractData of contracts) {
+		const { contract, address, calldata } = contractData;
+		console.log(yellow(`Assigning owner to ${contract}...`));
+
+		const tx = await OwnerRelayOnEthereum.initiateRelay(address, calldata, overrides);
+		await tx.wait();
 	}
 };
 
