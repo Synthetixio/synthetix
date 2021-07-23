@@ -16,7 +16,7 @@ const {
 
 function connectContracts({ ctx }) {
 	const { useOvm } = ctx;
-	const network = ctx.fork ? 'mainnet' : 'local';
+	const network = ctx.network;
 
 	const allTargets = getTarget({ fs, path, network, useOvm });
 
@@ -69,18 +69,26 @@ function _setupProvider({ url }) {
 const { loadUsers } = require('../../test/integration/utils/users');
 
 task('get-snx-local-l2')
-	.addOptionalParam('account', 'The account to fund with SNX')
+	.addParam('account', 'The account to fund with SNX')
+	.addParam('snxNetwork', 'The SNX network to use', 'local')
+	.addParam('provider', 'The account to fund with SNX', 'http://localhost:8545')
+	.addOptionalParam('privateKey', 'The account to fund with SNX', 'http://localhost:8545')
 	.setAction(async (taskArguments, hre, runSuper) => {
-		const { account } = taskArguments;
+		const { account, provider, snxNetwork, privateKey } = taskArguments;
 		console.log(`Funding account ${yellow(account)}`);
 
 		const ctx = {};
-		ctx.network = 'local';
+		ctx.network = snxNetwork;
 		ctx.useOvm = true;
+		ctx.users = {};
 
-		ctx.provider = _setupProvider({ url: `http://localhost:8545` });
+		ctx.provider = _setupProvider({ url: provider });
 
-		loadUsers({ ctx });
+		if (privateKey) {
+			ctx.users.owner = new ethers.Wallet(privateKey, ctx.provider);
+		} else {
+			loadUsers({ ctx });
+		}
 
 		connectContracts({ ctx });
 
