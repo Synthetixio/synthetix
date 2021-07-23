@@ -176,7 +176,7 @@ contract MixinSystemSettings is MixinResolver {
             );
     }
 
-    function setInteractionDelay(address collateral) internal view returns (uint) {
+    function getInteractionDelay(address collateral) internal view returns (uint) {
         return
             flexibleStorage().getUIntValue(
                 SETTING_CONTRACT_NAME,
