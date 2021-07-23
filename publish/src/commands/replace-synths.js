@@ -127,9 +127,7 @@ const replaceSynths = async ({
 
 	// TODO - this should be fixed in Deployer
 	deployer.deployedContracts.SafeDecimalMath = {
-		options: {
-			address: getTarget({ contract: 'SafeDecimalMath' }).address,
-		},
+		address: getTarget({ contract: 'SafeDecimalMath' }).address,
 	};
 
 	const { account } = deployer;
