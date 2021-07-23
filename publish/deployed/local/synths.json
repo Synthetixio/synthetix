@@ -95,8 +95,8 @@
 		"asset": "ADA"
 	},
 	{
-		"name": "sCEX",
-		"asset": "CEX",
+		"name": "sCEFI",
+		"asset": "CEFI",
 		"index": [
 			{
 				"asset": "BNB",
@@ -254,9 +254,9 @@
 		}
 	},
 	{
-		"name": "iCEX",
-		"asset": "CEX",
-		"index": "sCEX",
+		"name": "iCEFI",
+		"asset": "CEFI",
+		"index": "sCEFI",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1000,

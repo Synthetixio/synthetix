@@ -148,7 +148,7 @@ describe('publish scripts', () => {
 		if (isCompileRequired()) {
 			console.log('Found source file modified after build. Rebuilding...');
 
-			await commands.build({ showContractSize: true, testHelpers: true });
+			await commands.build({ showContractSize: true, testHelpers: true, cleanBuild: true });
 		} else {
 			console.log('Skipping build as everything up to date');
 		}
@@ -849,8 +849,8 @@ describe('publish scripts', () => {
 									asset,
 									rate: 0.000001,
 								};
-							} else if (asset === 'CEX') {
-								// ensure iCEX is frozen at lower limit
+							} else if (asset === 'CEFI') {
+								// ensure iCEFI is frozen at lower limit
 								return {
 									asset,
 									rate: 9999999999,
@@ -1058,7 +1058,7 @@ describe('publish scripts', () => {
 					});
 
 					describe('handle updates to inverted rates', () => {
-						describe('when a user has issued and exchanged into iCEX', () => {
+						describe('when a user has issued and exchanged into iCEFI', () => {
 							beforeEach(async () => {
 								let tx;
 
@@ -1070,14 +1070,14 @@ describe('publish scripts', () => {
 								tx = await Synthetix.exchange(
 									toBytes32('sUSD'),
 									ethers.utils.parseEther('100'),
-									toBytes32('iCEX'),
+									toBytes32('iCEFI'),
 									overrides
 								);
 								await tx.wait();
 							});
 							describe('when a new inverted synth iABC is added to the list', () => {
 								describe('and the inverted synth iXTZ has its parameters shifted', () => {
-									describe('and the inverted synth iCEX has its parameters shifted as well', () => {
+									describe('and the inverted synth iCEFI has its parameters shifted as well', () => {
 										beforeEach(async () => {
 											// read current config file version (if something has been removed,
 											// we don't want to include it here)
@@ -1099,7 +1099,7 @@ describe('publish scripts', () => {
 											});
 
 											// mutate parameters of iXTZ
-											// Note: this is brittle and will *break* if iXTZ or iCEX are removed from the
+											// Note: this is brittle and will *break* if iXTZ or iCEFI are removed from the
 											// synths for deployment. This needs to be improved in the near future - JJ
 											currentSynthsFile.find(({ name }) => name === 'iXTZ').inverted = {
 												entryPoint: 100,
@@ -1107,8 +1107,8 @@ describe('publish scripts', () => {
 												lowerLimit: 50,
 											};
 
-											// mutate parameters of iCEX
-											currentSynthsFile.find(({ name }) => name === 'iCEX').inverted = {
+											// mutate parameters of iCEFI
+											currentSynthsFile.find(({ name }) => name === 'iCEFI').inverted = {
 												entryPoint: 1,
 												upperLimit: 1.5,
 												lowerLimit: 0.5,
@@ -1276,15 +1276,15 @@ describe('publish scripts', () => {
 												);
 											});
 
-											it('and the iCEX synth should not be inverted at all', async () => {
+											it('and the iCEFI synth should not be inverted at all', async () => {
 												const [entryPoint] = await callMethodWithRetry(
-													ExchangeRates.inversePricing(toBytes32('iCEX'))
+													ExchangeRates.inversePricing(toBytes32('iCEFI'))
 												);
 
 												assert.strictEqual(
 													+ethers.utils.formatEther(entryPoint.toString()),
 													0,
-													'iCEX should not be set'
+													'iCEFI should not be set'
 												);
 											});
 
@@ -1324,7 +1324,7 @@ describe('publish scripts', () => {
 														let failed;
 														try {
 															const tx = await Synthetix.exchange(
-																toBytes32('iCEX'),
+																toBytes32('iCEFI'),
 																ethers.utils.parseEther('1000'),
 																toBytes32('iABC'),
 																overrides
