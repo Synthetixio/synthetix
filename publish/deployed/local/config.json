@@ -317,22 +317,22 @@
 	"SynthiXTZ": {
 		"deploy": true
 	},
-	"TokenStatesCEX": {
+	"TokenStatesCEFI": {
 		"deploy": true
 	},
-	"ProxysCEX": {
+	"ProxysCEFI": {
 		"deploy": true
 	},
-	"SynthsCEX": {
+	"SynthsCEFI": {
 		"deploy": true
 	},
-	"TokenStateiCEX": {
+	"TokenStateiCEFI": {
 		"deploy": true
 	},
-	"ProxyiCEX": {
+	"ProxyiCEFI": {
 		"deploy": true
 	},
-	"SynthiCEX": {
+	"SynthiCEFI": {
 		"deploy": true
 	},
 	"TokenStatesXRP": {
