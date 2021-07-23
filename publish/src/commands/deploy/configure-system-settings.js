@@ -48,33 +48,13 @@ module.exports = async ({
 		}
 		const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 
-		// override individual currencyKey / synths exchange rates
-		const synthExchangeRateOverride = {
-			sETH: parseUnits('0.0025').toString(),
-			iETH: parseUnits('0.004').toString(),
-			sBTC: parseUnits('0.003').toString(),
-			iBTC: parseUnits('0.003').toString(),
-			iBNB: parseUnits('0.021').toString(),
-			sXTZ: parseUnits('0.0085').toString(),
-			iXTZ: parseUnits('0.0085').toString(),
-			sEOS: parseUnits('0.0085').toString(),
-			iEOS: parseUnits('0.009').toString(),
-			sETC: parseUnits('0.0085').toString(),
-			sLINK: parseUnits('0.0085').toString(),
-			sDASH: parseUnits('0.009').toString(),
-			iDASH: parseUnits('0.009').toString(),
-			sXRP: parseUnits('0.009').toString(),
-		};
-
+		// update all synths with 0 current rate
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
 						currentRate: parseUnits(synthRates[i].toString() || '0').toString(),
-						targetRate:
-							synth.name in synthExchangeRateOverride
-								? synthExchangeRateOverride[synth.name]
-								: exchangeFeeRates[synth.category],
+						targetRate: exchangeFeeRates[synth.category],
 					},
 					synth
 				)
