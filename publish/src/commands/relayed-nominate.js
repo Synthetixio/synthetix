@@ -175,7 +175,7 @@ const relayedNominate = async ({
 		gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 	};
 
-	for (const contractData of contracts) {
+	for (const contractData of contractsToNominate) {
 		const { contract, address, calldata } = contractData;
 		console.log(yellow(`Nominating owner on ${contract}...`));
 
