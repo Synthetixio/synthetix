@@ -30,7 +30,6 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
 
     bytes32 internal constant sUSD = "sUSD";
     bytes32 internal constant sLINK = "sLINK";
-    bytes32 internal constant SNX = "SNX";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_SYNTHSLINK = "SynthsLINK";
