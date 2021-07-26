@@ -1,8 +1,8 @@
 'use strict';
 
 const path = require('path');
+const ethers = require('ethers');
 const fs = require('fs');
-const w3utils = require('web3-utils');
 
 const { ensureDeploymentPath, getDeploymentPathForNetwork, ensureNetwork } = require('../util');
 const { red, gray, yellow } = require('chalk');
@@ -41,7 +41,10 @@ const prepareDeployDetectDiff = async ({ network = DEFAULTS.network }) => {
 		const deployedBytecode = deployment.sources[source].bytecode;
 		const compiledFilename = path.join(buildPath, 'compiled', `${source}.json`);
 		const compiled = require(compiledFilename);
-		if (w3utils.keccak256(deployedBytecode) !== w3utils.keccak256(compiled.evm.bytecode.object)) {
+		if (
+			ethers.utils.keccak256(deployedBytecode) !==
+			ethers.utils.keccak256(compiled.evm.bytecode.object)
+		) {
 			config[name] = { deploy: true };
 			updated++;
 		}

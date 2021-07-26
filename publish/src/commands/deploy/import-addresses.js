@@ -35,20 +35,21 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 		await Promise.all(
 			allContracts
 				// ignore adding contracts with the skipResolver option
-				.filter(([, contract]) => !contract.options.skipResolver)
+				.filter(([, contract]) => !contract.skipResolver)
 				.map(([name, contract]) => {
 					return limitPromise(async () => {
-						const isImported = await AddressResolver.methods
-							.areAddressesImported([toBytes32(name)], [contract.options.address])
-							.call();
+						const isImported = await AddressResolver.areAddressesImported(
+							[toBytes32(name)],
+							[contract.address]
+						);
 
 						if (!isImported) {
 							console.log(green(`${name} needs to be imported to the AddressResolver`));
 
 							addressArgs[0].push(toBytes32(name));
-							addressArgs[1].push(contract.options.address);
+							addressArgs[1].push(contract.address);
 
-							newContractsBeingAdded[contract.options.address] = name;
+							newContractsBeingAdded[contract.address] = name;
 						}
 					});
 				})
