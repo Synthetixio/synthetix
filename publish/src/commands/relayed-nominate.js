@@ -47,27 +47,6 @@ const relayedNominate = async ({
 		newOwner = newOwner.toLowerCase();
 	}
 
-	// @TODO: get network provider urls using loadConnections method
-	// (but right now this would break the posibility of setting a custom network for L2 on manual tests)
-	//
-	// const { providerUrl: envProviderUrl, privateKey: envPrivateKey } = loadConnections({
-	// 	network,
-	// 	useFork,
-	// });
-
-	// if (!providerUrl) {
-	// 	if (!envProviderUrl) {
-	// 		throw new Error('Missing .env key of PROVIDER_URL. Please add and retry.');
-	// 	}
-
-	// 	providerUrl = envProviderUrl;
-	// }
-
-	// // if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
-	// if (network !== 'local' && !privateKey && !useFork) {
-	// 	privateKey = envPrivateKey;
-	// }
-
 	const { config: l2Config, deployment: l2Deployment } = loadAndCheckRequiredSources({
 		deploymentPath: l2DeploymentPath,
 		network: l2Network,
@@ -165,7 +144,7 @@ const relayedNominate = async ({
 
 	const relayOwner = await OwnerRelayOnEthereum.owner().then(o => o.toLowerCase());
 
-	if (relayOwner !== l1Wallet.address) {
+	if (relayOwner !== l1Wallet.address.toLowerCase()) {
 		console.log(red('The given L1 wallet is not owner of the OwnerRelayOnEthereum contract'));
 		process.exit(1);
 	}
