@@ -189,7 +189,9 @@ module.exports = {
 	cmd: program =>
 		program
 			.command('relayed-nominate')
-			.description('Nominate a new owner for one or more contracts, realyed from L1 to L2')
+			.description(
+				'Nominate a new owner for one or more contracts, realyed from L1 to L2 using the OwnerRelayOnEthereum contract'
+			)
 			.option(
 				'--l1-deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
@@ -210,7 +212,7 @@ module.exports = {
 				x => x.toLowerCase()
 			)
 			.option('--l1-provider-url <value>', 'Ethereum network provider URL.')
-			.option('--l2-provider-url <value>', 'Ethereum network provider URL.')
+			.option('--l2-provider-url <value>', 'Optimism network provider URL.')
 			.option('--l1-private-key [value]', 'The private key to execute the commnad with on L1.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
