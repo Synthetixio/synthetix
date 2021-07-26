@@ -150,9 +150,14 @@ const relayedNominate = async ({
 		l1Wallet = new ethers.Wallet(l1PrivateKey, l1Provider);
 	}
 
+	const { deployment: l1Deployment } = loadAndCheckRequiredSources({
+		deploymentPath: l1DeploymentPath,
+		network: l1Network,
+	});
+
 	const getL1Contract = contract => {
-		const { address, source } = l2Deployment.targets[contract];
-		const { abi } = l2Deployment.sources[source];
+		const { address, source } = l1Deployment.targets[contract];
+		const { abi } = l1Deployment.sources[source];
 		return new ethers.Contract(address, abi, l1Wallet);
 	};
 
@@ -172,7 +177,7 @@ const relayedNominate = async ({
 
 	for (const contractData of contracts) {
 		const { contract, address, calldata } = contractData;
-		console.log(yellow(`Assigning owner to ${contract}...`));
+		console.log(yellow(`Nominating owner on ${contract}...`));
 
 		const tx = await OwnerRelayOnEthereum.initiateRelay(address, calldata, overrides);
 		await tx.wait();
