@@ -185,6 +185,7 @@ contract('FuturesMarketData', accounts => {
 
 			const order = await futuresMarket.orders(trader3);
 			assert.equal(details.orderPending, await futuresMarket.orderPending(trader3));
+			assert.equal(details.canConfirmOrder, await futuresMarket.canConfirmOrder(trader3));
 			assert.bnEqual(details.order.id, order.id);
 			assert.bnEqual(details.order.leverage, order.leverage);
 			assert.bnEqual(details.order.fee, order.fee);
@@ -206,6 +207,7 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details2.remainingMargin, remaining.marginRemaining);
 			const lp = await futuresMarket.liquidationPrice(trader1, true);
 			assert.bnEqual(details2.liquidationPrice, lp[0]);
+			assert.equal(details.canLiquidatePosition, await futuresMarket.canLiquidate(trader1));
 		});
 
 		it('By asset', async () => {

@@ -75,12 +75,14 @@ contract FuturesMarketData {
     struct PositionData {
         IFuturesMarket.Order order;
         bool orderPending;
+        bool canConfirmOrder;
         IFuturesMarket.Position position;
         int notionalValue;
         int profitLoss;
         int accruedFunding;
         uint remainingMargin;
         uint liquidationPrice;
+        bool canLiquidatePosition;
     }
 
     /* ========== STORAGE VARIABLES ========== */
@@ -249,12 +251,14 @@ contract FuturesMarketData {
             PositionData(
                 _order(market, account),
                 market.orderPending(account),
+                market.canConfirmOrder(account),
                 IFuturesMarket.Position(positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
                 _notionalValue(market, account),
                 _profitLoss(market, account),
                 _accruedFunding(market, account),
                 _remainingMargin(market, account),
-                liquidationPrice
+                liquidationPrice,
+                market.canLiquidate(account)
             );
     }
 
