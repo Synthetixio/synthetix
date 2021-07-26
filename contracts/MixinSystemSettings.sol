@@ -30,6 +30,9 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_ETHER_WRAPPER_MAX_ETH = "etherWrapperMaxETH";
     bytes32 internal constant SETTING_ETHER_WRAPPER_MINT_FEE_RATE = "etherWrapperMintFeeRate";
     bytes32 internal constant SETTING_ETHER_WRAPPER_BURN_FEE_RATE = "etherWrapperBurnFeeRate";
+    bytes32 internal constant SETTING_LINK_WRAPPER_MAX_LINK = "linkWrapperMaxLINK";
+    bytes32 internal constant SETTING_LINK_WRAPPER_MINT_FEE_RATE = "linkWrapperMintFeeRate";
+    bytes32 internal constant SETTING_LINK_WRAPPER_BURN_FEE_RATE = "linkWrapperBurnFeeRate";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -137,5 +140,17 @@ contract MixinSystemSettings is MixinResolver {
 
     function getEtherWrapperBurnFeeRate() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE);
+    }
+
+    function getLinkWrapperMaxLink() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LINK_WRAPPER_MAX_LINK);
+    }
+
+    function getLinkWrapperMintFeeRate() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LINK_WRAPPER_MINT_FEE_RATE);
+    }
+
+    function getLinkWrapperBurnFeeRate() internal view returns (uint) {
+        return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LINK_WRAPPER_BURN_FEE_RATE);
     }
 }
