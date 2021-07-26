@@ -278,18 +278,20 @@
 	},
 	{
 		"name": "Mirfak",
+		"released": false,
 		"version": {
 			"major": 2,
-			"minor": 999
+			"minor": 48
 		},
 		"sources": ["OwnerRelayOnEthereum"],
 		"sips": [167]
 	},
 	{
 		"name": "Mirfak (Optimism)",
+		"released": false,
 		"version": {
 			"major": 2,
-			"minor": 999
+			"minor": 48
 		},
 		"ovm": true,
 		"sources": ["OwnerRelayOnOptimism"],
