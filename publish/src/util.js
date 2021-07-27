@@ -158,10 +158,9 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 
-	const etherscanUrl =
-		network === 'mainnet'
-			? 'https://api.etherscan.io/api'
-			: `https://api-${network}.etherscan.io/api`;
+	const etherscanUrl = `https://api${network !== 'mainnet' ? `-${network}` : ''}${
+		useOvm ? '-optimistic' : ''
+	}.etherscan.io/api`;
 
 	const explorerLinkPrefix = getExplorerLinkPrefix({ network, useOvm });
 

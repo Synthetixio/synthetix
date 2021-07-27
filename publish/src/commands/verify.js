@@ -23,17 +23,18 @@ const {
 const CONTRACT_OVERRIDES = require('../contract-overrides');
 const { optimizerRuns } = require('./build').DEFAULTS;
 
-const verify = async ({ buildPath, network, deploymentPath }) => {
+const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 	// Note: require this here as silent error is detected on require that impacts pretty-error
 	const solc = require('solc');
 
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	const { config, deployment, deploymentFile } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
+		useOvm,
 	});
 
 	// ensure that every contract in the flag file has a matching deployed address
@@ -50,7 +51,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 		);
 	}
 
-	const { etherscanUrl, explorerLinkPrefix } = loadConnections({ network });
+	const { etherscanUrl, explorerLinkPrefix } = loadConnections({ network, useOvm });
 	console.log(gray(`Starting ${network.toUpperCase()} contract verification on Etherscan...`));
 
 	const tableData = [];
@@ -225,7 +226,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 				if (status === 'Fail - Unable to verify') {
 					console.log(red(` - Unable to verify ${name}.`));
 					tableData.push([name, address, 'Unable to verify']);
-
+					console.log(require('util').inspect(result.data, true, null, true));
 					break;
 				}
 
@@ -258,10 +259,12 @@ module.exports = {
 				'Path to a folder hosting compiled files from the "build" step in this script',
 				path.join(__dirname, '..', '..', '..', BUILD_FOLDER)
 			)
-			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
+			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+
 			.action(verify),
 };
