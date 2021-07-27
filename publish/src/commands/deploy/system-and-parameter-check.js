@@ -54,10 +54,10 @@ module.exports = async ({
 
 	try {
 		const oldSynthetix = deployer.getExistingContract({ contract: 'Synthetix' });
-		currentSynthetixSupply = await oldSynthetix.methods.totalSupply().call();
+		currentSynthetixSupply = await oldSynthetix.totalSupply();
 
 		// inflationSupplyToDate = total supply - 100m
-		const inflationSupplyToDate = parseUnits(currentSynthetixSupply, 'wei').sub(
+		const inflationSupplyToDate = parseUnits(currentSynthetixSupply.toString(), 'wei').sub(
 			parseUnits((100e6).toString(), 'wei')
 		);
 
@@ -94,7 +94,7 @@ module.exports = async ({
 	try {
 		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
 		if (!oracleExrates) {
-			oracleAddress = await oldExrates.methods.oracle().call();
+			oracleAddress = await oldExrates.oracle();
 		}
 	} catch (err) {
 		if (freshDeploy) {
@@ -113,7 +113,7 @@ module.exports = async ({
 	try {
 		const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
 
-		const systemSuspensionStatus = await oldSystemStatus.methods.systemSuspension().call();
+		const systemSuspensionStatus = await oldSystemStatus.systemSuspension();
 
 		systemSuspended = systemSuspensionStatus.suspended;
 		systemSuspendedReason = systemSuspensionStatus.reason;
@@ -156,19 +156,16 @@ module.exports = async ({
 	}
 
 	const deployerBalance = parseInt(
-		formatUnits(await deployer.provider.web3.eth.getBalance(account), 'ether'),
+		formatUnits(await deployer.provider.getBalance(account), 'ether'),
 		10
 	);
 	if (useFork) {
-		// Make sure the pwned account has ETH when using a fork
-		const accounts = await deployer.provider.web3.eth.getAccounts();
-
-		await deployer.provider.web3.eth.sendTransaction({
-			from: accounts[0],
+		const response = await deployer.signer.sendTransaction({
 			to: account,
-			gas: 50000,
+			gasLimit: 50000,
 			value: parseUnits('10', 'ether').toString(),
 		});
+		await response.wait();
 	} else if (deployerBalance < 5) {
 		console.log(
 			yellow(`⚠ WARNING: Deployer account balance could be too low: ${deployerBalance} ETH`)

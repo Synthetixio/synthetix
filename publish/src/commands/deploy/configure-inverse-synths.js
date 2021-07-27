@@ -44,9 +44,7 @@ module.exports = async ({
 			// for this environment (true for all environments except the initial deploy in 'local' during those tests)
 			if (oldExrates) {
 				// get inverse synth's params from the old exrates, if any exist
-				const oldInversePricing = await oldExrates.methods
-					.inversePricing(toBytes32(currencyKey))
-					.call();
+				const oldInversePricing = await oldExrates.inversePricing(toBytes32(currencyKey));
 
 				const {
 					entryPoint: oldEntryPoint,
@@ -58,23 +56,21 @@ module.exports = async ({
 
 				const currentRateIsFrozen = currentRateIsFrozenUpper || currentRateIsFrozenLower;
 				// and the last rate if any exists
-				const currentRateForCurrency = await oldExrates.methods
-					.rateForCurrency(toBytes32(currencyKey))
-					.call();
+				const currentRateForCurrency = await oldExrates.rateForCurrency(toBytes32(currencyKey));
 
 				// and total supply, if any
 				const synth = deployer.deployedContracts[`Synth${currencyKey}`];
-				const totalSynthSupply = await synth.methods.totalSupply().call();
+				const totalSynthSupply = await synth.totalSupply();
 				console.log(gray(`totalSupply of ${currencyKey}: ${Number(totalSynthSupply)}`));
 
-				const inversePricingOnCurrentExRates = await ExchangeRates.methods
-					.inversePricing(toBytes32(currencyKey))
-					.call();
+				const inversePricingOnCurrentExRates = await ExchangeRates.inversePricing(
+					toBytes32(currencyKey)
+				);
 
 				// ensure that if it's a newer exchange rates deployed, then skip reinserting the inverse pricing if
 				// already done
 				if (
-					oldExrates.options.address !== ExchangeRates.options.address &&
+					oldExrates.address !== ExchangeRates.address &&
 					JSON.stringify(inversePricingOnCurrentExRates) === JSON.stringify(oldInversePricing) &&
 					+formatUnits(inversePricingOnCurrentExRates.entryPoint) === entryPoint &&
 					+formatUnits(inversePricingOnCurrentExRates.upperLimit) === upperLimit &&
@@ -92,7 +88,7 @@ module.exports = async ({
 					upperLimit === +formatUnits(oldUpperLimit) &&
 					lowerLimit === +formatUnits(oldLowerLimit)
 				) {
-					if (oldExrates.options.address !== addressOf(ExchangeRates)) {
+					if (oldExrates.address !== addressOf(ExchangeRates)) {
 						const freezeAtUpperLimit = +formatUnits(currentRateForCurrency) === upperLimit;
 						const freezeAtLowerLimit = +formatUnits(currentRateForCurrency) === lowerLimit;
 						console.log(
