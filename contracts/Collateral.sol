@@ -16,7 +16,6 @@ import "./interfaces/ICollateralUtil.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
-import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -78,7 +77,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
-    bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_COLLATERALUTIL = "CollateralUtil";
 
     /* ========== CONSTRUCTOR ========== */
@@ -103,14 +101,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](7);
+        bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_FEEPOOL;
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_EXCHANGER;
         newAddresses[3] = CONTRACT_SYSTEMSTATUS;
         newAddresses[4] = CONTRACT_SYNTHSUSD;
-        newAddresses[5] = CONTRACT_ISSUER;
-        newAddresses[6] = CONTRACT_COLLATERALUTIL;
+        newAddresses[5] = CONTRACT_COLLATERALUTIL;
 
         bytes32[] memory combined = combineArrays(existingAddresses, newAddresses);
 
@@ -141,10 +138,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function _feePool() internal view returns (IFeePool) {
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
-    }
-
-    function _issuer() internal view returns (IIssuer) {
-        return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
     function _collateralUtil() internal view returns (ICollateralUtil) {
@@ -637,40 +630,24 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 5. Check the borrower has enough collateral to repay.
         _checkLoanPayableWithCollateral(loan, repayer, payment);
 
-        // 6. Process the payment.
-        loan = _processPayment(loan, payment);
+        // 6. Get the expected amount for the exchange from sUSD -> borrowed synth.
+        (uint expectedAmount, , ) = _exchanger().getAmountsForExchange(payment, sUSD, loan.currency);
 
-        // 7. Update the last interaction time.
+        // 7. Process the payment.
+        loan = _processPayment(loan, expectedAmount);
+
+        // 8. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 8. Get the amount for the exchange from sUSD -> borrowed synth.
-        (uint amountReceived, uint fee, ) = _exchanger().getAmountsForExchange(payment, sUSD, loan.currency);
-
-        // 9. Reduce the collateral used for paymewnt.
+        // 9. Reduce the collateral and burn the borrowed synth units by the amount repaid (minus the exchange fees).
         require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, sUSD), "Waiting or owing");
         loan.collateral = loan.collateral.sub(payment);
+        _synthsUSD().burn(repayer, expectedAmount);
 
-        // 10. Burn the borrowed synth units by the amount repaid (minus the exchange fees).
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, loan.currency), "Waiting or owing");
-        _synth(synthsByKey[loan.currency]).burn(repayer, amountReceived);
-
-        // 11. Remit the fee if required.
-        if (fee > 0) {
-            // Normalize fee to sUSD
-            // Note: `fee` is being reused to avoid stack too deep errors.
-            fee = _exchangeRates().effectiveValue(loan.currency, fee, sUSD);
-
-            // Remit the fee in sUSDs
-            _issuer().synths(sUSD).issue(_feePool().FEE_ADDRESS(), fee);
-
-            // Tell the fee pool about this
-            _feePool().recordFeePaid(fee);
-        }
-
-        // 12. Store the loan
+        // 10. Store the loan
         state.updateLoan(loan);
 
-        // 13. Emit the event.
+        // 11. Emit the event.
         emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
     }
 

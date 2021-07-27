@@ -216,7 +216,15 @@ contract('CollateralShort', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: short.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
-			expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'draw', 'getReward'],
+			expected: [
+				'open',
+				'close',
+				'deposit',
+				'repayWithCollateral',
+				'withdraw',
+				'liquidate',
+				'draw',
+			],
 		});
 	});
 
@@ -320,6 +328,45 @@ contract('CollateralShort', async accounts => {
 			it('should tell the manager about the short', async () => {
 				assert.bnEqual(await manager.short(sETH), oneETH);
 			});
+		});
+	});
+
+	describe('Repaying shorts', async () => {
+		const oneETH = toUnit(1);
+		const susdCollateral = toUnit(1000);
+
+		beforeEach(async () => {
+			await issue(sUSDSynth, susdCollateral, account1);
+
+			tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
+
+			id = getid(tx);
+
+			await fastForwardAndUpdateRates(3600);
+
+			await short.repayWithCollateral(account1, id, toUnit(500), { from: account1 });
+		});
+
+		it('should update the loan', async () => {
+			loan = await state.getLoan(account1, id);
+			assert.equal(loan.amount, toUnit(0.5).toString());
+			assert.eqaul(loan.collateral, toUnit(500).toString());
+		});
+
+		it('should not let them repay too much', async () => {
+			await fastForwardAndUpdateRates(3600);
+			await assert.revert(
+				short.repayWithCollateral(account1, id, toUnit(2000), { from: account1 }),
+				'Not enough collateral to repay this much'
+			);
+		});
+
+		it('should only let the borrower repay with collateral', async () => {
+			await fastForwardAndUpdateRates(3600);
+			await assert.revert(
+				short.repayWithCollateral(account1, id, toUnit(100), { from: account2 }),
+				'Must be the borrower to repay this loan'
+			);
 		});
 	});
 

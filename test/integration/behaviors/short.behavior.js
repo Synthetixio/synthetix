@@ -13,7 +13,7 @@ const { skipWaitingPeriod } = require('../utils/skip');
 function itCanOpenAndCloseShort({ ctx }) {
 	describe('shorting', () => {
 		const amountToDeposit = parseEther('10000'); // sUSD
-		const amountToBorrow = parseEther('1'); // sETH
+		const amountToBorrow = parseEther('100'); // sETH
 
 		let user;
 		let CollateralShort,
@@ -58,10 +58,10 @@ function itCanOpenAndCloseShort({ ctx }) {
 			await CollateralShortAsOwner.setInteractionDelay(interactionDelay);
 		});
 
-		describe('open, close, deposit, withdraw, draw a short', async () => {
+		describe('open, close, deposit, withdraw, draw, and repay a short', async () => {
 			let tx, loan, loanId;
 
-			describe('open a loan, deposit and withdraw collateral, draw, and close the loan', () => {
+			describe('open a loan, deposit and withdraw collateral, draw, repay with collateral, and close the loan', () => {
 				before('skip if max borrowing power reached', async function() {
 					const maxBorrowingPower = await CollateralShort.maxLoan(
 						amountToDeposit,
@@ -125,8 +125,8 @@ function itCanOpenAndCloseShort({ ctx }) {
 				});
 
 				before('draw down the loan', async () => {
-					assert.bnEqual(loan.amount, parseEther('1'));
-					tx = await CollateralShort.draw(loanId, parseEther('1'));
+					assert.bnEqual(loan.amount, parseEther('100'));
+					tx = await CollateralShort.draw(loanId, parseEther('100'));
 
 					const { events } = await tx.wait();
 
@@ -134,12 +134,26 @@ function itCanOpenAndCloseShort({ ctx }) {
 					loanId = event.args.id;
 
 					loan = await CollateralStateShort.getLoan(user.address, loanId);
-					assert.bnEqual(loan.amount, parseEther('2'));
+					assert.bnEqual(loan.amount, parseEther('200'));
+				});
+
+				before('repay loan with collateral', async () => {
+					assert.bnEqual(loan.amount, parseEther('200'));
+					assert.bnEqual(loan.collateral, parseEther('15000'));
+					tx = await CollateralShort.repayWithCollateral(user.address, loanId, parseEther('100'));
+
+					const { events } = await tx.wait();
+
+					const event = events.find(l => l.event === 'LoanRepaymentMade');
+					loanId = event.args.id;
+
+					loan = await CollateralStateShort.getLoan(user.address, loanId);
+					assert.bnEqual(loan.collateral, parseEther('14900'));
 				});
 
 				it('shows the loan amount and collateral are correct', async () => {
-					assert.bnEqual(loan.amount, parseEther('2'));
-					assert.bnEqual(loan.collateral, parseEther('15000'));
+					assert.bnEqual(loan.amount, parseEther('100'));
+					assert.bnEqual(loan.collateral, parseEther('14900'));
 				});
 
 				describe('closing a loan', () => {
