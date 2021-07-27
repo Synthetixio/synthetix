@@ -1,11 +1,7 @@
 pragma solidity ^0.5.16;
 
-// Inheritance
-import "./Owned.sol";
-
 // Internal references
 import "./AddressResolver.sol";
-import "./ReadProxy.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/mixinresolver
 contract MixinResolver {
