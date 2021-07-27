@@ -165,6 +165,9 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 				? CONTRACT_OVERRIDES[`${source}.sol`].runs
 				: optimizerRuns;
 
+			// The version reported by solc-js is too verbose and needs a v at the front
+			const solcVersion = 'v' + solc.version().replace('.Emscripten.clang', '');
+
 			result = await axios.post(
 				etherscanUrl,
 				qs.stringify({
@@ -175,7 +178,8 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 					contractname: source,
 					// note: spelling mistake is on etherscan's side
 					constructorArguements: constructorArguments,
-					compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front
+					// if ovm remove the +commit... info
+					compilerversion: useOvm ? solcVersion.replace(/\+commit.+$/, '') : solcVersion,
 					optimizationUsed: 1,
 					runs,
 					libraryname1: 'SafeDecimalMath',
