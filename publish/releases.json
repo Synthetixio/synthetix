@@ -283,7 +283,7 @@
 			"major": 2,
 			"minor": 48
 		},
-		"sources": ["SystemSettings, OwnerRelayOnEthereum"],
+		"sources": ["SystemSettings", "OwnerRelayOnEthereum"],
 		"sips": [167]
 	},
 	{
