@@ -163,7 +163,7 @@ module.exports = async ({
 		const response = await deployer.signer.sendTransaction({
 			to: account,
 			gasLimit: 50000,
-			value: parseUnits('10', 'ether').toString(),
+			value: parseUnits('10', 'ether'),
 		});
 		await response.wait();
 	} else if (deployerBalance < 5) {
