@@ -166,7 +166,7 @@ contract('OwnerRelayOnOptimism', () => {
 			});
 
 			it('reverts with the expected error', async () => {
-				assert.ok(sendMessageError.toString().includes('revert L1 sender is not the owner relay'));
+				assert.ok(sendMessageError.toString().includes('L1 sender is not the owner relay'));
 			});
 		});
 
