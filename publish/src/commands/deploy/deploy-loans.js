@@ -37,8 +37,8 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 			name: 'WETH',
 			source: useOvm ? 'MockWETH' : 'WETH',
 		});
-		weth.options.skipResolver = true;
-		WETH_ADDRESS = weth.options.address;
+		weth.skipResolver = true;
+		WETH_ADDRESS = weth.address;
 	}
 
 	if (!WETH_ADDRESS) {
@@ -132,7 +132,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		});
 
 		// this could be undefined in an env where MockToken is not listed in the config flags
-		RENBTC_ADDRESS = renBTC ? renBTC.options.address : undefined;
+		RENBTC_ADDRESS = renBTC ? renBTC.address : undefined;
 	}
 
 	await deployer.deployContract({

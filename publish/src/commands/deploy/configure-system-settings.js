@@ -34,7 +34,7 @@ module.exports = async ({
 			// has populated all references).
 			// Note: this populates rates for new synths regardless of the addNewSynths flag
 			synthRates = await Promise.all(
-				synths.map(({ name }) => SystemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
+				synths.map(({ name }) => SystemSettings.exchangeFeeRate(toBytes32(name)))
 			);
 		} catch (err) {
 			// weird edge case: if a new SystemSettings is deployed and generate-solidity is on then
@@ -53,7 +53,7 @@ module.exports = async ({
 			.map((synth, i) =>
 				Object.assign(
 					{
-						currentRate: parseUnits(synthRates[i] || '0').toString(),
+						currentRate: parseUnits(synthRates[i].toString() || '0').toString(),
 						targetRate: exchangeFeeRates[synth.category],
 					},
 					synth
