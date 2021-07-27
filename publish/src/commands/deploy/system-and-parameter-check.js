@@ -159,14 +159,7 @@ module.exports = async ({
 		formatUnits(await deployer.provider.getBalance(account), 'ether'),
 		10
 	);
-	if (useFork) {
-		const response = await deployer.signer.sendTransaction({
-			to: account,
-			gasLimit: 50000,
-			value: parseUnits('10', 'ether'),
-		});
-		await response.wait();
-	} else if (deployerBalance < 5) {
+	if (deployerBalance < 5) {
 		console.log(
 			yellow(`⚠ WARNING: Deployer account balance could be too low: ${deployerBalance} ETH`)
 		);
