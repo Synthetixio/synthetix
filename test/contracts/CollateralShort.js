@@ -42,6 +42,7 @@ contract('CollateralShort', async accounts => {
 		synths,
 		manager,
 		issuer,
+		util,
 		debtCache;
 
 	let tx, loan, id;
@@ -71,6 +72,14 @@ contract('CollateralShort', async accounts => {
 
 		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
 			from: oracle,
+		});
+	};
+
+	const deployUtil = async ({ resolver }) => {
+		return setupContract({
+			accounts,
+			contract: 'CollateralUtil',
+			args: [resolver],
 		});
 	};
 
@@ -131,6 +140,8 @@ contract('CollateralShort', async accounts => {
 
 		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
+		util = await deployUtil({ resolver: addressResolver.address });
+
 		short = await deployShort({
 			state: state.address,
 			owner: owner,
@@ -144,8 +155,8 @@ contract('CollateralShort', async accounts => {
 		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
-			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
-			[short.address, manager.address],
+			[toBytes32('CollateralShort'), toBytes32('CollateralManager'), toBytes32('CollateralUtil')],
+			[short.address, manager.address, util.address],
 			{
 				from: owner,
 			}
@@ -155,6 +166,7 @@ contract('CollateralShort', async accounts => {
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
 		await debtCache.rebuildCache();
+		await util.rebuildCache();
 
 		await manager.addCollaterals([short.address], { from: owner });
 
@@ -220,6 +232,7 @@ contract('CollateralShort', async accounts => {
 				'open',
 				'close',
 				'deposit',
+				'repay',
 				'repayWithCollateral',
 				'withdraw',
 				'liquidate',
@@ -343,29 +356,28 @@ contract('CollateralShort', async accounts => {
 			id = getid(tx);
 
 			await fastForwardAndUpdateRates(3600);
-
-			await short.repayWithCollateral(account1, id, toUnit(500), { from: account1 });
 		});
 
-		it('should update the loan', async () => {
+		it('should repay with collateral and update the loan', async () => {
+			tx = await short.repayWithCollateral(account1, id, toUnit(50), { from: account1 });
+
 			loan = await state.getLoan(account1, id);
+
 			assert.equal(loan.amount, toUnit(0.5).toString());
-			assert.eqaul(loan.collateral, toUnit(500).toString());
+			assert.equal(loan.collateral, toUnit(950).toString());
 		});
 
 		it('should not let them repay too much', async () => {
-			await fastForwardAndUpdateRates(3600);
 			await assert.revert(
 				short.repayWithCollateral(account1, id, toUnit(2000), { from: account1 }),
-				'Not enough collateral to repay this much'
+				'Not enough collateral'
 			);
 		});
 
 		it('should only let the borrower repay with collateral', async () => {
-			await fastForwardAndUpdateRates(3600);
 			await assert.revert(
 				short.repayWithCollateral(account1, id, toUnit(100), { from: account2 }),
-				'Must be the borrower to repay this loan'
+				'Must be borrower'
 			);
 		});
 	});
