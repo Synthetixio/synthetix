@@ -51,7 +51,7 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 
 							newContractsBeingAdded[contract.address] = name;
 						}
-					});
+					}).catch(err => console.log('Error', name, err));
 				})
 		);
 

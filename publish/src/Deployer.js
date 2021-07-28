@@ -221,21 +221,29 @@ class Deployer {
 			if (dryRun) {
 				this._dryRunCounter++;
 				// use the existing version of a contract in a dry run
-				deployedContract = this.makeContract({ abi: compiled.abi, address: existingAddress });
+				const deployedContractCopy = this.makeContract({
+					abi: compiled.abi,
+					address: existingAddress,
+				});
+				// create an object that we'll add function stubs to
+				const deployedContractFunctions = {};
 				const { account } = this;
 				// but stub out all method calls except owner because it is needed to
 				// determine which actions can be performed directly or need to be added to ownerActions
-				Object.keys(deployedContract.functions).forEach(key => {
-					deployedContract.functions[key] = () => ({
-						call: () =>
-							key === 'owner'
+				Object.keys(deployedContractCopy)
+					.filter(fnc => typeof deployedContractCopy[fnc] === 'function')
+					.forEach(key => {
+						deployedContractFunctions[key.replace(/\(.*\)$/, '')] = () =>
+							key === 'owner()'
 								? Promise.resolve(account)
 								: key === 'resolverAddressesRequired'
 								? Promise.resolve([])
-								: undefined,
+								: undefined;
 					});
-				});
-				deployedContract.address = '0x' + this._dryRunCounter.toString().padStart(40, '0');
+				deployedContract = {
+					functions: deployedContractFunctions,
+					address: ethers.Wallet.createRandom().address,
+				};
 			} else {
 				// If the contract creation will result in an address that's unsafe for OVM,
 				// increment the tx nonce until its not.
