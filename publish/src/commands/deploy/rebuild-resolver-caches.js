@@ -37,13 +37,13 @@ module.exports = async ({
 			CollateralErc20,
 			CollateralShort,
 		}).map(([name, address]) => {
-			const target = new ethers.Contract(
-				address,
-				[...compiled['MixinResolver'].abi, ...compiled['Owned'].abi],
-				deployer.provider
-			);
+			// Conbine MixinResolver + Owned abis
+			const abi1 = compiled['MixinResolver'].abi;
+			const abi2 = compiled['Owned'].abi.filter(e => e.type !== 'constructor'); // Avoid duplicate constructor entries
+			const abi = [...abi1, ...abi2];
+
+			const target = new ethers.Contract(address, abi, deployer.provider);
 			target.source = name;
-			target.address = address;
 			return [`legacy_${name}`, target];
 		});
 
@@ -77,27 +77,34 @@ module.exports = async ({
 	const resolverAddressesRequired = (
 		await Promise.all(
 			contractsWithRebuildableCache.map(([id, contract]) => {
-				return limitPromise(() => contract.resolverAddressesRequired()).then(result => [
-					contract.address,
-					result,
-				]);
+				return limitPromise(() => contract.resolverAddressesRequired())
+					.then(result => [contract.address, result])
+					.catch(() => {
+						console.log(
+							yellow.bold(
+								`⚠ WARNING: Contract ${id} did not respond to resolverAddressesRequired()`
+							)
+						);
+					});
 			})
 		)
-	).reduce((allAddresses, [targetContractAddress, requiredAddressesForContract]) => {
-		// side-effect
-		for (const contractDepName of requiredAddressesForContract) {
-			const contractDepNameParsed = ethers.utils.parseBytes32String(contractDepName);
-			// collect all contract maps
-			contractToDepMap[contractDepNameParsed] = []
-				.concat(contractToDepMap[contractDepNameParsed] || [])
-				.concat(targetContractAddress);
-		}
-		return allAddresses.concat(
-			requiredAddressesForContract.filter(
-				contractAddress => !allAddresses.includes(contractAddress)
-			)
-		);
-	}, []);
+	)
+		.filter(e => e !== undefined)
+		.reduce((allAddresses, [targetContractAddress, requiredAddressesForContract]) => {
+			// side-effect
+			for (const contractDepName of requiredAddressesForContract) {
+				const contractDepNameParsed = ethers.utils.parseBytes32String(contractDepName);
+				// collect all contract maps
+				contractToDepMap[contractDepNameParsed] = []
+					.concat(contractToDepMap[contractDepNameParsed] || [])
+					.concat(targetContractAddress);
+			}
+			return allAddresses.concat(
+				requiredAddressesForContract.filter(
+					contractAddress => !allAddresses.includes(contractAddress)
+				)
+			);
+		}, []);
 
 	// check which resolver addresses are imported
 	const resolvedAddresses = await Promise.all(
@@ -135,7 +142,16 @@ module.exports = async ({
 		contractsToRebuildCache = Array.from(contractsToRebuildCacheSet);
 	} else {
 		for (const [name, target] of contractsWithRebuildableCache) {
-			const isCached = await target.isResolverCached();
+			let isCached = true;
+
+			try {
+				isCached = await target.isResolverCached();
+			} catch (err) {
+				console.log(
+					yellow.bold(`⚠ WARNING: Contract ${name} did not respond to isResolverCached()`)
+				);
+			}
+
 			if (!isCached) {
 				const requiredAddresses = await target.resolverAddressesRequired();
 
