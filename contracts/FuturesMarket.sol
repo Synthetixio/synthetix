@@ -37,6 +37,10 @@ interface IFuturesMarketManagerInternal {
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarket
 contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFuturesMarket {
+    /* ========== TYPES ========== */
+
+    enum Error {Ok, NotPending, NoPriceUpdate, InsolventPosition, NegativeMargin, MaxMarketSizeExceeded}
+
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;
@@ -80,6 +84,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
 
+    // Holds the revert message for each type of error.
+    mapping(uint => string) internal _errorMessages;
+
     /* ---------- Address Resolver Configuration ---------- */
 
     bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -100,6 +107,13 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // Initialise the funding sequence with 0 initially accrued, so that the first usable funding index is 1.
         fundingSequence.push(0);
+
+        // Set up the mapping between error codes and their revert messages.
+        _errorMessages[uint(Error.NotPending)] = "No pending order";
+        _errorMessages[uint(Error.NoPriceUpdate)] = "Awaiting next price";
+        _errorMessages[uint(Error.InsolventPosition)] = "Position can be liquidated";
+        _errorMessages[uint(Error.NegativeMargin)] = "Withdrawing more than margin";
+        _errorMessages[uint(Error.MaxMarketSizeExceeded)] = "Max market size exceeded";
     }
 
     /* ========== VIEWS ========== */
@@ -307,16 +321,11 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function canConfirmOrder(address account) external view returns (bool) {
         IExchangeRates exRates = _exchangeRates();
         (uint price, bool invalid) = _assetPrice(exRates);
-        Order storage order = orders[account];
-        Position storage position = positions[account];
-        uint fundingSequenceIndex = fundingSequence.length;
-        return
-            !invalid && // Price is valid
-            price != 0 &&
-            _orderPending(order) && // There is actually an order
-            order.roundId < _currentRoundId(exRates) && // A new price has arrived
-            !_canLiquidate(position, _liquidationFee(), fundingSequenceIndex, price) && // No existing position can be liquidated
-            0 <= _marginPlusProfitFunding(position, fundingSequenceIndex, price).sub(int(order.fee)); // Margin has not dipped negative due to fees, profit, funding
+        if (invalid || price == 0) {
+            return false;
+        }
+        (, , , Error error) = _orderConfirmationDetails(price, fundingSequence.length, account);
+        return error == Error.Ok;
     }
 
     function _notionalValue(Position storage position, uint price) internal view returns (int value) {
@@ -576,6 +585,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return 0 <= a * b;
     }
 
+    function _error(Error error) internal view {
+        require(error == Error.Ok, _errorMessages[uint(error)]);
+    }
+
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /* ---------- Market Operations ---------- */
@@ -607,35 +620,26 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _entryDebtCorrection = _entryDebtCorrection.add(newCorrection).sub(oldCorrection);
     }
 
-    function _realiseMargin(
+    function _realisedMargin(
         Position storage position,
         uint currentFundingIndex,
         uint price,
         int marginDelta
-    ) internal returns (uint) {
-        // 1. Determine new margin, ensuring that the result is positive.
+    ) internal view returns (uint margin, Error errorCode) {
         int newMargin = _marginPlusProfitFunding(position, currentFundingIndex, price).add(marginDelta);
-        require(0 <= newMargin, "Withdrawing more than margin");
-        uint uMargin = uint(newMargin);
-
-        // Fail if the position can be liquidated after realising the margin
-        int positionSize = position.size;
-        if (0 != positionSize) {
-            require(_liquidationFee() < uMargin, "Position can be liquidated");
+        if (newMargin < 0) {
+            return (0, Error.NegativeMargin);
         }
 
-        // 2. Update the debt correction
-        _applyDebtCorrection(
-            Position(uMargin, positionSize, price, currentFundingIndex),
-            Position(position.margin, positionSize, position.lastPrice, position.fundingIndex)
-        );
+        uint uMargin = uint(newMargin);
+        int positionSize = position.size;
+        if (positionSize != 0 && uMargin <= _liquidationFee()) {
+            return (uMargin, Error.InsolventPosition);
+        }
 
-        // 3. Update the account's position
-        position.margin = uMargin;
-        position.lastPrice = price;
-        position.fundingIndex = currentFundingIndex;
-
-        return uMargin;
+        // Callers must ensure that the result is accompanied by the application of a
+        // corresponding debt correction, if it is used to actually update the position's margin.
+        return (uMargin, Error.Ok);
     }
 
     function _modifyMargin(
@@ -646,20 +650,29 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     ) internal {
         Position storage position = positions[sender];
 
-        // Reverts if the position would be liquidated.
-        // Note _realiseMargin also updates the system debt with the margin delta, so it's unnecessary here.
-        uint remainingMargin_ = _realiseMargin(position, fundingIndex, price, marginDelta);
+        // Determine new margin, ensuring that the result is positive.
+        (uint margin, Error error) = _realisedMargin(position, fundingIndex, price, marginDelta);
+        _error(error);
+
+        // Update the debt correction.
+        int positionSize = position.size;
+        _applyDebtCorrection(
+            Position(margin, positionSize, price, fundingIndex),
+            Position(position.margin, positionSize, position.lastPrice, position.fundingIndex)
+        );
+
+        // Update the account's position with the realised margin.
+        position.margin = margin;
+        position.lastPrice = price;
+        position.fundingIndex = fundingIndex;
 
         // The user can decrease their position as long as:
         //     * they have sufficient margin to do so
         //     * the resulting margin would not be lower than the minimum margin
         //     * the resulting leverage is lower than the maximum leverage
         if (0 < position.size && marginDelta <= 0) {
-            require(_minInitialMargin() <= remainingMargin_, "Insufficient margin");
-            require(
-                _abs(_currentLeverage(position, price, remainingMargin_)) < _maxLeverage(baseAsset),
-                "Max leverage exceeded"
-            );
+            require(_minInitialMargin() <= margin, "Insufficient margin");
+            require(_abs(_currentLeverage(position, price, margin)) < _maxLeverage(baseAsset), "Max leverage exceeded");
         }
 
         // Transfer no tokens if marginDelta is 0
@@ -714,22 +727,21 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
     }
 
-    function _checkOrderSize(
-        int size,
+    function _orderSizeSmallEnough(
+        int oldSize,
         int newSize,
         bool sameSide,
         uint play
-    ) internal view {
+    ) internal view returns (Error) {
         // Allow users to reduce an order no matter the market conditions.
-        if (sameSide && newSize <= size) {
-            return;
+        if (sameSide && newSize <= oldSize) {
+            return Error.Ok;
         }
 
         // Either the user is flipping sides, or they are increasing an order on the same side they're already on;
         // we check that the side of the market their order is on would not break the limit.
-
-        int newSkew = marketSkew.sub(size).add(newSize);
-        int newMarketSize = int(marketSize).sub(_signedAbs(size)).add(_signedAbs(newSize));
+        int newSkew = marketSkew.sub(oldSize).add(newSize);
+        int newMarketSize = int(marketSize).sub(_signedAbs(oldSize)).add(_signedAbs(newSize));
 
         int newSideSize;
         if (0 < newSize) {
@@ -743,7 +755,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // We'll allow an extra little bit of value over and above the stated max to allow for
         // rounding errors, price movements, multiple orders etc.
-        require(_abs(newSideSize.div(2)) <= _maxMarketValue(baseAsset).add(play), "Max market size exceeded");
+        if (_maxMarketValue(baseAsset).add(play) < _abs(newSideSize.div(2))) {
+            return Error.MaxMarketSizeExceeded;
+        }
+
+        return Error.Ok;
+    }
+
+    function _requireOrderSizeSmallEnough(
+        int size,
+        int newSize,
+        bool sameSide,
+        uint play
+    ) internal view {
+        _error(_orderSizeSmallEnough(size, newSize, sameSide, play));
     }
 
     function _submitOrder(
@@ -774,7 +799,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Note that this in principle allows several orders to be placed at once
         // that collectively violate the maximum, but this is checked again when
         // the orders are confirmed.
-        _checkOrderSize(
+        _requireOrderSizeSmallEnough(
             size,
             int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price)),
             sameSide,
@@ -821,57 +846,95 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     // TODO: Ensure that this is fine if the position is swapping sides
     // TODO: Check that everything is fine if a position already exists.
+    function _orderConfirmationDetails(
+        uint price,
+        uint fundingIndex,
+        address account
+    )
+        internal
+        view
+        returns (
+            uint newMargin,
+            int newSize,
+            uint orderFee_,
+            Error error
+        )
+    {
+        // Is an order is pending?
+        if (!_orderPending(orders[account])) {
+            return (0, 0, 0, Error.NotPending);
+        }
+
+        Order memory order = orders[account];
+
+        // Has the price updated?
+        // TODO: Verify that we can actually rely on the round id monotonically increasing
+        if (_currentRoundId(_exchangeRates()) <= order.roundId) {
+            return (0, 0, 0, Error.NoPriceUpdate);
+        }
+
+        Position storage position = positions[account];
+
+        // Can the existing position be liquidated?
+        // You can't outrun an impending liquidation by closing your position quickly, for example.
+        if (_canLiquidate(position, _liquidationFee(), fundingIndex, price)) {
+            return (0, 0, 0, Error.InsolventPosition);
+        }
+
+        // We weren't liquidated, so we realise the margin to compute the new position size.
+        // The fee is deducted at this stage; it is an error if the realised margin minus the fee is negative or subject to liquidation.
+        uint fee = order.fee;
+        (uint margin, Error marginError) = _realisedMargin(position, fundingIndex, price, -int(fee));
+        if (marginError != Error.Ok) {
+            return (margin, 0, fee, marginError);
+        }
+
+        // The fee is added back in because order size is computed pre-fee for accuracy, though their leverage will
+        // be slightly higher than what was requested if the fee is nonzero.
+        int size = int(margin.add(fee)).multiplyDecimalRound(order.leverage).divideDecimalRound(int(price));
+        int oldSize = position.size;
+
+        // Ensure the order is actually allowed given the market size limit.
+        // Give an extra percentage of play in case multiple orders were submitted simultaneously or the price moved.
+        int confirmationSizePlay = int(_maxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR));
+        Error marketSizeError = _orderSizeSmallEnough(oldSize, size, _sameSide(oldSize, size), uint(confirmationSizePlay));
+        if (marketSizeError != Error.Ok) {
+            return (margin, size, fee, marginError);
+        }
+
+        return (margin, size, fee, Error.Ok);
+    }
+
     function confirmOrder(address account) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
 
-        require(_orderPending(orders[account]), "No pending order");
-        Order memory order = orders[account];
+        (uint margin, int newSize, uint fee, Error error) = _orderConfirmationDetails(price, fundingIndex, account);
+        _error(error);
 
-        // TODO: Verify that we can actually rely on the round id monotonically increasing
-        require(order.roundId < _currentRoundId(_exchangeRates()), "Awaiting next price");
-
+        // Update the margin, which will need to be realised
         Position storage position = positions[account];
-
-        // You can't outrun an impending liquidation by closing your position quickly, for example.
-        require(!_canLiquidate(position, _liquidationFee(), fundingIndex, price), "Position can be liquidated");
-
-        // We weren't liquidated, so we realise the margin to compute the new position size.
-        // The fee is deducted at this stage; the transaction will revert if the realised margin minus the fee is negative.
-        uint margin = _realiseMargin(position, fundingIndex, price, -int(order.fee));
-        // The order size is computed pre-fee, so the order size is accurate, though their leverage may
-        // be slightly higher than what was requested if the fee is nonzero.
-        int newSize = int(margin.add(order.fee)).multiplyDecimalRound(order.leverage).divideDecimalRound(int(price));
-        int positionSize = position.size;
-
-        // Before continuing, check that their order is actually allowed given the market size limit.
-        // Give an extra percentage of play in case of multiple orders were submitted simultaneously or the price moved.
-        _checkOrderSize(
-            positionSize,
-            newSize,
-            _sameSide(positionSize, newSize),
-            uint(int(_maxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
-        );
-
-        // Update the market size and skew, checking that the maximums are not exceeded
-        marketSkew = marketSkew.add(newSize).sub(positionSize);
-        marketSize = marketSize.add(_abs(newSize)).sub(_abs(positionSize));
+        uint oldMargin = position.margin;
+        int oldSize = position.size;
+        position.margin = margin;
 
         // Apply debt corrections
-        // TODO: This can be made more efficient given that _realiseMargin already applied a correction
-        //       e.g. skip the correction inside that function and do it all here.
         _applyDebtCorrection(
-            Position(0, newSize, price, fundingIndex),
-            Position(0, positionSize, position.lastPrice, position.fundingIndex)
+            Position(margin, newSize, price, fundingIndex),
+            Position(oldMargin, oldSize, position.lastPrice, position.fundingIndex)
         );
 
+        // Update the aggregated market size and skew with the new order size
+        marketSkew = marketSkew.add(newSize).sub(oldSize);
+        marketSize = marketSize.add(_abs(newSize)).sub(_abs(oldSize));
+
         // Send the fee to the fee pool
-        if (0 < order.fee) {
-            _manager().payFee(order.fee);
+        if (0 < fee) {
+            _manager().payFee(fee);
         }
 
         // Actually lodge the position and delete the order
-        // Updating the margin was already handled in _realiseMargin
+        // Updating the margin was already handled above
         if (newSize == 0) {
             // If the position is being closed, we no longer need to track these details.
             delete position.size;
@@ -882,8 +945,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
         }
-        delete orders[account];
+        Order storage order = orders[account];
         emitOrderConfirmed(order.id, account, margin, newSize, price, fundingIndex);
+        delete orders[account];
     }
 
     function _liquidatePosition(

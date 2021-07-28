@@ -1214,7 +1214,7 @@ contract('FuturesMarket', accounts => {
 
 			for (const side of ['long', 'short']) {
 				describe(`${side}`, () => {
-					it.skip('Orders are blocked if they exceed market size', async () => {
+					it.skip('Orders are blocked if they exceed max market size', async () => {
 						assert.isTrue(false);
 					});
 
