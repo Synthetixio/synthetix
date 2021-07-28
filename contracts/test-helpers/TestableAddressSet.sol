@@ -31,7 +31,7 @@ contract TestableAddressSet {
         return set.elements[index];
     }
 
-    function index(address element) public view returns (uint) {
-        return set.indices[element];
+    function index(address _element) public view returns (uint) {
+        return set.indices[_element];
     }
 }

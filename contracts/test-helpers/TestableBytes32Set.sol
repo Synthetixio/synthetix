@@ -31,7 +31,7 @@ contract TestableBytes32Set {
         return set.elements[index];
     }
 
-    function index(bytes32 element) public view returns (uint) {
-        return set.indices[element];
+    function index(bytes32 _element) public view returns (uint) {
+        return set.indices[_element];
     }
 }

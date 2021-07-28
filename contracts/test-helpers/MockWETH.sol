@@ -10,11 +10,11 @@ contract MockWETH is ERC20, ERC20Detailed {
         _mint(msg.sender, 1000000 * (10**18));
     }
 
-    function deposit() external {
+    function deposit() external pure {
         revert("Unimplemented for OVM");
     }
 
-    function withdraw(uint amount) external {
+    function withdraw(uint amount) external pure {
         amount;
         revert("Unimplemented for OVM");
     }

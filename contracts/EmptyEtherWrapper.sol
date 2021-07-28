@@ -7,7 +7,7 @@ contract EmptyEtherWrapper {
 
     /* ========== VIEWS ========== */
 
-    function totalIssuedSynths() public view returns (uint) {
+    function totalIssuedSynths() public pure returns (uint) {
         return 0;
     }
 

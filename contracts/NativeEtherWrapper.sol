@@ -23,7 +23,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
     /* ========== PUBLIC FUNCTIONS ========== */
 
     /* ========== VIEWS ========== */
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+    function resolverAddressesRequired() public view returns (bytes32[] memory) {
         bytes32[] memory addresses = new bytes32[](2);
         addresses[0] = CONTRACT_ETHER_WRAPPER;
         addresses[1] = CONTRACT_SYNTHSETH;
@@ -65,7 +65,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
 
     function burn(uint amount) public {
         require(amount > 0, "amount must be greater than 0");
-        IWETH weth = weth();
+        IWETH _weth = weth();
 
         // Transfer sETH from the msg.sender.
         synthsETH().transferFrom(msg.sender, address(this), amount);
@@ -77,7 +77,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         etherWrapper().burn(amount);
 
         // Convert WETH to ETH and send to msg.sender.
-        weth.withdraw(weth.balanceOf(address(this)));
+        _weth.withdraw(_weth.balanceOf(address(this)));
         // solhint-disable avoid-low-level-calls
         msg.sender.call.value(address(this).balance)("");
 
