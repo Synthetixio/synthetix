@@ -528,7 +528,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 6. Check they are eligible for liquidation.
         // Note: this will revert if collateral is 0, however that should only be possible if the loan amount is 0.
-        require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio);
+        require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio, "Cratio above liq ratio");
 
         // 7. Determine how much needs to be liquidated to fix their c ratio.
         uint liqAmount = _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
