@@ -19,6 +19,7 @@ import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/IEtherWrapper.sol";
+import "./interfaces/ILinkWrapper.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
@@ -45,6 +46,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
+    bytes32 private constant CONTRACT_LINK_WRAPPER = "LinkWrapper";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -52,7 +54,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](8);
+        bytes32[] memory newAddresses = new bytes32[](9);
         newAddresses[0] = CONTRACT_ISSUER;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -61,6 +63,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         newAddresses[5] = CONTRACT_ETHERCOLLATERAL_SUSD;
         newAddresses[6] = CONTRACT_COLLATERALMANAGER;
         newAddresses[7] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[8] = CONTRACT_LINK_WRAPPER;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -94,6 +97,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function etherWrapper() internal view returns (IEtherWrapper) {
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
+    }
+
+    function linkWrapper() internal view returns (IEtherWrapper) {
+        return ILinkWrapper(requireAndGetAddress(CONTRACT_LINK_WRAPPER));
     }
 
     function debtSnapshotStaleTime() external view returns (uint) {
@@ -213,6 +220,10 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         // 3. EtherWrapper.
         // Subtract sETH and sUSD issued by EtherWrapper.
         excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
+
+        // 4. LinkWrapper.
+        // Subtract sLINK and sUSD issued by EtherWrapper.
+        excludedDebt = excludedDebt.add(linkWrapper().totalIssuedSynths());
 
         return (excludedDebt, isInvalid);
     }
