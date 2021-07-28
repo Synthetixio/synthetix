@@ -631,16 +631,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _checkLoanPayableWithCollateral(loan, repayer, payment);
 
         // 6. Get the expected amount for the exchange from sUSD -> borrowed synth.
-        (uint expectedAmount, , ) = _exchanger().getAmountsForExchange(payment, sUSD, loan.currency);
+        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, sUSD, loan.currency);
 
-        // 7. Process the payment.
-        loan = _processPayment(loan, expectedAmount);
+        // 7. Reduce the loan amount by the expectedAmount and pay the fees.
+        loan.amount = loan.amount.sub(expectedAmount);
+        _payFees(fee, sUSD);
 
         // 8. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
         // 9. Reduce the collateral and burn the borrowed synth units by the amount repaid (minus the exchange fees).
-        require(!_exchanger().hasWaitingPeriodOrSettlementOwing(repayer, sUSD), "Waiting or owing");
         loan.collateral = loan.collateral.sub(payment);
         _synthsUSD().burn(repayer, expectedAmount);
 
