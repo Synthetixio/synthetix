@@ -10,6 +10,11 @@ import "./interfaces/IAddressResolver.sol";
 contract FuturesMarketData {
     /* ========== TYPES ========== */
 
+    struct FuturesGlobals {
+        uint minInitialMargin;
+        uint liquidationFee;
+    }
+
     struct MarketSummary {
         address market;
         bytes32 asset;
@@ -109,6 +114,11 @@ contract FuturesMarketData {
             IFuturesMarketSettings(
                 resolverProxy.requireAndGetAddress("FuturesMarketSettings", "Missing FuturesMarketSettings Address")
             );
+    }
+
+    function globals() external view returns (FuturesGlobals memory) {
+        IFuturesMarketSettings settings = _futuresMarketSettings();
+        return FuturesGlobals(settings.minInitialMargin(), settings.liquidationFee());
     }
 
     function parameters(bytes32 baseAsset) external view returns (IFuturesMarketSettings.Parameters memory) {
