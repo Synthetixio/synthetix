@@ -1,18 +1,10 @@
 const { task } = require('hardhat/config');
 const { yellow } = require('chalk');
-const { toBytes32 } = require('../../index');
 
 const fs = require('fs');
 const path = require('path');
 const ethers = require('ethers');
-const {
-	utils: { formatEther },
-} = ethers;
-const {
-	getSource,
-	getTarget,
-	constants: { ZERO_ADDRESS },
-} = require('../../index');
+const { getSource, getTarget } = require('../../index');
 
 function connectContracts({ ctx }) {
 	const { useOvm } = ctx;
@@ -30,34 +22,6 @@ function connectContracts({ ctx }) {
 	});
 }
 
-async function _getSNXForOwnerOnL2ByHackMinting({ ctx, amount }) {
-	const owner = ctx.users.owner;
-
-	let { Synthetix, AddressResolver } = ctx.contracts;
-
-	const bridgeName = toBytes32('SynthetixBridgeToBase');
-	let bridgeAddress = ZERO_ADDRESS;
-	bridgeAddress = await AddressResolver.getAddress(bridgeName);
-
-	let tx;
-	AddressResolver = AddressResolver.connect(owner);
-	tx = await AddressResolver.importAddresses([bridgeName], [owner.address]);
-	await tx.wait();
-	tx = await AddressResolver.rebuildCaches([Synthetix.address]);
-	await tx.wait();
-
-	Synthetix = Synthetix.connect(owner);
-	tx = await Synthetix.mintSecondary(owner.address, amount);
-	await tx.wait();
-
-	tx = await AddressResolver.importAddresses([bridgeName], [bridgeAddress]);
-	await tx.wait();
-	tx = await AddressResolver.rebuildCaches([Synthetix.address]);
-	await tx.wait();
-
-	console.log(`New balance: `, formatEther(await Synthetix.balanceOf(owner.address)), `SNX`);
-}
-
 function _setupProvider({ url }) {
 	return new ethers.providers.JsonRpcProvider({
 		url,
@@ -67,6 +31,7 @@ function _setupProvider({ url }) {
 }
 
 const { loadUsers } = require('../../test/integration/utils/users');
+const { ensureBalance } = require('../util/balances');
 
 task('get-snx-local-l2')
 	.addParam('account', 'The account to fund with SNX')
@@ -92,6 +57,28 @@ task('get-snx-local-l2')
 
 		connectContracts({ ctx });
 
-		// SNX go brrrrrrrrrrr.
-		await _getSNXForOwnerOnL2ByHackMinting({ ctx, amount: ethers.utils.parseEther('5000000') });
+		const accounts = [
+			// Hardhat account #1 (deployer)
+			'0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+			// futures trader
+			'0x96D6C55a500782ba07aefb4f620dF2a94CDc7bA7',
+		];
+
+		// TODO: fix error with WETH funding when cap is exceeded.
+		// await ensureBalance({ ctx, symbol: 'WETH', user: { address: account }, balance: ethers.utils.parseEther('1000') })
+
+		for (const account of accounts) {
+			await ensureBalance({
+				ctx,
+				symbol: 'SNX',
+				user: { address: account },
+				balance: ethers.utils.parseEther('100000000'),
+			});
+			await ensureBalance({
+				ctx,
+				symbol: 'sUSD',
+				user: { address: account },
+				balance: ethers.utils.parseEther('100000000'),
+			});
+		}
 	});
