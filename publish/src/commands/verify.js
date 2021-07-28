@@ -230,7 +230,6 @@ const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 				if (status === 'Fail - Unable to verify') {
 					console.log(red(` - Unable to verify ${name}.`));
 					tableData.push([name, address, 'Unable to verify']);
-					console.log(require('util').inspect(result.data, true, null, true));
 					break;
 				}
 
