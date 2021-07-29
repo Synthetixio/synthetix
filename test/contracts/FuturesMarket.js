@@ -1419,6 +1419,8 @@ contract('FuturesMarket', accounts => {
 			assert.isTrue(false);
 		});
 
+		// TODO: Properly test the max order size constraint violation due to a price movement.
+
 		it('Order confirmation properly records the exchange fee with the fee pool', async () => {
 			const FEE_ADDRESS = await feePool.FEE_ADDRESS();
 			const preBalance = await sUSD.balanceOf(FEE_ADDRESS);
@@ -1548,6 +1550,10 @@ contract('FuturesMarket', accounts => {
 				futuresMarket.closePosition({ from: trader }),
 				'Position can be liquidated'
 			);
+		});
+
+		it.skip('Can close positions even if the max market size constraints are violated', async () => {
+			assert.isTrue(false);
 		});
 	});
 
