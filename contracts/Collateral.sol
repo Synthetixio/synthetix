@@ -635,7 +635,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 7. Reduce the loan amount by the expectedAmount and pay the fees.
         loan.amount = loan.amount.sub(expectedAmount);
-        _payFees(fee, sUSD);
+        if (fee > 0) {
+            _payFees(fee, sUSD);
+        }
 
         // 8. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
