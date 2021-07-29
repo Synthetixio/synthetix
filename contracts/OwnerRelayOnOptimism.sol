@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./MixinResolver.sol";
+import "./TempOwned.sol";
 
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
@@ -10,7 +11,7 @@ interface IOwned {
     function acceptOwnership() external;
 }
 
-contract OwnerRelayOnOptimism is MixinResolver {
+contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -18,7 +19,11 @@ contract OwnerRelayOnOptimism is MixinResolver {
 
     /* ========== CONSTRUCTOR ============ */
 
-    constructor(address _resolver) public MixinResolver(_resolver) {}
+    constructor(
+        address _resolver,
+        address _tempOwner,
+        uint _tempOwnerEOL
+    ) public MixinResolver(_resolver) TempOwned(_tempOwner, _tempOwnerEOL) {}
 
     /* ========== INTERNALS ============ */
 
@@ -50,6 +55,15 @@ contract OwnerRelayOnOptimism is MixinResolver {
         require(msg.sender == address(messenger), "Sender is not the messenger");
         require(messenger.xDomainMessageSender() == ownerRelayOnEthereum(), "L1 sender is not the owner relay");
 
+        // solhint-disable avoid-low-level-calls
+        (bool success, bytes memory result) = target.call(data);
+
+        require(success, string(abi.encode("xChain call failed:", result)));
+
+        emit RelayFinalized(target, data);
+    }
+
+    function directRelay(address target, bytes calldata data) external onlyTemporaryOwner {
         // solhint-disable avoid-low-level-calls
         (bool success, bytes memory result) = target.call(data);
 
