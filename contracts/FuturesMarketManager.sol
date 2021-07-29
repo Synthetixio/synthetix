@@ -151,10 +151,10 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
 
         // Exchanger.settle ensures synth is active
         ISynth sUSD = _sUSD();
-        (, , uint numEntriesSettled) = _exchanger().settle(account, SUSD);
+        (uint reclaimed, , ) = _exchanger().settle(account, SUSD);
 
         uint balanceAfter = amount;
-        if (numEntriesSettled > 0) {
+        if (0 < reclaimed) {
             balanceAfter = IERC20(address(sUSD)).balanceOf(account);
         }
 
