@@ -3,6 +3,7 @@ const { toBytes32 } = require('../..');
 
 async function ensureBalance({ ctx, symbol, user, balance }) {
 	const currentBalance = await _readBalance({ ctx, symbol, user });
+	console.log(`${user.address} ${symbol} ${ethers.utils.formatEther(currentBalance)}`);
 
 	if (currentBalance.lt(balance)) {
 		const amount = balance.sub(currentBalance);
@@ -130,7 +131,8 @@ async function _getsUSD({ ctx, user, amount }) {
 	let tx;
 
 	const requiredSNX = await _getSNXAmountRequiredForsUSDAmount({ ctx, amount });
-	await ensureBalance({ ctx, symbol: 'SNX', user, balance: requiredSNX });
+	// TODO: mul(12) is a temp workaround for "Amount too large" error.
+	await ensureBalance({ ctx, symbol: 'SNX', user: ctx.users.owner, balance: requiredSNX.mul(12) });
 
 	Synthetix = Synthetix.connect(ctx.users.owner);
 	tx = await Synthetix.issueSynths(amount);
