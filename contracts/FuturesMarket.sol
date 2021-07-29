@@ -30,7 +30,7 @@ import "./interfaces/IFuturesMarketSettings.sol";
 interface IFuturesMarketManagerInternal {
     function issueSUSD(address account, uint amount) external;
 
-    function burnSUSD(address account, uint amount) external;
+    function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
 
     function payFee(uint amount) external;
 }
@@ -644,6 +644,24 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint fundingIndex,
         address sender
     ) internal {
+        // Transfer no tokens if marginDelta is 0
+        uint absDelta = _abs(marginDelta);
+        if (0 < marginDelta) {
+            // A positive margin delta corresponds to a deposit, which will be burnt from their
+            // sUSD balance and credited to their margin account.
+
+            // Ensure we handle reclamation when burning tokens.
+            uint postReclamationAmount = _manager().burnSUSD(sender, absDelta);
+            if (postReclamationAmount != absDelta) {
+                // If balance was insufficient, the actual delta will be smaller
+                marginDelta = int(postReclamationAmount);
+            }
+        } else if (marginDelta < 0) {
+            // A negative margin delta corresponds to a withdrawal, which will be minted into
+            // their sUSD balance, and debited from their margin account.
+            _manager().issueSUSD(sender, absDelta);
+        }
+
         Position storage position = positions[sender];
 
         // Reverts if the position would be liquidated.
@@ -660,14 +678,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
                 _abs(_currentLeverage(position, price, remainingMargin_)) < _maxLeverage(baseAsset),
                 "Max leverage exceeded"
             );
-        }
-
-        // Transfer no tokens if marginDelta is 0
-        uint absDelta = _abs(marginDelta);
-        if (0 < marginDelta) {
-            _manager().burnSUSD(sender, absDelta);
-        } else if (marginDelta < 0) {
-            _manager().issueSUSD(sender, absDelta);
         }
     }
 
