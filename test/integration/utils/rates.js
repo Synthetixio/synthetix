@@ -22,6 +22,28 @@ async function updateExchangeRatesIfNeeded({ ctx }) {
 	}
 }
 
+async function updateExchangeRatesWithDefaults({ ctx }) {
+	let { ExchangeRates } = ctx.contracts;
+	const oracle = await ExchangeRates.oracle();
+	const signer = ctx.fork ? ctx.provider.getSigner(oracle) : ctx.users.owner;
+	ExchangeRates = ExchangeRates.connect(signer);
+
+	const { timestamp } = await ctx.provider.getBlock();
+	const currencyKeys = [toBytes32('sETH'), toBytes32('sBTC')];
+	const defaultRates = [ethers.utils.parseEther('100'), ethers.utils.parseEther('10000')];
+
+	const tx = await ExchangeRates.updateRates(currencyKeys, defaultRates, timestamp);
+	await tx.wait();
+
+	if (await _isCacheInvalid({ ctx })) {
+		await _updateCache({ ctx });
+		if (await _isCacheInvalid({ ctx })) {
+			await _printCacheInfo({ ctx });
+			throw new Error('Cache is still invalid after updating it.');
+		}
+	}
+}
+
 async function _isCacheInvalid({ ctx }) {
 	const { DebtCache } = ctx.contracts;
 
@@ -118,6 +140,7 @@ async function getRate({ ctx, symbol }) {
 }
 
 module.exports = {
+	updateExchangeRatesWithDefaults,
 	updateExchangeRatesIfNeeded,
 	getRate,
 };
