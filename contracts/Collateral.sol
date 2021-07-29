@@ -185,7 +185,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         bytes32 key,
         uint amount
     ) internal view {
-        require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough synths");
+        require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough balance");
     }
 
     // Check the borrower has enough collateral to make the payment.

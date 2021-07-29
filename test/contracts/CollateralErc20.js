@@ -1044,7 +1044,7 @@ contract('CollateralErc20', async accounts => {
 			it('should revert if they have no sUSD', async () => {
 				await assert.revert(
 					cerc20.repay(account1, id, tensUSD, { from: account2 }),
-					'Not enough synths'
+					'Not enough balance'
 				);
 			});
 
@@ -1169,7 +1169,7 @@ contract('CollateralErc20', async accounts => {
 			it('should revert if they have no sUSD', async () => {
 				await assert.revert(
 					cerc20.liquidate(account1, id, onesUSD, { from: account2 }),
-					'Not enough synths'
+					'Not enough balance'
 				);
 			});
 
@@ -1338,7 +1338,7 @@ contract('CollateralErc20', async accounts => {
 
 		describe('revert conditions', async () => {
 			it('should revert if they have no sUSD', async () => {
-				await assert.revert(cerc20.close(id, { from: account1 }), 'Not enough synths');
+				await assert.revert(cerc20.close(id, { from: account1 }), 'Not enough balance');
 			});
 
 			it('should revert if they are not the borrower', async () => {

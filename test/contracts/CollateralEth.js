@@ -940,7 +940,7 @@ contract('CollateralEth', async accounts => {
 			it('should revert if they have no sUSD', async () => {
 				await assert.revert(
 					ceth.repay(account1, id, tensUSD, { from: account2 }),
-					'Not enough synths'
+					'Not enough balance'
 				);
 			});
 
@@ -1071,7 +1071,7 @@ contract('CollateralEth', async accounts => {
 			it('should revert if they have no sUSD', async () => {
 				await assert.revert(
 					ceth.liquidate(account1, id, onesUSD, { from: account2 }),
-					'Not enough synths'
+					'Not enough balance'
 				);
 			});
 
@@ -1259,7 +1259,7 @@ contract('CollateralEth', async accounts => {
 
 		describe('revert conditions', async () => {
 			it('should revert if they have no sUSD', async () => {
-				await assert.revert(ceth.close(id, { from: account1 }), 'Not enough synths');
+				await assert.revert(ceth.close(id, { from: account1 }), 'Not enough balance');
 			});
 
 			it('should revert if they are not the borrower', async () => {
