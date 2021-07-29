@@ -23,11 +23,10 @@ contract NativeEtherWrapper is Owned, MixinResolver {
     /* ========== PUBLIC FUNCTIONS ========== */
 
     /* ========== VIEWS ========== */
-    function resolverAddressesRequired() public view returns (bytes32[] memory) {
-        bytes32[] memory addresses = new bytes32[](2);
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        addresses = new bytes32[](2);
         addresses[0] = CONTRACT_ETHER_WRAPPER;
         addresses[1] = CONTRACT_SYNTHSETH;
-        return addresses;
     }
 
     function etherWrapper() internal view returns (IEtherWrapper) {
