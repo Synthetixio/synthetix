@@ -888,7 +888,7 @@ const setupAllContracts = async ({
 		{ contract: 'Proxy', forContract: 'FuturesMarketManager' },
 		{
 			contract: 'FuturesMarketManager',
-			deps: ['AddressResolver'],
+			deps: ['AddressResolver', 'Exchanger'],
 		},
 		{ contract: 'Proxy', forContract: 'FuturesMarketBTC' },
 		{

@@ -1,4 +1,4 @@
-const { contract, web3 } = require('hardhat');
+const { artifacts, contract, web3 } = require('hardhat');
 
 const { toBytes32 } = require('../..');
 const {
@@ -18,13 +18,18 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 } = require('./helpers');
 
+const MockExchanger = artifacts.require('MockExchanger');
+
 contract('FuturesMarket', accounts => {
 	let proxyFuturesMarket,
 		futuresMarketSettings,
+		futuresMarketManager,
 		futuresMarket,
 		exchangeRates,
+		addressResolver,
 		oracle,
 		sUSD,
+		synthetix,
 		feePool,
 		debtCache;
 
@@ -97,9 +102,12 @@ contract('FuturesMarket', accounts => {
 		({
 			ProxyFuturesMarketBTC: proxyFuturesMarket,
 			FuturesMarketSettings: futuresMarketSettings,
+			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
+			AddressResolver: addressResolver,
 			SynthsUSD: sUSD,
+			Synthetix: synthetix,
 			FeePool: feePool,
 			DebtCache: debtCache,
 		} = await setupAllContracts({
@@ -918,6 +926,22 @@ contract('FuturesMarket', accounts => {
 		});
 
 		describe('sUSD balance', () => {
+			it(`Can't deposit more sUSD than owned`, async () => {
+				const preBalance = await sUSD.balanceOf(trader);
+				await assert.revert(
+					futuresMarket.modifyMargin(preBalance.add(toUnit('1')), { from: trader }),
+					'subtraction overflow'
+				);
+			});
+
+			it(`Can't withdraw more sUSD than is in the margin`, async () => {
+				await futuresMarket.modifyMargin(toUnit('100'), { from: trader });
+				await assert.revert(
+					futuresMarket.modifyMargin(toUnit('-101'), { from: trader }),
+					'Withdrawing more than margin'
+				);
+			});
+
 			it('Positive delta -> burn sUSD', async () => {
 				const preBalance = await sUSD.balanceOf(trader);
 				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
@@ -935,6 +959,41 @@ contract('FuturesMarket', accounts => {
 				const preBalance = await sUSD.balanceOf(trader);
 				await futuresMarket.modifyMargin(toUnit('0'), { from: trader });
 				assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(toUnit('0')));
+			});
+
+			it('fee reclamation is respected', async () => {
+				// Set up a mock exchanger
+				const mockExchanger = await MockExchanger.new(synthetix.address);
+				await addressResolver.importAddresses(
+					['Exchanger'].map(toBytes32),
+					[mockExchanger.address],
+					{
+						from: owner,
+					}
+				);
+				await synthetix.rebuildCache();
+				await futuresMarketManager.rebuildCache();
+
+				// Set up a starting balance
+				const preBalance = await sUSD.balanceOf(trader);
+				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
+
+				// Now set a reclamation event
+				await mockExchanger.setReclaim(toUnit('10'));
+				await mockExchanger.setNumEntries('1');
+
+				// Issuance works fine
+				await futuresMarket.modifyMargin(toUnit('-900'), { from: trader });
+				assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(toUnit('100')));
+				assert.bnEqual((await futuresMarket.remainingMargin(trader))[0], toUnit('100'));
+
+				// But burning properly deducts the reclamation amount
+				await futuresMarket.modifyMargin(preBalance.sub(toUnit('100')), { from: trader });
+				assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
+				assert.bnEqual(
+					(await futuresMarket.remainingMargin(trader))[0],
+					preBalance.sub(toUnit('10'))
+				);
 			});
 		});
 
