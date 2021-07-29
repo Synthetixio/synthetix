@@ -21,11 +21,11 @@ task('ops', 'Run Optimism chain')
 	.addFlag('stop', 'Stop optimism chain')
 	.addFlag('detached', 'Detach the chain from the console')
 	.addOptionalParam('optimismPath', 'Path to optmism repository folder', './optimism')
-	.addOptionalParam('optimismBranch', 'Branch to checkout', 'develop')
+	.addOptionalParam('optimismBranch', 'Branch to checkout', 'master')
 	.addOptionalParam(
 		'optimismCommit',
 		'Commit to checkout',
-		'e61514437b945a0050521e909bf757f8e3d34e15'
+		'05ace3ae2c12c6ba5a4a0ac33254f9547cc4557c'
 	)
 	.setAction(async (taskArguments, hre, runSuper) => {
 		taskArguments.maxMemory = true;

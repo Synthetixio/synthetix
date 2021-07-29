@@ -191,7 +191,7 @@ task('interact', 'Interact with a deployed Synthetix instance from the command l
 					let outputPart = outputs.length > 0 ? ` returns(${outputs.join(', ')})` : '';
 					outputPart = item.stateMutability === 'view' ? ` view${outputPart}` : outputPart;
 
-					return `${inputPart}${outputPart}`;
+					return `${inputPart}${outputPart} ${gray(item.signature)}`;
 				}
 
 				const escItem = '↩ BACK';
