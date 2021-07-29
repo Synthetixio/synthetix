@@ -490,7 +490,10 @@ contract('CollateralEth', async accounts => {
 					);
 				});
 				it('should fail if the minimum is less than 1', async () => {
-					await assert.revert(ceth.setMinCratio(toUnit(0.99), { from: owner }), 'Must be above 1');
+					await assert.revert(
+						ceth.setMinCratio(toUnit(0.99), { from: owner }),
+						'Cratio must be above 1'
+					);
 				});
 			});
 			describe('when it succeeds', async () => {
@@ -791,7 +794,7 @@ contract('CollateralEth', async accounts => {
 			it('should revert if they do not send any eth', async () => {
 				await assert.revert(
 					ceth.deposit(account1, id, { value: 0, from: account1 }),
-					'Must be above 0'
+					'Deposit must be above 0'
 				);
 			});
 		});
@@ -933,7 +936,7 @@ contract('CollateralEth', async accounts => {
 
 		describe('revert conditions', async () => {
 			it('should revert if they try to repay 0', async () => {
-				await assert.revert(ceth.repay(account1, id, 0, { from: account1 }), 'Must be above 0');
+				await assert.revert(ceth.repay(account1, id, 0, { from: account1 }), 'Payment be above 0');
 			});
 
 			// account 2 had no sUSD

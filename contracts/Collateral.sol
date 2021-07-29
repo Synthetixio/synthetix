@@ -234,7 +234,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ---------- SETTERS ---------- */
 
     function setMinCratio(uint _minCratio) external onlyOwner {
-        require(_minCratio > SafeDecimalMath.unit(), "Must be above 1");
+        require(_minCratio > SafeDecimalMath.unit(), "Cratio must be above 1");
         minCratio = _minCratio;
         emit MinCratioRatioUpdated(minCratio);
     }
@@ -447,7 +447,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. They sent some value > 0
-        require(amount > 0, "Must be above 0");
+        require(amount > 0, "Deposit must be above 0");
 
         // 2. Get the loan
         Loan memory loan = state.getLoan(account, id);
@@ -512,7 +512,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. Check the payment amount.
-        require(payment > 0, "Must be above 0");
+        require(payment > 0, "Payment must be above 0");
 
         // 2. Get the loan.
         Loan memory loan = state.getLoan(borrower, id);
@@ -575,7 +575,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. Check the payment amount.
-        require(payment > 0, "Must be above 0");
+        require(payment > 0, "Payment must be above 0");
 
         // 2. Get loan
         Loan memory loan = state.getLoan(borrower, id);
@@ -616,7 +616,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
 
         // 1. Check the payment amount.
-        require(payment > 0, "Must be above 0");
+        require(payment > 0, "Payment must be above 0");
 
         // 2. Get loan
         Loan memory loan = state.getLoan(borrower, id);
