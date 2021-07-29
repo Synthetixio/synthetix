@@ -66,7 +66,27 @@ task('status:exchangerates', 'Query state of the system on any network - only Ex
 		_logGeneral({ hre });
 	});
 
-function _commonInputAndSetup({ hre, taskArguments }) {}
+function _commonInputAndSetup({ hre, taskArguments }) {
+	if (!hre.config.status) {
+		hre.config.status = {};
+	}
+
+	hre.config.status.useOvm = taskArguments.useOvm;
+	hre.config.status.useFork = taskArguments.useFork;
+	hre.config.status.network = taskArguments.network.toLowerCase();
+	hre.config.status.addresses = taskArguments.addresses ? taskArguments.addresses.split(',') : [];
+	hre.config.status.blockOptions = {
+		blockTag: taskArguments.block ? +taskArguments.block : 'latest',
+	};
+
+	hre.config.status.providerUrl = taskArguments.providerUrl;
+	if (!taskArguments.providerUrl && process.env.PROVIDER_URL) {
+		hre.config.status.providerUrl = process.env.PROVIDER_URL.replace(
+			'network',
+			hre.config.status.network
+		);
+	}
+}
 
 function _logGeneral({ hre }) {
 	logSection('Info');
