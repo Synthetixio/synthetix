@@ -11,7 +11,6 @@ const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
-	'local-ovm': require('./publish/deployed/local-ovm'),
 	'kovan-ovm': require('./publish/deployed/kovan-ovm-futures'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
 	// 'kovan-ovm-futures': require('./publish/deployed/kovan-ovm-futures'),
@@ -527,12 +526,12 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			// Deterministic account #0 when using `npx hardhat node`
 			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 		}),
-		'local-ovm': Object.assign({}, base, {
-			// Deterministic account #0 when using `npx hardhat node`
-			owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-			deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-			oracle: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-		}),
+		// 'local-ovm': Object.assign({}, base, {
+		// 	// Deterministic account #0 when using `npx hardhat node`
+		// 	owner: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		// 	deployer: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		// 	oracle: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+		// }),
 	};
 
 	const users = Object.entries(
