@@ -46,7 +46,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     /* ========== CONSTANTS ========== */
 
     int private constant _UNIT = int(10**uint(18));
-    // Orders can potentially move the market past its configured max by up to 2 %
+    // Orders can potentially move the market past its configured max by up to 5 %
     uint private constant _MAX_MARKET_VALUE_PLAY_FACTOR = (2 * uint(_UNIT)) / 100;
 
     /* ========== STATE VARIABLES ========== */
@@ -108,8 +108,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _errorMessages[uint(Error.NotPending)] = "No pending order";
         _errorMessages[uint(Error.NoPriceUpdate)] = "Awaiting next price";
         _errorMessages[uint(Error.InsolventPosition)] = "Position can be liquidated";
-        _errorMessages[uint(Error.NegativeMargin)] = "Withdrawing more than margin";
         _errorMessages[uint(Error.MaxMarketSizeExceeded)] = "Max market size exceeded";
+        _errorMessages[uint(Error.NegativeMargin)] = "Withdrawing more than margin";
     }
 
     /* ========== VIEWS ========== */
@@ -316,14 +316,83 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return _orderPending(orders[account]);
     }
 
-    function canConfirmOrder(address account) external view returns (bool) {
+    // TODO: Ensure that this is fine if the position is swapping sides
+    // TODO: Check that everything is fine if a position already exists.
+    function _orderStatusDetails(
+        uint price,
+        uint fundingIndex,
+        address account
+    )
+        internal
+        view
+        returns (
+            uint newMargin,
+            int newSize,
+            uint orderFee_,
+            Error error
+        )
+    {
+        // Is an order is pending?
+        if (!_orderPending(orders[account])) {
+            return (0, 0, 0, Error.NotPending);
+        }
+
+        Order memory order = orders[account];
+
+        // Has the price updated?
+        // TODO: Verify that we can actually rely on the round id monotonically increasing
+        if (_currentRoundId(_exchangeRates()) <= order.roundId) {
+            return (0, 0, 0, Error.NoPriceUpdate);
+        }
+
+        Position storage position = positions[account];
+
+        // Can the existing position be liquidated?
+        // You can't outrun an impending liquidation by closing your position quickly, for example.
+        if (_canLiquidate(position, _liquidationFee(), fundingIndex, price)) {
+            return (0, 0, 0, Error.InsolventPosition);
+        }
+
+        // We weren't liquidated, so we realise the margin to compute the new position size.
+        // The fee is deducted at this stage; it is an error if the realised margin minus the fee is negative or subject to liquidation.
+        uint fee = order.fee;
+        (uint margin, Error marginError) = _realisedMargin(position, fundingIndex, price, -int(fee));
+        if (marginError != Error.Ok) {
+            return (margin, 0, fee, marginError);
+        }
+
+        // The fee is added back in because order size is computed pre-fee for accuracy, though their leverage will
+        // be slightly higher than what was requested if the fee is nonzero.
+        int size = int(margin.add(fee)).multiplyDecimalRound(order.leverage).divideDecimalRound(int(price));
+        int oldSize = position.size;
+
+        // Ensure the order is actually allowed given the market size limit.
+        // Give an extra percentage of play in case multiple orders were submitted simultaneously or the price moved.
+        int confirmationSizePlay = int(_maxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR));
+        Error marketSizeError = _orderSizeSmallEnough(oldSize, size, _sameSide(oldSize, size), uint(confirmationSizePlay));
+        if (marketSizeError != Error.Ok) {
+            return (margin, size, fee, marginError);
+        }
+
+        return (margin, size, fee, Error.Ok);
+    }
+
+    function _orderStatus(address account) internal view returns (Error) {
         IExchangeRates exRates = _exchangeRates();
         (uint price, bool invalid) = _assetPrice(exRates);
         if (invalid) {
-            return false;
+            return Error.InvalidPrice;
         }
-        (, , , Error error) = _orderConfirmationDetails(price, fundingSequence.length, account);
-        return error == Error.Ok;
+        (, , , Error error) = _orderStatusDetails(price, fundingSequence.length, account);
+        return error;
+    }
+
+    function orderStatus(address account) external view returns (Error) {
+        return _orderStatus(account);
+    }
+
+    function canConfirmOrder(address account) external view returns (bool) {
+        return _orderStatus(account) == Error.Ok;
     }
 
     function _notionalValue(Position storage position, uint price) internal view returns (int value) {
@@ -842,72 +911,11 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _submitOrder(leverage, price, fundingIndex, sender);
     }
 
-    // TODO: Ensure that this is fine if the position is swapping sides
-    // TODO: Check that everything is fine if a position already exists.
-    function _orderConfirmationDetails(
-        uint price,
-        uint fundingIndex,
-        address account
-    )
-        internal
-        view
-        returns (
-            uint newMargin,
-            int newSize,
-            uint orderFee_,
-            Error error
-        )
-    {
-        // Is an order is pending?
-        if (!_orderPending(orders[account])) {
-            return (0, 0, 0, Error.NotPending);
-        }
-
-        Order memory order = orders[account];
-
-        // Has the price updated?
-        // TODO: Verify that we can actually rely on the round id monotonically increasing
-        if (_currentRoundId(_exchangeRates()) <= order.roundId) {
-            return (0, 0, 0, Error.NoPriceUpdate);
-        }
-
-        Position storage position = positions[account];
-
-        // Can the existing position be liquidated?
-        // You can't outrun an impending liquidation by closing your position quickly, for example.
-        if (_canLiquidate(position, _liquidationFee(), fundingIndex, price)) {
-            return (0, 0, 0, Error.InsolventPosition);
-        }
-
-        // We weren't liquidated, so we realise the margin to compute the new position size.
-        // The fee is deducted at this stage; it is an error if the realised margin minus the fee is negative or subject to liquidation.
-        uint fee = order.fee;
-        (uint margin, Error marginError) = _realisedMargin(position, fundingIndex, price, -int(fee));
-        if (marginError != Error.Ok) {
-            return (margin, 0, fee, marginError);
-        }
-
-        // The fee is added back in because order size is computed pre-fee for accuracy, though their leverage will
-        // be slightly higher than what was requested if the fee is nonzero.
-        int size = int(margin.add(fee)).multiplyDecimalRound(order.leverage).divideDecimalRound(int(price));
-        int oldSize = position.size;
-
-        // Ensure the order is actually allowed given the market size limit.
-        // Give an extra percentage of play in case multiple orders were submitted simultaneously or the price moved.
-        int confirmationSizePlay = int(_maxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR));
-        Error marketSizeError = _orderSizeSmallEnough(oldSize, size, _sameSide(oldSize, size), uint(confirmationSizePlay));
-        if (marketSizeError != Error.Ok) {
-            return (margin, size, fee, marginError);
-        }
-
-        return (margin, size, fee, Error.Ok);
-    }
-
     function confirmOrder(address account) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
 
-        (uint margin, int newSize, uint fee, Error error) = _orderConfirmationDetails(price, fundingIndex, account);
+        (uint margin, int newSize, uint fee, Error error) = _orderStatusDetails(price, fundingIndex, account);
         _error(error);
 
         // Update the margin, which will need to be realised
