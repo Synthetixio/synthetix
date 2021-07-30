@@ -76,6 +76,7 @@ contract FuturesMarketData {
         IFuturesMarket.Order order;
         bool orderPending;
         bool canConfirmOrder;
+        IFuturesMarket.Error orderStatus;
         IFuturesMarket.Position position;
         int notionalValue;
         int profitLoss;
@@ -252,6 +253,7 @@ contract FuturesMarketData {
                 _order(market, account),
                 market.orderPending(account),
                 market.canConfirmOrder(account),
+                market.orderStatus(account),
                 IFuturesMarket.Position(positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
                 _notionalValue(market, account),
                 _profitLoss(market, account),
