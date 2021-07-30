@@ -150,12 +150,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     /* ---------- Market Details ---------- */
 
     function _assetPrice(IExchangeRates exchangeRates) internal view returns (uint price, bool invalid) {
-        return exchangeRates.rateAndInvalid(baseAsset);
+        (uint _price, bool _invalid) = exchangeRates.rateAndInvalid(baseAsset);
+        // Ensure we catch uninitialised rates
+        return (_price, _invalid || _price == 0);
     }
 
     function _assetPriceRequireNotInvalid() internal view returns (uint) {
         (uint price, bool invalid) = _assetPrice(_exchangeRates());
-        require(!(invalid || price == 0), "Invalid price");
+        require(!invalid, "Invalid price");
         return price;
     }
 
@@ -321,7 +323,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function canConfirmOrder(address account) external view returns (bool) {
         IExchangeRates exRates = _exchangeRates();
         (uint price, bool invalid) = _assetPrice(exRates);
-        if (invalid || price == 0) {
+        if (invalid) {
             return false;
         }
         (, , , Error error) = _orderConfirmationDetails(price, fundingSequence.length, account);
