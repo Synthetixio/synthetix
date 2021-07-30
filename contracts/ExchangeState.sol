@@ -99,4 +99,15 @@ contract ExchangeState is Owned, State, IExchangeState {
         }
         return timestamp;
     }
+
+    function getLockedValue(address account, bytes32 currencyKey, uint waitingPeriod) external view returns (uint) {
+        ExchangeEntry[] storage userEntries = exchanges[account][currencyKey];
+        uint locked = 0;
+        for (uint i = 0; i < userEntries.length; i++) {
+            if (userEntries[i].timestamp+waitingPeriod > block.timestamp) {
+				locked = locked.add(userEntries[i].amountReceived);
+			}
+        }
+        return locked;
+    }
 }
