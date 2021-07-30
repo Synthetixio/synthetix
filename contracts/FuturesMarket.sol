@@ -316,6 +316,41 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return _orderPending(orders[account]);
     }
 
+    function _orderSizeSmallEnough(
+        int oldSize,
+        int newSize,
+        bool sameSide,
+        uint play
+    ) internal view returns (Error) {
+        // Allow users to reduce an order no matter the market conditions.
+        if (sameSide && newSize <= oldSize) {
+            return Error.Ok;
+        }
+
+        // Either the user is flipping sides, or they are increasing an order on the same side they're already on;
+        // we check that the side of the market their order is on would not break the limit.
+        int newSkew = marketSkew.sub(oldSize).add(newSize);
+        int newMarketSize = int(marketSize).sub(_signedAbs(oldSize)).add(_signedAbs(newSize));
+
+        int newSideSize;
+        if (0 < newSize) {
+            // long case: marketSize + skew = 2 * longSize
+            newSideSize = newMarketSize.add(newSkew);
+        } else {
+            // short case: marketSize - skew = 2 * shortSize
+            newSideSize = newMarketSize.sub(newSkew);
+        }
+        // newSideSize still includes an extra factor of 2 here, so we will divide by 2 in the require statement.
+
+        // We'll allow an extra little bit of value over and above the stated max to allow for
+        // rounding errors, price movements, multiple orders etc.
+        if (_maxMarketValue(baseAsset).add(play) < _abs(newSideSize.div(2))) {
+            return Error.MaxMarketSizeExceeded;
+        }
+
+        return Error.Ok;
+    }
+
     // TODO: Ensure that this is fine if the position is swapping sides
     // TODO: Check that everything is fine if a position already exists.
     function _orderStatusDetails(
@@ -794,50 +829,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
     }
 
-    function _orderSizeSmallEnough(
-        int oldSize,
-        int newSize,
-        bool sameSide,
-        uint play
-    ) internal view returns (Error) {
-        // Allow users to reduce an order no matter the market conditions.
-        if (sameSide && newSize <= oldSize) {
-            return Error.Ok;
-        }
-
-        // Either the user is flipping sides, or they are increasing an order on the same side they're already on;
-        // we check that the side of the market their order is on would not break the limit.
-        int newSkew = marketSkew.sub(oldSize).add(newSize);
-        int newMarketSize = int(marketSize).sub(_signedAbs(oldSize)).add(_signedAbs(newSize));
-
-        int newSideSize;
-        if (0 < newSize) {
-            // long case: marketSize + skew = 2 * longSize
-            newSideSize = newMarketSize.add(newSkew);
-        } else {
-            // short case: marketSize - skew = 2 * shortSize
-            newSideSize = newMarketSize.sub(newSkew);
-        }
-        // newSideSize still includes an extra factor of 2 here, so we will divide by 2 in the require statement.
-
-        // We'll allow an extra little bit of value over and above the stated max to allow for
-        // rounding errors, price movements, multiple orders etc.
-        if (_maxMarketValue(baseAsset).add(play) < _abs(newSideSize.div(2))) {
-            return Error.MaxMarketSizeExceeded;
-        }
-
-        return Error.Ok;
-    }
-
-    function _requireOrderSizeSmallEnough(
-        int size,
-        int newSize,
-        bool sameSide,
-        uint play
-    ) internal view {
-        _error(_orderSizeSmallEnough(size, newSize, sameSide, play));
-    }
-
     function _submitOrder(
         int leverage,
         uint price,
@@ -866,11 +857,13 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Note that this in principle allows several orders to be placed at once
         // that collectively violate the maximum, but this is checked again when
         // the orders are confirmed.
-        _requireOrderSizeSmallEnough(
-            size,
-            int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price)),
-            sameSide,
-            100 * uint(_UNIT) // a bit of extra value in case of rounding errors
+        _error(
+            _orderSizeSmallEnough(
+                size,
+                int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price)),
+                sameSide,
+                100 * uint(_UNIT) // a bit of extra value in case of rounding errors
+            )
         );
 
         // Cancel any open order
