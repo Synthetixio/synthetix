@@ -47,7 +47,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     int private constant _UNIT = int(10**uint(18));
     // Orders can potentially move the market past its configured max by up to 5 %
-    uint private constant _MAX_MARKET_VALUE_PLAY_FACTOR = (2 * uint(_UNIT)) / 100;
+    uint private constant _MAX_MARKET_VALUE_PLAY_FACTOR = (5 * uint(_UNIT)) / 100;
 
     /* ========== STATE VARIABLES ========== */
 
