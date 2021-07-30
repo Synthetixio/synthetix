@@ -15,7 +15,7 @@ contract TempOwned {
     }
 
     function _onlyTemporaryOwner() private view {
-        require(tempOwnerEOL >= now, "The EOL date for executing this function already reached");
-        require(msg.sender == tempOwner, "Only the contract temporary owner may perform this action");
+        require(tempOwnerEOL >= now, "Owner EOL date already reached");
+        require(msg.sender == tempOwner, "Only executable by temp owner");
     }
 }
