@@ -37,10 +37,6 @@ interface IFuturesMarketManagerInternal {
 
 // https://docs.synthetix.io/contracts/source/contracts/futuresmarket
 contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFuturesMarket {
-    /* ========== TYPES ========== */
-
-    enum Error {Ok, NotPending, NoPriceUpdate, InsolventPosition, NegativeMargin, MaxMarketSizeExceeded}
-
     /* ========== LIBRARIES ========== */
 
     using SafeMath for uint;

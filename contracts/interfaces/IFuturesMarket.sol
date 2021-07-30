@@ -3,6 +3,8 @@ pragma solidity ^0.5.16;
 interface IFuturesMarket {
     /* ========== TYPES ========== */
 
+    enum Error {Ok, NotPending, NoPriceUpdate, InvalidPrice, InsolventPosition, MaxMarketSizeExceeded, NegativeMargin}
+
     struct Order {
         uint id;
         int leverage;
