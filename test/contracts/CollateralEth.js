@@ -936,7 +936,10 @@ contract('CollateralEth', async accounts => {
 
 		describe('revert conditions', async () => {
 			it('should revert if they try to repay 0', async () => {
-				await assert.revert(ceth.repay(account1, id, 0, { from: account1 }), 'Payment be above 0');
+				await assert.revert(
+					ceth.repay(account1, id, 0, { from: account1 }),
+					'Payment must be above 0'
+				);
 			});
 
 			// account 2 had no sUSD

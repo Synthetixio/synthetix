@@ -836,7 +836,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'CollateralState',
-			deps: [], // TODO should this include CollateralState?
+			deps: [],
 		},
 		{
 			contract: 'Collateral',
