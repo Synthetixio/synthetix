@@ -359,25 +359,34 @@ contract('CollateralShort', async accounts => {
 		});
 
 		it('should repay with collateral and update the loan', async () => {
-			tx = await short.repayWithCollateral(account1, id, toUnit(50), { from: account1 });
+			tx = await short.repayWithCollateral(account1, id, toUnit(0.5), { from: account1 });
 
 			loan = await state.getLoan(account1, id);
 
-			assert.equal(loan.amount, toUnit(0.5).toString());
+			assert.bnClose(loan.amount, toUnit(0.5).toString(), toUnit(0.1).toString());
 			assert.equal(loan.collateral, toUnit(950).toString());
+		});
+
+		it('should also repay accrued interest if paying off all principal', async () => {
+			tx = await short.repayWithCollateral(account1, id, toUnit(1), { from: account1 });
+
+			loan = await state.getLoan(account1, id);
+
+			assert.equal(loan.amount, toUnit(0).toString());
+			assert.bnClose(loan.collateral, toUnit(900).toString(), toUnit(0.1).toString());
+		});
+
+		it('should only let the borrower repay with collateral', async () => {
+			await assert.revert(
+				short.repayWithCollateral(account1, id, toUnit(0.1), { from: account2 }),
+				'Must be borrower'
+			);
 		});
 
 		it('should not let them repay too much', async () => {
 			await assert.revert(
 				short.repayWithCollateral(account1, id, toUnit(2000), { from: account1 }),
-				'Not enough collateral'
-			);
-		});
-
-		it('should only let the borrower repay with collateral', async () => {
-			await assert.revert(
-				short.repayWithCollateral(account1, id, toUnit(100), { from: account2 }),
-				'Must be borrower'
+				'Payment too high'
 			);
 		});
 	});

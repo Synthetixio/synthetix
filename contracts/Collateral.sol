@@ -188,16 +188,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough balance");
     }
 
-    // Check the borrower has enough collateral to make the payment.
-    function _checkLoanPayableWithCollateral(
-        Loan memory _loan,
-        address payer,
-        uint amount
-    ) internal view {
-        require(_loan.account == payer, "Must be borrower");
-        require(_loan.collateral >= amount, "Not enough collateral");
-    }
-
     // We set the interest index to 0 to indicate the loan has been closed.
     function _checkLoanAvailable(Loan memory _loan) internal view {
         require(_loan.interestIndex > 0, "Loan does not exist");
@@ -618,38 +608,44 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 1. Check the payment amount.
         require(payment > 0, "Payment must be above 0");
 
-        // 2. Get loan
+        // 2. Get loan.
         Loan memory loan = state.getLoan(borrower, id);
 
         // 3. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
 
-        // 4. Accrue interest.
+        // 4. Check that the repayer is the borrower.
+        require(loan.account == repayer, "Must be borrower");
+
+        // 5. Accrue interest.
         loan = accrueInterest(loan);
 
-        // 5. Check the borrower has enough collateral to repay.
-        _checkLoanPayableWithCollateral(loan, repayer, payment);
+        // 6. If the payment is equal to the principal, assume repayer wants to repay the accruedInterest as well.
+        if (payment == loan.amount) {
+            payment = payment.add(loan.accruedInterest);
+        } else {
+            require(payment < loan.amount, "Payment too high");
+        }
 
-        // 6. Get the expected amount for the exchange from sUSD -> borrowed synth.
-        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, sUSD, loan.currency);
+        // 7. Get the expected amount for the exchange from borrowed synth -> sUSD.
+        (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);
 
-        // 7. Reduce the loan amount by the expectedAmount and pay the fees.
-        loan.amount = loan.amount.sub(expectedAmount);
+        // 8. Reduce the collateral by the amount repaid (minus the exchange fees).
+        loan.collateral = loan.collateral.sub(expectedAmount);
+
+        // 9. Process the payment and pay the exchange fees if needed.
+        loan = _processPayment(loan, payment);
         if (fee > 0) {
             _payFees(fee, sUSD);
         }
 
-        // 8. Update the last interaction time.
+        // 10. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 9. Reduce the collateral and burn the borrowed synth units by the amount repaid (minus the exchange fees).
-        loan.collateral = loan.collateral.sub(payment);
-        _synthsUSD().burn(repayer, expectedAmount);
-
-        // 10. Store the loan
+        // 11. Store the loan.
         state.updateLoan(loan);
 
-        // 11. Emit the event.
+        // 12. Emit the event.
         emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
     }
 
