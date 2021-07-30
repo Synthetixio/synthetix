@@ -35,6 +35,15 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
         return requireAndGetAddress(CONTRACT_BASE_OWNER_RELAY_ON_ETHEREUM);
     }
 
+    function _relayCall(address target, bytes memory data) private {
+        // solhint-disable avoid-low-level-calls
+        (bool success, bytes memory result) = target.call(data);
+
+        require(success, string(abi.encode("xChain call failed:", result)));
+
+        emit RelayFinalized(target, data);
+    }
+
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -55,21 +64,11 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
         require(msg.sender == address(messenger), "Sender is not the messenger");
         require(messenger.xDomainMessageSender() == ownerRelayOnEthereum(), "L1 sender is not the owner relay");
 
-        // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory result) = target.call(data);
-
-        require(success, string(abi.encode("xChain call failed:", result)));
-
-        emit RelayFinalized(target, data);
+        _relayCall(target, data);
     }
 
     function directRelay(address target, bytes calldata data) external onlyTemporaryOwner {
-        // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory result) = target.call(data);
-
-        require(success, string(abi.encode("xChain call failed:", result)));
-
-        emit RelayFinalized(target, data);
+        _relayCall(target, data);
     }
 
     /* ========== EVENTS ========== */
