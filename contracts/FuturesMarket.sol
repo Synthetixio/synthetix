@@ -316,6 +316,21 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return _orderPending(orders[account]);
     }
 
+    function _orderSize(
+        uint price,
+        uint margin,
+        int leverage
+    ) internal pure returns (int) {
+        return int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price));
+    }
+
+    function orderSize(address account) external view returns (int size, bool invalid) {
+        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        Position storage position = positions[account];
+        Order storage order = orders[account];
+        return (_orderSize(price, _remainingMargin(position, fundingSequence.length, price), order.leverage), isInvalid);
+    }
+
     function _orderSizeSmallEnough(
         int oldSize,
         int newSize,
@@ -396,9 +411,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             return (margin, 0, fee, marginError);
         }
 
-        // The fee is added back in because order size is computed pre-fee for accuracy, though their leverage will
+        // The fee is added back in because order size is computed pre-fee, though their leverage will
         // be slightly higher than what was requested if the fee is nonzero.
-        int size = int(margin.add(fee)).multiplyDecimalRound(order.leverage).divideDecimalRound(int(price));
+        int size = _orderSize(price, margin.add(fee), order.leverage);
         int oldSize = position.size;
 
         // Ensure the order is actually allowed given the market size limit.

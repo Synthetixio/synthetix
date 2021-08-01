@@ -184,6 +184,7 @@ contract('FuturesMarketData', accounts => {
 			const details2 = await futuresMarketData.positionDetails(futuresMarket.address, trader1);
 
 			const order = await futuresMarket.orders(trader3);
+			assert.equal(details.orderSize, (await futuresMarket.orderSize(trader3))[0]);
 			assert.equal(details.orderPending, await futuresMarket.orderPending(trader3));
 			assert.equal(details.canConfirmOrder, await futuresMarket.canConfirmOrder(trader3));
 			assert.equal(details.orderStatus, await futuresMarket.orderStatus(trader3));

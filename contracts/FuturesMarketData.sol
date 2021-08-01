@@ -74,6 +74,7 @@ contract FuturesMarketData {
 
     struct PositionData {
         IFuturesMarket.Order order;
+        int orderSize;
         bool orderPending;
         bool canConfirmOrder;
         IFuturesMarket.Error orderStatus;
@@ -248,9 +249,11 @@ contract FuturesMarketData {
         (uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
             market.positions(account);
         (uint liquidationPrice, ) = market.liquidationPrice(account, true);
+        (int orderSize, ) = market.orderSize(account);
         return
             PositionData(
                 _order(market, account),
+                orderSize,
                 market.orderPending(account),
                 market.canConfirmOrder(account),
                 market.orderStatus(account),

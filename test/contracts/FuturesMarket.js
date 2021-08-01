@@ -1022,6 +1022,9 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.fee, fee);
 			assert.bnEqual(order.roundId, roundId);
 
+			const orderSize = (await futuresMarket.orderSize(trader))[0];
+			assert.bnEqual(orderSize, margin.mul(toBN(10)).div(toBN(100)));
+
 			// And it properly emits the relevant events.
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
 			assert.equal(decodedLogs.length, 1);
@@ -1031,6 +1034,21 @@ contract('FuturesMarket', accounts => {
 				args: [id, trader, leverage, fee, roundId],
 				log: decodedLogs[0],
 			});
+		});
+
+		it('order size updates with new prices', async () => {
+			const margin = toUnit('1000');
+			const leverage = toUnit('10');
+			await futuresMarket.modifyMarginAndSubmitOrder(margin, leverage, { from: trader });
+			let orderSize = (await futuresMarket.orderSize(trader))[0];
+
+			const notional = margin.mul(toBN(10));
+			assert.bnEqual(orderSize, notional.div(toBN(100)));
+
+			// Halve the price, order units double for the same leverage.
+			await setPrice(baseAsset, toUnit('50'));
+			orderSize = (await futuresMarket.orderSize(trader))[0];
+			assert.bnEqual(orderSize, notional.div(toBN(50)));
 		});
 
 		it('submitting orders increments the order id', async () => {
@@ -1316,14 +1334,15 @@ contract('FuturesMarket', accounts => {
 			const leverage = toUnit('10');
 			const fee = (await futuresMarket.orderFee(trader, leverage))[0];
 			await futuresMarket.submitOrder(leverage, { from: trader });
-
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 
 			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+			const orderSize = (await futuresMarket.orderSize(trader))[0];
 			const tx = await futuresMarket.confirmOrder(trader);
 
 			const size = toUnit('50');
+			assert.bnEqual(orderSize, size);
 
 			const position = await futuresMarket.positions(trader);
 

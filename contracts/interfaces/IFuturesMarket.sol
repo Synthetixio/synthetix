@@ -97,6 +97,8 @@ interface IFuturesMarket {
 
     function orderPending(address account) external view returns (bool pending);
 
+    function orderSize(address account) external view returns (int size, bool invalid);
+
     function orderStatus(address account) external view returns (Error);
 
     function canConfirmOrder(address account) external view returns (bool);
