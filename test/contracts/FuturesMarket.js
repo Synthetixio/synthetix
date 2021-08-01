@@ -18,6 +18,16 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 } = require('./helpers');
 
+const orderStatuses = {
+	Ok: 0,
+	NotPending: 1,
+	NoPriceUpdate: 2,
+	InvalidPrice: 3,
+	InsolventPosition: 4,
+	MaxMarketSizeExceeded: 5,
+	NegativeMargin: 6,
+};
+
 contract('FuturesMarket', accounts => {
 	let proxyFuturesMarket,
 		futuresMarketSettings,
@@ -1337,6 +1347,7 @@ contract('FuturesMarket', accounts => {
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 
+			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.Ok);
 			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
 			const orderSize = (await futuresMarket.orderSize(trader))[0];
 			const tx = await futuresMarket.confirmOrder(trader);
@@ -1390,12 +1401,14 @@ contract('FuturesMarket', accounts => {
 			const leverage = toUnit('10');
 			await futuresMarket.submitOrder(leverage, { from: trader });
 
+			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.NoPriceUpdate);
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Awaiting next price');
 		});
 
 		it('cannot confirm an order if none is pending', async () => {
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.NotPending);
 			await assert.revert(futuresMarket.confirmOrder(trader), 'No pending order');
 		});
 
@@ -1409,10 +1422,12 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, price);
 
 			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.Ok);
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.InvalidPrice);
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
 		});
 
@@ -1430,6 +1445,7 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, toUnit('100'));
 
 			// But it fails!
+			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.InsolventPosition);
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Position can be liquidated');
 		});
