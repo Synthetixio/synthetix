@@ -117,10 +117,6 @@ class Deployer {
 			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		};
 
-		if (!this.useOvm) {
-			tx.gasLimit = 1000000;
-		}
-
 		const response = await this.signer.sendTransaction(tx);
 		await response.wait();
 

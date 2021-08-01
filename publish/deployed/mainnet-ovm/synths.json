@@ -2,5 +2,17 @@
 	{
 		"name": "sUSD",
 		"asset": "USD"
+	},
+	{
+		"name": "sETH",
+		"asset": "ETH"
+	},
+	{
+		"name": "sBTC",
+		"asset": "BTC"
+	},
+	{
+		"name": "sLINK",
+		"asset": "LINK"
 	}
 ]
