@@ -600,7 +600,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address borrower,
         address repayer,
         uint id,
-        uint payment
+        uint payment,
+        bool payInterest
     ) internal rateIsValid {
         // 0. Check the system is active.
         _systemStatus().requireIssuanceActive();
@@ -620,12 +621,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 5. Accrue interest.
         loan = accrueInterest(loan);
 
-        // 6. If the payment is equal to the principal, assume repayer wants to repay the accruedInterest as well.
-        if (payment == loan.amount) {
+        // 6. Repay the accruedInterest if payInterest == true.
+        if (payInterest) {
             payment = payment.add(loan.accruedInterest);
-        } else {
-            require(payment < loan.amount, "Payment too high");
         }
+
+        // 7. Make sure they are not overpaying.
+        require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
 
         // 7. Get the expected amount for the exchange from borrowed synth -> sUSD.
         (uint expectedAmount, uint fee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, sUSD);

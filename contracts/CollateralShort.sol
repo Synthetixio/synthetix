@@ -66,9 +66,10 @@ contract CollateralShort is Collateral {
     function repayWithCollateral(
         address borrower,
         uint id,
-        uint amount
+        uint amount,
+        bool payInterest
     ) external {
-        repayWithCollateralInternal(borrower, msg.sender, id, amount);
+        repayWithCollateralInternal(borrower, msg.sender, id, amount, payInterest);
     }
 
     function draw(uint id, uint amount) external {
