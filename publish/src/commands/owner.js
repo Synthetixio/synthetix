@@ -35,17 +35,18 @@ const DEFAULTS = {
 };
 
 const owner = async ({
+	deploymentPath,
+	gasLimit,
+	gasPrice,
+	isContract,
 	network,
 	newOwner,
-	deploymentPath,
-	gasPrice,
-	gasLimit,
 	privateKey,
-	yes,
-	useOvm,
-	useFork,
 	providerUrl,
-	isContract,
+	skipActions = false,
+	useFork,
+	useOvm,
+	yes,
 }) => {
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
@@ -161,83 +162,85 @@ const owner = async ({
 		});
 	}
 
-	console.log(
-		gray('Running through operations during deployment that couldnt complete as not owner.')
-	);
-	// Read owner-actions.json + encoded data to stage tx's
-	for (const [key, entry] of Object.entries(ownerActions)) {
-		const { target, data, complete } = entry;
-		if (complete) continue;
+	if (!skipActions) {
+		console.log(
+			gray('Running through operations during deployment that couldnt complete as not owner.')
+		);
+		// Read owner-actions.json + encoded data to stage tx's
+		for (const [key, entry] of Object.entries(ownerActions)) {
+			const { target, data, complete } = entry;
+			if (complete) continue;
 
-		let existingTx;
-		if (isContract) {
-			existingTx = checkExistingPendingTx({
-				stagedTransactions,
-				target,
-				encodedData: data,
-				currentSafeNonce,
-			});
-
-			if (existingTx) continue;
-		}
-
-		await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
-
-		try {
+			let existingTx;
 			if (isContract) {
-				const { txHash, newNonce } = await getNewTransactionHash({
-					safeContract: protocolDaoContract,
-					data,
-					to: target,
-					sender: wallet.address,
-					network,
-					lastNonce,
+				existingTx = checkExistingPendingTx({
+					stagedTransactions,
+					target,
+					encodedData: data,
+					currentSafeNonce,
 				});
 
-				// sign txHash to get signature
-				const sig = await getSafeSignature({
-					privateKey,
-					providerUrl,
-					contractTxHash: txHash,
-				});
-
-				// save transaction and signature to Gnosis Safe API
-				await saveTransactionToApi({
-					safeContract: protocolDaoContract,
-					network,
-					data,
-					nonce: newNonce,
-					to: target,
-					sender: wallet.address,
-					transactionHash: txHash,
-					signature: sig,
-				});
-
-				// track lastNonce submitted
-				lastNonce = newNonce;
-			} else {
-				const params = {
-					to: target,
-					gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-					data,
-				};
-				if (gasLimit) {
-					params.gasLimit = ethers.BigNumber.from(gasLimit);
-				}
-
-				const tx = await wallet.sendTransaction(params);
-				const receipt = await tx.wait();
-
-				logTx(receipt);
+				if (existingTx) continue;
 			}
 
-			entry.complete = true;
-			fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
-		} catch (err) {
-			console.log(
-				gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
-			);
-			return;
+			await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
+
+			try {
+				if (isContract) {
+					const { txHash, newNonce } = await getNewTransactionHash({
+						safeContract: protocolDaoContract,
+						data,
+						to: target,
+						sender: wallet.address,
+						network,
+						lastNonce,
+					});
+
+					// sign txHash to get signature
+					const sig = await getSafeSignature({
+						privateKey,
+						providerUrl,
+						contractTxHash: txHash,
+					});
+
+					// save transaction and signature to Gnosis Safe API
+					await saveTransactionToApi({
+						safeContract: protocolDaoContract,
+						network,
+						data,
+						nonce: newNonce,
+						to: target,
+						sender: wallet.address,
+						transactionHash: txHash,
+						signature: sig,
+					});
+
+					// track lastNonce submitted
+					lastNonce = newNonce;
+				} else {
+					const params = {
+						to: target,
+						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+						data,
+					};
+					if (gasLimit) {
+						params.gasLimit = ethers.BigNumber.from(gasLimit);
+					}
+
+					const tx = await wallet.sendTransaction(params);
+					const receipt = await tx.wait();
+
+					logTx(receipt);
+				}
+
+				entry.complete = true;
+				fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
+			} catch (err) {
+				console.log(
+					gray(`Transaction failed, if sending txn to safe api failed retry manually - ${err}`)
+				);
+				return;
+			}
 		}
 	}
 

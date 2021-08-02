@@ -10,9 +10,11 @@ const Deployer = require('../Deployer');
 
 const {
 	toBytes32,
-	constants: { CONFIG_FILENAME, COMPILED_FOLDER, DEPLOYMENT_FILENAME, BUILD_FOLDER, ZERO_ADDRESS },
-	wrap,
+	constants: { CONFIG_FILENAME, COMPILED_FOLDER, DEPLOYMENT_FILENAME, BUILD_FOLDER },
 } = require('../../..');
+
+const nominateCmd = require('./nominate');
+const ownerCmd = require('./owner');
 
 const {
 	ensureNetwork,
@@ -33,24 +35,24 @@ const DEFAULTS = {
 };
 
 const replaceSynths = async ({
-	network,
 	buildPath = DEFAULTS.buildPath,
+	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
 	deploymentPath,
 	gasPrice = DEFAULTS.gasPrice,
 	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
-	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
-	subclass,
-	synthsToReplace,
+	network,
 	privateKey,
+	subclass,
+	useFork,
+	useOvm,
 	yes,
 }) => {
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
-	const { getTarget } = wrap({ network, fs, path });
-
 	const {
+		config,
 		configFile,
 		synths,
 		synthsFile,
@@ -61,13 +63,19 @@ const replaceSynths = async ({
 		network,
 	});
 
-	if (synthsToReplace.length < 1) {
-		console.log(yellow('No synths provided. Please use --synths-to-replace option'));
+	if (!subclass) {
+		console.log(yellow('Please provide a valid Synth subclass'));
 		return;
 	}
 
-	if (!subclass) {
-		console.log(yellow('Please provide a valid Synth subclass'));
+	const synthsToReplace = Object.entries(config)
+		.filter(([label, { deploy }]) => /Synth(s|i)[\w]+$/.test(label) && deploy)
+		.map(([label]) => label);
+
+	if (!synthsToReplace.length) {
+		console.log(
+			yellow(`No synths marked to deploy in the config file - please update it and try again.`)
+		);
 		return;
 	}
 
@@ -100,6 +108,7 @@ const replaceSynths = async ({
 
 	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
+		useFork,
 	});
 
 	// allow local deployments to use the private key passed as a CLI option
@@ -127,7 +136,7 @@ const replaceSynths = async ({
 
 	// TODO - this should be fixed in Deployer
 	deployer.deployedContracts.SafeDecimalMath = {
-		address: getTarget({ contract: 'SafeDecimalMath' }).address,
+		address: deployment.targets['SafeDecimalMath'].address,
 	};
 
 	const { account, signer } = deployer;
@@ -211,11 +220,6 @@ const replaceSynths = async ({
 		}
 	}
 
-	const { address: issuerAddress, source } = deployment.targets['Issuer'];
-	const { abi: issuerABI } = deployment.sources[source];
-	const Issuer = new ethers.Contract(issuerAddress, issuerABI, provider);
-
-	const resolverAddress = await Issuer.resolver();
 	const updatedSynths = JSON.parse(fs.readFileSync(synthsFile));
 
 	const runStep = async opts =>
@@ -227,37 +231,24 @@ const replaceSynths = async ({
 			explorerLinkPrefix,
 		});
 
+	const resolverAddress = deployment.targets['ReadProxyAddressResolver'].address;
+
+	const contractsToNominateUpgraderTo = [
+		deployment.targets['Issuer'].address,
+		deployment.targets['AddressResolver'],
+	];
+	const replacementSynths = [];
+
+	// DEPLOY NEW SYNTHS
+
 	for (const { currencyKey, Synth, Proxy, TokenState } of deployedSynths) {
 		const currencyKeyInBytes = toBytes32(currencyKey);
 		const synthContractName = `Synth${currencyKey}`;
 
-		// STEPS
-		// 1. set old ExternTokenState.setTotalSupply(0) // owner
-		await runStep({
-			contract: synthContractName,
-			target: Synth,
-			read: 'totalSupply',
-			expected: input => input === '0',
-			write: 'setTotalSupply',
-			writeArg: '0',
-		});
-
-		// 2. invoke Issuer.removeSynth(currencyKey) // owner
-		await runStep({
-			contract: 'Issuer',
-			target: Issuer,
-			read: 'synths',
-			readArg: currencyKeyInBytes,
-			expected: input => input === ZERO_ADDRESS,
-			write: 'removeSynth',
-			writeArg: currencyKeyInBytes,
-		});
-
-		// 3. use Deployer to deploy
-		const replacementSynth = await deployer.deployContract({
+		// deploy each synth
+		const newSynth = await deployer.deployContract({
 			name: synthContractName,
 			source: subclass,
-			force: true,
 			args: [
 				Proxy.address,
 				TokenState.address,
@@ -269,50 +260,61 @@ const replaceSynths = async ({
 				resolverAddress,
 			],
 		});
+		replacementSynths.push(newSynth);
 
-		// Ensure this new synth has its resolver cache set
-		const tx = await replacementSynth.rebuildCache({
-			gasLimit: Number(methodCallGasLimit),
-			gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
-		});
-		await tx.wait();
+		contractsToNominateUpgraderTo.push(
+			Synth.address,
+			Proxy.address,
+			TokenState.address,
+			newSynth.address
+		);
+	}
 
-		// 4. Issuer.addSynth(newone) // owner
-		await runStep({
-			contract: 'Issuer',
-			target: Issuer,
-			read: 'synths',
-			readArg: currencyKeyInBytes,
-			expected: input => input === replacementSynth.address,
-			write: 'addSynth',
-			writeArg: replacementSynth.address,
-		});
+	// NOMINATE CONTRACTS TO THE UPGRADER
+	const synthUpgrader = deployment.targets['SynthUpgrader'];
+	await nominateCmd.nominate({
+		// TODO: DOES NOT WORK - nominate expects contract names not addresses (and yet we
+		// need addresses as we have replaced a synth in the deployment file)
+		contracts: contractsToNominateUpgraderTo,
+		deploymentPath,
+		gasPrice,
+		gasLimit: methodCallGasLimit,
+		network,
+		newOwner: synthUpgrader.address,
+		useFork,
+		useOvm,
+	});
 
-		// 5. old TokenState.setAssociatedContract(newone) // owner
-		await runStep({
-			contract: `TokenState${currencyKey}`,
-			target: TokenState,
-			read: 'associatedContract',
-			expected: input => input === replacementSynth.address,
-			write: 'setAssociatedContract',
-			writeArg: replacementSynth.address,
-		});
+	// RUN MIGRATION
 
-		// 6. old Proxy.setTarget(newone) // owner
-		await runStep({
-			contract: `Proxy${currencyKey}`,
-			target: Proxy,
-			read: 'target',
-			expected: input => input === replacementSynth.address,
-			write: 'setTarget',
-			writeArg: replacementSynth.address,
-		});
+	// now finally invoke the upgrade for all synths
+	await runStep({
+		contract: 'SynthUpgrader',
+		target: synthUpgrader,
+		write: 'upgrade',
+		writeArgs: [
+			deployedSynths.map(({ currencyKey }) => toBytes32(`Synth${currencyKey}`)),
+			replacementSynths.map(synth => synth.address),
+		],
+	});
 
-		// Update the synths.json file
+	// UPDATE the synths.json file
+	for (const { currencyKey } of deployedSynths) {
 		const synthToUpdateInJSON = updatedSynths.find(({ name }) => name === currencyKey);
 		synthToUpdateInJSON.subclass = subclass;
 		fs.writeFileSync(synthsFile, stringify(updatedSynths));
 	}
+
+	// ACCEPT OWNERSHIP
+	await ownerCmd.owner({
+		deploymentPath,
+		gasPrice,
+		gasLimit: methodCallGasLimit,
+		network,
+		skipActions: true, // skip any owner actions - only do the accept ownerships
+		useFork,
+		useOvm,
+	});
 };
 
 module.exports = {
@@ -337,6 +339,11 @@ module.exports = {
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option(
+				'-k, --use-fork',
+				'Perform the deployment on a forked chain running on localhost (see fork command).',
+				false
+			)
 			// Bug with parseInt
 			// https://github.com/tj/commander.js/issues/523
 			// Commander by default accepts 2 parameters,
@@ -349,15 +356,6 @@ module.exports = {
 				DEFAULTS.methodCallGasLimit
 			)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
-			.option(
-				'-s, --synths-to-replace <value>',
-				'The list of synths to replace',
-				(val, memo) => {
-					memo.push(val);
-					return memo;
-				},
-				[]
-			)
 			.option('-u, --subclass <value>', 'Subclass to switch into')
 			.option(
 				'-v, --private-key [value]',
@@ -365,5 +363,7 @@ module.exports = {
 			)
 			.option('-x, --max-supply-to-purge-in-usd [value]', 'For PurgeableSynth, max supply', 1000)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+
 			.action(replaceSynths),
 };
