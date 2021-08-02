@@ -27,8 +27,8 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
     /* ========== VIEWS ========== */
 
-    function atomicTwapPriceWindow() external view returns (uint) {
-        return getAtomicTwapPriceWindow();
+    function atomicTwapWindow() external view returns (uint) {
+        return getAtomicTwapWindow();
     }
 
     function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address) {
@@ -80,7 +80,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
                 address(sourceEquivalent),
                 sourceAmountInEquivalent,
                 address(destEquivalent),
-                getAtomicTwapPriceWindow()
+                getAtomicTwapWindow()
             );
         // Similar to source amount, normalize decimals back to internal unit for output amount
         uint pDexValue = (twapValueInEquivalent * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());

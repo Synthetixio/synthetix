@@ -24,7 +24,7 @@ const { setupContract, setupAllContracts } = require('./setup');
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
-	defaults: { RATE_STALE_PERIOD, ATOMIC_TWAP_PRICE_WINDOW },
+	defaults: { RATE_STALE_PERIOD, ATOMIC_TWAP_WINDOW },
 } = require('../..');
 
 const { toBN } = require('web3-utils');
@@ -3021,17 +3021,17 @@ contract('Exchange Rates', async accounts => {
 			});
 		});
 
-		describe('atomicTwapPriceWindow', () => {
-			it('atomicTwapPriceWindow default is set correctly', async () => {
-				assert.bnEqual(await instance.atomicTwapPriceWindow(), ATOMIC_TWAP_PRICE_WINDOW);
+		describe('atomicTwapWindow', () => {
+			it('atomicTwapWindow default is set correctly', async () => {
+				assert.bnEqual(await instance.atomicTwapWindow(), ATOMIC_TWAP_WINDOW);
 			});
 			describe('when price window is changed in the system settings', () => {
-				const newPriceWindow = toBN(ATOMIC_TWAP_PRICE_WINDOW).add(toBN('1'));
+				const newTwapWindow = toBN(ATOMIC_TWAP_WINDOW).add(toBN('1'));
 				beforeEach(async () => {
-					await systemSettings.setAtomicTwapPriceWindow(newPriceWindow, { from: owner });
+					await systemSettings.setAtomicTwapWindow(newTwapWindow, { from: owner });
 				});
-				it('then atomicTwapPriceWindow is correctly updated', async () => {
-					assert.bnEqual(await instance.atomicTwapPriceWindow(), newPriceWindow);
+				it('then atomicTwapWindow is correctly updated', async () => {
+					assert.bnEqual(await instance.atomicTwapWindow(), newTwapWindow);
 				});
 			});
 		});

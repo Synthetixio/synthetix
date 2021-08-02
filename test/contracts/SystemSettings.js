@@ -54,7 +54,7 @@ contract('SystemSettings', async accounts => {
 				'setEtherWrapperMintFeeRate',
 				'setEtherWrapperBurnFeeRate',
 				'setAtomicMaxVolumePerBlock',
-				'setAtomicTwapPriceWindow',
+				'setAtomicTwapWindow',
 				'setAtomicEquivalentForDexPricing',
 				'setAtomicExchangeFeeRate',
 				'setAtomicPriceBuffer',
@@ -932,12 +932,12 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
-	describe('setAtomicTwapPriceWindow', () => {
-		const priceWindow = toBN('3600'); // 1 hour
+	describe('setAtomicTwapWindow', () => {
+		const twapWindow = toBN('3600'); // 1 hour
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setAtomicTwapPriceWindow,
-				args: [priceWindow],
+				fnc: systemSettings.setAtomicTwapWindow,
+				args: [twapWindow],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -945,17 +945,17 @@ contract('SystemSettings', async accounts => {
 		});
 
 		it('should revert if window is below minimum', async () => {
-			const minimum = await systemSettings.MIN_ATOMIC_TWAP_PRICE_WINDOW();
+			const minimum = await systemSettings.MIN_ATOMIC_TWAP_WINDOW();
 			await assert.revert(
-				systemSettings.setAtomicTwapPriceWindow(minimum.sub(toBN('1')), { from: owner }),
+				systemSettings.setAtomicTwapWindow(minimum.sub(toBN('1')), { from: owner }),
 				'Atomic twap window under minimum 30 min'
 			);
 		});
 
 		it('should revert if window is above maximum', async () => {
-			const maximum = await systemSettings.MAX_ATOMIC_TWAP_PRICE_WINDOW();
+			const maximum = await systemSettings.MAX_ATOMIC_TWAP_WINDOW();
 			await assert.revert(
-				systemSettings.setAtomicTwapPriceWindow(maximum.add(toBN('1')), { from: owner }),
+				systemSettings.setAtomicTwapWindow(maximum.add(toBN('1')), { from: owner }),
 				'Atomic twap window exceed maximum 1 day'
 			);
 		});
@@ -963,21 +963,21 @@ contract('SystemSettings', async accounts => {
 		describe('when successfully invoked', () => {
 			let txn;
 			beforeEach(async () => {
-				txn = await systemSettings.setAtomicTwapPriceWindow(priceWindow, { from: owner });
+				txn = await systemSettings.setAtomicTwapWindow(twapWindow, { from: owner });
 			});
 
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.atomicTwapPriceWindow(), priceWindow);
+				assert.bnEqual(await systemSettings.atomicTwapWindow(), twapWindow);
 			});
 
-			it('and emits an AtomicTwapPriceWindowUpdated event', async () => {
-				assert.eventEqual(txn, 'AtomicTwapPriceWindowUpdated', [priceWindow]);
+			it('and emits an AtomicTwapWindowUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicTwapWindowUpdated', [twapWindow]);
 			});
 
 			it('allows to be changed', async () => {
-				const newPriceWindow = priceWindow.add(toBN('1'));
-				await systemSettings.setAtomicTwapPriceWindow(newPriceWindow, { from: owner });
-				assert.bnEqual(await systemSettings.atomicTwapPriceWindow(), newPriceWindow);
+				const newTwapWindow = twapWindow.add(toBN('1'));
+				await systemSettings.setAtomicTwapWindow(newTwapWindow, { from: owner });
+				assert.bnEqual(await systemSettings.atomicTwapWindow(), newTwapWindow);
 			});
 		});
 	});

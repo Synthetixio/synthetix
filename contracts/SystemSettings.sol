@@ -50,8 +50,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     uint public constant MAX_ATOMIC_VOLUME_PER_BLOCK = uint192(-1);
 
     // TWAP window must be between 30min and 1 day.
-    uint public constant MIN_ATOMIC_TWAP_PRICE_WINDOW = 1800;
-    uint public constant MAX_ATOMIC_TWAP_PRICE_WINDOW = 86400;
+    uint public constant MIN_ATOMIC_TWAP_WINDOW = 1800;
+    uint public constant MAX_ATOMIC_TWAP_WINDOW = 86400;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -166,8 +166,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP-120 Atomic exchanges
     // time window (in seconds) for TWAP prices when considered for atomic exchanges
-    function atomicTwapPriceWindow() external view returns (uint) {
-        return getAtomicTwapPriceWindow();
+    function atomicTwapWindow() external view returns (uint) {
+        return getAtomicTwapWindow();
     }
 
     // SIP-120 Atomic exchanges
@@ -348,11 +348,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicMaxVolumePerBlockUpdated(_maxVolume);
     }
 
-    function setAtomicTwapPriceWindow(uint _window) external onlyOwner {
-        require(_window >= MIN_ATOMIC_TWAP_PRICE_WINDOW, "Atomic twap window under minimum 30 min");
-        require(_window <= MAX_ATOMIC_TWAP_PRICE_WINDOW, "Atomic twap window exceed maximum 1 day");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_TWAP_PRICE_WINDOW, _window);
-        emit AtomicTwapPriceWindowUpdated(_window);
+    function setAtomicTwapWindow(uint _window) external onlyOwner {
+        require(_window >= MIN_ATOMIC_TWAP_WINDOW, "Atomic twap window under minimum 30 min");
+        require(_window <= MAX_ATOMIC_TWAP_WINDOW, "Atomic twap window exceed maximum 1 day");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ATOMIC_TWAP_WINDOW, _window);
+        emit AtomicTwapWindowUpdated(_window);
     }
 
     function setAtomicEquivalentForDexPricing(bytes32 _currencyKey, address _equivalent) external onlyOwner {
@@ -403,7 +403,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
     event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
-    event AtomicTwapPriceWindowUpdated(uint newWindow);
+    event AtomicTwapWindowUpdated(uint newWindow);
     event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
     event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);

@@ -216,7 +216,7 @@ const defaults = {
 	},
 	*/
 	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${1e6}`), // 1 million
-	ATOMIC_TWAP_PRICE_WINDOW: '3600', // 1 hour
+	ATOMIC_TWAP_WINDOW: '3600', // 1 hour
 	/**
 	 * Do these need defaults?
 	ATOMIC_PRICE_BUFFERS: {

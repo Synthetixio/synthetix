@@ -41,7 +41,7 @@ interface ISystemSettings {
 
     function atomicMaxVolumePerBlock() external view returns (uint);
 
-    function atomicTwapPriceWindow() external view returns (uint);
+    function atomicTwapWindow() external view returns (uint);
 
     function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address);
 

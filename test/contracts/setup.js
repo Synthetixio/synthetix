@@ -21,7 +21,7 @@ const {
 		MINIMUM_STAKE_TIME,
 		DEBT_SNAPSHOT_STALE_TIME,
 		ATOMIC_MAX_VOLUME_PER_BLOCK,
-		ATOMIC_TWAP_PRICE_WINDOW,
+		ATOMIC_TWAP_WINDOW,
 		CROSS_DOMAIN_DEPOSIT_GAS_LIMIT,
 		CROSS_DOMAIN_REWARD_GAS_LIMIT,
 		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
@@ -1087,7 +1087,7 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setAtomicMaxVolumePerBlock(ATOMIC_MAX_VOLUME_PER_BLOCK, {
 				from: owner,
 			}),
-			returnObj['SystemSettings'].setAtomicTwapPriceWindow(ATOMIC_TWAP_PRICE_WINDOW, {
+			returnObj['SystemSettings'].setAtomicTwapWindow(ATOMIC_TWAP_WINDOW, {
 				from: owner,
 			}),
 		]);

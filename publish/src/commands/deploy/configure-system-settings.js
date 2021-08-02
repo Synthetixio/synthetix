@@ -314,10 +314,10 @@ module.exports = async ({
 		await runStep({
 			contract: 'SystemSettings',
 			target: SystemSettings,
-			read: 'atomicTwapPriceWindow',
+			read: 'atomicTwapWindow',
 			expected: input => input !== '0', // only change if zero
-			write: 'setAtomicTwapPriceWindow',
-			writeArg: await getDeployParameter('ATOMIC_TWAP_PRICE_WINDOW'),
+			write: 'setAtomicTwapWindow',
+			writeArg: await getDeployParameter('ATOMIC_TWAP_WINDOW'),
 		});
 	}
 };
