@@ -330,6 +330,9 @@ const deploy = async ({
 		deployer,
 		runStep,
 		useOvm,
+		network,
+		deploymentPath,
+		loadAndCheckRequiredSources,
 	});
 
 	await deployDappUtils({

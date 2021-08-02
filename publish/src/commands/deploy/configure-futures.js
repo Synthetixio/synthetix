@@ -51,7 +51,7 @@ module.exports = async ({
 		comment: 'Set the reward for liquidating a futures position (SIP-80)',
 	});
 
-	const futuresAssets = Object.values(futuresMarkets).map(x => x.asset);
+	const futuresAssets = futuresMarkets.map(x => x.asset);
 
 	// Some market parameters invoke a recomputation of the funding rate, and
 	// thus require exchange rates to be fresh. We assume production networks
