@@ -25,9 +25,8 @@ task('status', 'Query state of the system on any network')
 	.addOptionalParam('block', 'Block number to check again')
 	.addOptionalParam('providerUrl', 'The http provider to use for communicating with the blockchain')
 	.addOptionalParam('deploymentPath', 'Specify the path to the deployment data directory')
-	.setAction(async (taskArguments, hre, runSuper) => {
-		_commonInputAndSetup({ hre, taskArguments });
-		const statusConf = hre.config.status;
+	.setAction(async (taskArguments, hre) => {
+		const statusConf = _commonInputAndSetup({ hre, taskArguments });
 		logHeader({ statusConf });
 
 		const actionNames = Object.values(ActionNames);
@@ -67,4 +66,6 @@ function _commonInputAndSetup({ hre, taskArguments }) {
 
 	statusConf.provider = setupProvider(statusConf);
 	ensureDeploymentPath(statusConf.deploymentPath);
+
+	return statusConf;
 }
