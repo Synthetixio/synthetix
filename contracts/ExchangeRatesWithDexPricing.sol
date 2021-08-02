@@ -83,10 +83,10 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
                 getAtomicTwapPriceWindow()
             );
         // Similar to source amount, normalize decimals back to internal unit for output amount
-        uint pTwapValue = (twapValueInEquivalent * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());
+        uint pDexValue = (twapValueInEquivalent * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());
 
         // Final value is minimum output between P_CLBUF and P_TWAP
-        value = Math.min(pClbufValue, pTwapValue);
+        value = Math.min(pClbufValue, pDexValue);
     }
 
     /* ========== EVENTS ========== */

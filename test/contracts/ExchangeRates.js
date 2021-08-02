@@ -3072,11 +3072,11 @@ contract('Exchange Rates', async accounts => {
 
 			function itGivesTheCorrectRates({
 				inputs: { amountIn, srcToken, destToken },
-				rates: { pTwap, pCl: pClRaw },
+				rates: { pDex, pCl: pClRaw },
 				settings: { clBuffer },
 				expected: { amountOut: expectedAmountOut, rateTypes: expectedRateTypes },
 			}) {
-				describe(`P_TWAP of ${pTwap}, P_CL of ${pClRaw}, and CL_BUFFER of ${clBuffer}bps`, () => {
+				describe(`P_DEX of ${pDex}, P_CL of ${pClRaw}, and CL_BUFFER of ${clBuffer}bps`, () => {
 					let rates;
 
 					// Array-ify expected output types to allow for multiple rates types to be equivalent
@@ -3085,13 +3085,13 @@ contract('Exchange Rates', async accounts => {
 						: [expectedRateTypes];
 
 					// Adjust inputs to unit
-					pTwap = toUnit(pTwap);
+					pDex = toUnit(pDex);
 					clBuffer = toUnit(clBuffer).div(toBN('10000')); // bps to unit percentage
 
 					const pClIn8 = convertToDecimals(pClRaw, 8);
 					const pClIn18 = toUnit(pClRaw);
 
-					// For simplicity and to align it with pTwap, the given pCl rate is priced on the dest token.
+					// For simplicity and to align it with pDex, the given pCl rate is priced on the dest token.
 					// Internally, however, the CL aggregators are expected to be priced in USD and with 8 decimals.
 					// So if the source token is USD, we need to inverse the given CL rate for the CL aggregator.
 					const pClInUsdIn8 = srcToken === sUSD ? divideDecimal(unitIn8, pClIn8, unitIn8) : pClIn8;
@@ -3105,12 +3105,12 @@ contract('Exchange Rates', async accounts => {
 							? divideDecimal(amountIn, pClInUsdIn8, unitIn8) // x usd / rate (usd/dest)
 							: multiplyDecimal(amountIn, pClIn18); // x dest * rate (usd/dest)
 					const potentialOutputs = {
-						pTwap: multiplyDecimal(amountIn, pTwap),
+						pDex: multiplyDecimal(amountIn, pDex),
 						pClBuf: multiplyDecimal(pClOut, one.sub(clBuffer)),
 					};
 
 					beforeEach(async () => {
-						await dexPriceAggregator.setAssetToAssetRate(pTwap);
+						await dexPriceAggregator.setAssetToAssetRate(pDex);
 						await ethAggregator.setLatestAnswer(pClInUsdIn8, await currentTime());
 
 						await systemSettings.setAtomicPriceBuffer(destToken, clBuffer, { from: owner });
@@ -3237,11 +3237,11 @@ contract('Exchange Rates', async accounts => {
 				const srcToken = sUSD;
 				const destToken = sETH;
 
-				// P_TWAP of 0.01, P_CL of 0.011, and CL_BUFFER of 50bps
+				// P_DEX of 0.01, P_CL of 0.011, and CL_BUFFER of 50bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '0.01',
+						pDex: '0.01',
 						pCl: '0.011',
 					},
 					settings: {
@@ -3249,15 +3249,15 @@ contract('Exchange Rates', async accounts => {
 					},
 					expected: {
 						amountOut: toUnit('10'),
-						rateTypes: 'pTwap',
+						rateTypes: 'pDex',
 					},
 				});
 
-				// P_TWAP of 0.01, P_CL of 0.0099, and CL_BUFFER of 50bps
+				// P_DEX of 0.01, P_CL of 0.0099, and CL_BUFFER of 50bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '0.01',
+						pDex: '0.01',
 						pCl: '0.0099',
 					},
 					settings: {
@@ -3269,11 +3269,11 @@ contract('Exchange Rates', async accounts => {
 					},
 				});
 
-				// Given P_TWAP of 0.01, P_CL of 0.01, and CL_BUFFER of 50bps
+				// Given P_DEX of 0.01, P_CL of 0.01, and CL_BUFFER of 50bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '0.01',
+						pDex: '0.01',
 						pCl: '0.01',
 					},
 					settings: {
@@ -3285,11 +3285,11 @@ contract('Exchange Rates', async accounts => {
 					},
 				});
 
-				// Given P_TWAP of 0.0099, P_CL of 0.01, and CL_BUFFER of 200bps
+				// Given P_DEX of 0.0099, P_CL of 0.01, and CL_BUFFER of 200bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '0.0099',
+						pDex: '0.0099',
 						pCl: '0.01',
 					},
 					settings: {
@@ -3301,11 +3301,11 @@ contract('Exchange Rates', async accounts => {
 					},
 				});
 
-				// Given P_TWAP of 0.0099, P_CL of 0.01, and CL_BUFFER of 0bps
+				// Given P_DEX of 0.0099, P_CL of 0.01, and CL_BUFFER of 0bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '0.0099',
+						pDex: '0.0099',
 						pCl: '0.01',
 					},
 					settings: {
@@ -3313,15 +3313,15 @@ contract('Exchange Rates', async accounts => {
 					},
 					expected: {
 						amountOut: toUnit('9.9'),
-						rateTypes: 'pTwap',
+						rateTypes: 'pDex',
 					},
 				});
 
-				// P_TWAP of 0.01, P_SPOT of 0.01, P_CL of 0.01, and CL_BUFFER of 0bps
+				// P_DEX of 0.01, P_SPOT of 0.01, P_CL of 0.01, and CL_BUFFER of 0bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '0.01',
+						pDex: '0.01',
 						pCl: '0.01',
 					},
 					settings: {
@@ -3329,7 +3329,7 @@ contract('Exchange Rates', async accounts => {
 					},
 					expected: {
 						amountOut: toUnit('10'),
-						rateTypes: ['pTwap', 'pClBuf'],
+						rateTypes: ['pDex', 'pClBuf'],
 					},
 				});
 			});
@@ -3339,11 +3339,11 @@ contract('Exchange Rates', async accounts => {
 				const srcToken = sETH;
 				const destToken = sUSD;
 
-				// P_TWAP of 100, P_CL of 110, and CL_BUFFER of 50bps
+				// P_DEX of 100, P_CL of 110, and CL_BUFFER of 50bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '100',
+						pDex: '100',
 						pCl: '110',
 					},
 					settings: {
@@ -3351,15 +3351,15 @@ contract('Exchange Rates', async accounts => {
 					},
 					expected: {
 						amountOut: toUnit('1000'),
-						rateTypes: 'pTwap',
+						rateTypes: 'pDex',
 					},
 				});
 
-				// P_TWAP of 100, P_CL of 99, and CL_BUFFER of 50bps
+				// P_DEX of 100, P_CL of 99, and CL_BUFFER of 50bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '100',
+						pDex: '100',
 						pCl: '99',
 					},
 					settings: {
@@ -3371,11 +3371,11 @@ contract('Exchange Rates', async accounts => {
 					},
 				});
 
-				// P_TWAP of 100, P_CL of 100, and CL_BUFFER of 50bps
+				// P_DEX of 100, P_CL of 100, and CL_BUFFER of 50bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '100',
+						pDex: '100',
 						pCl: '100',
 					},
 					settings: {
@@ -3387,11 +3387,11 @@ contract('Exchange Rates', async accounts => {
 					},
 				});
 
-				// P_TWAP of 99, P_CL of 100, and CL_BUFFER of 200bps
+				// P_DEX of 99, P_CL of 100, and CL_BUFFER of 200bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '99',
+						pDex: '99',
 						pCl: '100',
 					},
 					settings: {
@@ -3403,11 +3403,11 @@ contract('Exchange Rates', async accounts => {
 					},
 				});
 
-				// P_TWAP of 99, P_CL of 100, and CL_BUFFER of 0bps
+				// P_DEX of 99, P_CL of 100, and CL_BUFFER of 0bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '99',
+						pDex: '99',
 						pCl: '100',
 					},
 					settings: {
@@ -3415,15 +3415,15 @@ contract('Exchange Rates', async accounts => {
 					},
 					expected: {
 						amountOut: toUnit('990'),
-						rateTypes: 'pTwap',
+						rateTypes: 'pDex',
 					},
 				});
 
-				// P_TWAP of 100, P_CL of 100, and CL_BUFFER of 0bps
+				// P_DEX of 100, P_CL of 100, and CL_BUFFER of 0bps
 				itGivesTheCorrectRates({
 					inputs: { amountIn, srcToken, destToken },
 					rates: {
-						pTwap: '100',
+						pDex: '100',
 						pCl: '100',
 					},
 					settings: {
@@ -3431,7 +3431,7 @@ contract('Exchange Rates', async accounts => {
 					},
 					expected: {
 						amountOut: toUnit('1000'),
-						rateTypes: ['pTwap', 'pClBuf'],
+						rateTypes: ['pDex', 'pClBuf'],
 					},
 				});
 			});
@@ -3439,14 +3439,14 @@ contract('Exchange Rates', async accounts => {
 			describe('when both tokens have a price buffer set', () => {
 				const pCl = toUnit('100');
 				const pClAggregator = convertToDecimals(100, 8);
-				const pTwap = pCl.mul(toBN('2'));
+				const pDex = pCl.mul(toBN('2'));
 				const susdBuffer = toUnit('0.003');
 				const sethBuffer = toUnit('0.005');
 
 				const amountIn = toUnit('10');
 
 				beforeEach(async () => {
-					await dexPriceAggregator.setAssetToAssetRate(pTwap);
+					await dexPriceAggregator.setAssetToAssetRate(pDex);
 					await ethAggregator.setLatestAnswer(pClAggregator, await currentTime());
 
 					await systemSettings.setAtomicPriceBuffer(sUSD, susdBuffer, { from: owner });
