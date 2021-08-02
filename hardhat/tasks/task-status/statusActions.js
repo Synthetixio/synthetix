@@ -1,6 +1,9 @@
+const fs = require('fs');
+const path = require('path');
+const ethers = require('ethers');
 const { green, cyan, bgRed } = require('chalk');
-const { getContract } = require('../util/getContract');
-const { formatEther, formatBytes32String, toUtf8String } = require('ethers').utils;
+
+const { wrap } = require('../../..');
 
 const ActionNames = {
 	getSynthetix: 'Synthetix',
@@ -18,6 +21,12 @@ const logSection = sectionName => {
 	console.log(green(`\n=== ${sectionName}: ===`));
 };
 
+const logActionError = actionName => {
+	logSection(actionName);
+
+	logItem('Action not recognized', actionName, 1, bgRed);
+};
+
 const logItem = (itemName, itemValue, indent = 1, color = undefined) => {
 	const hasValue = itemValue !== undefined;
 	const spaces = '  '.repeat(indent);
@@ -29,6 +38,16 @@ const logItem = (itemName, itemValue, indent = 1, color = undefined) => {
 	} else {
 		console.log(spaces, name, value);
 	}
+};
+
+const logHeader = ({ statusConf }) => {
+	logSection('Info');
+
+	logItem('Network', statusConf.network);
+	logItem('Deployment', statusConf.deploymentPath);
+	logItem('Optimism', statusConf.useOvm);
+	logItem('Block #', statusConf.blockOptions.blockTag);
+	logItem('Provider', statusConf.provider.connection.url);
 };
 
 const actions = {
@@ -129,7 +148,7 @@ const actions = {
 				deploymentPath,
 			});
 
-			const supply = formatEther(await SupplySchedule.mintableSupply(blockOptions));
+			const supply = ethers.utils.formatEther(await SupplySchedule.mintableSupply(blockOptions));
 			logItem('SupplySchedule.mintableSupply', supply);
 
 			const lastMint = (await SupplySchedule.lastMintEvent(blockOptions)).toNumber();
@@ -255,7 +274,7 @@ const actions = {
 		const getAddress = async ({ contract }) => {
 			logItem(
 				`AddressResolver.getAddress(${contract})`,
-				await AddressResolver.getAddress(formatBytes32String(contract), blockOptions)
+				await AddressResolver.getAddress(ethers.utils.formatBytes32String(contract), blockOptions)
 			);
 		};
 
@@ -308,15 +327,18 @@ const actions = {
 
 		let currencyKeys;
 		if (listedCurrencies) {
-			currencyKeys = listedCurrencies.map(e => formatBytes32String(e));
+			currencyKeys = listedCurrencies.map(e => ethers.utils.formatBytes32String(e));
 		} else {
-			currencyKeys = [...(await Issuer.availableCurrencyKeys()), formatBytes32String('SNX')];
+			currencyKeys = [
+				...(await Issuer.availableCurrencyKeys()),
+				ethers.utils.formatBytes32String('SNX'),
+			];
 		}
 
 		const now = Math.floor(new Date().getTime() / 60000);
 
 		const logRate = async currencyKey => {
-			const currency = toUtf8String(currencyKey);
+			const currency = ethers.utils.toUtf8String(currencyKey);
 			const rate = await ExchangeRates.rateForCurrency(currencyKey, blockOptions);
 			const isInvalid = await ExchangeRates.rateIsInvalid(currencyKey, blockOptions);
 			const updated = await ExchangeRates.lastRateUpdateTimes(currencyKey, blockOptions);
@@ -324,7 +346,7 @@ const actions = {
 
 			logItem(
 				`${currency} rate`,
-				`${formatEther(rate)} (Updated ${sinceUpdate} minutes ago)`,
+				`${ethers.utils.formatEther(rate)} (Updated ${sinceUpdate} minutes ago)`,
 				1,
 				isInvalid ? bgRed : undefined
 			);
@@ -336,19 +358,25 @@ const actions = {
 	},
 };
 
-function logHeader({ statusConf }) {
-	logSection('Info');
+function getContract({
+	contract,
+	network = 'mainnet',
+	useOvm = false,
+	deploymentPath = undefined,
+	provider,
+}) {
+	const { getSource, getTarget } = wrap({
+		network,
+		deploymentPath,
+		fs,
+		path,
+	});
 
-	logItem('Network', statusConf.network);
-	logItem('Deployment', statusConf.deploymentPath);
-	logItem('Optimism', statusConf.useOvm);
-	logItem('Block #', statusConf.blockOptions.blockTag);
-	logItem('Provider', statusConf.provider.connection.url);
-}
-function logActionError({ actionName }) {
-	logSection(actionName);
-
-	logItem('Action not recognized', actionName, 1, bgRed);
+	return new ethers.Contract(
+		getTarget({ contract, network, useOvm, deploymentPath }).address,
+		getSource({ contract, network, useOvm, deploymentPath }).abi,
+		provider
+	);
 }
 
 module.exports = {

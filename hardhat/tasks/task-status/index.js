@@ -1,7 +1,8 @@
 const { task } = require('hardhat/config');
-const { setupProvider } = require('../util/setupProvider');
-const { ensureDeploymentPath, getDeploymentPathForNetwork } = require('../../publish/src/util');
-const { logHeader, logActionError, actions, ActionNames } = require('../util/statusActions');
+const ethers = require('ethers');
+const { ensureNetwork, loadConnections } = require('../../../publish/src/util');
+const { ensureDeploymentPath, getDeploymentPathForNetwork } = require('../../../publish/src/util');
+const { logHeader, logActionError, actions, ActionNames } = require('./statusActions');
 
 const defaultActions = [
 	'Synthetix',
@@ -35,7 +36,7 @@ task('status', 'Query state of the system on any network')
 			if (actionNames.includes(action)) {
 				await actions[action](statusConf);
 			} else {
-				logActionError({ actionName: action });
+				logActionError(action);
 			}
 		}
 	});
@@ -64,8 +65,18 @@ function _commonInputAndSetup({ hre, taskArguments }) {
 	statusConf.deploymentPath =
 		taskArguments.deploymentPath || getDeploymentPathForNetwork({ network: taskArguments.network });
 
-	statusConf.provider = setupProvider(statusConf);
+	statusConf.provider = _setupProvider(statusConf);
 	ensureDeploymentPath(statusConf.deploymentPath);
 
 	return statusConf;
+}
+
+function _setupProvider({ providerUrl, network }) {
+	ensureNetwork(network);
+	const { providerUrl: envProviderUrl } = loadConnections({
+		network,
+	});
+
+	const provider = new ethers.providers.JsonRpcProvider(providerUrl || envProviderUrl);
+	return provider;
 }
