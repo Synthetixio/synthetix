@@ -3,15 +3,15 @@ const { getContract } = require('../util/getContract');
 const { formatEther, formatBytes32String, toUtf8String } = require('ethers').utils;
 
 const ActionNames = {
-	getSynthetix: 'getSynthetix',
-	getDebtCache: 'getDebtCache',
-	getSynthetixState: 'getSynthetixState',
-	getSupplySchedule: 'getSupplySchedule',
-	getFeePool: 'getFeePool',
-	getFeePoolState: 'getFeePoolState',
-	getAddressResolver: 'getAddressResolver',
-	getSystemSettings: 'getSystemSettings',
-	getExchangeRates: 'getExchangeRates',
+	getSynthetix: 'Synthetix',
+	getDebtCache: 'DebtCache',
+	getSynthetixState: 'SynthetixState',
+	getSupplySchedule: 'SupplySchedule',
+	getFeePool: 'FeePool',
+	getFeePoolState: 'FeePoolState',
+	getAddressResolver: 'AddressResolver',
+	getSystemSettings: 'SystemSettings',
+	getExchangeRates: 'ExchangeRates',
 };
 
 const logSection = sectionName => {
@@ -75,9 +75,9 @@ const actions = {
 
 		const info = await DebtCache.cacheInfo();
 
-		logItem('DebgCache.info.isInvalid', info.isInvalid, 1, info.isInvalid ? bgRed : undefined);
+		logItem('DebtCache.info.isInvalid', info.isInvalid, 1, info.isInvalid ? bgRed : undefined);
 
-		logItem('DebgCache.info.isStale', info.isStale, 1, info.isStale ? bgRed : undefined);
+		logItem('DebtCache.info.isStale', info.isStale, 1, info.isStale ? bgRed : undefined);
 	},
 
 	[ActionNames.getSynthetixState]: async function({
@@ -97,6 +97,10 @@ const actions = {
 			provider,
 			deploymentPath,
 		});
+
+		if (!addresses || addresses.length === 0) {
+			console.log(green('  No Addresses defined'));
+		}
 
 		for (const address of addresses) {
 			console.log(green('  Address:'), address);
@@ -215,6 +219,10 @@ const actions = {
 			provider,
 			deploymentPath,
 		});
+
+		if (!addresses || addresses.length === 0) {
+			console.log(green('  No Addresses defined'));
+		}
 
 		for (const address of addresses) {
 			console.log(green('  Address:'), address);

@@ -4,15 +4,15 @@ const { ensureDeploymentPath, getDeploymentPathForNetwork } = require('../../pub
 const { logHeader, logActionError, actions, ActionNames } = require('../util/statusActions');
 
 const defaultActions = [
-	'getSynthetix',
-	'getDebtCache',
-	'getSynthetixState',
-	'getSupplySchedule',
-	'getFeePool',
-	'getFeePoolState',
-	'getAddressResolver',
-	'getSystemSettings',
-	'getExchangeRates',
+	'Synthetix',
+	'DebtCache',
+	'SynthetixState',
+	'SupplySchedule',
+	'FeePool',
+	'FeePoolState',
+	'AddressResolver',
+	'SystemSettings',
+	'ExchangeRates',
 ];
 
 task('status', 'Query state of the system on any network')
@@ -21,7 +21,7 @@ task('status', 'Query state of the system on any network')
 	.addOptionalParam('targetNetwork', 'The network to run off', 'mainnet')
 	.addOptionalParam('addresses', 'Addresses to perform particular checks on')
 	.addOptionalParam('currencyKeys', 'Keys to get exchange rate on')
-	.addOptionalParam('executeActions', 'Areas to get state')
+	.addOptionalParam('executeActions', 'Contracts to query state')
 	.addOptionalParam('block', 'Block number to check again')
 	.addOptionalParam('providerUrl', 'The http provider to use for communicating with the blockchain')
 	.addOptionalParam('deploymentPath', 'Specify the path to the deployment data directory')
