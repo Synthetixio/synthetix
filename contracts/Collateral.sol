@@ -637,9 +637,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 9. Process the payment and pay the exchange fees if needed.
         loan = _processPayment(loan, payment);
-        if (fee > 0) {
-            _payFees(fee, sUSD);
-        }
+        _payFees(fee, sUSD);
 
         // 10. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
