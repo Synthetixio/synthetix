@@ -1242,12 +1242,67 @@ contract('FuturesMarket', accounts => {
 
 			for (const side of ['long', 'short']) {
 				describe(`${side}`, () => {
-					it.skip('Orders are blocked if they exceed max market size', async () => {
+					let maxSize, maxMargin;
+					const leverage = side === 'long' ? toUnit('10') : toUnit('-10');
+
+					beforeEach(async () => {
+						await futuresMarketSettings.setMaxMarketValue(baseAsset, toUnit('10000'), {
+							from: owner,
+						});
+						await setPrice(baseAsset, toUnit('1'));
+
+						const maxOrderSizes = await futuresMarket.maxOrderSizes();
+						maxSize = maxOrderSizes[side];
+						maxMargin = maxSize.div(toBN(10));
+					});
+
+					it('Orders are blocked if they exceed max market size', async () => {
+						await futuresMarket.modifyMargin(maxMargin.add(toUnit('11')), { from: trader });
+						await assert.revert(
+							futuresMarket.submitOrder(leverage, { from: trader }),
+							'Max market size exceeded'
+						);
+
+						// orders are allowed a bit over the formal limit to account for rounding etc.
+						await futuresMarket.modifyMargin(toUnit('1').neg(), { from: trader });
+						await futuresMarket.submitOrder(leverage, { from: trader });
+					});
+
+					it.skip('Max order size is caught when an account has a position open already', async () => {
 						assert.isTrue(false);
 					});
 
-					it.skip('Orders are allowed a touch of extra size to account for price motion', async () => {
-						assert.isTrue(false);
+					it('Orders are allowed a touch of extra size to account for price motion on confirmation', async () => {
+						// Ensure there's some existing order size for prices to shunt around.
+						await futuresMarket.modifyMargin(maxMargin.div(toBN(10)).mul(toBN(7)), {
+							from: trader2,
+						});
+						await futuresMarket.submitOrder(leverage, { from: trader2 });
+						await setPrice(baseAsset, toUnit('1'));
+						await futuresMarket.confirmOrder(trader2);
+
+						await futuresMarket.modifyMargin(maxMargin.div(toBN(10)).mul(toBN(3)), {
+							from: trader,
+						});
+						await futuresMarket.submitOrder(leverage, { from: trader });
+
+						// The price moves, so the value of the already-confirmed order, shunts out the pending one.
+						await setPrice(baseAsset, toUnit('1.08'));
+
+						assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+						assert.equal(
+							await futuresMarket.orderStatus(trader),
+							orderStatuses.MaxMarketSizeExceeded
+						);
+						await assert.revert(futuresMarket.confirmOrder(trader), 'Max market size exceeded');
+
+						// Price moves back partially and allows the order to confirm
+						await setPrice(baseAsset, toUnit('1.04'));
+
+						assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+						assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.Ok);
+						await futuresMarket.confirmOrder(trader);
+						assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.NotPending);
 					});
 
 					it.skip('Orders collectively slightly above the limit can confirm, but substantially above it cannot be', async () => {

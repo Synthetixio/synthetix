@@ -331,14 +331,21 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return (_orderSize(price, _remainingMargin(position, fundingSequence.length, price), order.leverage), isInvalid);
     }
 
-    function _orderSizeSmallEnough(
-        int oldSize,
-        int newSize,
-        bool sameSide,
+    function _maxSize(
+        uint price,
+        uint maxValue,
         uint play
+    ) internal pure returns (uint) {
+        return uint(int(maxValue.add(play)).divideDecimalRound(int(price)));
+    }
+
+    function _orderSizeSmallEnough(
+        uint maxSize,
+        int oldSize,
+        int newSize
     ) internal view returns (Error) {
         // Allow users to reduce an order no matter the market conditions.
-        if (sameSide && newSize <= oldSize) {
+        if (_sameSide(oldSize, newSize) && _abs(newSize) <= _abs(oldSize)) {
             return Error.Ok;
         }
 
@@ -355,11 +362,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             // short case: marketSize - skew = 2 * shortSize
             newSideSize = newMarketSize.sub(newSkew);
         }
-        // newSideSize still includes an extra factor of 2 here, so we will divide by 2 in the require statement.
 
-        // We'll allow an extra little bit of value over and above the stated max to allow for
-        // rounding errors, price movements, multiple orders etc.
-        if (_maxMarketValue(baseAsset).add(play) < _abs(newSideSize.div(2))) {
+        // newSideSize still includes an extra factor of 2 here, so we will divide by 2 in the actual condition
+        if (maxSize < _abs(newSideSize.div(2))) {
             return Error.MaxMarketSizeExceeded;
         }
 
@@ -414,17 +419,18 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // The fee is added back in because order size is computed pre-fee, though their leverage will
         // be slightly higher than what was requested if the fee is nonzero.
         int size = _orderSize(price, margin.add(fee), order.leverage);
-        int oldSize = position.size;
 
         // Ensure the order is actually allowed given the market size limit.
         // Give an extra percentage of play in case multiple orders were submitted simultaneously or the price moved.
-        int confirmationSizePlay = int(_maxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR));
-        Error marketSizeError = _orderSizeSmallEnough(oldSize, size, _sameSide(oldSize, size), uint(confirmationSizePlay));
-        if (marketSizeError != Error.Ok) {
-            return (margin, size, fee, marginError);
-        }
-
-        return (margin, size, fee, Error.Ok);
+        uint maxMarketValue = _maxMarketValue(baseAsset);
+        uint maxMarketSize =
+            _maxSize(
+                price,
+                maxMarketValue,
+                uint(int(maxMarketValue).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
+            );
+        Error marketSizeError = _orderSizeSmallEnough(maxMarketSize, position.size, size);
+        return (margin, size, fee, marketSizeError);
     }
 
     function _orderStatus(address account) internal view returns (Error) {
@@ -859,27 +865,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         uint margin = _remainingMargin(position, fundingIndex, price);
         int size = position.size;
-        bool sameSide = _sameSide(leverage, size);
 
-        // TODO: Charge this out of margin (also update _cancelOrder, and compute this before _checkMargin)
         // Compute the fee owed, which will be charged to the margin after the order is confirmed.
         uint fee = _orderFee(margin, leverage, size, price);
 
         // Check that the user has sufficient margin
-        _checkMargin(position, price, margin, leverage, fee, sameSide);
+        _checkMargin(position, price, margin, leverage, fee, _sameSide(leverage, size));
 
         // Check that the order isn't too large for the market
         // Note that this in principle allows several orders to be placed at once
         // that collectively violate the maximum, but this is checked again when
         // the orders are confirmed.
-        _error(
-            _orderSizeSmallEnough(
-                size,
-                int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price)),
-                sameSide,
-                100 * uint(_UNIT) // a bit of extra value in case of rounding errors
-            )
-        );
+        // Allow a bit of extra value in case of rounding errors
+        int newSize = _orderSize(price, margin, leverage);
+        _error(_orderSizeSmallEnough(_maxSize(price, _maxMarketValue(baseAsset), 100 * uint(_UNIT)), size, newSize));
 
         // Cancel any open order
         Order storage order = orders[sender];
