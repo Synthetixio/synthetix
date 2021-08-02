@@ -314,7 +314,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32,
         address,
         bytes32
-    ) external returns (uint amountReceive) {
+    ) external returns (uint amountReceived) {
         // FIXME remove parameter name in returns. Just (uint)
         _notImplemented();
     }
