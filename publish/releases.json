@@ -275,5 +275,16 @@
 		"ovm": true,
 		"sources": ["EtherWrapper", "Exchanger", "Synthetix", "SystemSettings"],
 		"sips": [138, 139, 140]
+	},
+	{
+		"name": "Dubhe (Optimism)",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
+		"ovm": true,
+		"sources": [],
+		"sips": [121]
 	}
 ]

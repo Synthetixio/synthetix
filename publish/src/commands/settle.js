@@ -138,7 +138,7 @@ const settle = async ({
 			if (startingBlock > currentBlock) {
 				return [];
 			}
-			console.log(gray('-> Fetching page of results from target', yellow(target.options.address)));
+			console.log(gray('-> Fetching page of results from target', yellow(target.address)));
 			const pageOfResults = await target.getPastEvents('SynthExchange', {
 				fromBlock: startingBlock,
 				toBlock: startingBlock + pageSize - 1,
