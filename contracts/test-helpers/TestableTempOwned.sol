@@ -15,6 +15,10 @@ contract TestableTempOwned is TempOwned {
         return 13;
     }
 
+    function getNow() external view returns (uint) {
+        return now;
+    }
+
     function getDebugData()
         external
         view
