@@ -240,10 +240,13 @@ const replaceSynths = async ({
 	const replacementSynths = [];
 
 	// DEPLOY NEW SYNTHS
+	console.log(gray('Deploy the new synths'));
 
 	for (const { currencyKey, Synth, Proxy, TokenState } of deployedSynths) {
 		const currencyKeyInBytes = toBytes32(currencyKey);
 		const synthContractName = `Synth${currencyKey}`;
+
+		console.log(gray('Deploying'), yellow(synthContractName));
 
 		// deploy each synth
 		const newSynth = await deployer.deployContract({
@@ -272,9 +275,14 @@ const replaceSynths = async ({
 
 	// NOMINATE CONTRACTS TO THE UPGRADER
 	const synthUpgrader = deployment.targets['SynthUpgrader'];
+	console.log(
+		gray('Nominate required contracts to the SynthUpgrader contract'),
+		yellow(synthUpgrader.address)
+	);
+
 	await nominateCmd.nominate({
-		// TODO: DOES NOT WORK - nominate expects contract names not addresses (and yet we
-		// need addresses as we have replaced a synth in the deployment file)
+		// Note: passing as addresses - this won't work with any contract using LegacyOwned,
+		// which does not include any Synths - ??? BUT WHAT ABOUT THEIR PROXIES OR TOKEN STATES?
 		contracts: contractsToNominateUpgraderTo,
 		deploymentPath,
 		gasPrice,
@@ -288,6 +296,7 @@ const replaceSynths = async ({
 	// RUN MIGRATION
 
 	// now finally invoke the upgrade for all synths
+	console.log(gray('Running the upgrade action'));
 	await runStep({
 		contract: 'SynthUpgrader',
 		target: synthUpgrader,
@@ -298,7 +307,7 @@ const replaceSynths = async ({
 		],
 	});
 
-	// UPDATE the synths.json file
+	// update the synths.json file with the appropriate subclass
 	for (const { currencyKey } of deployedSynths) {
 		const synthToUpdateInJSON = updatedSynths.find(({ name }) => name === currencyKey);
 		synthToUpdateInJSON.subclass = subclass;
@@ -306,6 +315,7 @@ const replaceSynths = async ({
 	}
 
 	// ACCEPT OWNERSHIP
+	console.log(gray('Accept ownership of all contracts that were previously given'));
 	await ownerCmd.owner({
 		deploymentPath,
 		gasPrice,

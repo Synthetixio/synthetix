@@ -20,6 +20,11 @@ const {
 const nominate = async ({
 	network,
 	newOwner,
+	// This list of contracts can either be the contract labels OR
+	// the addresses themselves. The latter should be used only when the
+	// deployment file doesn't have all the needed contracts (say when something
+	// has been upgraded in the deployment and the old contract is still needed to
+	// be nominated)
 	contracts,
 	useFork = false,
 	deploymentPath,
@@ -51,7 +56,7 @@ const nominate = async ({
 	});
 
 	contracts.forEach(contract => {
-		if (!(contract in config)) {
+		if (!(contract in config) && !ethers.utils.isAddress(contract)) {
 			console.error(red(`Contract ${contract} isn't in the config for this deployment!`));
 			process.exit(1);
 		}
@@ -111,8 +116,22 @@ const nominate = async ({
 	}
 
 	for (const contract of contracts) {
-		const { address, source } = deployment.targets[contract];
-		const { abi } = deployment.sources[source];
+		let abi;
+		let address;
+		let source;
+		if (contract in deployment.targets) {
+			({ address, source } = deployment.targets[contract]);
+			({ abi } = deployment.sources[source]);
+		} else if (ethers.utils.isAddress(contract)) {
+			address = contract;
+			// use a generic contract that implements Owned
+			// Note: this will not work for contracts passed by address
+			// that use LegacyOwned (a very rare edge case - in that case,
+			// the below will revert and the contract should be passed by name)
+			abi = deployment.sources['AddressResolver'];
+		} else {
+			throw new Error('Cannot find contract to nominate:', contract);
+		}
 		const deployedContract = new ethers.Contract(address, abi, wallet);
 
 		// ignore contracts that don't support Owned
