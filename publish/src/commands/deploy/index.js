@@ -13,9 +13,9 @@ const {
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
 	loadConnections,
-	performTransactionalStepWeb3,
 	reportDeployedContracts,
 } = require('../../util');
+const { performTransactionalStep } = require('../../command-utils/transact');
 
 const {
 	constants: {
@@ -115,8 +115,8 @@ const deploy = async ({
 
 	const getDeployParameter = getDeployParameterFactory({ params, yes, ignoreCustomParameters });
 
-	const addressOf = c => (c ? c.options.address : '');
-	const sourceOf = c => (c ? c.options.source : '');
+	const addressOf = c => (c ? c.address : '');
+	const sourceOf = c => (c ? c.source : '');
 
 	// Mark contracts for deployment specified via an argument
 	if (specifyContracts) {
@@ -216,9 +216,9 @@ const deploy = async ({
 		nonceManager: manageNonces ? nonceManager : undefined,
 	});
 
-	const { account } = deployer;
+	const { account, signer } = deployer;
 
-	nonceManager.web3 = deployer.provider.web3;
+	nonceManager.provider = deployer.provider;
 	nonceManager.account = account;
 
 	const {
@@ -261,11 +261,11 @@ const deploy = async ({
 	const runSteps = [];
 
 	const runStep = async opts => {
-		const { noop, ...rest } = await performTransactionalStepWeb3({
+		const { noop, ...rest } = await performTransactionalStep({
 			...opts,
 			// no gas limit on OVM (use system limit), otherwise use provided limit or the methodCall amount
 			gasLimit: useOvm ? undefined : opts.gasLimit || methodCallGasLimit,
-			account,
+			signer,
 			dryRun,
 			explorerLinkPrefix,
 			gasPrice,

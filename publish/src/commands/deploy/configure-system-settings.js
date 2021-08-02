@@ -34,7 +34,7 @@ module.exports = async ({
 			// has populated all references).
 			// Note: this populates rates for new synths regardless of the addNewSynths flag
 			synthRates = await Promise.all(
-				synths.map(({ name }) => SystemSettings.methods.exchangeFeeRate(toBytes32(name)).call())
+				synths.map(({ name }) => SystemSettings.exchangeFeeRate(toBytes32(name)))
 			);
 		} catch (err) {
 			// weird edge case: if a new SystemSettings is deployed and generate-solidity is on then
@@ -48,33 +48,13 @@ module.exports = async ({
 		}
 		const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 
-		// override individual currencyKey / synths exchange rates
-		const synthExchangeRateOverride = {
-			sETH: parseUnits('0.0025').toString(),
-			iETH: parseUnits('0.004').toString(),
-			sBTC: parseUnits('0.003').toString(),
-			iBTC: parseUnits('0.003').toString(),
-			iBNB: parseUnits('0.021').toString(),
-			sXTZ: parseUnits('0.0085').toString(),
-			iXTZ: parseUnits('0.0085').toString(),
-			sEOS: parseUnits('0.0085').toString(),
-			iEOS: parseUnits('0.009').toString(),
-			sETC: parseUnits('0.0085').toString(),
-			sLINK: parseUnits('0.0085').toString(),
-			sDASH: parseUnits('0.009').toString(),
-			iDASH: parseUnits('0.009').toString(),
-			sXRP: parseUnits('0.009').toString(),
-		};
-
+		// update all synths with 0 current rate
 		const synthsRatesToUpdate = synths
 			.map((synth, i) =>
 				Object.assign(
 					{
-						currentRate: parseUnits(synthRates[i] || '0').toString(),
-						targetRate:
-							synth.name in synthExchangeRateOverride
-								? synthExchangeRateOverride[synth.name]
-								: exchangeFeeRates[synth.category],
+						currentRate: parseUnits(synthRates[i].toString() || '0').toString(),
+						targetRate: exchangeFeeRates[synth.category],
 					},
 					synth
 				)
