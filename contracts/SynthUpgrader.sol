@@ -18,14 +18,36 @@ contract SynthUpgrade is BaseMigration {
         resolver = _resolver;
     }
 
-    function upgrade(
-        address currentOwner,
-        bytes32 synthContractLabel,
-        Synth newSynth
-    ) external onlyDeployer {
-        require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
+    function upgrade(bytes32[] calldata synthContractLabels, address[] calldata newSynths) external onlyOwner {
+        address currentOwner = resolver.owner();
+
+        require(owner == currentOwner, "The owner of this contract does not match the resolver");
 
         Issuer issuer = Issuer(resolver.requireAndGetAddress("Issuer", "Missing Issuer address in resolver"));
+
+        resolver.acceptOwnership();
+        issuer.acceptOwnership();
+
+        uint numNewSynths = newSynths.length;
+
+        for (uint i = 0; i < numNewSynths; i++) {
+            upgradeSynth(currentOwner, issuer, synthContractLabels[i], Synth(newSynths[i]));
+        }
+
+        // update the synths in the AddressResolver
+        resolver.importAddresses(synthContractLabels, newSynths);
+
+        // Return ownership
+        Owned(address(issuer)).nominateNewOwner(currentOwner);
+        Owned(address(resolver)).nominateNewOwner(currentOwner);
+    }
+
+    function upgradeSynth(
+        address currentOwner,
+        Issuer issuer,
+        bytes32 synthContractLabel,
+        Synth newSynth
+    ) internal {
         Synth synthToRemove =
             Synth(resolver.requireAndGetAddress(synthContractLabel, "Cannot find old synth by the given label"));
         TokenState tokenState = synthToRemove.tokenState();
@@ -37,12 +59,10 @@ contract SynthUpgrade is BaseMigration {
         require(newSynth.tokenState() == tokenState, "TokenState mismatch in new synth");
         require(newSynth.proxy() == proxy, "Proxy mismatch in new synth");
 
-        Owned(address(issuer)).acceptOwnership();
         Owned(address(synthToRemove)).acceptOwnership();
         Owned(address(newSynth)).acceptOwnership();
         Owned(address(tokenState)).acceptOwnership();
         Owned(address(proxy)).acceptOwnership();
-        Owned(address(resolver)).acceptOwnership();
 
         // track the totalSupply
         uint totalSupply = synthToRemove.totalSupply();
@@ -72,19 +92,10 @@ contract SynthUpgrade is BaseMigration {
         // update the proxy
         proxy.setTarget(Proxyable(address(newSynth)));
 
-        // update the synth in the AddressResolver
-        bytes32[] memory namesToImport = new bytes32[](1);
-        namesToImport[0] = synthContractLabel;
-        address[] memory addressesToImport = new address[](1);
-        addressesToImport[0] = address(newSynth);
-        resolver.importAddresses(namesToImport, addressesToImport);
-
         // Return ownership
-        Owned(address(issuer)).nominateNewOwner(currentOwner);
         Owned(address(synthToRemove)).nominateNewOwner(currentOwner);
         Owned(address(newSynth)).nominateNewOwner(currentOwner);
         Owned(address(tokenState)).nominateNewOwner(currentOwner);
         Owned(address(proxy)).nominateNewOwner(currentOwner);
-        Owned(address(resolver)).nominateNewOwner(currentOwner);
     }
 }
