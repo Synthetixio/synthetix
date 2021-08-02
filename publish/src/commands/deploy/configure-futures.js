@@ -10,9 +10,11 @@ const {
 module.exports = async ({
 	deployer,
 	getDeployParameter,
+	loadAndCheckRequiredSources,
 	runStep,
 	useOvm,
 	freshDeploy,
+	deploymentPath,
 	network,
 }) => {
 	console.log(gray(`\n------ CONFIGURE FUTURES MARKETS ------\n`));
@@ -23,6 +25,11 @@ module.exports = async ({
 		FuturesMarketSettings: futuresMarketSettings,
 		ExchangeRates: exchangeRates,
 	} = deployer.deployedContracts;
+
+	const { futuresMarkets } = loadAndCheckRequiredSources({
+		deploymentPath,
+		network,
+	});
 
 	await runStep({
 		contract: 'FuturesMarketSettings',
@@ -44,8 +51,7 @@ module.exports = async ({
 		comment: 'Set the reward for liquidating a futures position (SIP-80)',
 	});
 
-	const futuresAssets = await getDeployParameter('FUTURES_ASSETS');
-	const currencyKeys = futuresAssets.map(asset => toBytes32(`s${asset}`));
+	const futuresAssets = Object.values(futuresMarkets).map(x => x.asset);
 
 	// Some market parameters invoke a recomputation of the funding rate, and
 	// thus require exchange rates to be fresh. We assume production networks
@@ -54,14 +60,9 @@ module.exports = async ({
 		const { timestamp } = await deployer.provider.ethers.provider.getBlock();
 		const DUMMY_PRICE = parseEther('1').toString();
 
-		console.log(
-			gray(
-				`Updating ExchangeRates for futures assets: ` +
-					futuresAssets.map(asset => `s${asset}`).join(', ')
-			)
-		);
+		console.log(gray(`Updating ExchangeRates for futures assets: ` + futuresAssets.join(', ')));
 
-		for (const key of currencyKeys) {
+		for (const key of futuresAssets.map(toBytes32)) {
 			await runStep({
 				contract: 'ExchangeRates',
 				target: exchangeRates,
@@ -75,21 +76,32 @@ module.exports = async ({
 	// Configure parameters for each market.
 	//
 
-	for (const asset of futuresAssets) {
+	for (const market of Object.values(futuresMarkets)) {
+		const {
+			asset,
+			takerFee,
+			makerFee,
+			closureFee,
+			maxLeverage,
+			maxMarketValue,
+			maxFundingRate,
+			maxFundingRateSkew,
+			maxFundingRateDelta,
+		} = market;
+
 		console.log(gray(`\n   --- MARKET ${asset} ---\n`));
 
-		const baseAsset = toBytes32(`s${asset}`);
+		const baseAsset = toBytes32(asset);
 
-		// TODO: Perform this programmatically per-market
 		const settings = {
-			takerFee: w3utils.toWei('0.003'),
-			makerFee: w3utils.toWei('0.001'),
-			closureFee: w3utils.toWei('0'),
-			maxLeverage: w3utils.toWei('10'),
-			maxMarketValue: w3utils.toWei('100000'),
-			maxFundingRate: w3utils.toWei('0.1'),
-			maxFundingRateSkew: w3utils.toWei('1'),
-			maxFundingRateDelta: w3utils.toWei('0.0125'),
+			takerFee: w3utils.toWei(takerFee),
+			makerFee: w3utils.toWei(makerFee),
+			closureFee: w3utils.toWei(closureFee),
+			maxLeverage: w3utils.toWei(maxLeverage),
+			maxMarketValue: w3utils.toWei(maxMarketValue),
+			maxFundingRate: w3utils.toWei(maxFundingRate),
+			maxFundingRateSkew: w3utils.toWei(maxFundingRateSkew),
+			maxFundingRateDelta: w3utils.toWei(maxFundingRateDelta),
 		};
 
 		for (const setting in settings) {
