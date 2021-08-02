@@ -7,7 +7,8 @@ contract EmptyEtherWrapper {
 
     /* ========== VIEWS ========== */
 
-    function totalIssuedSynths() public pure returns (uint) {
+    function totalIssuedSynths() public view returns (uint) {
+        // FIXME change view to pure.
         return 0;
     }
 

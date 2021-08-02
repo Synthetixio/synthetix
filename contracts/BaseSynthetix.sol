@@ -314,7 +314,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         bytes32,
         address,
         bytes32
-    ) external returns (uint) {
+    ) external returns (uint amountReceive) {
+        // FIXME remove parameter name in returns. Just (uint)
         _notImplemented();
     }
 
@@ -358,7 +359,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _systemActive() private view {
+    function _systemActive() private {
+        // FIXME add view modifier
         systemStatus().requireSystemActive();
     }
 
@@ -367,7 +369,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _issuanceActive() private view {
+    function _issuanceActive() private {
+        // FIXME add view modifier
         systemStatus().requireIssuanceActive();
     }
 
@@ -376,7 +379,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _exchangeActive(bytes32 src, bytes32 dest) private view {
+    function _exchangeActive(bytes32 src, bytes32 dest) private {
+        // FIXME add view modifier
         systemStatus().requireExchangeBetweenSynthsAllowed(src, dest);
     }
 
@@ -385,7 +389,8 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         _;
     }
 
-    function _onlyExchanger() private view {
+    function _onlyExchanger() private {
+        // FIXME add view modifier
         require(msg.sender == address(exchanger()), "Only Exchanger can invoke this");
     }
 

@@ -24,9 +24,11 @@ contract NativeEtherWrapper is Owned, MixinResolver {
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](2);
+        bytes32[] memory addresses = new bytes32[](2);
+        // FIXME remove type declaration. Addresses is already declared in the returns parameters (Allign with other contracts)
         addresses[0] = CONTRACT_ETHER_WRAPPER;
         addresses[1] = CONTRACT_SYNTHSETH;
+        return addresses; // FIXME remove return since it's already specified in returns function key
     }
 
     function etherWrapper() internal view returns (IEtherWrapper) {
@@ -64,7 +66,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
 
     function burn(uint amount) public {
         require(amount > 0, "amount must be greater than 0");
-        IWETH _weth = weth();
+        IWETH weth = weth(); // FIXME weth collides with weth() function. Rename to _weth
 
         // Transfer sETH from the msg.sender.
         synthsETH().transferFrom(msg.sender, address(this), amount);
@@ -76,9 +78,9 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         etherWrapper().burn(amount);
 
         // Convert WETH to ETH and send to msg.sender.
-        _weth.withdraw(_weth.balanceOf(address(this)));
+        weth.withdraw(weth.balanceOf(address(this)));
         // solhint-disable avoid-low-level-calls
-        msg.sender.call.value(address(this).balance)("");
+        msg.sender.call.value(address(this).balance)(""); // FIXME retrieve returned value and catch any error
 
         emit Burned(msg.sender, amount);
     }
