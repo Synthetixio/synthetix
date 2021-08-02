@@ -98,6 +98,7 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
+	FUTURES_MARKETS_FILENAME: 'futures-markets.json',
 
 	AST_FILENAME: 'asts.json',
 
