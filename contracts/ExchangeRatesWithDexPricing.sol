@@ -6,9 +6,7 @@ import "./interfaces/IDexPriceAggregator.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerateswithdexpricing
 contract ExchangeRatesWithDexPricing is ExchangeRates {
-    // SIP-120 Atomic exchanges
-    // Address of the external TWAP aggregator oracle
-    IDexPriceAggregator public dexPriceAggregator;
+    bytes32 internal constant SETTING_DEX_PRICE_AGGREGATOR = "dexPriceAggregator";
 
     constructor(
         address _owner,
@@ -21,11 +19,16 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     /* ========== SETTERS ========== */
 
     function setDexPriceAggregator(IDexPriceAggregator _dexPriceAggregator) external onlyOwner {
-        dexPriceAggregator = _dexPriceAggregator;
+        flexibleStorage().setAddressValue(CONTRACT_NAME, SETTING_DEX_PRICE_AGGREGATOR, address(_dexPriceAggregator));
         emit DexPriceAggregatorUpdated(address(_dexPriceAggregator));
     }
 
     /* ========== VIEWS ========== */
+
+    function dexPriceAggregator() public view returns (IDexPriceAggregator) {
+        // TODO: this fetch could be made cheaper with an internal cache that gets wiped on `setDexPriceAggregator()` calls
+        return IDexPriceAggregator(flexibleStorage().getAddressValue(CONTRACT_NAME, SETTING_DEX_PRICE_AGGREGATOR));
+    }
 
     function atomicTwapWindow() external view returns (uint) {
         return getAtomicTwapWindow();
@@ -76,7 +79,7 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         uint sourceAmountInEquivalent = (sourceAmount * 10**uint(sourceEquivalent.decimals())) / SafeDecimalMath.unit();
         // TODO: add sanity check here to make sure the price window isn't 0?
         uint twapValueInEquivalent =
-            dexPriceAggregator.assetToAsset(
+            dexPriceAggregator().assetToAsset(
                 address(sourceEquivalent),
                 sourceAmountInEquivalent,
                 address(destEquivalent),

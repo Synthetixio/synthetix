@@ -209,7 +209,7 @@ contract('Exchange Rates', async accounts => {
 
 			it('should be able to handle lots of currencies on creation', async () => {
 				const creationTime = await currentTime();
-				const numberOfCurrencies = 100;
+				const numberOfCurrencies = 80;
 				const { currencyKeys, rates } = createRandomKeysAndRates(numberOfCurrencies);
 
 				const instance = await setupContract({
@@ -2994,7 +2994,11 @@ contract('Exchange Rates', async accounts => {
 	// Atomic pricing via DEX
 	const itReadsAtomicPricesFromDex = () => {
 		describe('setDexPriceAggregator()', () => {
-			it("only the owner should be able to change the dex twap aggregator's address", async () => {
+			it('should not be set by default', async () => {
+				assert.equal(await instance.dexPriceAggregator.call(), ZERO_ADDRESS);
+			});
+
+			it("only the owner should be able to change the dex price aggregator's address", async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: instance.setDexPriceAggregator,
 					args: [dexPriceAggregator],
@@ -3010,7 +3014,7 @@ contract('Exchange Rates', async accounts => {
 			});
 
 			it('should emit event on successful address update', async () => {
-				// Ensure oracle is set to intended address originally
+				// Ensure initially set to intended address
 				await instance.setDexPriceAggregator(dexPriceAggregator, { from: owner });
 				assert.equal(await instance.dexPriceAggregator.call(), dexPriceAggregator);
 
