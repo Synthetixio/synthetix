@@ -40,8 +40,6 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
         (bool success, bytes memory result) = target.call(data);
 
         require(success, string(abi.encode("xChain call failed:", result)));
-
-        emit RelayFinalized(target, data);
     }
 
     /* ========== VIEWS ========== */
@@ -65,6 +63,8 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
         require(messenger.xDomainMessageSender() == ownerRelayOnEthereum(), "L1 sender is not the owner relay");
 
         _relayCall(target, data);
+
+        emit RelayFinalized(target, data);
     }
 
     function directRelay(address target, bytes calldata data) external onlyTemporaryOwner {
