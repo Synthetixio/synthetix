@@ -8,15 +8,19 @@ describe('notifyRewardAmount() integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
-	const rewardsToDeposit = ethers.utils.parseEther('10');
+	const rewardsToDeposit = ethers.utils.parseEther('25000');
+	const tradingRewards = ethers.utils.parseEther('1000');
 
-	let owner;
+	let ownerL1, ownerL2;
+
 	let FeePool,
-		RewardsDistribution,
+		RewardsDistributionL1,
+		RewardsDistributionL2,
 		RewardEscrowV2,
 		Synthetix,
 		SynthetixBridgeToOptimism,
-		SynthetixBridgeEscrow;
+		SynthetixBridgeEscrow,
+		TradingRewards;
 
 	let depositReceipt;
 
@@ -24,19 +28,22 @@ describe('notifyRewardAmount() integration tests (L1, L2)', () => {
 		before('target contracts and users', () => {
 			({
 				FeePool,
-				RewardsDistribution,
+				RewardsDistribution: RewardsDistributionL1,
 				Synthetix,
 				SynthetixBridgeEscrow,
 				SynthetixBridgeToOptimism,
 			} = ctx.l1.contracts);
 
-			owner = ctx.l1.users.owner;
+			({ RewardsDistribution: RewardsDistributionL2, TradingRewards } = ctx.l2.contracts);
+
+			ownerL1 = ctx.l1.users.owner;
+			ownerL2 = ctx.l2.users.owner;
 		});
 
 		before('approve if needed', async () => {
 			await approveIfNeeded({
 				token: Synthetix,
-				owner,
+				owner: ownerL1,
 				beneficiary: SynthetixBridgeToOptimism,
 				amount: rewardsToDeposit,
 			});
@@ -50,17 +57,34 @@ describe('notifyRewardAmount() integration tests (L1, L2)', () => {
 			});
 
 			before('add a new distribution and mint', async () => {
-				RewardsDistribution = RewardsDistribution.connect(owner);
-				Synthetix = Synthetix.connect(owner);
+				Synthetix = Synthetix.connect(ownerL1);
+				RewardsDistributionL1 = RewardsDistributionL1.connect(ownerL1);
+				RewardsDistributionL2 = RewardsDistributionL2.connect(ownerL2);
 
-				let tx = await RewardsDistribution.addRewardDistribution(
+				let tx = await RewardsDistributionL1.addRewardDistribution(
 					SynthetixBridgeToOptimism.address,
 					rewardsToDeposit
 				);
 				await tx.wait();
 
+				tx = await RewardsDistributionL2.addRewardDistribution(
+					TradingRewards.address,
+					tradingRewards
+				);
+				await tx.wait();
+
 				tx = await Synthetix.mint();
 				depositReceipt = await tx.wait();
+			});
+
+			it('populates the distributions array accordingly on both L1 and L2', async () => {
+				let distribution = await RewardsDistributionL1.distributions(0);
+				assert.equal(distribution.destination, SynthetixBridgeToOptimism.address);
+				assert.bnEqual(distribution.amount, rewardsToDeposit);
+
+				distribution = await RewardsDistributionL2.distributions(0);
+				assert.equal(distribution.destination, TradingRewards.address);
+				assert.bnEqual(distribution.amount, tradingRewards);
 			});
 
 			it('increases the escrow balance', async () => {
@@ -71,7 +95,8 @@ describe('notifyRewardAmount() integration tests (L1, L2)', () => {
 
 			describe('when the rewards deposit gets picked up in L2', () => {
 				let currentFeePeriodRewards;
-				let rewardEscrowBalanceL2;
+				let rewardEscrowBalanceL2, tradingRewardsBalanceL2;
+				const rewardsToDistribute = rewardsToDeposit.sub(tradingRewards);
 
 				before('target contracts', () => {
 					({ FeePool, RewardEscrowV2, Synthetix } = ctx.l2.contracts);
@@ -79,6 +104,7 @@ describe('notifyRewardAmount() integration tests (L1, L2)', () => {
 
 				before('record current values', async () => {
 					rewardEscrowBalanceL2 = await Synthetix.balanceOf(RewardEscrowV2.address);
+					tradingRewardsBalanceL2 = await Synthetix.balanceOf(TradingRewards.address);
 					currentFeePeriodRewards = (await FeePool.recentFeePeriods(0)).rewardsToDistribute;
 				});
 
@@ -89,14 +115,21 @@ describe('notifyRewardAmount() integration tests (L1, L2)', () => {
 				it('increases the current fee periods rewards to distribute', async () => {
 					assert.bnEqual(
 						(await FeePool.recentFeePeriods(0)).rewardsToDistribute,
-						currentFeePeriodRewards.add(rewardsToDeposit)
+						currentFeePeriodRewards.add(rewardsToDistribute)
 					);
 				});
 
-				it('increases the RewardEscrowV2 balance', async () => {
+				it('increases the TradingRewards balance on L2', async () => {
+					assert.bnEqual(
+						await Synthetix.balanceOf(TradingRewards.address),
+						tradingRewardsBalanceL2.add(tradingRewards)
+					);
+				});
+
+				it('increases the RewardEscrowV2 balance on L2', async () => {
 					assert.bnEqual(
 						await Synthetix.balanceOf(RewardEscrowV2.address),
-						rewardEscrowBalanceL2.add(rewardsToDeposit)
+						rewardEscrowBalanceL2.add(rewardsToDistribute)
 					);
 				});
 			});
