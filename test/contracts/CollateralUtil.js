@@ -21,7 +21,7 @@ let CollateralManagerState;
 let ProxyERC20;
 let TokenState;
 
-contract('CollateralEth', async accounts => {
+contract('CollateralUtil', async accounts => {
 	const sUSD = toBytes32('sUSD');
 	const sETH = toBytes32('sETH');
 	const sBTC = toBytes32('sBTC');
