@@ -77,14 +77,6 @@ contract('CollateralEth', async accounts => {
 		await sETHSynth.issue(receiver, issueAmount, { from: owner });
 	};
 
-	const deployUtil = async ({ resolver }) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralUtil',
-			args: [resolver],
-		});
-	};
-
 	const deployCollateral = async ({
 		state,
 		owner,
@@ -111,6 +103,7 @@ contract('CollateralEth', async accounts => {
 			FeePool: feePool,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
+			CollateralUtil: util,
 			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
@@ -123,6 +116,7 @@ contract('CollateralEth', async accounts => {
 				'Exchanger',
 				'SystemStatus',
 				'Issuer',
+				'CollateralUtil',
 				'DebtCache',
 			],
 		}));
@@ -149,8 +143,6 @@ contract('CollateralEth', async accounts => {
 
 		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		util = await deployUtil({ resolver: addressResolver.address });
-
 		ceth = await deployCollateral({
 			state: state.address,
 			owner: owner,
@@ -164,8 +156,8 @@ contract('CollateralEth', async accounts => {
 		await state.setAssociatedContract(ceth.address, { from: owner });
 
 		await addressResolver.importAddresses(
-			[toBytes32('CollateralEth'), toBytes32('CollateralManager'), toBytes32('CollateralUtil')],
-			[ceth.address, manager.address, util.address],
+			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
+			[ceth.address, manager.address],
 			{
 				from: owner,
 			}
@@ -176,7 +168,6 @@ contract('CollateralEth', async accounts => {
 		await debtCache.rebuildCache();
 		await feePool.rebuildCache();
 		await issuer.rebuildCache();
-		await util.rebuildCache();
 
 		await manager.addCollaterals([ceth.address], { from: owner });
 
@@ -348,131 +339,6 @@ contract('CollateralEth', async accounts => {
 			const sBTCAmount = await ceth.maxLoan(toUnit('2.6'), toBytes32('sBTC'));
 
 			assert.bnEqual(sBTCAmount, toUnit('0.02'));
-		});
-	});
-
-	describe('liquidation amount test', async () => {
-		let amountToLiquidate;
-		let minCratio;
-		let collateralKey;
-
-		/**
-		 * r = target issuance ratio
-		 * D = debt balance in sUSD
-		 * V = Collateral VALUE in sUSD
-		 * P = liquidation penalty
-		 * Calculates amount of sUSD = (D - V * r) / (1 - (1 + P) * r)
-		 *
-		 * To go back to another synth, remember to do effective value
-		 */
-
-		beforeEach(async () => {
-			tx = await ceth.open(oneHundredsUSD, sUSD, {
-				value: twoETH,
-				from: account1,
-			});
-
-			id = getid(tx);
-			loan = await state.getLoan(account1, id);
-			minCratio = await ceth.minCratio();
-			collateralKey = await ceth.collateralKey();
-		});
-
-		it('when we start at 200%, we can take a 35% reduction in collateral prices', async () => {
-			await exchangeRates.updateRates([sETH], ['65'].map(toUnit), await currentTime(), {
-				from: oracle,
-			});
-
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
-
-			assert.bnEqual(amountToLiquidate, toUnit(0));
-		});
-
-		it('when we start at 200%, a price shock of 40% in the collateral requires 50% of the loan to be liquidated', async () => {
-			await exchangeRates.updateRates([sETH], ['60'].map(toUnit), await currentTime(), {
-				from: oracle,
-			});
-
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
-
-			assert.bnClose(amountToLiquidate, toUnit(50), '1000');
-		});
-
-		it('when we start at 200%, a price shock of 50% in the collateral requires the whole loan to be liquidated', async () => {
-			await exchangeRates.updateRates([sETH], ['50'].map(toUnit), await currentTime(), {
-				from: oracle,
-			});
-
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
-
-			assert.bnGt(amountToLiquidate, toUnit(100));
-		});
-
-		it('when we start at 130%, any reduction in collateral will make the position undercollateralised ', async () => {
-			tx = await ceth.open(toUnit('200'), sUSD, {
-				value: toUnit('2.6'),
-				from: account1,
-			});
-
-			id = getid(tx);
-			loan = await state.getLoan(account1, id);
-
-			await exchangeRates.updateRates([sETH], ['99'].map(toUnit), await currentTime(), {
-				from: oracle,
-			});
-
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
-
-			assert.bnGt(amountToLiquidate, 0);
-		});
-	});
-
-	describe('collateral redeemed test', async () => {
-		let collateralRedeemed;
-		let collateralKey;
-
-		beforeEach(async () => {
-			collateralKey = await ceth.collateralKey();
-		});
-
-		it('when ETH is @ $100 and we are liquidating 10 sUSD, then redeem 0.11 ETH', async () => {
-			collateralRedeemed = await util.collateralRedeemed(sUSD, tensUSD, collateralKey);
-
-			assert.bnEqual(collateralRedeemed, toUnit(0.11));
-		});
-
-		it('when ETH is @ $200 and we are liquidating 10 sUSD, then redeem 0.055 ETH', async () => {
-			await exchangeRates.updateRates([sETH], ['200'].map(toUnit), await currentTime(), {
-				from: oracle,
-			});
-
-			collateralRedeemed = await util.collateralRedeemed(sUSD, tensUSD, collateralKey);
-
-			assert.bnEqual(collateralRedeemed, toUnit(0.055));
-		});
-
-		it('when ETH is @ $70 and we are liquidating 25 sUSD, then redeem 0.36666 ETH', async () => {
-			await exchangeRates.updateRates([sETH], ['70'].map(toUnit), await currentTime(), {
-				from: oracle,
-			});
-
-			collateralRedeemed = await util.collateralRedeemed(sUSD, toUnit(25), collateralKey);
-
-			assert.bnClose(collateralRedeemed, toUnit(0.392857142857142857), '100');
-		});
-
-		it('regardless of eth price, we liquidate 1.1 * amount when doing sETH', async () => {
-			collateralRedeemed = await util.collateralRedeemed(sETH, oneETH, collateralKey);
-
-			assert.bnEqual(collateralRedeemed, toUnit(1.1));
-
-			await exchangeRates.updateRates([sETH], ['1000'].map(toUnit), await currentTime(), {
-				from: oracle,
-			});
-
-			collateralRedeemed = await util.collateralRedeemed(sETH, oneETH, collateralKey);
-
-			assert.bnEqual(collateralRedeemed, toUnit(1.1));
 		});
 	});
 

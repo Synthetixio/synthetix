@@ -12,23 +12,34 @@ import "./MixinSystemSettings.sol";
 import "./SafeDecimalMath.sol";
 
 contract CollateralUtil is ICollateralUtil, ICollateralLoan, MixinSystemSettings {
+    /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    /* ========== CONSTANTS ========== */
+
     bytes32 private constant sUSD = "sUSD";
 
-    IAddressResolver public addressResolverProxy;
+    /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
+
+    bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+
+    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
+        bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
+        bytes32[] memory newAddresses = new bytes32[](1);
+        newAddresses[0] = CONTRACT_EXRATES;
+        addresses = combineArrays(existingAddresses, newAddresses);
+    }
+
+    /* ---------- Related Contracts ---------- */
 
     function _exchangeRates() internal view returns (IExchangeRates) {
-        return IExchangeRates(addressResolverProxy.requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates contract"));
+        return IExchangeRates(resolver.requireAndGetAddress(CONTRACT_EXRATES, "Missing ExchangeRates contract"));
     }
 
-    constructor(address _resolver) public MixinSystemSettings(_resolver) {
-        addressResolverProxy = IAddressResolver(_resolver);
-    }
+    constructor(address _resolver) public MixinSystemSettings(_resolver) {}
 
-    /* ========== VIEW FUNCS ========== */
+    /* ========== UTILITY VIEW FUNCS ========== */
 
     function getCollateralRatio(Loan calldata loan, bytes32 collateralKey) external view returns (uint cratio) {
         uint cvalue = _exchangeRates().effectiveValue(collateralKey, loan.collateral, sUSD);

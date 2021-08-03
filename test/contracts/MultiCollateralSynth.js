@@ -27,7 +27,6 @@ contract('MultiCollateralSynth', accounts => {
 		resolver,
 		manager,
 		ceth,
-		util,
 		exchangeRates,
 		managerState,
 		debtCache,
@@ -38,14 +37,6 @@ contract('MultiCollateralSynth', accounts => {
 	const getid = async tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
 		return event.args.id;
-	};
-
-	const deployUtil = async ({ resolver }) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralUtil',
-			args: [resolver],
-		});
 	};
 
 	const deployCollateral = async ({
@@ -112,6 +103,7 @@ contract('MultiCollateralSynth', accounts => {
 				'SystemStatus',
 				'Exchanger',
 				'FeePool',
+				'CollateralUtil',
 				'CollateralManager',
 			],
 		}));
@@ -134,8 +126,6 @@ contract('MultiCollateralSynth', accounts => {
 
 		const state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		util = await deployUtil({ resolver: resolver.address });
-
 		ceth = await deployCollateral({
 			state: state.address,
 			owner: owner,
@@ -149,8 +139,8 @@ contract('MultiCollateralSynth', accounts => {
 		await state.setAssociatedContract(ceth.address, { from: owner });
 
 		await resolver.importAddresses(
-			[toBytes32('CollateralEth'), toBytes32('CollateralManager'), toBytes32('CollateralUtil')],
-			[ceth.address, manager.address, util.address],
+			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
+			[ceth.address, manager.address],
 			{
 				from: owner,
 			}
@@ -159,7 +149,6 @@ contract('MultiCollateralSynth', accounts => {
 		await manager.rebuildCache();
 		await feePool.rebuildCache();
 		await debtCache.rebuildCache();
-		await util.rebuildCache();
 
 		await manager.addCollaterals([ceth.address], { from: owner });
 

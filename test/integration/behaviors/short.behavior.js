@@ -58,10 +58,10 @@ function itCanOpenAndCloseShort({ ctx }) {
 			await CollateralShortAsOwner.setInteractionDelay(interactionDelay);
 		});
 
-		describe('open, close, deposit, withdraw, draw, and repay a short', async () => {
+		describe('open, close, deposit, withdraw, and draw a short', async () => {
 			let tx, loan, loanId;
 
-			describe('open a loan, deposit and withdraw collateral, draw, repay with collateral, and close the loan', () => {
+			describe('open a loan, deposit and withdraw collateral, draw, and close the loan', () => {
 				before('skip if max borrowing power reached', async function() {
 					const maxBorrowingPower = await CollateralShort.maxLoan(
 						amountToDeposit,

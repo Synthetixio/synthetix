@@ -40,7 +40,6 @@ contract('ShortingRewards', accounts => {
 		synths,
 		short,
 		state,
-		util,
 		sUSDSynth,
 		sBTCSynth,
 		sETHSynth,
@@ -105,14 +104,6 @@ contract('ShortingRewards', accounts => {
 		await sETHSynth.issue(receiver, issueAmount, { from: owner });
 	};
 
-	const deployUtil = async ({ resolver }) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralUtil',
-			args: [resolver],
-		});
-	};
-
 	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
@@ -158,6 +149,7 @@ contract('ShortingRewards', accounts => {
 				'Synthetix',
 				'SystemSettings',
 				'Exchanger',
+				'CollateralUtil',
 			],
 		}));
 
@@ -181,8 +173,6 @@ contract('ShortingRewards', accounts => {
 
 		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		util = await deployUtil({ resolver: addressResolver.address });
-
 		short = await deployShort({
 			state: state.address,
 			owner: owner,
@@ -196,8 +186,8 @@ contract('ShortingRewards', accounts => {
 		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
-			[toBytes32('CollateralShort'), toBytes32('CollateralManager'), toBytes32('CollateralUtil')],
-			[short.address, manager.address, util.address],
+			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
+			[short.address, manager.address],
 			{
 				from: owner,
 			}
@@ -207,7 +197,6 @@ contract('ShortingRewards', accounts => {
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
 		await debtCache.rebuildCache();
-		await util.rebuildCache();
 
 		await manager.addCollaterals([short.address], { from: owner });
 

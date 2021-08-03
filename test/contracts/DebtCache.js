@@ -61,7 +61,6 @@ contract('DebtCache', async accounts => {
 		// MultiCollateral tests.
 		ceth,
 		// Short tests.
-		util,
 		short;
 
 	const deployCollateral = async ({
@@ -111,8 +110,6 @@ contract('DebtCache', async accounts => {
 
 		const cethState = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		util = await deployUtil({ resolver: addressResolver.address });
-
 		// Deploy ETH Collateral.
 		ceth = await deployCollateral({
 			state: cethState.address,
@@ -127,8 +124,8 @@ contract('DebtCache', async accounts => {
 		await cethState.setAssociatedContract(ceth.address, { from: owner });
 
 		await addressResolver.importAddresses(
-			[toBytes32('CollateralEth'), toBytes32('CollateralManager'), toBytes32('CollateralUtil')],
-			[ceth.address, manager.address, util.address],
+			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
+			[ceth.address, manager.address],
 			{
 				from: owner,
 			}
@@ -139,7 +136,6 @@ contract('DebtCache', async accounts => {
 		await debtCache.rebuildCache();
 		await feePool.rebuildCache();
 		await issuer.rebuildCache();
-		await util.rebuildCache();
 
 		await manager.addCollaterals([ceth.address], { from: owner });
 
@@ -164,14 +160,6 @@ contract('DebtCache', async accounts => {
 			synths.map(s => toUnit('0')),
 			{ from: owner }
 		);
-	};
-
-	const deployUtil = async ({ resolver }) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralUtil',
-			args: [resolver],
-		});
 	};
 
 	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
@@ -210,8 +198,6 @@ contract('DebtCache', async accounts => {
 
 		const state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		util = await deployUtil({ resolver: addressResolver.address });
-
 		short = await deployShort({
 			state: state.address,
 			owner: owner,
@@ -225,8 +211,8 @@ contract('DebtCache', async accounts => {
 		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
-			[toBytes32('CollateralShort'), toBytes32('CollateralManager'), toBytes32('CollateralUtil')],
-			[short.address, manager.address, util.address],
+			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
+			[short.address, manager.address],
 			{
 				from: owner,
 			}
@@ -236,7 +222,6 @@ contract('DebtCache', async accounts => {
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
 		await debtCache.rebuildCache();
-		await util.rebuildCache();
 
 		await manager.addCollaterals([short.address], { from: owner });
 
@@ -292,6 +277,7 @@ contract('DebtCache', async accounts => {
 				'FlexibleStorage',
 				'CollateralManager',
 				'RewardEscrowV2', // necessary for issuer._collateral()
+				'CollateralUtil',
 				'EtherCollateral',
 				'EtherCollateralsUSD',
 			],

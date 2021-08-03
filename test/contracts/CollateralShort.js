@@ -42,7 +42,6 @@ contract('CollateralShort', async accounts => {
 		synths,
 		manager,
 		issuer,
-		util,
 		debtCache;
 
 	let tx, loan, id;
@@ -72,14 +71,6 @@ contract('CollateralShort', async accounts => {
 
 		await exchangeRates.updateRates([sBTC], ['10000'].map(toUnit), timestamp, {
 			from: oracle,
-		});
-	};
-
-	const deployUtil = async ({ resolver }) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralUtil',
-			args: [resolver],
 		});
 	};
 
@@ -116,6 +107,7 @@ contract('CollateralShort', async accounts => {
 				'SystemStatus',
 				'Issuer',
 				'DebtCache',
+				'CollateralUtil',
 			],
 		}));
 
@@ -140,8 +132,6 @@ contract('CollateralShort', async accounts => {
 
 		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		util = await deployUtil({ resolver: addressResolver.address });
-
 		short = await deployShort({
 			state: state.address,
 			owner: owner,
@@ -155,8 +145,8 @@ contract('CollateralShort', async accounts => {
 		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
-			[toBytes32('CollateralShort'), toBytes32('CollateralManager'), toBytes32('CollateralUtil')],
-			[short.address, manager.address, util.address],
+			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
+			[short.address, manager.address],
 			{
 				from: owner,
 			}
@@ -166,7 +156,6 @@ contract('CollateralShort', async accounts => {
 		await manager.rebuildCache();
 		await issuer.rebuildCache();
 		await debtCache.rebuildCache();
-		await util.rebuildCache();
 
 		await manager.addCollaterals([short.address], { from: owner });
 
