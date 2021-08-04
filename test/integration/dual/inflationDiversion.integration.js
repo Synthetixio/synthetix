@@ -2,7 +2,6 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL2 } = require('../utils/optimism');
-const { approveIfNeeded } = require('../utils/approve');
 
 describe('inflationDiversion() integration tests (L1, L2)', () => {
 	const ctx = this;
@@ -38,15 +37,6 @@ describe('inflationDiversion() integration tests (L1, L2)', () => {
 
 			ownerL1 = ctx.l1.users.owner;
 			ownerL2 = ctx.l2.users.owner;
-		});
-
-		before('approve if needed', async () => {
-			await approveIfNeeded({
-				token: Synthetix,
-				owner: ownerL1,
-				beneficiary: SynthetixBridgeToOptimism,
-				amount: rewardsToDeposit,
-			});
 		});
 
 		describe('when new distributions are added (bridge)', () => {
