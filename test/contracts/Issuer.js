@@ -6,7 +6,6 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts, mockToken } = require('./setup');
 
-const MockEtherCollateral = artifacts.require('MockEtherCollateral');
 const MockEtherWrapper = artifacts.require('MockEtherWrapper');
 
 const {
@@ -2532,89 +2531,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 			});
 
-			describe('when etherCollateral is set', async () => {
-				const collateralKey = 'EtherCollateral';
-
-				it('should have zero totalIssuedSynths', async () => {
-					// totalIssuedSynthsExcludeEtherCollateral equal totalIssuedSynths
-					assert.bnEqual(
-						await synthetix.totalIssuedSynths(sUSD),
-						await synthetix.totalIssuedSynthsExcludeEtherCollateral(sUSD)
-					);
-				});
-				describe('creating a loan on etherCollateral to issue sETH', async () => {
-					let etherCollateral;
-					beforeEach(async () => {
-						// mock etherCollateral
-						etherCollateral = await MockEtherCollateral.new({ from: owner });
-						// have the owner simulate being MultiCollateral so we can invoke issue and burn
-						await addressResolver.importAddresses(
-							[toBytes32(collateralKey)],
-							[etherCollateral.address],
-							{ from: owner }
-						);
-
-						// ensure Issuer and DebtCache has the latest EtherCollateral
-						await issuer.rebuildCache();
-						await debtCache.rebuildCache();
-
-						// Give some SNX to account1
-						await synthetix.transfer(account1, toUnit('1000'), { from: owner });
-
-						// account1 should be able to issue
-						await synthetix.issueSynths(toUnit('10'), { from: account1 });
-						// set owner as Synthetix on resolver to allow issuing by owner
-						await addressResolver.importAddresses([toBytes32('Synthetix')], [owner], {
-							from: owner,
-						});
-					});
-
-					it('should be able to exclude sETH issued by ether Collateral from totalIssuedSynths', async () => {
-						const totalSupplyBefore = await synthetix.totalIssuedSynths(sETH);
-
-						// issue sETH
-						const amountToIssue = toUnit('10');
-						await sETHContract.issue(account1, amountToIssue, { from: owner });
-						// openLoan of same amount on Ether Collateral
-						await etherCollateral.openLoan(amountToIssue, { from: owner });
-						// totalSupply of synths should exclude Ether Collateral issued synths
-						assert.bnEqual(
-							totalSupplyBefore,
-							await synthetix.totalIssuedSynthsExcludeEtherCollateral(sETH)
-						);
-
-						// totalIssuedSynths after includes amount issued
-						assert.bnEqual(
-							await synthetix.totalIssuedSynths(sETH),
-							totalSupplyBefore.add(amountToIssue)
-						);
-					});
-
-					it('should exclude sETH issued by ether Collateral from debtBalanceOf', async () => {
-						// account1 should own 100% of the debt.
-						const debtBefore = await synthetix.debtBalanceOf(account1, sUSD);
-						assert.bnEqual(debtBefore, toUnit('10'));
-
-						// issue sETH to mimic loan
-						const amountToIssue = toUnit('10');
-						await sETHContract.issue(account1, amountToIssue, { from: owner });
-						await etherCollateral.openLoan(amountToIssue, { from: owner });
-
-						// After account1 owns 100% of sUSD debt.
-						assert.bnEqual(
-							await synthetix.totalIssuedSynthsExcludeEtherCollateral(sUSD),
-							toUnit('10')
-						);
-						assert.bnEqual(await synthetix.debtBalanceOf(account1, sUSD), debtBefore);
-					});
-				});
-			});
-
 			describe('when EtherWrapper is set', async () => {
 				it('should have zero totalIssuedSynths', async () => {
 					assert.bnEqual(
 						await synthetix.totalIssuedSynths(sUSD),
-						await synthetix.totalIssuedSynthsExcludeEtherCollateral(sUSD)
+						await synthetix.totalIssuedSynthsExcludeOtherCollateral(sUSD)
 					);
 				});
 				describe('depositing WETH on the EtherWrapper to issue sETH', async () => {
@@ -2642,7 +2563,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 						// totalSupply of synths should exclude EtherWrapper issued sETH
 						assert.bnEqual(
 							totalSupplyBefore,
-							await synthetix.totalIssuedSynthsExcludeEtherCollateral(sETH)
+							await synthetix.totalIssuedSynthsExcludeOtherCollateral(sETH)
 						);
 
 						// totalIssuedSynths after includes amount issued
