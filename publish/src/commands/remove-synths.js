@@ -174,7 +174,7 @@ const removeSynths = async ({
 			console.log(green('Would attempt to remove the synth:', currencyKey));
 		} else {
 			await performTransactionalStep({
-				account: wallet,
+				signer: wallet,
 				contract: 'Issuer',
 				target: Issuer,
 				write: 'removeSynth',

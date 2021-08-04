@@ -115,5 +115,32 @@
 	},
 	"EtherWrapper": {
 		"deploy": false
+	},
+	"TokenStatesETH": {
+		"deploy": false
+	},
+	"ProxysETH": {
+		"deploy": false
+	},
+	"SynthsETH": {
+		"deploy": false
+	},
+	"TokenStatesBTC": {
+		"deploy": false
+	},
+	"ProxysBTC": {
+		"deploy": false
+	},
+	"SynthsBTC": {
+		"deploy": false
+	},
+	"TokenStatesLINK": {
+		"deploy": false
+	},
+	"ProxysLINK": {
+		"deploy": false
+	},
+	"SynthsLINK": {
+		"deploy": false
 	}
 }
