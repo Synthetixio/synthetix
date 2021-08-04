@@ -14,18 +14,6 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		args: [account, account, addressOf(ReadProxyAddressResolver)],
 	});
 
-	await deployer.deployContract({
-		// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
-		name: 'EtherCollateral',
-		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateral',
-		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
-	});
-	await deployer.deployContract({
-		name: 'EtherCollateralsUSD',
-		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateralsUSD',
-		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
-	});
-
 	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
 
 	if (network === 'local') {
