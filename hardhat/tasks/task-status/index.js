@@ -63,7 +63,8 @@ function _commonInputAndSetup({ hre, taskArguments }) {
 	};
 	statusConf.providerUrl = taskArguments.providerUrl;
 	statusConf.deploymentPath =
-		taskArguments.deploymentPath || getDeploymentPathForNetwork({ network: taskArguments.network });
+		taskArguments.deploymentPath ||
+		getDeploymentPathForNetwork({ network: taskArguments.network, useOvm: taskArguments.useOvm });
 
 	statusConf.provider = _setupProvider(statusConf);
 	ensureDeploymentPath(statusConf.deploymentPath);
@@ -71,10 +72,11 @@ function _commonInputAndSetup({ hre, taskArguments }) {
 	return statusConf;
 }
 
-function _setupProvider({ providerUrl, network }) {
+function _setupProvider({ providerUrl, network, useOvm }) {
 	ensureNetwork(network);
 	const { providerUrl: envProviderUrl } = loadConnections({
 		network,
+		useOvm,
 	});
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl || envProviderUrl);

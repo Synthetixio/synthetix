@@ -360,6 +360,7 @@ const actions = {
 
 function getContract({
 	contract,
+	source,
 	network = 'mainnet',
 	useOvm = false,
 	deploymentPath = undefined,
@@ -370,11 +371,12 @@ function getContract({
 		deploymentPath,
 		fs,
 		path,
+		useOvm,
 	});
 
 	return new ethers.Contract(
 		getTarget({ contract, network, useOvm, deploymentPath }).address,
-		getSource({ contract, network, useOvm, deploymentPath }).abi,
+		getSource({ contract: source || contract, network, useOvm, deploymentPath }).abi,
 		provider
 	);
 }
