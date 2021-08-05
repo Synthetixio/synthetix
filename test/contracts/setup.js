@@ -234,6 +234,7 @@ const setupContract = async ({
 			toWei('0.02'), // refund fee
 		],
 		BinaryOptionMarketData: [],
+		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
 			owner,
@@ -242,6 +243,16 @@ const setupContract = async ({
 			0,
 			0,
 		],
+		CollateralUtil: [tryGetAddressOf('AddressResolver')],
+		Collateral: [
+			tryGetAddressOf('CollateralState'),
+			tryGetAddressOf('CollateralManager'),
+			tryGetAddressOf('AddressResolver'),
+			'sUSD',
+			1.2,
+			100,
+		],
+		CollateralState: [owner, tryGetAddressOf('Collateral')],
 		WETH: [],
 	};
 
@@ -472,6 +483,12 @@ const setupContract = async ({
 					{ from: owner }
 				),
 			]);
+		},
+
+		async CollateralManager() {
+			await cache['CollateralManagerState'].setAssociatedContract(instance.address, {
+				from: owner,
+			});
 		},
 
 		async SystemStatus() {
@@ -795,8 +812,32 @@ const setupAllContracts = async ({
 			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
 		{
+			contract: 'CollateralState',
+			deps: [],
+		},
+		{
+			contract: 'CollateralManagerState',
+			deps: [],
+		},
+		{
+			contract: 'CollateralUtil',
+			deps: ['AddressResolver', 'ExchangeRates'],
+		},
+		{
 			contract: 'CollateralManager',
-			deps: ['AddressResolver', 'SystemStatus', 'Issuer', 'ExchangeRates', 'DebtCache'],
+			deps: [
+				'AddressResolver',
+				'SystemStatus',
+				'Issuer',
+				'ExchangeRates',
+				'DebtCache',
+				'CollateralUtil',
+				'CollateralManagerState',
+			],
+		},
+		{
+			contract: 'Collateral',
+			deps: ['CollateralState', 'CollateralManager', 'AddressResolver'],
 		},
 	];
 
