@@ -41,11 +41,14 @@ module.exports = async ({
 
 	const checkSnapshot = async () => {
 		console.log(gray('     ---- Step 1'));
-		const [cacheInfo, currentDebt] = await Promise.all([
-			DebtCache.cacheInfo(),
-			DebtCache.currentDebt(),
-		]);
+		// const [cacheInfo, currentDebt] = await Promise.all([
+		// 	DebtCache.cacheInfo(),
+		// 	DebtCache.currentDebt(),
+		// ]);
+		const cacheInfo = await DebtCache.cacheInfo();
 		console.log(gray('     ---- Step 2'));
+		const currentDebt = await DebtCache.currentDebt();
+		console.log(gray('     ---- Step 3'));
 
 		// Check if the snapshot is stale and can be fixed.
 		if (cacheInfo.isStale && !currentDebt.anyRateIsInvalid) {
