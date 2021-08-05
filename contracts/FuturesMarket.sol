@@ -310,14 +310,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         Order storage order = orders[account];
         Position storage position = positions[account];
         uint fundingSequenceIndex = fundingSequence.length;
-        (uint prevPrice,) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.roundId);
+        (uint prevPrice, ) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.roundId);
         return
             !invalid && // Price is valid
             price != 0 &&
             _orderPending(order) && // There is actually an order
             order.roundId < _currentRoundId(exRates) && // A new price has arrived
-            prevPrice < uint(int(price).multiplyDecimalRound(int(order.maxSlippage))) && // slippage
-            prevPrice > uint(int(price).multiplyDecimalRound(-int(order.maxSlippage))) &&
+            int(prevPrice) < int(price).multiplyDecimalRound(int(_UNIT) + int(order.maxSlippage)) && // slippage
+            int(prevPrice) > int(price).multiplyDecimalRound(-int(_UNIT) + int(order.maxSlippage)) &&
             !_canLiquidate(position, _liquidationFee(), fundingSequenceIndex, price) && // No existing position can be liquidated
             0 <= _marginPlusProfitFunding(position, fundingSequenceIndex, price).sub(int(order.fee)); // Margin has not dipped negative due to fees, profit, funding
     }
@@ -851,10 +851,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         require(order.roundId < _currentRoundId(_exchangeRates()), "Awaiting next price");
 
         // Check for price slippage.
-        (uint prevPrice,) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.roundId);
+        (uint prevPrice, ) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.roundId);
         require(
-            prevPrice < uint(int(price).multiplyDecimalRound(int(order.maxSlippage))) &&
-            prevPrice > uint(int(price).multiplyDecimalRound(-int(order.maxSlippage))),
+            int(prevPrice) < int(price).multiplyDecimalRound(int(_UNIT) + int(order.maxSlippage)) &&
+                int(prevPrice) > int(price).multiplyDecimalRound(-int(_UNIT) + int(order.maxSlippage)),
             "exceeds slippage tolerance"
         );
         // if (newSize > 0) {

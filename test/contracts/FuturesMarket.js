@@ -67,6 +67,7 @@ contract('FuturesMarket', accounts => {
 	}
 
 	async function submitAndConfirmOrder({ market, account, fillPrice, leverage }) {
+		await setPrice(await market.baseAsset(), fillPrice);
 		await market.submitOrder(leverage, defaultMaxSlippage, { from: account });
 		await confirmOrder({
 			market,
@@ -82,6 +83,7 @@ contract('FuturesMarket', accounts => {
 		marginDelta,
 		leverage,
 	}) {
+		await setPrice(await market.baseAsset(), fillPrice);
 		await market.modifyMarginAndSubmitOrder(marginDelta, leverage, defaultMaxSlippage, {
 			from: account,
 		});
@@ -1069,7 +1071,7 @@ contract('FuturesMarket', accounts => {
 	});
 
 	describe('Submitting orders', () => {
-		it.only('can successfully submit an order', async () => {
+		it('can successfully submit an order', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.modifyMargin(margin, { from: trader });
 
@@ -1114,7 +1116,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual((await futuresMarket.orders(trader2)).id, id.add(toBN(2)));
 		});
 
-		it.only('submitting a second order cancels the first one.', async () => {
+		it('submitting a second order cancels the first one.', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.modifyMargin(margin, { from: trader });
 
@@ -1466,7 +1468,7 @@ contract('FuturesMarket', accounts => {
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
 		});
 
-		it.only('Cannot confirm an order if the price slippage exceeds tolerance', async () => {
+		it('Cannot confirm an order if the price slippage exceeds tolerance', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.modifyMargin(margin, { from: trader });
 			const leverage = toUnit('10');
