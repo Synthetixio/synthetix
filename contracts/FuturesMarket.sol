@@ -310,11 +310,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         Order storage order = orders[account];
         Position storage position = positions[account];
         uint fundingSequenceIndex = fundingSequence.length;
+        (uint prevPrice,) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.roundId);
         return
             !invalid && // Price is valid
             price != 0 &&
             _orderPending(order) && // There is actually an order
             order.roundId < _currentRoundId(exRates) && // A new price has arrived
+            prevPrice < uint(int(price).multiplyDecimalRound(int(order.maxSlippage))) && // slippage
+            prevPrice > uint(int(price).multiplyDecimalRound(-int(order.maxSlippage))) &&
             !_canLiquidate(position, _liquidationFee(), fundingSequenceIndex, price) && // No existing position can be liquidated
             0 <= _marginPlusProfitFunding(position, fundingSequenceIndex, price).sub(int(order.fee)); // Margin has not dipped negative due to fees, profit, funding
     }
@@ -847,6 +850,16 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // TODO: Verify that we can actually rely on the round id monotonically increasing
         require(order.roundId < _currentRoundId(_exchangeRates()), "Awaiting next price");
 
+        // Check for price slippage.
+        (uint prevPrice,) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.roundId);
+        require(
+            prevPrice < uint(int(price).multiplyDecimalRound(int(order.maxSlippage))) &&
+            prevPrice > uint(int(price).multiplyDecimalRound(-int(order.maxSlippage))),
+            "exceeds slippage tolerance"
+        );
+        // if (newSize > 0) {
+        // }
+
         Position storage position = positions[account];
 
         // You can't outrun an impending liquidation by closing your position quickly, for example.
@@ -868,13 +881,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             _sameSide(positionSize, newSize),
             uint(int(_maxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
         );
-
-        // Check price slippage as specified by `maxPrice`.
-        // Don't check if the position is being closed.
-        // if (newSize > 0) {
-        if (newSize > 0) {
-            // TODO: check price slippage.
-        }
 
         // Update the market size and skew, checking that the maximums are not exceeded
         marketSkew = marketSkew.add(newSize).sub(positionSize);

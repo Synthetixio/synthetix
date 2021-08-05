@@ -1480,7 +1480,7 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, price);
 
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
-			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
+			await assert.revert(futuresMarket.confirmOrder(trader), 'exceeds slippage tolerance');
 
 			// Slips -1%.
 			price = toUnit('200')
@@ -1489,7 +1489,7 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, price);
 
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
-			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
+			await assert.revert(futuresMarket.confirmOrder(trader), 'exceeds slippage tolerance');
 		});
 
 		it('Cannot confirm an order if an existing position is liquidating', async () => {
