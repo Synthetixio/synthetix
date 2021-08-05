@@ -15,9 +15,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-let CollateralManager;
 let CollateralState;
-let CollateralManagerState;
 
 contract('CollateralShort', async accounts => {
 	const YEAR = 31556926;
@@ -95,6 +93,8 @@ contract('CollateralShort', async accounts => {
 			AddressResolver: addressResolver,
 			Issuer: issuer,
 			DebtCache: debtCache,
+			CollateralManager: manager,
+			CollateralManagerState: managerState,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -108,25 +108,10 @@ contract('CollateralShort', async accounts => {
 				'Issuer',
 				'DebtCache',
 				'CollateralUtil',
+				'CollateralManager',
+				'CollateralManagerState',
 			],
 		}));
-
-		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		const maxDebt = toUnit(10000000);
-
-		manager = await CollateralManager.new(
-			managerState.address,
-			owner,
-			addressResolver.address,
-			maxDebt,
-			// 5% / 31536000 (seconds in common year)
-			1585489599,
-			0,
-			{
-				from: deployerAccount,
-			}
-		);
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -180,9 +165,7 @@ contract('CollateralShort', async accounts => {
 	};
 
 	before(async () => {
-		CollateralManager = artifacts.require(`CollateralManager`);
 		CollateralState = artifacts.require(`CollateralState`);
-		CollateralManagerState = artifacts.require('CollateralManagerState');
 
 		await setupShort();
 	});
@@ -338,12 +321,18 @@ contract('CollateralShort', async accounts => {
 		const susdCollateral = toUnit(1000);
 		const payInterest = true;
 
+		let beforeInteractionTime;
+
 		beforeEach(async () => {
 			await issue(sUSDSynth, susdCollateral, account1);
 
 			tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
 
 			id = getid(tx);
+
+			loan = await state.getLoan(account1, id);
+
+			beforeInteractionTime = loan.lastInteraction;
 
 			await fastForwardAndUpdateRates(3600);
 		});
@@ -355,6 +344,16 @@ contract('CollateralShort', async accounts => {
 
 			loan = await state.getLoan(account1, id);
 
+			assert.eventEqual(tx, 'LoanRepaymentMade', {
+				account: account1,
+				repayer: account1,
+				id: id,
+				amountRepaid: toUnit(0.5),
+				amountAfter: loan.amount,
+			});
+
+			assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
+
 			assert.bnClose(loan.amount, toUnit(0.5).toString(), toUnit(0.1).toString());
 			assert.equal(loan.collateral, toUnit(950).toString());
 		});
@@ -365,6 +364,8 @@ contract('CollateralShort', async accounts => {
 			});
 
 			loan = await state.getLoan(account1, id);
+
+			assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
 			assert.equal(loan.amount, toUnit(0).toString());
 			assert.bnClose(loan.collateral, toUnit(900).toString(), toUnit(0.1).toString());

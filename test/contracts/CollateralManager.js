@@ -15,9 +15,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-let CollateralManager;
 let CollateralState;
-let CollateralManagerState;
 
 contract('CollateralManager', async accounts => {
 	const [deployerAccount, owner, oracle, , account1] = accounts;
@@ -135,6 +133,8 @@ contract('CollateralManager', async accounts => {
 			AddressResolver: addressResolver,
 			Issuer: issuer,
 			DebtCache: debtCache,
+			CollateralManager: manager,
+			CollateralManagerState: managerState,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -148,26 +148,11 @@ contract('CollateralManager', async accounts => {
 				'DebtCache',
 				'Exchanger',
 				'CollateralManager',
-				'CollateralUtil',
+				'CollateralManagerState',
 			],
 		}));
 
-		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
 		maxDebt = toUnit(50000000);
-
-		manager = await CollateralManager.new(
-			managerState.address,
-			owner,
-			addressResolver.address,
-			maxDebt,
-			// 5% / 31536000 (seconds in common year)
-			1585489599,
-			0,
-			{
-				from: deployerAccount,
-			}
-		);
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -318,9 +303,7 @@ contract('CollateralManager', async accounts => {
 	};
 
 	before(async () => {
-		CollateralManager = artifacts.require(`CollateralManager`);
 		CollateralState = artifacts.require(`CollateralState`);
-		CollateralManagerState = artifacts.require('CollateralManagerState');
 
 		await setupManager();
 	});

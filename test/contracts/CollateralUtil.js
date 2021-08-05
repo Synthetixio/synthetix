@@ -4,22 +4,18 @@ const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const PublicEST8Decimals = artifacts.require('PublicEST8Decimals');
-
 const { toUnit, currentTime } = require('../utils')();
 
-const { setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts, setupContract, mockToken } = require('./setup');
+
+const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-let CollateralManager;
 let CollateralState;
-let CollateralManagerState;
-let ProxyERC20;
-let TokenState;
 
 contract('CollateralUtil', async accounts => {
 	const sUSD = toBytes32('sUSD');
@@ -33,7 +29,9 @@ contract('CollateralUtil', async accounts => {
 	let tx;
 	let loan;
 	let id;
-	let proxy, tokenState;
+
+	const name = 'Some name';
+	const symbol = 'TOKEN';
 
 	const [deployerAccount, owner, oracle, , account1] = accounts;
 
@@ -115,6 +113,8 @@ contract('CollateralUtil', async accounts => {
 			Issuer: issuer,
 			CollateralUtil: util,
 			DebtCache: debtCache,
+			CollateralManager: manager,
+			CollateralManagerState: managerState,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -128,52 +128,21 @@ contract('CollateralUtil', async accounts => {
 				'DebtCache',
 				'Exchanger',
 				'CollateralUtil',
+				'CollateralManager',
+				'CollateralManagerState',
 			],
 		}));
-
-		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		const maxDebt = toUnit(10000000);
-
-		manager = await CollateralManager.new(
-			managerState.address,
-			owner,
-			addressResolver.address,
-			maxDebt,
-			0,
-			0,
-			{
-				from: deployerAccount,
-			}
-		);
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
 		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
-		// the owner is the associated contract, so we can simulate
-		proxy = await ProxyERC20.new(owner, {
-			from: deployerAccount,
-		});
-		tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		renBTC = await PublicEST8Decimals.new(
-			proxy.address,
-			tokenState.address,
-			'Some Token',
-			'TOKEN',
-			toUnit('1000'),
-			owner,
-			{
-				from: deployerAccount,
-			}
-		);
-
-		await tokenState.setAssociatedContract(owner, { from: owner });
-		await tokenState.setBalanceOf(owner, toUnit('1000'), { from: owner });
-		await tokenState.setAssociatedContract(renBTC.address, { from: owner });
-
-		await proxy.setTarget(renBTC.address, { from: owner });
+		({ token: renBTC } = await mockToken({
+			accounts,
+			name,
+			symbol,
+			supply: 1e6,
+		}));
 
 		cerc20 = await deployCollateral({
 			state: state.address,
@@ -224,11 +193,7 @@ contract('CollateralUtil', async accounts => {
 	};
 
 	before(async () => {
-		CollateralManager = artifacts.require(`CollateralManager`);
-		CollateralManagerState = artifacts.require('CollateralManagerState');
 		CollateralState = artifacts.require(`CollateralState`);
-		ProxyERC20 = artifacts.require(`ProxyERC20`);
-		TokenState = artifacts.require(`TokenState`);
 
 		await setupMultiCollateral();
 	});
@@ -242,6 +207,14 @@ contract('CollateralUtil', async accounts => {
 		await issuesBTCtoAccount(toUnit(10), owner);
 
 		await debtCache.takeDebtSnapshot();
+	});
+
+	it('should ensure only expected functions are mutative', async () => {
+		ensureOnlyExpectedMutativeFunctions({
+			abi: util.abi,
+			ignoreParents: ['MixinResolver'],
+			expected: [],
+		});
 	});
 
 	describe('liquidation amount test', async () => {
