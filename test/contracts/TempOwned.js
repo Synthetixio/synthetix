@@ -2,7 +2,7 @@
 
 const { artifacts, contract } = require('hardhat');
 
-const { assert } = require('./common');
+const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { currentTime, fastForward } = require('../utils')();
 
 const TesteableTempOwned = artifacts.require('TestableTempOwned');
@@ -38,22 +38,26 @@ contract('TempOwned', accounts => {
 		);
 	});
 
-	it('allows to call a method to the tempOwner before EOL, then EOL is reached and blocks the execution', async () => {
-		const contract = await TesteableTempOwned.new(tempOwner, timestamp + DAY, {
-			from: deployerAccount,
+	describe('when reaching EOL', () => {
+		addSnapshotBeforeRestoreAfterEach();
+
+		it('allows to call a method to the tempOwner before EOL, then EOL is reached and blocks the execution', async () => {
+			const contract = await TesteableTempOwned.new(tempOwner, timestamp + DAY, {
+				from: deployerAccount,
+			});
+
+			assert.equal(await contract.testValue(), 0);
+
+			await contract.setTestValue(1, { from: tempOwner });
+
+			assert.equal(await contract.testValue(), 1);
+
+			await fastForward(DAY * 2);
+
+			await assert.revert(
+				contract.setTestValue(3, { from: tempOwner }),
+				'Owner EOL date already reached'
+			);
 		});
-
-		assert.equal(await contract.testValue(), 0);
-
-		await contract.setTestValue(1, { from: tempOwner });
-
-		assert.equal(await contract.testValue(), 1);
-
-		await fastForward(DAY * 2);
-
-		await assert.revert(
-			contract.setTestValue(3, { from: tempOwner }),
-			'Owner EOL date already reached'
-		);
 	});
 });
