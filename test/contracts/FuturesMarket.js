@@ -1069,7 +1069,7 @@ contract('FuturesMarket', accounts => {
 	});
 
 	describe('Submitting orders', () => {
-		it('can successfully submit an order', async () => {
+		it.only('can successfully submit an order', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.modifyMargin(margin, { from: trader });
 
@@ -1086,6 +1086,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, leverage);
 			assert.bnEqual(order.fee, fee);
 			assert.bnEqual(order.roundId, roundId);
+			assert.bnEqual(order.maxSlippage, defaultMaxSlippage);
 
 			// And it properly emits the relevant events.
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
@@ -1113,7 +1114,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual((await futuresMarket.orders(trader2)).id, id.add(toBN(2)));
 		});
 
-		it('submitting a second order cancels the first one.', async () => {
+		it.only('submitting a second order cancels the first one.', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.modifyMargin(margin, { from: trader });
 
@@ -1130,6 +1131,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order1.leverage, leverage);
 			assert.bnEqual(order1.fee, fee);
 			assert.bnEqual(order1.roundId, roundId1);
+			assert.bnEqual(order1.maxSlippage, defaultMaxSlippage);
 
 			await fastForward(24 * 60 * 60);
 			const price = toUnit('100');
@@ -1139,8 +1141,9 @@ contract('FuturesMarket', accounts => {
 			await futuresMarket.modifyMargin(margin2.sub(margin), { from: trader });
 			const leverage2 = toUnit('5');
 			const fee2 = (await futuresMarket.orderFee(trader, leverage2))[0];
+			const slippage2 = defaultMaxSlippage.add(toBN(1));
 
-			const tx = await futuresMarket.submitOrder(leverage2, defaultMaxSlippage, { from: trader });
+			const tx = await futuresMarket.submitOrder(leverage2, slippage2, { from: trader });
 
 			const id2 = toBN(2);
 			const roundId2 = await futuresMarket.currentRoundId();
@@ -1151,6 +1154,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order2.leverage, leverage2);
 			assert.bnEqual(order2.fee, fee2);
 			assert.bnEqual(order2.roundId, roundId2);
+			assert.bnEqual(order2.maxSlippage, slippage2);
 
 			// And it properly emits the relevant events.
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
@@ -1457,6 +1461,32 @@ contract('FuturesMarket', accounts => {
 			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
+
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
+		});
+
+		it.only('Cannot confirm an order if the price slippage exceeds tolerance', async () => {
+			const margin = toUnit('1000');
+			await futuresMarket.modifyMargin(margin, { from: trader });
+			const leverage = toUnit('10');
+			await futuresMarket.submitOrder(leverage, defaultMaxSlippage, { from: trader });
+
+			// Slips +1%.
+			let price;
+			price = toUnit('200')
+				.mul(toBN(1).add(defaultMaxSlippage))
+				.add(toBN(1));
+			await setPrice(baseAsset, price);
+
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
+
+			// Slips -1%.
+			price = toUnit('200')
+				.mul(toBN(-1).add(defaultMaxSlippage))
+				.sub(toBN(1));
+			await setPrice(baseAsset, price);
 
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
