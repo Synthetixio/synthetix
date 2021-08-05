@@ -19,46 +19,8 @@ module.exports = async ({
 		CollateralShort,
 		CollateralManager,
 		CollateralManagerState,
-		CollateralStateErc20,
-		CollateralStateEth,
-		CollateralStateShort,
 	} = deployer.deployedContracts;
 
-	if (CollateralStateShort && CollateralShort) {
-		await runStep({
-			contract: 'CollateralStateShort',
-			target: CollateralStateShort,
-			read: 'associatedContract',
-			expected: input => input === CollateralShort.address,
-			write: 'setAssociatedContract',
-			writeArg: CollateralShort.address,
-			comment: 'Ensure the CollateralShort contract can write to its state',
-		});
-	}
-
-	if (CollateralStateErc20 && CollateralErc20) {
-		await runStep({
-			contract: 'CollateralStateErc20',
-			target: CollateralStateErc20,
-			read: 'associatedContract',
-			expected: input => input === addressOf(CollateralErc20),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(CollateralErc20),
-			comment: 'Ensure the CollateralErc20 can write to its state',
-		});
-	}
-
-	if (CollateralStateEth && CollateralEth) {
-		await runStep({
-			contract: 'CollateralStateEth',
-			target: CollateralStateEth,
-			read: 'associatedContract',
-			expected: input => input === addressOf(CollateralEth),
-			write: 'setAssociatedContract',
-			writeArg: addressOf(CollateralEth),
-			comment: 'Ensure the CollatearlEth contract can write to its state',
-		});
-	}
 	if (CollateralManagerState && CollateralManager) {
 		await runStep({
 			contract: 'CollateralManagerState',

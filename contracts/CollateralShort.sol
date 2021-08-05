@@ -5,34 +5,29 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Collateral.sol";
 
-// Internal references
-import "./CollateralState.sol";
-
 contract CollateralShort is Collateral {
     constructor(
-        CollateralState _state,
         address _owner,
         ICollateralManager _manager,
         address _resolver,
         bytes32 _collateralKey,
         uint _minCratio,
         uint _minCollateral
-    ) public Collateral(_state, _owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
+    ) public Collateral(_owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
 
     function open(
         uint collateral,
         uint amount,
         bytes32 currency
-    ) external {
-        require(collateral <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance too low");
-
-        openInternal(collateral, amount, currency, true);
-
+    ) external returns (uint id) {
+        // Transfer from will throw if they didn't set the allowance
         IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), collateral);
+
+        id = openInternal(collateral, amount, currency, true);
     }
 
-    function close(uint id) external {
-        uint collateral = closeInternal(msg.sender, id);
+    function close(uint id) external returns (uint amount, uint collateral) {
+        (amount, collateral) = closeInternal(msg.sender, id);
 
         IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
     }
@@ -41,26 +36,26 @@ contract CollateralShort is Collateral {
         address borrower,
         uint id,
         uint amount
-    ) external {
-        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance too low");
+    ) external returns (uint short, uint collateral) {
+        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance not high enough");
 
         IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), amount);
 
-        depositInternal(borrower, id, amount);
+        (short, collateral) = depositInternal(borrower, id, amount);
     }
 
-    function withdraw(uint id, uint amount) external {
-        uint withdrawnAmount = withdrawInternal(id, amount);
+    function withdraw(uint id, uint amount) external returns (uint short, uint collateral) {
+        (short, collateral) = withdrawInternal(id, amount);
 
-        IERC20(address(_synthsUSD())).transfer(msg.sender, withdrawnAmount);
+        IERC20(address(_synthsUSD())).transfer(msg.sender, amount);
     }
 
     function repay(
         address borrower,
         uint id,
         uint amount
-    ) external {
-        repayInternal(borrower, msg.sender, id, amount);
+    ) external returns (uint short, uint collateral) {
+        (short, collateral) = repayInternal(borrower, msg.sender, id, amount);
     }
 
     function repayWithCollateral(
@@ -68,12 +63,12 @@ contract CollateralShort is Collateral {
         uint id,
         uint amount,
         bool payInterest
-    ) external {
-        repayWithCollateralInternal(borrower, msg.sender, id, amount, payInterest);
+    ) external returns (uint short, uint collateral) {
+        (short, collateral) = repayWithCollateralInternal(borrower, msg.sender, id, amount, payInterest);
     }
 
-    function draw(uint id, uint amount) external {
-        drawInternal(id, amount);
+    function draw(uint id, uint amount) external returns (uint short, uint collateral) {
+        (short, collateral) = drawInternal(id, amount);
     }
 
     function liquidate(

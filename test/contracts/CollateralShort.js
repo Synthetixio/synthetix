@@ -1,21 +1,16 @@
 'use strict';
 
-const { artifacts, contract } = require('hardhat');
+const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { fastForward, toUnit, fromUnit, currentTime } = require('../utils')();
 
-const { setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts } = require('./setup');
 
 const { ensureOnlyExpectedMutativeFunctions, setExchangeFeeRateForSynths } = require('./helpers');
 
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../..');
-
-let CollateralState;
+const { toBytes32 } = require('../..');
 
 contract('CollateralShort', async accounts => {
 	const YEAR = 31556926;
@@ -24,10 +19,9 @@ contract('CollateralShort', async accounts => {
 	const sETH = toBytes32('sETH');
 	const sBTC = toBytes32('sBTC');
 
-	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
+	const [, owner, oracle, , account1, account2] = accounts;
 
 	let short,
-		state,
 		managerState,
 		feePool,
 		exchanger,
@@ -75,14 +69,6 @@ contract('CollateralShort', async accounts => {
 		});
 	};
 
-	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
-		});
-	};
-
 	const setupShort = async () => {
 		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
 		({
@@ -97,6 +83,7 @@ contract('CollateralShort', async accounts => {
 			AddressResolver: addressResolver,
 			Issuer: issuer,
 			DebtCache: debtCache,
+			CollateralShort: short,
 			SystemSettings: systemSettings,
 			CollateralManager: manager,
 			CollateralManagerState: managerState,
@@ -114,6 +101,7 @@ contract('CollateralShort', async accounts => {
 				'DebtCache',
 				'SystemSettings',
 				'CollateralUtil',
+				'CollateralShort',
 				'CollateralManager',
 				'CollateralManagerState',
 			],
@@ -122,20 +110,6 @@ contract('CollateralShort', async accounts => {
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
-
-		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		short = await deployShort({
-			state: state.address,
-			owner: owner,
-			manager: manager.address,
-			resolver: addressResolver.address,
-			collatKey: sUSD,
-			minColat: toUnit(1.2),
-			minSize: toUnit(0.1),
-		});
-
-		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
@@ -173,8 +147,6 @@ contract('CollateralShort', async accounts => {
 	};
 
 	before(async () => {
-		CollateralState = artifacts.require(`CollateralState`);
-
 		await setupShort();
 	});
 
@@ -205,7 +177,6 @@ contract('CollateralShort', async accounts => {
 	});
 
 	it('should set constructor params on deployment', async () => {
-		assert.equal(await short.state(), state.address);
 		assert.equal(await short.owner(), owner);
 		assert.equal(await short.resolver(), addressResolver.address);
 		assert.equal(await short.collateralKey(), sUSD);
@@ -248,11 +219,9 @@ contract('CollateralShort', async accounts => {
 			beforeEach(async () => {
 				await issue(sUSDSynth, susdCollateral, account1);
 
-				tx = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
+				id = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
 
-				id = getid(tx);
-
-				loan = await state.getLoan(account1, id);
+				loan = short.loans[id];
 			});
 
 			it('should emit the event properly', async () => {
@@ -300,7 +269,7 @@ contract('CollateralShort', async accounts => {
 
 				id = getid(tx);
 
-				loan = await state.getLoan(account1, id);
+				loan = short.loans[id];
 			});
 
 			it('should emit the event properly', async () => {
@@ -349,7 +318,7 @@ contract('CollateralShort', async accounts => {
 
 			id = getid(tx);
 
-			loan = await state.getLoan(account1, id);
+			loan = short.loans[id];
 
 			beforeInteractionTime = loan.lastInteraction;
 			beforeFeePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
@@ -362,7 +331,7 @@ contract('CollateralShort', async accounts => {
 				from: account1,
 			});
 
-			loan = await state.getLoan(account1, id);
+			loan = short.loans[id];
 
 			assert.eventEqual(tx, 'LoanRepaymentMade', {
 				account: account1,
@@ -391,7 +360,7 @@ contract('CollateralShort', async accounts => {
 				from: account1,
 			});
 
-			loan = await state.getLoan(account1, id);
+			loan = short.loans[id];
 
 			assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
@@ -431,7 +400,7 @@ contract('CollateralShort', async accounts => {
 		});
 
 		it('should update the loan', async () => {
-			loan = await state.getLoan(account1, id);
+			loan = short.loans[id];
 			assert.equal(loan.amount, toUnit(6).toString());
 		});
 
@@ -539,7 +508,7 @@ contract('CollateralShort', async accounts => {
 				collateralLiquidated: expectedCollateralLiquidated,
 			});
 
-			loan = await state.getLoan(account1, id);
+			loan = short.loans[id];
 
 			assert.bnEqual(loan.amount, expectedLoanRemaining);
 			assert.bnEqual(loan.collateral, expectedCollateralRemaining);
@@ -713,7 +682,7 @@ contract('CollateralShort', async accounts => {
 
 			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
 
-			loan = await state.getLoan(account1, id);
+			loan = short.loans[id];
 
 			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
@@ -731,7 +700,7 @@ contract('CollateralShort', async accounts => {
 
 			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
 
-			loan = await state.getLoan(account1, id);
+			loan = short.loans[id];
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 

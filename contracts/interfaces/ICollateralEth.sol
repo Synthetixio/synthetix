@@ -1,19 +1,29 @@
 pragma solidity >=0.4.24;
 
 interface ICollateralEth {
-    function open(uint amount, bytes32 currency) external payable;
+    function open(
+        uint collateral,
+        uint amount,
+        bytes32 currency
+    ) external payable returns (uint id);
 
-    function close(uint id) external;
+    function close(uint id) external returns (uint amount, uint collateral);
 
-    function deposit(address borrower, uint id) external payable;
+    function deposit(
+        address borrower,
+        uint id,
+        uint amount
+    ) external payable returns (uint principal, uint collateral);
 
-    function withdraw(uint id, uint amount) external;
+    function withdraw(uint id, uint amount) external returns (uint principal, uint collateral);
 
     function repay(
         address borrower,
         uint id,
         uint amount
-    ) external;
+    ) external returns (uint principal, uint collateral);
+
+    function draw(uint id, uint amount) external returns (uint principal, uint collateral);
 
     function liquidate(
         address borrower,

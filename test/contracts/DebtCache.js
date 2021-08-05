@@ -61,25 +61,16 @@ contract('DebtCache', async accounts => {
 		// Short tests.
 		short;
 
-	const deployCollateral = async ({
-		state,
-		owner,
-		manager,
-		resolver,
-		collatKey,
-		minColat,
-		minSize,
-	}) => {
+	const deployCollateral = async ({ owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralEth',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
+			args: [owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
 	const setupMultiCollateral = async () => {
 		const CollateralManager = artifacts.require(`CollateralManager`);
-		const CollateralState = artifacts.require(`CollateralState`);
 		const CollateralManagerState = artifacts.require('CollateralManagerState');
 
 		synths = ['sUSD', 'sETH', 'sAUD'];
@@ -106,11 +97,8 @@ contract('DebtCache', async accounts => {
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
-		const cethState = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
 		// Deploy ETH Collateral.
 		ceth = await deployCollateral({
-			state: cethState.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -118,8 +106,6 @@ contract('DebtCache', async accounts => {
 			minColat: toUnit('1.3'),
 			minSize: toUnit('2'),
 		});
-
-		await cethState.setAssociatedContract(ceth.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
@@ -160,17 +146,16 @@ contract('DebtCache', async accounts => {
 		);
 	};
 
-	const deployShort = async ({ state, owner, manager, resolver, collatKey, minColat, minSize }) => {
+	const deployShort = async ({ owner, manager, resolver, collatKey, minColat, minSize }) => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralShort',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
+			args: [owner, manager, resolver, collatKey, minColat, minSize],
 		});
 	};
 
 	const setupShort = async () => {
 		const CollateralManager = artifacts.require(`CollateralManager`);
-		const CollateralState = artifacts.require(`CollateralState`);
 		const CollateralManagerState = artifacts.require('CollateralManagerState');
 
 		const managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, {
@@ -194,10 +179,7 @@ contract('DebtCache', async accounts => {
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
-		const state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
 		short = await deployShort({
-			state: state.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -205,8 +187,6 @@ contract('DebtCache', async accounts => {
 			minColat: toUnit(1.2),
 			minSize: toUnit(0.1),
 		});
-
-		await state.setAssociatedContract(short.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],

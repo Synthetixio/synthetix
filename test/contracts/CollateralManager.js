@@ -1,12 +1,12 @@
 'use strict';
 
-const { artifacts, contract } = require('hardhat');
+const { contract } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { toUnit, currentTime, fastForward } = require('../utils')();
 
-const { setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts, setupContract, mockToken } = require('./setup');
 
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
@@ -15,26 +15,23 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-let CollateralState;
-
 contract('CollateralManager', async accounts => {
-	const [deployerAccount, owner, oracle, , account1] = accounts;
+	const [, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
 	const sUSD = toBytes32('sUSD');
 	const sBTC = toBytes32('sBTC');
+
+	const name = 'Some name';
+	const symbol = 'TOKEN';
 
 	const INTERACTION_DELAY = 300;
 
 	const oneRenBTC = 100000000;
 
 	let ceth,
-		mcstate,
-		mcstateErc20,
 		cerc20,
-		proxy,
 		renBTC,
-		tokenState,
 		manager,
 		managerState,
 		addressResolver,
@@ -156,10 +153,14 @@ contract('CollateralManager', async accounts => {
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
-		mcstate = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
+		({ token: renBTC } = await mockToken({
+			accounts,
+			name,
+			symbol,
+			supply: 1e6,
+		}));
 
 		ceth = await deployEthCollateral({
-			mcState: mcstate.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -168,44 +169,10 @@ contract('CollateralManager', async accounts => {
 			minSize: toUnit(1),
 		});
 
-		await mcstate.setAssociatedContract(ceth.address, { from: owner });
-
-		mcstateErc20 = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		const ProxyERC20 = artifacts.require(`ProxyERC20`);
-		const TokenState = artifacts.require(`TokenState`);
-
-		// the owner is the associated contract, so we can simulate
-		proxy = await ProxyERC20.new(owner, {
-			from: deployerAccount,
-		});
-		tokenState = await TokenState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		const PublicEST8Decimals = artifacts.require('PublicEST8Decimals');
-
-		renBTC = await PublicEST8Decimals.new(
-			proxy.address,
-			tokenState.address,
-			'Some Token',
-			'TOKEN',
-			toUnit('1000'),
-			owner,
-			{
-				from: deployerAccount,
-			}
-		);
-
-		await tokenState.setAssociatedContract(owner, { from: owner });
-		await tokenState.setBalanceOf(owner, toUnit('1000'), { from: owner });
-		await tokenState.setAssociatedContract(renBTC.address, { from: owner });
-
-		await proxy.setTarget(renBTC.address, { from: owner });
-
 		// Issue ren and set allowance
 		await renBTC.transfer(account1, toUnit(100), { from: owner });
 
 		cerc20 = await deployErc20Collateral({
-			mcState: mcstateErc20.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -215,10 +182,6 @@ contract('CollateralManager', async accounts => {
 			underCon: renBTC.address,
 			decimals: 8,
 		});
-
-		await mcstateErc20.setAssociatedContract(cerc20.address, { from: owner });
-
-		shortState = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
 		short = await deployShort({
 			state: shortState.address,
@@ -303,8 +266,6 @@ contract('CollateralManager', async accounts => {
 	};
 
 	before(async () => {
-		CollateralState = artifacts.require(`CollateralState`);
-
 		await setupManager();
 	});
 

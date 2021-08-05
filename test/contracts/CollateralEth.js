@@ -18,7 +18,6 @@ const {
 } = require('../..');
 
 let CollateralManager;
-let CollateralState;
 let CollateralManagerState;
 
 contract('CollateralEth', async accounts => {
@@ -46,7 +45,6 @@ contract('CollateralEth', async accounts => {
 	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
 	let ceth,
-		state,
 		managerState,
 		manager,
 		issuer,
@@ -141,10 +139,7 @@ contract('CollateralEth', async accounts => {
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
-		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
 		ceth = await deployCollateral({
-			state: state.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -152,8 +147,6 @@ contract('CollateralEth', async accounts => {
 			minColat: toUnit('1.3'),
 			minSize: toUnit('2'),
 		});
-
-		await state.setAssociatedContract(ceth.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
@@ -209,7 +202,6 @@ contract('CollateralEth', async accounts => {
 
 	before(async () => {
 		CollateralManager = artifacts.require(`CollateralManager`);
-		CollateralState = artifacts.require(`CollateralState`);
 		CollateralManagerState = artifacts.require('CollateralManagerState');
 
 		await setupMultiCollateral();
@@ -228,7 +220,6 @@ contract('CollateralEth', async accounts => {
 
 	it('should set constructor params on deployment', async () => {
 		// assert.equal(await ceth.proxy(), account1);
-		assert.equal(await ceth.state(), state.address);
 		assert.equal(await ceth.owner(), owner);
 		assert.equal(await ceth.resolver(), addressResolver.address);
 		assert.equal(await ceth.collateralKey(), sETH);
@@ -266,7 +257,7 @@ contract('CollateralEth', async accounts => {
 				});
 
 				id = getid(tx);
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 			});
 
 			it('when we issue at 200%, our c ratio is 200%', async () => {
@@ -309,7 +300,7 @@ contract('CollateralEth', async accounts => {
 				});
 
 				id = getid(tx);
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 			});
 
 			it('when we issue at 200%, our c ratio is 200%', async () => {
@@ -540,7 +531,7 @@ contract('CollateralEth', async accounts => {
 
 				id = getid(tx);
 
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 			});
 
 			it('should set the loan correctly', async () => {
@@ -584,7 +575,7 @@ contract('CollateralEth', async accounts => {
 
 				id = getid(tx);
 
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 			});
 
 			it('should set the loan correctly', async () => {
@@ -671,7 +662,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should increase the total collateral of the loan', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 
 				assert.bnEqual(loan.collateral, twentyETH);
 			});
@@ -737,7 +728,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should decrease the total collateral of the loan', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 
 				const expectedCollateral = tenETH.sub(oneETH);
 
@@ -832,7 +823,7 @@ contract('CollateralEth', async accounts => {
 			beforeEach(async () => {
 				await issuesUSDToAccount(oneHundredsUSD, account2);
 				tx = await ceth.repay(account1, id, tensUSD, { from: account2 });
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 			});
 
 			it('should work reduce the repayers balance', async () => {
@@ -873,7 +864,7 @@ contract('CollateralEth', async accounts => {
 
 				tx = await ceth.repay(account1, id, oneETH, { from: account2 });
 
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 			});
 
 			it('should work reduce the repayers balance', async () => {
@@ -973,7 +964,7 @@ contract('CollateralEth', async accounts => {
 
 				await issuesUSDToAccount(toUnit(1000), account2);
 
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 				minCratio = await ceth.minCratio();
 				collateralKey = await ceth.collateralKey();
 
@@ -1016,7 +1007,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should fix the collateralisation ratio of the loan', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 
 				const ratio = await ceth.collateralRatio(loan);
 
@@ -1042,7 +1033,7 @@ contract('CollateralEth', async accounts => {
 					from: oracle,
 				});
 
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 
 				await issuesUSDToAccount(toUnit(1000), account2);
 
@@ -1064,7 +1055,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should close the loan correctly', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 
 				assert.equal(loan.amount, 0);
 				assert.equal(loan.collateral, 0);
@@ -1148,7 +1139,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should record the loan as closed', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 
 				assert.equal(loan.amount, 0);
 				assert.equal(loan.collateral, 0);
@@ -1250,7 +1241,7 @@ contract('CollateralEth', async accounts => {
 			beforeEach(async () => {
 				tx = await ceth.draw(id, toUnit(30), { from: account1 });
 
-				loan = await state.getLoan(account1, id);
+				loan = ceth.loans[id];
 			});
 
 			it('should update the amount on the loan', async () => {
@@ -1281,7 +1272,7 @@ contract('CollateralEth', async accounts => {
 
 			tx = await ceth.deposit(account1, id, { from: account1, value: oneETH });
 
-			loan = await state.getLoan(account1, id);
+			loan = ceth.loans[id];
 
 			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
@@ -1300,7 +1291,7 @@ contract('CollateralEth', async accounts => {
 
 			tx = await ceth.deposit(account1, id2, { from: account1, value: oneETH });
 
-			loan = await state.getLoan(account1, id2);
+			loan = ceth.loans[id];
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
@@ -1313,7 +1304,7 @@ contract('CollateralEth', async accounts => {
 
 			tx = await ceth.deposit(account1, id, { from: account1, value: oneETH });
 
-			loan = await state.getLoan(account1, id);
+			loan = ceth.loans[id];
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 

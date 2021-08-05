@@ -21,7 +21,6 @@ const {
 
 let CollateralManager;
 let CollateralManagerState;
-let CollateralState;
 let ProxyERC20;
 let TokenState;
 
@@ -51,7 +50,6 @@ contract('CollateralErc20', async accounts => {
 	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
 
 	let cerc20,
-		state,
 		managerState,
 		feePool,
 		exchangeRates,
@@ -107,7 +105,6 @@ contract('CollateralErc20', async accounts => {
 	};
 
 	const deployCollateral = async ({
-		state,
 		owner,
 		manager,
 		resolver,
@@ -120,7 +117,7 @@ contract('CollateralErc20', async accounts => {
 		return setupContract({
 			accounts,
 			contract: 'CollateralErc20',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
+			args: [owner, manager, resolver, collatKey, minColat, minSize, underCon, decimals],
 		});
 	};
 
@@ -172,8 +169,6 @@ contract('CollateralErc20', async accounts => {
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
-		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
 		// the owner is the associated contract, so we can simulate
 		proxy = await ProxyERC20.new(owner, {
 			from: deployerAccount,
@@ -199,7 +194,6 @@ contract('CollateralErc20', async accounts => {
 		await proxy.setTarget(renBTC.address, { from: owner });
 
 		cerc20 = await deployCollateral({
-			state: state.address,
 			owner: owner,
 			manager: manager.address,
 			resolver: addressResolver.address,
@@ -209,8 +203,6 @@ contract('CollateralErc20', async accounts => {
 			underCon: renBTC.address,
 			decimals: 8,
 		});
-
-		await state.setAssociatedContract(cerc20.address, { from: owner });
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralErc20'), toBytes32('CollateralManager')],
@@ -249,7 +241,6 @@ contract('CollateralErc20', async accounts => {
 	before(async () => {
 		CollateralManager = artifacts.require(`CollateralManager`);
 		CollateralManagerState = artifacts.require('CollateralManagerState');
-		CollateralState = artifacts.require(`CollateralState`);
 		ProxyERC20 = artifacts.require(`ProxyERC20`);
 		TokenState = artifacts.require(`TokenState`);
 
@@ -268,7 +259,6 @@ contract('CollateralErc20', async accounts => {
 	});
 
 	it('should set constructor params on deployment', async () => {
-		assert.equal(await cerc20.state(), state.address);
 		assert.equal(await cerc20.owner(), owner);
 		assert.equal(await cerc20.resolver(), addressResolver.address);
 		assert.equal(await cerc20.collateralKey(), sBTC);
@@ -306,7 +296,7 @@ contract('CollateralErc20', async accounts => {
 				});
 
 				id = getid(tx);
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 			});
 
 			it('when we issue at 200%, our c ratio is 200%', async () => {
@@ -348,7 +338,7 @@ contract('CollateralErc20', async accounts => {
 				});
 
 				id = getid(tx);
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 			});
 
 			it('when we issue at 200%, our c ratio is 200%', async () => {
@@ -619,7 +609,7 @@ contract('CollateralErc20', async accounts => {
 
 				id = getid(tx);
 
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 
 				issueFeeRate = new BN(await cerc20.issueFeeRate());
 				issueFee = fiveHundredSUSD.mul(issueFeeRate);
@@ -667,7 +657,7 @@ contract('CollateralErc20', async accounts => {
 
 				id = getid(tx);
 
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 
 				issueFeeRate = await cerc20.issueFeeRate();
 				issueFee = toUnit(2).mul(issueFeeRate);
@@ -755,7 +745,7 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('should increase the total collateral of the loan', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 
 				assert.bnEqual(loan.collateral, toUnit(3));
 			});
@@ -826,7 +816,7 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('should decrease the total collateral of the loan', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 
 				const expectedCollateral = toUnit(2).sub(toUnit(1));
 
@@ -910,7 +900,7 @@ contract('CollateralErc20', async accounts => {
 			beforeEach(async () => {
 				await issuesUSDToAccount(oneHundredsUSD, account2);
 				tx = await cerc20.repay(account1, id, tensUSD, { from: account2 });
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 			});
 
 			it('should work reduce the repayers balance', async () => {
@@ -949,7 +939,7 @@ contract('CollateralErc20', async accounts => {
 
 				tx = await cerc20.repay(account1, id, oneRenBTC, { from: account2 });
 
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 			});
 
 			it('should work reduce the repayers balance', async () => {
@@ -1044,7 +1034,7 @@ contract('CollateralErc20', async accounts => {
 
 				await issuesUSDToAccount(toUnit(5000), account2);
 
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 				minCratio = await cerc20.minCratio();
 				collateralKey = await cerc20.collateralKey();
 
@@ -1085,7 +1075,7 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('should fix the collateralisation ratio of the loan', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 
 				const ratio = await cerc20.collateralRatio(loan);
 
@@ -1101,7 +1091,7 @@ contract('CollateralErc20', async accounts => {
 					from: oracle,
 				});
 
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 
 				await issuesUSDToAccount(toUnit(10000), account2);
 
@@ -1121,7 +1111,7 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('should close the loan correctly', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 
 				assert.equal(loan.amount, 0);
 				assert.equal(loan.collateral, 0);
@@ -1201,7 +1191,7 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('should record the loan as closed', async () => {
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 
 				assert.equal(loan.amount, 0);
 				assert.equal(loan.collateral, 0);
@@ -1298,7 +1288,7 @@ contract('CollateralErc20', async accounts => {
 			beforeEach(async () => {
 				tx = await cerc20.draw(id, oneThousandsUSD, { from: account1 });
 
-				loan = await state.getLoan(account1, id);
+				loan = cerc20.loans[id];
 			});
 
 			it('should update the amount on the loan', async () => {
