@@ -759,6 +759,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function _submitOrder(
         int leverage,
         uint price,
+        uint maxSlippage,
         uint fundingIndex,
         address sender
     ) internal {
@@ -806,27 +807,32 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         order.leverage = leverage;
         order.fee = fee;
         order.roundId = roundId;
+        order.maxSlippage = maxSlippage;
         emitOrderSubmitted(id, sender, leverage, fee, roundId);
     }
 
-    function submitOrder(int leverage) external optionalProxy {
+    function submitOrder(int leverage, uint maxSlippage) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
-        _submitOrder(leverage, price, fundingIndex, messageSender);
+        _submitOrder(leverage, price, maxSlippage, fundingIndex, messageSender);
     }
 
     function closePosition() external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
-        _submitOrder(0, price, fundingIndex, messageSender);
+        _submitOrder(0, price, 2**256 - 1, fundingIndex, messageSender);
     }
 
-    function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
+    function modifyMarginAndSubmitOrder(
+        int marginDelta,
+        int leverage,
+        uint maxSlippage
+    ) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         address sender = messageSender;
         _modifyMargin(marginDelta, price, fundingIndex, sender);
-        _submitOrder(leverage, price, fundingIndex, sender);
+        _submitOrder(leverage, price, maxSlippage, fundingIndex, sender);
     }
 
     // TODO: Ensure that this is fine if the position is swapping sides
@@ -862,6 +868,13 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             _sameSide(positionSize, newSize),
             uint(int(_maxMarketValue(baseAsset)).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
         );
+
+        // Check price slippage as specified by `maxPrice`.
+        // Don't check if the position is being closed.
+        // if (newSize > 0) {
+        if (newSize > 0) {
+            // TODO: check price slippage.
+        }
 
         // Update the market size and skew, checking that the maximums are not exceeded
         marketSkew = marketSkew.add(newSize).sub(positionSize);

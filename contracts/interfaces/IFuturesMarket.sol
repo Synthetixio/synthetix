@@ -8,6 +8,7 @@ interface IFuturesMarket {
         int leverage;
         uint fee;
         uint roundId;
+        uint maxSlippage;
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.
@@ -39,7 +40,8 @@ interface IFuturesMarket {
             uint id,
             int leverage,
             uint fee,
-            uint roundId
+            uint roundId,
+            uint maxSlippage
         );
 
     function positions(address account)
@@ -129,11 +131,15 @@ interface IFuturesMarket {
 
     function cancelOrder() external;
 
-    function submitOrder(int leverage) external;
+    function submitOrder(int leverage, uint maxSlippage) external;
 
     function closePosition() external;
 
-    function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external;
+    function modifyMarginAndSubmitOrder(
+        int marginDelta,
+        int leverage,
+        uint maxSlippage
+    ) external;
 
     function confirmOrder(address account) external;
 
