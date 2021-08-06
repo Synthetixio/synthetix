@@ -54,6 +54,11 @@ contract('SystemSettings', async accounts => {
 				'setEtherWrapperMaxETH',
 				'setEtherWrapperMintFeeRate',
 				'setEtherWrapperBurnFeeRate',
+				'setMinCratio',
+				'setIssueFeeRate',
+				'setCollateralManager',
+				'setCanOpenLoans',
+				'setInteractionDelay',
 			],
 		});
 	});
