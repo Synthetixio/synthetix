@@ -1,4 +1,4 @@
-const { contract, web3 } = require('hardhat');
+const { artifacts, contract, web3 } = require('hardhat');
 const { toBN } = web3.utils;
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { setupAllContracts, setupContract } = require('./setup');
@@ -12,8 +12,10 @@ const {
 } = require('./helpers');
 const ZERO_ADDRESS = constants.ZERO_ADDRESS;
 
+const MockExchanger = artifacts.require('MockExchanger');
+
 contract('FuturesMarketManager', accounts => {
-	let proxyFuturesMarketManager, futuresMarketManager, sUSD, debtCache;
+	let proxyFuturesMarketManager, futuresMarketManager, sUSD, debtCache, synthetix, addressResolver;
 	const owner = accounts[1];
 	const trader = accounts[2];
 	const initialMint = toUnit('100000');
@@ -24,6 +26,8 @@ contract('FuturesMarketManager', accounts => {
 			FuturesMarketManager: futuresMarketManager,
 			SynthsUSD: sUSD,
 			DebtCache: debtCache,
+			Synthetix: synthetix,
+			AddressResolver: addressResolver,
 		} = await setupAllContracts({
 			accounts,
 			synths: ['sUSD'],
@@ -36,6 +40,7 @@ contract('FuturesMarketManager', accounts => {
 				'SystemStatus',
 				'SystemSettings',
 				'Synthetix',
+				'Exchanger',
 				'DebtCache',
 				'CollateralManager',
 			],
@@ -291,6 +296,27 @@ contract('FuturesMarketManager', accounts => {
 
 			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
 			await assert.revert(market.burnSUSD(owner, toUnit('1')), 'SafeMath: subtraction overflow');
+		});
+
+		it('burning respects settlement', async () => {
+			// Set up a mock exchanger
+			const mockExchanger = await MockExchanger.new(synthetix.address);
+			await addressResolver.importAddresses(['Exchanger'].map(toBytes32), [mockExchanger.address], {
+				from: owner,
+			});
+			await synthetix.rebuildCache();
+			await futuresMarketManager.rebuildCache();
+
+			await mockExchanger.setReclaim(toUnit('10'));
+			await mockExchanger.setNumEntries('1');
+
+			// Issuance works fine
+			await market.issueSUSD(owner, toUnit('100'));
+			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('100'));
+
+			// But burning properly deducts the reclamation amount
+			await market.burnSUSD(owner, toUnit('90'));
+			assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
 		});
 
 		it('only markets are permitted to issue or burn sUSD', async () => {

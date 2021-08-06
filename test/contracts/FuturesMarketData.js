@@ -141,6 +141,17 @@ contract('FuturesMarketData', accounts => {
 		assert.equal(await futuresMarketData.resolverProxy(), addressResolver.address);
 	});
 
+	describe('Globals', () => {
+		it('Global futures settings are properly fetched', async () => {
+			const globals = await futuresMarketData.globals();
+
+			assert.bnEqual(await futuresMarketSettings.minInitialMargin(), globals.minInitialMargin);
+			assert.bnEqual(globals.minInitialMargin, toUnit('100'));
+			assert.bnEqual(await futuresMarketSettings.liquidationFee(), globals.liquidationFee);
+			assert.bnEqual(globals.liquidationFee, toUnit('20'));
+		});
+	});
+
 	describe('Market details', () => {
 		it('By address', async () => {
 			const details = await futuresMarketData.marketDetails(futuresMarket.address);
