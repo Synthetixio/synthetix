@@ -53,7 +53,7 @@ contract('FuturesMarket', accounts => {
 
 	const initialFundingIndex = toBN(4);
 
-	const defaultMaxSlippage = toUnit('0.01'); // 1%
+	const defaultMaxSlippage = toUnit('0.20'); // 20%
 
 	async function setPrice(asset, price) {
 		await exchangeRates.updateRates([asset], [price], await currentTime(), {
@@ -1468,7 +1468,10 @@ contract('FuturesMarket', accounts => {
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
 		});
 
-		it('Cannot confirm an order if the price slippage exceeds tolerance', async () => {
+		it('Cannot confirm an order if the price slippage since order submission price exceeds tolerance', async () => {
+			const startPrice = toUnit('200');
+			await setPrice(baseAsset, startPrice);
+
 			const margin = toUnit('1000');
 			await futuresMarket.modifyMargin(margin, { from: trader });
 			const leverage = toUnit('10');
@@ -1476,18 +1479,14 @@ contract('FuturesMarket', accounts => {
 
 			// Slips +1%.
 			let price;
-			price = toUnit('200')
-				.mul(toBN(1).add(defaultMaxSlippage))
-				.add(toBN(1));
+			price = startPrice.mul(toUnit(1).add(defaultMaxSlippage)).add(toBN(1));
 			await setPrice(baseAsset, price);
 
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'exceeds slippage tolerance');
 
 			// Slips -1%.
-			price = toUnit('200')
-				.mul(toBN(-1).add(defaultMaxSlippage))
-				.sub(toBN(1));
+			price = startPrice.mul(toUnit(1).sub(defaultMaxSlippage)).sub(toBN(1));
 			await setPrice(baseAsset, price);
 
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));

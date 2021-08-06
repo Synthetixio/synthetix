@@ -316,8 +316,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             price != 0 &&
             _orderPending(order) && // There is actually an order
             order.roundId < _currentRoundId(exRates) && // A new price has arrived
-            int(prevPrice) < int(price).multiplyDecimalRound(int(_UNIT) + int(order.maxSlippage)) && // slippage
-            int(prevPrice) > int(price).multiplyDecimalRound(-int(_UNIT) + int(order.maxSlippage)) &&
+            _abs(int256(price - prevPrice) / int256(prevPrice)) < order.maxSlippage &&
             !_canLiquidate(position, _liquidationFee(), fundingSequenceIndex, price) && // No existing position can be liquidated
             0 <= _marginPlusProfitFunding(position, fundingSequenceIndex, price).sub(int(order.fee)); // Margin has not dipped negative due to fees, profit, funding
     }
@@ -852,11 +851,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // Check for price slippage.
         (uint prevPrice, ) = _exchangeRates().rateAndTimestampAtRound(baseAsset, order.roundId);
-        require(
-            int(prevPrice) < int(price).multiplyDecimalRound(int(_UNIT) + int(order.maxSlippage)) &&
-                int(prevPrice) > int(price).multiplyDecimalRound(-int(_UNIT) + int(order.maxSlippage)),
-            "exceeds slippage tolerance"
-        );
+
+        require(_abs(int256(price - prevPrice) / int256(prevPrice)) < order.maxSlippage, "exceeds slippage tolerance");
         // if (newSize > 0) {
         // }
 
