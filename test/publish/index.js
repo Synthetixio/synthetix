@@ -68,6 +68,7 @@ describe('publish scripts', () => {
 		getPathToNetwork,
 		getStakingRewards,
 		getShortingRewards,
+		getFuturesMarkets,
 	} = wrap({
 		network,
 		fs,
@@ -148,15 +149,15 @@ describe('publish scripts', () => {
 		if (isCompileRequired()) {
 			console.log('Found source file modified after build. Rebuilding...');
 
-			await commands.build({ showContractSize: true, testHelpers: true });
+			// await commands.build({ showContractSize: true, testHelpers: true });
 		} else {
 			console.log('Skipping build as everything up to date');
 		}
 
 		[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 
-		gasLimit = 8000000;
-		gasPrice = ethers.utils.parseUnits('5', 'gwei');
+		// gasLimit = 26970000;
+		// gasPrice = ethers.utils.parseUnits('0.015', 'gwei');
 
 		overrides = {
 			gasLimit,
@@ -184,6 +185,7 @@ describe('publish scripts', () => {
 			let SystemSettings;
 			let Liquidations;
 			let ExchangeRates;
+			let FuturesMarketManager;
 			const aggregators = {};
 
 			const getContract = ({ target, source }) =>
@@ -240,14 +242,14 @@ describe('publish scripts', () => {
 				}
 				fs.writeFileSync(feedsJSONPath, JSON.stringify(feeds));
 
-				await commands.deploy({
-					concurrency,
-					network,
-					freshDeploy: true,
-					yes: true,
-					privateKey: accounts.deployer.privateKey,
-					ignoreCustomParameters: true,
-				});
+				// await commands.deploy({
+				// 	concurrency,
+				// 	network,
+				// 	freshDeploy: true,
+				// 	yes: true,
+				// 	privateKey: accounts.deployer.privateKey,
+				// 	ignoreCustomParameters: true,
+				// });
 
 				sources = getSource();
 				targets = getTarget();
@@ -269,6 +271,7 @@ describe('publish scripts', () => {
 				Liquidations = getContract({ target: 'Liquidations' });
 
 				ExchangeRates = getContract({ target: 'ExchangeRates' });
+				FuturesMarketManager = getContract({ target: 'FuturesMarketManager' });
 			});
 
 			describe('default system settings', () => {
@@ -499,6 +502,25 @@ describe('publish scripts', () => {
 					});
 				});
 			});
+
+			describe.only('futures markets added to FuturesMarketManager', async () => {
+				const markets = getFuturesMarkets();
+
+				it(`The number of available futures markets in Synthetix matches the number of futures markets in the JSON file: ${markets.length}`, async () => {
+					const count = await FuturesMarketManager.numMarkets();
+					assert.strictEqual(markets.length, count);
+				});
+
+				markets.forEach(({ asset }) => {
+					describe(asset, () => {
+						it('FuturesMarketManager has the market added', async () => {
+							const foundMarket = await FuturesMarketManager.marketForAsset(toBytes32(asset));
+							assert.strictEqual(foundMarket, targets[`FuturesMarket${asset.slice(1)}`].address);
+						});
+					});
+				});
+			});
+
 			describe('deploy-staking-rewards', () => {
 				beforeEach(async () => {
 					const rewardsToDeploy = [
