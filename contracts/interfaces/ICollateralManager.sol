@@ -69,9 +69,6 @@ interface ICollateralManager {
     function removeShortableSynths(bytes32[] calldata synths) external;
 
     // State mutative
-    function updateBorrowRates(uint rate) external;
-
-    function updateShortRates(bytes32 currency, uint rate) external;
 
     function incrementLongs(bytes32 synth, uint amount) external;
 
@@ -80,4 +77,14 @@ interface ICollateralManager {
     function incrementShorts(bytes32 synth, uint amount) external;
 
     function decrementShorts(bytes32 synth, uint amount) external;
+
+    function accrueInterest(
+        uint interestIndex,
+        bytes32 currency,
+        bool isShort
+    ) external returns (uint difference, uint index);
+
+    function updateBorrowRatesCollateral(uint rate) external;
+
+    function updateShortRatesCollateral(bytes32 currency, uint rate) external;
 }

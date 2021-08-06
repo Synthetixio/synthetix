@@ -573,30 +573,12 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     // Update the cumulative interest rate for the currency that was interacted with.
     function accrueInterest(Loan storage loan) internal {
-        // 0. Get the rates we need.
-        (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) =
-            loan.short
-                ? manager.getShortRatesAndTime(loan.currency, loan.interestIndex)
-                : manager.getRatesAndTime(loan.interestIndex);
+        (uint differential, uint newIndex) = manager.accrueInterest(loan.interestIndex, loan.currency, loan.short);
 
-        // 1. Get the instantaneous rate.
-        (uint rate, bool invalid) = loan.short ? manager.getShortRate(synthsByKey[loan.currency]) : manager.getBorrowRate();
+        // 5. If the loan was just opened, don't record any interest. Otherwise multiple by the amount outstanding.
+        uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(differential);
 
-        require(!invalid, "Invalid rates");
-
-        // 2. Get the time since we last updated the rate.
-        uint timeDelta = block.timestamp.sub(lastUpdated).mul(SafeDecimalMath.unit());
-
-        // 3. Get the latest cumulative rate. F_n+1 = F_n + F_last
-        uint latestCumulative = lastRate.add(rate.multiplyDecimal(timeDelta));
-
-        // 4. If the loan was just opened, don't record any interest. Otherwise multiple by the amount outstanding.
-        uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(latestCumulative.sub(entryRate));
-
-        // 5. Update rates with the lastest cumulative rate. This also updates the time.
-        loan.short ? manager.updateShortRates(loan.currency, latestCumulative) : manager.updateBorrowRates(latestCumulative);
-
-        // 6. Update loan
+        // 8. Update loan
         loan.accruedInterest = loan.accruedInterest.add(interest);
         loan.interestIndex = newIndex;
     }

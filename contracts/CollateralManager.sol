@@ -201,7 +201,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         }
     }
 
-    function getBorrowRate() external view returns (uint borrowRate, bool anyRateIsInvalid) {
+    function getBorrowRate() public view returns (uint borrowRate, bool anyRateIsInvalid) {
         // get the snx backed debt.
         uint snxDebt = _issuer().totalIssuedSynths(sUSD, true);
 
@@ -223,7 +223,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         anyRateIsInvalid = ratesInvalid;
     }
 
-    function getShortRate(bytes32 synth) external view returns (uint shortRate, bool rateIsInvalid) {
+    function getShortRate(bytes32 synth) public view returns (uint shortRate, bool rateIsInvalid) {
         bytes32 synthKey = _synth(synth).currencyKey();
 
         rateIsInvalid = _exchangeRates().rateIsInvalid(synthKey);
@@ -250,7 +250,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function getRatesAndTime(uint index)
-        external
+        public
         view
         returns (
             uint entryRate,
@@ -263,7 +263,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function getShortRatesAndTime(bytes32 currency, uint index)
-        external
+        public
         view
         returns (
             uint entryRate,
@@ -461,11 +461,11 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     /* ---------- STATE MUTATIONS ---------- */
 
-    function updateBorrowRates(uint rate) external onlyCollateral {
+    function updateBorrowRates(uint rate) internal {
         state.updateBorrowRates(rate);
     }
 
-    function updateShortRates(bytes32 currency, uint rate) external onlyCollateral {
+    function updateShortRates(bytes32 currency, uint rate) internal {
         state.updateShortRates(currency, rate);
     }
 
@@ -483,6 +483,35 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     function decrementShorts(bytes32 synth, uint amount) external onlyCollateral {
         state.decrementShorts(synth, amount);
+    }
+
+    function accrueInterest(
+        uint interestIndex,
+        bytes32 currency,
+        bool isShort
+    ) external onlyCollateral returns (uint difference, uint index) {
+        // 1. Get the rates we need.
+        (uint entryRate, uint lastRate, uint lastUpdated, uint newIndex) =
+            isShort ? getShortRatesAndTime(currency, interestIndex) : getRatesAndTime(interestIndex);
+
+        // 2. Get the instantaneous rate.
+        (uint rate, bool invalid) = isShort ? getShortRate(currency) : getBorrowRate();
+
+        require(!invalid);
+
+        // 3. Get the time since we last updated the rate.
+        // TODO: consider this in the context of l2 time.
+        uint timeDelta = block.timestamp.sub(lastUpdated).mul(1e18);
+
+        // 4. Get the latest cumulative rate. F_n+1 = F_n + F_last
+        uint latestCumulative = lastRate.add(rate.multiplyDecimal(timeDelta));
+
+        // 5. Return the rate differential and the new interest index.
+        difference = latestCumulative.sub(entryRate);
+        index = newIndex;
+
+        // 5. Update rates with the lastest cumulative rate. This also updates the time.
+        isShort ? updateShortRates(currency, latestCumulative) : updateBorrowRates(latestCumulative);
     }
 
     /* ========== MODIFIERS ========== */
