@@ -469,6 +469,14 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         state.updateShortRates(currency, rate);
     }
 
+    function updateBorrowRatesCollateral(uint rate) external onlyCollateral {
+        state.updateBorrowRates(rate);
+    }
+
+    function updateShortRatesCollateral(bytes32 currency, uint rate) external onlyCollateral {
+        state.updateShortRates(currency, rate);
+    }
+
     function incrementLongs(bytes32 synth, uint amount) external onlyCollateral {
         state.incrementLongs(synth, amount);
     }
