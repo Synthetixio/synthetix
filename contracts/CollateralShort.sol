@@ -37,7 +37,7 @@ contract CollateralShort is Collateral {
         uint id,
         uint amount
     ) external returns (uint short, uint collateral) {
-        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance not high enough");
+        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance too low");
 
         IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), amount);
 
@@ -50,7 +50,7 @@ contract CollateralShort is Collateral {
         IERC20(address(_synthsUSD())).transfer(msg.sender, amount);
     }
 
-    function repay(
+    function repayWithCollateral(
         address borrower,
         uint id,
         uint amount

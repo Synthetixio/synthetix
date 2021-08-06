@@ -178,7 +178,7 @@ contract('ShortingRewards', accounts => {
 		});
 
 		await addressResolver.importAddresses(
-			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
+			[toBytes32('CollateralShort'), toBytes32('CollateralManager'), toBytes32('CollateralUtil')],
 			[short.address, manager.address],
 			{
 				from: owner,

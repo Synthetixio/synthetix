@@ -862,6 +862,18 @@ const setupAllContracts = async ({
 			contract: 'CollateralShort',
 			deps: ['CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
+		{
+			contract: 'CollateralUtil',
+			deps: ['AddressResolver'],
+		},
+		{
+			contract: 'CollateralState',
+			deps: [], // TODO should this include CollateralState?
+		},
+		{
+			contract: 'Collateral',
+			deps: ['CollateralState', 'CollateralManager', 'AddressResolver'],
+		},
 	];
 
 	// get deduped list of all required base contracts

@@ -15,6 +15,7 @@ import "./interfaces/ICollateralUtil.sol";
 import "./interfaces/ICollateralManager.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
+import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynth.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -64,8 +65,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     uint public maxLoansPerAccount = 50;
 
     // Time in seconds that a user must wait between interacting with a loan.
-    // Provides front running and flash loan protection.
-    uint public interactionDelay = 300;
+    uint public interactionDelay = 0;
 
     bool public canOpenLoans = true;
 
@@ -211,35 +211,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function addRewardsContracts(address rewardsContract, bytes32 synth) external onlyOwner {
         shortingRewards[synth] = rewardsContract;
-    }
-
-    /* ---------- SETTERS ---------- */
-
-    function setMinCratio(uint _minCratio) external onlyOwner {
-        require(_minCratio > SafeDecimalMath.unit(), "Cratio must be above 1");
-        minCratio = _minCratio;
-        emit MinCratioRatioUpdated(minCratio);
-    }
-
-    function setIssueFeeRate(uint _issueFeeRate) external onlyOwner {
-        issueFeeRate = _issueFeeRate;
-        emit IssueFeeRateUpdated(issueFeeRate);
-    }
-
-    function setInteractionDelay(uint _interactionDelay) external onlyOwner {
-        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
-        interactionDelay = _interactionDelay;
-        emit InteractionDelayUpdated(interactionDelay);
-    }
-
-    function setManager(ICollateralManager _newManager) external onlyOwner {
-        manager = _newManager;
-        emit ManagerUpdated(manager);
-    }
-
-    function setCanOpenLoans(bool _canOpenLoans) external onlyOwner {
-        canOpenLoans = _canOpenLoans;
-        emit CanOpenLoansUpdated(canOpenLoans);
     }
 
     /* ---------- LOAN INTERACTIONS ---------- */
