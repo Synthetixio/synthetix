@@ -273,6 +273,7 @@ contract('DebtCache', async accounts => {
 				'FlexibleStorage',
 				'CollateralManager',
 				'RewardEscrowV2', // necessary for issuer._collateral()
+				'CollateralUtil',
 			],
 		}));
 	});
