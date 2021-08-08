@@ -25,6 +25,7 @@ contract('FuturesMarketData', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
+	const defaultMaxSlippage = toUnit('0.20'); // 20%
 
 	before(async () => {
 		({
@@ -113,10 +114,10 @@ contract('FuturesMarketData', accounts => {
 
 		// The traders take positions on market
 		await futuresMarket.modifyMargin(toUnit('1000'), { from: trader1 });
-		await futuresMarket.submitOrder(toUnit('5'), { from: trader1 });
+		await futuresMarket.submitOrder(toUnit('5'), defaultMaxSlippage, { from: trader1 });
 
 		await futuresMarket.modifyMargin(toUnit('750'), { from: trader2 });
-		await futuresMarket.submitOrder(toUnit('-10'), { from: trader2 });
+		await futuresMarket.submitOrder(toUnit('-10'), defaultMaxSlippage, { from: trader2 });
 
 		await exchangeRates.updateRates([baseAsset], [toUnit('100')], await currentTime(), {
 			from: oracle,
@@ -125,12 +126,12 @@ contract('FuturesMarketData', accounts => {
 		await futuresMarket.confirmOrder(trader2);
 
 		await futuresMarket.modifyMargin(toUnit('4000'), { from: trader3 });
-		await futuresMarket.submitOrder(toUnit('1.25'), { from: trader3 });
+		await futuresMarket.submitOrder(toUnit('1.25'), defaultMaxSlippage, { from: trader3 });
 
 		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForAsset(newAsset));
 
 		await sethMarket.modifyMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.submitOrder(toUnit('4'), { from: trader3 });
+		await sethMarket.submitOrder(toUnit('4'), defaultMaxSlippage, { from: trader3 });
 		await exchangeRates.updateRates([newAsset], [toUnit('999')], await currentTime(), {
 			from: oracle,
 		});
