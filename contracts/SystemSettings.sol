@@ -188,6 +188,18 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getAtomicPriceBuffer(currencyKey);
     }
 
+    // SIP-120 Atomic exchanges
+    // consideration window for determining synth volatility
+    function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicVolatilityConsiderationWindow(currencyKey);
+    }
+
+    // SIP-120 Atomic exchanges
+    // update threshold for determining synth volatility
+    function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint) {
+        return getAtomicVolatilityUpdateThreshold(currencyKey);
+    }
+
     // ========== RESTRICTED ==========
 
     function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
@@ -383,6 +395,24 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AtomicPriceBufferUpdated(_currencyKey, _buffer);
     }
 
+    function setAtomicVolatilityConsiderationWindow(bytes32 _currencyKey, uint _window) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW, _currencyKey)),
+            _window
+        );
+        emit AtomicVolatilityConsiderationWindowUpdated(_currencyKey, _window);
+    }
+
+    function setAtomicVolatilityUpdateThreshold(bytes32 _currencyKey, uint _threshold) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD, _currencyKey)),
+            _threshold
+        );
+        emit AtomicVolatilityUpdateThresholdUpdated(_currencyKey, _threshold);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
@@ -407,4 +437,6 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
     event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
     event AtomicPriceBufferUpdated(bytes32 synthKey, uint newBuffer);
+    event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
+    event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
 }

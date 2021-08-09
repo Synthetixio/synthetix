@@ -58,6 +58,8 @@ contract('SystemSettings', async accounts => {
 				'setAtomicEquivalentForDexPricing',
 				'setAtomicExchangeFeeRate',
 				'setAtomicPriceBuffer',
+				'setAtomicVolatilityConsiderationWindow',
+				'setAtomicVolatilityUpdateThreshold',
 			],
 		});
 	});
@@ -1116,6 +1118,107 @@ contract('SystemSettings', async accounts => {
 			it('allows to be reset to zero', async () => {
 				await systemSettings.setAtomicPriceBuffer(sETH, 0, { from: owner });
 				assert.bnEqual(await systemSettings.atomicPriceBuffer(sETH), 0);
+			});
+		});
+	});
+
+	describe('setAtomicVolatilityConsiderationWindow', () => {
+		const sETH = toBytes32('sETH');
+		const considerationWindow = toBN('600'); // 10 min
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAtomicVolatilityConsiderationWindow,
+				args: [sETH, considerationWindow],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAtomicVolatilityConsiderationWindow(
+					sETH,
+					considerationWindow,
+					{
+						from: owner,
+					}
+				);
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(
+					await systemSettings.atomicVolatilityConsiderationWindow(sETH),
+					considerationWindow
+				);
+			});
+
+			it('and emits a AtomicVolatilityConsiderationWindowUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicVolatilityConsiderationWindowUpdated', [
+					sETH,
+					considerationWindow,
+				]);
+			});
+
+			it('allows to be changed', async () => {
+				const newConsiderationWindow = considerationWindow.add(toBN('1'));
+				await systemSettings.setAtomicVolatilityConsiderationWindow(sETH, newConsiderationWindow, {
+					from: owner,
+				});
+				assert.bnEqual(
+					await systemSettings.atomicVolatilityConsiderationWindow(sETH),
+					newConsiderationWindow
+				);
+			});
+
+			it('allows to be reset to zero', async () => {
+				await systemSettings.setAtomicVolatilityConsiderationWindow(sETH, 0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicVolatilityConsiderationWindow(sETH), 0);
+			});
+		});
+	});
+
+	describe('setAtomicVolatilityUpdateThreshold', () => {
+		const sETH = toBytes32('sETH');
+		const threshold = toBN('3');
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setAtomicVolatilityUpdateThreshold,
+				args: [sETH, threshold],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let txn;
+			beforeEach(async () => {
+				txn = await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, threshold, {
+					from: owner,
+				});
+			});
+
+			it('then it changes the value as expected', async () => {
+				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(sETH), threshold);
+			});
+
+			it('and emits an AtomicVolatilityUpdateThresholdUpdated event', async () => {
+				assert.eventEqual(txn, 'AtomicVolatilityUpdateThresholdUpdated', [sETH, threshold]);
+			});
+
+			it('allows to be changed', async () => {
+				const newThreshold = threshold.add(ONE);
+				await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, newThreshold, {
+					from: owner,
+				});
+				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(sETH), newThreshold);
+			});
+
+			it('allows to be reset to zero', async () => {
+				await systemSettings.setAtomicVolatilityUpdateThreshold(sETH, 0, { from: owner });
+				assert.bnEqual(await systemSettings.atomicVolatilityUpdateThreshold(sETH), 0);
 			});
 		});
 	});
