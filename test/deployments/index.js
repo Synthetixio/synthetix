@@ -33,11 +33,8 @@ describe('deployments', () => {
 					let web3;
 					let contracts;
 
-					const getContract = ({ target: targetName }) => {
-						const target = targets[targetName]
-						const source = sources[target.source]
-						return new web3.eth.Contract(source.abi, target.address);
-					}
+					const getContract = ({ source, target }) =>
+						new web3.eth.Contract(sources[source || target].abi, targets[target].address);
 
 					beforeEach(() => {
 						web3 = new Web3();
@@ -49,9 +46,8 @@ describe('deployments', () => {
 						web3 = new Web3(new Web3.providers.HttpProvider(connections.providerUrl));
 
 						contracts = {
-							Synthetix: getContract({ target: 'Synthetix' }),
+							Synthetix: getContract({ source: 'Synthetix', target: 'ProxyERC20' }),
 							ExchangeRates: getContract({ target: 'ExchangeRates' }),
-							FuturesMarketManager: getContract({ target: 'FuturesMarketManager' }),
 						};
 					});
 
