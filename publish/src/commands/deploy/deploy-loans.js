@@ -49,6 +49,36 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 	}
 
 	// ----------------
+	// LINK Wrapper
+	// ----------------
+
+	let LINK_ADDRESS = (await getDeployParameter('LINK_ERC20_ADDRESSES'))[network];
+
+	if (network === 'local') {
+		// On local, deploy a mock WETH token.
+		// OVM already has a deployment of WETH, however since we use
+		// Hardhat for the local-ovm environment, we must deploy
+		// our own.
+		const link = await deployer.deployContract({
+			name: 'LINK',
+			source: 'MockToken',
+		});
+		link.skipResolver = true;
+		LINK_ADDRESS = link.address;
+	}
+
+	if (!LINK_ADDRESS) {
+		throw new Error('LINK address is not known');
+	}
+
+	await deployer.deployContract({
+		name: 'LinkWrapper',
+		source: useOvm ? 'EmptyLinkWrapper' : 'LinkWrapper',
+		deps: ['AddressResolver'],
+		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver), LINK_ADDRESS],
+	});
+
+	// ----------------
 	// Multi Collateral System
 	// ----------------
 
