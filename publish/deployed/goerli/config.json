@@ -32,12 +32,6 @@
 	"ExchangeState": {
 		"deploy": false
 	},
-	"EtherCollateral": {
-		"deploy": false
-	},
-	"EtherCollateralsUSD": {
-		"deploy": false
-	},
 	"FeePool": {
 		"deploy": false
 	},
