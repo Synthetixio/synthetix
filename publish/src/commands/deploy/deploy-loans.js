@@ -66,20 +66,16 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		args: [account, account],
 	});
 
-	const useEmptyCollateralManager = useOvm;
 	const collateralManager = await deployer.deployContract({
 		name: 'CollateralManager',
-		source: useEmptyCollateralManager ? 'EmptyCollateralManager' : 'CollateralManager',
-		args: useEmptyCollateralManager
-			? []
-			: [
-					addressOf(collateralManagerState),
-					account,
-					addressOf(ReadProxyAddressResolver),
-					collateralManagerDefaults['MAX_DEBT'],
-					collateralManagerDefaults['BASE_BORROW_RATE'],
-					collateralManagerDefaults['BASE_SHORT_RATE'],
-			  ],
+		args: [
+			addressOf(collateralManagerState),
+			account,
+			addressOf(ReadProxyAddressResolver),
+			collateralManagerDefaults['MAX_DEBT'],
+			collateralManagerDefaults['BASE_BORROW_RATE'],
+			collateralManagerDefaults['BASE_SHORT_RATE'],
+		],
 	});
 
 	await deployer.deployContract({
@@ -139,6 +135,5 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 
 	return {
 		collateralManagerDefaults,
-		useEmptyCollateralManager,
 	};
 };
