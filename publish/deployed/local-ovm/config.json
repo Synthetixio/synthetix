@@ -125,7 +125,16 @@
 	"SynthetixBridgeToBase": {
 		"deploy": true
 	},
+	"CollateralUtil": {
+		"deploy": true
+	},
 	"CollateralManager": {
+		"deploy": true
+	},
+	"CollateralManagerState": {
+		"deploy": true
+	},
+	"CollateralShort": {
 		"deploy": true
 	},
 	"EtherWrapper": {
