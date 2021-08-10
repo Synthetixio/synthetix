@@ -39,7 +39,7 @@ module.exports = ({ params, yes, ignoreCustomParameters }) => async name => {
 	if (effectiveValue !== defaultParam) {
 		console.log(
 			yellow(
-				`PARAMETER OVERRIDE: Overriding default ${name} with ${effectiveValue}, specified in params.json.`
+				`PARAMETER OVERRIDE: Overriding default ${name} with ${effectiveValue}, specified in params.js.`
 			)
 		);
 	}
