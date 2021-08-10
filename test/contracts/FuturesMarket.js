@@ -1,5 +1,5 @@
 const { artifacts, contract, web3 } = require('hardhat');
-
+const ethers = require('ethers');
 const { toBytes32 } = require('../..');
 const {
 	currentTime,
@@ -1385,7 +1385,7 @@ contract('FuturesMarket', accounts => {
 		});
 	});
 
-	describe.only('Confirming orders', () => {
+	describe('Confirming orders', () => {
 		it('can confirm a pending order once a new price arrives', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.modifyMargin(margin, { from: trader });
@@ -1473,16 +1473,16 @@ contract('FuturesMarket', accounts => {
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
 		});
 
-		it.only('Cannot confirm an order if the price slippage since order submission price exceeds tolerance', async () => {
+		it('Cannot confirm an order if the price slippage since order submission price exceeds tolerance', async () => {
 			const startPrice = toUnit('200');
 			await setPrice(baseAsset, startPrice);
 
 			const margin = toUnit('1000');
 			await futuresMarket.modifyMargin(margin, { from: trader });
 			const leverage = toUnit('10');
-			const maxSlippage = toUnit('0.01'); // 1%
-			const minPrice = startPrice.mul(toUnit(1).add(maxSlippage));
-			const maxPrice = startPrice.mul(toUnit(1).sub(maxSlippage));
+			const maxSlippage = toUnit('0.01'); // 1% in either direction
+			const minPrice = startPrice.mul(toUnit(1).sub(maxSlippage));
+			const maxPrice = startPrice.mul(toUnit(1).add(maxSlippage));
 
 			await futuresMarket.submitOrder(leverage, minPrice, maxPrice, { from: trader });
 

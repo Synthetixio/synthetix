@@ -4,6 +4,7 @@ const { toBytes32 } = require('../../');
 const { currentTime, toUnit } = require('../utils')();
 const { setupContract, setupAllContracts } = require('./setup');
 const { assert } = require('./common');
+const ethers = require('ethers');
 
 const FuturesMarket = artifacts.require('FuturesMarket');
 
