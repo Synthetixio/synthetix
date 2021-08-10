@@ -244,6 +244,14 @@ const setupContract = async ({
 			0,
 		],
 		CollateralUtil: [tryGetAddressOf('AddressResolver')],
+		Collateral: [
+			owner,
+			tryGetAddressOf('CollateralManager'),
+			tryGetAddressOf('AddressResolver'),
+			toBytes32('sUSD'),
+			toUnit(1.2),
+			toUnit(100),
+		],
 		CollateralEth: [
 			owner,
 			tryGetAddressOf('CollateralManager'),
@@ -504,6 +512,14 @@ const setupContract = async ({
 			await cache['CollateralManagerState'].setAssociatedContract(instance.address, {
 				from: owner,
 			});
+		},
+
+		async Collateral() {
+			await Promise.all([
+				cache['CollateralState'].setAssociatedContract(instance.address, { from: owner }),
+				cache['CollateralManager'].setAssociatedContract(instance.address, { from: owner }),
+				cache['AddressResolver'].setAssociatedContract(instance.address, { from: owner }),
+			]);
 		},
 
 		async SystemStatus() {
@@ -827,10 +843,6 @@ const setupAllContracts = async ({
 			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
 		},
 		{
-			contract: 'CollateralState',
-			deps: [],
-		},
-		{
 			contract: 'CollateralManagerState',
 			deps: [],
 		},
@@ -851,28 +863,20 @@ const setupAllContracts = async ({
 			],
 		},
 		{
-			contract: 'CollateralEth',
+			contract: 'Collateral',
 			deps: ['CollateralManager', 'AddressResolver', 'CollateralUtil'],
+		},
+		{
+			contract: 'CollateralEth',
+			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
 		{
 			contract: 'CollateralErc20',
-			deps: ['CollateralManager', 'AddressResolver', 'CollateralUtil'],
+			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
 		{
 			contract: 'CollateralShort',
-			deps: ['CollateralManager', 'AddressResolver', 'CollateralUtil'],
-		},
-		{
-			contract: 'CollateralUtil',
-			deps: ['AddressResolver'],
-		},
-		{
-			contract: 'CollateralState',
-			deps: [], // TODO should this include CollateralState?
-		},
-		{
-			contract: 'Collateral',
-			deps: ['CollateralState', 'CollateralManager', 'AddressResolver'],
+			deps: ['Collateral', 'CollateralManager', 'AddressResolver', 'CollateralUtil'],
 		},
 	];
 
