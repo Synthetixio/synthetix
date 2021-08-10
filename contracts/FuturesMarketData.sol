@@ -86,6 +86,7 @@ contract FuturesMarketData {
         int profitLoss;
         int accruedFunding;
         uint remainingMargin;
+        uint accessibleMargin;
         uint liquidationPrice;
         bool canLiquidatePosition;
     }
@@ -248,6 +249,11 @@ contract FuturesMarketData {
         return value;
     }
 
+    function _accessibleMargin(IFuturesMarket market, address account) internal view returns (uint) {
+        (uint value, ) = market.accessibleMargin(account);
+        return value;
+    }
+
     function _order(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Order memory) {
         (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId) = market.orders(account);
         return IFuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId);
@@ -267,6 +273,7 @@ contract FuturesMarketData {
                 _profitLoss(market, account),
                 _accruedFunding(market, account),
                 _remainingMargin(market, account),
+                _accessibleMargin(market, account),
                 liquidationPrice,
                 market.canLiquidate(account)
             );
