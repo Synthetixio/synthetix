@@ -18,6 +18,7 @@ import "./interfaces/IFuturesMarketSettings.sol";
 
 // Remaining Functionality
 //     Rename marketSize, marketSkew, marketDebt, profitLoss, accruedFunding -> size, skew, debt, profit, funding
+//     TODO: Check that a user has sufficient margin BEFORE deducting the fee, and only check that the fee does not exceed their remaining balance afterwards. (otherwise they can't submit an order with minMargin)
 
 /* Notes:
  *
@@ -381,8 +382,37 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        return (_remainingMargin(position, fundingSequence.length, price), isInvalid);
+        return (_remainingMargin(positions[account], fundingSequence.length, price), isInvalid);
+    }
+
+    function _accessibleMargin(
+        Position storage position,
+        uint endFundingIndex,
+        uint price
+    ) internal view returns (uint marginWithdrawable) {
+        // Margin if position size was not changed, but leverage was increased to maximum.
+        uint marginAtMaxLeverage = _abs(_notionalValue(position, price).divideDecimalRound(int(_maxLeverage(baseAsset))));
+
+        // If the user has no position open, we will not enforce any minimum margin requirement.
+        uint minInitial = 0 == marginAtMaxLeverage ? 0 : _minInitialMargin();
+
+        // The user may withdraw the excess margin as long as they keep the minimum initial margin in the account.
+        uint inaccessible = uint(_max(int(minInitial), int(marginAtMaxLeverage)));
+        uint remaining = _remainingMargin(position, endFundingIndex, price);
+
+        // If their margin is below the minimum, or they are already past the maximum manually-selectable leverage,
+        // then they can't withdraw anything.
+        if (remaining <= inaccessible) {
+            return 0;
+        }
+
+        // Otherwise, they have some margin to withdraw
+        return remaining.sub(inaccessible);
+    }
+
+    function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
+        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        return (_accessibleMargin(positions[account], fundingSequence.length, price), isInvalid);
     }
 
     function _liquidationPrice(
@@ -435,8 +465,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
         (uint aPrice, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        return (_liquidationPrice(position, includeFunding, fundingSequence.length, aPrice), isInvalid);
+        return (_liquidationPrice(positions[account], includeFunding, fundingSequence.length, aPrice), isInvalid);
     }
 
     function _canLiquidate(
