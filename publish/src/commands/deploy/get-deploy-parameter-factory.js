@@ -14,25 +14,25 @@ module.exports = ({ params, yes, ignoreCustomParameters }) => async name => {
 
 	let effectiveValue = defaultParam;
 
-	const param = (params || []).find(p => p.name === name);
+	const param = params[name];
 
 	if (param) {
 		if (!yes) {
 			try {
 				await confirmAction(
 					yellow(
-						`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.json. Specified value is ${param.value} and default is ${defaultParam}.` +
+						`⚠⚠⚠ WARNING: Found an entry for ${name} in params.js. Specified value is ${param} and default is ${defaultParam}.` +
 							'\nDo you want to use the specified value (default otherwise)? (y/n) '
 					)
 				);
 
-				effectiveValue = param.value;
+				effectiveValue = param;
 			} catch (err) {
 				console.error(err);
 			}
 		} else {
 			// yes = true
-			effectiveValue = param.value;
+			effectiveValue = param;
 		}
 	}
 
