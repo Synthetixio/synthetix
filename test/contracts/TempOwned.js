@@ -16,7 +16,7 @@ contract('TempOwned', accounts => {
 		timestamp = await currentTime();
 	});
 
-	it('should should not allow call owned method if EOL date reached', async () => {
+	it('should not allow call owned method if EOL date reached', async () => {
 		const contract = await TesteableTempOwned.new(tempOwner, timestamp - DAY, {
 			from: deployerAccount,
 		});
@@ -27,7 +27,7 @@ contract('TempOwned', accounts => {
 		);
 	});
 
-	it('should should not allow call owned method from another address', async () => {
+	it('should not allow call owned method from another address', async () => {
 		const contract = await TesteableTempOwned.new(tempOwner, timestamp + DAY, {
 			from: deployerAccount,
 		});
