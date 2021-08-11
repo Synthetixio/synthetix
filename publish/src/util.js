@@ -86,7 +86,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 
 	console.log(gray(`Loading the list of deployment parameters on ${network.toUpperCase()}...`));
 	const paramsFile = path.join(deploymentPath, PARAMS_FILENAME);
-	const params = require(paramsFile);
+	const params = JSON.parse(fs.readFileSync(paramsFile));
 
 	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
 	const versions = network !== 'local' ? getVersions({ network, deploymentPath }) : {};
