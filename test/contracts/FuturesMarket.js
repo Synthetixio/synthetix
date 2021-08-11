@@ -1574,6 +1574,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnEqual(order.maxPrice, toUnit(0));
 		});
 
 		it('closing positions fails if a new price has not been set.', async () => {
