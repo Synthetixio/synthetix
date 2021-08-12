@@ -13,6 +13,7 @@ module.exports = async ({
 	console.log(gray(`\n------ CONFIGURING MULTI COLLATERAL ------\n`));
 
 	const {
+		SystemSettings,
 		CollateralErc20,
 		CollateralEth,
 		CollateralShort,
@@ -127,7 +128,7 @@ module.exports = async ({
 		});
 	}
 
-	if (CollateralShort) {
+	if (CollateralShort && SystemSettings) {
 		await runStep({
 			contract: 'CollateralShort',
 			target: CollateralShort,
@@ -157,27 +158,31 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract has all associated synths added',
 		});
 
-		const CollateralShortInteractionDelay = (await getDeployParameter('COLLATERAL_SHORT'))[
-			'INTERACTION_DELAY'
-		];
+		await runStep({
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			read: 'interactionDelay',
+			readArg: addressOf(CollateralShort),
+			expected: input => input === addressOf(CollateralShort),
+			write: 'setInteractionDelay',
+			writeArg: [
+				(await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'],
+				CollateralShort.address,
+			],
+			comment: 'Ensure the CollateralShort contract has an interaction delay of zero on the OVM',
+		});
 
 		await runStep({
-			contract: 'CollateralShort',
-			target: CollateralShort,
-			read: 'interactionDelay',
-			expected: input => input !== '0', // only change if zero
-			write: 'setInteractionDelay',
-			writeArg: CollateralShortInteractionDelay,
-			comment:
-				'Ensure the CollateralShort contract has an interaction delay to prevent frontrunning',
-		});
-		await runStep({
-			contract: 'CollateralShort',
-			target: CollateralShort,
+			contract: 'SystemSettings',
+			target: SystemSettings,
 			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero
+			readArg: addressOf(CollateralShort),
+			expected: input => input === addressOf(CollateralShort),
 			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
+			writeArg: [
+				(await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
+				CollateralShort.address,
+			],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
 		});
 	}
