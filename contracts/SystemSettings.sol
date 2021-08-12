@@ -151,6 +151,14 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getEtherWrapperBurnFeeRate();
     }
 
+    function interactionDelay(address collateral) external view returns (uint) {
+        return getInteractionDelay(collateral);
+    }
+
+    function issueFeeRate(address collateral) external view returns (uint) {
+        return getIssueFeeRate(collateral);
+    }
+
     // ========== RESTRICTED ==========
 
     function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
