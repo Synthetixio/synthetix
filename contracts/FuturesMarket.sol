@@ -315,6 +315,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             price != 0 &&
             _orderPending(order) && // There is actually an order
             order.roundId < _currentRoundId(exRates) && // A new price has arrived
+            price >= order.minPrice &&
+            price <= order.maxPrice &&
             !_canLiquidate(position, _liquidationFee(), fundingSequenceIndex, price) && // No existing position can be liquidated
             0 <= _marginPlusProfitFunding(position, fundingSequenceIndex, price).sub(int(order.fee)); // Margin has not dipped negative due to fees, profit, funding
     }
@@ -759,6 +761,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function _submitOrder(
         int leverage,
         uint price,
+        uint[2] memory priceBounds,
         uint fundingIndex,
         address sender
     ) internal {
@@ -806,27 +809,38 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         order.leverage = leverage;
         order.fee = fee;
         order.roundId = roundId;
+        order.minPrice = priceBounds[0];
+        order.maxPrice = priceBounds[1];
         emitOrderSubmitted(id, sender, leverage, fee, roundId);
     }
 
-    function submitOrder(int leverage) external optionalProxy {
+    function submitOrder(
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
-        _submitOrder(leverage, price, fundingIndex, messageSender);
+        _submitOrder(leverage, price, [minPrice, maxPrice], fundingIndex, messageSender);
     }
 
     function closePosition() external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
-        _submitOrder(0, price, fundingIndex, messageSender);
+        _submitOrder(0, price, [0, uint256(-1)], fundingIndex, messageSender);
     }
 
-    function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
+    function modifyMarginAndSubmitOrder(
+        int marginDelta,
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         address sender = messageSender;
         _modifyMargin(marginDelta, price, fundingIndex, sender);
-        _submitOrder(leverage, price, fundingIndex, sender);
+        _submitOrder(leverage, price, [minPrice, maxPrice], fundingIndex, sender);
     }
 
     // TODO: Ensure that this is fine if the position is swapping sides
@@ -840,6 +854,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // TODO: Verify that we can actually rely on the round id monotonically increasing
         require(order.roundId < _currentRoundId(_exchangeRates()), "Awaiting next price");
+
+        // Check price slippage.
+        require(price >= order.minPrice && price <= order.maxPrice, "Price exceeds slippage limits");
 
         Position storage position = positions[account];
 
