@@ -24,8 +24,11 @@ const orderStatuses = {
 	NoPriceUpdate: 2,
 	InvalidPrice: 3,
 	InsolventPosition: 4,
-	MaxMarketSizeExceeded: 5,
-	NegativeMargin: 6,
+	NotInsolvent: 5,
+	MaxMarketSizeExceeded: 6,
+	MaxLeverageExceeded: 7,
+	InsufficientMargin: 8,
+	NotPermitted: 9,
 };
 
 contract('FuturesMarket', accounts => {
@@ -976,12 +979,12 @@ contract('FuturesMarket', accounts => {
 			it('Cannot decrease margin past zero.', async () => {
 				await assert.revert(
 					futuresMarket.modifyMargin(toUnit('-1'), { from: trader }),
-					'Withdrawing more than margin'
+					'Insufficient margin'
 				);
 				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
 				await assert.revert(
 					futuresMarket.modifyMargin(toUnit('-2000'), { from: trader }),
-					'Withdrawing more than margin'
+					'Insufficient margin'
 				);
 			});
 		});

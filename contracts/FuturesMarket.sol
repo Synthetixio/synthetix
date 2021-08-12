@@ -107,9 +107,13 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint(Error.NotPending)] = "No pending order";
         _errorMessages[uint(Error.NoPriceUpdate)] = "Awaiting next price";
+        _errorMessages[uint(Error.InvalidPrice)] = "Invalid price";
         _errorMessages[uint(Error.InsolventPosition)] = "Position can be liquidated";
+        _errorMessages[uint(Error.NotInsolvent)] = "Position cannot be liquidated";
         _errorMessages[uint(Error.MaxMarketSizeExceeded)] = "Max market size exceeded";
-        _errorMessages[uint(Error.NegativeMargin)] = "Withdrawing more than margin";
+        _errorMessages[uint(Error.MaxLeverageExceeded)] = "Max leverage exceeded";
+        _errorMessages[uint(Error.InsufficientMargin)] = "Insufficient margin";
+        _errorMessages[uint(Error.NotPermitted)] = "Not permitted by this address";
     }
 
     /* ========== VIEWS ========== */
@@ -153,7 +157,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function _assetPriceRequireNotInvalid() internal view returns (uint) {
         (uint price, bool invalid) = _assetPrice(_exchangeRates());
-        require(!invalid, "Invalid price");
+        _error(invalid, Error.InvalidPrice);
         return price;
     }
 
@@ -282,11 +286,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     ) internal view returns (int) {
         int result;
 
-        if (endIndex == startIndex) {
+        // If the end index is not later than the start index, no funding has accrued.
+        if (endIndex <= startIndex) {
             return 0;
         }
-
-        require(startIndex < endIndex, "Funding index disordering");
 
         if (endIndex == sequenceLength) {
             result = _nextFundingEntry(sequenceLength, price);
@@ -708,8 +711,16 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return 0 <= a * b;
     }
 
+    function _error(bool isError, Error error) internal view {
+        if (isError) {
+            _error(error);
+        }
+    }
+
     function _error(Error error) internal view {
-        require(error == Error.Ok, _errorMessages[uint(error)]);
+        if (error != Error.Ok) {
+            revert(_errorMessages[uint(error)]);
+        }
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -726,7 +737,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function recomputeFunding() external returns (uint lastIndex) {
-        require(msg.sender == address(_marketSettings()), "Can be invoked by marketSettings only");
+        _error(msg.sender != address(_marketSettings()), Error.NotPermitted);
         return _recomputeFunding(_assetPriceRequireNotInvalid());
     }
 
@@ -751,7 +762,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     ) internal view returns (uint margin, Error errorCode) {
         int newMargin = _marginPlusProfitFunding(position, currentFundingIndex, price).add(marginDelta);
         if (newMargin < 0) {
-            return (0, Error.NegativeMargin);
+            return (0, Error.InsufficientMargin);
         }
 
         uint uMargin = uint(newMargin);
@@ -794,8 +805,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         //     * the resulting margin would not be lower than the minimum margin
         //     * the resulting leverage is lower than the maximum leverage
         if (0 < position.size && marginDelta <= 0) {
-            require(_minInitialMargin() <= margin, "Insufficient margin");
-            require(_abs(_currentLeverage(position, price, margin)) < _maxLeverage(baseAsset), "Max leverage exceeded");
+            _error(margin < _minInitialMargin(), Error.InsufficientMargin);
+            _error(_maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin)), Error.MaxLeverageExceeded);
         }
 
         // Transfer no tokens if marginDelta is 0
@@ -823,7 +834,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function _cancelOrder(address account) internal {
         Order storage order = orders[account];
-        require(_orderPending(order), "No pending order");
+        _error(!_orderPending(order), Error.NotPending);
         emitOrderCancelled(order.id, account);
         delete orders[account];
     }
@@ -846,7 +857,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         if (sameSide && _abs(currentLeverage_) <= _abs(desiredLeverage)) {
             // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
             // except that we get a nicer error message if fee > margin, rather than arithmetic overflow.
-            require(_minInitialMargin().add(fee) <= margin, "Insufficient margin");
+            _error(margin < _minInitialMargin().add(fee), Error.InsufficientMargin);
         }
     }
 
@@ -856,12 +867,12 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint fundingIndex,
         address sender
     ) internal {
-        require(_abs(leverage) <= _maxLeverage(baseAsset), "Max leverage exceeded");
+        _error(_maxLeverage(baseAsset) < _abs(leverage), Error.MaxLeverageExceeded);
         Position storage position = positions[sender];
 
         // The order is not submitted if the user's existing position needed to be liquidated.
         // We know that the price is not invalid now that we're in this function
-        require(!_canLiquidate(position, _liquidationFee(), fundingIndex, price), "Position can be liquidated");
+        _error(_canLiquidate(position, _liquidationFee(), fundingIndex, price), Error.InsolventPosition);
 
         uint margin = _remainingMargin(position, fundingIndex, price);
         int size = position.size;
@@ -1005,7 +1016,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint fundingIndex = _recomputeFunding(price);
 
         uint liquidationFee = _liquidationFee();
-        require(_canLiquidate(positions[account], liquidationFee, fundingIndex, price), "Position cannot be liquidated");
+        _error(!_canLiquidate(positions[account], liquidationFee, fundingIndex, price), Error.NotInsolvent);
 
         // If there are any pending orders, the liquidation will cancel them.
         if (_orderPending(orders[account])) {
