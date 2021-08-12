@@ -1,5 +1,4 @@
-const { contract, web3 } = require('hardhat');
-
+const { artifacts, contract, web3 } = require('hardhat');
 const { toBytes32 } = require('../..');
 const {
 	currentTime,
@@ -18,6 +17,8 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 } = require('./helpers');
 
+const MockExchanger = artifacts.require('MockExchanger');
+
 const errorCodes = {
 	Ok: 0,
 	NotPending: 1,
@@ -32,13 +33,23 @@ const errorCodes = {
 	NotPermitted: 10,
 };
 
+const defaultPriceBounds = [
+	toBN('0'),
+	toBN('2')
+		.pow(toBN('256'))
+		.sub(toBN('1')),
+];
+
 contract('FuturesMarket', accounts => {
 	let proxyFuturesMarket,
 		futuresMarketSettings,
+		futuresMarketManager,
 		futuresMarket,
 		exchangeRates,
+		addressResolver,
 		oracle,
 		sUSD,
+		synthetix,
 		feePool,
 		debtCache;
 
@@ -89,7 +100,9 @@ contract('FuturesMarket', accounts => {
 		marginDelta,
 		leverage,
 	}) {
-		await market.modifyMarginAndSubmitOrder(marginDelta, leverage, { from: account });
+		await market.modifyMarginAndSubmitOrder(marginDelta, leverage, {
+			from: account,
+		});
 		await confirmOrder({
 			market,
 			account,
@@ -111,9 +124,12 @@ contract('FuturesMarket', accounts => {
 		({
 			ProxyFuturesMarketBTC: proxyFuturesMarket,
 			FuturesMarketSettings: futuresMarketSettings,
+			FuturesMarketManager: futuresMarketManager,
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
+			AddressResolver: addressResolver,
 			SynthsUSD: sUSD,
+			Synthetix: synthetix,
 			FeePool: feePool,
 			DebtCache: debtCache,
 		} = await setupAllContracts({
@@ -934,6 +950,22 @@ contract('FuturesMarket', accounts => {
 		});
 
 		describe('sUSD balance', () => {
+			it(`Can't deposit more sUSD than owned`, async () => {
+				const preBalance = await sUSD.balanceOf(trader);
+				await assert.revert(
+					futuresMarket.modifyMargin(preBalance.add(toUnit('1')), { from: trader }),
+					'subtraction overflow'
+				);
+			});
+
+			it(`Can't withdraw more sUSD than is in the margin`, async () => {
+				await futuresMarket.modifyMargin(toUnit('100'), { from: trader });
+				await assert.revert(
+					futuresMarket.modifyMargin(toUnit('-101'), { from: trader }),
+					'Insufficient margin'
+				);
+			});
+
 			it('Positive delta -> burn sUSD', async () => {
 				const preBalance = await sUSD.balanceOf(trader);
 				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
@@ -951,6 +983,41 @@ contract('FuturesMarket', accounts => {
 				const preBalance = await sUSD.balanceOf(trader);
 				await futuresMarket.modifyMargin(toUnit('0'), { from: trader });
 				assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(toUnit('0')));
+			});
+
+			it('fee reclamation is respected', async () => {
+				// Set up a mock exchanger
+				const mockExchanger = await MockExchanger.new(synthetix.address);
+				await addressResolver.importAddresses(
+					['Exchanger'].map(toBytes32),
+					[mockExchanger.address],
+					{
+						from: owner,
+					}
+				);
+				await synthetix.rebuildCache();
+				await futuresMarketManager.rebuildCache();
+
+				// Set up a starting balance
+				const preBalance = await sUSD.balanceOf(trader);
+				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
+
+				// Now set a reclamation event
+				await mockExchanger.setReclaim(toUnit('10'));
+				await mockExchanger.setNumEntries('1');
+
+				// Issuance works fine
+				await futuresMarket.modifyMargin(toUnit('-900'), { from: trader });
+				assert.bnEqual(await sUSD.balanceOf(trader), preBalance.sub(toUnit('100')));
+				assert.bnEqual((await futuresMarket.remainingMargin(trader))[0], toUnit('100'));
+
+				// But burning properly deducts the reclamation amount
+				await futuresMarket.modifyMargin(preBalance.sub(toUnit('100')), { from: trader });
+				assert.bnEqual(await sUSD.balanceOf(owner), toUnit('0'));
+				assert.bnEqual(
+					(await futuresMarket.remainingMargin(trader))[0],
+					preBalance.sub(toUnit('10'))
+				);
 			});
 		});
 
@@ -1037,6 +1104,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, leverage);
 			assert.bnEqual(order.fee, fee);
 			assert.bnEqual(order.roundId, roundId);
+			assert.bnEqual(order.minPrice, defaultPriceBounds[0]);
+			assert.bnEqual(order.maxPrice, defaultPriceBounds[1]);
 
 			const orderSize = (await futuresMarket.orderSize(trader))[0];
 			assert.bnEqual(orderSize, margin.mul(toBN(10)).div(toBN(100)));
@@ -1047,7 +1116,7 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [id, trader, leverage, fee, roundId],
+				args: [id, trader, leverage, fee, roundId, defaultPriceBounds[0], defaultPriceBounds[1]],
 				log: decodedLogs[0],
 			});
 		});
@@ -1099,6 +1168,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order1.leverage, leverage);
 			assert.bnEqual(order1.fee, fee);
 			assert.bnEqual(order1.roundId, roundId1);
+			assert.bnEqual(order1.minPrice, defaultPriceBounds[0]);
+			assert.bnEqual(order1.maxPrice, defaultPriceBounds[1]);
 
 			await fastForward(24 * 60 * 60);
 			const price = toUnit('100');
@@ -1120,6 +1191,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order2.leverage, leverage2);
 			assert.bnEqual(order2.fee, fee2);
 			assert.bnEqual(order2.roundId, roundId2);
+			assert.bnEqual(order1.minPrice, defaultPriceBounds[0]);
+			assert.bnEqual(order1.maxPrice, defaultPriceBounds[1]);
 
 			// And it properly emits the relevant events.
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
@@ -1133,7 +1206,15 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [id2, trader, leverage2, fee2, roundId2],
+				args: [
+					id2,
+					trader,
+					leverage2,
+					fee2,
+					roundId2,
+					defaultPriceBounds[0],
+					defaultPriceBounds[1],
+				],
 				log: decodedLogs[1],
 			});
 		});
@@ -1439,6 +1520,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnEqual(order.maxPrice, toUnit(0));
 			assert.bnEqual(await sUSD.balanceOf(trader), preBalance);
 
 			// And the relevant events are properly emitted
@@ -1514,6 +1597,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnEqual(order.maxPrice, toUnit(0));
 
 			// And the relevant events are properly emitted
 			const id = toBN(1);
@@ -1689,6 +1774,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnEqual(order.maxPrice, toUnit(0));
 		});
 
 		it('closing positions fails if a new price has not been set.', async () => {
@@ -1723,6 +1810,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toUnit('3'));
 			assert.bnNotEqual(order.fee, toBN(0));
 			assert.bnNotEqual(order.roundId, toBN(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnNotEqual(order.maxPrice, toUnit(0));
 
 			const tx = await futuresMarket.closePosition({ from: trader });
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
@@ -1736,7 +1825,15 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [order.id.add(toBN(1)), trader, toBN(0), toBN(0), order.roundId],
+				args: [
+					order.id.add(toBN(1)),
+					trader,
+					toBN(0),
+					toBN(0),
+					order.roundId,
+					defaultPriceBounds[0],
+					defaultPriceBounds[1],
+				],
 				log: decodedLogs[1],
 			});
 
@@ -1746,6 +1843,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toBN(0));
 			assert.bnEqual(order.fee, toBN(0));
 			assert.bnNotEqual(order.roundId, toBN(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnNotEqual(order.maxPrice, toUnit(0));
 		});
 
 		it('Cannot close a position if it is liquidating', async () => {
