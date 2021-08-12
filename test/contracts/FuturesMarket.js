@@ -18,7 +18,7 @@ const {
 	ensureOnlyExpectedMutativeFunctions,
 } = require('./helpers');
 
-const orderStatuses = {
+const errorCodes = {
 	Ok: 0,
 	NotPending: 1,
 	NoPriceUpdate: 2,
@@ -1303,10 +1303,7 @@ contract('FuturesMarket', accounts => {
 						await setPrice(baseAsset, spike);
 
 						assert.isFalse(await futuresMarket.canConfirmOrder(trader));
-						assert.equal(
-							await futuresMarket.orderStatus(trader),
-							orderStatuses.MaxMarketSizeExceeded
-						);
+						assert.equal(await futuresMarket.orderStatus(trader), errorCodes.MaxMarketSizeExceeded);
 						await assert.revert(futuresMarket.confirmOrder(trader), 'Max market size exceeded');
 					});
 
@@ -1328,19 +1325,16 @@ contract('FuturesMarket', accounts => {
 						await setPrice(baseAsset, toUnit('1.08'));
 
 						assert.isFalse(await futuresMarket.canConfirmOrder(trader));
-						assert.equal(
-							await futuresMarket.orderStatus(trader),
-							orderStatuses.MaxMarketSizeExceeded
-						);
+						assert.equal(await futuresMarket.orderStatus(trader), errorCodes.MaxMarketSizeExceeded);
 						await assert.revert(futuresMarket.confirmOrder(trader), 'Max market size exceeded');
 
 						// Price moves back partially and allows the order to confirm
 						await setPrice(baseAsset, toUnit('1.04'));
 
 						assert.isTrue(await futuresMarket.canConfirmOrder(trader));
-						assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.Ok);
+						assert.equal(await futuresMarket.orderStatus(trader), errorCodes.Ok);
 						await futuresMarket.confirmOrder(trader);
-						assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.NotPending);
+						assert.equal(await futuresMarket.orderStatus(trader), errorCodes.NotPending);
 					});
 
 					it('Orders collectively slightly above the limit can confirm, but substantially above it cannot be', async () => {
@@ -1370,7 +1364,7 @@ contract('FuturesMarket', accounts => {
 						assert.isFalse(await futuresMarket.canConfirmOrder(trader3));
 						assert.equal(
 							await futuresMarket.orderStatus(trader3),
-							orderStatuses.MaxMarketSizeExceeded
+							errorCodes.MaxMarketSizeExceeded
 						);
 					});
 
@@ -1488,7 +1482,7 @@ contract('FuturesMarket', accounts => {
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 
-			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.Ok);
+			assert.equal(await futuresMarket.orderStatus(trader), errorCodes.Ok);
 			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
 			const orderSize = (await futuresMarket.orderSize(trader))[0];
 			const tx = await futuresMarket.confirmOrder(trader);
@@ -1542,14 +1536,14 @@ contract('FuturesMarket', accounts => {
 			const leverage = toUnit('10');
 			await futuresMarket.submitOrder(leverage, { from: trader });
 
-			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.NoPriceUpdate);
+			assert.equal(await futuresMarket.orderStatus(trader), errorCodes.NoPriceUpdate);
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Awaiting next price');
 		});
 
 		it('cannot confirm an order if none is pending', async () => {
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
-			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.NotPending);
+			assert.equal(await futuresMarket.orderStatus(trader), errorCodes.NotPending);
 			await assert.revert(futuresMarket.confirmOrder(trader), 'No pending order');
 		});
 
@@ -1563,12 +1557,12 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, price);
 
 			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
-			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.Ok);
+			assert.equal(await futuresMarket.orderStatus(trader), errorCodes.Ok);
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
-			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.InvalidPrice);
+			assert.equal(await futuresMarket.orderStatus(trader), errorCodes.InvalidPrice);
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
 		});
 
@@ -1586,7 +1580,7 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, toUnit('100'));
 
 			// But it fails!
-			assert.equal(await futuresMarket.orderStatus(trader), orderStatuses.InsolventPosition);
+			assert.equal(await futuresMarket.orderStatus(trader), errorCodes.InsolventPosition);
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Position can be liquidated');
 		});

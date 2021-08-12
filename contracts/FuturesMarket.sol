@@ -81,7 +81,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
 
     // Holds the revert message for each type of error.
-    mapping(uint => string) internal _errorMessages;
+    mapping(uint8 => string) internal _errorMessages;
 
     /* ---------- Address Resolver Configuration ---------- */
 
@@ -105,15 +105,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         fundingSequence.push(0);
 
         // Set up the mapping between error codes and their revert messages.
-        _errorMessages[uint(Error.NotPending)] = "No pending order";
-        _errorMessages[uint(Error.NoPriceUpdate)] = "Awaiting next price";
-        _errorMessages[uint(Error.InvalidPrice)] = "Invalid price";
-        _errorMessages[uint(Error.InsolventPosition)] = "Position can be liquidated";
-        _errorMessages[uint(Error.NotInsolvent)] = "Position cannot be liquidated";
-        _errorMessages[uint(Error.MaxMarketSizeExceeded)] = "Max market size exceeded";
-        _errorMessages[uint(Error.MaxLeverageExceeded)] = "Max leverage exceeded";
-        _errorMessages[uint(Error.InsufficientMargin)] = "Insufficient margin";
-        _errorMessages[uint(Error.NotPermitted)] = "Not permitted by this address";
+        _errorMessages[uint8(Error.NotPending)] = "No pending order";
+        _errorMessages[uint8(Error.NoPriceUpdate)] = "Awaiting next price";
+        _errorMessages[uint8(Error.InvalidPrice)] = "Invalid price";
+        _errorMessages[uint8(Error.InsolventPosition)] = "Position can be liquidated";
+        _errorMessages[uint8(Error.NotInsolvent)] = "Position cannot be liquidated";
+        _errorMessages[uint8(Error.MaxMarketSizeExceeded)] = "Max market size exceeded";
+        _errorMessages[uint8(Error.MaxLeverageExceeded)] = "Max leverage exceeded";
+        _errorMessages[uint8(Error.InsufficientMargin)] = "Insufficient margin";
+        _errorMessages[uint8(Error.NotPermitted)] = "Not permitted by this address";
     }
 
     /* ========== VIEWS ========== */
@@ -359,10 +359,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         int newSideSize;
         if (0 < newSize) {
-            // long case: marketSize + skew = 2 * longSize
+            // long case: marketSize + skew
+            //            = (|longSize| + |shortSize|) + (longSize + shortSize)
+            //            = 2 * longSize
             newSideSize = newMarketSize.add(newSkew);
         } else {
-            // short case: marketSize - skew = 2 * shortSize
+            // short case: marketSize - skew
+            //            = (|longSize| + |shortSize|) - (longSize + shortSize)
+            //            = 2 * -shortSize
             newSideSize = newMarketSize.sub(newSkew);
         }
 
@@ -719,7 +723,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function _error(Error error) internal view {
         if (error != Error.Ok) {
-            revert(_errorMessages[uint(error)]);
+            revert(_errorMessages[uint8(error)]);
         }
     }
 
