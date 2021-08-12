@@ -52,7 +52,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     // The set of all synths that are shortable.
     Bytes32SetLib.Bytes32Set internal _shortableSynths;
 
-    mapping(bytes32 => bytes32) public synthToInverseSynth;
+    mapping(bytes32 => bytes32) public shortableSynthsByKey;
 
     // The factor that will scale the utilisation ratio.
     uint public utilisationMultiplier = 1e18;
@@ -104,11 +104,10 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         uint length = _shortableSynths.elements.length;
 
         if (length > 0) {
-            shortAddresses = new bytes32[](length * 2);
+            shortAddresses = new bytes32[](length);
 
             for (uint i = 0; i < length; i++) {
                 shortAddresses[i] = _shortableSynths.elements[i];
-                shortAddresses[i + length] = synthToInverseSynth[_shortableSynths.elements[i]];
             }
         }
 
@@ -223,16 +222,14 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         anyRateIsInvalid = ratesInvalid;
     }
 
-    function getShortRate(bytes32 synth) public view returns (uint shortRate, bool rateIsInvalid) {
-        bytes32 synthKey = _synth(synth).currencyKey();
-
+    // TODO: Enforce a maximum?
+    function getShortRate(bytes32 synthKey) public view returns (uint shortRate, bool rateIsInvalid) {
         rateIsInvalid = _exchangeRates().rateIsInvalid(synthKey);
 
-        // get the spot supply of the synth, its iSynth
-        uint longSupply = IERC20(address(_synth(synth))).totalSupply();
-        uint inverseSupply = IERC20(address(_synth(synthToInverseSynth[synth]))).totalSupply();
+        // get the long supply of
+        uint longSupply = IERC20(address(_synth(shortableSynthsByKey[synthKey]))).totalSupply();
         // add the iSynth to supply properly reflect the market skew.
-        uint shortSupply = state.short(synthKey).add(inverseSupply);
+        uint shortSupply = state.short(synthKey);
 
         // in this case, the market is skewed long so its free to short.
         if (longSupply > shortSupply) {
@@ -243,6 +240,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         uint skew = shortSupply.sub(longSupply);
 
         // divide through by the size of the market
+        // TOOD: add a maximum here
         uint proportionalSkew = skew.divideDecimal(longSupply.add(shortSupply)).divideDecimal(SECONDS_IN_A_YEAR);
 
         // finally, add the base short rate.
@@ -381,26 +379,23 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         }
     }
 
-    // When we add a shortable synth, we need to know the iSynth as well
-    // This is so we can get the proper skew for the short rate.
-    function addShortableSynths(bytes32[2][] calldata requiredSynthAndInverseNamesInResolver, bytes32[] calldata synthKeys)
+    function addShortableSynths(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
         external
         onlyOwner
     {
-        require(requiredSynthAndInverseNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+        require(requiredSynthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
 
-        for (uint i = 0; i < requiredSynthAndInverseNamesInResolver.length; i++) {
+        for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
             // setting these explicitly for clarity
             // Each entry in the array is [Synth, iSynth]
-            bytes32 synth = requiredSynthAndInverseNamesInResolver[i][0];
-            bytes32 iSynth = requiredSynthAndInverseNamesInResolver[i][1];
+            bytes32 synth = requiredSynthNamesInResolver[i];
 
             if (!_shortableSynths.contains(synth)) {
                 // Add it to the address set lib.
                 _shortableSynths.add(synth);
 
                 // store the mapping to the iSynth so we can get its total supply for the borrow rate.
-                synthToInverseSynth[synth] = iSynth;
+                shortableSynthsByKey[synthKeys[i]] = synth;
 
                 emit ShortableSynthAdded(synth);
 
@@ -423,14 +418,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
             return false;
         }
 
-        // first check contract state
-        for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
-            bytes32 synthName = requiredSynthNamesInResolver[i];
-            if (!_shortableSynths.contains(synthName) || synthToInverseSynth[synthName] == bytes32(0)) {
-                return false;
-            }
-        }
-
         // now check everything added to external state contract
         for (uint i = 0; i < synthKeys.length; i++) {
             if (state.getShortRatesLength(synthKeys[i]) == 0) {
@@ -450,9 +437,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
                 bytes32 synthKey = _synth(synths[i]).currencyKey();
 
                 state.removeShortCurrency(synthKey);
-
-                // remove the inverse mapping.
-                delete synthToInverseSynth[synths[i]];
 
                 emit ShortableSynthRemoved(synths[i]);
             }
