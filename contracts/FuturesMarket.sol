@@ -45,16 +45,23 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /* ========== CONSTANTS ========== */
 
+    // This is the same unit as used inside `SignedSafeDecimalMath`.
     int private constant _UNIT = int(10**uint(18));
-    // Orders can potentially move the market past its configured max by up to 5 %
+
+    // Orders can potentially move the market past its configured max by up to 5%.
     uint private constant _MAX_MARKET_VALUE_PLAY_FACTOR = (5 * uint(_UNIT)) / 100;
 
     /* ========== STATE VARIABLES ========== */
 
+    // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
     bytes32 public baseAsset;
 
+    // The total number of base units in long and short positions.
     uint public marketSize;
-    int public marketSkew; // When positive, longs outweigh shorts. When negative, shorts outweigh longs.
+
+    // The net position in base units of the whole market.
+    // When this is positive, longs outweigh shorts. When it is negative, shorts outweigh longs.
+    int public marketSkew;
 
     /*
      * The funding sequence allows constant-time calculation of the funding owed to a given position.
@@ -68,6 +75,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     uint public fundingLastRecomputed;
     int[] public fundingSequence;
 
+    // Each user's order and position.
+    // Multiple positions can always be merged, so each user can only have one position at a time.
     mapping(address => Order) public orders;
     mapping(address => Position) public positions;
 
@@ -78,7 +87,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     int internal _entryDebtCorrection;
 
-    uint internal _nextOrderId = 1; // Zero reflects an order that does not exist
+    // This increments for each order; zero reflects an order that does not exist.
+    uint internal _nextOrderId = 1;
 
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
