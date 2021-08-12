@@ -103,6 +103,7 @@ contract('MultiCollateralSynth', accounts => {
 				'SystemStatus',
 				'Exchanger',
 				'FeePool',
+				'CollateralUtil',
 				'CollateralManager',
 			],
 		}));

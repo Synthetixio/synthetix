@@ -12,7 +12,7 @@ contract CollateralShort is Collateral {
     constructor(
         CollateralState _state,
         address _owner,
-        address _manager,
+        ICollateralManager _manager,
         address _resolver,
         bytes32 _collateralKey,
         uint _minCratio,
@@ -24,10 +24,7 @@ contract CollateralShort is Collateral {
         uint amount,
         bytes32 currency
     ) external {
-        require(
-            collateral <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)),
-            "Allowance not high enough"
-        );
+        require(collateral <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance too low");
 
         openInternal(collateral, amount, currency, true);
 
@@ -45,7 +42,7 @@ contract CollateralShort is Collateral {
         uint id,
         uint amount
     ) external {
-        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance not high enough");
+        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance too low");
 
         IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), amount);
 
@@ -66,6 +63,15 @@ contract CollateralShort is Collateral {
         repayInternal(borrower, msg.sender, id, amount);
     }
 
+    function repayWithCollateral(
+        address borrower,
+        uint id,
+        uint amount,
+        bool payInterest
+    ) external {
+        repayWithCollateralInternal(borrower, msg.sender, id, amount, payInterest);
+    }
+
     function draw(uint id, uint amount) external {
         drawInternal(id, amount);
     }
@@ -78,11 +84,5 @@ contract CollateralShort is Collateral {
         uint collateralLiquidated = liquidateInternal(borrower, id, amount);
 
         IERC20(address(_synthsUSD())).transfer(msg.sender, collateralLiquidated);
-    }
-
-    function getReward(bytes32 currency, address account) external {
-        if (shortingRewards[currency] != address(0)) {
-            IShortingRewards(shortingRewards[currency]).getReward(account);
-        }
     }
 }

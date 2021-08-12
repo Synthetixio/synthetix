@@ -56,6 +56,11 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 
 	console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
 
+	await deployer.deployContract({
+		name: 'CollateralUtil',
+		args: [addressOf(ReadProxyAddressResolver)],
+	});
+
 	const collateralManagerState = await deployer.deployContract({
 		name: 'CollateralManagerState',
 		args: [account, account],
