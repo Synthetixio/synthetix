@@ -107,6 +107,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Error.NotPending)] = "No pending order";
         _errorMessages[uint8(Error.NoPriceUpdate)] = "Awaiting next price";
+        _errorMessages[uint8(Error.PriceOutOfBounds)] = "Price out of acceptable range";
         _errorMessages[uint8(Error.InvalidPrice)] = "Invalid price";
         _errorMessages[uint8(Error.InsolventPosition)] = "Position can be liquidated";
         _errorMessages[uint8(Error.NotInsolvent)] = "Position cannot be liquidated";
@@ -405,6 +406,11 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // TODO: Verify that we can actually rely on the round id monotonically increasing
         if (_currentRoundId(_exchangeRates()) <= order.roundId) {
             return (0, 0, 0, Error.NoPriceUpdate);
+        }
+
+        // Is the price within the acceptable range?
+        if (price < order.minPrice || order.maxPrice < price) {
+            return (0, 0, 0, Error.PriceOutOfBounds);
         }
 
         Position storage position = positions[account];
@@ -868,6 +874,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function _submitOrder(
         int leverage,
         uint price,
+        uint[2] memory priceBounds,
         uint fundingIndex,
         address sender
     ) internal {
@@ -910,27 +917,46 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         order.leverage = leverage;
         order.fee = fee;
         order.roundId = roundId;
-        emitOrderSubmitted(id, sender, leverage, fee, roundId);
+        order.minPrice = priceBounds[0];
+        order.maxPrice = priceBounds[1];
+        emitOrderSubmitted(id, sender, leverage, fee, roundId, order.minPrice, order.maxPrice);
+    }
+
+    function submitOrderWithPriceBounds(
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) public optionalProxy {
+        uint price = _assetPriceRequireNotInvalid();
+        uint fundingIndex = _recomputeFunding(price);
+        _submitOrder(leverage, price, [minPrice, maxPrice], fundingIndex, messageSender);
     }
 
     function submitOrder(int leverage) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
-        uint fundingIndex = _recomputeFunding(price);
-        _submitOrder(leverage, price, fundingIndex, messageSender);
+        submitOrderWithPriceBounds(leverage, 0, uint(-1));
     }
 
     function closePosition() external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
-        _submitOrder(0, price, fundingIndex, messageSender);
+        _submitOrder(0, price, [0, uint(-1)], fundingIndex, messageSender);
     }
 
-    function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
+    function modifyMarginAndSubmitOrderWithPriceBounds(
+        int marginDelta,
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) public optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         address sender = messageSender;
         _modifyMargin(marginDelta, price, fundingIndex, sender);
-        _submitOrder(leverage, price, fundingIndex, sender);
+        _submitOrder(leverage, price, [minPrice, maxPrice], fundingIndex, sender);
+    }
+
+    function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
+        modifyMarginAndSubmitOrderWithPriceBounds(marginDelta, leverage, 0, uint(-1));
     }
 
     function confirmOrder(address account) external optionalProxy {
@@ -1043,18 +1069,29 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         proxy._emit(abi.encode(value), 2, SIG_PARAMETERUPDATED, parameter, 0, 0);
     }
 
-    event OrderSubmitted(uint indexed id, address indexed account, int leverage, uint fee, uint indexed roundId);
-    bytes32 internal constant SIG_ORDERSUBMITTED = keccak256("OrderSubmitted(uint256,address,int256,uint256,uint256)");
+    event OrderSubmitted(
+        uint indexed id,
+        address indexed account,
+        int leverage,
+        uint fee,
+        uint indexed roundId,
+        uint minPrice,
+        uint maxPrice
+    );
+    bytes32 internal constant SIG_ORDERSUBMITTED =
+        keccak256("OrderSubmitted(uint256,address,int256,uint256,uint256,uint256,uint256)");
 
     function emitOrderSubmitted(
         uint id,
         address account,
         int leverage,
         uint fee,
-        uint roundId
+        uint roundId,
+        uint minPrice,
+        uint maxPrice
     ) internal {
         proxy._emit(
-            abi.encode(leverage, fee),
+            abi.encode(leverage, fee, minPrice, maxPrice),
             4,
             SIG_ORDERSUBMITTED,
             bytes32(id),

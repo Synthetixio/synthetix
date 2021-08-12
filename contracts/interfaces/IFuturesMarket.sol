@@ -7,6 +7,7 @@ interface IFuturesMarket {
         Ok,
         NotPending,
         NoPriceUpdate,
+        PriceOutOfBounds,
         InvalidPrice,
         InsolventPosition,
         NotInsolvent,
@@ -21,6 +22,8 @@ interface IFuturesMarket {
         int leverage;
         uint fee;
         uint roundId;
+        uint minPrice;
+        uint maxPrice;
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.
@@ -52,7 +55,9 @@ interface IFuturesMarket {
             uint id,
             int leverage,
             uint fee,
-            uint roundId
+            uint roundId,
+            uint minPrice,
+            uint maxPrice
         );
 
     function positions(address account)
@@ -146,9 +151,22 @@ interface IFuturesMarket {
 
     function cancelOrder() external;
 
+    function submitOrderWithPriceBounds(
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) external;
+
     function submitOrder(int leverage) external;
 
     function closePosition() external;
+
+    function modifyMarginAndSubmitOrderWithPriceBounds(
+        int marginDelta,
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) external;
 
     function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external;
 

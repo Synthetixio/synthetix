@@ -22,13 +22,14 @@ const errorCodes = {
 	Ok: 0,
 	NotPending: 1,
 	NoPriceUpdate: 2,
-	InvalidPrice: 3,
-	InsolventPosition: 4,
-	NotInsolvent: 5,
-	MaxMarketSizeExceeded: 6,
-	MaxLeverageExceeded: 7,
-	InsufficientMargin: 8,
-	NotPermitted: 9,
+	PriceOutOfBounds: 3,
+	InvalidPrice: 4,
+	InsolventPosition: 5,
+	NotInsolvent: 6,
+	MaxMarketSizeExceeded: 7,
+	MaxLeverageExceeded: 8,
+	InsufficientMargin: 9,
+	NotPermitted: 10,
 };
 
 contract('FuturesMarket', accounts => {
@@ -157,9 +158,11 @@ contract('FuturesMarket', accounts => {
 					'modifyMargin',
 					'withdrawAllMargin',
 					'submitOrder',
+					'submitOrderWithPriceBounds',
 					'cancelOrder',
 					'closePosition',
 					'modifyMarginAndSubmitOrder',
+					'modifyMarginAndSubmitOrderWithPriceBounds',
 					'confirmOrder',
 					'liquidatePosition',
 					'recomputeFunding',
@@ -1564,6 +1567,46 @@ contract('FuturesMarket', accounts => {
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			assert.equal(await futuresMarket.orderStatus(trader), errorCodes.InvalidPrice);
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
+		});
+
+		it('Cannot confirm an order if the price slippage since order submission price exceeds tolerance', async () => {
+			const startPrice = toUnit('200');
+			await setPrice(baseAsset, startPrice);
+
+			const margin = toUnit('1000');
+			await futuresMarket.modifyMargin(margin, { from: trader });
+			const leverage = toUnit('10');
+			const maxSlippage = toUnit('0.01'); // 1% in either direction
+			const minPrice = startPrice.mul(toUnit(1).sub(maxSlippage));
+			const maxPrice = startPrice.mul(toUnit(1).add(maxSlippage));
+
+			await futuresMarket.submitOrderWithPriceBounds(leverage, minPrice, maxPrice, {
+				from: trader,
+			});
+
+			await futuresMarket.modifyMarginAndSubmitOrderWithPriceBounds(
+				margin,
+				leverage,
+				minPrice,
+				maxPrice,
+				{
+					from: trader2,
+				}
+			);
+
+			// Slips +1%.
+			await setPrice(baseAsset, maxPrice.add(toBN(1)));
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Price out of acceptable range');
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader2));
+			await assert.revert(futuresMarket.confirmOrder(trader2), 'Price out of acceptable range');
+
+			// Slips -1%.
+			await setPrice(baseAsset, minPrice.sub(toBN(1)));
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Price out of acceptable range');
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader2));
+			await assert.revert(futuresMarket.confirmOrder(trader2), 'Price out of acceptable range');
 		});
 
 		it('Cannot confirm an order if an existing position is liquidating', async () => {

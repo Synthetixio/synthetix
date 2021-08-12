@@ -241,8 +241,9 @@ contract FuturesMarketData {
     }
 
     function _order(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Order memory) {
-        (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId) = market.orders(account);
-        return IFuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId);
+        (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId, uint minPrice, uint maxPrice) =
+            market.orders(account);
+        return IFuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId, minPrice, maxPrice);
     }
 
     function _positionDetails(IFuturesMarket market, address account) internal view returns (PositionData memory) {
