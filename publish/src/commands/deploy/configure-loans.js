@@ -18,6 +18,7 @@ module.exports = async ({
 		CollateralShort,
 		CollateralManager,
 		CollateralManagerState,
+		SystemSettings,
 	} = deployer.deployedContracts;
 
 	if (CollateralManagerState && CollateralManager) {
@@ -157,27 +158,33 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract has all associated synths added',
 		});
 
-		const CollateralShortInteractionDelay = (await getDeployParameter('COLLATERAL_SHORT'))[
-			'INTERACTION_DELAY'
-		];
-
 		await runStep({
-			contract: 'CollateralShort',
-			target: CollateralShort,
-			read: 'interactionDelay',
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			// FIXME
+			// read: 'interactionDelay',
+			// readArg: [CollateralShort.address],
 			expected: input => input !== '0', // only change if zero
 			write: 'setInteractionDelay',
-			writeArg: CollateralShortInteractionDelay,
+			writeArg: [
+				(await getDeployParameter('COLLATERAL_SHORT'))['INTERACTION_DELAY'],
+				CollateralShort.address,
+			],
 			comment:
 				'Ensure the CollateralShort contract has an interaction delay to prevent frontrunning',
 		});
 		await runStep({
-			contract: 'CollateralShort',
-			target: CollateralShort,
-			read: 'issueFeeRate',
+			contract: 'SystemSettings',
+			target: SystemSettings,
+			// FIXME
+			// read: 'issueFeeRate',
+			// readArg: [CollateralShort.address],
 			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
+			writeArg: [
+				(await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
+				CollateralShort.address,
+			],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
 		});
 	}

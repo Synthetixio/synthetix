@@ -49,7 +49,7 @@ class Deployer {
 		this.provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
 		// use the default owner when in a fork or in local mode and no private key supplied
-		if ((useFork || network === 'local') && !privateKey) {
+		if ((useFork || (network === 'local' && !useOvm)) && !privateKey) {
 			const ownerAddress = getUsers({ network, user: 'owner' }).address; // protocolDAO
 			this.signer = this.provider.getSigner(ownerAddress);
 			this.signer.address = ownerAddress;

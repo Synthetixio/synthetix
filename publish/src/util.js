@@ -10,7 +10,7 @@ const { BigNumber } = require('ethers');
 const {
 	constants: {
 		CONFIG_FILENAME,
-		PARAMS_FILENAME,
+		// PARAMS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		OWNER_ACTIONS_FILENAME,
 		SYNTHS_FILENAME,
@@ -85,8 +85,10 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 	const config = JSON.parse(fs.readFileSync(configFile));
 
 	console.log(gray(`Loading the list of deployment parameters on ${network.toUpperCase()}...`));
-	const paramsFile = path.join(deploymentPath, PARAMS_FILENAME);
-	const params = require(paramsFile);
+	// FIXME: Errored here
+	// const paramsFile = path.join(deploymentPath, PARAMS_FILENAME);
+	// const params = require(paramsFile);
+	const params = require('../deployed/local-ovm/params');
 
 	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
 	const versions = network !== 'local' ? getVersions({ network, deploymentPath }) : {};
