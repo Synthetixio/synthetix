@@ -1,5 +1,4 @@
 const { artifacts, contract, web3 } = require('hardhat');
-
 const { toBytes32 } = require('../..');
 const {
 	currentTime,
@@ -19,6 +18,27 @@ const {
 } = require('./helpers');
 
 const MockExchanger = artifacts.require('MockExchanger');
+
+const statusCodes = {
+	Ok: 0,
+	NoOrderExists: 1,
+	AwaitingPriceUpdate: 2,
+	PriceOutOfBounds: 3,
+	InvalidPrice: 4,
+	CanLiquidate: 5,
+	CannotLiquidate: 6,
+	MaxMarketSizeExceeded: 7,
+	MaxLeverageExceeded: 8,
+	InsufficientMargin: 9,
+	NotPermitted: 10,
+};
+
+const defaultPriceBounds = [
+	toBN('0'),
+	toBN('2')
+		.pow(toBN('256'))
+		.sub(toBN('1')),
+];
 
 contract('FuturesMarket', accounts => {
 	let proxyFuturesMarket,
@@ -81,7 +101,9 @@ contract('FuturesMarket', accounts => {
 		marginDelta,
 		leverage,
 	}) {
-		await market.modifyMarginAndSubmitOrder(marginDelta, leverage, { from: account });
+		await market.modifyMarginAndSubmitOrder(marginDelta, leverage, {
+			from: account,
+		});
 		await confirmOrder({
 			market,
 			account,
@@ -153,9 +175,11 @@ contract('FuturesMarket', accounts => {
 					'modifyMargin',
 					'withdrawAllMargin',
 					'submitOrder',
+					'submitOrderWithPriceBounds',
 					'cancelOrder',
 					'closePosition',
 					'modifyMarginAndSubmitOrder',
+					'modifyMarginAndSubmitOrderWithPriceBounds',
 					'confirmOrder',
 					'liquidatePosition',
 					'recomputeFunding',
@@ -939,7 +963,7 @@ contract('FuturesMarket', accounts => {
 				await futuresMarket.modifyMargin(toUnit('100'), { from: trader });
 				await assert.revert(
 					futuresMarket.modifyMargin(toUnit('-101'), { from: trader }),
-					'Withdrawing more than margin'
+					'Insufficient margin'
 				);
 			});
 
@@ -1026,12 +1050,12 @@ contract('FuturesMarket', accounts => {
 			it('Cannot decrease margin past zero.', async () => {
 				await assert.revert(
 					futuresMarket.modifyMargin(toUnit('-1'), { from: trader }),
-					'Withdrawing more than margin'
+					'Insufficient margin'
 				);
 				await futuresMarket.modifyMargin(toUnit('1000'), { from: trader });
 				await assert.revert(
 					futuresMarket.modifyMargin(toUnit('-2000'), { from: trader }),
-					'Withdrawing more than margin'
+					'Insufficient margin'
 				);
 			});
 		});
@@ -1081,6 +1105,11 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, leverage);
 			assert.bnEqual(order.fee, fee);
 			assert.bnEqual(order.roundId, roundId);
+			assert.bnEqual(order.minPrice, defaultPriceBounds[0]);
+			assert.bnEqual(order.maxPrice, defaultPriceBounds[1]);
+
+			const orderSize = (await futuresMarket.orderSize(trader))[0];
+			assert.bnEqual(orderSize, margin.mul(toBN(10)).div(toBN(100)));
 
 			// And it properly emits the relevant events.
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
@@ -1088,9 +1117,24 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [id, trader, leverage, fee, roundId],
+				args: [id, trader, leverage, fee, roundId, defaultPriceBounds[0], defaultPriceBounds[1]],
 				log: decodedLogs[0],
 			});
+		});
+
+		it('order size updates with new prices', async () => {
+			const margin = toUnit('1000');
+			const leverage = toUnit('10');
+			await futuresMarket.modifyMarginAndSubmitOrder(margin, leverage, { from: trader });
+			let orderSize = (await futuresMarket.orderSize(trader))[0];
+
+			const notional = margin.mul(toBN(10));
+			assert.bnEqual(orderSize, notional.div(toBN(100)));
+
+			// Halve the price, order units double for the same leverage.
+			await setPrice(baseAsset, toUnit('50'));
+			orderSize = (await futuresMarket.orderSize(trader))[0];
+			assert.bnEqual(orderSize, notional.div(toBN(50)));
 		});
 
 		it('submitting orders increments the order id', async () => {
@@ -1125,6 +1169,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order1.leverage, leverage);
 			assert.bnEqual(order1.fee, fee);
 			assert.bnEqual(order1.roundId, roundId1);
+			assert.bnEqual(order1.minPrice, defaultPriceBounds[0]);
+			assert.bnEqual(order1.maxPrice, defaultPriceBounds[1]);
 
 			await fastForward(24 * 60 * 60);
 			const price = toUnit('100');
@@ -1146,6 +1192,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order2.leverage, leverage2);
 			assert.bnEqual(order2.fee, fee2);
 			assert.bnEqual(order2.roundId, roundId2);
+			assert.bnEqual(order1.minPrice, defaultPriceBounds[0]);
+			assert.bnEqual(order1.maxPrice, defaultPriceBounds[1]);
 
 			// And it properly emits the relevant events.
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
@@ -1159,7 +1207,15 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [id2, trader, leverage2, fee2, roundId2],
+				args: [
+					id2,
+					trader,
+					leverage2,
+					fee2,
+					roundId2,
+					defaultPriceBounds[0],
+					defaultPriceBounds[1],
+				],
 				log: decodedLogs[1],
 			});
 		});
@@ -1274,24 +1330,162 @@ contract('FuturesMarket', accounts => {
 
 			for (const side of ['long', 'short']) {
 				describe(`${side}`, () => {
-					it.skip('Orders are blocked if they exceed market size', async () => {
-						assert.isTrue(false);
+					let maxSize, maxMargin;
+					const leverage = side === 'long' ? toUnit('10') : toUnit('-10');
+
+					beforeEach(async () => {
+						await futuresMarketSettings.setMaxMarketValue(baseAsset, toUnit('10000'), {
+							from: owner,
+						});
+						await setPrice(baseAsset, toUnit('1'));
+
+						const maxOrderSizes = await futuresMarket.maxOrderSizes();
+						maxSize = maxOrderSizes[side];
+						maxMargin = maxSize.div(toBN(10));
 					});
 
-					it.skip('Orders are allowed a touch of extra size to account for price motion', async () => {
-						assert.isTrue(false);
+					it('Orders are blocked if they exceed max market size', async () => {
+						await futuresMarket.modifyMargin(maxMargin.add(toUnit('11')), { from: trader });
+						await assert.revert(
+							futuresMarket.submitOrder(leverage, { from: trader }),
+							'Max market size exceeded'
+						);
+
+						// orders are allowed a bit over the formal limit to account for rounding etc.
+						await futuresMarket.modifyMargin(toUnit('1').neg(), { from: trader });
+						await futuresMarket.submitOrder(leverage, { from: trader });
 					});
 
-					it.skip('Orders collectively slightly above the limit can confirm, but substantially above it cannot be', async () => {
-						assert.isTrue(false);
+					it('Max order size is caught when an account has a position open already', async () => {
+						const unitLeverage = divideDecimalRound(leverage, leverage.abs());
+
+						// Confirm a big order
+						await futuresMarket.modifyMargin(maxMargin.mul(toBN(8)), {
+							from: trader,
+						});
+						await futuresMarket.submitOrder(unitLeverage, { from: trader });
+						await setPrice(baseAsset, toUnit('1'));
+						await futuresMarket.confirmOrder(trader);
+
+						// Try to submit an order that's too big for the market
+						await futuresMarket.modifyMargin(maxMargin.mul(toBN(3)), {
+							from: trader,
+						});
+						await assert.revert(
+							futuresMarket.submitOrder(unitLeverage, { from: trader }),
+							'Max market size exceeded'
+						);
+
+						// Submit an order that's not too big, then the price will spike
+						await futuresMarket.modifyMargin(maxMargin.mul(toBN(2)).neg(), {
+							from: trader,
+						});
+						await futuresMarket.submitOrder(unitLeverage, { from: trader });
+						let spike = toUnit('2');
+						if (leverage.lt(toBN('0'))) {
+							spike = toUnit('0.5');
+						}
+						await setPrice(baseAsset, spike);
+
+						assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+						assert.equal(
+							await futuresMarket.orderStatus(trader),
+							statusCodes.MaxMarketSizeExceeded
+						);
+						await assert.revert(futuresMarket.confirmOrder(trader), 'Max market size exceeded');
 					});
 
-					it.skip('Orders are allowed to reduce in size (or close) even if the result is still over the max', async () => {
-						assert.isTrue(false);
+					it('Orders are allowed a touch of extra size to account for price motion on confirmation', async () => {
+						// Ensure there's some existing order size for prices to shunt around.
+						await futuresMarket.modifyMargin(maxMargin.div(toBN(10)).mul(toBN(7)), {
+							from: trader2,
+						});
+						await futuresMarket.submitOrder(leverage, { from: trader2 });
+						await setPrice(baseAsset, toUnit('1'));
+						await futuresMarket.confirmOrder(trader2);
+
+						await futuresMarket.modifyMargin(maxMargin.div(toBN(10)).mul(toBN(3)), {
+							from: trader,
+						});
+						await futuresMarket.submitOrder(leverage, { from: trader });
+
+						// The price moves, so the value of the already-confirmed order, shunts out the pending one.
+						await setPrice(baseAsset, toUnit('1.08'));
+
+						assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+						assert.equal(
+							await futuresMarket.orderStatus(trader),
+							statusCodes.MaxMarketSizeExceeded
+						);
+						await assert.revert(futuresMarket.confirmOrder(trader), 'Max market size exceeded');
+
+						// Price moves back partially and allows the order to confirm
+						await setPrice(baseAsset, toUnit('1.04'));
+
+						assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+						assert.equal(await futuresMarket.orderStatus(trader), statusCodes.Ok);
+						await futuresMarket.confirmOrder(trader);
+						assert.equal(await futuresMarket.orderStatus(trader), statusCodes.NoOrderExists);
 					});
 
-					it.skip('Max size constraint is still observed if switching market sides', async () => {
-						assert.isTrue(false);
+					it('Orders collectively slightly above the limit can confirm, but substantially above it cannot be', async () => {
+						const margin = maxMargin
+							.div(toBN('100'))
+							.mul(toBN('106'))
+							.div(toBN('3'));
+						for (const trader_ of [trader, trader2, trader3]) {
+							await futuresMarket.modifyMargin(margin, {
+								from: trader_,
+							});
+							await futuresMarket.submitOrder(leverage, { from: trader_ });
+						}
+						await setPrice(baseAsset, toUnit('1'));
+
+						assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+						assert.isTrue(await futuresMarket.canConfirmOrder(trader2));
+						assert.isTrue(await futuresMarket.canConfirmOrder(trader3));
+
+						await futuresMarket.confirmOrder(trader);
+
+						assert.isTrue(await futuresMarket.canConfirmOrder(trader2));
+						assert.isTrue(await futuresMarket.canConfirmOrder(trader3));
+
+						await futuresMarket.confirmOrder(trader2);
+
+						assert.isFalse(await futuresMarket.canConfirmOrder(trader3));
+						assert.equal(
+							await futuresMarket.orderStatus(trader3),
+							statusCodes.MaxMarketSizeExceeded
+						);
+					});
+
+					it('Orders are allowed to reduce in size (or close) even if the result is still over the max', async () => {
+						const unitLeverage = divideDecimalRound(leverage, leverage.abs());
+						const initialMargin = maxMargin.mul(toBN('5'));
+
+						await futuresMarket.modifyMargin(initialMargin, {
+							from: trader,
+						});
+						await futuresMarket.submitOrder(unitLeverage, { from: trader });
+						await setPrice(baseAsset, toUnit('1'));
+						await futuresMarket.confirmOrder(trader);
+
+						// Now exceed max size
+						await setPrice(baseAsset, toUnit('2.5'));
+
+						const sizes = await futuresMarket.maxOrderSizes();
+						assert.bnEqual(sizes[leverage.gt(toBN('0')) ? 0 : 1], toBN('0'));
+
+						// Reduce the order size, even though we are above the maximum
+						await futuresMarket.modifyMargin(initialMargin.sub(toUnit('0.01')), {
+							from: trader,
+						});
+						await futuresMarket.submitOrder((await futuresMarket.currentLeverage(trader))[0], {
+							from: trader,
+						});
+						await setPrice(baseAsset, toUnit('2.5'));
+						assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+						await futuresMarket.confirmOrder(trader);
 					});
 				});
 			}
@@ -1333,6 +1527,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnEqual(order.maxPrice, toUnit(0));
 			assert.bnEqual(await sUSD.balanceOf(trader), preBalance);
 
 			// And the relevant events are properly emitted
@@ -1376,14 +1572,16 @@ contract('FuturesMarket', accounts => {
 			const leverage = toUnit('10');
 			const fee = (await futuresMarket.orderFee(trader, leverage))[0];
 			await futuresMarket.submitOrder(leverage, { from: trader });
-
 			const price = toUnit('200');
 			await setPrice(baseAsset, price);
 
+			assert.equal(await futuresMarket.orderStatus(trader), statusCodes.Ok);
 			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+			const orderSize = (await futuresMarket.orderSize(trader))[0];
 			const tx = await futuresMarket.confirmOrder(trader);
 
 			const size = toUnit('50');
+			assert.bnEqual(orderSize, size);
 
 			const position = await futuresMarket.positions(trader);
 
@@ -1406,6 +1604,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnEqual(order.maxPrice, toUnit(0));
 
 			// And the relevant events are properly emitted
 			const id = toBN(1);
@@ -1431,12 +1631,14 @@ contract('FuturesMarket', accounts => {
 			const leverage = toUnit('10');
 			await futuresMarket.submitOrder(leverage, { from: trader });
 
+			assert.equal(await futuresMarket.orderStatus(trader), statusCodes.AwaitingPriceUpdate);
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Awaiting next price');
 		});
 
 		it('cannot confirm an order if none is pending', async () => {
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			assert.equal(await futuresMarket.orderStatus(trader), statusCodes.NoOrderExists);
 			await assert.revert(futuresMarket.confirmOrder(trader), 'No pending order');
 		});
 
@@ -1450,11 +1652,53 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, price);
 
 			assert.isTrue(await futuresMarket.canConfirmOrder(trader));
+			assert.equal(await futuresMarket.orderStatus(trader), statusCodes.Ok);
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			assert.equal(await futuresMarket.orderStatus(trader), statusCodes.InvalidPrice);
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Invalid price');
+		});
+
+		it('Cannot confirm an order if the price slippage since order submission price exceeds tolerance', async () => {
+			const startPrice = toUnit('200');
+			await setPrice(baseAsset, startPrice);
+
+			const margin = toUnit('1000');
+			await futuresMarket.modifyMargin(margin, { from: trader });
+			const leverage = toUnit('10');
+			const maxSlippage = toUnit('0.01'); // 1% in either direction
+			const minPrice = startPrice.mul(toUnit(1).sub(maxSlippage));
+			const maxPrice = startPrice.mul(toUnit(1).add(maxSlippage));
+
+			await futuresMarket.submitOrderWithPriceBounds(leverage, minPrice, maxPrice, {
+				from: trader,
+			});
+
+			await futuresMarket.modifyMarginAndSubmitOrderWithPriceBounds(
+				margin,
+				leverage,
+				minPrice,
+				maxPrice,
+				{
+					from: trader2,
+				}
+			);
+
+			// Slips +1%.
+			await setPrice(baseAsset, maxPrice.add(toBN(1)));
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Price out of acceptable range');
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader2));
+			await assert.revert(futuresMarket.confirmOrder(trader2), 'Price out of acceptable range');
+
+			// Slips -1%.
+			await setPrice(baseAsset, minPrice.sub(toBN(1)));
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
+			await assert.revert(futuresMarket.confirmOrder(trader), 'Price out of acceptable range');
+			assert.isFalse(await futuresMarket.canConfirmOrder(trader2));
+			await assert.revert(futuresMarket.confirmOrder(trader2), 'Price out of acceptable range');
 		});
 
 		it('Cannot confirm an order if an existing position is liquidating', async () => {
@@ -1471,6 +1715,7 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, toUnit('100'));
 
 			// But it fails!
+			assert.equal(await futuresMarket.orderStatus(trader), statusCodes.CanLiquidate);
 			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
 			await assert.revert(futuresMarket.confirmOrder(trader), 'Position can be liquidated');
 		});
@@ -1478,6 +1723,8 @@ contract('FuturesMarket', accounts => {
 		it.skip('Can confirm a set of multiple orders on both sides of the market', async () => {
 			assert.isTrue(false);
 		});
+
+		// TODO: Properly test the max order size constraint violation due to a price movement.
 
 		it('Order confirmation properly records the exchange fee with the fee pool', async () => {
 			const FEE_ADDRESS = await feePool.FEE_ADDRESS();
@@ -1534,6 +1781,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
 			assert.bnEqual(order.roundId, toUnit(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnEqual(order.maxPrice, toUnit(0));
 		});
 
 		it('closing positions fails if a new price has not been set.', async () => {
@@ -1568,6 +1817,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toUnit('3'));
 			assert.bnNotEqual(order.fee, toBN(0));
 			assert.bnNotEqual(order.roundId, toBN(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnNotEqual(order.maxPrice, toUnit(0));
 
 			const tx = await futuresMarket.closePosition({ from: trader });
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
@@ -1581,7 +1832,15 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [order.id.add(toBN(1)), trader, toBN(0), toBN(0), order.roundId],
+				args: [
+					order.id.add(toBN(1)),
+					trader,
+					toBN(0),
+					toBN(0),
+					order.roundId,
+					defaultPriceBounds[0],
+					defaultPriceBounds[1],
+				],
 				log: decodedLogs[1],
 			});
 
@@ -1591,6 +1850,8 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.leverage, toBN(0));
 			assert.bnEqual(order.fee, toBN(0));
 			assert.bnNotEqual(order.roundId, toBN(0));
+			assert.bnEqual(order.minPrice, toUnit(0));
+			assert.bnNotEqual(order.maxPrice, toUnit(0));
 		});
 
 		it('Cannot close a position if it is liquidating', async () => {
@@ -1608,6 +1869,10 @@ contract('FuturesMarket', accounts => {
 				futuresMarket.closePosition({ from: trader }),
 				'Position can be liquidated'
 			);
+		});
+
+		it.skip('Can close positions even if the max market size constraints are violated', async () => {
+			assert.isTrue(false);
 		});
 	});
 

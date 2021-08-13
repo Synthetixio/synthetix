@@ -195,12 +195,16 @@ contract('FuturesMarketData', accounts => {
 			const details2 = await futuresMarketData.positionDetails(futuresMarket.address, trader1);
 
 			const order = await futuresMarket.orders(trader3);
+			assert.equal(details.orderSize, (await futuresMarket.orderSize(trader3))[0]);
 			assert.equal(details.orderPending, await futuresMarket.orderPending(trader3));
 			assert.equal(details.canConfirmOrder, await futuresMarket.canConfirmOrder(trader3));
+			assert.equal(details.orderStatus, await futuresMarket.orderStatus(trader3));
 			assert.bnEqual(details.order.id, order.id);
 			assert.bnEqual(details.order.leverage, order.leverage);
 			assert.bnEqual(details.order.fee, order.fee);
 			assert.bnEqual(details.order.roundId, order.roundId);
+			assert.bnEqual(details.order.minPrice, order.minPrice);
+			assert.bnEqual(details.order.maxPrice, order.maxPrice);
 
 			const position = await futuresMarket.positions(trader1);
 			assert.bnEqual(details2.position.margin, position.margin);

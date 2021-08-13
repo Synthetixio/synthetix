@@ -3,11 +3,27 @@ pragma solidity ^0.5.16;
 interface IFuturesMarket {
     /* ========== TYPES ========== */
 
+    enum Status {
+        Ok,
+        NoOrderExists,
+        AwaitingPriceUpdate,
+        PriceOutOfBounds,
+        InvalidPrice,
+        CanLiquidate,
+        CannotLiquidate,
+        MaxMarketSizeExceeded,
+        MaxLeverageExceeded,
+        InsufficientMargin,
+        NotPermitted
+    }
+
     struct Order {
         uint id;
         int leverage;
         uint fee;
         uint roundId;
+        uint minPrice;
+        uint maxPrice;
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.
@@ -39,7 +55,9 @@ interface IFuturesMarket {
             uint id,
             int leverage,
             uint fee,
-            uint roundId
+            uint roundId,
+            uint minPrice,
+            uint maxPrice
         );
 
     function positions(address account)
@@ -95,6 +113,10 @@ interface IFuturesMarket {
 
     function orderPending(address account) external view returns (bool pending);
 
+    function orderSize(address account) external view returns (int size, bool invalid);
+
+    function orderStatus(address account) external view returns (Status);
+
     function canConfirmOrder(address account) external view returns (bool);
 
     function notionalValue(address account) external view returns (int value, bool invalid);
@@ -131,9 +153,22 @@ interface IFuturesMarket {
 
     function cancelOrder() external;
 
+    function submitOrderWithPriceBounds(
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) external;
+
     function submitOrder(int leverage) external;
 
     function closePosition() external;
+
+    function modifyMarginAndSubmitOrderWithPriceBounds(
+        int marginDelta,
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) external;
 
     function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external;
 
