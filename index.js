@@ -173,11 +173,8 @@ const defaults = {
 	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
 
 	COLLATERAL_MANAGER: {
-		SYNTHS: ['sUSD', 'sBTC', 'sETH'],
-		SHORTS: [
-			{ long: 'sBTC', short: 'iBTC' },
-			{ long: 'sETH', short: 'iETH' },
-		],
+		SYNTHS: ['sUSD', 'sETH'],
+		SHORTS: ['sETH'],
 		MAX_DEBT: w3utils.toWei('75000000'), // 75 million sUSD
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
@@ -195,7 +192,7 @@ const defaults = {
 		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
 	},
 	COLLATERAL_SHORT: {
-		SYNTHS: ['sBTC', 'sETH'],
+		SYNTHS: ['sETH'],
 		MIN_CRATIO: w3utils.toWei('1.2'),
 		MIN_COLLATERAL: w3utils.toWei('1000'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),

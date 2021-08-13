@@ -244,16 +244,14 @@ module.exports = async ({
 		target: CollateralManager,
 		read: 'areShortableSynthsSet',
 		readArg: [
-			CollateralManagerShorts.map(({ long }) => toBytes32(`Synth${long}`)),
-			CollateralManagerShorts.map(({ long }) => toBytes32(long)),
+			CollateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
+			CollateralManagerSynths.map(toBytes32),
 		],
 		expected: input => input,
 		write: 'addShortableSynths',
 		writeArg: [
-			CollateralManagerShorts.map(({ long, short }) =>
-				[`Synth${long}`, `Synth${short}`].map(toBytes32)
-			),
-			CollateralManagerShorts.map(({ long }) => toBytes32(long)),
+			CollateralManagerShorts.map(key => toBytes32(`Synth${key}`)),
+			CollateralManagerShorts.map(toBytes32),
 		],
 		comment: 'Ensure the CollateralManager contract has all associated short synths added',
 	});
