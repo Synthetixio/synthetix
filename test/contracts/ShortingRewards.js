@@ -149,6 +149,7 @@ contract('ShortingRewards', accounts => {
 				'Synthetix',
 				'SystemSettings',
 				'Exchanger',
+				'CollateralUtil',
 			],
 		}));
 
@@ -410,13 +411,6 @@ contract('ShortingRewards', accounts => {
 				'Only Short Contract'
 			);
 		});
-
-		it('getReward() can only be called by the short contract', async () => {
-			await assert.revert(
-				shortingRewards.getReward(account1, { from: account1 }),
-				'Only Short Contract'
-			);
-		});
 	});
 
 	describe('enrol()', () => {
@@ -586,7 +580,7 @@ contract('ShortingRewards', accounts => {
 
 			await issuesBTCtoAccount(toUnit(1), account1);
 			await short.close(id, { from: account1 });
-			await short.getReward(sBTC, account1, { from: account1 });
+			await shortingRewards.getReward(account1);
 
 			const postRewardBal = await rewardsToken.balanceOf(account1);
 			const postEarnedBal = await shortingRewards.earned(account1);
@@ -663,7 +657,7 @@ contract('ShortingRewards', accounts => {
 			});
 
 			await fastForward(DAY * 4);
-			await short.getReward(sBTC, account1, { from: account1 });
+			await shortingRewards.getReward(account1);
 			await fastForward(DAY * 4);
 
 			// New Rewards period much lower
@@ -681,7 +675,7 @@ contract('ShortingRewards', accounts => {
 			});
 
 			await fastForward(DAY * 71);
-			await short.getReward(sBTC, account1, { from: account1 });
+			await shortingRewards.getReward(account1);
 		});
 	});
 
@@ -739,7 +733,7 @@ contract('ShortingRewards', accounts => {
 			const initialRewardBal = await rewardsToken.balanceOf(account1);
 			const initialEarnedBal = await shortingRewards.earned(account1);
 			await short.close(id, { from: account1 });
-			await short.getReward(sBTC, account1, { from: account1 });
+			await shortingRewards.getReward(account1);
 			const postRewardBal = await rewardsToken.balanceOf(account1);
 			const postEarnedBal = await shortingRewards.earned(account1);
 

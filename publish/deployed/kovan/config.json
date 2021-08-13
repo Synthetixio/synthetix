@@ -53,12 +53,6 @@
 	"EscrowChecker": {
 		"deploy": false
 	},
-	"EtherCollateral": {
-		"deploy": false
-	},
-	"EtherCollateralsUSD": {
-		"deploy": false
-	},
 	"ExchangeRates": {
 		"deploy": false
 	},
