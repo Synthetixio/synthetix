@@ -80,6 +80,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         // If they try to withdraw more than their total balance, it will fail on the safe sub.
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].sub(amount);
 
+        // solhint-disable avoid-low-level-calls
         (bool success, ) = msg.sender.call.value(amount)("");
         require(success, "Transfer failed");
     }
