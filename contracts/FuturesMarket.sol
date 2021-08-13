@@ -1081,13 +1081,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return bytes32(uint256(uint160(input)));
     }
 
-    event ParameterUpdated(bytes32 indexed parameter, uint value);
-    bytes32 internal constant SIG_PARAMETERUPDATED = keccak256("ParameterUpdated(bytes32,uint256)");
-
-    function emitParameterUpdated(bytes32 parameter, uint value) internal {
-        proxy._emit(abi.encode(value), 2, SIG_PARAMETERUPDATED, parameter, 0, 0);
-    }
-
     event OrderSubmitted(
         uint indexed id,
         address indexed account,
