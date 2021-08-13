@@ -195,6 +195,16 @@ const deploy = async ({
 		privateKey = envPrivateKey;
 	}
 
+	// Here we set a default private key for local-ovm deployment, as the
+	// OVM geth node has no notion of local/unlocked accounts.
+	// Deploying without a private key will give the error "OVM: Unsupported RPC method",
+	// as the OVM node does not support eth_sendTransaction, which inherently relies on
+	// the unlocked accounts on the node.
+	if (network === 'local' && !privateKey) {
+		// Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+		privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+	}
+
 	const nonceManager = new NonceManager({});
 
 	const deployer = new Deployer({
