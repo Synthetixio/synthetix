@@ -85,6 +85,10 @@ jobs:
       - cmd-wait-for-port:
           port: 9545
       - run:
+          name: Run isolated layer 1 integration tests
+          command: |
+            npx hardhat test:integration:l1 --compile --deploy --provider-port 9545
+      - run:
           name: Run isolated layer 2 integration tests
           command: |
             npx hardhat test:integration:l2 --compile --deploy
