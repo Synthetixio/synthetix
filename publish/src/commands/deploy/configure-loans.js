@@ -48,7 +48,7 @@ module.exports = async ({
 			comment: 'Ensure the CollateralManager has all Collateral contracts added',
 		});
 	}
-	if (CollateralEth) {
+	if (CollateralEth && SystemSettings) {
 		await runStep({
 			contract: 'CollateralEth',
 			target: CollateralEth,
@@ -78,17 +78,21 @@ module.exports = async ({
 		});
 
 		await runStep({
-			contract: 'CollateralEth',
-			target: CollateralEth,
+			contract: 'SystemSettings',
+			target: SystemSettings,
 			read: 'issueFeeRate',
-			expected: input => input !== '0', // only change if zero
+			readArg: addressOf(CollateralEth),
+			expected: input => input !== '0', // only change if zero,
 			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
-			comment: 'Ensure the CollateralEth has its issue fee rate set',
+			writeArg: [
+				(await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
+				CollateralEth.address,
+			],
+			comment: 'Ensure the CollateralEth contract has its issue fee rate set',
 		});
 	}
 
-	if (CollateralErc20) {
+	if (CollateralErc20 && SystemSettings) {
 		await runStep({
 			contract: 'CollateralErc20',
 			target: CollateralErc20,
@@ -118,12 +122,16 @@ module.exports = async ({
 		});
 
 		await runStep({
-			contract: 'CollateralErc20',
-			target: CollateralErc20,
+			contract: 'SystemSettings',
+			target: SystemSettings,
 			read: 'issueFeeRate',
+			readArg: addressOf(CollateralErc20),
 			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
-			writeArg: (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
+			writeArg: [
+				(await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
+				CollateralErc20.address,
+			],
 			comment: 'Ensure the CollateralErc20 contract has its issue fee rate set',
 		});
 	}
