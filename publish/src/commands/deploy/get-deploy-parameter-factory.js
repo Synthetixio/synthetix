@@ -14,32 +14,32 @@ module.exports = ({ params, yes, ignoreCustomParameters }) => async name => {
 
 	let effectiveValue = defaultParam;
 
-	const param = params[name];
+	const param = (params || []).find(p => p.name === name);
 
 	if (param) {
 		if (!yes) {
 			try {
 				await confirmAction(
 					yellow(
-						`⚠⚠⚠ WARNING: Found an entry for ${name} in params.js. Specified value is ${param} and default is ${defaultParam}.` +
+						`⚠⚠⚠ WARNING: Found an entry for ${param.name} in params.json. Specified value is ${param.value} and default is ${defaultParam}.` +
 							'\nDo you want to use the specified value (default otherwise)? (y/n) '
 					)
 				);
 
-				effectiveValue = param;
+				effectiveValue = param.value;
 			} catch (err) {
 				console.error(err);
 			}
 		} else {
 			// yes = true
-			effectiveValue = param;
+			effectiveValue = param.value;
 		}
 	}
 
 	if (effectiveValue !== defaultParam) {
 		console.log(
 			yellow(
-				`PARAMETER OVERRIDE: Overriding default ${name} with ${effectiveValue}, specified in params.js.`
+				`PARAMETER OVERRIDE: Overriding default ${name} with ${effectiveValue}, specified in params.json.`
 			)
 		);
 	}

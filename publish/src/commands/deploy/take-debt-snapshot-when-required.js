@@ -24,7 +24,7 @@ module.exports = async ({
 		if (force || validityChanged) {
 			console.log(yellow(`Refreshing debt snapshot...`));
 			await runStep({
-				gasLimit: useOvm ? 10.0e6 : 12.0e6, // About 3.34 million gas is required to refresh the snapshot with ~40 synths on L1
+				gasLimit: useOvm ? 4.0e6 : 5.0e6, // About 3.34 million gas is required to refresh the snapshot with ~40 synths on L1
 				contract: 'DebtCache',
 				target: DebtCache,
 				write: 'takeDebtSnapshot',

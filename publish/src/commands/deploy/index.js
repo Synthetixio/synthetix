@@ -90,7 +90,7 @@ const deploy = async ({
 	// More info:
 	// https://www.notion.so/How-to-pay-Fees-in-Optimistic-Ethereum-f706f4e5b13e460fa5671af48ce9a695
 	if (useOvm) {
-		gasPrice = network === 'local' ? '0' : OVM_GAS_PRICE_GWEI;
+		gasPrice = OVM_GAS_PRICE_GWEI;
 		methodCallGasLimit = undefined;
 		contractDeploymentGasLimit = undefined;
 	}
@@ -191,7 +191,7 @@ const deploy = async ({
 
 	// when not in a local network, and not forking, and the privateKey isn't supplied,
 	// use the one from the .env file
-	if ((network !== 'local' && !useFork && !privateKey) || useOvm) {
+	if (network !== 'local' && !useFork && !privateKey) {
 		privateKey = envPrivateKey;
 	}
 

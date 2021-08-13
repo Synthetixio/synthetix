@@ -58,7 +58,7 @@ module.exports = ({
 				);
 			}
 
-			if (gasPrice !== OVM_GAS_PRICE_GWEI && network !== 'local') {
+			if (gasPrice !== OVM_GAS_PRICE_GWEI) {
 				throw new Error(`Gas price needs to be ${OVM_GAS_PRICE_GWEI} when targeting Optimism.`);
 			}
 		}
