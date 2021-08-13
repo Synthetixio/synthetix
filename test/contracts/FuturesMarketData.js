@@ -4,7 +4,6 @@ const { toBytes32 } = require('../../');
 const { currentTime, toUnit } = require('../utils')();
 const { setupContract, setupAllContracts } = require('./setup');
 const { assert } = require('./common');
-const ethers = require('ethers');
 
 const FuturesMarket = artifacts.require('FuturesMarket');
 
@@ -26,7 +25,6 @@ contract('FuturesMarketData', accounts => {
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
 	const traderInitialBalance = toUnit(1000000);
-	const defaultPriceBounds = [ethers.constants.Zero, ethers.constants.MaxUint256];
 
 	before(async () => {
 		({
@@ -115,10 +113,10 @@ contract('FuturesMarketData', accounts => {
 
 		// The traders take positions on market
 		await futuresMarket.modifyMargin(toUnit('1000'), { from: trader1 });
-		await futuresMarket.submitOrder(toUnit('5'), ...defaultPriceBounds, { from: trader1 });
+		await futuresMarket.submitOrder(toUnit('5'), { from: trader1 });
 
 		await futuresMarket.modifyMargin(toUnit('750'), { from: trader2 });
-		await futuresMarket.submitOrder(toUnit('-10'), ...defaultPriceBounds, { from: trader2 });
+		await futuresMarket.submitOrder(toUnit('-10'), { from: trader2 });
 
 		await exchangeRates.updateRates([baseAsset], [toUnit('100')], await currentTime(), {
 			from: oracle,
@@ -127,12 +125,12 @@ contract('FuturesMarketData', accounts => {
 		await futuresMarket.confirmOrder(trader2);
 
 		await futuresMarket.modifyMargin(toUnit('4000'), { from: trader3 });
-		await futuresMarket.submitOrder(toUnit('1.25'), ...defaultPriceBounds, { from: trader3 });
+		await futuresMarket.submitOrder(toUnit('1.25'), { from: trader3 });
 
 		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForAsset(newAsset));
 
 		await sethMarket.modifyMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.submitOrder(toUnit('4'), ...defaultPriceBounds, { from: trader3 });
+		await sethMarket.submitOrder(toUnit('4'), { from: trader3 });
 		await exchangeRates.updateRates([newAsset], [toUnit('999')], await currentTime(), {
 			from: oracle,
 		});
@@ -197,8 +195,10 @@ contract('FuturesMarketData', accounts => {
 			const details2 = await futuresMarketData.positionDetails(futuresMarket.address, trader1);
 
 			const order = await futuresMarket.orders(trader3);
+			assert.equal(details.orderSize, (await futuresMarket.orderSize(trader3))[0]);
 			assert.equal(details.orderPending, await futuresMarket.orderPending(trader3));
 			assert.equal(details.canConfirmOrder, await futuresMarket.canConfirmOrder(trader3));
+			assert.equal(details.orderStatus, await futuresMarket.orderStatus(trader3));
 			assert.bnEqual(details.order.id, order.id);
 			assert.bnEqual(details.order.leverage, order.leverage);
 			assert.bnEqual(details.order.fee, order.fee);
