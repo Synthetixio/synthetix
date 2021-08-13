@@ -3561,10 +3561,232 @@ contract('Exchange Rates', async accounts => {
 	};
 
 	const itDoesntReadAtomicPricesFromDex = () => {
-		describe('Atomic pricing', () => {
-			it('errors with not implemented when attempted to fetch atomic rate', async () => {
+		describe('Atomic exchange pricing', () => {
+			it('errors with not implemented when attempting to fetch atomic rate', async () => {
 				await assert.revert(
 					instance.effectiveAtomicValueAndRates(sETH, toUnit('10'), sUSD),
+					'Cannot be run on this layer'
+				);
+			});
+		});
+	};
+
+	const itReportsRateTooVolatileForAtomicExchanges = () => {
+		describe('atomicVolatilityConsiderationWindow', () => {
+			describe('when consideration window is changed in the system settings', () => {
+				const considerationWindow = toBN(600);
+				beforeEach(async () => {
+					await systemSettings.setAtomicVolatilityConsiderationWindow(SNX, considerationWindow, {
+						from: owner,
+					});
+				});
+				it('then atomicVolatilityConsiderationWindow is correctly updated', async () => {
+					assert.bnEqual(
+						await instance.atomicVolatilityConsiderationWindow(SNX),
+						considerationWindow
+					);
+				});
+			});
+		});
+
+		describe('atomicVolatilityUpdateThreshold', () => {
+			describe('when threshold for SNX is changed in the system settings', () => {
+				const updateThreshold = toBN(3);
+				beforeEach(async () => {
+					await systemSettings.setAtomicVolatilityUpdateThreshold(SNX, updateThreshold, {
+						from: owner,
+					});
+				});
+				it('then atomicVolatilityUpdateThreshold is correctly updated', async () => {
+					assert.bnEqual(await instance.atomicVolatilityUpdateThreshold(SNX), updateThreshold);
+				});
+			});
+		});
+
+		describe('synthTooVolatileForAtomicExchange', async () => {
+			const minute = 60 * 60;
+			const synth = sETH;
+			let aggregator;
+
+			beforeEach('set up eth aggregator mock', async () => {
+				aggregator = await MockAggregator.new({ from: owner });
+				await aggregator.setDecimals('8');
+				await instance.addAggregator(synth, aggregator.address, {
+					from: owner,
+				});
+			});
+
+			beforeEach('check related system systems', async () => {
+				assert.bnEqual(await instance.atomicVolatilityConsiderationWindow(synth), '0');
+				assert.bnEqual(await instance.atomicVolatilityUpdateThreshold(synth), '0');
+			});
+
+			describe('when consideration window is not set', () => {
+				it('does not consider synth to be volatile', async () => {
+					assert.isFalse(await instance.synthTooVolatileForAtomicExchange(synth));
+				});
+			});
+
+			describe('when update threshold is not set', () => {
+				it('does not consider synth to be volatile', async () => {
+					assert.isFalse(await instance.synthTooVolatileForAtomicExchange(synth));
+				});
+			});
+
+			describe('when consideration window and update threshold are set', () => {
+				const considerationWindow = 10 * minute;
+
+				beforeEach('set system settings', async () => {
+					// Window of 10min and threshold of 2 (i.e. max two updates allowed)
+					await systemSettings.setAtomicVolatilityConsiderationWindow(synth, considerationWindow, {
+						from: owner,
+					});
+					await systemSettings.setAtomicVolatilityUpdateThreshold(synth, 2, {
+						from: owner,
+					});
+				});
+
+				describe('when last aggregator update is outside consideration window', () => {
+					beforeEach('set last aggregator update', async () => {
+						await aggregator.setLatestAnswer(
+							convertToDecimals(1, 8),
+							(await currentTime()) - (considerationWindow + 1 * minute)
+						);
+					});
+
+					it('does not consider synth to be volatile', async () => {
+						assert.isFalse(await instance.synthTooVolatileForAtomicExchange(synth));
+					});
+				});
+
+				describe('when last aggregator update is inside consideration window', () => {
+					function itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+						oracleUpdateTimesFromNow = [],
+						volatile,
+					}) {
+						beforeEach('set aggregator updates', async () => {
+							oracleUpdateTimesFromNow.sort().reverse(); // ensure the update times go from farthest to most recent
+							const now = await currentTime();
+							for (const timeFromNow of oracleUpdateTimesFromNow) {
+								await aggregator.setLatestAnswer(convertToDecimals(1, 8), now - timeFromNow);
+							}
+						});
+
+						it(`${volatile ? 'considers' : 'does not consider'} synth to be volatile`, async () => {
+							assert.equal(await instance.synthTooVolatileForAtomicExchange(synth), volatile);
+						});
+					}
+
+					describe('when the allowed update threshold is not reached', () => {
+						itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+							oracleUpdateTimesFromNow: [
+								considerationWindow + 10 * minute,
+								considerationWindow + 5 * minute,
+								considerationWindow - 5 * minute,
+							],
+							volatile: false,
+						});
+					});
+
+					describe('when the allowed update threshold is reached', () => {
+						itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+							oracleUpdateTimesFromNow: [
+								considerationWindow + 10 * minute,
+								considerationWindow - 5 * minute,
+								considerationWindow - 7 * minute,
+							],
+							volatile: true,
+						});
+					});
+
+					describe('when the allowed update threshold is reached with updates at the edge of the consideration window', () => {
+						// The consideration window is inclusive on both sides (i.e. [])
+						itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+							oracleUpdateTimesFromNow: [
+								considerationWindow + 10 * minute,
+								considerationWindow - 5, // small 5s fudge for block times and querying speed
+								0,
+							],
+							volatile: true,
+						});
+					});
+
+					describe('when there is not enough oracle history to assess', () => {
+						itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+							oracleUpdateTimesFromNow: [considerationWindow - 5 * minute],
+							volatile: true,
+						});
+					});
+
+					describe('when there is just enough oracle history to assess', () => {
+						describe('when all updates are inside consideration window', () => {
+							itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+								oracleUpdateTimesFromNow: [
+									considerationWindow - 5 * minute,
+									considerationWindow - 7 * minute,
+								],
+								volatile: true,
+							});
+						});
+
+						describe('when not all updates are inside consideration window', () => {
+							itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+								oracleUpdateTimesFromNow: [
+									considerationWindow + 5 * minute,
+									considerationWindow - 5 * minute,
+								],
+								volatile: false,
+							});
+						});
+					});
+				});
+
+				describe('when aggregator fails', () => {
+					describe('when aggregator returns no rate outside consideration window', () => {
+						beforeEach('set aggregator updates', async () => {
+							await aggregator.setLatestAnswer(
+								'0',
+								(await currentTime()) - (considerationWindow + 1 * minute)
+							);
+						});
+
+						it('does not consider synth to be volatile', async () => {
+							assert.isFalse(await instance.synthTooVolatileForAtomicExchange(synth));
+						});
+					});
+
+					describe('when aggregator returns no rate inside consideration window', () => {
+						beforeEach('set aggregator updates', async () => {
+							await aggregator.setLatestAnswer(
+								'0',
+								(await currentTime()) - (considerationWindow - 1 * minute)
+							);
+						});
+
+						it('considers synth to be volatile', async () => {
+							assert.isTrue(await instance.synthTooVolatileForAtomicExchange(synth));
+						});
+					});
+
+					describe('when aggregator reverts', () => {
+						beforeEach('set aggregator to revert on getRoundData()', async () => {
+							await aggregator.setAllRoundDataShouldRevert(true);
+						});
+
+						it('considers synth to be volatile', async () => {
+							assert.isTrue(await instance.synthTooVolatileForAtomicExchange(synth));
+						});
+					});
+				});
+			});
+		});
+	};
+
+	const itDoesntAssessRateTooVolatileForAtomicExchanges = () => {
+		describe('Atomic exchange volatility control', () => {
+			it('errors with not implemented when attempting to assess volatility for atomic exchanges', async () => {
+				await assert.revert(
+					instance.synthTooVolatileForAtomicExchange(sETH),
 					'Cannot be run on this layer'
 				);
 			});
@@ -3628,6 +3850,8 @@ contract('Exchange Rates', async accounts => {
 		itReadsFromAggregator();
 
 		itDoesntReadAtomicPricesFromDex();
+
+		itDoesntAssessRateTooVolatileForAtomicExchanges();
 	});
 
 	describe('Using ExchangeRatesWithDexPricing', () => {
@@ -3687,5 +3911,7 @@ contract('Exchange Rates', async accounts => {
 		itReadsFromAggregator();
 
 		itReadsAtomicPricesFromDex();
+
+		itReportsRateTooVolatileForAtomicExchanges();
 	});
 });

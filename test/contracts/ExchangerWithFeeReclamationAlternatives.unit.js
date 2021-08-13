@@ -440,6 +440,21 @@ contract('ExchangerWithFeeReclamationAlternatives (unit tests)', async accounts 
 										],
 									},
 									() => {
+										behaviors.whenMockedWithVolatileSynth({ synth: sETH, volatile: true }, () => {
+											describe('when synth pricing is deemed volatile', () => {
+												it('reverts due to volatility', async () => {
+													const args = getExchangeArgs({
+														sourceCurrencyKey: sUSD,
+														destinationCurrencyKey: sETH,
+													});
+													await assert.revert(
+														this.instance.exchangeAtomically(...args),
+														'Src/dest synth too volatile'
+													);
+												});
+											});
+										});
+
 										describe('when sUSD is not in src/dest pair', () => {
 											it('reverts requiring src/dest to be sUSD', async () => {
 												const args = getExchangeArgs({

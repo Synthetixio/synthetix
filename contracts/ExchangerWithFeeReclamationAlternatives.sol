@@ -123,6 +123,12 @@ contract ExchangerWithFeeReclamationAlternatives is MinimalProxyFactory, Exchang
         address destinationAddress
     ) internal returns (uint amountReceived, uint fee) {
         _ensureCanExchange(sourceCurrencyKey, sourceAmount, destinationCurrencyKey);
+        require(
+            !exchangeRates().synthTooVolatileForAtomicExchange(
+                sourceCurrencyKey == sUSD ? destinationCurrencyKey : sourceCurrencyKey
+            ),
+            "Src/dest synth too volatile"
+        );
 
         uint sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 

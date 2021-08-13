@@ -46,6 +46,7 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
 
     mapping(uint => Entry) public entries;
 
+    bool public allRoundDataShouldRevert;
     bool public latestRoundDataShouldRevert;
 
     constructor() public {}
@@ -75,6 +76,10 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
             updatedAt: timestamp,
             answeredInRound: roundId
         });
+    }
+
+    function setAllRoundDataShouldRevert(bool _shouldRevert) external {
+        allRoundDataShouldRevert = _shouldRevert;
     }
 
     function setLatestRoundDataShouldRevert(bool _shouldRevert) external {
@@ -131,6 +136,10 @@ contract MockAggregatorV2V3 is AggregatorV2V3Interface {
             uint80
         )
     {
+        if (allRoundDataShouldRevert) {
+            revert("getRoundData reverted");
+        }
+
         Entry memory entry = entries[_roundId];
         // Emulate a Chainlink aggregator
         require(entry.updatedAt > 0, "No data present");

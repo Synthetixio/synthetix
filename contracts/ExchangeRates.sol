@@ -465,6 +465,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return false;
     }
 
+    function synthTooVolatileForAtomicExchange(bytes32) external view returns (bool) {
+        _notImplemented();
+    }
+
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function exchanger() internal view returns (IExchanger) {

@@ -191,6 +191,17 @@ module.exports = function({ accounts }) {
 				});
 			});
 		},
+		whenMockedWithVolatileSynth: ({ synth, volatile }, cb) => {
+			describe(`when mocked with ${fromBytes32(synth)} deemed ${
+				volatile ? 'volatile' : 'not volatile'
+			}`, () => {
+				beforeEach(async () => {
+					this.mocks.ExchangesRates.smocked.synthTooVolatileForAtomicExchange.will.return.with(
+						synthToCheck => (synthToCheck === synth ? volatile : false)
+					);
+				});
+			});
+		},
 		whenMockedEntireExchangeRateConfiguration: (
 			{
 				sourceCurrency,
