@@ -82,7 +82,7 @@ contract FuturesMarketData {
         int orderSize;
         bool orderPending;
         bool canConfirmOrder;
-        IFuturesMarket.Error orderStatus;
+        IFuturesMarket.Status orderStatus;
         IFuturesMarket.Position position;
         int notionalValue;
         int profitLoss;

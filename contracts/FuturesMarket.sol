@@ -105,16 +105,16 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         fundingSequence.push(0);
 
         // Set up the mapping between error codes and their revert messages.
-        _errorMessages[uint8(Error.NotPending)] = "No pending order";
-        _errorMessages[uint8(Error.NoPriceUpdate)] = "Awaiting next price";
-        _errorMessages[uint8(Error.PriceOutOfBounds)] = "Price out of acceptable range";
-        _errorMessages[uint8(Error.InvalidPrice)] = "Invalid price";
-        _errorMessages[uint8(Error.InsolventPosition)] = "Position can be liquidated";
-        _errorMessages[uint8(Error.NotInsolvent)] = "Position cannot be liquidated";
-        _errorMessages[uint8(Error.MaxMarketSizeExceeded)] = "Max market size exceeded";
-        _errorMessages[uint8(Error.MaxLeverageExceeded)] = "Max leverage exceeded";
-        _errorMessages[uint8(Error.InsufficientMargin)] = "Insufficient margin";
-        _errorMessages[uint8(Error.NotPermitted)] = "Not permitted by this address";
+        _errorMessages[uint8(Status.NoOrderExists)] = "No pending order";
+        _errorMessages[uint8(Status.AwaitingPriceUpdate)] = "Awaiting next price";
+        _errorMessages[uint8(Status.PriceOutOfBounds)] = "Price out of acceptable range";
+        _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
+        _errorMessages[uint8(Status.CanLiquidate)] = "Position can be liquidated";
+        _errorMessages[uint8(Status.CannotLiquidate)] = "Position cannot be liquidated";
+        _errorMessages[uint8(Status.MaxMarketSizeExceeded)] = "Max market size exceeded";
+        _errorMessages[uint8(Status.MaxLeverageExceeded)] = "Max leverage exceeded";
+        _errorMessages[uint8(Status.InsufficientMargin)] = "Insufficient margin";
+        _errorMessages[uint8(Status.NotPermitted)] = "Not permitted by this address";
     }
 
     /* ========== VIEWS ========== */
@@ -158,7 +158,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function _assetPriceRequireNotInvalid() internal view returns (uint) {
         (uint price, bool invalid) = _assetPrice(_exchangeRates());
-        _error(invalid, Error.InvalidPrice);
+        _revertIfError(invalid, Status.InvalidPrice);
         return price;
     }
 
@@ -347,10 +347,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint maxSize,
         int oldSize,
         int newSize
-    ) internal view returns (Error) {
+    ) internal view returns (Status) {
         // Allow users to reduce an order no matter the market conditions.
         if (_sameSide(oldSize, newSize) && _abs(newSize) <= _abs(oldSize)) {
-            return Error.Ok;
+            return Status.Ok;
         }
 
         // Either the user is flipping sides, or they are increasing an order on the same side they're already on;
@@ -373,10 +373,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // newSideSize still includes an extra factor of 2 here, so we will divide by 2 in the actual condition
         if (maxSize < _abs(newSideSize.div(2))) {
-            return Error.MaxMarketSizeExceeded;
+            return Status.MaxMarketSizeExceeded;
         }
 
-        return Error.Ok;
+        return Status.Ok;
     }
 
     // TODO: Ensure that this is fine if the position is swapping sides
@@ -392,12 +392,12 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             uint newMargin,
             int newSize,
             uint orderFee_,
-            Error error
+            Status status
         )
     {
         // Is an order is pending?
         if (!_orderPending(orders[account])) {
-            return (0, 0, 0, Error.NotPending);
+            return (0, 0, 0, Status.NoOrderExists);
         }
 
         Order memory order = orders[account];
@@ -405,12 +405,12 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Has the price updated?
         // TODO: Verify that we can actually rely on the round id monotonically increasing
         if (_currentRoundId(_exchangeRates()) <= order.roundId) {
-            return (0, 0, 0, Error.NoPriceUpdate);
+            return (0, 0, 0, Status.AwaitingPriceUpdate);
         }
 
         // Is the price within the acceptable range?
         if (price < order.minPrice || order.maxPrice < price) {
-            return (0, 0, 0, Error.PriceOutOfBounds);
+            return (0, 0, 0, Status.PriceOutOfBounds);
         }
 
         Position storage position = positions[account];
@@ -418,15 +418,16 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Can the existing position be liquidated?
         // You can't outrun an impending liquidation by closing your position quickly, for example.
         if (_canLiquidate(position, _liquidationFee(), fundingIndex, price)) {
-            return (0, 0, 0, Error.InsolventPosition);
+            return (0, 0, 0, Status.CanLiquidate);
         }
 
         // We weren't liquidated, so we realise the margin to compute the new position size.
-        // The fee is deducted at this stage; it is an error if the realised margin minus the fee is negative or subject to liquidation.
+        // The fee is deducted at this stage; it is an error if the realised margin minus the fee
+        // is negative or subject to liquidation.
         uint fee = order.fee;
-        (uint margin, Error marginError) = _realisedMargin(position, fundingIndex, price, -int(fee));
-        if (marginError != Error.Ok) {
-            return (margin, 0, fee, marginError);
+        (uint margin, Status marginStatus) = _realisedMargin(position, fundingIndex, price, -int(fee));
+        if (_isError(marginStatus)) {
+            return (margin, 0, fee, marginStatus);
         }
 
         // The fee is added back in because order size is computed pre-fee, though their leverage will
@@ -442,26 +443,26 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
                 maxMarketValue,
                 uint(int(maxMarketValue).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
             );
-        Error marketSizeError = _orderSizeSmallEnough(maxMarketSize, position.size, size);
-        return (margin, size, fee, marketSizeError);
+        Status marketSizeStatus = _orderSizeSmallEnough(maxMarketSize, position.size, size);
+        return (margin, size, fee, marketSizeStatus);
     }
 
-    function _orderStatus(address account) internal view returns (Error) {
+    function _orderStatus(address account) internal view returns (Status) {
         IExchangeRates exRates = _exchangeRates();
         (uint price, bool invalid) = _assetPrice(exRates);
         if (invalid) {
-            return Error.InvalidPrice;
+            return Status.InvalidPrice;
         }
-        (, , , Error error) = _orderStatusDetails(price, fundingSequence.length, account);
-        return error;
+        (, , , Status status) = _orderStatusDetails(price, fundingSequence.length, account);
+        return status;
     }
 
-    function orderStatus(address account) external view returns (Error) {
+    function orderStatus(address account) external view returns (Status) {
         return _orderStatus(account);
     }
 
     function canConfirmOrder(address account) external view returns (bool) {
-        return _orderStatus(account) == Error.Ok;
+        return !_isError(_orderStatus(account));
     }
 
     function _notionalValue(Position storage position, uint price) internal view returns (int value) {
@@ -721,15 +722,19 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return 0 <= a * b;
     }
 
-    function _error(bool isError, Error error) internal view {
+    function _isError(Status status) internal pure returns (bool) {
+        return status != Status.Ok;
+    }
+
+    function _revertIfError(bool isError, Status status) internal view {
         if (isError) {
-            _error(error);
+            revert(_errorMessages[uint8(status)]);
         }
     }
 
-    function _error(Error error) internal view {
-        if (error != Error.Ok) {
-            revert(_errorMessages[uint8(error)]);
+    function _revertIfError(Status status) internal view {
+        if (_isError(status)) {
+            revert(_errorMessages[uint8(status)]);
         }
     }
 
@@ -747,7 +752,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function recomputeFunding() external returns (uint lastIndex) {
-        _error(msg.sender != address(_marketSettings()), Error.NotPermitted);
+        _revertIfError(msg.sender != address(_marketSettings()), Status.NotPermitted);
         return _recomputeFunding(_assetPriceRequireNotInvalid());
     }
 
@@ -769,21 +774,21 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint currentFundingIndex,
         uint price,
         int marginDelta
-    ) internal view returns (uint margin, Error errorCode) {
+    ) internal view returns (uint margin, Status statusCode) {
         int newMargin = _marginPlusProfitFunding(position, currentFundingIndex, price).add(marginDelta);
         if (newMargin < 0) {
-            return (0, Error.InsufficientMargin);
+            return (0, Status.InsufficientMargin);
         }
 
         uint uMargin = uint(newMargin);
         int positionSize = position.size;
         if (positionSize != 0 && uMargin <= _liquidationFee()) {
-            return (uMargin, Error.InsolventPosition);
+            return (uMargin, Status.CanLiquidate);
         }
 
         // Callers must ensure that the result is accompanied by the application of a
         // corresponding debt correction, if it is used to actually update the position's margin.
-        return (uMargin, Error.Ok);
+        return (uMargin, Status.Ok);
     }
 
     function _modifyMargin(
@@ -813,8 +818,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         Position storage position = positions[sender];
 
         // Determine new margin, ensuring that the result is positive.
-        (uint margin, Error error) = _realisedMargin(position, fundingIndex, price, marginDelta);
-        _error(error);
+        (uint margin, Status status) = _realisedMargin(position, fundingIndex, price, marginDelta);
+        _revertIfError(status);
 
         // Update the debt correction.
         int positionSize = position.size;
@@ -834,11 +839,11 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         //     * the resulting leverage is lower than the maximum leverage
         if (0 < position.size && marginDelta <= 0) {
             if (margin < _minInitialMargin()) {
-                error = Error.InsufficientMargin;
+                status = Status.InsufficientMargin;
             } else if (_maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin))) {
-                error = Error.MaxLeverageExceeded;
+                status = Status.MaxLeverageExceeded;
             }
-            _error(error);
+            _revertIfError(status);
         }
     }
 
@@ -858,7 +863,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function _cancelOrder(address account) internal {
         Order storage order = orders[account];
-        _error(!_orderPending(order), Error.NotPending);
+        _revertIfError(!_orderPending(order), Status.NoOrderExists);
         emitOrderCancelled(order.id, account);
         delete orders[account];
     }
@@ -881,7 +886,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         if (sameSide && _abs(currentLeverage_) <= _abs(desiredLeverage)) {
             // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
             // except that we get a nicer error message if fee > margin, rather than arithmetic overflow.
-            _error(margin < _minInitialMargin().add(fee), Error.InsufficientMargin);
+            _revertIfError(margin < _minInitialMargin().add(fee), Status.InsufficientMargin);
         }
     }
 
@@ -892,12 +897,12 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint fundingIndex,
         address sender
     ) internal {
-        _error(_maxLeverage(baseAsset) < _abs(leverage), Error.MaxLeverageExceeded);
+        _revertIfError(_maxLeverage(baseAsset) < _abs(leverage), Status.MaxLeverageExceeded);
         Position storage position = positions[sender];
 
         // The order is not submitted if the user's existing position needed to be liquidated.
         // We know that the price is not invalid now that we're in this function
-        _error(_canLiquidate(position, _liquidationFee(), fundingIndex, price), Error.InsolventPosition);
+        _revertIfError(_canLiquidate(position, _liquidationFee(), fundingIndex, price), Status.CanLiquidate);
 
         uint margin = _remainingMargin(position, fundingIndex, price);
         int size = position.size;
@@ -914,7 +919,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // the orders are confirmed.
         // Allow a bit of extra value in case of rounding errors
         int newSize = _orderSize(price, margin, leverage);
-        _error(_orderSizeSmallEnough(_maxSize(price, _maxMarketValue(baseAsset), 100 * uint(_UNIT)), size, newSize));
+        _revertIfError(_orderSizeSmallEnough(_maxSize(price, _maxMarketValue(baseAsset), 100 * uint(_UNIT)), size, newSize));
 
         // Cancel any open order
         Order storage order = orders[sender];
@@ -977,8 +982,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
 
-        (uint margin, int newSize, uint fee, Error error) = _orderStatusDetails(price, fundingIndex, account);
-        _error(error);
+        (uint margin, int newSize, uint fee, Status status) = _orderStatusDetails(price, fundingIndex, account);
+        _revertIfError(status);
 
         // Update the margin, which will need to be realised
         Position storage position = positions[account];
@@ -1060,7 +1065,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint fundingIndex = _recomputeFunding(price);
 
         uint liquidationFee = _liquidationFee();
-        _error(!_canLiquidate(positions[account], liquidationFee, fundingIndex, price), Error.NotInsolvent);
+        _revertIfError(!_canLiquidate(positions[account], liquidationFee, fundingIndex, price), Status.CannotLiquidate);
 
         // If there are any pending orders, the liquidation will cancel them.
         if (_orderPending(orders[account])) {
