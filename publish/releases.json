@@ -288,6 +288,19 @@
 		"sips": [121]
 	},
 	{
+		"name": "Mirfak",
+		"ovm": true,
+		"sources": [
+			"Synthetix",
+			"Issuer",
+			"FeePool",
+			"DebtCache",
+			"SynthsUSD",
+			"SynthsETH"
+		],
+		"sips": [142]
+	},
+	{
 		"name": "Dubhe",
 		"released": false,
 		"version": {

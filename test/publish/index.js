@@ -1518,7 +1518,6 @@ describe('publish scripts', () => {
 									'DebtCache',
 									'DelegateApprovals',
 									'Depot',
-									'EtherCollateral',
 									'Exchanger',
 									'ExchangeRates',
 									'ExchangeState',
