@@ -355,7 +355,7 @@ contract('FuturesMarket', accounts => {
 						event: 'OrderSubmitted',
 						emittedFrom: proxyFuturesMarket.address,
 						args: [toBN(3), trader, leverage.neg(), fee, await futuresMarket.currentRoundId()],
-						log: decodedLogs[0],
+						log: decodedLogs[1],
 						bnCloseVariance: toUnit('0.001'),
 					});
 				});
@@ -946,6 +946,8 @@ contract('FuturesMarket', accounts => {
 
 	describe('Transferring margin', () => {
 		it.skip('Transferring margin updates margin, last price, funding index, but not size', async () => {
+			// We'll need to distinguish between the size = 0 case, when last price and index are not altered,
+			// and the size > 0 case, when last price and index ARE altered.
 			assert.isTrue(false);
 		});
 
@@ -1020,7 +1022,7 @@ contract('FuturesMarket', accounts => {
 				);
 			});
 
-			it('events are emitted properly', async () => {
+			it('events are emitted properly upon margin transfers', async () => {
 				// Deposit some balance
 				let tx = await futuresMarket.transferMargin(toUnit('1000'), { from: trader3 });
 				let decodedLogs = await getDecodedLogs({
@@ -1032,21 +1034,21 @@ contract('FuturesMarket', accounts => {
 					event: 'Burned',
 					emittedFrom: sUSD.address,
 					args: [trader3, toUnit('1000')],
-					log: decodedLogs[1],
+					log: decodedLogs[2],
 				});
 
 				decodedEventEqual({
 					event: 'MarginTransferred',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader3, toUnit('1000')],
-					log: decodedLogs[2],
+					log: decodedLogs[3],
 				});
 
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader3, toUnit('1000'), toBN('0'), toBN('0'), toBN('0')],
-					log: decodedLogs[3],
+					log: decodedLogs[4],
 				});
 
 				// Zero delta means no MarginTransferred or sUSD events
@@ -1060,7 +1062,7 @@ contract('FuturesMarket', accounts => {
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader3, toUnit('1000'), toBN('0'), toBN('0'), toBN('0')],
-					log: decodedLogs[0],
+					log: decodedLogs[1],
 				});
 
 				// Now withdraw the margin back out
@@ -1074,21 +1076,21 @@ contract('FuturesMarket', accounts => {
 					event: 'Issued',
 					emittedFrom: sUSD.address,
 					args: [trader3, toUnit('1000')],
-					log: decodedLogs[0],
+					log: decodedLogs[1],
 				});
 
 				decodedEventEqual({
 					event: 'MarginTransferred',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader3, toUnit('-1000')],
-					log: decodedLogs[1],
+					log: decodedLogs[2],
 				});
 
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader3, toUnit('0'), toBN('0'), toBN('0'), toBN('0')],
-					log: decodedLogs[2],
+					log: decodedLogs[3],
 				});
 			});
 		});
@@ -1184,12 +1186,12 @@ contract('FuturesMarket', accounts => {
 
 			// And it properly emits the relevant events.
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [futuresMarket] });
-			assert.equal(decodedLogs.length, 1);
+			assert.equal(decodedLogs.length, 2);
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
 				args: [id, trader, leverage, fee, roundId, defaultPriceBounds[0], defaultPriceBounds[1]],
-				log: decodedLogs[0],
+				log: decodedLogs[1],
 			});
 		});
 
@@ -1268,12 +1270,12 @@ contract('FuturesMarket', accounts => {
 
 			// And it properly emits the relevant events.
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
-			assert.equal(decodedLogs.length, 2);
+			assert.equal(decodedLogs.length, 3);
 			decodedEventEqual({
 				event: 'OrderCancelled',
 				emittedFrom: proxyFuturesMarket.address,
 				args: [id1, trader],
-				log: decodedLogs[0],
+				log: decodedLogs[1],
 			});
 			decodedEventEqual({
 				event: 'OrderSubmitted',
@@ -1287,7 +1289,7 @@ contract('FuturesMarket', accounts => {
 					defaultPriceBounds[0],
 					defaultPriceBounds[1],
 				],
-				log: decodedLogs[1],
+				log: decodedLogs[2],
 			});
 		});
 
@@ -1681,24 +1683,24 @@ contract('FuturesMarket', accounts => {
 			// And the relevant events are properly emitted
 			const id = toBN(1);
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
-			assert.equal(decodedLogs.length, 3);
+			assert.equal(decodedLogs.length, 4);
 			decodedEventEqual({
 				event: 'Issued',
 				emittedFrom: sUSD.address,
 				args: [await feePool.FEE_ADDRESS(), fee],
-				log: decodedLogs[0],
+				log: decodedLogs[1],
 			});
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: proxyFuturesMarket.address,
 				args: [trader, margin.sub(fee), size, price, toBN(2)],
-				log: decodedLogs[1],
+				log: decodedLogs[2],
 			});
 			decodedEventEqual({
 				event: 'OrderConfirmed',
 				emittedFrom: proxyFuturesMarket.address,
 				args: [id, trader, price],
-				log: decodedLogs[2],
+				log: decodedLogs[3],
 			});
 		});
 
@@ -1899,12 +1901,12 @@ contract('FuturesMarket', accounts => {
 
 			const tx = await futuresMarket.closePosition({ from: trader });
 			const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
-			assert.equal(decodedLogs.length, 2);
+			assert.equal(decodedLogs.length, 3);
 			decodedEventEqual({
 				event: 'OrderCancelled',
 				emittedFrom: proxyFuturesMarket.address,
 				args: [order.id, trader],
-				log: decodedLogs[0],
+				log: decodedLogs[1],
 			});
 			decodedEventEqual({
 				event: 'OrderSubmitted',
@@ -1918,7 +1920,7 @@ contract('FuturesMarket', accounts => {
 					defaultPriceBounds[0],
 					defaultPriceBounds[1],
 				],
-				log: decodedLogs[1],
+				log: decodedLogs[2],
 			});
 
 			assert.isTrue(await futuresMarket.orderPending(trader));
@@ -1969,19 +1971,19 @@ contract('FuturesMarket', accounts => {
 			});
 
 			// No fee => no fee minting log
-			assert.equal(decodedLogs.length, 2);
+			assert.equal(decodedLogs.length, 3);
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: proxyFuturesMarket.address,
 				args: [trader, toUnit('2000'), toBN('0'), toBN('0'), toBN('0')],
-				log: decodedLogs[0],
+				log: decodedLogs[1],
 				bnCloseVariance: toUnit('5'),
 			});
 			decodedEventEqual({
 				event: 'OrderConfirmed',
 				emittedFrom: proxyFuturesMarket.address,
 				args: [orderId, trader, toUnit('200')],
-				log: decodedLogs[1],
+				log: decodedLogs[2],
 			});
 		});
 	});
@@ -3054,24 +3056,24 @@ contract('FuturesMarket', accounts => {
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 
-				assert.equal(decodedLogs.length, 3);
+				assert.equal(decodedLogs.length, 4);
 				decodedEventEqual({
 					event: 'Issued',
 					emittedFrom: sUSD.address,
 					args: [noBalance, liquidationFee],
-					log: decodedLogs[0],
+					log: decodedLogs[1],
 				});
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader, toBN('0'), toBN('0'), toBN('0'), toBN('0')],
-					log: decodedLogs[1],
+					log: decodedLogs[2],
 				});
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader, noBalance, positionSize, price, liquidationFee],
-					log: decodedLogs[2],
+					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
 			});
@@ -3096,24 +3098,24 @@ contract('FuturesMarket', accounts => {
 
 				const decodedLogs = await getDecodedLogs({ hash: tx.tx, contracts: [sUSD, futuresMarket] });
 
-				assert.equal(decodedLogs.length, 3);
+				assert.equal(decodedLogs.length, 4);
 				decodedEventEqual({
 					event: 'Issued',
 					emittedFrom: sUSD.address,
 					args: [noBalance, liquidationFee],
-					log: decodedLogs[0],
+					log: decodedLogs[1],
 				});
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader3, toBN('0'), toBN('0'), toBN('0'), toBN('0')],
-					log: decodedLogs[1],
+					log: decodedLogs[2],
 				});
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader3, noBalance, positionSize, price, liquidationFee],
-					log: decodedLogs[2],
+					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
 			});
@@ -3144,13 +3146,13 @@ contract('FuturesMarket', accounts => {
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader, toBN('0'), toBN('0'), toBN('0'), toBN('0')],
-					log: decodedLogs[1],
+					log: decodedLogs[2],
 				});
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [trader, noBalance, positionSize, price, toUnit('100')],
-					log: decodedLogs[2],
+					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
 			});
@@ -3171,7 +3173,7 @@ contract('FuturesMarket', accounts => {
 					event: 'OrderCancelled',
 					emittedFrom: proxyFuturesMarket.address,
 					args: [order.id, trader],
-					log: decodedLogs[0],
+					log: decodedLogs[1],
 					bnCloseVariance: toUnit('0.001'),
 				});
 

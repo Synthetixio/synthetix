@@ -745,8 +745,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
         uint sequenceLength = fundingSequence.length;
 
-        fundingSequence.push(_nextFundingEntry(sequenceLength, price));
+        int funding = _nextFundingEntry(sequenceLength, price);
+        fundingSequence.push(funding);
         fundingLastRecomputed = block.timestamp;
+        emitFundingRecomputed(funding);
 
         return sequenceLength;
     }
@@ -1196,5 +1198,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         );
     }
 
-    // TODO: funding recomputed
+    event FundingRecomputed(int funding);
+    bytes32 internal constant SIG_FUNDINGRECOMPUTED = keccak256("FundingRecomputed(int256)");
+
+    function emitFundingRecomputed(int funding) internal {
+        proxy._emit(abi.encode(funding), 1, SIG_FUNDINGRECOMPUTED, 0, 0, 0);
+    }
 }
