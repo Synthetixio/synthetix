@@ -36,7 +36,6 @@ const {
 		DEPLOYMENT_FILENAME,
 		SYNTHS_FILENAME,
 		FEEDS_FILENAME,
-		OVM_GAS_PRICE_GWEI,
 	},
 	defaults: {
 		WAITING_PERIOD_SECS,
@@ -96,7 +95,7 @@ describe('publish scripts', () => {
 			const feedsJSON = fs.readFileSync(feedsJSONPath);
 
 			const logfilePath = path.join(__dirname, 'test.log');
-			let gasLimit = 26970000;
+			const gasLimit = 26970000;
 			let gasPrice;
 			let accounts;
 			let sUSD;
@@ -139,7 +138,7 @@ describe('publish scripts', () => {
 				console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 
 				provider = new ethers.providers.JsonRpcProvider({
-					url: 'http://localhost:8545',
+					url: process.env.PROVIDER_URL || 'http://localhost:8545',
 				});
 
 				const { isCompileRequired } = testUtils();
@@ -163,12 +162,13 @@ describe('publish scripts', () => {
 
 				[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 
-				if (useOvm) {
-					gasPrice = ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
-					provider.getGasPrice = async () => gasPrice;
+				// TODO: enable when we use the geth-ovm node for this test.
+				// if (useOvm) {
+				// 	gasPrice = ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
+				// 	provider.getGasPrice = async () => gasPrice;
 
-					gasLimit = undefined;
-				}
+				// 	gasLimit = undefined;
+				// }
 
 				overrides = {
 					gasLimit,
