@@ -516,7 +516,6 @@ const setupContract = async ({
 
 		async Collateral() {
 			await Promise.all([
-				cache['CollateralState'].setAssociatedContract(instance.address, { from: owner }),
 				cache['CollateralManager'].setAssociatedContract(instance.address, { from: owner }),
 				cache['AddressResolver'].setAssociatedContract(instance.address, { from: owner }),
 			]);
