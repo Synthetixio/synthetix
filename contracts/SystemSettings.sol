@@ -350,13 +350,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit CanOpenLoansUpdated(canOpenLoans);
     }
 
-    function setInteractionDelay(uint interactionDelay, address collateral) external onlyOwner {
+    function setInteractionDelay(uint delay, address collateral) external onlyOwner {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral)),
-            interactionDelay
+            delay
         );
-        emit InteractionDelayUpdated(interactionDelay);
+        emit InteractionDelayUpdated(delay);
     }
 
     // ========== EVENTS ==========

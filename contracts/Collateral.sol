@@ -143,6 +143,10 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- Public Views ---------- */
 
+    function getLoan(uint id) public view returns (Loan memory) {
+        return loans[id];
+    }
+
     function collateralRatio(uint id) public view returns (uint cratio) {
         Loan memory loan = loans[id];
         return _collateralUtil().getCollateralRatio(loan, collateralKey);
