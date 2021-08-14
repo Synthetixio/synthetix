@@ -415,6 +415,7 @@ const deploy = async ({
 		generateSolidity,
 		runStep,
 		useOvm,
+		useFork,
 	});
 
 	console.log(gray(`\n------ DEPLOY COMPLETE ------\n`));
