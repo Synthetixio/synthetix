@@ -120,7 +120,6 @@ contract('CollateralUtil', async accounts => {
 				'Issuer',
 				'DebtCache',
 				'Exchanger',
-				'CollateralErc20',
 				'CollateralUtil',
 				'CollateralManager',
 				'CollateralManagerState',
@@ -225,8 +224,8 @@ contract('CollateralUtil', async accounts => {
 			});
 
 			id = getid(tx);
-			loan = cerc20.loans[id];
-			console.log(loan);
+			loan = await cerc20.getLoan(id.toNumber());
+
 			minCratio = await cerc20.minCratio();
 			collateralKey = await cerc20.collateralKey();
 		});
