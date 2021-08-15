@@ -514,13 +514,6 @@ const setupContract = async ({
 			});
 		},
 
-		async Collateral() {
-			await Promise.all([
-				cache['CollateralManager'].setAssociatedContract(instance.address, { from: owner }),
-				cache['AddressResolver'].setAssociatedContract(instance.address, { from: owner }),
-			]);
-		},
-
 		async SystemStatus() {
 			// ensure the owner has suspend/resume control over everything
 			await instance.updateAccessControls(

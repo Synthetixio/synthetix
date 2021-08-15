@@ -15,16 +15,17 @@ function itCanOpenAndCloseShort({ ctx }) {
 		const amountToDeposit = parseEther('10000'); // sUSD
 		const amountToBorrow = parseEther('1'); // sETH
 
-		let user;
-		let CollateralShort, Synthetix, SynthsUSD, CollateralShortAsOwner, interactionDelay;
+		let user, owner;
+		let CollateralShort, SynthsUSD, SystemSettings, interactionDelay;
 
 		before('target contracts and users', () => {
-			({ CollateralShort, Synthetix, SynthsUSD } = ctx.contracts);
+			({ CollateralShort, SynthsUSD, SystemSettings } = ctx.contracts);
 
 			user = ctx.users.someUser;
+			owner = ctx.users.owner;
 
 			CollateralShort = CollateralShort.connect(user);
-			Synthetix = Synthetix.connect(user);
+			SystemSettings = SystemSettings.connect(owner);
 		});
 
 		before('ensure user should have sUSD', async () => {
@@ -43,14 +44,13 @@ function itCanOpenAndCloseShort({ ctx }) {
 		});
 
 		before('skip waiting period by setting interaction delay to zero', async () => {
-			CollateralShortAsOwner = CollateralShort.connect(ctx.users.owner);
-			interactionDelay = await CollateralShortAsOwner.interactionDelay();
+			interactionDelay = await SystemSettings.interactionDelay(CollateralShort.address);
 
-			await CollateralShortAsOwner.setInteractionDelay('0');
+			await SystemSettings.setInteractionDelay(0, CollateralShort.address);
 		});
 
 		after('restore waiting period', async () => {
-			await CollateralShortAsOwner.setInteractionDelay(interactionDelay);
+			await SystemSettings.setInteractionDelay(interactionDelay, CollateralShort.address);
 		});
 
 		describe('open, close, deposit, withdraw, and draw a short', async () => {
@@ -88,9 +88,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 
 					const { events } = await tx.wait();
 					const event = events.find(l => l.event === 'LoanCreated');
-					loanId = event.args.id;
+					loanId = event.args.id.toNumber();
 
-					loan = await CollateralShort.loans[loanId];
+					loan = await CollateralShort.getLoan(loanId);
 				});
 
 				before('deposit more collateral', async () => {
@@ -100,9 +100,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const { events } = await tx.wait();
 
 					const event = events.find(l => l.event === 'CollateralDeposited');
-					loanId = event.args.id;
+					loanId = event.args.id.toNumber();
 
-					loan = await CollateralShort.loans[loanId];
+					loan = await CollateralShort.getLoan(loanId);
 					assert.bnEqual(loan.collateral, parseEther('20000'));
 				});
 
@@ -113,9 +113,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const { events } = await tx.wait();
 
 					const event = events.find(l => l.event === 'CollateralWithdrawn');
-					loanId = event.args.id;
+					loanId = event.args.id.toNumber();
 
-					loan = await CollateralShort.loans[loanId];
+					loan = await CollateralShort.getLoan(loanId);
 					assert.bnEqual(loan.collateral, parseEther('15000'));
 				});
 
@@ -126,9 +126,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const { events } = await tx.wait();
 
 					const event = events.find(l => l.event === 'LoanDrawnDown');
-					loanId = event.args.id;
+					loanId = event.args.id.toNumber();
 
-					loan = await CollateralShort.loans[loanId];
+					loan = await CollateralShort.getLoan(loanId);
 					assert.bnEqual(loan.amount, parseEther('2'));
 				});
 
@@ -148,19 +148,20 @@ function itCanOpenAndCloseShort({ ctx }) {
 						});
 					});
 
+					before('close the loan', async () => {
+						tx = await CollateralShort.close(loanId);
+
+						const { events } = await tx.wait();
+
+						const event = events.find(l => l.event === 'LoanClosed');
+						loanId = event.args.id.toNumber();
+
+						loan = await CollateralShort.getLoan(loanId);
+					});
+
 					before('skip waiting period', async () => {
 						// Ignore settlement period for sUSD --> sETH closing the loan
 						await skipWaitingPeriod({ ctx });
-					});
-
-					before('settle', async () => {
-						const tx = await Synthetix.settle(toBytes32('sETH'));
-						await tx.wait();
-					});
-
-					before('close the loan', async () => {
-						tx = await CollateralShort.close(loanId);
-						loan = await CollateralShort.loans[loanId];
 					});
 
 					it('shows the loan amount is zero when closed', async () => {

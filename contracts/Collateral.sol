@@ -345,8 +345,12 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 6. Pay fees
         _payFees(loan.accruedInterest, loan.currency);
 
-        // 7. Record loan as closed setting interestIndex = 0
+        // 7. Record loan as closed.
+        loan.amount = 0;
+        loan.collateral = 0;
+        loan.accruedInterest = 0;
         loan.interestIndex = 0;
+        loan.lastInteraction = block.timestamp;
     }
 
     function depositInternal(
