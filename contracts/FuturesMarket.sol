@@ -620,12 +620,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return uint(_max(0, result));
     }
 
-    // The price at which a position is subject to liquidation; otherwise the price at which the user's remaining
-    // margin has run out. When they have just enough margin left to pay a liquidator, then they are liquidated.
-    // If a position is long, then it is safe as long as the current price is above the liquidation price; if it is
-    // short, then it is safe whenever the current price is below the liquidation price.
-    // A position's accurate liquidation price can move around slightly due to accrued funding - this contribution
-    // can be omitted by passing false to includeFunding.
+    /*
+     * The price at which a position is subject to liquidation; otherwise the price at which the user's remaining
+     * margin has run out. When they have just enough margin left to pay a liquidator, then they are liquidated.
+     * If a position is long, then it is safe as long as the current price is above the liquidation price; if it is
+     * short, then it is safe whenever the current price is below the liquidation price.
+     * A position's accurate liquidation price can move around slightly due to accrued funding - this contribution
+     * can be omitted by passing false to includeFunding.
+     */
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
         (uint aPrice, bool isInvalid) = _assetPrice(_exchangeRates());
         Position storage position = positions[account];
@@ -727,7 +729,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     // Reports the fee for submitting an order of a given size. Orders that increase the skew will be more
-    // expensive than ones that decrease it. Closing orders
+    // expensive than ones that decrease it; closing positions implies a different fee rate.
     function orderFee(address account, int leverage) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
         Position storage position = positions[account];
@@ -810,11 +812,13 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return sequenceLength;
     }
 
+    // Pushes a new entry to the funding sequence at the current price and funding rate.
     function recomputeFunding() external returns (uint lastIndex) {
         _revertIfError(msg.sender != address(_marketSettings()), Status.NotPermitted);
         return _recomputeFunding(_assetPriceRequireNotInvalid());
     }
 
+    // The impact of a given position on the debt correction.
     function _positionDebtCorrection(Position memory position) internal view returns (int) {
         return
             int(position.margin).sub(
@@ -822,12 +826,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             );
     }
 
+    // Alter the debt correction to account for the net result of altering a position.
     function _applyDebtCorrection(Position memory newPosition, Position memory oldPosition) internal {
         int newCorrection = _positionDebtCorrection(newPosition);
         int oldCorrection = _positionDebtCorrection(oldPosition);
         _entryDebtCorrection = _entryDebtCorrection.add(newCorrection).sub(oldCorrection);
     }
 
+    // The value in a position's margin after a deposit or withdrawal, accounting for funding and profit.
+    // If the resulting margin would be negative or below the liquidation threshold, an appropriate error is returned.
     function _realisedMargin(
         Position storage position,
         uint currentFundingIndex,
@@ -906,6 +913,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
     }
 
+    // Alter the amount of margin in a position. Positive arguments correspond to deposits, negative arguments to
+    // withdrawals. The margin will be burnt or issued directly into/out of the caller's sUSD wallet.
+    // Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
     function modifyMargin(int marginDelta) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
@@ -927,6 +937,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         delete orders[account];
     }
 
+    // If an order has not yet been confirmed, it can be cancelled.
     function cancelOrder() external optionalProxy {
         _cancelOrder(messageSender);
     }
@@ -1000,6 +1011,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         emitOrderSubmitted(id, sender, leverage, fee, roundId, order.minPrice, order.maxPrice);
     }
 
+    // Submit an order, but which cannot be confirmed unless the confirmation price is within desired bounds.
     function submitOrderWithPriceBounds(
         int leverage,
         uint minPrice,
@@ -1010,16 +1022,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _submitOrder(leverage, price, [minPrice, maxPrice], fundingIndex, messageSender);
     }
 
+    // Submit an order to adjust the position leverage to a target level.
+    // Reverts if the resulting position is too large, outside the max leverage, or if an existing position is liquidating.
     function submitOrder(int leverage) external optionalProxy {
         submitOrderWithPriceBounds(leverage, 0, uint(-1));
     }
 
+    // Submit an order to close a position. This is equivalent to `submitOrder(0)`.
     function closePosition() external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         _submitOrder(0, price, [0, uint(-1)], fundingIndex, messageSender);
     }
 
+    // Atomically alter margin and submit an order, but which cannot be confirmed unless the confirmation price is within desired bounds.
     function modifyMarginAndSubmitOrderWithPriceBounds(
         int marginDelta,
         int leverage,
@@ -1033,10 +1049,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _submitOrder(leverage, price, [minPrice, maxPrice], fundingIndex, sender);
     }
 
+    // Atomically alter a position's margin and then submit an order.
+    // This is the same as performing the steps in two transactions, except only one entry will be added to
+    // the funding sequence.
     function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
         modifyMarginAndSubmitOrderWithPriceBounds(marginDelta, leverage, 0, uint(-1));
     }
 
+    // Confirm an outstanding order, modifying the underlying position. This will succeed if and only if
+    // `canConfirmOrder(account)` is true, and reverts otherwise.
     function confirmOrder(address account) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
@@ -1119,6 +1140,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         emitPositionLiquidated(account, liquidator, positionSize, lPrice);
     }
 
+    // Liquidate a position if its remaining margin is below the liquidation fee. This succeeds if and only if
+    // `canLiquidate(account)` is true, and reverts otherwise.
+    // Upon liquidation, the position will be closed, and the liquidation fee minted into the liquidator's account.
     function liquidatePosition(address account) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
