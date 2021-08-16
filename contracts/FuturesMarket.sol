@@ -1013,7 +1013,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
 
         Position storage position = positions[sender];
-        uint positionId = position.id;
 
         // Determine new margin, ensuring that the result is positive.
         (uint margin, Status status) = _realisedMargin(position, fundingIndex, price, marginDelta);
@@ -1022,8 +1021,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Update the debt correction.
         int positionSize = position.size;
         _applyDebtCorrection(
-            Position(positionId, margin, positionSize, price, fundingIndex),
-            Position(positionId, position.margin, positionSize, position.lastPrice, position.fundingIndex)
+            Position(position.id, margin, positionSize, price, fundingIndex),
+            Position(position.id, position.margin, positionSize, position.lastPrice, position.fundingIndex)
         );
 
         // Update the account's position with the realised margin.
