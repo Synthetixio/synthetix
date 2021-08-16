@@ -13,7 +13,6 @@ const { fastForward } = require('../test-utils/rpc');
 const deployStakingRewardsCmd = require('../../publish/src/commands/deploy-staking-rewards');
 const deployShortingRewardsCmd = require('../../publish/src/commands/deploy-shorting-rewards');
 const deployCmd = require('../../publish/src/commands/deploy');
-const { buildPath } = deployCmd.DEFAULTS;
 const testUtils = require('../utils');
 
 const commands = {
@@ -36,6 +35,8 @@ const {
 		DEPLOYMENT_FILENAME,
 		SYNTHS_FILENAME,
 		FEEDS_FILENAME,
+		OVM_GAS_PRICE_GWEI,
+		BUILD_FOLDER,
 	},
 	defaults: {
 		WAITING_PERIOD_SECS,
@@ -58,14 +59,26 @@ const {
 const concurrency = isCI ? 1 : 10;
 const limitPromise = pLimit(concurrency);
 
+const providerUrl = process.env.PROVIDER_URL || 'http://localhost:8545';
+
 describe('publish scripts', () => {
 	const networks = [
-		{ network: 'local', useOvm: true },
-		{ network: 'local', useOvm: false },
+		// {
+		// 	name: 'local-ovm',
+		// 	buildPath: path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`),
+		// 	network: 'local',
+		// 	useOvm: true,
+		// },
+		{
+			name: 'local',
+			buildPath: deployCmd.DEFAULTS.buildPath,
+			network: 'local',
+			useOvm: false,
+		},
 	];
 
-	networks.map(({ network, useOvm }) =>
-		describe(`${network}${useOvm && '-ovm'}`, () => {
+	networks.map(({ network, useOvm, name, buildPath }) =>
+		describe(name, () => {
 			const {
 				getSource,
 				getTarget,
@@ -95,8 +108,8 @@ describe('publish scripts', () => {
 			const feedsJSON = fs.readFileSync(feedsJSONPath);
 
 			const logfilePath = path.join(__dirname, 'test.log');
-			const gasLimit = 26970000;
-			let gasPrice;
+			let gasLimit = 8000000;
+			let gasPrice = ethers.utils.parseUnits('5', 'gwei');
 			let accounts;
 			let sUSD;
 			let sBTC;
@@ -112,7 +125,9 @@ describe('publish scripts', () => {
 				fs.writeFileSync(feedsJSONPath, feedsJSON);
 
 				// and reset the deployment.json to signify new deploy
-				fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
+				if (!process.env.DEBUG) {
+					fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
+				}
 			};
 
 			const callMethodWithRetry = async method => {
@@ -131,7 +146,9 @@ describe('publish scripts', () => {
 
 			before(() => {
 				fs.writeFileSync(logfilePath, ''); // reset log file
-				fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
+				if (!process.env.DEBUG) {
+					fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
+				}
 			});
 
 			beforeEach(async () => {
@@ -162,13 +179,12 @@ describe('publish scripts', () => {
 
 				[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 
-				// TODO: enable when we use the geth-ovm node for this test.
-				// if (useOvm) {
-				// 	gasPrice = ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
-				// 	provider.getGasPrice = async () => gasPrice;
+				if (useOvm) {
+					gasPrice = ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
+					provider.getGasPrice = async () => gasPrice;
 
-				// 	gasLimit = undefined;
-				// }
+					gasLimit = undefined;
+				}
 
 				overrides = {
 					gasLimit,
@@ -262,7 +278,7 @@ describe('publish scripts', () => {
 							network,
 							freshDeploy: true,
 							useOvm,
-							providerUrl: 'http://localhost:8545',
+							providerUrl,
 							yes: true,
 							privateKey: accounts.deployer.privateKey,
 							ignoreCustomParameters: true,
@@ -275,7 +291,7 @@ describe('publish scripts', () => {
 						synths = getSynths().filter(({ name }) => name !== 'sUSD');
 
 						Synthetix = getContract({
-							target: useOvm ? 'Synthetix' : 'ProxyERC20',
+							target: useOvm ? 'ProxySynthetix' : 'ProxyERC20',
 							source: 'Synthetix',
 						});
 						FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
@@ -454,6 +470,7 @@ describe('publish scripts', () => {
 										concurrency,
 										network,
 										yes: true,
+										providerUrl,
 										useOvm,
 										privateKey: accounts.deployer.privateKey,
 									});
