@@ -215,20 +215,20 @@ module.exports = async ({
 			: yellow('⚠ NO'),
 	});
 
+	console.log(
+		yellow(
+			`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${Object.entries(
+				config
+			)
+				.filter(([, { deploy }]) => deploy)
+				.map(([contract]) => contract)
+				.join(', ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
+		) + gray('-'.repeat(50))
+	);
+
 	if (!yes) {
 		try {
-			await confirmAction(
-				yellow(
-					`⚠⚠⚠ WARNING: This action will deploy the following contracts to ${network}:\n${Object.entries(
-						config
-					)
-						.filter(([, { deploy }]) => deploy)
-						.map(([contract]) => contract)
-						.join(', ')}` + `\nIt will also set proxy targets and add synths to Synthetix.\n`
-				) +
-					gray('-'.repeat(50)) +
-					'\nDo you want to continue? (y/n) '
-			);
+			await confirmAction('Do you want to continue? (y/n) ');
 		} catch (err) {
 			console.log(gray('Operation cancelled'));
 			throw Error('Halted.');
