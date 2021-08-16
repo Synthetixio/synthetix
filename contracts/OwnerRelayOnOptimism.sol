@@ -7,11 +7,9 @@ import "./TempOwned.sol";
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-
 interface IOwned {
     function acceptOwnership() external;
 }
-
 
 contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -42,6 +40,8 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
         (bool success, bytes memory result) = target.call(data);
 
         require(success, string(abi.encode("xChain call failed:", result)));
+
+        emit CallRelayed(target, data);
     }
 
     /* ========== VIEWS ========== */
@@ -65,8 +65,6 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
         require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
 
         _relayCall(target, data);
-
-        emit RelayFinalized(target, data);
     }
 
     function directRelay(address target, bytes calldata data) external onlyTemporaryOwner {
@@ -75,5 +73,5 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
 
     /* ========== EVENTS ========== */
 
-    event RelayFinalized(address target, bytes data);
+    event CallRelayed(address target, bytes data);
 }

@@ -1,6 +1,6 @@
 const { ethers, contract, artifacts } = require('hardhat');
 const chalk = require('chalk');
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert } = require('./common');
 const { smockit } = require('@eth-optimism/smock');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 const { currentTime, fastForward } = require('../utils')();
@@ -11,6 +11,7 @@ contract('OwnerRelayOnOptimism', () => {
 	// Signers
 	let owner;
 	let tempOwner;
+	let someone;
 
 	// Real contracts
 	let OwnerRelayOnOptimism;
@@ -23,8 +24,10 @@ contract('OwnerRelayOnOptimism', () => {
 	const mockedContractAddressOnL2 = ethers.Wallet.createRandom().address;
 	const mockedRelayData = '0xdeadbeef';
 
+	let tempOwnerEOL;
+
 	before('initialize signers', async () => {
-		[owner, tempOwner] = await ethers.getSigners();
+		[owner, tempOwner, someone] = await ethers.getSigners();
 	});
 
 	before('mock other contracts used by OwnerRelayOnOptimism', async () => {
@@ -52,7 +55,8 @@ contract('OwnerRelayOnOptimism', () => {
 	});
 
 	before('instantiate the contract', async () => {
-		const timestamp = await currentTime();
+		tempOwnerEOL = (await currentTime()) + DAY;
+
 		const OwnerRelayOnOptimismFactory = await ethers.getContractFactory(
 			'OwnerRelayOnOptimism',
 			owner
@@ -60,7 +64,7 @@ contract('OwnerRelayOnOptimism', () => {
 		OwnerRelayOnOptimism = await OwnerRelayOnOptimismFactory.deploy(
 			MockedAddressResolver.address,
 			tempOwner.address,
-			timestamp + DAY
+			tempOwnerEOL
 		);
 
 		const tx = await OwnerRelayOnOptimism.rebuildCache();
@@ -75,6 +79,14 @@ contract('OwnerRelayOnOptimism', () => {
 		assert.ok(
 			requiredAddresses.includes(ethers.utils.formatBytes32String('base:OwnerRelayOnEthereum'))
 		);
+	});
+
+	it('shows that temp owner is set correctly', async () => {
+		assert.equal(tempOwner.address, await OwnerRelayOnOptimism.tempOwner());
+	});
+
+	it('shows that the temp owner EOL date is set correctly', async () => {
+		assert.equal(tempOwnerEOL, await OwnerRelayOnOptimism.tempOwnerEOL());
 	});
 
 	it('shows that only the expected functions are mutative', async () => {
@@ -196,8 +208,8 @@ contract('OwnerRelayOnOptimism', () => {
 				assert.equal(relayedMessageData, OwnerRelayOnOptimism.address);
 			});
 
-			it('emited a RelayFinalized event', async () => {
-				const event = relayReceipt.events.find(e => e.event === 'RelayFinalized');
+			it('emited a CallRelayed event', async () => {
+				const event = relayReceipt.events.find(e => e.event === 'CallRelayed');
 
 				assert.equal(event.args.target, MockedOwnedL2.address);
 				assert.equal(event.args.data, nominateNewOwnerCalldata);
@@ -205,10 +217,10 @@ contract('OwnerRelayOnOptimism', () => {
 		});
 	});
 
-	describe('when calling directRelay to trespass relay calling from L1', () => {
-		it('should only allow to be called by tempOwner', async () => {
+	describe('when calling directRelay to bypass the L1 to L2 relay', () => {
+		it('should not allow any address to call direct relay', async () => {
 			await assert.revert(
-				OwnerRelayOnOptimism.connect(owner).directRelay(
+				OwnerRelayOnOptimism.connect(someone).directRelay(
 					mockedContractAddressOnL2,
 					mockedRelayData,
 					{ gasPrice: 0 }
@@ -217,12 +229,31 @@ contract('OwnerRelayOnOptimism', () => {
 			);
 		});
 
-		describe('when reaching EOL', () => {
-			addSnapshotBeforeRestoreAfterEach();
+		describe('before the EOL date is reached', () => {
+			let relayReceipt;
 
-			it('should not allow to call directRelay', async () => {
-				await fastForward(DAY);
+			it('should allow the temp owner to call direct relay', async () => {
+				const tx = await OwnerRelayOnOptimism.connect(
+					tempOwner
+				).directRelay(mockedContractAddressOnL2, mockedRelayData, { gasPrice: 0 });
 
+				relayReceipt = await tx.wait();
+			});
+
+			it('emited a CallRelayed event', async () => {
+				const event = relayReceipt.events.find(e => e.event === 'CallRelayed');
+
+				assert.equal(event.args.target, mockedContractAddressOnL2);
+				assert.equal(event.args.data, mockedRelayData);
+			});
+		});
+
+		describe('after the EOL date is reached', () => {
+			before('fast forward', async () => {
+				await fastForward(DAY + 1);
+			});
+
+			it('should not allow the temp ownet to call direct relay', async () => {
 				await assert.revert(
 					OwnerRelayOnOptimism.connect(tempOwner).directRelay(
 						mockedContractAddressOnL2,
