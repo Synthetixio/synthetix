@@ -277,7 +277,36 @@
 		"sips": [138, 139, 140]
 	},
 	{
+		"name": "Dubhe (Optimism)",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
+		"ovm": true,
+		"sources": [],
+		"sips": [121]
+	},
+	{
 		"name": "Mirfak",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 47
+		},
+		"ovm": true,
+		"sources": [
+			"Synthetix",
+			"Issuer",
+			"FeePool",
+			"DebtCache",
+			"SynthsUSD",
+			"SynthsETH"
+		],
+		"sips": [142]
+	},
+	{
+		"name": "Wezen",
 		"released": false,
 		"version": {
 			"major": 2,
@@ -287,7 +316,7 @@
 		"sips": [167]
 	},
 	{
-		"name": "Mirfak (Optimism)",
+		"name": "Wezen (Optimism)",
 		"released": false,
 		"version": {
 			"major": 2,
