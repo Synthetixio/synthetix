@@ -847,8 +847,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function _recomputeFunding(uint price) internal returns (uint lastIndex) {
         uint sequenceLength = fundingSequence.length;
 
-        fundingSequence.push(_nextFundingEntry(sequenceLength, price));
+        int funding = _nextFundingEntry(sequenceLength, price);
+        fundingSequence.push(funding);
         fundingLastRecomputed = block.timestamp;
+        emitFundingRecomputed(funding);
 
         return sequenceLength;
     }
@@ -898,7 +900,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return (uMargin, Status.Ok);
     }
 
-    function _modifyMargin(
+    function _transferMargin(
         int marginDelta,
         uint price,
         uint fundingIndex,
@@ -937,14 +939,17 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // Update the account's position with the realised margin.
         position.margin = margin;
-        position.lastPrice = price;
-        position.fundingIndex = fundingIndex;
+        // We only need to update their funding/PnL details if they actually have a position open
+        if (positionSize > 0) {
+            position.lastPrice = price;
+            position.fundingIndex = fundingIndex;
+        }
 
         // The user can decrease their position if they have no position, or as long as:
         //     * they have sufficient margin to do so
         //     * the resulting margin would not be lower than the minimum margin
         //     * the resulting leverage is lower than the maximum leverage
-        if (0 < position.size && marginDelta <= 0) {
+        if (0 < positionSize && marginDelta <= 0) {
             if (margin < _minInitialMargin()) {
                 status = Status.InsufficientMargin;
             } else if (_maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin))) {
@@ -952,15 +957,27 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             }
             _revertIfError(status);
         }
+
+        // Emit relevant events
+        if (marginDelta != 0) {
+            emitMarginTransferred(sender, marginDelta);
+        }
+        emitPositionModified(
+            sender,
+            margin,
+            positionSize,
+            positionSize > 0 ? price : 0,
+            positionSize > 0 ? fundingIndex : 0
+        );
     }
 
     // Alter the amount of margin in a position. Positive arguments correspond to deposits, negative arguments to
     // withdrawals. The margin will be burnt or issued directly into/out of the caller's sUSD wallet.
     // Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
-    function modifyMargin(int marginDelta) external optionalProxy {
+    function transferMargin(int marginDelta) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
-        _modifyMargin(marginDelta, price, fundingIndex, messageSender);
+        _transferMargin(marginDelta, price, fundingIndex, messageSender);
     }
 
     function withdrawAllMargin() external optionalProxy {
@@ -968,7 +985,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         int marginDelta = -int(_remainingMargin(positions[sender], fundingIndex, price));
-        _modifyMargin(marginDelta, price, fundingIndex, sender);
+        _transferMargin(marginDelta, price, fundingIndex, sender);
     }
 
     function _cancelOrder(address account) internal {
@@ -1077,7 +1094,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     // Atomically alter margin and submit an order, but which cannot be confirmed unless the confirmation price is within desired bounds.
-    function modifyMarginAndSubmitOrderWithPriceBounds(
+    function transferMarginAndSubmitOrderWithPriceBounds(
         int marginDelta,
         int leverage,
         uint minPrice,
@@ -1086,15 +1103,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         address sender = messageSender;
-        _modifyMargin(marginDelta, price, fundingIndex, sender);
+        _transferMargin(marginDelta, price, fundingIndex, sender);
         _submitOrder(leverage, price, [minPrice, maxPrice], fundingIndex, sender);
     }
 
     // Atomically alter a position's margin and then submit an order.
     // This is the same as performing the steps in two transactions, except only one entry will be added to
     // the funding sequence.
-    function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
-        modifyMarginAndSubmitOrderWithPriceBounds(marginDelta, leverage, 0, uint(-1));
+    function transferMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
+        transferMarginAndSubmitOrderWithPriceBounds(marginDelta, leverage, 0, uint(-1));
     }
 
     // Confirm an outstanding order, modifying the underlying position. This will succeed if and only if
@@ -1134,13 +1151,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             delete position.size;
             delete position.lastPrice;
             delete position.fundingIndex;
+            emitPositionModified(account, margin, 0, 0, 0);
         } else {
             position.size = newSize;
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
+            emitPositionModified(account, margin, newSize, price, fundingIndex);
         }
         Order storage order = orders[account];
-        emitOrderConfirmed(order.id, account, margin, newSize, price, fundingIndex);
+        emitOrderConfirmed(order.id, account, price);
         delete orders[account];
     }
 
@@ -1178,7 +1197,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Issue the reward to the liquidator.
         _manager().issueSUSD(liquidator, liquidationFee);
 
-        emitPositionLiquidated(account, liquidator, positionSize, lPrice);
+        emitPositionModified(account, 0, 0, 0, 0);
+        emitPositionLiquidated(account, liquidator, positionSize, lPrice, liquidationFee);
     }
 
     // Liquidate a position if its remaining margin is below the liquidation fee. This succeeds if and only if
@@ -1205,11 +1225,11 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return bytes32(uint256(uint160(input)));
     }
 
-    event ParameterUpdated(bytes32 indexed parameter, uint value);
-    bytes32 internal constant SIG_PARAMETERUPDATED = keccak256("ParameterUpdated(bytes32,uint256)");
+    event MarginTransferred(address indexed account, int marginDelta);
+    bytes32 internal constant SIG_MARGINTRANSFERRED = keccak256("MarginTransferred(address,int256)");
 
-    function emitParameterUpdated(bytes32 parameter, uint value) internal {
-        proxy._emit(abi.encode(value), 2, SIG_PARAMETERUPDATED, parameter, 0, 0);
+    function emitMarginTransferred(address account, int marginDelta) internal {
+        proxy._emit(abi.encode(marginDelta), 2, SIG_MARGINTRANSFERRED, addressToBytes32(account), 0, 0);
     }
 
     event OrderSubmitted(
@@ -1243,26 +1263,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         );
     }
 
-    event OrderConfirmed(uint indexed id, address indexed account, uint margin, int size, uint price, uint fundingIndex);
-    bytes32 internal constant SIG_ORDERCONFIRMED =
-        keccak256("OrderConfirmed(uint256,address,uint256,int256,uint256,uint256)");
+    event OrderConfirmed(uint indexed id, address indexed account, uint price);
+    bytes32 internal constant SIG_ORDERCONFIRMED = keccak256("OrderConfirmed(uint256,address,uint256)");
 
     function emitOrderConfirmed(
         uint id,
         address account,
-        uint margin,
-        int size,
-        uint price,
-        uint fundingIndex
+        uint price
     ) internal {
-        proxy._emit(
-            abi.encode(margin, size, price, fundingIndex),
-            3,
-            SIG_ORDERCONFIRMED,
-            bytes32(id),
-            addressToBytes32(account),
-            0
-        );
+        proxy._emit(abi.encode(price), 3, SIG_ORDERCONFIRMED, bytes32(id), addressToBytes32(account), 0);
     }
 
     event OrderCancelled(uint indexed id, address indexed account);
@@ -1272,22 +1281,51 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         proxy._emit(abi.encode(), 3, SIG_ORDERCANCELLED, bytes32(id), addressToBytes32(account), 0);
     }
 
-    event PositionLiquidated(address indexed account, address indexed liquidator, int size, uint price);
-    bytes32 internal constant SIG_POSITIONLIQUIDATED = keccak256("PositionLiquidated(address,address,int256,uint256)");
+    event PositionModified(address indexed account, uint margin, int size, uint lastPrice, uint fundingIndex);
+    bytes32 internal constant SIG_POSITIONMODIFIED = keccak256("PositionModified(address,uint256,int256,uint256,uint256)");
+
+    function emitPositionModified(
+        address account,
+        uint margin,
+        int size,
+        uint lastPrice,
+        uint fundingIndex
+    ) internal {
+        proxy._emit(
+            abi.encode(margin, size, lastPrice, fundingIndex),
+            2,
+            SIG_POSITIONMODIFIED,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
+    event PositionLiquidated(address indexed account, address indexed liquidator, int size, uint price, uint fee);
+    bytes32 internal constant SIG_POSITIONLIQUIDATED =
+        keccak256("PositionLiquidated(address,address,int256,uint256,uint256)");
 
     function emitPositionLiquidated(
         address account,
         address liquidator,
         int size,
-        uint price
+        uint price,
+        uint fee
     ) internal {
         proxy._emit(
-            abi.encode(size, price),
+            abi.encode(size, price, fee),
             3,
             SIG_POSITIONLIQUIDATED,
             addressToBytes32(account),
             addressToBytes32(liquidator),
             0
         );
+    }
+
+    event FundingRecomputed(int funding);
+    bytes32 internal constant SIG_FUNDINGRECOMPUTED = keccak256("FundingRecomputed(int256)");
+
+    function emitFundingRecomputed(int funding) internal {
+        proxy._emit(abi.encode(funding), 1, SIG_FUNDINGRECOMPUTED, 0, 0, 0);
     }
 }

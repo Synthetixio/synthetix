@@ -145,7 +145,7 @@ interface IFuturesMarket {
 
     function recomputeFunding() external returns (uint lastIndex);
 
-    function modifyMargin(int marginDelta) external;
+    function transferMargin(int marginDelta) external;
 
     function withdrawAllMargin() external;
 
@@ -161,14 +161,14 @@ interface IFuturesMarket {
 
     function closePosition() external;
 
-    function modifyMarginAndSubmitOrderWithPriceBounds(
+    function transferMarginAndSubmitOrderWithPriceBounds(
         int marginDelta,
         int leverage,
         uint minPrice,
         uint maxPrice
     ) external;
 
-    function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external;
+    function transferMarginAndSubmitOrder(int marginDelta, int leverage) external;
 
     function confirmOrder(address account) external;
 
