@@ -203,6 +203,7 @@ const setupContract = async ({
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
 		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
+		LinkWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('LINK')],
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
@@ -512,6 +513,13 @@ const setupContract = async ({
 					fncName: 'totalIssuedSynths',
 					returns: ['0'],
 				});
+			} else if (mock === 'LinkWrapper') {
+				await mockGenericContractFnc({
+					instance,
+					mock,
+					fncName: 'totalIssuedSynths',
+					returns: ['0'],
+				});
 			} else if (mock === 'FeePool') {
 				await Promise.all([
 					mockGenericContractFnc({
@@ -652,8 +660,13 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'EtherWrapper', 'WETH', 'SynthsETH'],
 		},
 		{
+			contract: 'LinkWrapper',
+			mocks: [],
+			deps: ['AddressResolver', 'SynthsLINK'],
+		},
+		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper'],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper', 'LinkWrapper'],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -667,6 +680,7 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'FlexibleStorage',
 				'EtherWrapper',
+				'LinkWrapper',
 			],
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
 		},
@@ -686,7 +700,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Synth',
-			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper'],
+			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper', 'LinkWrapper'],
 			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
 		}, // a generic synth
 		{
@@ -789,6 +803,7 @@ const setupAllContracts = async ({
 				'FlexibleStorage',
 				'CollateralManager',
 				'EtherWrapper',
+				'LinkWrapper',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
