@@ -14,7 +14,6 @@ import "./SignedSafeDecimalMath.sol";
 // Internal references
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
-import "./interfaces/IFuturesMarketSettings.sol";
 
 /*
  * Synthetic Futures
@@ -140,9 +139,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /* ---------- Address Resolver Configuration ---------- */
 
-    bytes32 internal constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 internal constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
     bytes32 internal constant CONTRACT_FUTURESMARKETMANAGER = "FuturesMarketManager";
     bytes32 internal constant CONTRACT_FUTURESMARKETSETTINGS = "FuturesMarketSettings";
 
@@ -178,29 +175,23 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinFuturesMarketSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
-        newAddresses[0] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[1] = CONTRACT_EXRATES;
-        newAddresses[2] = CONTRACT_SYNTHSUSD;
-        newAddresses[3] = CONTRACT_FUTURESMARKETMANAGER;
-        newAddresses[4] = CONTRACT_FUTURESMARKETSETTINGS;
+        bytes32[] memory newAddresses = new bytes32[](3);
+        newAddresses[0] = CONTRACT_EXRATES;
+        newAddresses[1] = CONTRACT_FUTURESMARKETMANAGER;
+        newAddresses[2] = CONTRACT_FUTURESMARKETSETTINGS;
         addresses = combineArrays(existingAddresses, newAddresses);
-    }
-
-    function _manager() internal view returns (IFuturesMarketManagerInternal) {
-        return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
-    }
-
-    function _marketSettings() internal view returns (IFuturesMarketSettings) {
-        return IFuturesMarketSettings(requireAndGetAddress(CONTRACT_FUTURESMARKETSETTINGS));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
-    function _sUSD() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD));
+    function _manager() internal view returns (IFuturesMarketManagerInternal) {
+        return IFuturesMarketManagerInternal(requireAndGetAddress(CONTRACT_FUTURESMARKETMANAGER));
+    }
+
+    function _settings() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_FUTURESMARKETSETTINGS);
     }
 
     /* ---------- Market Details ---------- */
@@ -936,7 +927,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * Pushes a new entry to the funding sequence at the current price and funding rate.
      */
     function recomputeFunding() external returns (uint lastIndex) {
-        _revertIfError(msg.sender != address(_marketSettings()), Status.NotPermitted);
+        _revertIfError(msg.sender != _settings(), Status.NotPermitted);
         return _recomputeFunding(_assetPriceRequireNotInvalid());
     }
 
