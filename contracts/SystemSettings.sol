@@ -313,7 +313,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
-    function setMinCratio(uint minCratio, address collateral) external onlyOwner {
+    function setMinCratio(address collateral, uint minCratio) external onlyOwner {
         require(minCratio > SafeDecimalMath.unit());
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
@@ -323,16 +323,16 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit MinCratioRatioUpdated(minCratio);
     }
 
-    function setIssueFeeRate(uint issueFeeRate, address collateral) external onlyOwner {
+    function setIssueFeeRate(address collateral, uint rate) external onlyOwner {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_ISSUE_FEE_RATE, collateral)),
-            issueFeeRate
+            rate
         );
-        emit IssueFeeRateUpdated(issueFeeRate);
+        emit IssueFeeRateUpdated(rate);
     }
 
-    function setCollateralManager(address newCollateralManager, address collateral) external onlyOwner {
+    function setCollateralManager(address collateral, address newCollateralManager) external onlyOwner {
         flexibleStorage().setAddressValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, collateral)),
@@ -341,7 +341,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit CollateralManagerUpdated(newCollateralManager);
     }
 
-    function setCanOpenLoans(bool canOpenLoans, address collateral) external onlyOwner {
+    function setCanOpenLoans(address collateral, bool canOpenLoans) external onlyOwner {
         flexibleStorage().setBoolValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral)),
@@ -350,7 +350,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit CanOpenLoansUpdated(canOpenLoans);
     }
 
-    function setInteractionDelay(uint delay, address collateral) external onlyOwner {
+    function setInteractionDelay(address collateral, uint delay) external onlyOwner {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral)),
