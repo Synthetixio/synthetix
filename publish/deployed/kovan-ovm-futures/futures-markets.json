@@ -1,0 +1,35 @@
+[
+	{
+		"asset": "sBTC",
+		"takerFee": "0.003",
+		"makerFee": "0.001",
+		"closureFee": "0",
+		"maxLeverage": "10",
+		"maxMarketValue": "100000",
+		"maxFundingRate": "0.1",
+		"maxFundingRateSkew": "1",
+		"maxFundingRateDelta": "0.0125"
+	},
+	{
+		"asset": "sETH",
+		"takerFee": "0.003",
+		"makerFee": "0.001",
+		"closureFee": "0",
+		"maxLeverage": "10",
+		"maxMarketValue": "100000",
+		"maxFundingRate": "0.1",
+		"maxFundingRateSkew": "1",
+		"maxFundingRateDelta": "0.0125"
+	},
+	{
+		"asset": "sLINK",
+		"takerFee": "0.003",
+		"makerFee": "0.001",
+		"closureFee": "0",
+		"maxLeverage": "10",
+		"maxMarketValue": "100000",
+		"maxFundingRate": "0.1",
+		"maxFundingRateSkew": "1",
+		"maxFundingRateDelta": "0.0125"
+	}
+]

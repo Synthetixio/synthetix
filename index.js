@@ -22,7 +22,16 @@ const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli', 'kovan-ovm-futures'];
+const networks = [
+	'local',
+	'local-ovm',
+	'kovan',
+	'rinkeby',
+	'ropsten',
+	'mainnet',
+	'goerli',
+	'kovan-ovm-futures',
+];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -98,6 +107,7 @@ const constants = {
 	DEPLOYMENT_FILENAME: 'deployment.json',
 	VERSIONS_FILENAME: 'versions.json',
 	FEEDS_FILENAME: 'feeds.json',
+	FUTURES_MARKETS_FILENAME: 'futures-markets.json',
 
 	AST_FILENAME: 'asts.json',
 
@@ -214,7 +224,6 @@ const defaults = {
 	ETHER_WRAPPER_MINT_FEE_RATE: w3utils.toWei('0.02'), // 200 bps
 	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
 
-	FUTURES_ASSETS: ['BTC', 'ETH', 'LINK'],
 	FUTURES_LIQUIDATION_FEE: w3utils.toWei('20'), // 20 sUSD liquidation fee
 	FUTURES_MIN_INITIAL_MARGIN: w3utils.toWei('100'), // minimum initial margin for all markets
 };
@@ -437,6 +446,31 @@ const getSynths = ({
 	});
 };
 
+const getFuturesMarkets = ({
+	network = 'mainnet',
+	useOvm = false,
+	path,
+	fs,
+	deploymentPath,
+} = {}) => {
+	if (!deploymentPath && (!path || !fs)) {
+		return data[getFolderNameForNetwork({ network, useOvm })].rewards;
+	}
+
+	const pathToFuturesMarketsList = deploymentPath
+		? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
+		: getPathToNetwork({
+				network,
+				path,
+				useOvm,
+				file: constants.FUTURES_MARKETS_FILENAME,
+		  });
+	if (!fs.existsSync(pathToFuturesMarketsList)) {
+		return [];
+	}
+	return JSON.parse(fs.readFileSync(pathToFuturesMarketsList));
+};
+
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
  */
@@ -657,6 +691,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getFeeds',
 		'getSynths',
 		'getTarget',
+		'getFuturesMarkets',
 		'getTokens',
 		'getUsers',
 		'getVersions',
@@ -680,6 +715,7 @@ module.exports = {
 	getSuspensionReasons,
 	getFeeds,
 	getSynths,
+	getFuturesMarkets,
 	getTarget,
 	getTokens,
 	getUsers,
