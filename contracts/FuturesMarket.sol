@@ -135,7 +135,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     // This increments for each order; zero reflects an order that does not exist.
     uint internal _nextOrderId = 1;
 
-    // This increments for each position; zero reflects an order that does not exist.
+    // This increments for each position; zero reflects a position that does not exist.
     uint internal _nextPositionId = 1;
 
     // Holds the revert message for each type of error.
@@ -1021,8 +1021,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Update the debt correction.
         int positionSize = position.size;
         _applyDebtCorrection(
-            Position(position.id, margin, positionSize, price, fundingIndex),
-            Position(position.id, position.margin, positionSize, position.lastPrice, position.fundingIndex)
+            Position(0, margin, positionSize, price, fundingIndex),
+            Position(0, position.margin, positionSize, position.lastPrice, position.fundingIndex)
         );
 
         // Update the account's position with the realised margin.
@@ -1051,6 +1051,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             emitMarginTransferred(sender, marginDelta);
         }
         emitPositionModified(
+            position.id,
             sender,
             margin,
             positionSize,
@@ -1126,6 +1127,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // The order is not submitted if the user's existing position needed to be liquidated.
         // We know that the price is not invalid now that we're in this function
         _revertIfError(_canLiquidate(position, _liquidationFee(), fundingIndex, price), Status.CanLiquidate);
+
+        if (leverage == position.size && position.size == 0) {
+            revert("Cannot close an already-closed position");
+        }
 
         uint margin = _remainingMargin(position, fundingIndex, price);
         int size = position.size;
@@ -1238,15 +1243,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         int oldSize = position.size;
         position.margin = margin;
 
-        if (oldSize == 0) {
-            position.id = _nextPositionId;
-            _nextPositionId += 1;
-            emitPositionOpened(position.id, account);
-        }
         // Apply debt corrections
         _applyDebtCorrection(
-            Position(position.id, margin, newSize, price, fundingIndex),
-            Position(position.id, oldMargin, oldSize, position.lastPrice, position.fundingIndex)
+            Position(0, margin, newSize, price, fundingIndex),
+            Position(0, oldMargin, oldSize, position.lastPrice, position.fundingIndex)
         );
 
         // Update the aggregated market size and skew with the new order size
@@ -1265,13 +1265,18 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             delete position.size;
             delete position.lastPrice;
             delete position.fundingIndex;
-            emitPositionModified(account, margin, 0, 0, 0);
+            emitPositionModified(position.id, account, margin, 0, 0, 0);
             emitPositionClosed(position.id, account);
         } else {
+            if (oldSize == 0) {
+                position.id = _nextPositionId;
+                _nextPositionId += 1;
+                emitPositionOpened(position.id, account);
+            }
             position.size = newSize;
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-            emitPositionModified(account, margin, newSize, price, fundingIndex);
+            emitPositionModified(position.id, account, margin, newSize, price, fundingIndex);
         }
         Order storage order = orders[account];
         emitOrderConfirmed(order.id, account, price);
@@ -1303,8 +1308,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // TODO: validate the correctness here (in particular of using the liquidation price)
         _applyDebtCorrection(
-            Position(positionId, 0, 0, lPrice, fundingIndex),
-            Position(positionId, position.margin, positionSize, position.lastPrice, position.fundingIndex)
+            Position(0, 0, 0, lPrice, fundingIndex),
+            Position(0, position.margin, positionSize, position.lastPrice, position.fundingIndex)
         );
 
         // Close the position itself.
@@ -1313,9 +1318,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Issue the reward to the liquidator.
         _manager().issueSUSD(liquidator, liquidationFee);
 
-        emitPositionModified(account, 0, 0, 0, 0);
+        emitPositionModified(positionId, account, 0, 0, 0, 0);
         emitPositionClosed(positionId, account);
-        emitPositionLiquidated(account, liquidator, positionSize, lPrice, liquidationFee);
+        emitPositionLiquidated(positionId, account, liquidator, positionSize, lPrice, liquidationFee);
     }
 
     /*
@@ -1401,23 +1406,32 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     event PositionOpened(uint indexed id, address indexed account);
-    bytes32 internal constant SIG_POSITIONOPENED = keccak256("PositionOpened(uint,address)");
+    bytes32 internal constant SIG_POSITIONOPENED = keccak256("PositionOpened(uint256,address)");
 
     function emitPositionOpened(uint id, address account) internal {
         proxy._emit(abi.encode(), 3, SIG_POSITIONOPENED, bytes32(id), addressToBytes32(account), 0);
     }
 
     event PositionClosed(uint indexed id, address indexed account);
-    bytes32 internal constant SIG_POSITIONCLOSED = keccak256("PositionClosed(uint,address)");
+    bytes32 internal constant SIG_POSITIONCLOSED = keccak256("PositionClosed(uint256,address)");
 
     function emitPositionClosed(uint id, address account) internal {
         proxy._emit(abi.encode(), 3, SIG_POSITIONCLOSED, bytes32(id), addressToBytes32(account), 0);
     }
 
-    event PositionModified(address indexed account, uint margin, int size, uint lastPrice, uint fundingIndex);
-    bytes32 internal constant SIG_POSITIONMODIFIED = keccak256("PositionModified(address,uint256,int256,uint256,uint256)");
+    event PositionModified(
+        uint indexed id,
+        address indexed account,
+        uint margin,
+        int size,
+        uint lastPrice,
+        uint fundingIndex
+    );
+    bytes32 internal constant SIG_POSITIONMODIFIED =
+        keccak256("PositionModified(uint256,address,uint256,int256,uint256,uint256)");
 
     function emitPositionModified(
+        uint id,
         address account,
         uint margin,
         int size,
@@ -1426,19 +1440,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     ) internal {
         proxy._emit(
             abi.encode(margin, size, lastPrice, fundingIndex),
-            2,
+            3,
             SIG_POSITIONMODIFIED,
+            bytes32(id),
             addressToBytes32(account),
-            0,
             0
         );
     }
 
-    event PositionLiquidated(address indexed account, address indexed liquidator, int size, uint price, uint fee);
+    event PositionLiquidated(uint id, address indexed account, address indexed liquidator, int size, uint price, uint fee);
     bytes32 internal constant SIG_POSITIONLIQUIDATED =
-        keccak256("PositionLiquidated(address,address,int256,uint256,uint256)");
+        keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
 
     function emitPositionLiquidated(
+        uint id,
         address account,
         address liquidator,
         int size,
@@ -1447,11 +1462,11 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     ) internal {
         proxy._emit(
             abi.encode(size, price, fee),
-            3,
+            4,
             SIG_POSITIONLIQUIDATED,
+            bytes32(id),
             addressToBytes32(account),
-            addressToBytes32(liquidator),
-            0
+            addressToBytes32(liquidator)
         );
     }
 
