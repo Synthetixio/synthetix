@@ -59,26 +59,9 @@ const {
 const concurrency = isCI ? 1 : 10;
 const limitPromise = pLimit(concurrency);
 
-const providerUrl = process.env.PROVIDER_URL || 'http://localhost:8545';
-
 describe('publish scripts', () => {
-	const networks = [
-		// {
-		// 	name: 'local-ovm',
-		// 	buildPath: path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`),
-		// 	network: 'local',
-		// 	useOvm: true,
-		// },
-		{
-			name: 'local',
-			buildPath: deployCmd.DEFAULTS.buildPath,
-			network: 'local',
-			useOvm: false,
-		},
-	];
+	const network = 'local';
 
-	networks.map(({ network, useOvm, name, buildPath }) =>
-		describe(name, () => {
 			const {
 				getSource,
 				getTarget,
@@ -86,10 +69,8 @@ describe('publish scripts', () => {
 				getPathToNetwork,
 				getStakingRewards,
 				getShortingRewards,
-				getFuturesMarkets,
 			} = wrap({
 				network,
-				useOvm,
 				fs,
 				path,
 			});
@@ -108,8 +89,8 @@ describe('publish scripts', () => {
 			const feedsJSON = fs.readFileSync(feedsJSONPath);
 
 			const logfilePath = path.join(__dirname, 'test.log');
-			let gasLimit = 8000000;
-			let gasPrice = ethers.utils.parseUnits('5', 'gwei');
+	let gasLimit;
+	let gasPrice;
 			let accounts;
 			let sUSD;
 			let sBTC;
@@ -125,9 +106,7 @@ describe('publish scripts', () => {
 				fs.writeFileSync(feedsJSONPath, feedsJSON);
 
 				// and reset the deployment.json to signify new deploy
-				if (!process.env.DEBUG) {
 					fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
-				}
 			};
 
 			const callMethodWithRetry = async method => {
@@ -146,16 +125,14 @@ describe('publish scripts', () => {
 
 			before(() => {
 				fs.writeFileSync(logfilePath, ''); // reset log file
-				if (!process.env.DEBUG) {
 					fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
-				}
 			});
 
 			beforeEach(async () => {
 				console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 
 				provider = new ethers.providers.JsonRpcProvider({
-					url: process.env.PROVIDER_URL || 'http://localhost:8545',
+			url: 'http://localhost:8545',
 				});
 
 				const { isCompileRequired } = testUtils();
@@ -169,22 +146,18 @@ describe('publish scripts', () => {
 					second: wallets[2],
 				};
 
-				if (isCompileRequired() && !process.env.SKIP_BUILD) {
+		if (isCompileRequired()) {
 					console.log('Found source file modified after build. Rebuilding...');
 
-					await commands.build({ showContractSize: true, testHelpers: true, useOvm });
+			await commands.build({ showContractSize: true, testHelpers: true });
 				} else {
 					console.log('Skipping build as everything up to date');
 				}
 
 				[sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
 
-				if (useOvm) {
-					gasPrice = ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
-					provider.getGasPrice = async () => gasPrice;
-
-					gasLimit = undefined;
-				}
+		gasLimit = 8000000;
+		gasPrice = ethers.utils.parseUnits('5', 'gwei');
 
 				overrides = {
 					gasLimit,
@@ -212,7 +185,6 @@ describe('publish scripts', () => {
 					let SystemSettings;
 					let Liquidations;
 					let ExchangeRates;
-					let FuturesMarketManager;
 					const aggregators = {};
 
 					const getContract = ({ target, source }) =>
@@ -231,11 +203,7 @@ describe('publish scripts', () => {
 								bytecode: { object: bytecode },
 							},
 						} = compiled['MockAggregatorV2V3'];
-						const MockAggregatorFactory = new ethers.ContractFactory(
-							abi,
-							bytecode,
-							accounts.deployer
-						);
+				const MockAggregatorFactory = new ethers.ContractFactory(abi, bytecode, accounts.deployer);
 						const MockAggregator = await MockAggregatorFactory.deploy({ gasLimit, gasPrice });
 
 						const tx = await MockAggregator.setDecimals('8', {
@@ -274,26 +242,19 @@ describe('publish scripts', () => {
 						fs.writeFileSync(feedsJSONPath, JSON.stringify(feeds));
 
 						await commands.deploy({
-							concurrency: useOvm ? 1 : concurrency,
+					concurrency,
 							network,
 							freshDeploy: true,
-							useOvm,
-							providerUrl,
 							yes: true,
 							privateKey: accounts.deployer.privateKey,
 							ignoreCustomParameters: true,
-							ignoreSafetyChecks: useOvm,
-							addNewSynths: useOvm,
 						});
 
 						sources = getSource();
 						targets = getTarget();
 						synths = getSynths().filter(({ name }) => name !== 'sUSD');
 
-						Synthetix = getContract({
-							target: useOvm ? 'ProxySynthetix' : 'ProxyERC20',
-							source: 'Synthetix',
-						});
+				Synthetix = getContract({ target: 'ProxyERC20', source: 'Synthetix' });
 						FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
 						Exchanger = getContract({ target: 'Exchanger' });
 						DebtCache = getContract({ target: 'DebtCache' });
@@ -309,55 +270,35 @@ describe('publish scripts', () => {
 						Liquidations = getContract({ target: 'Liquidations' });
 
 						ExchangeRates = getContract({ target: 'ExchangeRates' });
-						FuturesMarketManager = getContract({ target: 'FuturesMarketManager' });
 					});
 
 					describe('default system settings', () => {
 						it('defaults are properly configured in a fresh deploy', async () => {
-							assert.strictEqual(
-								(await Exchanger.waitingPeriodSecs()).toString(),
-								WAITING_PERIOD_SECS
-							);
+					assert.strictEqual((await Exchanger.waitingPeriodSecs()).toString(), WAITING_PERIOD_SECS);
 							assert.strictEqual(
 								(await Exchanger.priceDeviationThresholdFactor()).toString(),
 								PRICE_DEVIATION_THRESHOLD_FACTOR
 							);
 							assert.strictEqual(await Exchanger.tradingRewardsEnabled(), TRADING_REWARDS_ENABLED);
 							assert.strictEqual((await Issuer.issuanceRatio()).toString(), ISSUANCE_RATIO);
-							assert.strictEqual(
-								(await FeePool.feePeriodDuration()).toString(),
-								FEE_PERIOD_DURATION
-							);
+					assert.strictEqual((await FeePool.feePeriodDuration()).toString(), FEE_PERIOD_DURATION);
 							assert.strictEqual(
 								(await FeePool.targetThreshold()).toString(),
 								ethers.utils.parseEther((TARGET_THRESHOLD / 100).toString()).toString()
 							);
 
-							assert.strictEqual(
-								(await Liquidations.liquidationDelay()).toString(),
-								LIQUIDATION_DELAY
-							);
-							assert.strictEqual(
-								(await Liquidations.liquidationRatio()).toString(),
-								LIQUIDATION_RATIO
-							);
+					assert.strictEqual((await Liquidations.liquidationDelay()).toString(), LIQUIDATION_DELAY);
+					assert.strictEqual((await Liquidations.liquidationRatio()).toString(), LIQUIDATION_RATIO);
 							assert.strictEqual(
 								(await Liquidations.liquidationPenalty()).toString(),
 								LIQUIDATION_PENALTY
 							);
-							assert.strictEqual(
-								(await ExchangeRates.rateStalePeriod()).toString(),
-								RATE_STALE_PERIOD
-							);
+					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
 							assert.strictEqual(
 								(await DebtCache.debtSnapshotStaleTime()).toString(),
 								DEBT_SNAPSHOT_STALE_TIME
 							);
 							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), MINIMUM_STAKE_TIME);
-
-							// The block below tests fee rates for different synth categories.
-							// Disabled until there are more synths on L2.
-							if (!useOvm) {
 								for (const [category, rate] of Object.entries(EXCHANGE_FEE_RATES)) {
 									// take the first synth we can find from that category, ignoring ETH and BTC as
 									// they deviate from the rest of the synth fee category defaults
@@ -367,15 +308,11 @@ describe('publish scripts', () => {
 
 									assert.strictEqual(
 										(
-											await Exchanger.feeRateForExchange(
-												toBytes32('(ignored)'),
-												toBytes32(synth.name)
-											)
+								await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32(synth.name))
 										).toString(),
 										rate
 									);
 								}
-							}
 						});
 
 						describe('when defaults are changed', () => {
@@ -438,10 +375,7 @@ describe('publish scripts', () => {
 								tx = await SystemSettings.setRateStalePeriod(newRateStalePeriod, overrides);
 								await tx.wait();
 
-								tx = await SystemSettings.setDebtSnapshotStaleTime(
-									newDebtSnapshotStaleTime,
-									overrides
-								);
+						tx = await SystemSettings.setDebtSnapshotStaleTime(newDebtSnapshotStaleTime, overrides);
 								await tx.wait();
 
 								tx = await SystemSettings.setMinimumStakeTime(newMinimumStakeTime, overrides);
@@ -470,8 +404,6 @@ describe('publish scripts', () => {
 										concurrency,
 										network,
 										yes: true,
-										providerUrl,
-										useOvm,
 										privateKey: accounts.deployer.privateKey,
 									});
 								});
@@ -509,10 +441,7 @@ describe('publish scripts', () => {
 										(await ExchangeRates.rateStalePeriod()).toString(),
 										newRateStalePeriod
 									);
-									assert.strictEqual(
-										(await Issuer.minimumStakeTime()).toString(),
-										newMinimumStakeTime
-									);
+							assert.strictEqual((await Issuer.minimumStakeTime()).toString(), newMinimumStakeTime);
 									assert.strictEqual(
 										(
 											await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32('sUSD'))
@@ -524,7 +453,7 @@ describe('publish scripts', () => {
 						});
 					});
 
-					(useOvm ? describe.skip : describe)('synths added to Issuer', () => {
+			describe('synths added to Issuer', () => {
 						const hexToString = hex => ethers.utils.toUtf8String(hex).replace(/\0/g, '');
 
 						it('then all synths are added to the issuer', async () => {
@@ -571,29 +500,7 @@ describe('publish scripts', () => {
 							});
 						});
 					});
-
-					describe('futures markets', async () => {
-						const markets = getFuturesMarkets();
-
-						it(`The number of available futures markets in Synthetix matches the number of futures markets in the JSON file: ${markets.length}`, async () => {
-							const count = await FuturesMarketManager.numMarkets();
-							assert.strictEqual(markets.length, count.toNumber());
-						});
-
-						describe('futures markets added to FuturesMarketManager', async () => {
-							markets.forEach(({ asset }) => {
-								it(asset, async () => {
-									const foundMarket = await FuturesMarketManager.marketForAsset(toBytes32(asset));
-									assert.strictEqual(
-										foundMarket,
-										targets[`FuturesMarket${asset.slice(1)}`].address
-									);
-								});
-							});
-						});
-					});
-
-					(useOvm ? describe.skip : describe)('deploy-staking-rewards', () => {
+			describe('deploy-staking-rewards', () => {
 						beforeEach(async () => {
 							const rewardsToDeploy = [
 								'sETHUniswapV1',
@@ -652,7 +559,7 @@ describe('publish scripts', () => {
 						});
 					});
 
-					(useOvm ? describe.skip : describe)('deploy-shorting-rewards', () => {
+			describe('deploy-shorting-rewards', () => {
 						beforeEach(async () => {
 							const rewardsToDeploy = ['sBTC', 'sETH'];
 
@@ -695,7 +602,7 @@ describe('publish scripts', () => {
 						});
 					});
 
-					(useOvm ? describe.skip : describe)('importFeePeriods script', () => {
+			describe('importFeePeriods script', () => {
 						let oldFeePoolAddress;
 						let feePeriodLength;
 
@@ -856,14 +763,8 @@ describe('publish scripts', () => {
 
 											periods = periods.map(period => period.map(bn => bn.toString()));
 
-											assert.strictEqual(
-												JSON.stringify(periods[0]),
-												JSON.stringify(periodsAdded[0])
-											);
-											assert.strictEqual(
-												JSON.stringify(periods[1]),
-												JSON.stringify(periodsAdded[1])
-											);
+									assert.strictEqual(JSON.stringify(periods[0]), JSON.stringify(periodsAdded[0]));
+									assert.strictEqual(JSON.stringify(periods[1]), JSON.stringify(periodsAdded[1]));
 										});
 									});
 								});
@@ -906,9 +807,7 @@ describe('publish scripts', () => {
 						});
 					});
 
-					(useOvm ? describe.skip : describe)(
-						'when ExchangeRates has prices SNX $0.30 and all synths $1',
-						() => {
+			describe('when ExchangeRates has prices SNX $0.30 and all synths $1', () => {
 							beforeEach(async () => {
 								// set default issuance of 0.2
 								const tx = await SystemSettings.setIssuanceRatio(
@@ -970,7 +869,6 @@ describe('publish scripts', () => {
 								}
 							});
 
-							// l1-only for now?
 							describe('when transferring 100k SNX to user1', () => {
 								beforeEach(async () => {
 									// transfer SNX to first account
@@ -1002,12 +900,7 @@ describe('publish scripts', () => {
 									describe('when user1 exchange 1000 sUSD for sETH (the MultiCollateralSynth)', () => {
 										let sETHBalanceAfterExchange;
 										beforeEach(async () => {
-											await Synthetix.exchange(
-												sUSD,
-												ethers.utils.parseEther('1000'),
-												sETH,
-												overrides
-											);
+								await Synthetix.exchange(sUSD, ethers.utils.parseEther('1000'), sETH, overrides);
 											sETHBalanceAfterExchange = await callMethodWithRetry(
 												sETHContract.balanceOf(accounts.first.address)
 											);
@@ -1090,7 +983,6 @@ describe('publish scripts', () => {
 												);
 											});
 
-											// Definitely L1-only.
 											describe('when deployer replaces sBTC with PurgeableSynth', () => {
 												beforeEach(async () => {
 													await commands.replaceSynths({
@@ -1124,9 +1016,7 @@ describe('publish scripts', () => {
 														);
 														assert.strictEqual(
 															ethers.utils.formatEther(balance.toString()),
-															(
-																4990 + +ethers.utils.formatEther(amountReceived.toString())
-															).toString(),
+												(4990 + +ethers.utils.formatEther(amountReceived.toString())).toString(),
 															'Balance should match'
 														);
 													});
@@ -1271,8 +1161,7 @@ describe('publish scripts', () => {
 															] = await callMethodWithRetry(
 																ExchangeRates.inversePricing(toBytes32(currencyKey))
 															);
-															const expected = synths.find(({ name }) => name === currencyKey)
-																.inverted;
+												const expected = synths.find(({ name }) => name === currencyKey).inverted;
 															assert.strictEqual(
 																+ethers.utils.formatEther(entryPoint.toString()),
 																expected.entryPoint,
@@ -1310,9 +1199,7 @@ describe('publish scripts', () => {
 																frozenAtUpperLimit,
 																frozenAtLowerLimit,
 															] = await callMethodWithRetry(ExchangeRates.inversePricing(iABC));
-															const rate = await callMethodWithRetry(
-																ExchangeRates.rateForCurrency(iABC)
-															);
+												const rate = await callMethodWithRetry(ExchangeRates.rateForCurrency(iABC));
 
 															assert.strictEqual(
 																+ethers.utils.formatEther(entryPoint.toString()),
@@ -1461,10 +1348,9 @@ describe('publish scripts', () => {
 									});
 								});
 							});
-						}
-					);
+			});
 
-					(useOvm ? describe.skip : describe)('when a pricing aggregator exists', () => {
+			describe('when a pricing aggregator exists', () => {
 						let mockAggregator;
 						beforeEach(async () => {
 							mockAggregator = await createMockAggregator();
@@ -1554,11 +1440,7 @@ describe('publish scripts', () => {
 										describe('when Synthetix.anySynthOrSNXRateIsInvalid() is invoked', () => {
 											it('then it returns false as expected', async () => {
 												const response = await Synthetix.anySynthOrSNXRateIsInvalid();
-												assert.strictEqual(
-													response,
-													false,
-													'anySynthOrSNXRateIsInvalid must be false'
-												);
+										assert.strictEqual(response, false, 'anySynthOrSNXRateIsInvalid must be false');
 											});
 										});
 									});
@@ -1567,7 +1449,7 @@ describe('publish scripts', () => {
 						});
 					});
 
-					(useOvm ? describe.skip : describe)('AddressResolver consolidation', () => {
+			describe('AddressResolver consolidation', () => {
 						let ReadProxyAddressResolver;
 						beforeEach(async () => {
 							ReadProxyAddressResolver = getContract({ target: 'ReadProxyAddressResolver' });
@@ -1575,13 +1457,10 @@ describe('publish scripts', () => {
 						describe('when the AddressResolver is set to deploy and everything else false', () => {
 							beforeEach(async () => {
 								const currentConfigFile = JSON.parse(fs.readFileSync(configJSONPath));
-								const configForAddressResolver = Object.keys(currentConfigFile).reduce(
-									(memo, cur) => {
+						const configForAddressResolver = Object.keys(currentConfigFile).reduce((memo, cur) => {
 										memo[cur] = { deploy: cur === 'AddressResolver' };
 										return memo;
-									},
-									{}
-								);
+						}, {});
 
 								fs.writeFileSync(configJSONPath, JSON.stringify(configForAddressResolver));
 							});
@@ -1599,10 +1478,7 @@ describe('publish scripts', () => {
 									AddressResolver = getContract({ target: 'AddressResolver' });
 								});
 								it('then the read proxy address resolver is updated', async () => {
-									assert.strictEqual(
-										await ReadProxyAddressResolver.target(),
-										AddressResolver.address
-									);
+							assert.strictEqual(await ReadProxyAddressResolver.target(), AddressResolver.address);
 								});
 								it('and the resolver has all the addresses inside', async () => {
 									const targets = getTarget();
@@ -1612,7 +1488,6 @@ describe('publish scripts', () => {
 											'DebtCache',
 											'DelegateApprovals',
 											'Depot',
-											'EtherCollateral',
 											'Exchanger',
 											'ExchangeRates',
 											'ExchangeState',
@@ -1633,10 +1508,7 @@ describe('publish scripts', () => {
 										].map(contractName =>
 											callMethodWithRetry(
 												AddressResolver.getAddress(snx.toBytes32(contractName))
-											).then(found => ({
-												contractName,
-												ok: found === targets[contractName].address,
-											}))
+									).then(found => ({ contractName, ok: found === targets[contractName].address }))
 										)
 									);
 
@@ -1698,11 +1570,7 @@ describe('publish scripts', () => {
 												sources[source].abi.find(({ name }) => name === 'resolver')
 											)
 											.map(([contract, { source, address }]) => {
-												const Contract = new ethers.Contract(
-													address,
-													sources[source].abi,
-													provider
-												);
+										const Contract = new ethers.Contract(address, sources[source].abi, provider);
 												return { contract, Contract };
 											})
 									);
