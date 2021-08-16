@@ -17,7 +17,7 @@ import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IERC20.sol";
 
-// TODO: Does this really need to be proxyable?
+// https://docs.synthetix.io/contracts/source/contracts/FuturesMarketManager
 contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarketManager {
     using SafeMath for uint;
     using AddressSetLib for AddressSetLib.AddressSet;
@@ -88,6 +88,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
         return _marketsForAssets(assets);
     }
 
+    // The accumulated debt contribution of all futures markets.
     function totalDebt() external view returns (uint debt, bool isInvalid) {
         uint total;
         bool anyIsInvalid;
@@ -102,6 +103,7 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    // Add a set of new markets. Reverts if some market's asset already has a market.
     function addMarkets(address[] calldata marketsToAdd) external optionalProxy_onlyOwner {
         uint numOfMarkets = marketsToAdd.length;
         for (uint i; i < numOfMarkets; i++) {
@@ -130,20 +132,25 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
         }
     }
 
+    // Remove a set of markets. Reverts if any market is not known to the manager.
     function removeMarkets(address[] calldata marketsToRemove) external optionalProxy_onlyOwner {
         return _removeMarkets(marketsToRemove);
     }
 
+    // Remove the markets for a given set of assets. Reverts if any asset has no associated market.
     function removeMarketsByAsset(bytes32[] calldata assetsToRemove) external optionalProxy_onlyOwner {
         _removeMarkets(_marketsForAssets(assetsToRemove));
     }
 
-    // Issuing and burn functions can't be called through the proxy
+    // Allows a market to issue sUSD to an account when it withdraws margin.
+    // This function is not callable through the proxy, only underlying contracts interact.
     function issueSUSD(address account, uint amount) external onlyMarkets {
         // No settlement is required to issue synths into the target account.
         _sUSD().issue(account, amount);
     }
 
+    // Allows a market to burn sUSD from an account when it deposits margin.
+    // This function is not callable through the proxy, only underlying contracts interact.
     function burnSUSD(address account, uint amount) external onlyMarkets returns (uint postReclamationAmount) {
         // We'll settle first, in order to ensure the user has sufficient balance.
         // If the settlement reduces the user's balance below the requested amount,
@@ -166,6 +173,8 @@ contract FuturesMarketManager is Owned, MixinResolver, Proxyable, IFuturesMarket
         return amount;
     }
 
+    // Allows markets to issue exchange fees into the fee pool and notify it that this occurred.
+    // This function is not callable through the proxy, only underlying contracts interact.
     function payFee(uint amount) external onlyMarkets {
         IFeePool pool = _feePool();
         _sUSD().issue(pool.FEE_ADDRESS(), amount);

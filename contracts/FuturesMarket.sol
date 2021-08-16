@@ -16,11 +16,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 
-// Remaining Functionality
-//     Rename marketSize, marketSkew, marketDebt, profitLoss, accruedFunding -> size, skew, debt, profit, funding
-
-/* Notes:
- *
+/*
  * Internal functions assume:
  *    - prices passed into them are valid;
  *    - funding has already been recomputed up to the current time (hence unrecorded funding is nil);
@@ -35,7 +31,7 @@ interface IFuturesMarketManagerInternal {
     function payFee(uint amount) external;
 }
 
-// https://docs.synthetix.io/contracts/source/contracts/futuresmarket
+// https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
 contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFuturesMarket {
     /* ========== LIBRARIES ========== */
 
@@ -835,6 +831,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     // The value in a position's margin after a deposit or withdrawal, accounting for funding and profit.
     // If the resulting margin would be negative or below the liquidation threshold, an appropriate error is returned.
+    // Callers must ensure that the result, if not an error, is accompanied by the application of a
+    // corresponding debt correction, if it is used to actually update the position's margin.
     function _realisedMargin(
         Position storage position,
         uint currentFundingIndex,
@@ -852,8 +850,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             return (uMargin, Status.CanLiquidate);
         }
 
-        // Callers must ensure that the result is accompanied by the application of a
-        // corresponding debt correction, if it is used to actually update the position's margin.
         return (uMargin, Status.Ok);
     }
 

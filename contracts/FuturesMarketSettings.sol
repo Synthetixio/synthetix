@@ -36,34 +36,42 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
 
     /* ---------- Getters ---------- */
 
+    // The fee charged when opening a position on the heavy side of a futures market.
     function takerFee(bytes32 _baseAsset) external view returns (uint) {
         return _takerFee(_baseAsset);
     }
 
+    // The fee charged when opening a position on the light side of a futures market.
     function makerFee(bytes32 _baseAsset) public view returns (uint) {
         return _makerFee(_baseAsset);
     }
 
+    // The fee charged when reducing the size of a position.
     function closureFee(bytes32 _baseAsset) public view returns (uint) {
         return _closureFee(_baseAsset);
     }
 
+    // The maximum allowable leverage in a market.
     function maxLeverage(bytes32 _baseAsset) public view returns (uint) {
         return _maxLeverage(_baseAsset);
     }
 
+    // The maximum allowable notional value on each side of a market.
     function maxMarketValue(bytes32 _baseAsset) public view returns (uint) {
         return _maxMarketValue(_baseAsset);
     }
 
+    // The maximum theoretical funding rate per day charged by a market.
     function maxFundingRate(bytes32 _baseAsset) public view returns (uint) {
         return _maxFundingRate(_baseAsset);
     }
 
+    // The skew level at which the max funding rate will be charged.
     function maxFundingRateSkew(bytes32 _baseAsset) public view returns (uint) {
         return _maxFundingRateSkew(_baseAsset);
     }
 
+    // The maximum speed that the funding rate can move per day.
     function maxFundingRateDelta(bytes32 _baseAsset) public view returns (uint) {
         return _maxFundingRateDelta(_baseAsset);
     }
