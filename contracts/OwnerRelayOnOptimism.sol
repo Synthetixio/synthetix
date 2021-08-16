@@ -7,9 +7,11 @@ import "./TempOwned.sol";
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
+
 interface IOwned {
     function acceptOwnership() external;
 }
+
 
 contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -27,11 +29,11 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
 
     /* ========== INTERNALS ============ */
 
-    function messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
+    function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
         return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
-    function ownerRelayOnEthereum() private view returns (address) {
+    function _ownerRelayOnEthereum() private view returns (address) {
         return requireAndGetAddress(CONTRACT_BASE_OWNER_RELAY_ON_ETHEREUM);
     }
 
@@ -57,10 +59,10 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
     }
 
     function finalizeRelay(address target, bytes calldata data) external {
-        iAbs_BaseCrossDomainMessenger messenger = messenger();
+        iAbs_BaseCrossDomainMessenger messenger = _messenger();
 
         require(msg.sender == address(messenger), "Sender is not the messenger");
-        require(messenger.xDomainMessageSender() == ownerRelayOnEthereum(), "L1 sender is not the owner relay");
+        require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
 
         _relayCall(target, data);
 

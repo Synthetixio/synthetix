@@ -7,9 +7,11 @@ import "./MixinSystemSettings.sol";
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
+
 interface IOwnerRelayOnOptimism {
     function finalizeRelay(address target, bytes calldata data) external;
 }
+
 
 contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -23,11 +25,11 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
 
     /* ========== INTERNALS ============ */
 
-    function messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
+    function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
         return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
-    function ownerRelayOnOptimism() private view returns (address) {
+    function _ownerRelayOnOptimism() private view returns (address) {
         return requireAndGetAddress(CONTRACT_OVM_OWNER_RELAY_ON_OPTIMISM);
     }
 
@@ -52,12 +54,11 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
 
         // Use specified crossDomainGasLimit if specified value is not zero.
         // otherwise use the default in SystemSettings.
-        uint32 xGasLimit =
-            crossDomainGasLimit != 0
-                ? crossDomainGasLimit
-                : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
+        uint32 xGasLimit = crossDomainGasLimit != 0
+            ? crossDomainGasLimit
+            : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
 
-        messenger().sendMessage(ownerRelayOnOptimism(), messageData, xGasLimit);
+        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, xGasLimit);
 
         emit RelayInitiated(target, data);
     }
