@@ -93,10 +93,14 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         return _parameters(_baseAsset);
     }
 
+    // The amount of sUSD paid to a liquidator when they successfully liquidate a position.
+    // This quantity must be no greater than `minInitialMargin`.
     function liquidationFee() external view returns (uint) {
         return _liquidationFee();
     }
 
+    // The minimum margin required to open a position.
+    // This quantity must be no less than `liquidationFee`.
     function minInitialMargin() external view returns (uint) {
         return _minInitialMargin();
     }

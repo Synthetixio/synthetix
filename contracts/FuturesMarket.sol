@@ -17,10 +17,55 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 
 /*
- * Internal functions assume:
- *    - prices passed into them are valid;
- *    - funding has already been recomputed up to the current time (hence unrecorded funding is nil);
- *    - the account being managed was not liquidated in the same transaction;
+ * Synthetic Futures
+ * =================
+ *
+ * Futures markets allow users leveraged exposure to an asset, long or short.
+ * A user must post some margin in order to open a futures account, and profits/losses are
+ * continually tallied against this margin. If a user's margin runs out, then their position is closed
+ * by a liquidation keeper, which is rewarded with a flat fee extracted from the margin.
+ *
+ * The Synthetix debt pool is effectively the counterparty to each trade, so if a particular position
+ * is in profit, then the debt pool pays by issuing sUSD into their margin account,
+ * while if the position makes a loss then the debt pool burns sUSD from the margin, reducing the
+ * debt load in the system.
+ *
+ * As the debt pool underwrites all positions, the debt-inflation risk to the system is proportional to the
+ * long-short skew in the market. It is therefore in the interest of the system to reduce the this skew.
+ * To encourage the minimisation of the skew, each position is charged a funding rate, which increases with
+ * the size of the skew. The funding rate is charged continuously, and positions on the heavier side of the
+ * market are charged the current funding rate times the notional value of their position, while positions
+ * on the lighter side are paid at the same rate to keep their positions open.
+ * As the funding rate is the same (but negated) on both sides of the market, there is an excess quantity of
+ * funding being charged, which is collected by the debt pool, and serves to reduce the system debt.
+ *
+ * To combat front-running, the system does not confirm a user's order until the next price is received from
+ * the oracle. Therefore opening a position is a three stage procedure: depositing margin, submitting an order,
+ * and waiting for that order to be confirmed. The last transaction is performed by a keeper,
+ * once a price update is detected.
+ *
+ * The contract architecture is as follows:
+ *
+ *     - FuturesMarket.sol:         one of these exists per asset. Margin is maintained isolated per market.
+ *
+ *     - FuturesMarketManager.sol:  the manager keeps track of which markets exist, and is the main window between
+ *                                  futures markets and the rest of the system. It accumulates the total debt
+ *                                  over all markets, and issues and burns sUSD on each market's behalf.
+ *
+ *     - FuturesMarketSettings.sol: Holds the settings for each market in the global FlexibleStorage instance used
+ *                                  by SystemSettings, and provides an interface to modify these values. Other than
+ *                                  the base asset, these settings determine the behaviour of each market.
+ *
+ * Each futures market and the manager operates behind a proxy, and for efficiency they communicate with one another
+ * using their underlying implementations.
+ *
+ * Technical note: internal functions within the FuturesMarket contract assume the following:
+ *
+ *     - prices passed into them are valid;
+ *
+ *     - funding has already been recomputed up to the current time (hence unrecorded funding is nil);
+ *
+ *     - the account being managed was not liquidated in the same transaction;
  */
 
 interface IFuturesMarketManagerInternal {
@@ -64,8 +109,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * Then to obtain the net funding over a particular interval, subtract the start point's sequence entry
      * from the end point's sequence entry.
      * Positions contain the funding sequence entry at the time they were confirmed; so to compute
-     * funding profit/loss on a given position, find the net profit per base unit since the position was
-     * confirmed and multiply it by the position size.
+     * the net funding on a given position, obtain from this sequence the net funding per base unit
+     * since the position was confirmed and multiply it by the position size.
      */
     uint public fundingLastRecomputed;
     int[] public fundingSequence;
