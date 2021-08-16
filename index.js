@@ -125,6 +125,7 @@ const knownAccounts = {
 // The solidity defaults are managed here in the same format they will be stored, hence all
 // numbers are converted to strings and those with 18 decimals are also converted to wei amounts
 const defaults = {
+	TEMP_OWNER_DEFAULT_EOL: 60 * 60 * 24 * 30 * 2, // 2 months
 	WAITING_PERIOD_SECS: (60 * 5).toString(), // 5 mins
 	PRICE_DEVIATION_THRESHOLD_FACTOR: w3utils.toWei('3'),
 	TRADING_REWARDS_ENABLED: false,
