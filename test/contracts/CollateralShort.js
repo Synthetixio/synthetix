@@ -8,16 +8,14 @@ const { fastForward, toUnit, fromUnit, currentTime } = require('../utils')();
 
 const { setupAllContracts, setupContract } = require('./setup');
 
-const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { ensureOnlyExpectedMutativeFunctions, setExchangeFeeRateForSynths } = require('./helpers');
 
 const {
 	toBytes32,
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-let CollateralManager;
 let CollateralState;
-let CollateralManagerState;
 
 contract('CollateralShort', async accounts => {
 	const YEAR = 31556926;
@@ -32,6 +30,7 @@ contract('CollateralShort', async accounts => {
 		state,
 		managerState,
 		feePool,
+		exchanger,
 		exchangeRates,
 		addressResolver,
 		sUSDSynth,
@@ -42,7 +41,9 @@ contract('CollateralShort', async accounts => {
 		synths,
 		manager,
 		issuer,
-		debtCache;
+		debtCache,
+		systemSettings,
+		FEE_ADDRESS;
 
 	let tx, loan, id;
 
@@ -86,6 +87,7 @@ contract('CollateralShort', async accounts => {
 		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
 		({
 			ExchangeRates: exchangeRates,
+			Exchanger: exchanger,
 			SynthsUSD: sUSDSynth,
 			SynthsBTC: sBTCSynth,
 			SynthsETH: sETHSynth,
@@ -95,6 +97,9 @@ contract('CollateralShort', async accounts => {
 			AddressResolver: addressResolver,
 			Issuer: issuer,
 			DebtCache: debtCache,
+			SystemSettings: systemSettings,
+			CollateralManager: manager,
+			CollateralManagerState: managerState,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -107,27 +112,16 @@ contract('CollateralShort', async accounts => {
 				'SystemStatus',
 				'Issuer',
 				'DebtCache',
+				'SystemSettings',
+				'CollateralUtil',
+				'CollateralManager',
+				'CollateralManagerState',
 			],
 		}));
 
-		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		const maxDebt = toUnit(10000000);
-
-		manager = await CollateralManager.new(
-			managerState.address,
-			owner,
-			addressResolver.address,
-			maxDebt,
-			// 5% / 31536000 (seconds in common year)
-			1585489599,
-			0,
-			{
-				from: deployerAccount,
-			}
-		);
-
 		await managerState.setAssociatedContract(manager.address, { from: owner });
+
+		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		state = await CollateralState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
@@ -179,9 +173,7 @@ contract('CollateralShort', async accounts => {
 	};
 
 	before(async () => {
-		CollateralManager = artifacts.require(`CollateralManager`);
 		CollateralState = artifacts.require(`CollateralState`);
-		CollateralManagerState = artifacts.require('CollateralManagerState');
 
 		await setupShort();
 	});
@@ -190,6 +182,16 @@ contract('CollateralShort', async accounts => {
 
 	beforeEach(async () => {
 		await updateRatesWithDefaults();
+
+		// set a 0.3% default exchange fee rate                                                                                 │        { contract: 'ExchangeState' },
+		const exchangeFeeRate = toUnit('0.003');
+		const synthKeys = [sETH, sUSD];
+		await setExchangeFeeRateForSynths({
+			owner,
+			systemSettings,
+			synthKeys,
+			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+		});
 
 		await issue(sUSDSynth, toUnit(100000), owner);
 		await issue(sBTCSynth, toUnit(1), owner);
@@ -216,7 +218,16 @@ contract('CollateralShort', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: short.abi,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'Proxy', 'Collateral'],
-			expected: ['open', 'close', 'deposit', 'repay', 'withdraw', 'liquidate', 'draw', 'getReward'],
+			expected: [
+				'open',
+				'close',
+				'deposit',
+				'repay',
+				'repayWithCollateral',
+				'withdraw',
+				'liquidate',
+				'draw',
+			],
 		});
 	});
 
@@ -320,6 +331,86 @@ contract('CollateralShort', async accounts => {
 			it('should tell the manager about the short', async () => {
 				assert.bnEqual(await manager.short(sETH), oneETH);
 			});
+		});
+	});
+
+	describe('Repaying shorts', async () => {
+		const oneETH = toUnit(1);
+		const susdCollateral = toUnit(1000);
+		const tolerance = toUnit(0.15);
+		const payInterest = true;
+
+		let beforeFeePoolBalance, beforeInteractionTime;
+
+		beforeEach(async () => {
+			await issue(sUSDSynth, susdCollateral, account1);
+
+			tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
+
+			id = getid(tx);
+
+			loan = await state.getLoan(account1, id);
+
+			beforeInteractionTime = loan.lastInteraction;
+			beforeFeePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
+
+			await fastForwardAndUpdateRates(3600);
+		});
+
+		it('should repay with collateral and update the loan', async () => {
+			tx = await short.repayWithCollateral(account1, id, toUnit(0.5), !payInterest, {
+				from: account1,
+			});
+
+			loan = await state.getLoan(account1, id);
+
+			assert.eventEqual(tx, 'LoanRepaymentMade', {
+				account: account1,
+				repayer: account1,
+				id: id,
+				amountRepaid: toUnit(0.5),
+				amountAfter: loan.amount,
+			});
+
+			const { fee } = await exchanger.getAmountsForExchange(toUnit(0.5), sETH, sUSD);
+
+			assert.bnClose(
+				await sUSDSynth.balanceOf(FEE_ADDRESS),
+				beforeFeePoolBalance.add(fee),
+				tolerance
+			);
+
+			assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
+
+			assert.bnClose(loan.amount, toUnit(0.5).toString(), tolerance);
+			assert.bnClose(loan.collateral, toUnit(950).toString(), tolerance);
+		});
+
+		it('should repay accrued interest', async () => {
+			tx = await short.repayWithCollateral(account1, id, toUnit(1), payInterest, {
+				from: account1,
+			});
+
+			loan = await state.getLoan(account1, id);
+
+			assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
+
+			assert.equal(loan.amount, toUnit(0).toString());
+			assert.bnClose(loan.collateral, toUnit(900).toString(), toUnit(0.3));
+		});
+
+		it('should only let the borrower repay with collateral', async () => {
+			await assert.revert(
+				short.repayWithCollateral(account1, id, toUnit(0.1), payInterest, { from: account2 }),
+				'Must be borrower'
+			);
+		});
+
+		it('should not let them repay too much', async () => {
+			await assert.revert(
+				short.repayWithCollateral(account1, id, toUnit(2000), payInterest, { from: account1 }),
+				'Payment too high'
+			);
 		});
 	});
 

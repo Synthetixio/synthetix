@@ -47,6 +47,9 @@
 	"CollateralStateShort": {
 		"deploy": true
 	},
+	"CollateralUtil": {
+		"deploy": true
+	},
 	"DebtCache": {
 		"deploy": true
 	},
@@ -69,12 +72,6 @@
 		"deploy": true
 	},
 	"ExchangeState": {
-		"deploy": true
-	},
-	"EtherCollateral": {
-		"deploy": true
-	},
-	"EtherCollateralsUSD": {
 		"deploy": true
 	},
 	"FeePool": {
