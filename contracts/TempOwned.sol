@@ -1,13 +1,12 @@
 pragma solidity ^0.5.16;
 
-
 contract TempOwned {
-    address internal tempOwner;
-    uint internal tempOwnerEOL;
+    address public tempOwner;
+    uint public tempOwnerEOL;
 
     constructor(address _tempOwner, uint _tempOwnerEOL) public {
         require(_tempOwner != address(0), "Owner address cannot be 0");
-        require(_tempOwnerEOL > now, "Onvalid temp owner EOL");
+        require(_tempOwnerEOL > now, "Invalid temp owner EOL");
 
         tempOwner = _tempOwner;
         tempOwnerEOL = _tempOwnerEOL;

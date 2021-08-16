@@ -3,11 +3,11 @@ pragma solidity ^0.5.16;
 import "../TempOwned.sol";
 
 contract TestableTempOwned is TempOwned {
-    uint8 public testValue;
+    uint public testValue;
 
     constructor(address _tempOwner, uint _tempOwnerEOL) public TempOwned(_tempOwner, _tempOwnerEOL) {}
 
-    function setTestValue(uint8 _testValue) external onlyTemporaryOwner {
+    function setTestValue(uint _testValue) external onlyTemporaryOwner {
         testValue = _testValue;
     }
 }

@@ -2,62 +2,87 @@
 
 const { artifacts, contract } = require('hardhat');
 
-const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
+const { assert } = require('./common');
 const { currentTime, fastForward } = require('../utils')();
 
-const TesteableTempOwned = artifacts.require('TestableTempOwned');
+const TestableTempOwnedFactory = artifacts.require('TestableTempOwned');
 
 contract('TempOwned', accounts => {
 	const DAY = 60 * 60 * 24;
+	const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
 	const [deployerAccount, tempOwner, account3] = accounts;
+
+	let TestableTempOwned;
 	let timestamp;
 
 	beforeEach(async () => {
 		timestamp = await currentTime();
 	});
 
-	it('should not allow call owned method if EOL date reached', async () => {
-		const contract = await TesteableTempOwned.new(tempOwner, timestamp - DAY, {
-			from: deployerAccount,
+	describe('when attempting to deploy with an invalid owner address', () => {
+		it('reverts', async () => {
+			await assert.revert(
+				TestableTempOwnedFactory.new(ZERO_ADDRESS, timestamp + DAY, { from: deployerAccount }),
+				'Owner address cannot be 0'
+			);
 		});
-
-		await assert.revert(
-			contract.setTestValue(4, { from: tempOwner }),
-			'Owner EOL date already reached'
-		);
 	});
 
-	it('should not allow call owned method from another address', async () => {
-		const contract = await TesteableTempOwned.new(tempOwner, timestamp + DAY, {
-			from: deployerAccount,
+	describe('when attempting to deploy with an invalid EOL date', () => {
+		it('reverts', async () => {
+			await assert.revert(
+				TestableTempOwnedFactory.new(tempOwner, timestamp - DAY, { from: deployerAccount }),
+				'Invalid temp owner EOL'
+			);
 		});
-
-		await assert.revert(
-			contract.setTestValue(4, { from: account3 }),
-			'Only executable by temp owner'
-		);
 	});
 
-	describe('when reaching EOL', () => {
-		addSnapshotBeforeRestoreAfterEach();
+	describe('when deploying with a valid EOL date', () => {
+		let tempOwnerEOL;
 
-		it('allows to call a method to the tempOwner before EOL, then EOL is reached and blocks the execution', async () => {
-			const contract = await TesteableTempOwned.new(tempOwner, timestamp + DAY, {
+		before('deploy', async () => {
+			tempOwnerEOL = timestamp + DAY;
+
+			TestableTempOwned = await TestableTempOwnedFactory.new(tempOwner, tempOwnerEOL, {
 				from: deployerAccount,
 			});
+		});
 
-			assert.equal(await contract.testValue(), 0);
+		it('properly set tempOwner', async () => {
+			assert.equal(tempOwner, await TestableTempOwned.tempOwner());
+		});
 
-			await contract.setTestValue(1, { from: tempOwner });
+		it('properly set tempOwnerEOL', async () => {
+			assert.equal(tempOwnerEOL, await TestableTempOwned.tempOwnerEOL());
+		});
 
-			assert.equal(await contract.testValue(), 1);
+		describe('before reaching the EOL date', () => {
+			it('does not allow any address to change the value', async () => {
+				await assert.revert(
+					TestableTempOwned.setTestValue(42, { from: account3 }),
+					'Only executable by temp owner'
+				);
+			});
 
-			await fastForward(DAY * 2);
+			it('allows temp owner to change the value', async () => {
+				await TestableTempOwned.setTestValue(42, { from: tempOwner });
 
-			await assert.revert(
-				contract.setTestValue(3, { from: tempOwner }),
-				'Owner EOL date already reached'
-			);
+				assert.equal(42, await TestableTempOwned.testValue());
+			});
+		});
+
+		describe('after reaching the EOL date', () => {
+			before('fast forward', async () => {
+				await fastForward(DAY + 1);
+			});
+
+			it('does not allow temp owner to change the value', async () => {
+				await assert.revert(
+					TestableTempOwned.setTestValue(1337, { from: tempOwner }),
+					'Owner EOL date already reached'
+				);
+			});
 		});
 	});
 });
