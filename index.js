@@ -22,7 +22,16 @@ const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'local-ovm', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli', 'kovan-ovm-futures'];
+const networks = [
+	'local',
+	'local-ovm',
+	'kovan',
+	'rinkeby',
+	'ropsten',
+	'mainnet',
+	'goerli',
+	'kovan-ovm-futures',
+];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -451,16 +460,16 @@ const getFuturesMarkets = ({
 	const pathToFuturesMarketsList = deploymentPath
 		? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
 		: getPathToNetwork({
-			network,
-			path,
-			useOvm,
-			file: constants.FUTURES_MARKETS_FILENAME,
-		});
+				network,
+				path,
+				useOvm,
+				file: constants.FUTURES_MARKETS_FILENAME,
+		  });
 	if (!fs.existsSync(pathToFuturesMarketsList)) {
 		return [];
 	}
 	return JSON.parse(fs.readFileSync(pathToFuturesMarketsList));
-}
+};
 
 /**
  * Retrieve the list of staking rewards for the network - returning this names, stakingToken, and rewardToken
