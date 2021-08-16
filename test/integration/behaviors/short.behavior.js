@@ -58,7 +58,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 			await CollateralShortAsOwner.setInteractionDelay(interactionDelay);
 		});
 
-		describe('open, close, deposit, withdraw, draw a short', async () => {
+		describe('open, close, deposit, withdraw, and draw a short', async () => {
 			let tx, loan, loanId;
 
 			describe('open a loan, deposit and withdraw collateral, draw, and close the loan', () => {

@@ -298,7 +298,7 @@
 		"sources": [
 			"Synthetix",
 			"Issuer",
-			"Synthetix",
+			"FeePool",
 			"DebtCache",
 			"SynthsUSD",
 			"SynthsETH"
