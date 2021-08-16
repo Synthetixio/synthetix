@@ -26,23 +26,6 @@ jobs:
       - run: npx hardhat compile --optimizer --fail-oversize
       - run: rm -rf build # force a clean build
       - run: npx hardhat compile --use-ovm --optimizer --fail-oversize
-  job-fork-tests-no-update:
-    working_directory: ~/repo
-    docker:
-      - image: synthetixio/docker-node:14.16-focal
-        auth:
-          username: $DOCKERHUB_USERNAME
-          password: $DOCKERHUB_TOKEN
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run:
-          command: npm run fork:mainnet
-          background: true
-      - cmd-wait-for-port:
-          port: 8545
-      - run: npx hardhat test:integration:l1 --use-fork
   job-fork-tests:
     working_directory: ~/repo
     docker:
@@ -59,7 +42,15 @@ jobs:
           background: true
       - cmd-wait-for-port:
           port: 8545
-      - run: npx hardhat test:integration:l1 --compile --deploy --use-fork
+      - run:
+          name: Run integration tests on l1
+          command: |
+            NEW_CONTRACTS=$(node bin.js releases --no-released)
+            if [ -z "$NEW_CONTRACTS" ]; then
+              npx hardhat test:integration:l1 --use-fork
+            else
+              npx hardhat test:integration:l1 --compile --deploy --use-fork
+            fi;
   job-integration-tests:
     working_directory: ~/repo
     machine:
@@ -72,7 +63,7 @@ jobs:
           at: .
       - restore_cache:
           keys:
-            - v5-optimism-build-
+            - v6-optimism-build-
       - run:
           name: Build docker containers if necessary
           command: |
@@ -80,7 +71,7 @@ jobs:
               npx hardhat ops --fresh --build --build-ops
             fi;
       - save_cache:
-          key: v5-optimism-build-
+          key: v6-optimism-build-
           paths:
             - ./optimism
       - run:
@@ -356,9 +347,6 @@ workflows:
           requires:
             - job-prepare
       - job-fork-tests:
-          requires:
-            - job-prepare
-      - job-fork-tests-no-update:
           requires:
             - job-prepare
       - job-integration-tests:

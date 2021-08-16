@@ -14,18 +14,6 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		args: [account, account, addressOf(ReadProxyAddressResolver)],
 	});
 
-	await deployer.deployContract({
-		// name is EtherCollateral as it behaves as EtherCollateral in the address resolver
-		name: 'EtherCollateral',
-		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateral',
-		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
-	});
-	await deployer.deployContract({
-		name: 'EtherCollateralsUSD',
-		source: useOvm ? 'EmptyEtherCollateral' : 'EtherCollateralsUSD',
-		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver)],
-	});
-
 	let WETH_ADDRESS = (await getDeployParameter('WETH_ERC20_ADDRESSES'))[network];
 
 	if (network === 'local') {
@@ -37,8 +25,8 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 			name: 'WETH',
 			source: useOvm ? 'MockWETH' : 'WETH',
 		});
-		weth.options.skipResolver = true;
-		WETH_ADDRESS = weth.options.address;
+		weth.skipResolver = true;
+		WETH_ADDRESS = weth.address;
 	}
 
 	if (!WETH_ADDRESS) {
@@ -67,6 +55,11 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 	const collateralManagerDefaults = await getDeployParameter('COLLATERAL_MANAGER');
 
 	console.log(gray(`\n------ DEPLOY MULTI COLLATERAL ------\n`));
+
+	await deployer.deployContract({
+		name: 'CollateralUtil',
+		args: [addressOf(ReadProxyAddressResolver)],
+	});
 
 	const collateralManagerState = await deployer.deployContract({
 		name: 'CollateralManagerState',
@@ -127,7 +120,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		});
 
 		// this could be undefined in an env where MockToken is not listed in the config flags
-		RENBTC_ADDRESS = renBTC ? renBTC.options.address : undefined;
+		RENBTC_ADDRESS = renBTC ? renBTC.address : undefined;
 	}
 
 	await deployer.deployContract({
