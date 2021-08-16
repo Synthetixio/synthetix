@@ -135,6 +135,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     // This increments for each order; zero reflects an order that does not exist.
     uint internal _nextOrderId = 1;
 
+    // This increments for each position; zero reflects an order that does not exist.
+    uint internal _nextPositionId = 1;
+
     // Holds the revert message for each type of error.
     mapping(uint8 => string) internal _errorMessages;
 
@@ -1010,6 +1013,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
 
         Position storage position = positions[sender];
+        uint positionId = position.id;
 
         // Determine new margin, ensuring that the result is positive.
         (uint margin, Status status) = _realisedMargin(position, fundingIndex, price, marginDelta);
@@ -1018,8 +1022,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Update the debt correction.
         int positionSize = position.size;
         _applyDebtCorrection(
-            Position(margin, positionSize, price, fundingIndex),
-            Position(position.margin, positionSize, position.lastPrice, position.fundingIndex)
+            Position(positionId, margin, positionSize, price, fundingIndex),
+            Position(positionId, position.margin, positionSize, position.lastPrice, position.fundingIndex)
         );
 
         // Update the account's position with the realised margin.
@@ -1229,14 +1233,21 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // Update the margin, which will need to be realised
         Position storage position = positions[account];
+
         uint oldMargin = position.margin;
+
         int oldSize = position.size;
         position.margin = margin;
 
+        if (oldSize == 0) {
+            position.id = _nextPositionId;
+            _nextPositionId += 1;
+            emitPositionOpened(position.id, account);
+        }
         // Apply debt corrections
         _applyDebtCorrection(
-            Position(margin, newSize, price, fundingIndex),
-            Position(oldMargin, oldSize, position.lastPrice, position.fundingIndex)
+            Position(position.id, margin, newSize, price, fundingIndex),
+            Position(position.id, oldMargin, oldSize, position.lastPrice, position.fundingIndex)
         );
 
         // Update the aggregated market size and skew with the new order size
@@ -1256,6 +1267,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             delete position.lastPrice;
             delete position.fundingIndex;
             emitPositionModified(account, margin, 0, 0, 0);
+            emitPositionClosed(position.id, account);
         } else {
             position.size = newSize;
             position.lastPrice = price;
@@ -1286,13 +1298,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // Record updates to market size and debt.
         int positionSize = position.size;
+        uint positionId = position.id;
         marketSkew = marketSkew.sub(positionSize);
         marketSize = marketSize.sub(_abs(positionSize));
 
         // TODO: validate the correctness here (in particular of using the liquidation price)
         _applyDebtCorrection(
-            Position(0, 0, lPrice, fundingIndex),
-            Position(position.margin, positionSize, position.lastPrice, position.fundingIndex)
+            Position(positionId, 0, 0, lPrice, fundingIndex),
+            Position(positionId, position.margin, positionSize, position.lastPrice, position.fundingIndex)
         );
 
         // Close the position itself.
@@ -1302,6 +1315,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _manager().issueSUSD(liquidator, liquidationFee);
 
         emitPositionModified(account, 0, 0, 0, 0);
+        emitPositionClosed(positionId, account);
         emitPositionLiquidated(account, liquidator, positionSize, lPrice, liquidationFee);
     }
 
@@ -1385,6 +1399,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     function emitOrderCancelled(uint id, address account) internal {
         proxy._emit(abi.encode(), 3, SIG_ORDERCANCELLED, bytes32(id), addressToBytes32(account), 0);
+    }
+
+    event PositionOpened(uint indexed id, address indexed account);
+    bytes32 internal constant SIG_POSITIONOPENED = keccak256("PositionOpened(uint,address)");
+
+    function emitPositionOpened(uint id, address account) internal {
+        proxy._emit(abi.encode(), 3, SIG_POSITIONOPENED, bytes32(id), addressToBytes32(account), 0);
+    }
+
+    event PositionClosed(uint indexed id, address indexed account);
+    bytes32 internal constant SIG_POSITIONCLOSED = keccak256("PositionClosed(uint,address)");
+
+    function emitPositionClosed(uint id, address account) internal {
+        proxy._emit(abi.encode(), 3, SIG_POSITIONCLOSED, bytes32(id), addressToBytes32(account), 0);
     }
 
     event PositionModified(address indexed account, uint margin, int size, uint lastPrice, uint fundingIndex);
