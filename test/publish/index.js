@@ -36,6 +36,8 @@ const {
 		DEPLOYMENT_FILENAME,
 		SYNTHS_FILENAME,
 		FEEDS_FILENAME,
+		OVM_GAS_PRICE_GWEI,
+		BUILD_FOLDER,
 	},
 	defaults: {
 		WAITING_PERIOD_SECS,
@@ -1585,6 +1587,246 @@ describe('publish scripts', () => {
 									`${contract}.resolver is not the ReadProxyAddressResolver`
 								);
 							}
+						});
+					});
+				});
+			});
+		});
+	});
+});
+
+describe.skip('publish scripts (l2)', async () => {
+	const { buildPath, network, useOvm } = {
+		network: 'local',
+		useOvm: true,
+		buildPath: path.join(__dirname, '..', '..', `${BUILD_FOLDER}-ovm`),
+	};
+
+	const { getSource, getTarget, /* getSynths, */ getPathToNetwork, getFuturesMarkets } = wrap({
+		network,
+		useOvm,
+		fs,
+		path,
+	});
+
+	const deploymentPath = getPathToNetwork();
+
+	// track these files to revert them later on
+	const rewardsJSONPath = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
+	const rewardsJSON = fs.readFileSync(rewardsJSONPath);
+	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
+	const synthsJSON = fs.readFileSync(synthsJSONPath);
+	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
+	const configJSON = fs.readFileSync(configJSONPath);
+	const deploymentJSONPath = path.join(deploymentPath, DEPLOYMENT_FILENAME);
+	const feedsJSONPath = path.join(deploymentPath, FEEDS_FILENAME);
+	const feedsJSON = fs.readFileSync(feedsJSONPath);
+
+	const logfilePath = path.join(__dirname, 'test.l2.log');
+	let gasLimit;
+	let gasPrice;
+	let accounts;
+	// let sUSD;
+	// let sBTC;
+	// let sETH;
+	let provider;
+	// let overrides;
+
+	const resetConfigAndSynthFiles = () => {
+		// restore the synths and config files for this env (cause removal updated it)
+		fs.writeFileSync(synthsJSONPath, synthsJSON);
+		fs.writeFileSync(rewardsJSONPath, rewardsJSON);
+		fs.writeFileSync(configJSONPath, configJSON);
+		fs.writeFileSync(feedsJSONPath, feedsJSON);
+
+		// and reset the deployment.json to signify new deploy
+		fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
+	};
+
+	// const callMethodWithRetry = async method => {
+	// 	let response;
+
+	// 	try {
+	// 		response = await method;
+	// 	} catch (err) {
+	// 		console.log('Error detected looking up value. Ignoring and trying again.', err);
+	// 		// retry
+	// 		response = await method;
+	// 	}
+
+	// 	return limitPromise(() => response);
+	// };
+
+	before(() => {
+		fs.writeFileSync(logfilePath, ''); // reset log file
+		fs.writeFileSync(deploymentJSONPath, JSON.stringify({ targets: {}, sources: {} }));
+	});
+
+	beforeEach(async () => {
+		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
+
+		provider = new ethers.providers.JsonRpcProvider({
+			url: 'http://localhost:8545',
+		});
+
+		const { isCompileRequired } = testUtils();
+
+		// load accounts used by local EVM
+		const wallets = loadLocalWallets({ provider });
+
+		accounts = {
+			deployer: wallets[0],
+			first: wallets[1],
+			second: wallets[2],
+		};
+
+		if (isCompileRequired() && !process.env.SKIP_BUILD) {
+			console.log('Found source file modified after build. Rebuilding...');
+
+			await commands.build({ showContractSize: true, testHelpers: true, useOvm });
+		} else {
+			console.log('Skipping build as everything up to date');
+		}
+
+		// [sUSD, sBTC, sETH] = ['sUSD', 'sBTC', 'sETH'].map(toBytes32);
+
+		gasPrice = ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei');
+		provider.getGasPrice = async () => gasPrice;
+		gasLimit = undefined;
+
+		// overrides = {
+		// 	gasLimit,
+		// 	gasPrice,
+		// };
+	});
+
+	afterEach(resetConfigAndSynthFiles);
+
+	describe('integrated actions test', () => {
+		describe('when deployed', () => {
+			// let rewards;
+			let sources;
+			let targets;
+			// let synths;
+			// let Synthetix;
+			// let timestamp;
+			// let sUSDContract;
+			// let sBTCContract;
+			// let sETHContract;
+			// let FeePool;
+			// let DebtCache;
+			// let Exchanger;
+			// let Issuer;
+			// let SystemSettings;
+			// let Liquidations;
+			// let ExchangeRates;
+			let FuturesMarketManager;
+			const aggregators = {};
+
+			const getContract = ({ target, source }) =>
+				new ethers.Contract(
+					targets[target].address,
+					(sources[source] || sources[targets[target].source]).abi,
+					accounts.deployer
+				);
+
+			const createMockAggregator = async () => {
+				// get last build
+				const { compiled } = loadCompiledFiles({ buildPath });
+				const {
+					abi,
+					evm: {
+						bytecode: { object: bytecode },
+					},
+				} = compiled['MockAggregatorV2V3'];
+				const MockAggregatorFactory = new ethers.ContractFactory(abi, bytecode, accounts.deployer);
+				const MockAggregator = await MockAggregatorFactory.deploy({ gasLimit, gasPrice });
+
+				const tx = await MockAggregator.setDecimals('8', {
+					gasLimit,
+					gasPrice,
+				});
+				await tx.wait();
+
+				return MockAggregator;
+			};
+
+			// const setAggregatorAnswer = async ({ asset, rate }) => {
+			// 	let tx;
+
+			// 	tx = await aggregators[asset].setLatestAnswer(
+			// 		(rate * 1e8).toString(),
+			// 		timestamp,
+			// 		overrides
+			// 	);
+			// 	await tx.wait();
+
+			// 	// Cache the debt to make sure nothing's wrong/stale after the rate update.
+			// 	tx = await DebtCache.takeDebtSnapshot(overrides);
+			// };
+
+			beforeEach(async () => {
+				// timestamp = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+				// deploy a mock aggregator for all supported rates
+				const feeds = JSON.parse(feedsJSON);
+				for (const feedEntry of Object.values(feeds)) {
+					const aggregator = await createMockAggregator();
+					aggregators[feedEntry.asset] = aggregator;
+					feedEntry.feed = aggregator.address;
+				}
+				fs.writeFileSync(feedsJSONPath, JSON.stringify(feeds));
+
+				await commands.deploy({
+					concurrency: 1,
+					network,
+					freshDeploy: true,
+					useOvm,
+					yes: true,
+					privateKey: accounts.deployer.privateKey,
+					ignoreCustomParameters: true,
+					addNewSynths: useOvm,
+				});
+
+				sources = getSource();
+				targets = getTarget();
+				// synths = getSynths().filter(({ name }) => name !== 'sUSD');
+
+				// Synthetix = getContract({
+				// 	target: useOvm ? 'ProxySynthetix' : 'ProxyERC20',
+				// 	source: 'Synthetix',
+				// });
+				// FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
+				// Exchanger = getContract({ target: 'Exchanger' });
+				// DebtCache = getContract({ target: 'DebtCache' });
+
+				// Issuer = getContract({ target: 'Issuer' });
+
+				// sUSDContract = getContract({ target: 'ProxyERC20sUSD', source: 'Synth' });
+
+				// sBTCContract = getContract({ target: 'ProxysBTC', source: 'Synth' });
+				// sETHContract = getContract({ target: 'ProxysETH', source: 'Synth' });
+				// SystemSettings = getContract({ target: 'SystemSettings' });
+
+				// Liquidations = getContract({ target: 'Liquidations' });
+
+				// ExchangeRates = getContract({ target: 'ExchangeRates' });
+				FuturesMarketManager = getContract({ target: 'FuturesMarketManager' });
+			});
+
+			describe('futures markets', async () => {
+				const markets = getFuturesMarkets();
+
+				it(`The number of available futures markets in Synthetix matches the number of futures markets in the JSON file: ${markets.length}`, async () => {
+					const count = await FuturesMarketManager.numMarkets();
+					assert.strictEqual(markets.length, count.toNumber());
+				});
+
+				describe('futures markets added to FuturesMarketManager', async () => {
+					markets.forEach(({ asset }) => {
+						it(asset, async () => {
+							const foundMarket = await FuturesMarketManager.marketForAsset(toBytes32(asset));
+							assert.strictEqual(foundMarket, targets[`FuturesMarket${asset.slice(1)}`].address);
 						});
 					});
 				});
