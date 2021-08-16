@@ -19,6 +19,7 @@ const {
 		SHORTING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
 		FEEDS_FILENAME,
+		FUTURES_MARKETS_FILENAME,
 	},
 	wrap,
 } = require('../..');
@@ -89,6 +90,10 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 	const paramsFile = path.join(deploymentPath, PARAMS_FILENAME);
 	const params = JSON.parse(fs.readFileSync(paramsFile));
 
+	console.log(gray(`Loading the list of futures markets on ${network.toUpperCase()}...`));
+	const futuresMarketsFile = path.join(deploymentPath, FUTURES_MARKETS_FILENAME);
+	const futuresMarkets = JSON.parse(fs.readFileSync(futuresMarketsFile));
+
 	const versionsFile = path.join(deploymentPath, VERSIONS_FILENAME);
 	const versions = network !== 'local' ? getVersions({ network, deploymentPath }) : {};
 
@@ -123,6 +128,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 		synthsFile,
 		stakingRewards,
 		stakingRewardsFile,
+		futuresMarkets,
+		futuresMarketsFile,
 		deployment,
 		deploymentFile,
 		ownerActions,

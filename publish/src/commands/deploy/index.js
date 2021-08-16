@@ -330,6 +330,9 @@ const deploy = async ({
 		deployer,
 		runStep,
 		useOvm,
+		network,
+		deploymentPath,
+		loadAndCheckRequiredSources,
 	});
 
 	await deployDappUtils({
@@ -424,10 +427,12 @@ const deploy = async ({
 	await configureFutures({
 		addressOf,
 		deployer,
+		loadAndCheckRequiredSources,
 		runStep,
 		getDeployParameter,
 		useOvm,
 		freshDeploy,
+		deploymentPath,
 		network,
 	});
 

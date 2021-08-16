@@ -112,10 +112,10 @@ contract('FuturesMarketData', accounts => {
 		await sUSD.issue(trader3, traderInitialBalance);
 
 		// The traders take positions on market
-		await futuresMarket.modifyMargin(toUnit('1000'), { from: trader1 });
+		await futuresMarket.transferMargin(toUnit('1000'), { from: trader1 });
 		await futuresMarket.submitOrder(toUnit('5'), { from: trader1 });
 
-		await futuresMarket.modifyMargin(toUnit('750'), { from: trader2 });
+		await futuresMarket.transferMargin(toUnit('750'), { from: trader2 });
 		await futuresMarket.submitOrder(toUnit('-10'), { from: trader2 });
 
 		await exchangeRates.updateRates([baseAsset], [toUnit('100')], await currentTime(), {
@@ -124,12 +124,12 @@ contract('FuturesMarketData', accounts => {
 		await futuresMarket.confirmOrder(trader1);
 		await futuresMarket.confirmOrder(trader2);
 
-		await futuresMarket.modifyMargin(toUnit('4000'), { from: trader3 });
+		await futuresMarket.transferMargin(toUnit('4000'), { from: trader3 });
 		await futuresMarket.submitOrder(toUnit('1.25'), { from: trader3 });
 
 		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForAsset(newAsset));
 
-		await sethMarket.modifyMargin(toUnit('3000'), { from: trader3 });
+		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
 		await sethMarket.submitOrder(toUnit('4'), { from: trader3 });
 		await exchangeRates.updateRates([newAsset], [toUnit('999')], await currentTime(), {
 			from: oracle,
