@@ -3,14 +3,14 @@ pragma solidity ^0.5.16;
 interface IFuturesMarket {
     /* ========== TYPES ========== */
 
-    enum Error {
+    enum Status {
         Ok,
-        NotPending,
-        NoPriceUpdate,
+        NoOrderExists,
+        AwaitingPriceUpdate,
         PriceOutOfBounds,
         InvalidPrice,
-        InsolventPosition,
-        NotInsolvent,
+        CanLiquidate,
+        CannotLiquidate,
         MaxMarketSizeExceeded,
         MaxLeverageExceeded,
         InsufficientMargin,
@@ -115,7 +115,7 @@ interface IFuturesMarket {
 
     function orderSize(address account) external view returns (int size, bool invalid);
 
-    function orderStatus(address account) external view returns (Error);
+    function orderStatus(address account) external view returns (Status);
 
     function canConfirmOrder(address account) external view returns (bool);
 
