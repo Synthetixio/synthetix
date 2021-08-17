@@ -173,7 +173,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _errorMessages[uint8(Status.MaxLeverageExceeded)] = "Max leverage exceeded";
         _errorMessages[uint8(Status.InsufficientMargin)] = "Insufficient margin";
         _errorMessages[uint8(Status.NotPermitted)] = "Not permitted by this address";
-        _errorMessages[uint8(Status.AlreadyClosedPosition)] = "Cannot close an already-closed position"
+        _errorMessages[uint8(Status.AlreadyClosedPosition)] = "Cannot close an already-closed position";
     }
 
     /* ========== VIEWS ========== */

@@ -14,7 +14,8 @@ interface IFuturesMarket {
         MaxMarketSizeExceeded,
         MaxLeverageExceeded,
         InsufficientMargin,
-        NotPermitted
+        NotPermitted,
+        AlreadyClosedPosition
     }
 
     struct Order {
