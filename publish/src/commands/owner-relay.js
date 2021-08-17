@@ -35,13 +35,16 @@ const ownerRelay = async ({
 	l2ProviderUrl,
 	l1PrivateKey,
 	l2PrivateKey,
-	newOwner,
+	safeOwner,
 	contracts,
 	gasPrice,
 	gasLimit,
 	isContract,
 	yes,
 }) => {
+	/// ////////////////////////////////////
+	// SETUP / SANITY CHECK
+	/// ////////////////////////////////////
 	ensureNetwork(l1Network);
 	l1DeploymentPath = l1DeploymentPath || getDeploymentPathForNetwork({ network: l1Network });
 	l2DeploymentPath = l2DeploymentPath || getDeploymentPathForNetwork({ network: l2Network });
@@ -62,12 +65,22 @@ const ownerRelay = async ({
 	const l2Provider = new ethers.providers.JsonRpcProvider(l2ProviderUrl);
 
 	const getL1Contract = contract => {
+		if (!l1Deployment.targets[contract]) {
+			console.error(red(`Contract ${contract} not found in deployment targets L1!`));
+			process.exit(1);
+		}
+
 		const { address, source } = l1Deployment.targets[contract];
 		const { abi } = l1Deployment.sources[source];
 		return new ethers.Contract(address, abi, l1Wallet);
 	};
 
 	const getL2Contract = contract => {
+		if (!l2Deployment.targets[contract]) {
+			console.error(red(`Contract ${contract} not found in deployment targets L2!`));
+			process.exit(1);
+		}
+
 		const { address, source } = l2Deployment.targets[contract];
 		const { abi } = l2Deployment.sources[source];
 		return new ethers.Contract(address, abi, l2Provider);
@@ -107,6 +120,9 @@ const ownerRelay = async ({
 	const OwnerRelayOnEthereum = getL1Contract('OwnerRelayOnEthereum');
 	const OwnerRelayOnOptimism = getL2Contract('OwnerRelayOnOptimism');
 
+	/// ////////////////////////////////////
+	// FILTER TARGET CONTRACTS
+	/// ////////////////////////////////////
 	const contractsToAccept = [];
 	const relayAddress = OwnerRelayOnOptimism.address();
 	for (const contract of contracts) {
@@ -164,19 +180,28 @@ const ownerRelay = async ({
 	let currentSafeNonce;
 	let stagedTransactions;
 
-	const getBatchRelayData = ({ batchData }) => {
+	/// ////////////////////////////////////
+	// DO THE ACTION
+	/// ////////////////////////////////////
+	const getBatchCallData = contractsCallData => {
 		const targets = [];
 		const datas = [];
-		for (const data of batchData) {
-			const { address, calldata } = data;
+		for (const contractCallData of contractsCallData) {
+			const { address, calldata } = contractCallData;
 			targets.push(address);
 			datas.push(calldata);
 		}
-		return OwnerRelayOnOptimism.interface.encodeFunctionData('initiateRelayBatch', [
+		return {
 			targets,
 			datas,
-		]);
+			batchData: OwnerRelayOnEthereum.interface.encodeFunctionData('initiateRelayBatch', [
+				targets,
+				datas,
+			]),
+		};
 	};
+
+	const contractsToAcceptCalldata = getBatchCallData(contractsToAccept);
 
 	if (!isContract) {
 		const overrides = {
@@ -184,19 +209,17 @@ const ownerRelay = async ({
 			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		};
 
-		for (const contractData of contractsToAccept) {
-			const { contract, address, calldata } = contractData;
-			console.log(yellow(`Accepting ownership on ${contract}...`));
-
-			const tx = await OwnerRelayOnEthereum.initiateRelay(address, calldata, overrides);
-			await tx.wait();
-		}
+		const tx = await OwnerRelayOnEthereum.initiateRelayBatch(
+			contractsToAcceptCalldata.address,
+			contractsToAcceptCalldata.datas,
+			overrides
+		);
+		await tx.wait();
 	} else {
 		const target = OwnerRelayOnEthereum.address();
-		const data = getBatchRelayData(contractsToAccept);
 		// Using a relay owned by teh DAO. We need to stage the transaction in Gnosis Safe.
 		// new owner should be gnosis safe proxy address
-		protocolDaoContract = getSafeInstance({ provider: l1Provider, safeAddress: newOwner });
+		protocolDaoContract = getSafeInstance({ provider: l1Provider, safeAddress: safeOwner });
 
 		// get protocolDAO nonce
 		currentSafeNonce = await getSafeNonce(protocolDaoContract);
@@ -217,7 +240,7 @@ const ownerRelay = async ({
 		const existingTx = checkExistingPendingTx({
 			stagedTransactions,
 			target,
-			encodedData: data,
+			encodedData: contractsToAcceptCalldata.batchData,
 			currentSafeNonce,
 		});
 
@@ -228,7 +251,7 @@ const ownerRelay = async ({
 		try {
 			const { txHash, newNonce } = await getNewTransactionHash({
 				safeContract: protocolDaoContract,
-				data,
+				data: contractsToAcceptCalldata.batchData,
 				to: target,
 				sender: l1Wallet.address,
 				network: l1Network,
@@ -246,7 +269,7 @@ const ownerRelay = async ({
 			await saveTransactionToApi({
 				safeContract: protocolDaoContract,
 				network: l1Network,
-				data,
+				data: contractsToAcceptCalldata.batchData,
 				nonce: newNonce,
 				to: target,
 				sender: l1Wallet.address,
@@ -289,7 +312,8 @@ module.exports = {
 			.option(
 				'--l2-network <value>',
 				'The network where are the contracts we want to set the owner to.',
-				x => x.toLowerCase()
+				x => x.toLowerCase(),
+				'kovan'
 			)
 			.option('--l1-provider-url <value>', 'Ethereum network provider URL.')
 			.option('--l2-provider-url <value>', 'Optimism network provider URL.')
@@ -298,8 +322,8 @@ module.exports = {
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
 			.option(
-				'-o, --new-owner <value>',
-				'The address of the new owner (please include the 0x prefix)'
+				'--safe-owner <value>',
+				'The address of the safe owner (please include the 0x prefix)'
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('--is-contract', 'Wether the bridge owner is a contract wallet or an EOA', false)
