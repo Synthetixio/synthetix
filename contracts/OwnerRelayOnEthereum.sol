@@ -48,7 +48,8 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
         bytes calldata data,
         uint32 crossDomainGasLimit // If zero, uses default value in SystemSettings
     ) external onlyOwner {
-        bytes memory messageData = abi.encodeWithSelector(IOwnerRelayOnOptimism(0).finalizeRelay.selector, target, data);
+        IOwnerRelayOnOptimism ownerRelayOnOptimism;
+        bytes memory messageData = abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelay.selector, target, data);
 
         // Use specified crossDomainGasLimit if specified value is not zero.
         // otherwise use the default in SystemSettings.
