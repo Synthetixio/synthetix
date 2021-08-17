@@ -1047,7 +1047,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader3, toUnit('1000'), toBN('0'), toBN('0'), toBN('0')],
+					args: [toBN('1'), trader3, toUnit('1000'), toBN('0'), toBN('0'), toBN('0')],
 					log: decodedLogs[4],
 				});
 
@@ -1061,7 +1061,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader3, toUnit('1000'), toBN('0'), toBN('0'), toBN('0')],
+					args: [toBN('1'), trader3, toUnit('1000'), toBN('0'), toBN('0'), toBN('0')],
 					log: decodedLogs[1],
 				});
 
@@ -1089,7 +1089,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader3, toUnit('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [toBN('1'), trader3, toUnit('0'), toBN('0'), toBN('0'), toBN('0')],
 					log: decodedLogs[3],
 				});
 			});
@@ -1693,7 +1693,7 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [trader, margin.sub(fee), size, price, toBN(2)],
+				args: [id, trader, margin.sub(fee), size, price, toBN(2)],
 				log: decodedLogs[2],
 			});
 			decodedEventEqual({
@@ -1961,6 +1961,7 @@ contract('FuturesMarket', accounts => {
 
 			await futuresMarket.closePosition({ from: trader });
 			const orderId = (await futuresMarket.orders(trader))[0];
+			const positionId = (await futuresMarket.positions(trader))[0];
 
 			await setPrice(baseAsset, toUnit('200'));
 			const tx = await futuresMarket.confirmOrder(trader);
@@ -1975,7 +1976,7 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [trader, toUnit('2000'), toBN('0'), toBN('0'), toBN('0')],
+				args: [positionId, trader, toUnit('2000'), toBN('0'), toBN('0'), toBN('0')],
 				log: decodedLogs[1],
 				bnCloseVariance: toUnit('5'),
 			});
@@ -3033,13 +3034,14 @@ contract('FuturesMarket', accounts => {
 				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit(0), toUnit('0.01'));
 			});
 
-			it('Can liquidate a position with less than the liquidation fee margin remaining (long case)', async () => {
+			it.only('Can liquidate a position with less than the liquidation fee margin remaining (long case)', async () => {
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 				const price = (await futuresMarket.liquidationPrice(trader, true)).price;
 				assert.bnClose(price, toUnit('226.25'), toUnit('0.01'));
 				await setPrice(baseAsset, price);
 
-				const positionSize = (await futuresMarket.positions(trader)).size;
+				const { size: positionSize, id: positionId } = await futuresMarket.positions(trader);
+				// const positionSize = (await futuresMarket.positions(trader)).size;
 
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 
@@ -3066,13 +3068,13 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader, toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [positionId, trader, toBN('0'), toBN('0'), toBN('0'), toBN('0')],
 					log: decodedLogs[2],
 				});
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader, noBalance, positionSize, price, liquidationFee],
+					args: [positionId, trader, noBalance, positionSize, price, liquidationFee],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
