@@ -40,6 +40,12 @@ contract OwnerRelayOnOptimism is MixinResolver {
 
     /* ========== EXTERNAL ========== */
 
+    function acceptOwnershipOnBatch(address[] calldata targets) external {
+        for (uint i = 0; i < targets.length; i++) {
+            IOwned(targets[i]).acceptOwnership();
+        }
+    }
+
     function acceptOwnershipOn(address target) external {
         IOwned(target).acceptOwnership();
     }
