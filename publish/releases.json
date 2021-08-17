@@ -278,7 +278,7 @@
 	},
 	{
 		"name": "Dubhe (Optimism)",
-		"released": false,
+		"released": true,
 		"version": {
 			"major": 2,
 			"minor": 47
@@ -292,18 +292,17 @@
 		"released": false,
 		"version": {
 			"major": 2,
-			"minor": 47
+			"minor": 48
 		},
-		"ovm": true,
 		"sources": [
-			"Synthetix",
-			"Issuer",
-			"FeePool",
 			"DebtCache",
-			"SynthsUSD",
-			"SynthsETH"
+			"FeePool",
+			"Issuer",
+			"Synthetix",
+			"SynthsETH",
+			"SynthsUSD"
 		],
-		"sips": [142]
+		"sips": [142, 145, 170]
 	},
 	{
 		"name": "Wezen",
