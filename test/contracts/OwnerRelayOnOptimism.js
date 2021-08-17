@@ -3,10 +3,15 @@ const chalk = require('chalk');
 const { assert } = require('./common');
 const { smockit } = require('@eth-optimism/smock');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
+const { currentTime, fastForward } = require('../utils')();
 
 contract('OwnerRelayOnOptimism', () => {
+	const DAY = 60 * 60 * 24;
+
 	// Signers
 	let owner;
+	let temporaryOwner;
+	let someone;
 
 	// Real contracts
 	let OwnerRelayOnOptimism;
@@ -16,9 +21,14 @@ contract('OwnerRelayOnOptimism', () => {
 
 	// Other mocked stuff
 	const mockedOwnerRelayOnEthereumAddress = ethers.Wallet.createRandom().address;
+	const mockedContractAddressOnL2 = ethers.Wallet.createRandom().address;
+	const mockedRelayData = '0xdeadbeef';
+
+	let ownershipDuration;
+	let expectedExpiry;
 
 	before('initialize signers', async () => {
-		[owner] = await ethers.getSigners();
+		[owner, temporaryOwner, someone] = await ethers.getSigners();
 	});
 
 	before('mock other contracts used by OwnerRelayOnOptimism', async () => {
@@ -46,11 +56,19 @@ contract('OwnerRelayOnOptimism', () => {
 	});
 
 	before('instantiate the contract', async () => {
+		ownershipDuration = DAY;
+
+		expectedExpiry = (await currentTime()) + ownershipDuration;
+
 		const OwnerRelayOnOptimismFactory = await ethers.getContractFactory(
 			'OwnerRelayOnOptimism',
 			owner
 		);
-		OwnerRelayOnOptimism = await OwnerRelayOnOptimismFactory.deploy(MockedAddressResolver.address);
+		OwnerRelayOnOptimism = await OwnerRelayOnOptimismFactory.deploy(
+			MockedAddressResolver.address,
+			temporaryOwner.address,
+			ownershipDuration
+		);
 
 		const tx = await OwnerRelayOnOptimism.rebuildCache();
 		await tx.wait();
@@ -66,11 +84,23 @@ contract('OwnerRelayOnOptimism', () => {
 		);
 	});
 
+	it('shows that temp owner is set correctly', async () => {
+		assert.equal(temporaryOwner.address, await OwnerRelayOnOptimism.temporaryOwner());
+	});
+
+	it('shows that the temp owner duration is set correctly', async () => {
+		assert.bnClose(
+			expectedExpiry.toString(),
+			(await OwnerRelayOnOptimism.expiryTime()).toString(),
+			'10'
+		);
+	});
+
 	it('shows that only the expected functions are mutative', async () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: artifacts.require('OwnerRelayOnOptimism').abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['finalizeRelay', 'acceptOwnershipOn'],
+			expected: ['finalizeRelay', 'directRelay', 'acceptOwnershipOn', 'acceptOwnershipOnBatch'],
 		});
 	});
 
@@ -78,8 +108,8 @@ contract('OwnerRelayOnOptimism', () => {
 		it('reverts with the expected error', async () => {
 			await assert.revert(
 				OwnerRelayOnOptimism.connect(owner).finalizeRelay(
-					'0x0000000000000000000000000000000000000001', // Any address
-					'0xdeadbeef' // Any data
+					mockedContractAddressOnL2, // Any address
+					mockedRelayData // Any data
 				),
 				'Sender is not the messenger'
 			);
@@ -87,17 +117,46 @@ contract('OwnerRelayOnOptimism', () => {
 	});
 
 	describe('when accepting ownership by calling OwnerRelayOnOptimism directly', () => {
-		before('mock the target contract acceptOwnership() function', async () => {
-			MockedOwnedL2.smocked.acceptOwnership.will.return();
+		describe('when calling acceptOwnershipOn', () => {
+			before('mock the target contract acceptOwnership() function', async () => {
+				MockedOwnedL2.smocked.acceptOwnership.will.return();
+			});
+
+			before('call the target acceptOwnership() function via OwnerRelayOnOptimism', async () => {
+				const tx = await OwnerRelayOnOptimism.connect(owner).acceptOwnershipOn(
+					MockedOwnedL2.address
+				);
+				await tx.wait();
+			});
+
+			it('called the function on the target contract', async () => {
+				assert.equal(MockedOwnedL2.smocked.acceptOwnership.calls.length, 1);
+			});
 		});
 
-		before('call the target acceptOwnership() function via OwnerRelayOnOptimism', async () => {
-			const tx = await OwnerRelayOnOptimism.connect(owner).acceptOwnershipOn(MockedOwnedL2.address);
-			await tx.wait();
-		});
+		describe('when calling acceptOwnershipOnBatch', () => {
+			let MockedOwnedL2Alt1, MockedOwnedL2Alt2;
 
-		it('called the function on the target contract', async () => {
-			assert.equal(MockedOwnedL2.smocked.acceptOwnership.calls.length, 1);
+			before('mock a couple more contracts', async () => {
+				MockedOwnedL2Alt1 = await smockit(artifacts.require('Owned').abi, ethers.provider);
+				MockedOwnedL2Alt2 = await smockit(artifacts.require('Owned').abi, ethers.provider);
+			});
+
+			before(
+				'call the target acceptOwnership() function via OwnerRelayOnOptimism batched',
+				async () => {
+					const tx = await OwnerRelayOnOptimism.connect(owner).acceptOwnershipOnBatch([
+						MockedOwnedL2Alt1.address,
+						MockedOwnedL2Alt2.address,
+					]);
+					await tx.wait();
+				}
+			);
+
+			it('called the function on the target contracts', async () => {
+				assert.equal(MockedOwnedL2Alt1.smocked.acceptOwnership.calls.length, 1);
+				assert.equal(MockedOwnedL2Alt2.smocked.acceptOwnership.calls.length, 1);
+			});
 		});
 	});
 
@@ -113,8 +172,8 @@ contract('OwnerRelayOnOptimism', () => {
 			// The data doesn't matter since we mock the function below,
 			// and this data will be ignored.
 			const tx = await MockedMessenger.connect(owner).sendMessage(
-				'0x0000000000000000000000000000000000000001',
-				'0xdeadbeef',
+				mockedContractAddressOnL2,
+				mockedRelayData,
 				42
 			);
 			await tx.wait();
@@ -185,11 +244,60 @@ contract('OwnerRelayOnOptimism', () => {
 				assert.equal(relayedMessageData, OwnerRelayOnOptimism.address);
 			});
 
-			it('emited a RelayFinalized event', async () => {
-				const event = relayReceipt.events.find(e => e.event === 'RelayFinalized');
+			it('emited a CallRelayed event', async () => {
+				const event = relayReceipt.events.find(e => e.event === 'CallRelayed');
 
 				assert.equal(event.args.target, MockedOwnedL2.address);
 				assert.equal(event.args.data, nominateNewOwnerCalldata);
+			});
+		});
+	});
+
+	describe('when calling directRelay to bypass the L1 to L2 relay', () => {
+		it('should not allow any address to call direct relay', async () => {
+			await assert.revert(
+				OwnerRelayOnOptimism.connect(someone).directRelay(
+					mockedContractAddressOnL2,
+					mockedRelayData,
+					{ gasPrice: 0 }
+				),
+				'Only executable by temp owner'
+			);
+		});
+
+		describe('before ownershipDuration expires', () => {
+			let relayReceipt;
+
+			it('should allow the temp owner to call direct relay', async () => {
+				const tx = await OwnerRelayOnOptimism.connect(
+					temporaryOwner
+				).directRelay(mockedContractAddressOnL2, mockedRelayData, { gasPrice: 0 });
+
+				relayReceipt = await tx.wait();
+			});
+
+			it('emited a CallRelayed event', async () => {
+				const event = relayReceipt.events.find(e => e.event === 'CallRelayed');
+
+				assert.equal(event.args.target, mockedContractAddressOnL2);
+				assert.equal(event.args.data, mockedRelayData);
+			});
+		});
+
+		describe('after ownershipDuration expires', () => {
+			before('fast forward', async () => {
+				await fastForward(DAY);
+			});
+
+			it('should not allow the temp owner to call direct relay', async () => {
+				await assert.revert(
+					OwnerRelayOnOptimism.connect(temporaryOwner).directRelay(
+						mockedContractAddressOnL2,
+						mockedRelayData,
+						{ gasPrice: 0 }
+					),
+					'Ownership expired'
+				);
 			});
 		});
 	});

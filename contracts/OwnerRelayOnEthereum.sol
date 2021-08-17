@@ -23,11 +23,11 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
 
     /* ========== INTERNALS ============ */
 
-    function messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
+    function _messenger() private view returns (iAbs_BaseCrossDomainMessenger) {
         return iAbs_BaseCrossDomainMessenger(requireAndGetAddress(CONTRACT_EXT_MESSENGER));
     }
 
-    function ownerRelayOnOptimism() private view returns (address) {
+    function _ownerRelayOnOptimism() private view returns (address) {
         return requireAndGetAddress(CONTRACT_OVM_OWNER_RELAY_ON_OPTIMISM);
     }
 
@@ -57,7 +57,7 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
                 ? crossDomainGasLimit
                 : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
 
-        messenger().sendMessage(ownerRelayOnOptimism(), messageData, xGasLimit);
+        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, xGasLimit);
 
         emit RelayInitiated(target, data);
     }

@@ -2,6 +2,10 @@ const { assert } = require('../../contracts/common');
 const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL2 } = require('../utils/optimism');
 
+const {
+	defaults: { TEMP_OWNER_DEFAULT_DURATION },
+} = require('../../..');
+
 describe('owner relay integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
@@ -10,16 +14,39 @@ describe('owner relay integration tests (L1, L2)', () => {
 	let ownerL1, ownerL2;
 
 	// Contracts
-	let OwnerRelayOnEthereum, OwnerRelayOnOptimism, SystemSettingsL2;
+	let OwnerRelayOnEthereum,
+		OwnerRelayOnOptimism,
+		SystemSettingsL2,
+		AddressResolverL1,
+		AddressResolverL2;
 
 	let relayReceipt;
 
 	before('target contracts and users', () => {
-		({ OwnerRelayOnEthereum } = ctx.l1.contracts);
-		({ OwnerRelayOnOptimism, SystemSettings: SystemSettingsL2 } = ctx.l2.contracts);
+		({ OwnerRelayOnEthereum, ReadProxyAddressResolver: AddressResolverL1 } = ctx.l1.contracts);
+		({
+			OwnerRelayOnOptimism,
+			SystemSettings: SystemSettingsL2,
+			ReadProxyAddressResolver: AddressResolverL2,
+		} = ctx.l2.contracts);
 
 		ownerL1 = ctx.l1.users.owner;
 		ownerL2 = ctx.l2.users.owner;
+	});
+
+	it('shows that the L1 relay was deployed with the correct parameters', async () => {
+		assert.equal(AddressResolverL1.address, await OwnerRelayOnEthereum.resolver());
+	});
+
+	it('shows that the L2 relay was deployed with the correct parameters', async () => {
+		assert.equal(AddressResolverL2.address, await OwnerRelayOnOptimism.resolver());
+		assert.equal(ownerL2.address, await OwnerRelayOnOptimism.temporaryOwner());
+
+		// Accept results within an hour
+		const expectedExpiry =
+			(await ctx.l1.provider.getBlock()).timestamp + TEMP_OWNER_DEFAULT_DURATION;
+		const expiryTime = (await OwnerRelayOnOptimism.expiryTime()).toString();
+		assert.bnClose(expectedExpiry, expiryTime, '3600');
 	});
 
 	describe('when SystemSettings on L2 is owned by an EOA', () => {
@@ -61,18 +88,55 @@ describe('owner relay integration tests (L1, L2)', () => {
 	});
 
 	describe('when SystemSettings on L2 is owned by the relay', () => {
+		let originalMinimumStakeTime;
+		const newMinimumStakeTime = '42';
+
 		it('shows that the current owner of SystemSettings is the L2 relay', async () => {
 			assert.equal(await SystemSettingsL2.owner(), OwnerRelayOnOptimism.address);
 		});
 
-		describe('when changing an L2 system setting with an L1 tx', () => {
-			let originalMinimumStakeTime;
-			const newMinimumStakeTime = '42';
+		before('store minimumStakeTime', async () => {
+			originalMinimumStakeTime = await SystemSettingsL2.minimumStakeTime();
+		});
 
-			before('store minimumStakeTime', async () => {
-				originalMinimumStakeTime = await SystemSettingsL2.minimumStakeTime();
+		describe('when changing an L2 system setting with directRelay', () => {
+			before('call setMinimumStakeTime directly', async () => {
+				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [
+					newMinimumStakeTime,
+				]);
+
+				const tx = await OwnerRelayOnOptimism.connect(ownerL2).directRelay(
+					SystemSettingsL2.address,
+					calldata
+				);
+
+				await tx.wait();
 			});
 
+			it(`shows that the minimum stake time is now ${newMinimumStakeTime}`, async () => {
+				assert.equal((await SystemSettingsL2.minimumStakeTime()).toString(), newMinimumStakeTime);
+			});
+
+			after('restore minimumStakeTime', async () => {
+				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [
+					originalMinimumStakeTime,
+				]);
+
+				const tx = await OwnerRelayOnOptimism.connect(ownerL2).directRelay(
+					SystemSettingsL2.address,
+					calldata
+				);
+
+				await tx.wait();
+
+				assert.equal(
+					(await SystemSettingsL2.minimumStakeTime()).toString(),
+					originalMinimumStakeTime
+				);
+			});
+		});
+
+		describe('when changing an L2 system setting with an L1 relay tx', () => {
 			before('relay setMinimumStakeTime via the bridge', async () => {
 				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [
 					newMinimumStakeTime,
