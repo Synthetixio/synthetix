@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -9,6 +10,8 @@ import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessen
 
 interface IOwnerRelayOnOptimism {
     function finalizeRelay(address target, bytes calldata data) external;
+
+    function finalizeRelayBatch(address[] calldata target, bytes[] calldata data) external;
 }
 
 contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
@@ -63,7 +66,31 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
         emit RelayInitiated(target, data);
     }
 
+    function initiateRelayBatch(
+        address[] calldata targets,
+        bytes[] calldata data,
+        uint32 crossDomainGasLimit // If zero, uses default value in SystemSettings
+    ) external onlyOwner {
+        // First check that the length of the arguments match
+        require(targets.length == data.length, "Argument length mismatch");
+
+        IOwnerRelayOnOptimism ownerRelayOnOptimism;
+        bytes memory messageData = abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelayBatch.selector, targets, data);
+
+        // Use specified crossDomainGasLimit if specified value is not zero.
+        // otherwise use the default in SystemSettings.
+        uint32 xGasLimit =
+            crossDomainGasLimit != 0
+                ? crossDomainGasLimit
+                : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
+
+        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, xGasLimit);
+
+        emit RelayBatchInitiated(targets, data);
+    }
+
     /* ========== EVENTS ========== */
 
     event RelayInitiated(address target, bytes data);
+    event RelayBatchInitiated(address[] targets, bytes[] data);
 }

@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./MixinResolver.sol";
@@ -40,8 +41,6 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
         (bool success, bytes memory result) = target.call(data);
 
         require(success, string(abi.encode("xChain call failed:", result)));
-
-        emit CallRelayed(target, data);
     }
 
     /* ========== VIEWS ========== */
@@ -54,6 +53,12 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
 
     /* ========== EXTERNAL ========== */
 
+    function directRelay(address target, bytes calldata data) external onlyTemporaryOwner {
+        _relayCall(target, data);
+
+        emit CallRelayed(target, data);
+    }
+
     function finalizeRelay(address target, bytes calldata data) external {
         iAbs_BaseCrossDomainMessenger messenger = _messenger();
 
@@ -61,13 +66,25 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
         require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
 
         _relayCall(target, data);
+
+        emit CallRelayed(target, data);
     }
 
-    function directRelay(address target, bytes calldata data) external onlyTemporaryOwner {
-        _relayCall(target, data);
+    function finalizeRelayBatch(address[] calldata targets, bytes[] calldata data) external {
+        iAbs_BaseCrossDomainMessenger messenger = _messenger();
+
+        require(msg.sender == address(messenger), "Sender is not the messenger");
+        require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            _relayCall(targets[i], data[i]);
+        }
+
+        emit CallBatchRelayed(targets, data);
     }
 
     /* ========== EVENTS ========== */
 
     event CallRelayed(address target, bytes data);
+    event CallBatchRelayed(address[] targets, bytes[] data);
 }
