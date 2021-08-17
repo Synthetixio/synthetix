@@ -40,11 +40,13 @@ describe('owner relay integration tests (L1, L2)', () => {
 
 	it('shows that the L2 relay was deployed with the correct parameters', async () => {
 		assert.equal(AddressResolverL2.address, await OwnerRelayOnOptimism.resolver());
-		assert.equal(ownerL2.address, await OwnerRelayOnOptimism.tempOwner());
+		assert.equal(ownerL2.address, await OwnerRelayOnOptimism.temporaryOwner());
 
 		// Accept results within an hour
-		const duration = (await OwnerRelayOnOptimism.duration()).toNumber();
-		assert.bnClose(duration, TEMP_OWNER_DEFAULT_DURATION, 60 * 60);
+		const expectedExpiry =
+			(await ctx.l1.provider.getBlock()).timestamp + TEMP_OWNER_DEFAULT_DURATION;
+		const expiryTime = (await OwnerRelayOnOptimism.expiryTime()).toString();
+		assert.bnClose(expectedExpiry, expiryTime, '3600');
 	});
 
 	describe('when SystemSettings on L2 is owned by an EOA', () => {

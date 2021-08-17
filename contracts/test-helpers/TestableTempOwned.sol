@@ -5,7 +5,10 @@ import "../TemporarilyOwned.sol";
 contract TestableTempOwned is TemporarilyOwned {
     uint public testValue;
 
-    constructor(address _tempOwner, uint _duration) public TemporarilyOwned(_tempOwner, _duration) {}
+    constructor(address _temporaryOwner, uint _ownershipDuration)
+        public
+        TemporarilyOwned(_temporaryOwner, _ownershipDuration)
+    {}
 
     function setTestValue(uint _testValue) external onlyTemporaryOwner {
         testValue = _testValue;

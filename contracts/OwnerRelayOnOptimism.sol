@@ -21,9 +21,9 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
 
     constructor(
         address _resolver,
-        address _tempOwner,
-        uint _ownedDuration
-    ) public MixinResolver(_resolver) TemporarilyOwned(_tempOwner, _ownedDuration) {}
+        address _temporaryOwner,
+        uint _ownershipDuration
+    ) public MixinResolver(_resolver) TemporarilyOwned(_temporaryOwner, _ownershipDuration) {}
 
     /* ========== INTERNALS ============ */
 
