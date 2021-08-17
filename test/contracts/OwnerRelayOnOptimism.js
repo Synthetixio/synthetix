@@ -93,7 +93,7 @@ contract('OwnerRelayOnOptimism', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: artifacts.require('OwnerRelayOnOptimism').abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['finalizeRelay', 'directRelay', 'acceptOwnershipOn'],
+			expected: ['finalizeRelay', 'directRelay', 'acceptOwnershipOn', 'acceptOwnershipOnBatch'],
 		});
 	});
 
@@ -110,17 +110,46 @@ contract('OwnerRelayOnOptimism', () => {
 	});
 
 	describe('when accepting ownership by calling OwnerRelayOnOptimism directly', () => {
-		before('mock the target contract acceptOwnership() function', async () => {
-			MockedOwnedL2.smocked.acceptOwnership.will.return();
+		describe('when calling acceptOwnershipOn', () => {
+			before('mock the target contract acceptOwnership() function', async () => {
+				MockedOwnedL2.smocked.acceptOwnership.will.return();
+			});
+
+			before('call the target acceptOwnership() function via OwnerRelayOnOptimism', async () => {
+				const tx = await OwnerRelayOnOptimism.connect(owner).acceptOwnershipOn(
+					MockedOwnedL2.address
+				);
+				await tx.wait();
+			});
+
+			it('called the function on the target contract', async () => {
+				assert.equal(MockedOwnedL2.smocked.acceptOwnership.calls.length, 1);
+			});
 		});
 
-		before('call the target acceptOwnership() function via OwnerRelayOnOptimism', async () => {
-			const tx = await OwnerRelayOnOptimism.connect(owner).acceptOwnershipOn(MockedOwnedL2.address);
-			await tx.wait();
-		});
+		describe('when calling acceptOwnershipOnBatch', () => {
+			let MockedOwnedL2Alt1, MockedOwnedL2Alt2;
 
-		it('called the function on the target contract', async () => {
-			assert.equal(MockedOwnedL2.smocked.acceptOwnership.calls.length, 1);
+			before('mock a couple more contracts', async () => {
+				MockedOwnedL2Alt1 = await smockit(artifacts.require('Owned').abi, ethers.provider);
+				MockedOwnedL2Alt2 = await smockit(artifacts.require('Owned').abi, ethers.provider);
+			});
+
+			before(
+				'call the target acceptOwnership() function via OwnerRelayOnOptimism batched',
+				async () => {
+					const tx = await OwnerRelayOnOptimism.connect(owner).acceptOwnershipOnBatch([
+						MockedOwnedL2Alt1.address,
+						MockedOwnedL2Alt2.address,
+					]);
+					await tx.wait();
+				}
+			);
+
+			it('called the function on the target contracts', async () => {
+				assert.equal(MockedOwnedL2Alt1.smocked.acceptOwnership.calls.length, 1);
+				assert.equal(MockedOwnedL2Alt2.smocked.acceptOwnership.calls.length, 1);
+			});
 		});
 	});
 
