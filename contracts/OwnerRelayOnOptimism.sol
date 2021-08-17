@@ -54,16 +54,6 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
 
     /* ========== EXTERNAL ========== */
 
-    function acceptOwnershipOnBatch(address[] calldata targets) external {
-        for (uint i = 0; i < targets.length; i++) {
-            IOwned(targets[i]).acceptOwnership();
-        }
-    }
-
-    function acceptOwnershipOn(address target) external {
-        IOwned(target).acceptOwnership();
-    }
-
     function finalizeRelay(address target, bytes calldata data) external {
         iAbs_BaseCrossDomainMessenger messenger = _messenger();
 
