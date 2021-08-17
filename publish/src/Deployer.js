@@ -287,7 +287,7 @@ class Deployer {
 					this.nonceManager.incrementNonce();
 				}
 			}
-			deployedContract.deployed = true; // indicate a fresh deployment occurred
+			deployedContract.justDeployed = true; // indicate a fresh deployment occurred
 
 			// Deployment in OVM could result in empty bytecode if
 			// the contract's constructor parameters are unsafe.
@@ -409,7 +409,7 @@ class Deployer {
 		await this._updateResults({
 			name,
 			source: deployedContract.source,
-			deployed: deployedContract.deployed,
+			deployed: deployedContract.justDeployed,
 			address: deployedContract.address,
 		});
 
