@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 
 // Inheritance
 import "./MixinResolver.sol";
-import "./TempOwned.sol";
+import "./TemporarilyOwned.sol";
 
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
@@ -11,7 +11,7 @@ interface IOwned {
     function acceptOwnership() external;
 }
 
-contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
+contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
@@ -22,8 +22,8 @@ contract OwnerRelayOnOptimism is MixinResolver, TempOwned {
     constructor(
         address _resolver,
         address _tempOwner,
-        uint _tempOwnerEOL
-    ) public MixinResolver(_resolver) TempOwned(_tempOwner, _tempOwnerEOL) {}
+        uint _ownedDuration
+    ) public MixinResolver(_resolver) TemporarilyOwned(_tempOwner, _ownedDuration) {}
 
     /* ========== INTERNALS ============ */
 

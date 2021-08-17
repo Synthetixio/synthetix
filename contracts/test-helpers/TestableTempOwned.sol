@@ -1,11 +1,11 @@
 pragma solidity ^0.5.16;
 
-import "../TempOwned.sol";
+import "../TemporarilyOwned.sol";
 
-contract TestableTempOwned is TempOwned {
+contract TestableTempOwned is TemporarilyOwned {
     uint public testValue;
 
-    constructor(address _tempOwner, uint _tempOwnerEOL) public TempOwned(_tempOwner, _tempOwnerEOL) {}
+    constructor(address _tempOwner, uint _duration) public TemporarilyOwned(_tempOwner, _duration) {}
 
     function setTestValue(uint _testValue) external onlyTemporaryOwner {
         testValue = _testValue;

@@ -1,15 +1,16 @@
 pragma solidity ^0.5.16;
 
-contract TempOwned {
+contract TemporarilyOwned {
     address public tempOwner;
-    uint public tempOwnerEOL;
+    uint public initialTimestamp;
+    uint public duration;
 
-    constructor(address _tempOwner, uint _tempOwnerEOL) public {
+    constructor(address _tempOwner, uint _duration) public {
         require(_tempOwner != address(0), "Owner address cannot be 0");
-        require(_tempOwnerEOL > now, "Invalid temp owner EOL");
 
         tempOwner = _tempOwner;
-        tempOwnerEOL = _tempOwnerEOL;
+        initialTimestamp = now;
+        duration = _duration;
     }
 
     modifier onlyTemporaryOwner {
@@ -18,7 +19,7 @@ contract TempOwned {
     }
 
     function _onlyTemporaryOwner() private view {
-        require(now <= tempOwnerEOL, "Owner EOL date already reached");
+        require(now - initialTimestamp < duration, "Ownership expired");
         require(msg.sender == tempOwner, "Only executable by temp owner");
     }
 }

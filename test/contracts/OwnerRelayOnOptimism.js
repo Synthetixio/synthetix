@@ -3,7 +3,7 @@ const chalk = require('chalk');
 const { assert } = require('./common');
 const { smockit } = require('@eth-optimism/smock');
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
-const { currentTime, fastForward } = require('../utils')();
+const { fastForward } = require('../utils')();
 
 contract('OwnerRelayOnOptimism', () => {
 	const DAY = 60 * 60 * 24;
@@ -24,7 +24,7 @@ contract('OwnerRelayOnOptimism', () => {
 	const mockedContractAddressOnL2 = ethers.Wallet.createRandom().address;
 	const mockedRelayData = '0xdeadbeef';
 
-	let tempOwnerEOL;
+	let duration;
 
 	before('initialize signers', async () => {
 		[owner, tempOwner, someone] = await ethers.getSigners();
@@ -55,7 +55,7 @@ contract('OwnerRelayOnOptimism', () => {
 	});
 
 	before('instantiate the contract', async () => {
-		tempOwnerEOL = (await currentTime()) + DAY;
+		duration = DAY;
 
 		const OwnerRelayOnOptimismFactory = await ethers.getContractFactory(
 			'OwnerRelayOnOptimism',
@@ -64,7 +64,7 @@ contract('OwnerRelayOnOptimism', () => {
 		OwnerRelayOnOptimism = await OwnerRelayOnOptimismFactory.deploy(
 			MockedAddressResolver.address,
 			tempOwner.address,
-			tempOwnerEOL
+			duration
 		);
 
 		const tx = await OwnerRelayOnOptimism.rebuildCache();
@@ -85,8 +85,8 @@ contract('OwnerRelayOnOptimism', () => {
 		assert.equal(tempOwner.address, await OwnerRelayOnOptimism.tempOwner());
 	});
 
-	it('shows that the temp owner EOL date is set correctly', async () => {
-		assert.equal(tempOwnerEOL, await OwnerRelayOnOptimism.tempOwnerEOL());
+	it('shows that the temp owner duration is set correctly', async () => {
+		assert.equal(duration, await OwnerRelayOnOptimism.duration());
 	});
 
 	it('shows that only the expected functions are mutative', async () => {
@@ -258,7 +258,7 @@ contract('OwnerRelayOnOptimism', () => {
 			);
 		});
 
-		describe('before the EOL date is reached', () => {
+		describe('before duration expires', () => {
 			let relayReceipt;
 
 			it('should allow the temp owner to call direct relay', async () => {
@@ -277,19 +277,19 @@ contract('OwnerRelayOnOptimism', () => {
 			});
 		});
 
-		describe('after the EOL date is reached', () => {
+		describe('after duration expires', () => {
 			before('fast forward', async () => {
-				await fastForward(DAY + 1);
+				await fastForward(DAY);
 			});
 
-			it('should not allow the temp ownet to call direct relay', async () => {
+			it('should not allow the temp owner to call direct relay', async () => {
 				await assert.revert(
 					OwnerRelayOnOptimism.connect(tempOwner).directRelay(
 						mockedContractAddressOnL2,
 						mockedRelayData,
 						{ gasPrice: 0 }
 					),
-					'Owner EOL date already reached'
+					'Ownership expired'
 				);
 			});
 		});

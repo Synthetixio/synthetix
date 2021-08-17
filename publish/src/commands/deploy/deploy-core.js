@@ -4,7 +4,7 @@ const { gray } = require('chalk');
 
 const {
 	constants: { ZERO_ADDRESS },
-	defaults: { TEMP_OWNER_DEFAULT_EOL },
+	defaults: { TEMP_OWNER_DEFAULT_DURATION },
 } = require('../../../..');
 
 module.exports = async ({
@@ -243,11 +243,10 @@ module.exports = async ({
 		args: [account],
 	});
 
-	const EOL = Math.floor(new Date().getTime() / 1000) + TEMP_OWNER_DEFAULT_EOL;
 	await deployer.deployContract({
 		name: 'OwnerRelayOnOptimism',
 		deps: ['AddressResolver'],
-		args: [addressOf(readProxyForResolver), account, EOL],
+		args: [addressOf(readProxyForResolver), account, TEMP_OWNER_DEFAULT_DURATION],
 	});
 
 	await deployer.deployContract({

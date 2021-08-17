@@ -3,7 +3,7 @@ const { bootstrapDual } = require('../utils/bootstrap');
 const { finalizationOnL2 } = require('../utils/optimism');
 
 const {
-	defaults: { TEMP_OWNER_DEFAULT_EOL },
+	defaults: { TEMP_OWNER_DEFAULT_DURATION },
 } = require('../../..');
 
 describe('owner relay integration tests (L1, L2)', () => {
@@ -43,8 +43,8 @@ describe('owner relay integration tests (L1, L2)', () => {
 		assert.equal(ownerL2.address, await OwnerRelayOnOptimism.tempOwner());
 
 		// Accept results within an hour
-		const eol = (await OwnerRelayOnOptimism.tempOwnerEOL()).toNumber();
-		assert.bnClose(eol, Math.floor(new Date().getTime() / 1000) + TEMP_OWNER_DEFAULT_EOL, 60 * 60);
+		const duration = (await OwnerRelayOnOptimism.duration()).toNumber();
+		assert.bnClose(duration, TEMP_OWNER_DEFAULT_DURATION, 60 * 60);
 	});
 
 	describe('when SystemSettings on L2 is owned by an EOA', () => {
