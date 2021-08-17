@@ -306,6 +306,7 @@
 	},
 	{
 		"name": "Mirfak (Optimism)",
+		"ovm": true,
 		"released": false,
 		"version": {
 			"major": 2,
