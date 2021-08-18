@@ -132,7 +132,7 @@
 	},
 	"dependencies": {
 		"abi-decoder": "2.3.0",
-		"commander": "5.1.0",
+		"commander": "8.1.0",
 		"inquirer": "^6.5.2",
 		"inquirer-list-search-prompt": "^1.0.2",
 		"js-levenshtein": "^1.1.6",

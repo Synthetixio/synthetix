@@ -1,11 +1,7 @@
 pragma solidity >=0.4.24;
 
 interface ICollateralEth {
-    function open(
-        uint collateral,
-        uint amount,
-        bytes32 currency
-    ) external payable returns (uint id);
+    function open(uint amount, bytes32 currency) external payable returns (uint id);
 
     function close(uint id) external returns (uint amount, uint collateral);
 

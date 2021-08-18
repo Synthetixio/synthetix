@@ -20,14 +20,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         uint _minCollateral
     ) public Collateral(_owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
 
-    function open(
-        uint collateral,
-        uint amount,
-        bytes32 currency
-    ) external payable returns (uint id) {
-        // Transfer from will throw if they didn't set the allowance
-        IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), collateral);
-
+    function open(uint amount, bytes32 currency) external payable returns (uint id) {
         id = openInternal(msg.value, amount, currency, false);
     }
 
