@@ -185,9 +185,12 @@ program
 program
 	.command('releases')
 	.description('Get the list of releases')
-	.option('--no-released', 'Only retreive the unreleased ones.')
-	.action(async ({ released }) => {
-		const result = releases.filter(release => release.released === released);
+	.option('--unreleased', 'Only retrieve the unreleased ones.')
+	.option('--with-sources', 'Only retrieve ones with files.')
+	.action(async ({ unreleased, withSources }) => {
+		const result = releases
+			.filter(release => release.released === !unreleased)
+			.filter(({ sources }) => (withSources ? sources.length > 0 : true));
 
 		if (result.length > 0) {
 			console.log(JSON.stringify(result, null, 2));
