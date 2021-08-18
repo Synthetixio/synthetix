@@ -88,9 +88,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 
 					const { events } = await tx.wait();
 					const event = events.find(l => l.event === 'LoanCreated');
-					loanId = event.args.id.toNumber();
+					loanId = event.args.id;
 
-					loan = await CollateralShort.getLoan(loanId);
+					loan = await CollateralShort.loans(loanId);
 				});
 
 				before('deposit more collateral', async () => {
@@ -100,9 +100,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const { events } = await tx.wait();
 
 					const event = events.find(l => l.event === 'CollateralDeposited');
-					loanId = event.args.id.toNumber();
+					loanId = event.args.id;
 
-					loan = await CollateralShort.getLoan(loanId);
+					loan = await CollateralShort.loans(loanId);
 					assert.bnEqual(loan.collateral, parseEther('20000'));
 				});
 
@@ -113,9 +113,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const { events } = await tx.wait();
 
 					const event = events.find(l => l.event === 'CollateralWithdrawn');
-					loanId = event.args.id.toNumber();
+					loanId = event.args.id;
 
-					loan = await CollateralShort.getLoan(loanId);
+					loan = await CollateralShort.loans(loanId);
 					assert.bnEqual(loan.collateral, parseEther('15000'));
 				});
 
@@ -126,9 +126,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const { events } = await tx.wait();
 
 					const event = events.find(l => l.event === 'LoanDrawnDown');
-					loanId = event.args.id.toNumber();
+					loanId = event.args.id;
 
-					loan = await CollateralShort.getLoan(loanId);
+					loan = await CollateralShort.loans(loanId);
 					assert.bnEqual(loan.amount, parseEther('2'));
 				});
 
@@ -154,9 +154,9 @@ function itCanOpenAndCloseShort({ ctx }) {
 						const { events } = await tx.wait();
 
 						const event = events.find(l => l.event === 'LoanClosed');
-						loanId = event.args.id.toNumber();
+						loanId = event.args.id;
 
-						loan = await CollateralShort.getLoan(loanId);
+						loan = await CollateralShort.loans(loanId);
 					});
 
 					before('skip waiting period', async () => {

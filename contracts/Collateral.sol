@@ -143,10 +143,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- Public Views ---------- */
 
-    function getLoan(uint id) public view returns (Loan memory) {
-        return loans[id];
-    }
-
     function collateralRatio(uint id) public view returns (uint cratio) {
         Loan memory loan = loans[id];
         return _collateralUtil().getCollateralRatio(loan, collateralKey);
@@ -188,6 +184,12 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint amount
     ) internal view {
         require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough balance");
+    }
+
+    // We set the interest index to 0 to indicate the loan has been closed.
+    function _checkLoanAvailable(Loan memory loan) internal view {
+        require(loan.interestIndex > 0, "Loan does not exist");
+        require(loan.lastInteraction.add(interactionDelay) <= block.timestamp, "Recently interacted");
     }
 
     function issuanceRatio() internal view returns (uint ratio) {
@@ -295,6 +297,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     function closeInternal(address borrower, uint id) internal rateIsValid returns (uint amount, uint collateral) {
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
+        // 1. Check loan is open and last interaction time.
+        _checkLoanAvailable(loan);
+
         // Record loan as closed.
         (amount, collateral) = _closeLoan(borrower, borrower, loan);
 
@@ -328,6 +333,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 3. Return collateral to the child class so it knows how much to transfer.
         collateral = loan.collateral;
 
+        _checkSynthBalance(loan.account, loan.currency, total);
+
         // 4. Burn the synths
         _synth(synthsByKey[loan.currency]).burn(liquidator, total);
 
@@ -359,9 +366,15 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint amount
     ) internal rateIsValid returns (uint, uint) {
         _systemStatus().requireIssuanceActive();
+
+        // 1. They sent some value > 0
+        require(amount > 0, "Deposit must be above 0");
+
         Loan storage loan = loans[id];
         // Owner is not important here, as it is a donation to the collateral of the loan
-        require(loan.interestIndex != 0);
+        // 1. Check loan is open and last interaction time.
+        _checkLoanAvailable(loan);
+
         accrueInterest(loan);
 
         // 5. Add the collateral
@@ -375,6 +388,9 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     function withdrawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
         Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
+
+        // 1. Check loan is open and last interaction time.
+        _checkLoanAvailable(loan);
 
         // 4. Subtract the collateral.
         loan.collateral = loan.collateral.sub(amount);
@@ -395,12 +411,18 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     ) internal rateIsValid returns (uint collateralLiquidated) {
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
+        // 1. Check loan is open and last interaction time.
+        _checkLoanAvailable(loan);
+
+        // 5. Check they have enough balance to make the payment.
+        _checkSynthBalance(msg.sender, loan.currency, payment);
+
         // 1. Check the payment amount.
         require(payment > 0);
 
         // 6. Check they are eligible for liquidation.
         // Note: this will revert if collateral is 0, however that should only be possible if the loan amount is 0.
-        require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio);
+        require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio, "Cratio above liq ratio");
 
         // 7. Determine how much needs to be liquidated to fix their c ratio.
         uint liqAmount = _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
@@ -417,7 +439,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             return collateralLiquidated;
         }
 
-        // require(IERC20(address(_synth(synthsByKey[loan.currency]))).balanceOf(msg.sender) >= amountToLiquidate);
+        _checkSynthBalance(msg.sender, loan.currency, amountToLiquidate);
 
         // 11. Process the payment to workout interest/principal split.
         _processPayment(loan, amountToLiquidate);
@@ -443,10 +465,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 1. Check loan is open and last interaction time.
-        require(loan.lastInteraction.add(interactionDelay) <= block.timestamp);
+        _checkLoanAvailable(loan);
+
+        // 5. Check the spender has enough synths to make the repayment
+        _checkSynthBalance(repayer, loan.currency, payment);
 
         // 2. Process the payment.
-        require(payment > 0);
+        require(payment > 0, "Payment must be above 0");
         _processPayment(loan, payment);
 
         // 3. Update the last interaction time.
@@ -472,7 +497,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 1. Check loan is open and last interaction time.
-        require(loan.lastInteraction.add(interactionDelay) <= block.timestamp);
+        _checkLoanAvailable(loan);
 
         // 2. Check the payment amount.
         require(payment > 0, "Payment must be above 0");
@@ -511,7 +536,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
         // 2. Check last interaction time.
-        require(loan.lastInteraction.add(interactionDelay) <= block.timestamp);
+        _checkLoanAvailable(loan);
 
         // 4. Add the requested amount.
         loan.amount = loan.amount.add(amount);
@@ -608,11 +633,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         accrueInterest(loan);
     }
 
-    function _checkLoanRatio(Loan storage loan) internal {
+    function _checkLoanRatio(Loan storage loan) internal view {
         if (loan.amount == 0) {
             return;
         }
-        require(collateralRatio(loan.id) > minCratio);
+        require(collateralRatio(loan.id) > minCratio, "Cratio too low");
     }
 
     // ========== MODIFIERS ==========

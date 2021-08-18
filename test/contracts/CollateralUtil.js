@@ -224,7 +224,7 @@ contract('CollateralUtil', async accounts => {
 			});
 
 			id = getid(tx);
-			loan = await cerc20.getLoan(id.toNumber());
+			loan = await cerc20.loans(id);
 
 			minCratio = await cerc20.minCratio();
 			collateralKey = await cerc20.collateralKey();

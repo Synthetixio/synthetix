@@ -30,8 +30,6 @@ contract('CollateralShort', async accounts => {
 		sUSDSynth,
 		sBTCSynth,
 		sETHSynth,
-		iBTCSynth,
-		iETHSynth,
 		synths,
 		manager,
 		issuer,
@@ -70,15 +68,13 @@ contract('CollateralShort', async accounts => {
 	};
 
 	const setupShort = async () => {
-		synths = ['sUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
+		synths = ['sUSD', 'sBTC', 'sETH'];
 		({
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
 			SynthsUSD: sUSDSynth,
 			SynthsBTC: sBTCSynth,
 			SynthsETH: sETHSynth,
-			SynthiBTC: iBTCSynth,
-			SynthiETH: iETHSynth,
 			FeePool: feePool,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
@@ -132,17 +128,6 @@ contract('CollateralShort', async accounts => {
 			{ from: owner }
 		);
 
-		await manager.addShortableSynths(
-			[
-				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
-				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
-			],
-			['sBTC', 'sETH'].map(toBytes32),
-			{
-				from: owner,
-			}
-		);
-
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 	};
 
@@ -168,8 +153,6 @@ contract('CollateralShort', async accounts => {
 		await issue(sUSDSynth, toUnit(100000), owner);
 		await issue(sBTCSynth, toUnit(1), owner);
 		await issue(sETHSynth, toUnit(1), owner);
-		await issue(iBTCSynth, toUnit(1), owner);
-		await issue(iETHSynth, toUnit(1), owner);
 
 		// The market is balanced between long and short.
 
@@ -219,9 +202,10 @@ contract('CollateralShort', async accounts => {
 			beforeEach(async () => {
 				await issue(sUSDSynth, susdCollateral, account1);
 
-				id = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
+				tx = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
 
-				loan = short.loans[id];
+				id = getid(tx);
+				loan = await short.loans(id);
 			});
 
 			it('should emit the event properly', async () => {
@@ -269,7 +253,7 @@ contract('CollateralShort', async accounts => {
 
 				id = getid(tx);
 
-				loan = short.loans[id];
+				loan = await short.loans(id);
 			});
 
 			it('should emit the event properly', async () => {
@@ -318,7 +302,7 @@ contract('CollateralShort', async accounts => {
 
 			id = getid(tx);
 
-			loan = short.loans[id];
+			loan = await short.loans(id);
 
 			beforeInteractionTime = loan.lastInteraction;
 			beforeFeePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
@@ -331,7 +315,7 @@ contract('CollateralShort', async accounts => {
 				from: account1,
 			});
 
-			loan = short.loans[id];
+			loan = await short.loans(id);
 
 			assert.eventEqual(tx, 'LoanRepaymentMade', {
 				account: account1,
@@ -360,7 +344,7 @@ contract('CollateralShort', async accounts => {
 				from: account1,
 			});
 
-			loan = short.loans[id];
+			loan = await short.loans(id);
 
 			assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
@@ -400,7 +384,7 @@ contract('CollateralShort', async accounts => {
 		});
 
 		it('should update the loan', async () => {
-			loan = short.loans[id];
+			loan = await short.loans(id);
 			assert.equal(loan.amount, toUnit(6).toString());
 		});
 
@@ -508,7 +492,7 @@ contract('CollateralShort', async accounts => {
 				collateralLiquidated: expectedCollateralLiquidated,
 			});
 
-			loan = short.loans[id];
+			loan = await short.loans(id);
 
 			assert.bnEqual(loan.amount, expectedLoanRemaining);
 			assert.bnEqual(loan.collateral, expectedCollateralRemaining);
@@ -682,7 +666,7 @@ contract('CollateralShort', async accounts => {
 
 			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
 
-			loan = short.loans[id];
+			loan = await short.loans(id);
 
 			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
@@ -700,7 +684,7 @@ contract('CollateralShort', async accounts => {
 
 			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
 
-			loan = short.loans[id];
+			loan = await short.loans(id);
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
