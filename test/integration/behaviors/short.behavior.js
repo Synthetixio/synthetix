@@ -46,11 +46,11 @@ function itCanOpenAndCloseShort({ ctx }) {
 		before('skip waiting period by setting interaction delay to zero', async () => {
 			interactionDelay = await SystemSettings.interactionDelay(CollateralShort.address);
 
-			await SystemSettings.setInteractionDelay(0, CollateralShort.address);
+			await SystemSettings.setInteractionDelay(CollateralShort.address, 0);
 		});
 
 		after('restore waiting period', async () => {
-			await SystemSettings.setInteractionDelay(interactionDelay, CollateralShort.address);
+			await SystemSettings.setInteractionDelay(CollateralShort.address, interactionDelay);
 		});
 
 		describe('open, close, deposit, withdraw, and draw a short', async () => {
