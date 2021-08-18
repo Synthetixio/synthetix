@@ -255,8 +255,6 @@ const nominateRelay = async ({
 
 		if (existingTx) return;
 
-		// await confirmOrEnd(yellow('Confirm: ') + `Stage ${bgYellow(black(key))} to (${target})`);
-
 		try {
 			const { txHash, newNonce } = await getNewTransactionHash({
 				safeContract: protocolDaoContract,
