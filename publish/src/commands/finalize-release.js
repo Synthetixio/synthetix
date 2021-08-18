@@ -6,7 +6,6 @@ const semver = require('semver');
 
 const prettier = require('prettier');
 
-// const { gray, yellow } = require('chalk');
 const { versionsUpdate } = require('./versions-update');
 const { stringify } = require('../util');
 
