@@ -35,6 +35,9 @@
 	"CollateralStateShort": {
 		"deploy": false
 	},
+	"CollateralUtil": {
+		"deploy": false
+	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},
