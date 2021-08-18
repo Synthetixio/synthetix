@@ -85,8 +85,8 @@ module.exports = async ({
 			expected: input => input !== '0', // only change if zero,
 			write: 'setIssueFeeRate',
 			writeArg: [
-				(await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
 				CollateralEth.address,
+				(await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'],
 			],
 			comment: 'Ensure the CollateralEth contract has its issue fee rate set',
 		});
@@ -129,8 +129,8 @@ module.exports = async ({
 			expected: input => input !== '0', // only change if zero
 			write: 'setIssueFeeRate',
 			writeArg: [
-				(await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
 				CollateralErc20.address,
+				(await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'],
 			],
 			comment: 'Ensure the CollateralErc20 contract has its issue fee rate set',
 		});
@@ -188,8 +188,8 @@ module.exports = async ({
 			expected: input => input === addressOf(CollateralShort),
 			write: 'setIssueFeeRate',
 			writeArg: [
-				(await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
 				CollateralShort.address,
+				(await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'],
 			],
 			comment: 'Ensure the CollateralShort contract has its issue fee rate set',
 		});
