@@ -1431,7 +1431,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         );
     }
 
-    event PositionLiquidated(uint id, address indexed account, address indexed liquidator, int size, uint price, uint fee);
+    event PositionLiquidated(
+        uint indexed id,
+        address indexed account,
+        address indexed liquidator,
+        int size,
+        uint price,
+        uint fee
+    );
     bytes32 internal constant SIG_POSITIONLIQUIDATED =
         keccak256("PositionLiquidated(uint256,address,address,int256,uint256,uint256)");
 
