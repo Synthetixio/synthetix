@@ -26,6 +26,9 @@ const {
 	getSafeSignature,
 } = require('../safe-utils');
 
+const { getContract } = require('../command-utils/contract');
+const { getBatchCallData } = require('../command-utils/bridge');
+
 const ownerRelay = async ({
 	l1Network,
 	l2Network,
@@ -64,28 +67,6 @@ const ownerRelay = async ({
 	const l1Provider = new ethers.providers.JsonRpcProvider(l1ProviderUrl);
 	const l2Provider = new ethers.providers.JsonRpcProvider(l2ProviderUrl);
 
-	const getL1Contract = contract => {
-		if (!l1Deployment.targets[contract]) {
-			console.error(red(`Contract ${contract} not found in deployment targets L1!`));
-			process.exit(1);
-		}
-
-		const { address, source } = l1Deployment.targets[contract];
-		const { abi } = l1Deployment.sources[source];
-		return new ethers.Contract(address, abi, l1Wallet);
-	};
-
-	const getL2Contract = contract => {
-		if (!l2Deployment.targets[contract]) {
-			console.error(red(`Contract ${contract} not found in deployment targets L2!`));
-			process.exit(1);
-		}
-
-		const { address, source } = l2Deployment.targets[contract];
-		const { abi } = l2Deployment.sources[source];
-		return new ethers.Contract(address, abi, l2Provider);
-	};
-
 	let l1Wallet;
 	if (!l1PrivateKey) {
 		const account = getUsers({ network: l1Network, user: 'owner' }).address; // protocolDAO
@@ -117,8 +98,16 @@ const ownerRelay = async ({
 		contracts = Object.keys(l2Config).filter(contract => contract !== 'DappMaintenance');
 	}
 
-	const OwnerRelayOnEthereum = getL1Contract('OwnerRelayOnEthereum');
-	const OwnerRelayOnOptimism = getL2Contract('OwnerRelayOnOptimism');
+	const OwnerRelayOnEthereum = getContract({
+		deployment: l1Deployment,
+		signer: l1Wallet,
+		contract: 'OwnerRelayOnEthereum',
+	});
+	const OwnerRelayOnOptimism = getContract({
+		deployment: l2Deployment,
+		signer: l2Provider,
+		contract: 'OwnerRelayOnOptimism',
+	});
 
 	/// ////////////////////////////////////
 	// FILTER TARGET CONTRACTS
@@ -126,7 +115,7 @@ const ownerRelay = async ({
 	const contractsToAccept = [];
 	const relayAddress = OwnerRelayOnOptimism.address();
 	for (const contract of contracts) {
-		const deployedContract = getL2Contract(contract);
+		const deployedContract = getContract({ deployment: l2Deployment, signer: l2Wallet, contract });
 
 		// ignore contracts that don't support Owned
 		if (!deployedContract.functions.owner) {
@@ -183,25 +172,10 @@ const ownerRelay = async ({
 	/// ////////////////////////////////////
 	// DO THE ACTION
 	/// ////////////////////////////////////
-	const getBatchCallData = contractsCallData => {
-		const targets = [];
-		const datas = [];
-		for (const contractCallData of contractsCallData) {
-			const { address, calldata } = contractCallData;
-			targets.push(address);
-			datas.push(calldata);
-		}
-		return {
-			targets,
-			datas,
-			batchData: OwnerRelayOnEthereum.interface.encodeFunctionData('initiateRelayBatch', [
-				targets,
-				datas,
-			]),
-		};
-	};
-
-	const contractsToAcceptCalldata = getBatchCallData(contractsToAccept);
+	const contractsToAcceptCalldata = getBatchCallData({
+		contractsCallData: contractsToAccept,
+		OwnerRelayOnEthereum,
+	});
 
 	if (!isContract) {
 		const overrides = {
@@ -210,7 +184,7 @@ const ownerRelay = async ({
 		};
 
 		const tx = await OwnerRelayOnEthereum.initiateRelayBatch(
-			contractsToAcceptCalldata.address,
+			contractsToAcceptCalldata.targets,
 			contractsToAcceptCalldata.datas,
 			overrides
 		);
