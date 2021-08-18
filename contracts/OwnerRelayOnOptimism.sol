@@ -8,10 +8,6 @@ import "./TemporarilyOwned.sol";
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
-interface IOwned {
-    function acceptOwnership() external;
-}
-
 contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
