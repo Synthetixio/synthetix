@@ -259,7 +259,7 @@ contract FuturesMarketData {
     }
 
     function _positionDetails(IFuturesMarket market, address account) internal view returns (PositionData memory) {
-        (uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
+        (uint positionId, uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
             market.positions(account);
         (uint liquidationPrice, ) = market.liquidationPrice(account, true);
         (int orderSize, ) = market.orderSize(account);
@@ -270,7 +270,7 @@ contract FuturesMarketData {
                 market.orderPending(account),
                 market.canConfirmOrder(account),
                 market.orderStatus(account),
-                IFuturesMarket.Position(positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
+                IFuturesMarket.Position(positionId, positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
                 _notionalValue(market, account),
                 _profitLoss(market, account),
                 _accruedFunding(market, account),

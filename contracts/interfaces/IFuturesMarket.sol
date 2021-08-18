@@ -14,7 +14,8 @@ interface IFuturesMarket {
         MaxMarketSizeExceeded,
         MaxLeverageExceeded,
         InsufficientMargin,
-        NotPermitted
+        NotPermitted,
+        AlreadyClosedPosition
     }
 
     struct Order {
@@ -28,6 +29,7 @@ interface IFuturesMarket {
 
     // If margin/size are positive, the position is long; if negative then it is short.
     struct Position {
+        uint id;
         uint margin;
         int size;
         uint lastPrice;
@@ -64,6 +66,7 @@ interface IFuturesMarket {
         external
         view
         returns (
+            uint id,
             uint margin,
             int size,
             uint lastPrice,
