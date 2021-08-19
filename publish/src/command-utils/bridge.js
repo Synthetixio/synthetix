@@ -1,19 +1,20 @@
 'use strict';
 
-const getBatchCallData = ({ contractsCallData, OwnerRelayOnEthereum }) => {
+const getBatchCallData = ({ contractsCallData, OwnerRelayOnEthereum, xDomainGasLimit }) => {
 	const targets = [];
-	const datas = [];
+	const payloads = [];
 	for (const contractCallData of contractsCallData) {
 		const { address, calldata } = contractCallData;
 		targets.push(address);
-		datas.push(calldata);
+		payloads.push(calldata);
 	}
 	return {
 		targets,
-		datas,
+		payloads,
 		batchData: OwnerRelayOnEthereum.interface.encodeFunctionData('initiateRelayBatch', [
 			targets,
-			datas,
+			payloads,
+			xDomainGasLimit,
 		]),
 	};
 };

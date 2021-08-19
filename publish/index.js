@@ -5,7 +5,6 @@ const program = require('commander');
 require('pretty-error').start();
 require('dotenv').config();
 
-require('./src/commands/accept-relay-owner').cmd(program);
 require('./src/commands/build').cmd(program);
 require('./src/commands/connect-bridge').cmd(program);
 require('./src/commands/deploy-shorting-rewards').cmd(program);
