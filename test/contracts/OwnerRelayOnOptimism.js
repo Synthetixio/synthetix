@@ -221,8 +221,8 @@ contract('OwnerRelayOnOptimism', () => {
 					assert.equal(relayedMessageData, OwnerRelayOnOptimism.address);
 				});
 
-				it('emitted a CallRelayed event', async () => {
-					const event = relayReceipt.events.find(e => e.event === 'CallRelayed');
+				it('emitted a RelayFinalized event', async () => {
+					const event = relayReceipt.events.find(e => e.event === 'RelayFinalized');
 
 					assert.equal(event.args.target, MockedOwned1OnL2.address);
 					assert.equal(event.args.payload, nominateNewOwnerCalldata);
@@ -288,8 +288,8 @@ contract('OwnerRelayOnOptimism', () => {
 					assert.equal(relayedMessageData, OwnerRelayOnOptimism.address);
 				});
 
-				it('emitted a CallBatchRelayed event', async () => {
-					const event = relayBatchReceipt.events.find(e => e.event === 'CallBatchRelayed');
+				it('emitted a RelayBatchFinalized event', async () => {
+					const event = relayBatchReceipt.events.find(e => e.event === 'RelayBatchFinalized');
 					assert.deepEqual(event.args.targets, mockedTargets);
 					assert.deepEqual(event.args.payloads, nominateNewOwnerCalldataBatch);
 				});
@@ -320,8 +320,8 @@ contract('OwnerRelayOnOptimism', () => {
 				relayReceipt = await tx.wait();
 			});
 
-			it('emitted a CallRelayed event', async () => {
-				const event = relayReceipt.events.find(e => e.event === 'CallRelayed');
+			it('emitted a DirectRelay event', async () => {
+				const event = relayReceipt.events.find(e => e.event === 'DirectRelay');
 
 				assert.equal(event.args.target, mockedContractAddressOnL2);
 				assert.equal(event.args.payload, mockedRelayData);

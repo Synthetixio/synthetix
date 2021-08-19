@@ -64,13 +64,13 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
     function directRelay(address target, bytes calldata payload) external onlyTemporaryOwner {
         _relayCall(target, payload);
 
-        emit CallRelayed(target, payload);
+        emit DirectRelay(target, payload);
     }
 
     function finalizeRelay(address target, bytes calldata payload) external onlyMessengerAndL1Relayer {
         _relayCall(target, payload);
 
-        emit CallRelayed(target, payload);
+        emit RelayFinalized(target, payload);
     }
 
     function finalizeRelayBatch(address[] calldata targets, bytes[] calldata payloads) external onlyMessengerAndL1Relayer {
@@ -78,11 +78,12 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
             _relayCall(targets[i], payloads[i]);
         }
 
-        emit CallBatchRelayed(targets, payloads);
+        emit RelayBatchFinalized(targets, payloads);
     }
 
     /* ========== EVENTS ========== */
 
-    event CallRelayed(address target, bytes payload);
-    event CallBatchRelayed(address[] targets, bytes[] payloads);
+    event DirectRelay(address target, bytes payload);
+    event RelayFinalized(address target, bytes payload);
+    event RelayBatchFinalized(address[] targets, bytes[] payloads);
 }
