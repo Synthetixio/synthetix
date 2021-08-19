@@ -39,6 +39,18 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
         require(success, string(abi.encode("xChain call failed:", result)));
     }
 
+    function onlyAllowMessengerAndL1Relayer() internal view {
+        iAbs_BaseCrossDomainMessenger messenger = _messenger();
+
+        require(msg.sender == address(messenger), "Sender is not the messenger");
+        require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
+    }
+
+    modifier onlyMessengerAndL1Relayer() {
+        onlyAllowMessengerAndL1Relayer();
+        _;
+    }
+
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -55,23 +67,13 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
         emit CallRelayed(target, payload);
     }
 
-    function finalizeRelay(address target, bytes calldata payload) external {
-        iAbs_BaseCrossDomainMessenger messenger = _messenger();
-
-        require(msg.sender == address(messenger), "Sender is not the messenger");
-        require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
-
+    function finalizeRelay(address target, bytes calldata payload) external onlyMessengerAndL1Relayer {
         _relayCall(target, payload);
 
         emit CallRelayed(target, payload);
     }
 
-    function finalizeRelayBatch(address[] calldata targets, bytes[] calldata payloads) external {
-        iAbs_BaseCrossDomainMessenger messenger = _messenger();
-
-        require(msg.sender == address(messenger), "Sender is not the messenger");
-        require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
-
+    function finalizeRelayBatch(address[] calldata targets, bytes[] calldata payloads) external onlyMessengerAndL1Relayer {
         for (uint256 i = 0; i < targets.length; i++) {
             _relayCall(targets[i], payloads[i]);
         }
