@@ -37,7 +37,6 @@ const ownerRelay = async ({
 	l1ProviderUrl,
 	l2ProviderUrl,
 	l1PrivateKey,
-	l2PrivateKey,
 	safeOwner,
 	contracts,
 	gasPrice,
@@ -77,15 +76,6 @@ const ownerRelay = async ({
 		l1Wallet = new ethers.Wallet(l1PrivateKey, l1Provider);
 	}
 
-	let l2Wallet;
-	if (!l2PrivateKey) {
-		const account = getUsers({ network: l1Network, user: 'owner' }).address; // protocolDAO
-		l2Wallet = l1Provider.getSigner(account);
-		l2Wallet.address = await l2Wallet.getAddress();
-	} else {
-		l2Wallet = new ethers.Wallet(l2PrivateKey, l1Provider);
-	}
-
 	if (contracts.length > 0) {
 		// Validate contract names
 		contracts.forEach(contract => {
@@ -116,7 +106,11 @@ const ownerRelay = async ({
 	const contractsToAccept = [];
 	const relayAddress = OwnerRelayOnOptimism.address();
 	for (const contract of contracts) {
-		const deployedContract = getContract({ deployment: l2Deployment, signer: l2Wallet, contract });
+		const deployedContract = getContract({
+			deployment: l2Deployment,
+			signer: l2Provider,
+			contract,
+		});
 
 		// ignore contracts that don't support Owned
 		if (!deployedContract.functions.owner) {
@@ -295,7 +289,6 @@ module.exports = {
 			.option('--l1-provider-url <value>', 'Ethereum network provider URL.')
 			.option('--l2-provider-url <value>', 'Optimism network provider URL.')
 			.option('--l1-private-key [value]', 'The private key to execute the commnad with on L1.')
-			.option('--l2-private-key [value]', 'The private key to execute the commnad with on L2.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
 			.option('--x-domain-gas-limit <value>', 'Cross Domain Gas Limit ', parseInt, 0)
