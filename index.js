@@ -12,7 +12,7 @@ const data = {
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
-	'kovan-ovm': require('./publish/deployed/kovan-ovm'),
+	'kovan-ovm': require('./publish/deployed/kovan-ovm-futures'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
 	'kovan-ovm-futures': require('./publish/deployed/kovan-ovm-futures'),
 };
@@ -22,16 +22,7 @@ const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = [
-	'local',
-	'local-ovm',
-	'kovan',
-	'rinkeby',
-	'ropsten',
-	'mainnet',
-	'goerli',
-	'kovan-ovm-futures',
-];
+const networks = ['kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
 
 const chainIdMapping = Object.entries({
 	1: {
