@@ -14,13 +14,7 @@ describe('relayBatch integration tests (L1, L2)', () => {
 	let ownerL1, ownerL2;
 
 	// Contracts
-	let AddressResolverL1,
-		AddressResolverL2,
-		OwnerRelayOnEthereum,
-		OwnerRelayOnOptimism,
-		RewardEscrowV2L2,
-		SynthetixL2,
-		SystemSettingsL2;
+	let AddressResolverL1, AddressResolverL2, OwnerRelayOnEthereum, OwnerRelayOnOptimism;
 
 	let relayReceipt;
 
@@ -29,23 +23,19 @@ describe('relayBatch integration tests (L1, L2)', () => {
 
 	before('target contracts and users', () => {
 		({ OwnerRelayOnEthereum, ReadProxyAddressResolver: AddressResolverL1 } = ctx.l1.contracts);
-		({
-			OwnerRelayOnOptimism,
-			SystemSettings: SystemSettingsL2,
-			Synthetix: SynthetixL2,
-			RewardEscrowV2: RewardEscrowV2L2,
-			ReadProxyAddressResolver: AddressResolverL2,
-		} = ctx.l2.contracts);
+		({ OwnerRelayOnOptimism, ReadProxyAddressResolver: AddressResolverL2 } = ctx.l2.contracts);
 
 		ownerL1 = ctx.l1.users.owner;
 		ownerL2 = ctx.l2.users.owner;
+	});
 
-		contractsToBeOwned.push(RewardEscrowV2L2);
-		contractsToBeOwned.push(SynthetixL2);
-		contractsToBeOwned.push(SystemSettingsL2);
-		for (const contract of contractsToBeOwned) {
-			contractsToBeOwnedAdresses.push(contract.address);
-		}
+	before('retrieve all contracts that are ownable on L2', async () => {
+		Object.values(ctx.l2.contracts).map(contract => {
+			if (contract.functions.owner) {
+				contractsToBeOwned.push(contract);
+				contractsToBeOwnedAdresses.push(contract.address);
+			}
+		});
 	});
 
 	it('shows that the L1 relay was deployed with the correct parameters', async () => {
@@ -63,41 +53,41 @@ describe('relayBatch integration tests (L1, L2)', () => {
 		assert.bnClose(expectedExpiry, expiryTime, '3600');
 	});
 
-	describe('when SystemSettings on L2 is owned by an EOA', () => {
+	describe('when L2 contracts are owned by an EOA', () => {
 		before('check ownership', async function() {
-			if ((await SystemSettingsL2.owner()) === OwnerRelayOnOptimism.address) {
+			if ((await AddressResolverL2.owner()) === OwnerRelayOnOptimism.address) {
 				this.skip();
 			}
 		});
 
-		it('shows that the current owner of SystemSettings is the EOA', async () => {
-			assert.equal(await SystemSettingsL2.owner(), ownerL2.address);
-		});
-
-		describe('when nominating the L2 relay as the owner of the L2 contracts we want to give ownership to', () => {
-			before('nominate the relay as the new ower for candidate contracts', async () => {
+		describe('when nominating the L2 relay as the owner of all L2 contracts', () => {
+			before('nominate the relay as the new owner for all L2 contracts', async () => {
 				for (const contract of contractsToBeOwned) {
-					const tx = await contract.connect(ownerL2).nominateNewOwner(OwnerRelayOnOptimism.address);
+					const nominationFn = 'nominateOwner' in contract ? 'nominateOwner' : 'nominateNewOwner';
+					const tx = await contract.connect(ownerL2)[nominationFn](OwnerRelayOnOptimism.address);
+
 					await tx.wait();
 				}
 			});
 
-			it('shows that the L2 relay is the nominated owner', async () => {
+			it('shows that the L2 relay is the nominated owner for all L2 contracts', async () => {
 				for (const contract of contractsToBeOwned) {
 					assert.equal(await contract.nominatedOwner(), OwnerRelayOnOptimism.address);
 				}
 			});
 
-			describe('when the L2 relay accepts ownership via the L1 relayer', () => {
+			describe('when the L2 relay accepts ownership via the L1 relayer for all L2 contracts', () => {
 				before('call acceptOwnership() via an L1 relay batch', async () => {
-					const calldata = SystemSettingsL2.interface.encodeFunctionData('acceptOwnership');
-					const calldataBatch = [calldata, calldata, calldata];
+					const calldataBatch = contractsToBeOwned.map(contract => {
+						return contract.interface.encodeFunctionData('acceptOwnership');
+					});
 
 					const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelayBatch(
 						contractsToBeOwnedAdresses,
 						calldataBatch,
 						0
 					);
+
 					relayReceipt = await tx.wait();
 				});
 
@@ -105,44 +95,53 @@ describe('relayBatch integration tests (L1, L2)', () => {
 					await finalizationOnL2({ ctx, transactionHash: relayReceipt.transactionHash });
 				});
 
-				it('shows that the current owner of the nominated contracts is the L2 relay', async () => {
+				it('shows that the L2 relay now owns all the L2 contracts', async () => {
 					for (const contract of contractsToBeOwned) {
 						assert.equal(await contract.owner(), OwnerRelayOnOptimism.address);
 					}
 				});
+			});
+		});
+	});
 
-				describe('when the relay relinquishes ownership back to an EOA via the L1 relayer', () => {
-					before('relay a tx to nominateNewOwner() from L1', async () => {
-						const calldata = SystemSettingsL2.interface.encodeFunctionData('nominateNewOwner', [
-							ownerL2.address,
-						]);
+	describe('when L2 contracts are owned by the relay', () => {
+		before('check ownership', async function() {
+			if ((await AddressResolverL2.owner()) !== OwnerRelayOnOptimism.address) {
+				this.skip();
+			}
+		});
 
-						const calldataBatch = [calldata, calldata, calldata];
-						const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelayBatch(
-							contractsToBeOwnedAdresses,
-							calldataBatch,
-							0
-						);
-						relayReceipt = await tx.wait();
-					});
-
-					before('wait for the relay to finalize on L2', async () => {
-						await finalizationOnL2({ ctx, transactionHash: relayReceipt.transactionHash });
-					});
-
-					before('call acceptOwnership() directly on L2 with the EOA', async () => {
-						for (const contract of contractsToBeOwned) {
-							const tx = await contract.connect(ownerL2).acceptOwnership();
-							await tx.wait();
-						}
-					});
-
-					it('shows that the current owner of SystemSettings is the EOA', async () => {
-						for (const contract of contractsToBeOwned) {
-							assert.equal(await contract.owner(), ownerL2.address);
-						}
-					});
+		describe('when the relay relinquishes ownership back to an EOA via the L1 relayer', () => {
+			before('relay a tx to nominateNewOwner() from L1', async () => {
+				const calldataBatch = contractsToBeOwned.map(contract => {
+					const nominationFn = 'nominateOwner' in contract ? 'nominateOwner' : 'nominateNewOwner';
+					return contract.interface.encodeFunctionData(nominationFn, [ownerL2.address]);
 				});
+
+				const tx = await OwnerRelayOnEthereum.connect(ownerL1).initiateRelayBatch(
+					contractsToBeOwnedAdresses,
+					calldataBatch,
+					0
+				);
+
+				relayReceipt = await tx.wait();
+			});
+
+			before('wait for the relay to finalize on L2', async () => {
+				await finalizationOnL2({ ctx, transactionHash: relayReceipt.transactionHash });
+			});
+
+			before('call acceptOwnership() directly on L2 with the EOA', async () => {
+				for (const contract of contractsToBeOwned) {
+					const tx = await contract.connect(ownerL2).acceptOwnership();
+					await tx.wait();
+				}
+			});
+
+			it('shows that the current owner of all contracts in L2 is the EOA', async () => {
+				for (const contract of contractsToBeOwned) {
+					assert.equal(await contract.owner(), ownerL2.address);
+				}
 			});
 		});
 	});
