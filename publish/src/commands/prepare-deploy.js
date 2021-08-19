@@ -23,7 +23,7 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 	ensureDeploymentPath(deploymentPath);
 
 	// Pick required ovm releases that need to be prepared
-	const unreleased = releases.filter(
+	const unreleased = releases.releases.filter(
 		release => (useOvm ? release.ovm : !release.ovm) && release.released !== true
 	);
 
@@ -41,10 +41,23 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
 
-	// Sweep releases.sources and,
+	// Get all the sources coming from the SIPs from the release on the required layer
+	const sources = release.sips
+		.map(sipNumber => {
+			const sip = releases.sips.find(sip => sip.sip === sipNumber);
+			if (!sip.sources) return null;
+			if (Array.isArray(sip.sources)) return sip.sources;
+			const baseSources = sip.sources.base || [];
+			const layerSources = sip.sources[useOvm ? 'ovm' : 'base'];
+			return [...baseSources, ...layerSources];
+		})
+		.filter(sources => !!sources)
+		.flat();
+
+	// Sweep sources and,
 	// (1) make sure they have an entry in config.json and,
 	// (2) its deploy value is set to true.
-	release.sources.map(source => {
+	sources.forEach(source => {
 		// If any non alpha characters in the name, assume regex and match existing names
 		if (/[^\w]/.test(source)) {
 			Object.keys(config)
