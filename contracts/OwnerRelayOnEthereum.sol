@@ -34,6 +34,15 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
         return requireAndGetAddress(CONTRACT_OVM_OWNER_RELAY_ON_OPTIMISM);
     }
 
+    function _getxGasLimit(uint32 crossDomainGasLimit) private view returns (uint32) {
+        // Use specified crossDomainGasLimit if specified value is not zero.
+        // otherwise use the default in SystemSettings.
+        return
+            crossDomainGasLimit != 0
+                ? crossDomainGasLimit
+                : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
+    }
+
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -54,14 +63,7 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
         IOwnerRelayOnOptimism ownerRelayOnOptimism;
         bytes memory messageData = abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelay.selector, target, payload);
 
-        // Use specified crossDomainGasLimit if specified value is not zero.
-        // otherwise use the default in SystemSettings.
-        uint32 xGasLimit =
-            crossDomainGasLimit != 0
-                ? crossDomainGasLimit
-                : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
-
-        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, xGasLimit);
+        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, _getxGasLimit(crossDomainGasLimit));
 
         emit RelayInitiated(target, payload);
     }
@@ -78,14 +80,7 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
         bytes memory messageData =
             abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelayBatch.selector, targets, payloads);
 
-        // Use specified crossDomainGasLimit if specified value is not zero.
-        // otherwise use the default in SystemSettings.
-        uint32 xGasLimit =
-            crossDomainGasLimit != 0
-                ? crossDomainGasLimit
-                : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
-
-        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, xGasLimit);
+        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, _getxGasLimit(crossDomainGasLimit));
 
         emit RelayBatchInitiated(targets, payloads);
     }
