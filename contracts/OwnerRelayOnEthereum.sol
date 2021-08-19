@@ -48,11 +48,11 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
 
     function initiateRelay(
         address target,
-        bytes calldata data,
+        bytes calldata payload,
         uint32 crossDomainGasLimit // If zero, uses default value in SystemSettings
     ) external onlyOwner {
         IOwnerRelayOnOptimism ownerRelayOnOptimism;
-        bytes memory messageData = abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelay.selector, target, data);
+        bytes memory messageData = abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelay.selector, target, payload);
 
         // Use specified crossDomainGasLimit if specified value is not zero.
         // otherwise use the default in SystemSettings.
@@ -63,19 +63,20 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
 
         _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, xGasLimit);
 
-        emit RelayInitiated(target, data);
+        emit RelayInitiated(target, payload);
     }
 
     function initiateRelayBatch(
         address[] calldata targets,
-        bytes[] calldata data,
+        bytes[] calldata payloads,
         uint32 crossDomainGasLimit // If zero, uses default value in SystemSettings
     ) external onlyOwner {
         // First check that the length of the arguments match
-        require(targets.length == data.length, "Argument length mismatch");
+        require(targets.length == payloads.length, "Argument length mismatch");
 
         IOwnerRelayOnOptimism ownerRelayOnOptimism;
-        bytes memory messageData = abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelayBatch.selector, targets, data);
+        bytes memory messageData =
+            abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelayBatch.selector, targets, payloads);
 
         // Use specified crossDomainGasLimit if specified value is not zero.
         // otherwise use the default in SystemSettings.
@@ -86,11 +87,11 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
 
         _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, xGasLimit);
 
-        emit RelayBatchInitiated(targets, data);
+        emit RelayBatchInitiated(targets, payloads);
     }
 
     /* ========== EVENTS ========== */
 
-    event RelayInitiated(address target, bytes data);
-    event RelayBatchInitiated(address[] targets, bytes[] data);
+    event RelayInitiated(address target, bytes payload);
+    event RelayBatchInitiated(address[] targets, bytes[] payloads);
 }

@@ -32,9 +32,9 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
         return requireAndGetAddress(CONTRACT_BASE_OWNER_RELAY_ON_ETHEREUM);
     }
 
-    function _relayCall(address target, bytes memory data) private {
+    function _relayCall(address target, bytes memory payload) private {
         // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory result) = target.call(data);
+        (bool success, bytes memory result) = target.call(payload);
 
         require(success, string(abi.encode("xChain call failed:", result)));
     }
@@ -49,38 +49,38 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
 
     /* ========== EXTERNAL ========== */
 
-    function directRelay(address target, bytes calldata data) external onlyTemporaryOwner {
-        _relayCall(target, data);
+    function directRelay(address target, bytes calldata payload) external onlyTemporaryOwner {
+        _relayCall(target, payload);
 
-        emit CallRelayed(target, data);
+        emit CallRelayed(target, payload);
     }
 
-    function finalizeRelay(address target, bytes calldata data) external {
+    function finalizeRelay(address target, bytes calldata payload) external {
         iAbs_BaseCrossDomainMessenger messenger = _messenger();
 
         require(msg.sender == address(messenger), "Sender is not the messenger");
         require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
 
-        _relayCall(target, data);
+        _relayCall(target, payload);
 
-        emit CallRelayed(target, data);
+        emit CallRelayed(target, payload);
     }
 
-    function finalizeRelayBatch(address[] calldata targets, bytes[] calldata data) external {
+    function finalizeRelayBatch(address[] calldata targets, bytes[] calldata payloads) external {
         iAbs_BaseCrossDomainMessenger messenger = _messenger();
 
         require(msg.sender == address(messenger), "Sender is not the messenger");
         require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
 
         for (uint256 i = 0; i < targets.length; i++) {
-            _relayCall(targets[i], data[i]);
+            _relayCall(targets[i], payloads[i]);
         }
 
-        emit CallBatchRelayed(targets, data);
+        emit CallBatchRelayed(targets, payloads);
     }
 
     /* ========== EVENTS ========== */
 
-    event CallRelayed(address target, bytes data);
-    event CallBatchRelayed(address[] targets, bytes[] data);
+    event CallRelayed(address target, bytes payload);
+    event CallBatchRelayed(address[] targets, bytes[] payloads);
 }

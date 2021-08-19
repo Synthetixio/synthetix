@@ -210,7 +210,7 @@ contract('OwnerRelayOnEthereum', () => {
 				const event = relayReceipt.events.find(e => e.event === 'RelayInitiated');
 
 				assert.equal(event.args.target, mockedContractAddressOnL2);
-				assert.equal(event.args.data, mockedRelayData);
+				assert.equal(event.args.payload, mockedRelayData);
 			});
 
 			describe('when not specifying a cross domain relay gas limit', () => {
@@ -262,7 +262,7 @@ contract('OwnerRelayOnEthereum', () => {
 				const event = relayBatchReceipt.events.find(e => e.event === 'RelayBatchInitiated');
 
 				assert.deepEqual(event.args.targets, mockedTargets);
-				assert.deepEqual(event.args.data, mockedRelayBatchData);
+				assert.deepEqual(event.args.payloads, mockedRelayBatchData);
 			});
 
 			describe('when not specifying a cross domain relay gas limit', () => {
