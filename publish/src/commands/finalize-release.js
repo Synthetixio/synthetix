@@ -15,11 +15,14 @@ const {
 } = require('../../../.');
 
 const finalizeRelease = async ({ layer, release, versionTag, yes }) => {
+	const isBase = layer === 'base' || layer === 'both';
+	const isOvm = layer === 'ovm' || layer === 'both';
+
 	// Write versions.json for whichever layer requires it
-	if (layer === 'base' || layer === 'both') {
+	if (isBase) {
 		await versionsUpdate({ release, useOvm: false, versionTag });
 	}
-	if (layer === 'ovm' || layer === 'both') {
+	if (isOvm) {
 		await versionsUpdate({ release, useOvm: true, versionTag });
 	}
 
@@ -27,10 +30,10 @@ const finalizeRelease = async ({ layer, release, versionTag, yes }) => {
 	const major = semver.major(versionTag);
 	const minor = semver.minor(versionTag);
 
-	for (const release of releases) {
+	// Mark as released the ones that have the specified version and layer
+	for (const release of releases.releases) {
 		const versionMatch = release.version.major === major && release.version.minor === minor;
-
-		const layerMatch = (release.ovm && layer !== 'base') || (!release.ovm && layer !== 'ovm');
+		const layerMatch = (release.ovm && isOvm) || (!release.ovm && isBase);
 
 		if (versionMatch && layerMatch) {
 			release.released = true;
