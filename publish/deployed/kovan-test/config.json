@@ -489,10 +489,10 @@
 		"deploy": false
 	},
 	"ShortingRewardssETH": {
-		"deploy": true
+		"deploy": false
 	},
 	"ShortingRewardssBTC": {
-		"deploy": true
+		"deploy": false
 	},
 	"TokenStatesTSLA": {
 		"deploy": false
