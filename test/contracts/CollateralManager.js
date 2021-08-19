@@ -200,11 +200,8 @@ contract('CollateralManager', async accounts => {
 		);
 
 		await manager.addShortableSynths(
-			[
-				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
-				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
-			],
-			['sBTC', 'sETH'].map(toBytes32),
+			[toBytes32('SynthsETH'), toBytes32('SynthsBTC')],
+			[sETH, sBTC],
 			{
 				from: owner,
 			}
