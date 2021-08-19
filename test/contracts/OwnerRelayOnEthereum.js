@@ -90,7 +90,7 @@ contract('OwnerRelayOnEthereum', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: artifacts.require('OwnerRelayOnEthereum').abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['initiateRelay'],
+			expected: ['initiateRelay', 'initiateRelayBatch'],
 		});
 	});
 
@@ -107,8 +107,38 @@ contract('OwnerRelayOnEthereum', () => {
 		});
 	});
 
-	describe('when initiating a relay from the owner account', () => {
-		let relayReceipt;
+	describe('when attempting to initiate a relay batch from a non-owner account', () => {
+		it('reverts with the expected error', async () => {
+			const mockedTargets = [mockedContractAddressOnL2, mockedContractAddressOnL2];
+			const mockedRelayBatchData = [mockedRelayData, mockedRelayData];
+			await assert.revert(
+				OwnerRelayOnEthereum.connect(user).initiateRelayBatch(
+					mockedTargets,
+					mockedRelayBatchData,
+					0
+				),
+				'Only the contract owner may perform this action'
+			);
+		});
+	});
+
+	describe('when attempting to initiate a relay batch from an owner account but there is argument inconsistency', () => {
+		it('reverts with the expected error', async () => {
+			const mockedTargets = [mockedContractAddressOnL2, mockedContractAddressOnL2];
+			const mockedRelayBatchData = [mockedRelayData];
+			await assert.revert(
+				OwnerRelayOnEthereum.connect(owner).initiateRelayBatch(
+					mockedTargets,
+					mockedRelayBatchData,
+					0
+				),
+				'Argument length mismatch'
+			);
+		});
+	});
+
+	describe('when relaying from the owner account', () => {
+		let relayReceipt, relayBatchReceipt;
 
 		const specifiedCrossDomainRelayGasLimit = 3e6;
 
@@ -117,15 +147,6 @@ contract('OwnerRelayOnEthereum', () => {
 			messageData: undefined,
 			crossDomainGasLimit: undefined,
 		};
-
-		before('mock Optimism Messenger.sendMessage(...)', async () => {
-			// Allows us to record what Messenger.sendMessage gets called with
-			MockedMessenger.smocked.sendMessage.will.return.with(
-				(contractOnL2, messageData, crossDomainGasLimit) => {
-					relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
-				}
-			);
-		});
 
 		before('mock SystemSettings.getCrossDomainMessageGasLimit(...)', async () => {
 			MockedFlexibleStorage.smocked.getUIntValue.will.return.with(
@@ -149,51 +170,114 @@ contract('OwnerRelayOnEthereum', () => {
 			);
 		});
 
-		before('initiate the relay', async () => {
-			const tx = await OwnerRelayOnEthereum.connect(owner).initiateRelay(
-				mockedContractAddressOnL2,
-				mockedRelayData,
-				specifiedCrossDomainRelayGasLimit
+		before('mock Optimism Messenger.sendMessage(...)', async () => {
+			// Allows us to record what Messenger.sendMessage gets called with
+			MockedMessenger.smocked.sendMessage.will.return.with(
+				(contractOnL2, messageData, crossDomainGasLimit) => {
+					relayedMessage = { contractOnL2, messageData, crossDomainGasLimit };
+				}
 			);
-			relayReceipt = await tx.wait();
 		});
 
-		it('relayed a message to OwnerRelayOnOptimism', async () => {
-			assert.equal(relayedMessage.contractOnL2, mockedOwnerRelayOnOptimismAddress);
-		});
-
-		it('relayed the message with the expected crossDomainGasLimit', async () => {
-			assert.equal(relayedMessage.crossDomainGasLimit, specifiedCrossDomainRelayGasLimit);
-		});
-
-		it('relayed the correct data', async () => {
-			const expectedRelayData = MockedOwnerRelayOnOptimism.interface.encodeFunctionData(
-				'finalizeRelay',
-				[mockedContractAddressOnL2, mockedRelayData]
-			);
-
-			assert.equal(relayedMessage.messageData, expectedRelayData);
-		});
-
-		it('emited a RelayInitiated event', async () => {
-			const event = relayReceipt.events.find(e => e.event === 'RelayInitiated');
-
-			assert.equal(event.args.target, mockedContractAddressOnL2);
-			assert.equal(event.args.data, mockedRelayData);
-		});
-
-		describe('when not specifying a cross domain relay gas limit', () => {
+		describe('when initiating a single relay', () => {
 			before('initiate the relay', async () => {
 				const tx = await OwnerRelayOnEthereum.connect(owner).initiateRelay(
 					mockedContractAddressOnL2,
 					mockedRelayData,
-					0
+					specifiedCrossDomainRelayGasLimit
 				);
-				await tx.wait();
+				relayReceipt = await tx.wait();
 			});
 
-			it('relayed the message with the default crossDomainGasLimit', async () => {
-				assert.equal(relayedMessage.crossDomainGasLimit, CROSS_DOMAIN_RELAY_GAS_LIMIT);
+			it('relayed a message to OwnerRelayOnOptimism', async () => {
+				assert.equal(relayedMessage.contractOnL2, mockedOwnerRelayOnOptimismAddress);
+			});
+
+			it('relayed the message with the expected crossDomainGasLimit', async () => {
+				assert.equal(relayedMessage.crossDomainGasLimit, specifiedCrossDomainRelayGasLimit);
+			});
+
+			it('relayed the correct data', async () => {
+				const expectedRelayData = MockedOwnerRelayOnOptimism.interface.encodeFunctionData(
+					'finalizeRelay',
+					[mockedContractAddressOnL2, mockedRelayData]
+				);
+
+				assert.equal(relayedMessage.messageData, expectedRelayData);
+			});
+
+			it('emited a RelayInitiated event', async () => {
+				const event = relayReceipt.events.find(e => e.event === 'RelayInitiated');
+
+				assert.equal(event.args.target, mockedContractAddressOnL2);
+				assert.equal(event.args.payload, mockedRelayData);
+			});
+
+			describe('when not specifying a cross domain relay gas limit', () => {
+				before('initiate the relay', async () => {
+					const tx = await OwnerRelayOnEthereum.connect(owner).initiateRelay(
+						mockedContractAddressOnL2,
+						mockedRelayData,
+						0
+					);
+					await tx.wait();
+				});
+
+				it('relayed the message with the default crossDomainGasLimit', async () => {
+					assert.equal(relayedMessage.crossDomainGasLimit, CROSS_DOMAIN_RELAY_GAS_LIMIT);
+				});
+			});
+		});
+
+		describe('when initiating a relay batch', () => {
+			const mockedTargets = [mockedContractAddressOnL2, mockedContractAddressOnL2];
+			const mockedRelayBatchData = [mockedRelayData, mockedRelayData];
+			before('initiate the relay', async () => {
+				const tx = await OwnerRelayOnEthereum.connect(owner).initiateRelayBatch(
+					mockedTargets,
+					mockedRelayBatchData,
+					specifiedCrossDomainRelayGasLimit
+				);
+				relayBatchReceipt = await tx.wait();
+			});
+
+			it('relayed a message to OwnerRelayOnOptimism', async () => {
+				assert.equal(relayedMessage.contractOnL2, mockedOwnerRelayOnOptimismAddress);
+			});
+
+			it('relayed the message with the expected crossDomainGasLimit', async () => {
+				assert.equal(relayedMessage.crossDomainGasLimit, specifiedCrossDomainRelayGasLimit);
+			});
+
+			it('relayed the correct data', async () => {
+				const expectedRelayData = MockedOwnerRelayOnOptimism.interface.encodeFunctionData(
+					'finalizeRelayBatch',
+					[mockedTargets, mockedRelayBatchData]
+				);
+
+				assert.equal(relayedMessage.messageData, expectedRelayData);
+			});
+
+			it('emited a RelayBatchInitiated event', async () => {
+				const event = relayBatchReceipt.events.find(e => e.event === 'RelayBatchInitiated');
+
+				assert.deepEqual(event.args.targets, mockedTargets);
+				assert.deepEqual(event.args.payloads, mockedRelayBatchData);
+			});
+
+			describe('when not specifying a cross domain relay gas limit', () => {
+				before('initiate the relay batch', async () => {
+					const tx = await OwnerRelayOnEthereum.connect(owner).initiateRelayBatch(
+						mockedTargets,
+						mockedRelayBatchData,
+						0
+					);
+					await tx.wait();
+				});
+
+				it('relayed the message with the default crossDomainGasLimit', async () => {
+					assert.equal(relayedMessage.crossDomainGasLimit, CROSS_DOMAIN_RELAY_GAS_LIMIT);
+				});
 			});
 		});
 	});
