@@ -22,9 +22,9 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 	const deploymentPath = getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
-	// Pick required ovm releases that need to be prepared
+	// Pick unreleases releases that have contracts that need to be prepared
 	const unreleased = releases.releases.filter(
-		release => (useOvm ? release.ovm : !release.ovm) && release.released !== true
+		release => !release.released && !!release.ovm === useOvm && release.sips.length > 0
 	);
 
 	if (unreleased.length === 0) {
@@ -32,17 +32,18 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 		return;
 	}
 
-	// Pick the oldest one to prepare
-	const [release] = unreleased;
+	const releasesNames = `"${unreleased.map(r => r.name).join('", "')}"`;
 
-	console.log(gray(`Preparing release for ${release.name} on network ${network}...`));
+	console.log(gray(`Preparing ${releasesNames} on network ${network}...`));
 
 	// Get config.js
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
 	const config = JSON.parse(fs.readFileSync(configFile));
 
 	// Get all the sources coming from the SIPs from the release on the required layer
-	const sources = release.sips
+	const sources = unreleased
+		.map(({ sips }) => sips)
+		.flat()
 		.map(sipNumber => {
 			const sip = releases.sips.find(sip => sip.sip === sipNumber);
 			if (!sip.sources) return null;
@@ -71,7 +72,7 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 
 	// Update config file
 	fs.writeFileSync(configFile, stringify(config));
-	console.log(yellow(`${configFile} updated for ${release.name} release.`));
+	console.log(yellow(`${configFile} updated for ${releasesNames}.`));
 };
 
 module.exports = {
