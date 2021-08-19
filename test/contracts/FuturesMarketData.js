@@ -202,7 +202,6 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details.order.id, order.id);
 			assert.bnEqual(details.order.leverage, order.leverage);
 			assert.bnEqual(details.order.fee, order.fee);
-			assert.bnEqual(details.order.roundId, order.roundId);
 			assert.bnEqual(details.order.minPrice, order.minPrice);
 			assert.bnEqual(details.order.maxPrice, order.maxPrice);
 

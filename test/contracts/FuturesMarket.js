@@ -1171,13 +1171,11 @@ contract('FuturesMarket', accounts => {
 			const tx = await futuresMarket.submitOrder(leverage, { from: trader });
 
 			const id = toBN(1);
-			const roundId = await futuresMarket.currentRoundId();
 			const order = await futuresMarket.orders(trader);
 			assert.isTrue(await futuresMarket.orderPending(trader));
 			assert.bnEqual(order.id, id);
 			assert.bnEqual(order.leverage, leverage);
 			assert.bnEqual(order.fee, fee);
-			assert.bnEqual(order.roundId, roundId);
 			assert.bnEqual(order.minPrice, defaultPriceBounds[0]);
 			assert.bnEqual(order.maxPrice, defaultPriceBounds[1]);
 
@@ -1190,7 +1188,7 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [id, trader, leverage, fee, roundId, defaultPriceBounds[0], defaultPriceBounds[1]],
+				args: [id, trader, leverage, fee, defaultPriceBounds[0], defaultPriceBounds[1]],
 				log: decodedLogs[1],
 			});
 		});
@@ -1241,7 +1239,6 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order1.id, id1);
 			assert.bnEqual(order1.leverage, leverage);
 			assert.bnEqual(order1.fee, fee);
-			assert.bnEqual(order1.roundId, roundId1);
 			assert.bnEqual(order1.minPrice, defaultPriceBounds[0]);
 			assert.bnEqual(order1.maxPrice, defaultPriceBounds[1]);
 
@@ -1264,7 +1261,6 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order2.id, id2);
 			assert.bnEqual(order2.leverage, leverage2);
 			assert.bnEqual(order2.fee, fee2);
-			assert.bnEqual(order2.roundId, roundId2);
 			assert.bnEqual(order1.minPrice, defaultPriceBounds[0]);
 			assert.bnEqual(order1.maxPrice, defaultPriceBounds[1]);
 
@@ -1280,15 +1276,7 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'OrderSubmitted',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [
-					id2,
-					trader,
-					leverage2,
-					fee2,
-					roundId2,
-					defaultPriceBounds[0],
-					defaultPriceBounds[1],
-				],
+				args: [id2, trader, leverage2, fee2, defaultPriceBounds[0], defaultPriceBounds[1]],
 				log: decodedLogs[2],
 			});
 		});
@@ -1599,7 +1587,6 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(order.id, toUnit(0));
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
-			assert.bnEqual(order.roundId, toUnit(0));
 			assert.bnEqual(order.minPrice, toUnit(0));
 			assert.bnEqual(order.maxPrice, toUnit(0));
 			assert.bnEqual(await sUSD.balanceOf(trader), preBalance);
@@ -1639,7 +1626,7 @@ contract('FuturesMarket', accounts => {
 	});
 
 	describe('Confirming orders', () => {
-		it('can confirm a pending order once a new price arrives', async () => {
+		it('can confirm a pending order on spot price', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.transferMargin(margin, { from: trader });
 			const leverage = toUnit('10');
@@ -1676,7 +1663,6 @@ contract('FuturesMarket', accounts => {
 			assert.isFalse(await futuresMarket.orderPending(trader));
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
-			assert.bnEqual(order.roundId, toUnit(0));
 			assert.bnEqual(order.minPrice, toUnit(0));
 			assert.bnEqual(order.maxPrice, toUnit(0));
 
@@ -1702,17 +1688,6 @@ contract('FuturesMarket', accounts => {
 				args: [id, trader, price],
 				log: decodedLogs[3],
 			});
-		});
-
-		it('cannot confirm a pending order before a price has arrived', async () => {
-			const margin = toUnit('1000');
-			await futuresMarket.transferMargin(margin, { from: trader });
-			const leverage = toUnit('10');
-			await futuresMarket.submitOrder(leverage, { from: trader });
-
-			assert.equal(await futuresMarket.orderStatus(trader), statusCodes.AwaitingPriceUpdate);
-			assert.isFalse(await futuresMarket.canConfirmOrder(trader));
-			await assert.revert(futuresMarket.confirmOrder(trader), 'Awaiting next price');
 		});
 
 		it('cannot confirm an order if none is pending', async () => {
@@ -1847,7 +1822,7 @@ contract('FuturesMarket', accounts => {
 	});
 
 	describe('Closing positions', () => {
-		it('can close an open position once a new price arrives', async () => {
+		it('can close an open position once on spot price', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.transferMargin(margin, { from: trader });
 			const leverage = toUnit('10');
@@ -1880,24 +1855,8 @@ contract('FuturesMarket', accounts => {
 			assert.isFalse(await futuresMarket.orderPending(trader));
 			assert.bnEqual(order.leverage, toUnit(0));
 			assert.bnEqual(order.fee, toUnit(0));
-			assert.bnEqual(order.roundId, toUnit(0));
 			assert.bnEqual(order.minPrice, toUnit(0));
 			assert.bnEqual(order.maxPrice, toUnit(0));
-		});
-
-		it('closing positions fails if a new price has not been set.', async () => {
-			const margin = toUnit('1000');
-			await futuresMarket.transferMargin(margin, { from: trader });
-
-			const leverage = toUnit('10');
-			await futuresMarket.submitOrder(leverage, { from: trader });
-
-			await setPrice(baseAsset, toUnit('200'));
-
-			await futuresMarket.confirmOrder(trader);
-			await futuresMarket.closePosition({ from: trader });
-
-			await assert.revert(futuresMarket.confirmOrder(trader), 'Awaiting next price');
 		});
 
 		it('closing a position cancels any open orders.', async () => {
@@ -1916,7 +1875,6 @@ contract('FuturesMarket', accounts => {
 			assert.bnNotEqual(order.id, toBN(0));
 			assert.bnEqual(order.leverage, toUnit('3'));
 			assert.bnNotEqual(order.fee, toBN(0));
-			assert.bnNotEqual(order.roundId, toBN(0));
 			assert.bnEqual(order.minPrice, toUnit(0));
 			assert.bnNotEqual(order.maxPrice, toUnit(0));
 
@@ -1937,7 +1895,7 @@ contract('FuturesMarket', accounts => {
 					trader,
 					toBN(0),
 					toBN(0),
-					order.roundId,
+
 					defaultPriceBounds[0],
 					defaultPriceBounds[1],
 				],
@@ -1949,7 +1907,6 @@ contract('FuturesMarket', accounts => {
 			assert.bnNotEqual(order.id, toBN(0));
 			assert.bnEqual(order.leverage, toBN(0));
 			assert.bnEqual(order.fee, toBN(0));
-			assert.bnNotEqual(order.roundId, toBN(0));
 			assert.bnEqual(order.minPrice, toUnit(0));
 			assert.bnNotEqual(order.maxPrice, toUnit(0));
 		});

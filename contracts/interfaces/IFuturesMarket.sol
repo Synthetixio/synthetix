@@ -22,7 +22,6 @@ interface IFuturesMarket {
         uint id;
         int leverage;
         uint fee;
-        uint roundId;
         uint minPrice;
         uint maxPrice;
     }
@@ -57,7 +56,6 @@ interface IFuturesMarket {
             uint id,
             int leverage,
             uint fee,
-            uint roundId,
             uint minPrice,
             uint maxPrice
         );

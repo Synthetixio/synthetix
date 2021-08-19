@@ -519,12 +519,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         Order memory order = orders[account];
 
-        // Has the price updated?
-        // TODO: Verify that we can actually rely on the round id monotonically increasing
-        if (_currentRoundId(_exchangeRates()) <= order.roundId) {
-            return (0, 0, 0, Status.AwaitingPriceUpdate);
-        }
-
         // Is the price within the acceptable range?
         if (price < order.minPrice || order.maxPrice < price) {
             return (0, 0, 0, Status.PriceOutOfBounds);
@@ -1147,17 +1141,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
 
         // Lodge the order, which can be confirmed at the next price update
-        uint roundId = _currentRoundId(_exchangeRates());
         uint id = _nextOrderId;
         _nextOrderId += 1;
 
         order.id = id;
         order.leverage = leverage;
         order.fee = fee;
-        order.roundId = roundId;
         order.minPrice = priceBounds[0];
         order.maxPrice = priceBounds[1];
-        emitOrderSubmitted(id, sender, leverage, fee, roundId, order.minPrice, order.maxPrice);
+        emitOrderSubmitted(id, sender, leverage, fee, order.minPrice, order.maxPrice);
     }
 
     /*
@@ -1344,24 +1336,15 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         proxy._emit(abi.encode(marginDelta), 2, SIG_MARGINTRANSFERRED, addressToBytes32(account), 0, 0);
     }
 
-    event OrderSubmitted(
-        uint indexed id,
-        address indexed account,
-        int leverage,
-        uint fee,
-        uint indexed roundId,
-        uint minPrice,
-        uint maxPrice
-    );
+    event OrderSubmitted(uint indexed id, address indexed account, int leverage, uint fee, uint minPrice, uint maxPrice);
     bytes32 internal constant SIG_ORDERSUBMITTED =
-        keccak256("OrderSubmitted(uint256,address,int256,uint256,uint256,uint256,uint256)");
+        keccak256("OrderSubmitted(uint256,address,int256,uint256,uint256,uint256)");
 
     function emitOrderSubmitted(
         uint id,
         address account,
         int leverage,
         uint fee,
-        uint roundId,
         uint minPrice,
         uint maxPrice
     ) internal {
@@ -1371,7 +1354,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             SIG_ORDERSUBMITTED,
             bytes32(id),
             addressToBytes32(account),
-            bytes32(roundId)
+            0
         );
     }
 
