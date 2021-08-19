@@ -35,12 +35,12 @@ describe('owner relay integration tests (L1, L2)', () => {
 	});
 
 	it('shows that the L1 relay was deployed with the correct parameters', async () => {
-		assert.equal(AddressResolverL1.address, await OwnerRelayOnEthereum.resolver());
+		assert.equal(await OwnerRelayOnEthereum.resolver(), AddressResolverL1.address);
 	});
 
 	it('shows that the L2 relay was deployed with the correct parameters', async () => {
-		assert.equal(AddressResolverL2.address, await OwnerRelayOnOptimism.resolver());
-		assert.equal(ownerL2.address, await OwnerRelayOnOptimism.temporaryOwner());
+		assert.equal(await OwnerRelayOnOptimism.resolver(), AddressResolverL2.address);
+		assert.equal(await OwnerRelayOnOptimism.temporaryOwner(), ownerL2.address);
 
 		// Accept results within an hour
 		const expectedExpiry =
@@ -73,11 +73,14 @@ describe('owner relay integration tests (L1, L2)', () => {
 			});
 
 			describe('when the L2 relay accepts ownership', () => {
-				before('call acceptOwnershipOn() directly on OwnerRelayOnOptimism', async () => {
-					const tx = await OwnerRelayOnOptimism.connect(ownerL2).acceptOwnershipOn(
-						SystemSettingsL2.address
+				// we are just using directRelay() for accepting ownership because we need it for subsequent tests
+				before('call acceptOwnership() directly via directRelay', async () => {
+					const calldata = SystemSettingsL2.interface.encodeFunctionData('acceptOwnership');
+					const tx = await OwnerRelayOnOptimism.connect(ownerL2).directRelay(
+						SystemSettingsL2.address,
+						calldata
 					);
-					relayReceipt = await tx.wait();
+					await tx.wait();
 				});
 
 				it('shows that the current owner of SystemSettings is the L2 relay', async () => {
@@ -97,43 +100,6 @@ describe('owner relay integration tests (L1, L2)', () => {
 
 		before('store minimumStakeTime', async () => {
 			originalMinimumStakeTime = await SystemSettingsL2.minimumStakeTime();
-		});
-
-		describe('when changing an L2 system setting with directRelay', () => {
-			before('call setMinimumStakeTime directly', async () => {
-				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [
-					newMinimumStakeTime,
-				]);
-
-				const tx = await OwnerRelayOnOptimism.connect(ownerL2).directRelay(
-					SystemSettingsL2.address,
-					calldata
-				);
-
-				await tx.wait();
-			});
-
-			it(`shows that the minimum stake time is now ${newMinimumStakeTime}`, async () => {
-				assert.equal((await SystemSettingsL2.minimumStakeTime()).toString(), newMinimumStakeTime);
-			});
-
-			after('restore minimumStakeTime', async () => {
-				const calldata = SystemSettingsL2.interface.encodeFunctionData('setMinimumStakeTime', [
-					originalMinimumStakeTime,
-				]);
-
-				const tx = await OwnerRelayOnOptimism.connect(ownerL2).directRelay(
-					SystemSettingsL2.address,
-					calldata
-				);
-
-				await tx.wait();
-
-				assert.equal(
-					(await SystemSettingsL2.minimumStakeTime()).toString(),
-					originalMinimumStakeTime
-				);
-			});
 		});
 
 		describe('when changing an L2 system setting with an L1 relay tx', () => {
