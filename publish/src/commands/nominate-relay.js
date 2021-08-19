@@ -327,7 +327,7 @@ module.exports = {
 			.option('--l1-private-key [value]', 'The private key to execute the commnad with on L1.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
-			.optios('--x-domain-gas-limit <value>', 'Cross Domain Gas Limit ', parseInt, 0)
+			.option('--x-domain-gas-limit <value>', 'Cross Domain Gas Limit ', parseInt, 0)
 			.option(
 				'-o, --new-owner <value>',
 				'The address of the new owner (please include the 0x prefix)'

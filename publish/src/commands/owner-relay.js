@@ -298,7 +298,7 @@ module.exports = {
 			.option('--l2-private-key [value]', 'The private key to execute the commnad with on L2.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
-			.optios('--x-domain-gas-limit <value>', 'Cross Domain Gas Limit ', parseInt, 0)
+			.option('--x-domain-gas-limit <value>', 'Cross Domain Gas Limit ', parseInt, 0)
 			.option(
 				'--safe-owner <value>',
 				'The address of the safe owner (please include the 0x prefix)'
