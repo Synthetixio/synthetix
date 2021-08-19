@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./Owned.sol";
@@ -8,7 +9,9 @@ import "./MixinSystemSettings.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 interface IOwnerRelayOnOptimism {
-    function finalizeRelay(address target, bytes calldata data) external;
+    function finalizeRelay(address target, bytes calldata payload) external;
+
+    function finalizeRelayBatch(address[] calldata target, bytes[] calldata payloads) external;
 }
 
 contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
@@ -31,6 +34,15 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
         return requireAndGetAddress(CONTRACT_OVM_OWNER_RELAY_ON_OPTIMISM);
     }
 
+    function _getxGasLimit(uint32 crossDomainGasLimit) private view returns (uint32) {
+        // Use specified crossDomainGasLimit if specified value is not zero.
+        // otherwise use the default in SystemSettings.
+        return
+            crossDomainGasLimit != 0
+                ? crossDomainGasLimit
+                : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
+    }
+
     /* ========== VIEWS ========== */
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -45,24 +57,36 @@ contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
 
     function initiateRelay(
         address target,
-        bytes calldata data,
+        bytes calldata payload,
         uint32 crossDomainGasLimit // If zero, uses default value in SystemSettings
     ) external onlyOwner {
-        bytes memory messageData = abi.encodeWithSelector(IOwnerRelayOnOptimism(0).finalizeRelay.selector, target, data);
+        IOwnerRelayOnOptimism ownerRelayOnOptimism;
+        bytes memory messageData = abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelay.selector, target, payload);
 
-        // Use specified crossDomainGasLimit if specified value is not zero.
-        // otherwise use the default in SystemSettings.
-        uint32 xGasLimit =
-            crossDomainGasLimit != 0
-                ? crossDomainGasLimit
-                : uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Relay));
+        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, _getxGasLimit(crossDomainGasLimit));
 
-        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, xGasLimit);
+        emit RelayInitiated(target, payload);
+    }
 
-        emit RelayInitiated(target, data);
+    function initiateRelayBatch(
+        address[] calldata targets,
+        bytes[] calldata payloads,
+        uint32 crossDomainGasLimit // If zero, uses default value in SystemSettings
+    ) external onlyOwner {
+        // First check that the length of the arguments match
+        require(targets.length == payloads.length, "Argument length mismatch");
+
+        IOwnerRelayOnOptimism ownerRelayOnOptimism;
+        bytes memory messageData =
+            abi.encodeWithSelector(ownerRelayOnOptimism.finalizeRelayBatch.selector, targets, payloads);
+
+        _messenger().sendMessage(_ownerRelayOnOptimism(), messageData, _getxGasLimit(crossDomainGasLimit));
+
+        emit RelayBatchInitiated(targets, payloads);
     }
 
     /* ========== EVENTS ========== */
 
-    event RelayInitiated(address target, bytes data);
+    event RelayInitiated(address target, bytes payload);
+    event RelayBatchInitiated(address[] targets, bytes[] payloads);
 }
