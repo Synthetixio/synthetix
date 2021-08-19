@@ -489,10 +489,10 @@
 		"deploy": false
 	},
 	"ShortingRewardssETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"ShortingRewardssBTC": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesTSLA": {
 		"deploy": false
@@ -522,6 +522,9 @@
 		"deploy": false
 	},
 	"NativeEtherWrapper": {
+		"deploy": false
+	},
+	"OwnerRelayOnEthereum": {
 		"deploy": false
 	}
 }

@@ -169,5 +169,8 @@
 	},
 	"SynthsAAVE": {
 		"deploy": false
+	},
+	"OwnerRelayOnOptimism": {
+		"deploy": false
 	}
 }
