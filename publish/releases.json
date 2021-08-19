@@ -305,24 +305,140 @@
 		"sips": [142, 145, 170]
 	},
 	{
-		"name": "Wezen",
+		"name": "Mirfak (Optimism)",
+		"ovm": true,
 		"released": false,
 		"version": {
 			"major": 2,
 			"minor": 48
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Wezen",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 49
 		},
 		"sources": ["SystemSettings", "OwnerRelayOnEthereum"],
 		"sips": [167]
 	},
 	{
 		"name": "Wezen (Optimism)",
+		"ovm": true,
 		"released": false,
 		"version": {
 			"major": 2,
-			"minor": 48
+			"minor": 49
 		},
-		"ovm": true,
 		"sources": ["OwnerRelayOnOptimism"],
 		"sips": [167]
+	},
+	{
+		"name": "Sargas",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 50
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Sargas (Optimism)",
+		"ovm": true,
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 50
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Kaus",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 51
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Kaus (Optimism)",
+		"ovm": true,
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 51
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Avior",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 52
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Avior (Optimism)",
+		"ovm": true,
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 52
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Alkaid",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 53
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Alkaid (Optimism)",
+		"ovm": true,
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 53
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Menkalinan",
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 54
+		},
+		"sources": [],
+		"sips": []
+	},
+	{
+		"name": "Menkalinan (Optimism)",
+		"ovm": true,
+		"released": false,
+		"version": {
+			"major": 2,
+			"minor": 54
+		},
+		"sources": [],
+		"sips": []
 	}
 ]

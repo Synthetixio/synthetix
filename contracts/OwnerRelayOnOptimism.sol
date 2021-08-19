@@ -1,4 +1,5 @@
 pragma solidity ^0.5.16;
+pragma experimental ABIEncoderV2;
 
 // Inheritance
 import "./MixinResolver.sol";
@@ -6,10 +7,6 @@ import "./TemporarilyOwned.sol";
 
 // Internal references
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
-
-interface IOwned {
-    function acceptOwnership() external;
-}
 
 contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
@@ -35,13 +32,23 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
         return requireAndGetAddress(CONTRACT_BASE_OWNER_RELAY_ON_ETHEREUM);
     }
 
-    function _relayCall(address target, bytes memory data) private {
+    function _relayCall(address target, bytes memory payload) private {
         // solhint-disable avoid-low-level-calls
-        (bool success, bytes memory result) = target.call(data);
+        (bool success, bytes memory result) = target.call(payload);
 
         require(success, string(abi.encode("xChain call failed:", result)));
+    }
 
-        emit CallRelayed(target, data);
+    function _onlyAllowMessengerAndL1Relayer() internal view {
+        iAbs_BaseCrossDomainMessenger messenger = _messenger();
+
+        require(msg.sender == address(messenger), "Sender is not the messenger");
+        require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
+    }
+
+    modifier onlyMessengerAndL1Relayer() {
+        _onlyAllowMessengerAndL1Relayer();
+        _;
     }
 
     /* ========== VIEWS ========== */
@@ -54,30 +61,29 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
 
     /* ========== EXTERNAL ========== */
 
-    function acceptOwnershipOnBatch(address[] calldata targets) external {
-        for (uint i = 0; i < targets.length; i++) {
-            IOwned(targets[i]).acceptOwnership();
+    function directRelay(address target, bytes calldata payload) external onlyTemporaryOwner {
+        _relayCall(target, payload);
+
+        emit DirectRelay(target, payload);
+    }
+
+    function finalizeRelay(address target, bytes calldata payload) external onlyMessengerAndL1Relayer {
+        _relayCall(target, payload);
+
+        emit RelayFinalized(target, payload);
+    }
+
+    function finalizeRelayBatch(address[] calldata targets, bytes[] calldata payloads) external onlyMessengerAndL1Relayer {
+        for (uint256 i = 0; i < targets.length; i++) {
+            _relayCall(targets[i], payloads[i]);
         }
-    }
 
-    function acceptOwnershipOn(address target) external {
-        IOwned(target).acceptOwnership();
-    }
-
-    function finalizeRelay(address target, bytes calldata data) external {
-        iAbs_BaseCrossDomainMessenger messenger = _messenger();
-
-        require(msg.sender == address(messenger), "Sender is not the messenger");
-        require(messenger.xDomainMessageSender() == _ownerRelayOnEthereum(), "L1 sender is not the owner relay");
-
-        _relayCall(target, data);
-    }
-
-    function directRelay(address target, bytes calldata data) external onlyTemporaryOwner {
-        _relayCall(target, data);
+        emit RelayBatchFinalized(targets, payloads);
     }
 
     /* ========== EVENTS ========== */
 
-    event CallRelayed(address target, bytes data);
+    event DirectRelay(address target, bytes payload);
+    event RelayFinalized(address target, bytes payload);
+    event RelayBatchFinalized(address[] targets, bytes[] payloads);
 }
