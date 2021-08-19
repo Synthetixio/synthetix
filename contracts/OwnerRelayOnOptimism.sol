@@ -39,7 +39,7 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
         require(success, string(abi.encode("xChain call failed:", result)));
     }
 
-    function onlyAllowMessengerAndL1Relayer() internal view {
+    function _onlyAllowMessengerAndL1Relayer() internal view {
         iAbs_BaseCrossDomainMessenger messenger = _messenger();
 
         require(msg.sender == address(messenger), "Sender is not the messenger");
@@ -47,7 +47,7 @@ contract OwnerRelayOnOptimism is MixinResolver, TemporarilyOwned {
     }
 
     modifier onlyMessengerAndL1Relayer() {
-        onlyAllowMessengerAndL1Relayer();
+        _onlyAllowMessengerAndL1Relayer();
         _;
     }
 

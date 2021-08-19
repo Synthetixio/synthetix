@@ -9,9 +9,9 @@ import "./MixinSystemSettings.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
 
 interface IOwnerRelayOnOptimism {
-    function finalizeRelay(address target, bytes calldata data) external;
+    function finalizeRelay(address target, bytes calldata payload) external;
 
-    function finalizeRelayBatch(address[] calldata target, bytes[] calldata data) external;
+    function finalizeRelayBatch(address[] calldata target, bytes[] calldata payloads) external;
 }
 
 contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
