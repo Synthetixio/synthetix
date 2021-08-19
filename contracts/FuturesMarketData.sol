@@ -7,6 +7,8 @@ import "./interfaces/IFuturesMarketManager.sol";
 import "./interfaces/IFuturesMarketSettings.sol";
 import "./interfaces/IAddressResolver.sol";
 
+// https://docs.synthetix.io/contracts/source/contracts/FuturesMarketData
+// A utility contract to allow the front end to query market data in a single call.
 contract FuturesMarketData {
     /* ========== TYPES ========== */
 
@@ -79,8 +81,10 @@ contract FuturesMarketData {
 
     struct PositionData {
         IFuturesMarket.Order order;
+        int orderSize;
         bool orderPending;
         bool canConfirmOrder;
+        IFuturesMarket.Status orderStatus;
         IFuturesMarket.Position position;
         int notionalValue;
         int profitLoss;
@@ -249,20 +253,23 @@ contract FuturesMarketData {
     }
 
     function _order(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Order memory) {
-        (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId) = market.orders(account);
-        return IFuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId);
+        (uint orderId, int orderLeverage, uint orderFee, uint minPrice, uint maxPrice) = market.orders(account);
+        return IFuturesMarket.Order(orderId, orderLeverage, orderFee, minPrice, maxPrice);
     }
 
     function _positionDetails(IFuturesMarket market, address account) internal view returns (PositionData memory) {
-        (uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
+        (uint positionId, uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
             market.positions(account);
         (uint liquidationPrice, ) = market.liquidationPrice(account, true);
+        (int orderSize, ) = market.orderSize(account);
         return
             PositionData(
                 _order(market, account),
+                orderSize,
                 market.orderPending(account),
                 market.canConfirmOrder(account),
-                IFuturesMarket.Position(positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
+                market.orderStatus(account),
+                IFuturesMarket.Position(positionId, positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
                 _notionalValue(market, account),
                 _profitLoss(market, account),
                 _accruedFunding(market, account),

@@ -3,15 +3,32 @@ pragma solidity ^0.5.16;
 interface IFuturesMarket {
     /* ========== TYPES ========== */
 
+    enum Status {
+        Ok,
+        NoOrderExists,
+        AwaitingPriceUpdate,
+        PriceOutOfBounds,
+        InvalidPrice,
+        CanLiquidate,
+        CannotLiquidate,
+        MaxMarketSizeExceeded,
+        MaxLeverageExceeded,
+        InsufficientMargin,
+        NotPermitted,
+        AlreadyClosedPosition
+    }
+
     struct Order {
         uint id;
         int leverage;
         uint fee;
-        uint roundId;
+        uint minPrice;
+        uint maxPrice;
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.
     struct Position {
+        uint id;
         uint margin;
         int size;
         uint lastPrice;
@@ -39,13 +56,15 @@ interface IFuturesMarket {
             uint id,
             int leverage,
             uint fee,
-            uint roundId
+            uint minPrice,
+            uint maxPrice
         );
 
     function positions(address account)
         external
         view
         returns (
+            uint id,
             uint margin,
             int size,
             uint lastPrice,
@@ -95,6 +114,10 @@ interface IFuturesMarket {
 
     function orderPending(address account) external view returns (bool pending);
 
+    function orderSize(address account) external view returns (int size, bool invalid);
+
+    function orderStatus(address account) external view returns (Status);
+
     function canConfirmOrder(address account) external view returns (bool);
 
     function notionalValue(address account) external view returns (int value, bool invalid);
@@ -123,17 +146,30 @@ interface IFuturesMarket {
 
     function recomputeFunding() external returns (uint lastIndex);
 
-    function modifyMargin(int marginDelta) external;
+    function transferMargin(int marginDelta) external;
 
     function withdrawAllMargin() external;
 
     function cancelOrder() external;
 
+    function submitOrderWithPriceBounds(
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) external;
+
     function submitOrder(int leverage) external;
 
     function closePosition() external;
 
-    function modifyMarginAndSubmitOrder(int marginDelta, int leverage) external;
+    function transferMarginAndSubmitOrderWithPriceBounds(
+        int marginDelta,
+        int leverage,
+        uint minPrice,
+        uint maxPrice
+    ) external;
+
+    function transferMarginAndSubmitOrder(int marginDelta, int leverage) external;
 
     function confirmOrder(address account) external;
 
