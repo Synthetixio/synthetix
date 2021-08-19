@@ -188,9 +188,14 @@ program
 	.option('--unreleased', 'Only retrieve the unreleased ones.')
 	.option('--with-sources', 'Only retrieve ones with files.')
 	.action(async ({ unreleased, withSources }) => {
-		const result = releases
+		const getSip = sipNumber => releases.sips.find(({ sip }) => sip === sipNumber);
+
+		const result = releases.releases
 			.filter(release => release.released === !unreleased)
-			.filter(({ sources }) => (withSources ? sources.length > 0 : true));
+			.filter(release => {
+				if (!withSources) return true;
+				return release.sips.some(s => !!getSip(s).sources);
+			});
 
 		if (result.length > 0) {
 			console.log(JSON.stringify(result, null, 2));
