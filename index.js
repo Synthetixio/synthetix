@@ -454,7 +454,7 @@ const getFuturesMarkets = ({
 	deploymentPath,
 } = {}) => {
 	if (!deploymentPath && (!path || !fs)) {
-		return data[getFolderNameForNetwork({ network, useOvm })].rewards;
+		return data[getFolderNameForNetwork({ network, useOvm })].futuresMarkets;
 	}
 
 	const pathToFuturesMarketsList = deploymentPath
