@@ -315,7 +315,7 @@ contract('CollateralManager', async accounts => {
 			await ceth.open(toUnit(1), sETH, { value: toUnit(2), from: account1 });
 			await cerc20.open(oneRenBTC, toUnit(100), sUSD, { from: account1 });
 			await cerc20.open(oneRenBTC, toUnit(0.01), sBTC, { from: account1 });
-			tx = await short.open(toUnit(200), toUnit(1), sETH, { from: account1 });
+			await short.open(toUnit(200), toUnit(1), sETH, { from: account1 });
 
 			id = getid(tx);
 		});
@@ -533,15 +533,12 @@ contract('CollateralManager', async accounts => {
 		});
 
 		describe('when a shortable synth is removed', async () => {
-			beforeEach(async () => {
-				await manager.removeShortableSynths([toBytes32('SynthsBTC')], { from: owner });
-			});
+			it('should emit the ShortableSynthRemoved event', async () => {
+				const txn = await manager.removeShortableSynths([toBytes32('SynthsBTC')], { from: owner });
 
-			it('should zero out the inverse mapping', async () => {
-				assert.equal(
-					await manager.synthToInverseSynth(toBytes32('SynthsBTC')),
-					'0x0000000000000000000000000000000000000000000000000000000000000000'
-				);
+				assert.eventEqual(txn, 'ShortableSynthRemoved', {
+					synth: toBytes32('SynthsBTC'),
+				});
 			});
 		});
 	});
