@@ -6,7 +6,7 @@ const {
 	defaults: { TEMP_OWNER_DEFAULT_DURATION },
 } = require('../../..');
 
-describe('owner relay integration tests (L1, L2)', () => {
+describe('single relay integration tests (L1, L2)', () => {
 	const ctx = this;
 	bootstrapDual({ ctx });
 
@@ -142,7 +142,7 @@ describe('owner relay integration tests (L1, L2)', () => {
 			});
 		});
 
-		describe('when the relay relinquishes ownership back to an EOA on L1', () => {
+		describe('when the relay relinquishes ownership back to an EOA via L1', () => {
 			before('relay a tx to nominateNewOwner() from L1', async () => {
 				const calldata = SystemSettingsL2.interface.encodeFunctionData('nominateNewOwner', [
 					ownerL2.address,
