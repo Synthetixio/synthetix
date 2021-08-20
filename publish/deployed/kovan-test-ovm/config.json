@@ -131,9 +131,6 @@
 	"EtherWrapper": {
 		"deploy": false
 	},
-	"WETH": {
-		"deploy": true
-	},
 	"TokenStatesBTC": {
 		"deploy": false
 	},
