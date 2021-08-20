@@ -242,7 +242,14 @@ const owner = async ({
 	}
 
 	console.log(gray('Looking for contracts whose ownership we should accept'));
+	const warnings = [];
 	for (const contract of Object.keys(config)) {
+		if (!deployment.targets[contract]) {
+			const msg = yellow(`WARNING: contract ${contract} not found in deployment file`);
+			console.log(msg);
+			warnings.push(msg);
+			continue;
+		}
 		const { address, source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
 		const deployedContract = new ethers.Contract(address, abi, provider);
@@ -337,6 +344,12 @@ const owner = async ({
 				)
 			);
 		}
+	}
+	if (warnings.length) {
+		console.log(yellow('\nThere were some issues nominating owner\n'));
+		console.log(yellow('---'));
+		warnings.forEach(warning => console.log(warning));
+		console.log(yellow('---'));
 	}
 };
 

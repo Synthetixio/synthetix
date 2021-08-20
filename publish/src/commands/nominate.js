@@ -110,7 +110,14 @@ const nominate = async ({
 		}
 	}
 
+	const warnings = [];
 	for (const contract of contracts) {
+		if (!deployment.targets[contract]) {
+			const msg = yellow(`WARNING: contract ${contract} not found in deployment file`);
+			console.log(msg);
+			warnings.push(msg);
+			continue;
+		}
 		const { address, source } = deployment.targets[contract];
 		const { abi } = deployment.sources[source];
 		const deployedContract = new ethers.Contract(address, abi, wallet);
@@ -146,6 +153,12 @@ const nominate = async ({
 		} else {
 			console.log(gray('No change required.'));
 		}
+	}
+	if (warnings.length) {
+		console.log(yellow('\nThere were some issues nominating owner\n'));
+		console.log(yellow('---'));
+		warnings.forEach(warning => console.log(warning));
+		console.log(yellow('---'));
 	}
 };
 
