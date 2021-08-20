@@ -30,14 +30,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateral);
     }
 
-    function deposit(
-        address borrower,
-        uint id,
-        uint amount
-    ) external payable returns (uint principal, uint collateral) {
-        // Transfer from will throw if they didn't set the allowance
-        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance not high enough");
-
+    function deposit(address borrower, uint id) external payable returns (uint principal, uint collateral) {
         (principal, collateral) = depositInternal(borrower, id, msg.value);
     }
 

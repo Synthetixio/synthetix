@@ -5,11 +5,7 @@ interface ICollateralEth {
 
     function close(uint id) external returns (uint amount, uint collateral);
 
-    function deposit(
-        address borrower,
-        uint id,
-        uint amount
-    ) external payable returns (uint principal, uint collateral);
+    function deposit(address borrower, uint id) external payable returns (uint principal, uint collateral);
 
     function withdraw(uint id, uint amount) external returns (uint principal, uint collateral);
 
