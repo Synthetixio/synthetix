@@ -45,6 +45,7 @@ const nominateRelay = async ({
 	xDomainGasLimit,
 	isContract,
 	yes,
+	maxBatchSize,
 }) => {
 	/// ////////////////////////////////////
 	// SETUP / SANITY CHECK
@@ -70,7 +71,7 @@ const nominateRelay = async ({
 		try {
 			await confirmAction(
 				yellow(
-					'\nHeads up! You are about to set ownership to an EOA (externally owned address), i.e. not a multisig or a DAO. Are you sure? (y/n) '
+					'\nHeads up! You are about to relay nominate ownership signing with an EOA, i.e. not a multisig or a DAO. Are you sure? (y/n) '
 				)
 			);
 		} catch (err) {
@@ -141,7 +142,11 @@ const nominateRelay = async ({
 	// FILTER TARGET CONTRACTS
 	/// ////////////////////////////////////
 	const contractsToNominate = [];
+	let currentBatchSize = 0;
 	for (const contract of contracts) {
+		if (currentBatchSize >= maxBatchSize) {
+			break;
+		}
 		const deployedContract = getContract({
 			deployment: l2Deployment,
 			signer: l2Provider,
@@ -168,6 +173,7 @@ const nominateRelay = async ({
 		const calldata = deployedContract.interface.encodeFunctionData(nominationFn, [newOwner]);
 
 		contractsToNominate.push({ contract, address: deployedContract.address, calldata });
+		currentBatchSize++;
 	}
 
 	if (!contractsToNominate.length) {
@@ -203,7 +209,7 @@ const nominateRelay = async ({
 	const contractsToNominateCalldata = getBatchCallData({
 		contractsCallData: contractsToNominate,
 		OwnerRelayOnEthereum,
-		xDomainGasLimit,
+		xDomainGasLimit: ethers.BigNumber.from(xDomainGasLimit),
 	});
 
 	if (!isContract) {
@@ -216,14 +222,16 @@ const nominateRelay = async ({
 		}
 
 		const overrides = {
-			gasLimit,
 			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		};
+		if (gasLimit) {
+			overrides.gasLimit = gasLimit;
+		}
 
 		const tx = await OwnerRelayOnEthereum.initiateRelayBatch(
 			contractsToNominateCalldata.targets,
 			contractsToNominateCalldata.payloads,
-			xDomainGasLimit,
+			ethers.BigNumber.from(xDomainGasLimit),
 			overrides
 		);
 		await tx.wait();
@@ -338,6 +346,12 @@ module.exports = {
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('--is-contract', 'Wether the bridge owner is a contract wallet or an EOA', false)
+			.option(
+				'--max-batch-size <value>',
+				'Maximun number of contracts to be processed in a batch',
+				parseInt,
+				20
+			)
 			.option(
 				'-c, --contracts [value]',
 				'The list of contracts. Applies to all contract by default',
