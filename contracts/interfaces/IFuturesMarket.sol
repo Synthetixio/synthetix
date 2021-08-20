@@ -21,7 +21,6 @@ interface IFuturesMarket {
         uint id;
         int leverage;
         uint fee;
-        uint roundId;
         uint minPrice;
         uint maxPrice;
     }
@@ -55,7 +54,6 @@ interface IFuturesMarket {
             uint id,
             int leverage,
             uint fee,
-            uint roundId,
             uint minPrice,
             uint maxPrice
         );
@@ -71,8 +69,6 @@ interface IFuturesMarket {
         );
 
     function assetPrice() external view returns (uint price, bool invalid);
-
-    function currentRoundId() external view returns (uint roundId);
 
     function marketSizes() external view returns (uint long, uint short);
 

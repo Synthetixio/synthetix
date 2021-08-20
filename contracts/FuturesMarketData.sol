@@ -48,7 +48,6 @@ contract FuturesMarketData {
 
     struct PriceDetails {
         uint price;
-        uint currentRoundId;
         bool invalid;
     }
 
@@ -220,7 +219,7 @@ contract FuturesMarketData {
                 MarketLimits(params.maxLeverage, params.maxMarketValue),
                 _fundingParameters(params),
                 MarketSizeDetails(market.marketSize(), _marketSizes(market), marketDebt, market.marketSkew()),
-                PriceDetails(price, market.currentRoundId(), invalid)
+                PriceDetails(price, invalid)
             );
     }
 
@@ -253,9 +252,8 @@ contract FuturesMarketData {
     }
 
     function _order(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Order memory) {
-        (uint orderId, int orderLeverage, uint orderFee, uint orderRoundId, uint minPrice, uint maxPrice) =
-            market.orders(account);
-        return IFuturesMarket.Order(orderId, orderLeverage, orderFee, orderRoundId, minPrice, maxPrice);
+        (uint orderId, int orderLeverage, uint orderFee, uint minPrice, uint maxPrice) = market.orders(account);
+        return IFuturesMarket.Order(orderId, orderLeverage, orderFee, minPrice, maxPrice);
     }
 
     function _positionDetails(IFuturesMarket market, address account) internal view returns (PositionData memory) {
