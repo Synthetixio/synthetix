@@ -18,7 +18,7 @@ contract('OwnerRelayOnOptimism', () => {
 
 	// Mocked contracts
 	let MockedMessenger, MockedAddressResolver, MockedOwned1OnL2, MockedOwned2OnL2;
-
+	let MockedMessengerSigner;
 	// Other mocked stuff
 	const mockedOwnerRelayOnEthereumAddress = ethers.Wallet.createRandom().address;
 	const mockedContractAddressOnL2 = ethers.Wallet.createRandom().address;
@@ -36,6 +36,8 @@ contract('OwnerRelayOnOptimism', () => {
 			artifacts.require('iAbs_BaseCrossDomainMessenger').abi,
 			ethers.provider
 		);
+		MockedMessengerSigner = MockedMessenger.wallet;
+
 		MockedOwned1OnL2 = await smockit(artifacts.require('Owned').abi, ethers.provider);
 		MockedOwned2OnL2 = await smockit(artifacts.require('Owned').abi, ethers.provider);
 
@@ -135,6 +137,25 @@ contract('OwnerRelayOnOptimism', () => {
 		let nominateNewOwnerCalldata;
 		let relayReceipt, relayBatchReceipt;
 
+		async function finalizeRelay() {
+			let relayReceipt, sendMessageError;
+			try {
+				const tx = await OwnerRelayOnOptimism.connect(MockedMessengerSigner).finalizeRelay(
+					MockedOwned1OnL2.address,
+					nominateNewOwnerCalldata,
+					{
+						gasPrice: 0,
+					}
+				);
+
+				relayReceipt = await tx.wait();
+			} catch (err) {
+				sendMessageError = err;
+			}
+
+			return { relayReceipt, sendMessageError };
+		}
+
 		async function triggerSendMessage() {
 			// Calls Messenger.sendMessage(...) with dummy data,
 			// because the ABI requires it.
@@ -165,29 +186,9 @@ contract('OwnerRelayOnOptimism', () => {
 		});
 
 		describe('when finalizing a single relay from the Optimism Messenger', () => {
-			before(
-				'mock Messenger.sendMessage(...) to call OwnerRelayOnOptimism.finalizeRelay(...)',
-				async () => {
-					const MockedMessengerSigner = MockedMessenger.wallet;
-					MockedMessenger.smocked.sendMessage.will.return.with(async () => {
-						try {
-							const tx = await OwnerRelayOnOptimism.connect(MockedMessengerSigner).finalizeRelay(
-								MockedOwned1OnL2.address,
-								nominateNewOwnerCalldata,
-								{
-									gasPrice: 0,
-								}
-							);
-
-							relayReceipt = await tx.wait();
-						} catch (err) {
-							sendMessageError = err;
-						}
-					});
-				}
-			);
-
 			describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
+				let sendMessageError;
+
 				before('mock the Messenger to report some random account as the L1 initiator', async () => {
 					MockedMessenger.smocked.xDomainMessageSender.will.return.with(
 						ethers.Wallet.createRandom().address
@@ -195,7 +196,7 @@ contract('OwnerRelayOnOptimism', () => {
 				});
 
 				before('attempt to finalize the relay', async () => {
-					await triggerSendMessage();
+					({ sendMessageError } = await finalizeRelay());
 				});
 
 				it('reverts with the expected error', async () => {
@@ -204,6 +205,8 @@ contract('OwnerRelayOnOptimism', () => {
 			});
 
 			describe('when the initiator on L1 is the OwnerRelayOnEthereum', () => {
+				let returnObj;
+
 				before(
 					'mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator',
 					async () => {
@@ -214,7 +217,7 @@ contract('OwnerRelayOnOptimism', () => {
 				);
 
 				before('finalize the relay', async () => {
-					await triggerSendMessage();
+					returnObj = await finalizeRelay();
 				});
 
 				it('should ultimately relayed contract.nominateNewOwner(...) with the correct data', async () => {
@@ -222,7 +225,7 @@ contract('OwnerRelayOnOptimism', () => {
 				});
 
 				it('emitted a RelayFinalized event', async () => {
-					const event = relayReceipt.events.find(e => e.event === 'RelayFinalized');
+					const event = returnObj['relayReceipt'].events.find(e => e.event === 'RelayFinalized');
 
 					assert.equal(event.args.target, MockedOwned1OnL2.address);
 					assert.equal(event.args.payload, nominateNewOwnerCalldata);
