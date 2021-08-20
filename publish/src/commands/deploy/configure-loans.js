@@ -247,13 +247,13 @@ module.exports = async ({
 
 	const CollateralManagerShorts = collateralManagerDefaults['SHORTS'];
 	await runStep({
-		gasLimit: 2e6,
+		gasLimit: 1e6,
 		contract: 'CollateralManager',
 		target: CollateralManager,
 		read: 'areShortableSynthsSet',
 		readArg: [
-			CollateralManagerSynths.map(key => toBytes32(`Synth${key}`)),
-			CollateralManagerSynths.map(toBytes32),
+			CollateralManagerShorts.map(key => toBytes32(`Synth${key}`)),
+			CollateralManagerShorts.map(toBytes32),
 		],
 		expected: input => input,
 		write: 'addShortableSynths',

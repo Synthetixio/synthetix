@@ -178,7 +178,7 @@ contract('ShortingRewards', accounts => {
 		});
 
 		await addressResolver.importAddresses(
-			[toBytes32('CollateralShort'), toBytes32('CollateralManager'), toBytes32('CollateralUtil')],
+			[toBytes32('CollateralShort'), toBytes32('CollateralManager')],
 			[short.address, manager.address],
 			{
 				from: owner,
@@ -199,14 +199,9 @@ contract('ShortingRewards', accounts => {
 		);
 
 		await manager.addShortableSynths(
-			[
-				[toBytes32('SynthsBTC'), toBytes32('SynthiBTC')],
-				[toBytes32('SynthsETH'), toBytes32('SynthiETH')],
-			],
+			['SynthsBTC', 'SynthsETH'].map(toBytes32),
 			['sBTC', 'sETH'].map(toBytes32),
-			{
-				from: owner,
-			}
+			{ from: owner }
 		);
 
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
