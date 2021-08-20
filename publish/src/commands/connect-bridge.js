@@ -238,7 +238,7 @@ const setupInstance = async ({
 		useFork,
 		useOvm,
 	});
-	console.log(gray('  > provider:', provider.url));
+	console.log(gray('  > provider:', provider.connection.url));
 	console.log(gray('  > account:', wallet.address));
 
 	const AddressResolver = getContract({
