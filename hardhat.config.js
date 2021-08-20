@@ -46,6 +46,7 @@ module.exports = {
 	defaultNetwork: 'hardhat',
 	networks: {
 		hardhat: {
+			hardfork: 'london',
 			gas: 12e6,
 			blockGasLimit: 12e6,
 			allowUnlimitedContractSize: true,
