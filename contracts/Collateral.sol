@@ -148,6 +148,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return _collateralUtil().getCollateralRatio(loan, collateralKey);
     }
 
+    function liquidationAmount(uint id) public view returns (uint liqAmount) {
+        Loan memory loan = loans[id];
+        return _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
+    }
+
     // The maximum number of synths issuable for this amount of collateral
     function maxLoan(uint amount, bytes32 currency) public view returns (uint max) {
         return _collateralUtil().maxLoan(amount, currency, minCratio, collateralKey);
@@ -333,7 +338,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 3. Return collateral to the child class so it knows how much to transfer.
         collateral = loan.collateral;
 
-        _checkSynthBalance(loan.account, loan.currency, total);
+        _checkSynthBalance(msg.sender, loan.currency, total);
 
         // 4. Burn the synths
         _synth(synthsByKey[loan.currency]).burn(liquidator, total);
@@ -628,7 +633,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     function _getLoanAndAccrueInterest(uint id, address owner) internal returns (Loan storage loan) {
         loan = loans[id];
         _systemStatus().requireIssuanceActive();
-        require(loan.account == owner);
+        require(loan.account == owner, "Must be borrower");
         require(loan.interestIndex != 0);
         accrueInterest(loan);
     }

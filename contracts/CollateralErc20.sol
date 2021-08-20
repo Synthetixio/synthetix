@@ -78,7 +78,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         (principal, collateral) = withdrawInternal(id, scaledAmount);
 
         // scale down before transferring back.
-        uint scaledWithdraw = scaleDownCollateral(amount);
+        uint scaledWithdraw = scaleDownCollateral(collateral);
 
         IERC20(underlyingContract).transfer(msg.sender, scaledWithdraw);
     }

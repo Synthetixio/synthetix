@@ -22,7 +22,6 @@ contract('CollateralUtil', async accounts => {
 	const fiveThousandsUSD = toUnit(5000);
 
 	let tx;
-	let loan;
 	let id;
 
 	const name = 'Some name';
@@ -205,8 +204,6 @@ contract('CollateralUtil', async accounts => {
 
 	describe('liquidation amount test', async () => {
 		let amountToLiquidate;
-		let minCratio;
-		let collateralKey;
 
 		/**
 		 * r = target issuance ratio
@@ -224,10 +221,6 @@ contract('CollateralUtil', async accounts => {
 			});
 
 			id = getid(tx);
-			loan = await cerc20.loans(id);
-
-			minCratio = await cerc20.minCratio();
-			collateralKey = await cerc20.collateralKey();
 		});
 
 		it('when we start at 200%, we can take a 25% reduction in collateral prices', async () => {
@@ -235,7 +228,7 @@ contract('CollateralUtil', async accounts => {
 				from: oracle,
 			});
 
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
+			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnEqual(amountToLiquidate, toUnit(0));
 		});
@@ -245,7 +238,7 @@ contract('CollateralUtil', async accounts => {
 				from: oracle,
 			});
 
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
+			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(1250), '10000');
 		});
@@ -255,7 +248,7 @@ contract('CollateralUtil', async accounts => {
 				from: oracle,
 			});
 
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
+			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(3750), '10000');
 		});
@@ -265,7 +258,7 @@ contract('CollateralUtil', async accounts => {
 				from: oracle,
 			});
 
-			amountToLiquidate = await util.liquidationAmount(loan, minCratio, collateralKey);
+			amountToLiquidate = await cerc20.liquidationAmount(id);
 
 			assert.bnClose(amountToLiquidate, toUnit(5000), '10000');
 		});

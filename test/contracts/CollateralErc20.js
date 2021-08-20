@@ -61,7 +61,6 @@ contract('CollateralErc20', async accounts => {
 		synths,
 		manager,
 		issuer,
-		util,
 		debtCache,
 		FEE_ADDRESS;
 
@@ -131,7 +130,6 @@ contract('CollateralErc20', async accounts => {
 			FeePool: feePool,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
-			CollateralUtil: util,
 			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
@@ -908,8 +906,6 @@ contract('CollateralErc20', async accounts => {
 			const renAmount = new BN('19642857');
 			const internalAmount = new BN('196428571428571428');
 			let liquidationAmount;
-			let minCratio;
-			let collateralKey;
 
 			beforeEach(async () => {
 				const timestamp = await currentTime();
@@ -919,11 +915,7 @@ contract('CollateralErc20', async accounts => {
 
 				await issuesUSDToAccount(toUnit(5000), account2);
 
-				loan = await cerc20.loans(id);
-				minCratio = await cerc20.minCratio();
-				collateralKey = await cerc20.collateralKey();
-
-				liquidationAmount = await util.liquidationAmount(loan, minCratio, collateralKey);
+				liquidationAmount = await cerc20.liquidationAmount(id);
 
 				tx = await cerc20.liquidate(account1, id, liquidationAmount, {
 					from: account2,
@@ -960,8 +952,6 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('should fix the collateralisation ratio of the loan', async () => {
-				loan = await cerc20.loans(id);
-
 				const ratio = await cerc20.collateralRatio(id);
 
 				// the loan is very close 150%, we are in 10^18 land.
@@ -1063,7 +1053,7 @@ contract('CollateralErc20', async accounts => {
 			});
 
 			it('should revert if they are not the borrower', async () => {
-				await assert.revert(cerc20.close(id, { from: account2 }), 'Loan does not exist');
+				await assert.revert(cerc20.close(id, { from: account2 }), 'Must be borrower');
 			});
 		});
 
@@ -1162,10 +1152,7 @@ contract('CollateralErc20', async accounts => {
 			it('should revert if the draw would under collateralise the loan', async () => {
 				await fastForwardAndUpdateRates(INTERACTION_DELAY);
 
-				await assert.revert(
-					cerc20.draw(id, toUnit(3000), { from: account1 }),
-					'Cannot draw this much'
-				);
+				await assert.revert(cerc20.draw(id, toUnit(3000), { from: account1 }), 'Cratio too low');
 			});
 		});
 
