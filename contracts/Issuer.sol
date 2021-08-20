@@ -21,6 +21,8 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 import "./interfaces/ICollateralManager.sol";
+import "./interfaces/ISynthRedeemer.sol";
+import "./Proxyable.sol";
 
 interface IRewardEscrowV2 {
     // Views
@@ -81,13 +83,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
     bytes32 private constant CONTRACT_LIQUIDATIONS = "Liquidations";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
+    bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](11);
+        bytes32[] memory newAddresses = new bytes32[](12);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -99,6 +102,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         newAddresses[8] = CONTRACT_LIQUIDATIONS;
         newAddresses[9] = CONTRACT_DEBTCACHE;
         newAddresses[10] = CONTRACT_COLLATERALMANAGER;
+        newAddresses[11] = CONTRACT_SYNTHREDEEMER;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -144,6 +148,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function debtCache() internal view returns (IIssuerInternalDebtCache) {
         return IIssuerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
+    }
+
+    function synthRedeemer() internal view returns (ISynthRedeemer) {
+        return ISynthRedeemer(requireAndGetAddress(CONTRACT_SYNTHREDEEMER));
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -446,8 +454,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function _removeSynth(bytes32 currencyKey) internal {
         address synthToRemove = address(synths[currencyKey]);
         require(synthToRemove != address(0), "Synth does not exist");
-        require(IERC20(synthToRemove).totalSupply() == 0, "Synth supply exists");
         require(currencyKey != sUSD, "Cannot remove synth");
+
+        uint synthSupply = IERC20(synthToRemove).totalSupply();
+
+        if (synthSupply > 0) {
+            uint rateToRedeem = exchangeRates().rateForCurrency(currencyKey);
+            require(rateToRedeem > 0, "Cannot remove synth to redeem without rate");
+            ISynthRedeemer _synthRedeemer = synthRedeemer();
+            synths[sUSD].issue(address(_synthRedeemer), synthSupply.mul(rateToRedeem));
+            _synthRedeemer.deprecate(ISynth(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem, synthSupply);
+        }
 
         // Remove the synth from the availableSynths array.
         for (uint i = 0; i < availableSynths.length; i++) {
@@ -540,6 +557,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external onlySynthetix {
         _requireCanBurnOnBehalf(burnForAddress, from);
         _voluntaryBurnSynths(burnForAddress, 0, true);
+    }
+
+    function burnForRedemption(
+        ISynth deprecatedSynth,
+        address account,
+        uint balance
+    ) external onlySynthRedeemer {
+        deprecatedSynth.burn(account, balance);
     }
 
     function liquidateDelinquentAccount(
@@ -811,6 +836,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     modifier onlySynthetix() {
         _onlySynthetix(); // Use an internal function to save code size.
+        _;
+    }
+
+    function _onlySynthRedeemer() internal view {
+        require(msg.sender == address(synthRedeemer()), "Issuer: Only the SynthRedeemer contract can perform this action");
+    }
+
+    modifier onlySynthRedeemer() {
+        _onlySynthRedeemer();
         _;
     }
 
