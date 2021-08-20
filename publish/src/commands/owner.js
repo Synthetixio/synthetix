@@ -6,7 +6,7 @@ const { gray, yellow, red, cyan, bgYellow, black } = require('chalk');
 
 const {
 	getUsers,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, OVM_GAS_PRICE_GWEI },
 } = require('../../..');
 
 const {
@@ -319,10 +319,12 @@ const owner = async ({
 				} else {
 					const params = {
 						to: address,
-						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+						gasPrice: useOvm
+							? ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei')
+							: ethers.utils.parseUnits(gasPrice, 'gwei'),
 						data: encodedData,
 					};
-					if (gasLimit) {
+					if (gasLimit && !useOvm) {
 						params.gasLimit = ethers.BigNumber.from(gasLimit);
 					}
 
