@@ -44,6 +44,7 @@ const ownerRelay = async ({
 	xDomainGasLimit,
 	isContract,
 	yes,
+	maxBatchSize,
 }) => {
 	/// ////////////////////////////////////
 	// SETUP / SANITY CHECK
@@ -104,8 +105,12 @@ const ownerRelay = async ({
 	// FILTER TARGET CONTRACTS
 	/// ////////////////////////////////////
 	const contractsToAccept = [];
-	const relayAddress = OwnerRelayOnOptimism.address();
+	const relayAddress = OwnerRelayOnOptimism.address.toLowerCase();
+	let currentBatchSize = 0;
 	for (const contract of contracts) {
+		if (currentBatchSize >= maxBatchSize) {
+			break;
+		}
 		const deployedContract = getContract({
 			deployment: l2Deployment,
 			signer: l2Provider,
@@ -128,6 +133,7 @@ const ownerRelay = async ({
 			const calldata = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
 
 			contractsToAccept.push({ contract, address: deployedContract.address, calldata });
+			currentBatchSize++;
 		} else {
 			console.log(
 				cyan(
@@ -170,19 +176,21 @@ const ownerRelay = async ({
 	const contractsToAcceptCalldata = getBatchCallData({
 		contractsCallData: contractsToAccept,
 		OwnerRelayOnEthereum,
-		xDomainGasLimit,
+		xDomainGasLimit: ethers.BigNumber.from(xDomainGasLimit),
 	});
 
 	if (!isContract) {
 		const overrides = {
-			gasLimit,
 			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		};
+		if (gasLimit) {
+			overrides.gasLimit = gasLimit;
+		}
 
 		const tx = await OwnerRelayOnEthereum.initiateRelayBatch(
 			contractsToAcceptCalldata.targets,
 			contractsToAcceptCalldata.payloads,
-			xDomainGasLimit,
+			ethers.BigNumber.from(xDomainGasLimit),
 			overrides
 		);
 		await tx.wait();
@@ -298,6 +306,12 @@ module.exports = {
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('--is-contract', 'Wether the bridge owner is a contract wallet or an EOA', false)
+			.option(
+				'--max-batch-size <value>',
+				'Maximun number of contracts to be processed in a batch',
+				parseInt,
+				25
+			)
 			.option(
 				'-c, --contracts [value]',
 				'The list of contracts. Applies to all contract by default',
