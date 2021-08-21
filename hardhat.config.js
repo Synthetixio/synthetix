@@ -46,7 +46,6 @@ module.exports = {
 	defaultNetwork: 'hardhat',
 	networks: {
 		hardhat: {
-			hardfork: 'london',
 			gas: 12e6,
 			blockGasLimit: 12e6,
 			allowUnlimitedContractSize: true,
@@ -69,6 +68,6 @@ module.exports = {
 		outputFile: 'test-gas-used.log',
 	},
 	mocha: {
-		timeout: 120e3, // 120s
+		timeout: 60e3, // 60s
 	},
 };
