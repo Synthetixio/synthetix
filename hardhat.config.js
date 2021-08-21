@@ -69,6 +69,6 @@ module.exports = {
 		outputFile: 'test-gas-used.log',
 	},
 	mocha: {
-		timeout: 60e3, // 60s
+		timeout: 120e3, // 120s
 	},
 };
