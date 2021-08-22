@@ -31,7 +31,13 @@ interface ISystemSettings {
 
     function etherWrapperMintFeeRate() external view returns (uint);
 
-    function interactionDelay(address collateral) external view returns (uint);
+    function minCratio(address collateral) external view returns (uint);
 
     function issueFeeRate(address collateral) external view returns (uint);
+
+    function collateralManager(address collateral) external view returns (address);
+
+    function canOpenLoans(address collateral) external view returns (bool);
+
+    function interactionDelay(address collateral) external view returns (uint);
 }

@@ -151,12 +151,24 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getEtherWrapperBurnFeeRate();
     }
 
-    function interactionDelay(address collateral) external view returns (uint) {
-        return getInteractionDelay(collateral);
+    function minCratio(address collateral) external view returns (uint) {
+        return getMinCratio(collateral);
     }
 
     function issueFeeRate(address collateral) external view returns (uint) {
         return getIssueFeeRate(collateral);
+    }
+
+    function collateralManager(address collateral) external view returns (address) {
+        return getNewCollateralManager(collateral);
+    }
+
+    function canOpenLoans(address collateral) external view returns (bool) {
+        return getCanOpenLoans(collateral);
+    }
+
+    function interactionDelay(address collateral) external view returns (uint) {
+        return getInteractionDelay(collateral);
     }
 
     // ========== RESTRICTED ==========
@@ -313,50 +325,51 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
-    function setMinCratio(address collateral, uint minCratio) external onlyOwner {
-        require(minCratio > SafeDecimalMath.unit(), "Cratio must be above 1");
+    function setMinCratio(address _collateral, uint _minCratio) external onlyOwner {
+        require(_minCratio > SafeDecimalMath.unit(), "Cratio must be above 1");
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_MIN_CRATIO, collateral)),
-            minCratio
+            keccak256(abi.encodePacked(SETTING_MIN_CRATIO, _collateral)),
+            _minCratio
         );
-        emit MinCratioRatioUpdated(minCratio);
+        emit MinCratioRatioUpdated(_minCratio);
     }
 
-    function setIssueFeeRate(address collateral, uint rate) external onlyOwner {
+    function setIssueFeeRate(address _collateral, uint _issueFeeRate) external onlyOwner {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_ISSUE_FEE_RATE, collateral)),
-            rate
+            keccak256(abi.encodePacked(SETTING_ISSUE_FEE_RATE, _collateral)),
+            _issueFeeRate
         );
-        emit IssueFeeRateUpdated(rate);
+        emit IssueFeeRateUpdated(_issueFeeRate);
     }
 
-    function setCollateralManager(address collateral, address newCollateralManager) external onlyOwner {
+    function setCollateralManager(address _collateral, address _newCollateralManager) external onlyOwner {
         flexibleStorage().setAddressValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, collateral)),
-            newCollateralManager
+            keccak256(abi.encodePacked(SETTING_NEW_COLLATERAL_MANAGER, _collateral)),
+            _newCollateralManager
         );
-        emit CollateralManagerUpdated(newCollateralManager);
+        emit CollateralManagerUpdated(_newCollateralManager);
     }
 
-    function setCanOpenLoans(address collateral, bool canOpenLoans) external onlyOwner {
+    function setCanOpenLoans(address _collateral, bool _canOpenLoans) external onlyOwner {
         flexibleStorage().setBoolValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral)),
-            canOpenLoans
+            keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, _collateral)),
+            _canOpenLoans
         );
-        emit CanOpenLoansUpdated(canOpenLoans);
+        emit CanOpenLoansUpdated(_canOpenLoans);
     }
 
-    function setInteractionDelay(address collateral, uint delay) external onlyOwner {
+    function setInteractionDelay(address _collateral, uint _interactionDelay) external onlyOwner {
+        require(_interactionDelay <= SafeDecimalMath.unit() * 3600, "Max 1 hour");
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_CAN_OPEN_LOANS, collateral)),
-            delay
+            keccak256(abi.encodePacked(SETTING_INTERACTION_DELAY, _collateral)),
+            _interactionDelay
         );
-        emit InteractionDelayUpdated(delay);
+        emit InteractionDelayUpdated(_interactionDelay);
     }
 
     // ========== EVENTS ==========

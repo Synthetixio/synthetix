@@ -390,7 +390,7 @@ contract('SystemSettings', async accounts => {
 				await systemSettings.setMinCratio(short.address, toUnit(2), { from: owner });
 			});
 			it('should update the minCratio', async () => {
-				assert.bnEqual(await short.minCratio(), toUnit(2));
+				assert.bnEqual(await systemSettings.minCratio(short.address), toUnit(2));
 			});
 		});
 	});
@@ -409,11 +409,11 @@ contract('SystemSettings', async accounts => {
 				await systemSettings.setIssueFeeRate(short.address, toUnit(0.2), { from: owner });
 			});
 			it('should update the liquidation penalty', async () => {
-				assert.bnEqual(await short.issueFeeRate(), toUnit(0.2));
+				assert.bnEqual(await systemSettings.issueFeeRate(short.address), toUnit(0.2));
 			});
-			it('should allow the issue fee rate to be  0', async () => {
+			it('should allow the issue fee rate to be 0', async () => {
 				await systemSettings.setIssueFeeRate(short.address, toUnit(0), { from: owner });
-				assert.bnEqual(await short.issueFeeRate(), toUnit(0));
+				assert.bnEqual(await systemSettings.issueFeeRate(short.address), toUnit(0));
 			});
 		});
 	});
@@ -438,7 +438,7 @@ contract('SystemSettings', async accounts => {
 				await systemSettings.setInteractionDelay(short.address, toUnit(50), { from: owner });
 			});
 			it('should update the interaction delay', async () => {
-				assert.bnEqual(await short.interactionDelay(), toUnit(50));
+				assert.bnEqual(await systemSettings.interactionDelay(short.address), toUnit(50));
 			});
 		});
 	});
@@ -457,7 +457,7 @@ contract('SystemSettings', async accounts => {
 				await systemSettings.setCollateralManager(short.address, ZERO_ADDRESS, { from: owner });
 			});
 			it('should update the manager', async () => {
-				assert.bnEqual(await short.manager(), ZERO_ADDRESS);
+				assert.bnEqual(await systemSettings.collateralManager(short.address), ZERO_ADDRESS);
 			});
 		});
 	});
@@ -476,7 +476,7 @@ contract('SystemSettings', async accounts => {
 				await systemSettings.setCanOpenLoans(short.address, false, { from: owner });
 			});
 			it('should update the manager', async () => {
-				assert.isFalse(await short.canOpenLoans());
+				assert.isFalse(await systemSettings.canOpenLoans(short.address));
 			});
 		});
 	});
