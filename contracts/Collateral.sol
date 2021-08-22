@@ -657,14 +657,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     // ========== EVENTS ==========
-    // Setters
-    event MinCratioRatioUpdated(uint minCratio);
-    event MinCollateralUpdated(uint minCollateral);
-    event IssueFeeRateUpdated(uint issueFeeRate);
-    event MaxLoansPerAccountUpdated(uint maxLoansPerAccount);
-    event InteractionDelayUpdated(uint interactionDelay);
-    event ManagerUpdated(ICollateralManager manager);
-    event CanOpenLoansUpdated(bool canOpenLoans);
 
     // Loans
     event LoanCreated(address indexed account, uint id, uint amount, uint collateral, bytes32 currency, uint issuanceFee);
