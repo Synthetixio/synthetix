@@ -45,7 +45,7 @@ jobs:
       - run:
           name: Run integration tests on l1
           command: |
-            NEW_CONTRACTS=$(node bin.js releases --unreleased --with-sources)
+            NEW_CONTRACTS=$(node bin.js sips --layer=base --unreleased --with-sources)
             if [ -z "$NEW_CONTRACTS" ]; then
               npx hardhat test:integration:l1 --use-fork
             else
