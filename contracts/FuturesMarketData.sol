@@ -79,11 +79,6 @@ contract FuturesMarketData {
     }
 
     struct PositionData {
-        IFuturesMarket.Order order;
-        int orderSize;
-        bool orderPending;
-        bool canConfirmOrder;
-        IFuturesMarket.Status orderStatus;
         IFuturesMarket.Position position;
         int notionalValue;
         int profitLoss;
@@ -231,6 +226,12 @@ contract FuturesMarketData {
         return _marketDetails(IFuturesMarket(_futuresMarketManager().marketForAsset(asset)));
     }
 
+    function _position(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Position memory) {
+        (uint positionId, uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
+            market.positions(account);
+        return IFuturesMarket.Position(positionId, positionMargin, positionSize, positionEntryPrice, positionEntryIndex);
+    }
+
     function _notionalValue(IFuturesMarket market, address account) internal view returns (int) {
         (int value, ) = market.notionalValue(account);
         return value;
@@ -251,29 +252,20 @@ contract FuturesMarketData {
         return value;
     }
 
-    function _order(IFuturesMarket market, address account) internal view returns (IFuturesMarket.Order memory) {
-        (uint orderId, int orderLeverage, uint orderFee, uint minPrice, uint maxPrice) = market.orders(account);
-        return IFuturesMarket.Order(orderId, orderLeverage, orderFee, minPrice, maxPrice);
+    function _liquidationPrice(IFuturesMarket market, address account) internal view returns (uint) {
+        (uint liquidationPrice, ) = market.liquidationPrice(account, true);
+        return liquidationPrice;
     }
 
     function _positionDetails(IFuturesMarket market, address account) internal view returns (PositionData memory) {
-        (uint positionMargin, int positionSize, uint positionEntryPrice, uint positionEntryIndex) =
-            market.positions(account);
-        (uint liquidationPrice, ) = market.liquidationPrice(account, true);
-        (int orderSize, ) = market.orderSize(account);
         return
             PositionData(
-                _order(market, account),
-                orderSize,
-                market.orderPending(account),
-                market.canConfirmOrder(account),
-                market.orderStatus(account),
-                IFuturesMarket.Position(positionMargin, positionSize, positionEntryPrice, positionEntryIndex),
+                _position(market, account),
                 _notionalValue(market, account),
                 _profitLoss(market, account),
                 _accruedFunding(market, account),
                 _remainingMargin(market, account),
-                liquidationPrice,
+                _liquidationPrice(market, account),
                 market.canLiquidate(account)
             );
     }
