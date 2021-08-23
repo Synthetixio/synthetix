@@ -49,7 +49,7 @@ jobs:
             if [ -z "$NEW_CONTRACTS" ]; then
               npx hardhat test:integration:l1 --use-fork
             else
-              npx hardhat test:integration:l1 --compile --deploy --use-fork
+              npx hardhat test:integration:l1 --compile --deploy --use-sips --use-fork
             fi;
   job-integration-tests:
     working_directory: ~/repo
