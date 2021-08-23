@@ -1029,12 +1029,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _modifyPosition(sizeDelta, price, fundingIndex, messageSender);
     }
 
-    function _closePosition(
-        uint price,
-        uint fundingIndex,
-        uint size
-    ) internal {}
-
     /*
      * Submit an order to close a position.
      */
