@@ -1642,7 +1642,7 @@ contract('FuturesMarket', accounts => {
 		});
 
 		it('Modifying a position without closing it should not change its id', async () => {
-			await transferMarginSubmitAndConfirmOrder({
+			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
 				fillPrice: toUnit('200'),
@@ -1651,7 +1651,7 @@ contract('FuturesMarket', accounts => {
 			});
 			const { id: oldPositionId } = await futuresMarket.positions(trader);
 
-			await transferMarginSubmitAndConfirmOrder({
+			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
 				fillPrice: toUnit('200'),
@@ -1705,7 +1705,7 @@ contract('FuturesMarket', accounts => {
 		});
 
 		it('Cannot close an already-closed position', async () => {
-			await transferMarginSubmitAndConfirmOrder({
+			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
 				fillPrice: toUnit('200'),
@@ -1760,7 +1760,7 @@ contract('FuturesMarket', accounts => {
 		});
 
 		it('closing a position and opening one after should increment the position id', async () => {
-			await transferMarginSubmitAndConfirmOrder({
+			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
 				fillPrice: toUnit('100'),
@@ -1775,7 +1775,7 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, toUnit('200'));
 			await futuresMarket.confirmOrder(trader);
 
-			await transferMarginSubmitAndConfirmOrder({
+			await transferMarginAndModifyPosition({
 				market: futuresMarket,
 				account: trader,
 				fillPrice: toUnit('100'),
@@ -2042,47 +2042,57 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(await futuresMarket.currentFundingRate(), toUnit(0));
 
 			// Market is 50% skewed
+			/*
 			await submitAndConfirmOrder({
 				market: futuresMarket,
 				account: trader,
 				fillPrice: toUnit('250'),
 				leverage: toUnit('9'),
 			});
+			*/
 
 			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('-0.05'), toUnit('0.01'));
 
+			/*
 			await submitAndConfirmOrder({
 				market: futuresMarket,
 				account: trader,
 				fillPrice: toUnit('250'),
 				leverage: toUnit('1'),
 			});
+			*/
 
 			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('0.05'), toUnit('0.01'));
 
 			// Market is 100% skewed
+			/*
 			await submitAndConfirmOrder({
 				market: futuresMarket,
 				account: trader,
 				fillPrice: toUnit('250'),
 				leverage: toUnit('0'),
 			});
+			*/
 
 			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('0.1'), toUnit('0.01'));
 
+			/*
 			await submitAndConfirmOrder({
 				market: futuresMarket,
 				account: trader,
 				fillPrice: toUnit('250'),
 				leverage: toUnit('1'),
 			});
+			*/
 
+			/*
 			await submitAndConfirmOrder({
 				market: futuresMarket,
 				account: trader2,
 				fillPrice: toUnit('250'),
 				leverage: toUnit('0'),
 			});
+			*/
 
 			assert.bnClose(await futuresMarket.currentFundingRate(), toUnit('-0.1'), toUnit('0.01'));
 		});
@@ -2190,30 +2200,36 @@ contract('FuturesMarket', accounts => {
 						// E.g. if maxFRSkew = 0.5, then k = 0.5/1.5 = 1/3
 						//      So we sample oppLev from leverage to 1/3*leverage
 
+						/*
 						const k = toUnit(1)
 							.sub(maxFRSkew)
 							.mul(toUnit(1))
 							.div(toUnit(1).add(maxFRSkew));
+						 */
 
 						for (const maxFR of ['0.1', '0.2', '0.05'].map(toUnit)) {
 							await futuresMarketSettings.setMaxFundingRate(baseAsset, maxFR, { from: owner });
 
-							const lowLev = leverage.mul(k).div(toUnit(1));
+							// const lowLev = leverage.mul(k).div(toUnit(1));
 
 							for (let i = points; i >= 0; i--) {
 								// now lerp from leverage*k to leverage
+								/*
 								const frac = leverage
 									.sub(lowLev)
 									.mul(toBN(i))
 									.div(toBN(points));
-								const oppLev = lowLev.add(frac).neg();
+									*/
+								// const oppLev = lowLev.add(frac).neg();
 
+								/*
 								await submitAndConfirmOrder({
 									market: futuresMarket,
 									account: trader2,
 									fillPrice: toUnit('100'),
 									leverage: oppLev,
 								});
+								 */
 
 								// oppLev = lev*k + lev*(1 - k)*i/points
 								// The skew is (lev - lev*k - lev*(1-k)*i/points)/(lev + lev*k + lev*(1-k)*i/points)
@@ -2973,7 +2989,7 @@ contract('FuturesMarket', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 				await futuresMarket.liquidatePosition(trader, { from: noBalance });
 
-				await transferMarginSubmitAndConfirmOrder({
+				await transferMarginAndModifyPosition({
 					market: futuresMarket,
 					account: trader,
 					fillPrice: toUnit('100'),
