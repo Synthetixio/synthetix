@@ -167,7 +167,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _errorMessages[uint8(Status.MaxLeverageExceeded)] = "Max leverage exceeded";
         _errorMessages[uint8(Status.InsufficientMargin)] = "Insufficient margin";
         _errorMessages[uint8(Status.NotPermitted)] = "Not permitted by this address";
-        _errorMessages[uint8(Status.NilOrder)] = "Nil order";
+        _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
+        _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
     }
 
     /* ========== VIEWS ========== */
@@ -1016,7 +1017,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     function closePosition() external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
-        _modifyPosition(-positions[messageSender].size, price, fundingIndex, messageSender);
+        int size = positions[messageSender].size;
+        _revertIfError(size == 0, Status.NoPositionOpen);
+        _modifyPosition(-size, price, fundingIndex, messageSender);
     }
 
     function _liquidatePosition(

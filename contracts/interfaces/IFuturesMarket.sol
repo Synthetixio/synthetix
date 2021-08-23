@@ -12,7 +12,8 @@ interface IFuturesMarket {
         MaxLeverageExceeded,
         InsufficientMargin,
         NotPermitted,
-        NilOrder
+        NilOrder,
+        NoPositionOpen
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.
