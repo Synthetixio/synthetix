@@ -1015,10 +1015,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * Submit an order to close a position.
      */
     function closePosition() external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
-        uint fundingIndex = _recomputeFunding(price);
         int size = positions[messageSender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
+        uint price = _assetPriceRequireNotInvalid();
+        uint fundingIndex = _recomputeFunding(price);
         _modifyPosition(-size, price, fundingIndex, messageSender);
     }
 
