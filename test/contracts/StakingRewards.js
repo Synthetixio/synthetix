@@ -106,7 +106,6 @@ contract('StakingRewards', accounts => {
 				'setRewardsDistribution',
 				'setRewardsDuration',
 				'recoverERC20',
-				'updatePeriodFinish',
 			],
 		});
 	});
@@ -165,15 +164,6 @@ contract('StakingRewards', accounts => {
 			await onlyGivenAddressCanInvoke({
 				fnc: stakingRewards.setPaused,
 				args: [true],
-				address: owner,
-				accounts,
-			});
-		});
-
-		it('only owner can call updatePeriodFinish', async () => {
-			await onlyGivenAddressCanInvoke({
-				fnc: stakingRewards.updatePeriodFinish,
-				args: [0],
 				address: owner,
 				accounts,
 			});
