@@ -1165,6 +1165,55 @@ contract('FuturesMarket', accounts => {
 			await assert.revert(futuresMarket.modifyPosition(size, { from: trader }), 'Invalid price');
 		});
 
+		it('Cannot modify a position if the price has slipped too far', async () => {
+			const startPrice = toUnit('200');
+			await setPrice(baseAsset, startPrice);
+
+			const margin = toUnit('1000');
+			const minPrice = multiplyDecimalRound(startPrice, toUnit(1).sub(toUnit('0.01')));
+			const maxPrice = multiplyDecimalRound(startPrice, toUnit(1).add(toUnit('0.01')));
+
+			await futuresMarket.transferMargin(margin, { from: trader });
+			await futuresMarket.modifyPositionWithPriceBounds(toUnit('1'), minPrice, maxPrice, {
+				from: trader,
+			});
+
+			// Slips +1%.
+			await setPrice(baseAsset, maxPrice.add(toBN(1)));
+			await assert.revert(
+				futuresMarket.modifyPositionWithPriceBounds(toUnit('-1'), minPrice, maxPrice, {
+					from: trader,
+				}),
+				'Price out of acceptable range'
+			);
+			await assert.revert(
+				futuresMarket.closePositionWithPriceBounds(minPrice, maxPrice, {
+					from: trader,
+				}),
+				'Price out of acceptable range'
+			);
+
+			// Slips -1%.
+			await setPrice(baseAsset, minPrice.sub(toBN(1)));
+			await assert.revert(
+				futuresMarket.modifyPositionWithPriceBounds(toUnit('1'), minPrice, maxPrice, {
+					from: trader,
+				}),
+				'Price out of acceptable range'
+			);
+			await assert.revert(
+				futuresMarket.closePositionWithPriceBounds(minPrice, maxPrice, {
+					from: trader,
+				}),
+				'Price out of acceptable range'
+			);
+
+			await setPrice(baseAsset, startPrice);
+			await futuresMarket.closePositionWithPriceBounds(minPrice, maxPrice, {
+				from: trader,
+			});
+		});
+
 		it('Cannot modify a position if it is liquidating', async () => {
 			await transferMarginAndModifyPosition({
 				market: futuresMarket,

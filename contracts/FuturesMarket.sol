@@ -158,6 +158,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // Set up the mapping between error codes and their revert messages.
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
+        _errorMessages[uint8(Status.PriceOutOfBounds)] = "Price out of acceptable range";
         _errorMessages[uint8(Status.CanLiquidate)] = "Position can be liquidated";
         _errorMessages[uint8(Status.CannotLiquidate)] = "Position cannot be liquidated";
         _errorMessages[uint8(Status.MaxMarketSizeExceeded)] = "Max market size exceeded";
@@ -272,7 +273,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * The total debt contributed by this market to the Synthetix system.
+     * The debt contributed by this market to the overall system.
      * The total market debt is equivalent to the sum of remaining margins in all open positions.
      */
     function marketDebt() external view returns (uint debt, bool invalid) {
@@ -888,8 +889,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * Alter the amount of margin in a position. Positive arguments correspond to deposits, negative arguments to
-     * withdrawals. The margin will be burnt or issued directly into/out of the caller's sUSD wallet.
+     * Alter the amount of margin in a position. A positive input triggers a deposit; a negative one, a
+     * withdrawal. The margin will be burnt or issued directly into/out of the caller's sUSD wallet.
+     * Reverts on deposit if the caller lacks a sufficient sUSD balance.
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
     function transferMargin(int marginDelta) external optionalProxy {
@@ -993,14 +995,45 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * Submit an order to adjust the position leverage to a target level.
-     * Reverts if the resulting position is too large, outside the max leverage, or if an existing position is liquidating.
+     * Adjust the sender's position size.
+     * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
      */
     function modifyPosition(int sizeDelta) external optionalProxy {
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
         _modifyPosition(sizeDelta, price, fundingIndex, messageSender);
     }
+
+    function _revertIfPriceOutsideBounds(
+        uint price,
+        uint minPrice,
+        uint maxPrice
+    ) internal view {
+        _revertIfError(price < minPrice || maxPrice < price, Status.PriceOutOfBounds);
+    }
+
+    /*
+     * Adjust the sender's position size, but with an acceptable slippage range in case
+     * the price updates while the transaction is in flight.
+     * Reverts if the oracle price is outside the specified bounds, or the resulting position is too large,
+     * outside the max leverage, or is liquidating.
+     */
+    function modifyPositionWithPriceBounds(
+        int sizeDelta,
+        uint minPrice,
+        uint maxPrice
+    ) external optionalProxy {
+        uint price = _assetPriceRequireNotInvalid();
+        _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
+        uint fundingIndex = _recomputeFunding(price);
+        _modifyPosition(sizeDelta, price, fundingIndex, messageSender);
+    }
+
+    function _closePosition(
+        uint price,
+        uint fundingIndex,
+        uint size
+    ) internal {}
 
     /*
      * Submit an order to close a position.
@@ -1009,8 +1042,18 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         int size = positions[messageSender].size;
         _revertIfError(size == 0, Status.NoPositionOpen);
         uint price = _assetPriceRequireNotInvalid();
-        uint fundingIndex = _recomputeFunding(price);
-        _modifyPosition(-size, price, fundingIndex, messageSender);
+        _modifyPosition(-size, price, _recomputeFunding(price), messageSender);
+    }
+
+    /*
+     * Submit an order to close a position; reverts if the asset price is outside the specified bounds.
+     */
+    function closePositionWithPriceBounds(uint minPrice, uint maxPrice) external optionalProxy {
+        int size = positions[messageSender].size;
+        _revertIfError(size == 0, Status.NoPositionOpen);
+        uint price = _assetPriceRequireNotInvalid();
+        _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
+        _modifyPosition(-size, price, _recomputeFunding(price), messageSender);
     }
 
     function _liquidatePosition(

@@ -6,6 +6,7 @@ interface IFuturesMarket {
     enum Status {
         Ok,
         InvalidPrice,
+        PriceOutOfBounds,
         CanLiquidate,
         CannotLiquidate,
         MaxMarketSizeExceeded,
@@ -115,7 +116,15 @@ interface IFuturesMarket {
 
     function modifyPosition(int sizeDelta) external;
 
+    function modifyPositionWithPriceBounds(
+        int sizeDelta,
+        uint minPrice,
+        uint maxPrice
+    ) external;
+
     function closePosition() external;
+
+    function closePositionWithPriceBounds(uint minPrice, uint maxPrice) external;
 
     function liquidatePosition(address account) external;
 }
