@@ -567,26 +567,6 @@ contract('StakingRewards', accounts => {
 		});
 	});
 
-	describe('updatePeriodFinish()', () => {
-		const updateTimeStamp = toUnit('100');
-
-		before(async () => {
-			await stakingRewards.updatePeriodFinish(updateTimeStamp, {
-				from: owner,
-			});
-		});
-
-		it('should update periodFinish', async () => {
-			const periodFinish = await stakingRewards.periodFinish();
-			assert.bnEqual(periodFinish, updateTimeStamp);
-		});
-
-		it('should update rewardRate to zero', async () => {
-			const rewardRate = await stakingRewards.rewardRate();
-			assert.bnEqual(rewardRate, ZERO_BN);
-		});
-	});
-
 	describe('exit()', () => {
 		it('should retrieve all earned and increase rewards bal', async () => {
 			const totalToStake = toUnit('100');
