@@ -90,9 +90,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     // This is the same unit as used inside `SignedSafeDecimalMath`.
     int private constant _UNIT = int(10**uint(18));
 
-    // Orders can potentially move the market past its configured max by up to 5%.
-    uint private constant _MAX_MARKET_VALUE_PLAY_FACTOR = (5 * uint(_UNIT)) / 100;
-
     /* ========== STATE VARIABLES ========== */
 
     // The asset being traded in this market. This should be a valid key into the ExchangeRates contract.
