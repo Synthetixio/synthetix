@@ -121,8 +121,6 @@ contract('FuturesMarket', accounts => {
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	// TODO: Check that onlyOwner functions are indeed onlyOwner using `onlyGivenAddressCanInvoke`
-
 	describe('Basic parameters', () => {
 		it('Only expected functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
