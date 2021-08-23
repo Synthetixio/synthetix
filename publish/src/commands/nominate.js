@@ -17,6 +17,10 @@ const {
 	confirmAction,
 } = require('../util');
 
+const {
+	constants: { OVM_GAS_PRICE_GWEI },
+} = require('../../..');
+
 const nominate = async ({
 	network,
 	newOwner,
@@ -143,10 +147,15 @@ const nominate = async ({
 				'nominateOwner' in deployedContract ? 'nominateOwner' : 'nominateNewOwner';
 
 			console.log(yellow(`Invoking ${contract}.${nominationFnc}(${newOwner})`));
-			const overrides = {
-				gasLimit,
-				gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
-			};
+
+			const overrides = useOvm
+				? {
+						gasPrice: ethers.utils.parseUnits(OVM_GAS_PRICE_GWEI, 'gwei'),
+				  }
+				: {
+						gasLimit,
+						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
+				  };
 
 			const tx = await deployedContract[nominationFnc](newOwner, overrides);
 			await tx.wait();

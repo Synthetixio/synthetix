@@ -37,7 +37,6 @@ const ownerRelay = async ({
 	l1ProviderUrl,
 	l2ProviderUrl,
 	l1PrivateKey,
-	l2PrivateKey,
 	safeOwner,
 	contracts,
 	gasPrice,
@@ -45,6 +44,7 @@ const ownerRelay = async ({
 	xDomainGasLimit,
 	isContract,
 	yes,
+	maxBatchSize,
 }) => {
 	/// ////////////////////////////////////
 	// SETUP / SANITY CHECK
@@ -77,15 +77,6 @@ const ownerRelay = async ({
 		l1Wallet = new ethers.Wallet(l1PrivateKey, l1Provider);
 	}
 
-	let l2Wallet;
-	if (!l2PrivateKey) {
-		const account = getUsers({ network: l1Network, user: 'owner' }).address; // protocolDAO
-		l2Wallet = l1Provider.getSigner(account);
-		l2Wallet.address = await l2Wallet.getAddress();
-	} else {
-		l2Wallet = new ethers.Wallet(l2PrivateKey, l1Provider);
-	}
-
 	if (contracts.length > 0) {
 		// Validate contract names
 		contracts.forEach(contract => {
@@ -114,9 +105,17 @@ const ownerRelay = async ({
 	// FILTER TARGET CONTRACTS
 	/// ////////////////////////////////////
 	const contractsToAccept = [];
-	const relayAddress = OwnerRelayOnOptimism.address();
+	const relayAddress = OwnerRelayOnOptimism.address.toLowerCase();
+	let currentBatchSize = 0;
 	for (const contract of contracts) {
-		const deployedContract = getContract({ deployment: l2Deployment, signer: l2Wallet, contract });
+		if (currentBatchSize >= maxBatchSize) {
+			break;
+		}
+		const deployedContract = getContract({
+			deployment: l2Deployment,
+			signer: l2Provider,
+			contract,
+		});
 
 		// ignore contracts that don't support Owned
 		if (!deployedContract.functions.owner) {
@@ -134,6 +133,7 @@ const ownerRelay = async ({
 			const calldata = deployedContract.interface.encodeFunctionData('acceptOwnership', []);
 
 			contractsToAccept.push({ contract, address: deployedContract.address, calldata });
+			currentBatchSize++;
 		} else {
 			console.log(
 				cyan(
@@ -176,19 +176,21 @@ const ownerRelay = async ({
 	const contractsToAcceptCalldata = getBatchCallData({
 		contractsCallData: contractsToAccept,
 		OwnerRelayOnEthereum,
-		xDomainGasLimit,
+		xDomainGasLimit: ethers.BigNumber.from(xDomainGasLimit),
 	});
 
 	if (!isContract) {
 		const overrides = {
-			gasLimit,
 			gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 		};
+		if (gasLimit) {
+			overrides.gasLimit = gasLimit;
+		}
 
 		const tx = await OwnerRelayOnEthereum.initiateRelayBatch(
 			contractsToAcceptCalldata.targets,
 			contractsToAcceptCalldata.payloads,
-			xDomainGasLimit,
+			ethers.BigNumber.from(xDomainGasLimit),
 			overrides
 		);
 		await tx.wait();
@@ -295,7 +297,6 @@ module.exports = {
 			.option('--l1-provider-url <value>', 'Ethereum network provider URL.')
 			.option('--l2-provider-url <value>', 'Optimism network provider URL.')
 			.option('--l1-private-key [value]', 'The private key to execute the commnad with on L1.')
-			.option('--l2-private-key [value]', 'The private key to execute the commnad with on L2.')
 			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
 			.option('--x-domain-gas-limit <value>', 'Cross Domain Gas Limit ', parseInt, 0)
@@ -305,6 +306,12 @@ module.exports = {
 			)
 			.option('-y, --yes', 'Dont prompt, just reply yes.')
 			.option('--is-contract', 'Wether the bridge owner is a contract wallet or an EOA', false)
+			.option(
+				'--max-batch-size <value>',
+				'Maximun number of contracts to be processed in a batch',
+				parseInt,
+				25
+			)
 			.option(
 				'-c, --contracts [value]',
 				'The list of contracts. Applies to all contract by default',
