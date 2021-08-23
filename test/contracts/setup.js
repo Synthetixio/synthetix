@@ -255,6 +255,7 @@ const setupContract = async ({
 		],
 		CollateralState: [owner, tryGetAddressOf('Collateral')],
 		WETH: [],
+		LINK: [],
 	};
 
 	let instance;
@@ -649,6 +650,7 @@ const setupAllContracts = async ({
 		{ contract: 'SynthUtil', deps: ['AddressResolver'] },
 		{ contract: 'DappMaintenance' },
 		{ contract: 'WETH' },
+		{ contract: 'LINK' },
 		{
 			contract: 'EtherWrapper',
 			mocks: [],
@@ -662,7 +664,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'LinkWrapper',
 			mocks: [],
-			deps: ['AddressResolver', 'SynthsLINK'],
+			deps: ['AddressResolver', 'LINK'],
 		},
 		{
 			contract: 'DebtCache',

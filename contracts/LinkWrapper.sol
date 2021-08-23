@@ -140,7 +140,7 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // Transfers `amountIn` WETH to mint `amountIn - fees` sLINK.
+    // Transfers `amountIn` link to mint `amountIn - fees` sLINK.
     // `amountIn` is inclusive of fees, calculable via `calculateMintFee`.
     function mint(uint amountIn) external notPaused {
         require(amountIn <= _link.allowance(msg.sender, address(this)), "Allowance not high enough");
@@ -156,11 +156,11 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
         }
     }
 
-    // Burns `amountIn` sLINK for `amountIn - fees` WETH.
+    // Burns `amountIn` sLINK for `amountIn - fees` link.
     // `amountIn` is inclusive of fees, calculable via `calculateBurnFee`.
     function burn(uint amountIn) external notPaused {
         uint reserves = getReserves();
-        require(reserves > 0, "Contract cannot burn sLINK for WETH, WETH balance is zero");
+        require(reserves > 0, "Contract cannot burn sLINK for link, link balance is zero");
 
         // principal = [amountIn / (1 + burnFeeRate)]
         uint principal = amountIn.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
@@ -208,7 +208,7 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
         uint feeAmountLink = calculateMintFee(amountIn);
         uint principal = amountIn.sub(feeAmountLink);
 
-        // Transfer WETH from user.
+        // Transfer link from user.
         _link.transferFrom(msg.sender, address(this), amountIn);
 
         // Mint `amountIn - fees` sLINK to user.
@@ -243,7 +243,7 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
         // We don't update sLINKIssued, as only the principal was subtracted earlier.
         feesEscrowed = feesEscrowed.add(feeAmountLink);
 
-        // Transfer `amount - fees` WETH to user.
+        // Transfer `amount - fees` link to user.
         _link.transfer(msg.sender, principal);
 
         emit Burned(msg.sender, principal, feeAmountLink, amountIn);

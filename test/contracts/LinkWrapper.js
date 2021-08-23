@@ -12,14 +12,14 @@ const {
 	decodedEventEqual,
 } = require('./helpers');
 
-const { setupAllContracts } = require('./setup');
+const { mockToken, setupAllContracts } = require('./setup');
 
 const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');
 
 contract('LinkWrapper', async accounts => {
 	const synths = ['sUSD', 'sLINK', 'SNX'];
-	const [sLINK] = ['sLINK'].map(toBytes32);
+	const [sLINK, sUSD] = ['sLINK', 'sUSD'].map(toBytes32);
 
 	const ONE = toBN('1');
 
@@ -29,30 +29,29 @@ contract('LinkWrapper', async accounts => {
 		feePool,
 		exchangeRates,
 		addressResolver,
-		depot,
 		issuer,
 		FEE_ADDRESS,
 		sUSDSynth,
 		sLINKSynth,
-		etherWrapper,
-		weth,
+		linkWrapper,
+		linkToken,
 		timestamp;
 
-	const calculateETHToUSD = async feesInETH => {
-		// Ask the Depot how many sUSD I will get for this ETH
-		const expectedFeesUSD = await depot.synthsReceivedForEther(feesInETH);
+	const calculateLINKToUSD = async feesInAsset => {
+		// how many sUSD I will get for this LINK
+		const expectedFeesUSD = await exchangeRates.effectiveValue(sLINK, feesInAsset, sUSD);
 		return expectedFeesUSD;
 	};
 
 	const calculateMintFees = async amount => {
-		const mintFee = await etherWrapper.calculateMintFee(amount);
-		const expectedFeesUSD = await calculateETHToUSD(mintFee);
+		const mintFee = await linkWrapper.calculateMintFee(amount);
+		const expectedFeesUSD = await calculateLINKToUSD(mintFee);
 		return { mintFee, expectedFeesUSD };
 	};
 
 	const calculateBurnFees = async amount => {
-		const burnFee = await etherWrapper.calculateBurnFee(amount);
-		const expectedFeesUSD = await calculateETHToUSD(burnFee);
+		const burnFee = await linkWrapper.calculateBurnFee(amount);
+		const expectedFeesUSD = await calculateLINKToUSD(burnFee);
 		return { burnFee, expectedFeesUSD };
 	};
 
@@ -63,7 +62,7 @@ contract('LinkWrapper', async accounts => {
 			Issuer: issuer,
 			FeePool: feePool,
 			ExchangeRates: exchangeRates,
-			LinkWrapper: etherWrapper,
+			LinkWrapper: linkWrapper,
 			SynthsUSD: sUSDSynth,
 			SynthsLINK: sLINKSynth,
 		} = await setupAllContracts({
@@ -85,6 +84,12 @@ contract('LinkWrapper', async accounts => {
 			],
 		}));
 
+		({ token: linkToken } = await mockToken({
+			accounts,
+			name: 'Link Token',
+			symbol: 'LINK',
+		}));
+
 		// set defaults for test - 50bps mint and burn fees
 		await systemSettings.setLinkWrapperMintFeeRate(toUnit('0.005'), { from: owner });
 		await systemSettings.setLinkWrapperBurnFeeRate(toUnit('0.005'), { from: owner });
@@ -92,7 +97,7 @@ contract('LinkWrapper', async accounts => {
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 		timestamp = await currentTime();
 
-		await exchangeRates.updateRates([sLINK], ['1500', '1500'].map(toUnit), timestamp, {
+		await exchangeRates.updateRates([sLINK], ['20'].map(toUnit), timestamp, {
 			from: oracle,
 		});
 	});
@@ -101,7 +106,7 @@ contract('LinkWrapper', async accounts => {
 
 	it('ensure only expected functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: etherWrapper.abi,
+			abi: linkWrapper.abi,
 			hasFallback: true,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'MixinSystemSettings'],
 			expected: ['mint', 'burn', 'distributeFees'],
@@ -111,7 +116,7 @@ contract('LinkWrapper', async accounts => {
 	describe('On deployment of Contract', async () => {
 		let instance;
 		beforeEach(async () => {
-			instance = etherWrapper;
+			instance = linkWrapper;
 		});
 
 		it('should set constructor params on deployment', async () => {
@@ -130,27 +135,27 @@ contract('LinkWrapper', async accounts => {
 		});
 
 		describe('should have a default', async () => {
-			const MAX_ETH = toUnit('5000');
+			const MAX_LINK = toUnit('5000');
 			const FIFTY_BIPS = toUnit('0.005');
 
-			it('maxETH of 5,000 ETH', async () => {
-				assert.bnEqual(await etherWrapper.maxETH(), MAX_ETH);
+			it('maxLink of 5,000 LINK', async () => {
+				assert.bnEqual(await linkWrapper.maxLink(), MAX_LINK);
 			});
-			it('capacity of 5,000 ETH', async () => {
-				assert.bnEqual(await etherWrapper.capacity(), MAX_ETH);
+			it('capacity of 5,000 LINK', async () => {
+				assert.bnEqual(await linkWrapper.capacity(), MAX_LINK);
 			});
 			it('mintFeeRate of 50 bps', async () => {
-				assert.bnEqual(await etherWrapper.mintFeeRate(), FIFTY_BIPS);
+				assert.bnEqual(await linkWrapper.mintFeeRate(), FIFTY_BIPS);
 			});
 			it('burnFeeRate of 50 bps', async () => {
-				assert.bnEqual(await etherWrapper.burnFeeRate(), FIFTY_BIPS);
+				assert.bnEqual(await linkWrapper.burnFeeRate(), FIFTY_BIPS);
 			});
 			describe('totalIssuedSynths', async () => {
 				it('sLINK = 0', async () => {
-					assert.bnEqual(await etherWrapper.sLINKIssued(), toBN('0'));
+					assert.bnEqual(await linkWrapper.sLINKIssued(), toBN('0'));
 				});
 				it('sUSD = 0', async () => {
-					assert.bnEqual(await etherWrapper.sUSDIssued(), toBN('0'));
+					assert.bnEqual(await linkWrapper.sUSDIssued(), toBN('0'));
 				});
 			});
 		});
@@ -161,16 +166,16 @@ contract('LinkWrapper', async accounts => {
 			const mintAmount = toUnit('1.0');
 
 			beforeEach(async () => {
-				await weth.deposit({ from: account1, value: mintAmount });
-				await weth.approve(etherWrapper.address, mintAmount, { from: account1 });
-				await etherWrapper.mint(mintAmount, { from: account1 });
+				await linkToken.transfer(account1, toUnit('1000'), { from: owner });
+				await linkToken.approve(linkWrapper.address, mintAmount, { from: account1 });
+				await linkWrapper.mint(mintAmount, { from: account1 });
 			});
 
 			it('total issued sLINK = 1.0', async () => {
-				assert.bnEqual(await etherWrapper.sLINKIssued(), toUnit('1.0'));
+				assert.bnEqual(await linkWrapper.sLINKIssued(), toUnit('1.0'));
 			});
 			it('fees escrowed = 0.005', async () => {
-				assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.005'));
+				assert.bnEqual(await linkWrapper.feesEscrowed(), toUnit('0.005'));
 			});
 
 			describe('then burn(`reserves + fees` WETH) is called', async () => {
@@ -180,30 +185,30 @@ contract('LinkWrapper', async accounts => {
 					const { burnFee } = await calculateBurnFees(burnAmount);
 					const amountIn = burnAmount.add(burnFee);
 					await sLINKSynth.issue(account1, amountIn);
-					await sLINKSynth.approve(etherWrapper.address, amountIn, { from: account1 });
-					await etherWrapper.burn(amountIn, { from: account1 });
+					await sLINKSynth.approve(linkWrapper.address, amountIn, { from: account1 });
+					await linkWrapper.burn(amountIn, { from: account1 });
 				});
 
 				it('total issued sLINK = 0.0', async () => {
-					assert.bnEqual(await etherWrapper.sLINKIssued(), toUnit('0.0'));
+					assert.bnEqual(await linkWrapper.sLINKIssued(), toUnit('0.0'));
 				});
 				it('fees escrowed = 0.01', async () => {
-					assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.01'));
+					assert.bnEqual(await linkWrapper.feesEscrowed(), toUnit('0.01'));
 				});
 
 				describe('then distributeFees is called', async () => {
 					beforeEach(async () => {
 						// await feePool.closeCurrentFeePeriod({ from: account1 });
-						await etherWrapper.distributeFees();
+						await linkWrapper.distributeFees();
 					});
 
-					it('total issued sUSD = $15', async () => {
-						// 1500*0.01 = 15
-						assert.bnEqual(await etherWrapper.sUSDIssued(), toUnit('15.0'));
+					it('total issued sUSD = $0.2', async () => {
+						// 20*0.01 = 0.2
+						assert.bnEqual(await linkWrapper.sUSDIssued(), toUnit('0.2'));
 					});
 
 					it('fees escrowed = 0.0', async () => {
-						assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.0'));
+						assert.bnEqual(await linkWrapper.feesEscrowed(), toUnit('0.0'));
 					});
 				});
 			});
@@ -219,28 +224,27 @@ contract('LinkWrapper', async accounts => {
 			let feesEscrowed;
 
 			beforeEach(async () => {
-				initialCapacity = await etherWrapper.capacity();
+				initialCapacity = await linkWrapper.capacity();
 				amount = initialCapacity.sub(toUnit('1.0'));
 
 				({ mintFee } = await calculateMintFees(amount));
 
-				feesEscrowed = await etherWrapper.feesEscrowed();
+				feesEscrowed = await linkWrapper.feesEscrowed();
 
-				await weth.deposit({ from: account1, value: amount });
-				await weth.approve(etherWrapper.address, amount, { from: account1 });
-				mintTx = await etherWrapper.mint(amount, { from: account1 });
+				await linkToken.approve(linkWrapper.address, amount, { from: account1 });
+				mintTx = await linkWrapper.mint(amount, { from: account1 });
 			});
 
-			it('locks `amount` WETH in the contract', async () => {
+			it('locks `amount` LINK in the contract', async () => {
 				const logs = await getDecodedLogs({
 					hash: mintTx.tx,
-					contracts: [weth],
+					contracts: [linkToken],
 				});
 
 				decodedEventEqual({
 					event: 'Transfer',
-					emittedFrom: weth.address,
-					args: [account1, etherWrapper.address, amount],
+					emittedFrom: linkToken.address,
+					args: [account1, linkWrapper.address, amount],
 					log: logs[0],
 				});
 			});
@@ -248,20 +252,20 @@ contract('LinkWrapper', async accounts => {
 				assert.bnEqual(await sLINKSynth.balanceOf(account1), amount.sub(mintFee));
 			});
 			it('escrows `amount * mintFeeRate` worth of sLINK as fees', async () => {
-				assert.bnEqual(await etherWrapper.feesEscrowed(), feesEscrowed.add(mintFee));
+				assert.bnEqual(await linkWrapper.feesEscrowed(), feesEscrowed.add(mintFee));
 			});
 			it('has a capacity of (capacity - amount) after', async () => {
-				assert.bnEqual(await etherWrapper.capacity(), initialCapacity.sub(amount));
+				assert.bnEqual(await linkWrapper.capacity(), initialCapacity.sub(amount));
 			});
 			it('emits Minted event', async () => {
 				const logs = await getDecodedLogs({
 					hash: mintTx.tx,
-					contracts: [etherWrapper],
+					contracts: [linkWrapper],
 				});
 
 				decodedEventEqual({
 					event: 'Minted',
-					emittedFrom: etherWrapper.address,
+					emittedFrom: linkWrapper.address,
 					args: [account1, amount.sub(mintFee), mintFee],
 					log: logs.filter(l => !!l).find(({ name }) => name === 'Minted'),
 				});
@@ -276,30 +280,29 @@ contract('LinkWrapper', async accounts => {
 			let feesEscrowed;
 
 			beforeEach(async () => {
-				initialCapacity = await etherWrapper.capacity();
+				initialCapacity = await linkWrapper.capacity();
 				amount = initialCapacity.add(ONE);
 
 				// Calculate the mint fees on the capacity amount,
-				// as this will be the ETH accepted by the contract.
+				// as this will be the LINK accepted by the contract.
 				({ mintFee } = await calculateMintFees(initialCapacity));
 
-				feesEscrowed = await etherWrapper.feesEscrowed();
+				feesEscrowed = await linkWrapper.feesEscrowed();
 
-				await weth.deposit({ from: account1, value: amount });
-				await weth.approve(etherWrapper.address, amount, { from: account1 });
-				mintTx = await etherWrapper.mint(amount, { from: account1 });
+				await linkToken.approve(linkWrapper.address, amount, { from: account1 });
+				mintTx = await linkWrapper.mint(amount, { from: account1 });
 			});
 
-			it('locks `capacity` ETH in the contract', async () => {
+			it('locks `capacity` LINK in the contract', async () => {
 				const logs = await getDecodedLogs({
 					hash: mintTx.tx,
-					contracts: [weth],
+					contracts: [linkToken],
 				});
 
 				decodedEventEqual({
 					event: 'Transfer',
-					emittedFrom: weth.address,
-					args: [account1, etherWrapper.address, initialCapacity],
+					emittedFrom: linkToken.address,
+					args: [account1, linkWrapper.address, initialCapacity],
 					log: logs[0],
 				});
 			});
@@ -307,25 +310,25 @@ contract('LinkWrapper', async accounts => {
 				assert.bnEqual(await sLINKSynth.balanceOf(account1), initialCapacity.sub(mintFee));
 			});
 			it('escrows `capacity * mintFeeRate` worth of sLINK as fees', async () => {
-				assert.bnEqual(await etherWrapper.feesEscrowed(), feesEscrowed.add(mintFee));
+				assert.bnEqual(await linkWrapper.feesEscrowed(), feesEscrowed.add(mintFee));
 			});
 			it('has a capacity of 0 after', async () => {
-				assert.bnEqual(await etherWrapper.capacity(), toBN('0'));
+				assert.bnEqual(await linkWrapper.capacity(), toBN('0'));
 			});
 		});
 
 		describe('when capacity = 0', () => {
 			beforeEach(async () => {
+				await linkToken.transfer(account1, toUnit('1000'), { from: owner });
 				await systemSettings.setLinkWrapperMaxLINK('0', { from: owner });
 			});
 
 			it('reverts', async () => {
 				const amount = '1';
-				await weth.deposit({ from: account1, value: amount });
-				await weth.approve(etherWrapper.address, amount, { from: account1 });
+				await linkToken.approve(linkWrapper.address, amount, { from: account1 });
 
 				await assert.revert(
-					etherWrapper.mint(amount, { from: account1 }),
+					linkWrapper.mint(amount, { from: account1 }),
 					'Contract has no spare capacity to mint'
 				);
 			});
@@ -333,23 +336,23 @@ contract('LinkWrapper', async accounts => {
 	});
 
 	describe('burn', async () => {
-		describe('when the contract has 0 WETH', async () => {
+		describe('when the contract has 0 LINK', async () => {
 			it('reverts', async () => {
 				await assert.revert(
-					etherWrapper.burn('1', { from: account1 }),
-					'Contract cannot burn sLINK for WETH, WETH balance is zero'
+					linkWrapper.burn('1', { from: account1 }),
+					'Contract cannot burn sLINK for LINK, LINK balance is zero'
 				);
 			});
 		});
 
-		describe('when the contract has WETH reserves', async () => {
+		describe('when the contract has LINK reserves', async () => {
 			let burnTx;
 
 			beforeEach(async () => {
 				const amount = toUnit('1');
-				await weth.deposit({ from: account1, value: amount });
-				await weth.approve(etherWrapper.address, amount, { from: account1 });
-				await etherWrapper.mint(amount, { from: account1 });
+				await linkToken.transfer(account1, toUnit('10'), { from: owner });
+				await linkToken.approve(linkWrapper.address, amount, { from: account1 });
+				await linkWrapper.mint(amount, { from: account1 });
 			});
 
 			describe('when amount is strictly lower than reserves(1+burnFeeRate)', async () => {
@@ -360,15 +363,15 @@ contract('LinkWrapper', async accounts => {
 				let feesEscrowed;
 
 				beforeEach(async () => {
-					initialCapacity = await etherWrapper.capacity();
-					feesEscrowed = await etherWrapper.feesEscrowed();
+					initialCapacity = await linkWrapper.capacity();
+					feesEscrowed = await linkWrapper.feesEscrowed();
 
 					({ burnFee } = await calculateBurnFees(principal));
 					amount = principal.add(burnFee);
 					await sLINKSynth.issue(account1, amount);
-					await sLINKSynth.approve(etherWrapper.address, amount, { from: account1 });
+					await sLINKSynth.approve(linkWrapper.address, amount, { from: account1 });
 
-					burnTx = await etherWrapper.burn(amount, { from: account1 });
+					burnTx = await linkWrapper.burn(amount, { from: account1 });
 				});
 
 				it('burns `amount` of sLINK from user', async () => {
@@ -384,16 +387,16 @@ contract('LinkWrapper', async accounts => {
 						log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
 					});
 				});
-				it('sends amount(1-burnFeeRate) WETH to user', async () => {
+				it('sends amount(1-burnFeeRate) LINK to user', async () => {
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
-						contracts: [weth],
+						contracts: [linkToken],
 					});
 
 					decodedEventEqual({
 						event: 'Transfer',
-						emittedFrom: weth.address,
-						args: [etherWrapper.address, account1, amount.sub(burnFee)],
+						emittedFrom: linkToken.address,
+						args: [linkWrapper.address, account1, amount.sub(burnFee)],
 						log: logs
 							.reverse()
 							.filter(l => !!l)
@@ -401,20 +404,20 @@ contract('LinkWrapper', async accounts => {
 					});
 				});
 				it('escrows `amount * burnFeeRate` worth of sLINK as fees', async () => {
-					assert.bnEqual(await etherWrapper.feesEscrowed(), feesEscrowed.add(burnFee));
+					assert.bnEqual(await linkWrapper.feesEscrowed(), feesEscrowed.add(burnFee));
 				});
-				it('increases capacity by `amount - fees` WETH', async () => {
-					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(amount.sub(burnFee)));
+				it('increases capacity by `amount - fees` LINK', async () => {
+					assert.bnEqual(await linkWrapper.capacity(), initialCapacity.add(amount.sub(burnFee)));
 				});
 				it('emits Burned event', async () => {
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
-						contracts: [etherWrapper],
+						contracts: [linkWrapper],
 					});
 
 					decodedEventEqual({
 						event: 'Burned',
-						emittedFrom: etherWrapper.address,
+						emittedFrom: linkWrapper.address,
 						args: [account1, amount.sub(burnFee), burnFee],
 						log: logs
 							.reverse()
@@ -431,16 +434,16 @@ contract('LinkWrapper', async accounts => {
 				let feesEscrowed;
 
 				beforeEach(async () => {
-					reserves = await etherWrapper.getReserves();
+					reserves = await linkWrapper.getReserves();
 					({ burnFee } = await calculateBurnFees(reserves));
 
 					amount = reserves.add(burnFee).add(toBN('100000000'));
-					feesEscrowed = await etherWrapper.feesEscrowed();
+					feesEscrowed = await linkWrapper.feesEscrowed();
 
 					await sLINKSynth.issue(account1, amount);
-					await sLINKSynth.approve(etherWrapper.address, amount, { from: account1 });
+					await sLINKSynth.approve(linkWrapper.address, amount, { from: account1 });
 
-					burnTx = await etherWrapper.burn(amount, { from: account1 });
+					burnTx = await linkWrapper.burn(amount, { from: account1 });
 				});
 
 				it('burns `reserves(1+burnFeeRate)` amount of sLINK from user', async () => {
@@ -456,16 +459,16 @@ contract('LinkWrapper', async accounts => {
 						log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
 					});
 				});
-				it('sends `reserves` WETH to user', async () => {
+				it('sends `reserves` LINK to user', async () => {
 					const logs = await getDecodedLogs({
 						hash: burnTx.tx,
-						contracts: [weth],
+						contracts: [linkToken],
 					});
 
 					decodedEventEqual({
 						event: 'Transfer',
-						emittedFrom: weth.address,
-						args: [etherWrapper.address, account1, reserves],
+						emittedFrom: linkToken.address,
+						args: [linkWrapper.address, account1, reserves],
 						log: logs
 							.reverse()
 							.filter(l => !!l)
@@ -473,13 +476,13 @@ contract('LinkWrapper', async accounts => {
 					});
 				});
 				it('escrows `amount * burnFeeRate` worth of sLINK as fees', async () => {
-					assert.bnEqual(await etherWrapper.feesEscrowed(), feesEscrowed.add(burnFee));
+					assert.bnEqual(await linkWrapper.feesEscrowed(), feesEscrowed.add(burnFee));
 				});
 				it('has a max capacity after', async () => {
-					assert.bnEqual(await etherWrapper.capacity(), await etherWrapper.maxETH());
+					assert.bnEqual(await linkWrapper.capacity(), await linkWrapper.maxLink());
 				});
 				it('is left with 0 reserves remaining', async () => {
-					assert.equal(await etherWrapper.getReserves(), '0');
+					assert.equal(await linkWrapper.getReserves(), '0');
 				});
 			});
 
@@ -489,14 +492,14 @@ contract('LinkWrapper', async accounts => {
 
 				before(async () => {
 					const amount = toUnit('1.2');
-					await weth.deposit({ from: account1, value: amount });
-					await weth.approve(etherWrapper.address, amount, { from: account1 });
-					await etherWrapper.mint(amount, { from: account1 });
+					await linkToken.deposit({ from: account1, value: amount });
+					await linkToken.approve(linkWrapper.address, amount, { from: account1 });
+					await linkWrapper.mint(amount, { from: account1 });
 
 					burnAmount = toUnit('0.9');
 					await sLINKSynth.issue(account1, burnAmount);
-					await sLINKSynth.approve(etherWrapper.address, burnAmount, { from: account1 });
-					burnTx = await etherWrapper.burn(burnAmount, { from: account1 });
+					await sLINKSynth.approve(linkWrapper.address, burnAmount, { from: account1 });
+					burnTx = await linkWrapper.burn(burnAmount, { from: account1 });
 				});
 				it('emits a Burn event which burns 0.9 sLINK', async () => {
 					const logs = await getDecodedLogs({
@@ -523,13 +526,13 @@ contract('LinkWrapper', async accounts => {
 
 		before(async () => {
 			const amount = toUnit('10');
-			await weth.deposit({ from: account1, value: amount });
-			await weth.approve(etherWrapper.address, amount, { from: account1 });
-			await etherWrapper.mint(amount, { from: account1 });
+			await linkToken.deposit({ from: account1, value: amount });
+			await linkToken.approve(linkWrapper.address, amount, { from: account1 });
+			await linkWrapper.mint(amount, { from: account1 });
 
-			feesEscrowed = await etherWrapper.feesEscrowed();
-			sLINKIssued = await etherWrapper.sLINKIssued();
-			tx = await etherWrapper.distributeFees();
+			feesEscrowed = await linkWrapper.feesEscrowed();
+			sLINKIssued = await linkWrapper.sLINKIssued();
+			tx = await linkWrapper.distributeFees();
 		});
 
 		it('burns `feesEscrowed` sLINK', async () => {
@@ -541,7 +544,7 @@ contract('LinkWrapper', async accounts => {
 			decodedEventEqual({
 				event: 'Burned',
 				emittedFrom: sLINKSynth.address,
-				args: [etherWrapper.address, feesEscrowed],
+				args: [linkWrapper.address, feesEscrowed],
 				log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
 			});
 		});
@@ -563,10 +566,10 @@ contract('LinkWrapper', async accounts => {
 			});
 		});
 		it('sLINKIssued is reduced by `feesEscrowed`', async () => {
-			assert.bnEqual(await etherWrapper.sLINKIssued(), sLINKIssued.sub(feesEscrowed));
+			assert.bnEqual(await linkWrapper.sLINKIssued(), sLINKIssued.sub(feesEscrowed));
 		});
 		it('feesEscrowed = 0', async () => {
-			assert.bnEqual(await etherWrapper.feesEscrowed(), toBN(0));
+			assert.bnEqual(await linkWrapper.feesEscrowed(), toBN(0));
 		});
 	});
 });
