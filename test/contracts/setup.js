@@ -501,9 +501,19 @@ const setupContract = async ({
 		},
 
 		async CollateralManager() {
-			await cache['CollateralManagerState'].setAssociatedContract(instance.address, {
-				from: owner,
-			});
+			await Promise.all([
+				await cache['CollateralManagerState'].setAssociatedContract(instance.address, {
+					from: owner,
+				}),
+
+				await instance.addSynths(
+					[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
+					[toBytes32('sUSD'), toBytes32('sBTC'), toBytes32('sETH')],
+					{
+						from: owner,
+					}
+				),
+			]);
 		},
 
 		async SystemStatus() {
