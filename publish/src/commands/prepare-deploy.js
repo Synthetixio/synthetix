@@ -69,7 +69,8 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm, useSips }) =>
 		return;
 	}
 
-	console.log(gray(`Preparing deployment on network ${network}...`));
+	console.log(gray(`Preparing sources on ${network}:`));
+	console.log(gray(sources.map(source => `  - ${source}`).join('\n')));
 
 	// Get config.js
 	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
