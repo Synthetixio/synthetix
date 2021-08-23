@@ -951,9 +951,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             _revertIfError(margin.add(fee) < _minInitialMargin(), Status.InsufficientMargin);
         }
 
-        // Check that the maximum leverage is not exceeded (ignoring the fee)
+        // Check that the maximum leverage is not exceeded (ignoring the fee).
+        // We'll allow a little extra headroom for rounding errors.
         int desiredLeverage = newSize.multiplyDecimalRound(int(price)).divideDecimalRound(int(margin.add(fee)));
-        _revertIfError(_maxLeverage(baseAsset) < _abs(desiredLeverage), Status.MaxLeverageExceeded);
+        _revertIfError(_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(desiredLeverage), Status.MaxLeverageExceeded);
 
         // Check that the order isn't too large for the market
         // Allow a bit of extra value in case of rounding errors

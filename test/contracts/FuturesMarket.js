@@ -1224,15 +1224,20 @@ contract('FuturesMarket', accounts => {
 		it('max leverage cannot be exceeded', async () => {
 			await setPrice(baseAsset, toUnit('100'));
 			await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+			await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
 			await assert.revert(
 				futuresMarket.modifyPosition(toUnit('101'), { from: trader }),
 				'Max leverage exceeded'
 			);
 
 			await assert.revert(
-				futuresMarket.modifyPosition(toUnit('-101'), { from: trader }),
+				futuresMarket.modifyPosition(toUnit('-101'), { from: trader2 }),
 				'Max leverage exceeded'
 			);
+
+			// But we actually allow up to 10.01x leverage to account for rounding issues.
+			await futuresMarket.modifyPosition(toUnit('100.09'), { from: trader });
+			await futuresMarket.modifyPosition(toUnit('-100.09'), { from: trader2 });
 		});
 
 		it('min margin must be provided', async () => {
