@@ -403,17 +403,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     /* ---------- Position Details ---------- */
 
     /*
-     * The maximum order size at current prices, with a little bit of extra freedom.
-     */
-    function _maxSize(
-        uint price,
-        uint maxValue,
-        uint play
-    ) internal pure returns (uint) {
-        return uint(int(maxValue.add(play)).divideDecimalRound(int(price)));
-    }
-
-    /*
      * Determines whether a change in a position's size would violate the max market value constraint.
      */
     function _orderSizeTooLarge(
@@ -956,10 +945,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         int desiredLeverage = newSize.multiplyDecimalRound(int(price)).divideDecimalRound(int(margin.add(fee)));
         _revertIfError(_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(desiredLeverage), Status.MaxLeverageExceeded);
 
-        // Check that the order isn't too large for the market
-        // Allow a bit of extra value in case of rounding errors
+        // Check that the order isn't too large for the market.
+        // Allow a bit of extra value in case of rounding errors.
         _revertIfError(
-            _orderSizeTooLarge(_maxSize(price, _maxMarketValue(baseAsset), 100 * uint(_UNIT)), oldSize, newSize),
+            _orderSizeTooLarge(
+                uint(int(_maxMarketValue(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(price))),
+                oldSize,
+                newSize
+            ),
             Status.MaxMarketSizeExceeded
         );
 
