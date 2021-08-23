@@ -2590,7 +2590,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnClose(price, toUnit('226.25'), toUnit('0.01'));
 				await setPrice(baseAsset, price);
 
-				const positionSize = (await futuresMarket.positions(trader)).size;
+				const { size: positionSize, id: positionId } = await futuresMarket.positions(trader);
 
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 
@@ -2623,7 +2623,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader, noBalance, positionSize, price, liquidationFee],
+					args: [positionId, trader, noBalance, positionSize, price, liquidationFee],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
@@ -2635,7 +2635,7 @@ contract('FuturesMarket', accounts => {
 
 				await setPrice(baseAsset, price.add(toUnit('0.01')));
 
-				const positionSize = (await futuresMarket.positions(trader3)).size;
+				const { size: positionSize, id: positionId } = await futuresMarket.positions(trader3);
 
 				const tx = await futuresMarket.liquidatePosition(trader3, { from: noBalance });
 
@@ -2665,14 +2665,14 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader3, noBalance, positionSize, price, liquidationFee],
+					args: [positionId, trader3, noBalance, positionSize, price, liquidationFee],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
 			});
 
 			it('Transfers an updated fee upon liquidation', async () => {
-				const positionSize = (await futuresMarket.positions(trader)).size;
+				const { size: positionSize, id: positionId } = await futuresMarket.positions(trader);
 				// Move the price to a non-liquidating point
 				let price = (await futuresMarket.liquidationPrice(trader, true)).price;
 
@@ -2702,7 +2702,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionLiquidated',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader, noBalance, positionSize, price, toUnit('100')],
+					args: [positionId, trader, noBalance, positionSize, price, toUnit('100')],
 					log: decodedLogs[3],
 					bnCloseVariance: toUnit('0.001'),
 				});
