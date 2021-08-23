@@ -169,5 +169,8 @@
 	},
 	"OwnerRelayOnOptimism": {
 		"deploy": false
+	},
+	"SampleTest": {
+		"deploy": false
 	}
 }
