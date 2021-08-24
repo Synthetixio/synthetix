@@ -44,11 +44,11 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         // scale up before entering the system.
         uint scaledCollateral = scaleUpCollateral(collateral);
 
-        id = openInternal(scaledCollateral, amount, currency, false);
+        id = _openInternal(scaledCollateral, amount, currency, false);
     }
 
     function close(uint id) external returns (uint amount, uint collateral) {
-        (amount, collateral) = closeInternal(msg.sender, id);
+        (amount, collateral) = _closeInternal(msg.sender, id);
 
         // scale down before transferring back.
         uint scaledCollateral = scaleDownCollateral(collateral);
@@ -68,14 +68,14 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         // scale up before entering the system.
         uint scaledAmount = scaleUpCollateral(amount);
 
-        (principal, collateral) = depositInternal(borrower, id, scaledAmount);
+        (principal, collateral) = _depositInternal(borrower, id, scaledAmount);
     }
 
     function withdraw(uint id, uint amount) external returns (uint principal, uint collateral) {
         // scale up before entering the system.
         uint scaledAmount = scaleUpCollateral(amount);
 
-        (principal, collateral) = withdrawInternal(id, scaledAmount);
+        (principal, collateral) = _withdrawInternal(id, scaledAmount);
 
         // scale down before transferring back.
         uint scaledWithdraw = scaleDownCollateral(collateral);
@@ -88,11 +88,11 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         uint id,
         uint amount
     ) external returns (uint principal, uint collateral) {
-        (principal, collateral) = repayInternal(borrower, msg.sender, id, amount);
+        (principal, collateral) = _repayInternal(borrower, msg.sender, id, amount);
     }
 
     function draw(uint id, uint amount) external returns (uint principal, uint collateral) {
-        (principal, collateral) = drawInternal(id, amount);
+        (principal, collateral) = _drawInternal(id, amount);
     }
 
     function liquidate(
@@ -100,7 +100,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         uint id,
         uint amount
     ) external {
-        uint collateralLiquidated = liquidateInternal(borrower, id, amount);
+        uint collateralLiquidated = _liquidateInternal(borrower, id, amount);
 
         // scale down before transferring back.
         uint scaledCollateral = scaleDownCollateral(collateralLiquidated);

@@ -197,7 +197,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(loan.lastInteraction.add(interactionDelay) <= block.timestamp, "Recently interacted");
     }
 
-    function issuanceRatio() internal view returns (uint ratio) {
+    function _issuanceRatio() internal view returns (uint ratio) {
         ratio = SafeDecimalMath.unit().divideDecimalRound(minCratio);
     }
 
@@ -226,7 +226,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- LOAN INTERACTIONS ---------- */
 
-    function openInternal(
+    function _openInternal(
         uint collateral,
         uint amount,
         bytes32 currency,
@@ -277,7 +277,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         });
 
         // 10. Accrue interest on the loan.
-        accrueInterest(loans[id]);
+        _accrueInterest(loans[id]);
 
         // 11. Pay the minting fees to the fee pool
         _payFees(issueFee, currency);
@@ -299,7 +299,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         emit LoanCreated(msg.sender, id, amount, collateral, currency, issueFee);
     }
 
-    function closeInternal(address borrower, uint id) internal rateIsValid returns (uint amount, uint collateral) {
+    function _closeInternal(address borrower, uint id) internal rateIsValid returns (uint amount, uint collateral) {
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 1. Check loan is open and last interaction time.
@@ -312,7 +312,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         emit LoanClosed(borrower, id);
     }
 
-    function closeByLiquidationInternal(
+    function _closeByLiquidationInternal(
         address borrower,
         address liquidator,
         Loan storage loan
@@ -365,7 +365,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loan.lastInteraction = block.timestamp;
     }
 
-    function depositInternal(
+    function _depositInternal(
         address account,
         uint id,
         uint amount
@@ -380,7 +380,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 1. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
 
-        accrueInterest(loan);
+        _accrueInterest(loan);
 
         // 5. Add the collateral
         loan.collateral = loan.collateral.add(amount);
@@ -391,7 +391,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function withdrawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
+    function _withdrawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
         Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
         // 1. Check loan is open and last interaction time.
@@ -409,7 +409,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function liquidateInternal(
+    function _liquidateInternal(
         address borrower,
         uint id,
         uint payment
@@ -440,7 +440,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 10. If its greater than the amount owing, we need to close the loan.
         if (amountToLiquidate >= amountOwing) {
-            (, collateralLiquidated) = closeByLiquidationInternal(borrower, msg.sender, loan);
+            (, collateralLiquidated) = _closeByLiquidationInternal(borrower, msg.sender, loan);
             return collateralLiquidated;
         }
 
@@ -460,7 +460,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         emit LoanPartiallyLiquidated(borrower, id, msg.sender, amountToLiquidate, collateralLiquidated);
     }
 
-    function repayInternal(
+    function _repayInternal(
         address borrower,
         address repayer,
         uint id,
@@ -491,7 +491,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function repayWithCollateralInternal(
+    function _repayWithCollateralInternal(
         address borrower,
         address repayer,
         uint id,
@@ -534,7 +534,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function drawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
+    function _drawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
         Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
         // 2. Check last interaction time.
@@ -578,7 +578,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     // Update the cumulative interest rate for the currency that was interacted with.
-    function accrueInterest(Loan storage loan) internal {
+    function _accrueInterest(Loan storage loan) internal {
         (uint differential, uint newIndex) = manager.accrueInterest(loan.interestIndex, loan.currency, loan.short);
 
         // 5. If the loan was just opened, don't record any interest. Otherwise multiple by the amount outstanding.
@@ -632,7 +632,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _systemStatus().requireIssuanceActive();
         require(loan.account == owner, "Must be borrower");
         require(loan.interestIndex != 0);
-        accrueInterest(loan);
+        _accrueInterest(loan);
     }
 
     function _checkLoanRatio(Loan storage loan) internal view {
