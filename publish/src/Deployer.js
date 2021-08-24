@@ -277,9 +277,6 @@ class Deployer {
 
 				const overrides = await this.sendOverrides('contract-deployment');
 
-				console.log(...args);
-				console.log({ overrides });
-
 				deployedContract = await factory.deploy(...args, overrides);
 				const receipt = await deployedContract.deployTransaction.wait();
 
