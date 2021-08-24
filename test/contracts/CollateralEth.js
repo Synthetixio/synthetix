@@ -1080,8 +1080,8 @@ contract('CollateralEth', async accounts => {
 
 	describe('Accrue Interest', async () => {
 		beforeEach(async () => {
-			// 0.001% / 31556926 (seconds in common year)
-			await manager.setBaseBorrowRate(316887646, { from: owner });
+			// 0.005% / 31556926 (seconds in common year)
+			await manager.setBaseBorrowRate(158443823, { from: owner });
 		});
 
 		it('should correctly determine the interest on loans', async () => {
@@ -1092,7 +1092,7 @@ contract('CollateralEth', async accounts => {
 
 			id = getid(tx);
 
-			// after a year we should have accrued about 0.001% + (100/2100) = 0.04762904761
+			// after a year we should have accrued about 0.005% + (100/2100) = 0.05261904762
 
 			await fastForwardAndUpdateRates(YEAR);
 
@@ -1104,7 +1104,7 @@ contract('CollateralEth', async accounts => {
 
 			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 4.7629);
+			assert.equal(interest, 5.2619);
 
 			tx = await ceth.open(oneHundredsUSD, sUSD, {
 				value: twoETH,
@@ -1113,22 +1113,22 @@ contract('CollateralEth', async accounts => {
 
 			const id2 = getid(tx);
 
-			// after a year we should have accrued about 0.001% + (200/2200) = 0.09524809523
+			// after a year we should have accrued about 0.005% + (200/2200) = 0.09590909091
 
 			await fastForwardAndUpdateRates(YEAR);
 
 			tx = await ceth.deposit(account1, id2, { from: account1, value: oneETH });
 
-			loan = await ceth.loans(id);
+			loan = await ceth.loans(id2);
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 9.59248);
+			assert.equal(interest, 9.5909);
 
 			// after two years we should have accrued (this math is rough)
-			// 0.001% + (100/2100) = 0.04762904761 +
-			// 0.001% + (200/2200) = 0.09524809523 +
-			//                     = 0.14287714284
+			// 0.005% + (100/2100) = 0.05261904762 +
+			// 0.005% + (200/2200) = 0.09590909091 +
+			//                     = 0.1485281385
 
 			tx = await ceth.deposit(account1, id, { from: account1, value: oneETH });
 
@@ -1136,7 +1136,7 @@ contract('CollateralEth', async accounts => {
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 14.2877);
+			assert.equal(interest, 14.8528);
 		});
 	});
 });
