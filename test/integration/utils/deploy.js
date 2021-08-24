@@ -46,7 +46,7 @@ async function deployInstance({
 		freshDeploy,
 		yes: true,
 		providerUrl: `${providerUrl}:${providerPort}`,
-		gasPrice: useOvm ? OVM_GAS_PRICE : 1,
+		gasPrice: useOvm ? OVM_GAS_PRICE : 2.5,
 		useOvm,
 		privateKey,
 		methodCallGasLimit: useOvm ? undefined : 3500000,
