@@ -1135,6 +1135,26 @@ contract('SystemSettings', async accounts => {
 			});
 		});
 
+		it('should revert if window is below minimum', async () => {
+			const minimum = await systemSettings.MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW();
+			await assert.revert(
+				systemSettings.setAtomicVolatilityConsiderationWindow(sETH, minimum.sub(toBN('1')), {
+					from: owner,
+				}),
+				'Atomic volatility consideration window under minimum 1 min'
+			);
+		});
+
+		it('should revert if window is above maximum', async () => {
+			const maximum = await systemSettings.MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW();
+			await assert.revert(
+				systemSettings.setAtomicVolatilityConsiderationWindow(sETH, maximum.add(toBN('1')), {
+					from: owner,
+				}),
+				'Atomic volatility consideration window exceed maximum 1 day'
+			);
+		});
+
 		describe('when successfully invoked', () => {
 			let txn;
 			beforeEach(async () => {

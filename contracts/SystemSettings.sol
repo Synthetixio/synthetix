@@ -53,6 +53,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     uint public constant MIN_ATOMIC_TWAP_WINDOW = 60;
     uint public constant MAX_ATOMIC_TWAP_WINDOW = 86400;
 
+    // Volatility consideration window must be between 1 min and 1 day.
+    uint public constant MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = 60;
+    uint public constant MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = 86400;
+
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
@@ -396,6 +400,16 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     function setAtomicVolatilityConsiderationWindow(bytes32 _currencyKey, uint _window) external onlyOwner {
+        if (_window != 0) {
+            require(
+                _window >= MIN_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
+                "Atomic volatility consideration window under minimum 1 min"
+            );
+            require(
+                _window <= MAX_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW,
+                "Atomic volatility consideration window exceed maximum 1 day"
+            );
+        }
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW, _currencyKey)),
