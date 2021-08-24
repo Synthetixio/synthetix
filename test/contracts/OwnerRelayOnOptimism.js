@@ -132,21 +132,19 @@ contract('OwnerRelayOnOptimism', () => {
 	});
 
 	describe('when finalizing relaying from the Optimism Messenger', () => {
-		let sendMessageError;
 		let relayedMessageData;
 		let nominateNewOwnerCalldata;
-		let relayReceipt, relayBatchReceipt;
 
-		async function finalizeRelay() {
+		async function finalizeRelay(isBatch, targets, calldata) {
 			let relayReceipt, sendMessageError;
+			const relayFnc = isBatch ? 'finalizeRelayBatch' : 'finalizeRelay';
+
+			OwnerRelayOnOptimism = OwnerRelayOnOptimism.connect(MockedMessengerSigner);
+
 			try {
-				const tx = await OwnerRelayOnOptimism.connect(MockedMessengerSigner).finalizeRelay(
-					MockedOwned1OnL2.address,
-					nominateNewOwnerCalldata,
-					{
-						gasPrice: 0,
-					}
-				);
+				const tx = await OwnerRelayOnOptimism[relayFnc](targets, calldata, {
+					gasPrice: 0,
+				});
 
 				relayReceipt = await tx.wait();
 			} catch (err) {
@@ -154,19 +152,6 @@ contract('OwnerRelayOnOptimism', () => {
 			}
 
 			return { relayReceipt, sendMessageError };
-		}
-
-		async function triggerSendMessage() {
-			// Calls Messenger.sendMessage(...) with dummy data,
-			// because the ABI requires it.
-			// The data doesn't matter since we mock the function below,
-			// and this data will be ignored.
-			const tx = await MockedMessenger.connect(owner).sendMessage(
-				mockedContractAddressOnL2,
-				mockedRelayData,
-				42
-			);
-			await tx.wait();
 		}
 
 		before('mock the target contracts nominateNewOwner(...) function', async () => {
@@ -196,7 +181,11 @@ contract('OwnerRelayOnOptimism', () => {
 				});
 
 				before('attempt to finalize the relay', async () => {
-					({ sendMessageError } = await finalizeRelay());
+					({ sendMessageError } = await finalizeRelay(
+						false,
+						mockedContractAddressOnL2,
+						mockedRelayData
+					)); // isBatch == false i.e. finalizeRelay
 				});
 
 				it('reverts with the expected error', async () => {
@@ -205,7 +194,7 @@ contract('OwnerRelayOnOptimism', () => {
 			});
 
 			describe('when the initiator on L1 is the OwnerRelayOnEthereum', () => {
-				let returnObj;
+				let relayReceipt;
 
 				before(
 					'mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator',
@@ -217,7 +206,11 @@ contract('OwnerRelayOnOptimism', () => {
 				);
 
 				before('finalize the relay', async () => {
-					returnObj = await finalizeRelay();
+					({ relayReceipt } = await finalizeRelay(
+						false,
+						MockedOwned1OnL2.address,
+						nominateNewOwnerCalldata
+					)); // isBatch == false i.e. finalizeRelay
 				});
 
 				it('should ultimately relayed contract.nominateNewOwner(...) with the correct data', async () => {
@@ -225,7 +218,7 @@ contract('OwnerRelayOnOptimism', () => {
 				});
 
 				it('emitted a RelayFinalized event', async () => {
-					const event = returnObj['relayReceipt'].events.find(e => e.event === 'RelayFinalized');
+					const event = relayReceipt.events.find(e => e.event === 'RelayFinalized');
 
 					assert.equal(event.args.target, MockedOwned1OnL2.address);
 					assert.equal(event.args.payload, nominateNewOwnerCalldata);
@@ -235,27 +228,12 @@ contract('OwnerRelayOnOptimism', () => {
 
 		describe('when finalizing a relay batch from the Optimism Messenger', () => {
 			let mockedTargets, nominateNewOwnerCalldataBatch;
-			before(
-				'mock Messenger.sendMessage(...) to call OwnerRelayOnOptimism.finalizeRelayBatch(...)',
-				async () => {
-					mockedTargets = [MockedOwned2OnL2.address, MockedOwned2OnL2.address];
-					nominateNewOwnerCalldataBatch = [nominateNewOwnerCalldata, nominateNewOwnerCalldata];
-					const MockedMessengerSigner = MockedMessenger.wallet;
-					MockedMessenger.smocked.sendMessage.will.return.with(async () => {
-						try {
-							const tx = await OwnerRelayOnOptimism.connect(
-								MockedMessengerSigner
-							).finalizeRelayBatch(mockedTargets, nominateNewOwnerCalldataBatch, {
-								gasPrice: 0,
-							});
+			let sendMessageError;
 
-							relayBatchReceipt = await tx.wait();
-						} catch (err) {
-							sendMessageError = err;
-						}
-					});
-				}
-			);
+			before('initialize the batch parameters', async () => {
+				mockedTargets = [MockedOwned2OnL2.address, MockedOwned2OnL2.address];
+				nominateNewOwnerCalldataBatch = [nominateNewOwnerCalldata, nominateNewOwnerCalldata];
+			});
 
 			describe('when the initiator on L1 is NOT the OwnerRelayOnEthereum', () => {
 				before('mock the Messenger to report some random account as the L1 initiator', async () => {
@@ -265,7 +243,13 @@ contract('OwnerRelayOnOptimism', () => {
 				});
 
 				before('attempt to finalize the relay batch', async () => {
-					await triggerSendMessage();
+					mockedTargets = [MockedOwned2OnL2.address, MockedOwned2OnL2.address];
+					nominateNewOwnerCalldataBatch = [nominateNewOwnerCalldata, nominateNewOwnerCalldata];
+					({ sendMessageError } = await finalizeRelay(
+						true,
+						mockedTargets,
+						nominateNewOwnerCalldataBatch
+					)); // isBatch == true i.e. finalizeRelayBatch
 				});
 
 				it('reverts with the expected error', async () => {
@@ -274,6 +258,8 @@ contract('OwnerRelayOnOptimism', () => {
 			});
 
 			describe('when the initiator on L1 is the OwnerRelayOnEthereum', () => {
+				let relayReceipt;
+
 				before(
 					'mock the Messenger to report OwnerRelayOnEthereum as the L1 initiator',
 					async () => {
@@ -284,7 +270,11 @@ contract('OwnerRelayOnOptimism', () => {
 				);
 
 				before('finalize the relay', async () => {
-					await triggerSendMessage();
+					({ relayReceipt } = await finalizeRelay(
+						true,
+						mockedTargets,
+						nominateNewOwnerCalldataBatch
+					)); // isBatch == true i.e. finalizeRelayBatch
 				});
 
 				it('should ultimately relay contract.nominateNewOwner(...) with the correct data', async () => {
@@ -292,7 +282,7 @@ contract('OwnerRelayOnOptimism', () => {
 				});
 
 				it('emitted a RelayBatchFinalized event', async () => {
-					const event = relayBatchReceipt.events.find(e => e.event === 'RelayBatchFinalized');
+					const event = relayReceipt.events.find(e => e.event === 'RelayBatchFinalized');
 					assert.deepEqual(event.args.targets, mockedTargets);
 					assert.deepEqual(event.args.payloads, nominateNewOwnerCalldataBatch);
 				});
