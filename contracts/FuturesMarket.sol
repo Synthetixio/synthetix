@@ -76,22 +76,63 @@ interface IFuturesMarketManagerInternal {
     function payFee(uint amount) external;
 }
 
-library FuturesMarketPositionCalcs {
-    
-    function _accruedFunding(
-        Position memory position,
-        uint netFundingPerUnit,
-        uint endFundingIndex,
-        uint price
-    ) internal view returns (int funding) {
-        uint lastModifiedIndex = position.fundingIndex;
-        if (lastModifiedIndex == 0) {
-            return 0; // The position does not exist -- no funding.
-        }
+library FuturesMarketPositionLib {
+    /* ========== LIBRARIES ========== */
+
+    using SafeMath for uint;
+    using SignedSafeMath for int;
+    using SignedSafeDecimalMath for int;
+
+    function _accruedFunding(IFuturesMarket.Position memory position, int netFundingPerUnit)
+        internal
+        pure
+        returns (int funding)
+    {
         return position.size.multiplyDecimalRound(netFundingPerUnit);
     }
 
-    // int net = _netFundingPerUnit(lastModifiedIndex, endFundingIndex, fundingSequence.length, price);
+    function _profitLoss(IFuturesMarket.Position memory position, uint price) internal pure returns (int pnl) {
+        int priceShift = int(price).sub(int(position.lastPrice));
+        return position.size.multiplyDecimalRound(priceShift);
+    }
+
+    /*
+     * The initial margin of a position, plus any PnL and funding it has accrued. The resulting value may be negative.
+     */
+    function _marginPlusProfitFunding(
+        IFuturesMarket.Position memory position,
+        int netFundingPerUnit,
+        uint price
+    ) internal pure returns (int) {
+        return int(position.margin).add(_profitLoss(position, price)).add(_accruedFunding(position, netFundingPerUnit));
+    }
+
+    /*
+     * The value in a position's margin after a deposit or withdrawal, accounting for funding and profit.
+     * If the resulting margin would be negative or below the liquidation threshold, an appropriate error is returned.
+     * If the result is not an error, callers of this function that use it to update a position's margin
+     * must ensure that this is accompanied by a corresponding debt correction update, as per `_applyDebtCorrection`.
+     */
+    function _calcRealisedMargin(
+        IFuturesMarket.Position memory position,
+        int netFundingPerUnit,
+        uint price,
+        int marginDelta,
+        uint _liquidationFee
+    ) internal pure returns (uint margin, IFuturesMarket.Status statusCode) {
+        int newMargin = _marginPlusProfitFunding(position, netFundingPerUnit, price).add(marginDelta);
+        if (newMargin < 0) {
+            return (0, IFuturesMarket.Status.InsufficientMargin);
+        }
+
+        uint uMargin = uint(newMargin);
+        int positionSize = position.size;
+        if (positionSize != 0 && uMargin <= _liquidationFee) {
+            return (uMargin, IFuturesMarket.Status.CanLiquidate);
+        }
+
+        return (uMargin, IFuturesMarket.Status.Ok);
+    }
 }
 
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
@@ -101,7 +142,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     using SafeMath for uint;
     using SignedSafeMath for int;
     using SignedSafeDecimalMath for int;
-    using FuturesMarketLib for Position;
+    using FuturesMarketPositionLib for Position;
 
     /* ========== CONSTANTS ========== */
 
@@ -1004,41 +1045,82 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
     }
 
+    // Avoid stack too deep errors.
+    struct PositionDetailsLocalVars {
+        int256 net;
+        Status status;
+        bool positionDecreasing;
+    }
+
+    struct PositionDetails {
+        uint fee;
+        int size;
+        uint liquidationPrice;
+        uint margin;
+        int leverage;
+    }
+
+    /*
+     * Returns all new position details if a given order was confirmed at the current price.
+     */
     function calcPositionDetails(
         int sizeDelta,
         uint price,
         uint fundingIndex,
-        address sender // can be address(0), in which case an empty position is assumed
-    ) 
-        public view 
-        returns (uint orderFee, int256 size, uint liquidationPrice, uint margin, int256 leverage) 
+        address sender // can be address(0), in which case a new position is assumed
+    )
+        public
+        view
+        returns (
+            uint fee,
+            int size,
+            uint _lPrice,
+            uint margin,
+            int leverage
+        )
     {
+        PositionDetails memory details = _calcPositionDetails(sizeDelta, price, fundingIndex, sender);
+        return (details.fee, details.size, details.liquidationPrice, details.margin, details.leverage);
+    }
+
+    function _calcPositionDetails(
+        int sizeDelta,
+        uint price,
+        uint fundingIndex,
+        address sender
+    ) internal view returns (PositionDetails memory details) {
+        // Fetch position from storage, if there is one.
         Position storage position = positions[sender];
+        PositionDetailsLocalVars memory vars;
+
         _revertIfError(_canLiquidate(position, _liquidationFee(), fundingIndex, price), Status.CanLiquidate);
 
         int oldSize = position.size;
         int newSize = position.size.add(sizeDelta);
+        details.size = newSize;
 
         // Deduct the fee.
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
-        uint fee = _orderFee(newSize, oldSize, price);
-        // (uint margin, Status marginStatus) = _realisedMargin(position, fundingIndex, price, -int(fee));
-        _realisedMargin
-        _revertIfError(marginStatus);
+        details.fee = _orderFee(newSize, oldSize, price);
+
+        // Calculate the margin.
+        vars.net = _netFundingPerUnit(position.fundingIndex, fundingSequence.length, fundingSequence.length, price);
+        (details.margin, vars.status) = position._calcRealisedMargin(vars.net, price, -int(details.fee), _liquidationFee());
+        _revertIfError(vars.status);
 
         // Check that the user has sufficient margin given their order.
         // We don't check the margin requirement if the position size is decreasing
-        bool positionDecreasing = _sameSide(oldSize, newSize) && _abs(newSize) < _abs(oldSize);
-        if (!positionDecreasing) {
+        vars.positionDecreasing = _sameSide(oldSize, newSize) && _abs(newSize) < _abs(oldSize);
+        if (!vars.positionDecreasing) {
             // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
             // except that we get a nicer error message if fee > margin, rather than arithmetic overflow.
-            _revertIfError(margin.add(fee) < _minInitialMargin(), Status.InsufficientMargin);
+            _revertIfError(details.margin.add(details.fee) < _minInitialMargin(), Status.InsufficientMargin);
         }
 
         // Check that the maximum leverage is not exceeded (ignoring the fee).
         // We'll allow a little extra headroom for rounding errors.
-        int desiredLeverage = newSize.multiplyDecimalRound(int(price)).divideDecimalRound(int(margin.add(fee)));
-        _revertIfError(_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(desiredLeverage), Status.MaxLeverageExceeded);
+        details.leverage = newSize.multiplyDecimalRound(int(price)).divideDecimalRound(int(details.margin.add(details.fee)));
+        _revertIfError(_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(details.leverage), Status.MaxLeverageExceeded);
 
         // Check that the order isn't too large for the market.
         // Allow a bit of extra value in case of rounding errors.
@@ -1051,32 +1133,33 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             Status.MaxMarketSizeExceeded
         );
 
-        return (
-            fee,
-            newSize,
-            calcliquidationPrice(position.margin, newSize, price, fundingIndex),
-            margin,
-            desiredLeverage
+        details.liquidationPrice = _calcLiquidationPrice(
+            Position(0, position.margin, newSize, price, fundingIndex),
+            true,
+            fundingIndex,
+            price
         );
+
+        return details;
     }
 
-    function calcliquidationPrice(
+    function calcLiquidationPrice(
         uint margin,
         int size,
         uint price,
         uint fundingIndex
-    ) public returns (uint) {
+    ) public view returns (uint) {
         Position memory position = Position(0, margin, size, price, fundingIndex);
         (uint aPrice, ) = _assetPrice(_exchangeRates());
-        return _calcLiqPrice(position, true, fundingIndex, aPrice);
+        return _calcLiquidationPrice(position, true, fundingIndex, aPrice);
     }
 
-    function _calcLiqPrice(
+    function _calcLiquidationPrice(
         Position memory position,
         bool includeFunding,
         uint fundingIndex,
         uint currentPrice
-    ) internal returns (uint) {
+    ) internal view returns (uint) {
         // A position can be liquidated whenever:
         //     remainingMargin <= liquidationFee
         // Hence, expanding the definition of remainingMargin the exact price
