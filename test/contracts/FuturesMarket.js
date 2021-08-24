@@ -2324,7 +2324,7 @@ contract('FuturesMarket', accounts => {
 				liquidationPriceNoFunding = await futuresMarket.liquidationPrice(trader2, false);
 
 				assert.bnEqual(liquidationPrice.price, liquidationPriceNoFunding.price);
-				assert.bnEqual(liquidationPrice.price, toUnit('109.5'));
+				assert.bnEqual(liquidationPrice.price, toUnit('109.7'));
 				assert.isFalse(liquidationPrice.invalid);
 				assert.isFalse(liquidationPriceNoFunding.invalid);
 			});
@@ -2343,7 +2343,7 @@ contract('FuturesMarket', accounts => {
 				);
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader2, true)).price,
-					toUnit(298.25),
+					toUnit(298.75),
 					toUnit('0.001')
 				);
 
@@ -2356,7 +2356,7 @@ contract('FuturesMarket', accounts => {
 				);
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader2, true)).price,
-					toUnit(294.25),
+					toUnit(294.75),
 					toUnit('0.001')
 				);
 
@@ -2369,7 +2369,7 @@ contract('FuturesMarket', accounts => {
 				);
 				assert.bnClose(
 					(await futuresMarket.liquidationPrice(trader2, true)).price,
-					toUnit(299.25),
+					toUnit(299.75),
 					toUnit('0.001')
 				);
 			});
@@ -2378,7 +2378,7 @@ contract('FuturesMarket', accounts => {
 				await setPrice(baseAsset, toUnit('250'));
 				// Submit orders that induce -0.05 funding rate
 				await futuresMarket.transferMargin(toUnit('1500'), { from: trader });
-				await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('30'), { from: trader });
 				await futuresMarket.transferMargin(toUnit('500'), { from: trader2 });
 				await futuresMarket.modifyPosition(toUnit('-10'), { from: trader2 });
 
@@ -2395,10 +2395,10 @@ contract('FuturesMarket', accounts => {
 				lPrice = await futuresMarket.liquidationPrice(trader, false);
 				assert.bnClose(lPrice[0], preLPrice1, toUnit(0.001));
 
-				// trader2 receives -10 * -0.05 = 0.5 base units of funding, and a $7.5 trading fee
-				// liquidation price = (20 - (500 - 7.5) - 10 * 250) / (-10 + 0.5) = 312.894...
+				// trader2 receives -10 * -0.05 = 0.5 base units of funding, and a $2.5 trading fee
+				// liquidation price = (20 - (500 - 2.5) - 10 * 250) / (-10 + 0.5) = 312.894...
 				lPrice = await futuresMarket.liquidationPrice(trader2, true);
-				assert.bnClose(lPrice[0], toUnit(312.894), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(313.421), toUnit(0.001));
 				lPrice = await futuresMarket.liquidationPrice(trader2, false);
 				assert.bnClose(lPrice[0], preLPrice2, toUnit(0.001));
 			});
@@ -2420,13 +2420,13 @@ contract('FuturesMarket', accounts => {
 				// trader 1 pays 30 * 7 * -0.02 = -4.2 units of funding, pays $22.5 exchange fee
 				// Remaining margin = (20 - (1500 - 22.5) + 30 * 250) / (30 - 4.2) = 234.205...
 				let lPrice = await futuresMarket.liquidationPrice(trader, true);
-				assert.bnClose(lPrice[0], toUnit(234.205), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(234.205), toUnit(0.01));
 				assert.isTrue(lPrice[1]);
 
-				// trader 2 receives -20 * 7 * -0.02 = 2.8 units of funding, pays $15 exchange fee
-				// Remaining margin = (20 - (1000 - 15) - 20 * 250) / (-20 + 2.8) = 346.802...
+				// trader 2 receives -20 * 7 * -0.02 = 2.8 units of funding, pays $5 exchange fee
+				// Remaining margin = (20 - (1000 - 5) - 20 * 250) / (-20 + 2.8) = 346.802...
 				lPrice = await futuresMarket.liquidationPrice(trader2, true);
-				assert.bnClose(lPrice[0], toUnit(346.802), toUnit(0.001));
+				assert.bnClose(lPrice[0], toUnit(347.383), toUnit(0.01));
 				assert.isTrue(lPrice[1]);
 			});
 
@@ -2632,7 +2632,7 @@ contract('FuturesMarket', accounts => {
 
 			it('Can liquidate a position with less than the liquidation fee margin remaining (short case)', async () => {
 				const price = (await futuresMarket.liquidationPrice(trader3, true)).price;
-				assert.bnClose(price, toUnit('298.25'), toUnit('0.01'));
+				assert.bnClose(price, toUnit('298.75'), toUnit('0.01'));
 
 				await setPrice(baseAsset, price.add(toUnit('0.01')));
 
