@@ -2537,6 +2537,19 @@ contract('Issuer (via Synthetix)', async accounts => {
 					});
 				});
 			});
+
+			describe('burnForRedemption', () => {
+				it('only allowed by the synth redeemer', async () => {
+					await sETHContract.issue(account1, toUnit('5'));
+
+					await onlyGivenAddressCanInvoke({
+						fnc: issuer.burnForRedemption,
+						args: [sETHContract.address, account1, toUnit('5')],
+						accounts,
+						reason: 'Issuer: Only the SynthRedeemer contract can perform this action',
+					});
+				});
+			});
 		});
 	});
 });
