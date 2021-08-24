@@ -28,12 +28,12 @@ task('node', 'Run a node')
 			console.log(yellow(`Forking ${network}...`));
 		}
 
-		// Set hh 2.5.0 config to use london. See reference here: https://github.com/nomiclabs/hardhat/releases/tag/hardhat-core-v2.5.0
-		// That should be removed if we move to hh >2.6.0 since london is hardfork's default since that version
-		if (taskArguments.hardfork === 'london') {
-			hre.config.networks.hardhat.hardfork = 'london';
-			hre.config.networks.hardhat.gasPrice = 'auto';
-		}
+		// // Set hh 2.5.0 config to use london. See reference here: https://github.com/nomiclabs/hardhat/releases/tag/hardhat-core-v2.5.0
+		// // That should be removed if we move to hh >2.6.0 since london is hardfork's default since that version
+		// if (taskArguments.hardfork === 'london') {
+		// 	hre.config.networks.hardhat.hardfork = 'london';
+		// 	hre.config.networks.hardhat.gasPrice = 'auto';
+		// }
 
 		subtask(TASK_NODE_SERVER_READY).setAction(async ({ provider }, hre, runSuper) => {
 			await runSuper();
