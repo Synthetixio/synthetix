@@ -15,6 +15,7 @@ const {
 task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addFlag('compile', 'Compile an l1 instance before running the tests')
 	.addFlag('deploy', 'Deploy an l1 instance before running the tests')
+	.addFlag('useSips', 'Use sources from SIPs directly, instead of releases')
 	.addFlag('useFork', 'Run the tests against a fork of mainnet')
 	.addOptionalParam(
 		'providerPort',
@@ -40,7 +41,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 
 		if (taskArguments.deploy) {
 			if (taskArguments.useFork) {
-				await prepareDeploy({ network: 'mainnet' });
+				await prepareDeploy({ network: 'mainnet', useSips: taskArguments.useSips });
 				await deployInstance({
 					useFork: true,
 					network: 'mainnet',
