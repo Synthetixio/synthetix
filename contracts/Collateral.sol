@@ -507,9 +507,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 2. Check the payment amount.
         require(payment > 0, "Payment must be above 0");
 
-        // 3. Check that the repayer is the borrower.
-        require(loan.account == repayer, "Must be borrower");
-
         // 4. Repay the accruedInterest if payInterest == true.
         if (payInterest) {
             payment = payment.add(loan.accruedInterest);
