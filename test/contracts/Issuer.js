@@ -725,6 +725,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 							describe('when removed', () => {
 								let txn;
 								beforeEach(async () => {
+									// base conditions
+									assert.equal(await sUSDContract.balanceOf(synthRedeemer.address), '0');
+									assert.equal(await synthRedeemer.redemptions(synthProxy.address), '0');
+
+									// now do the removal
 									txn = await issuer.removeSynth(currencyKey, { from: owner });
 								});
 								it('emits an event', async () => {
