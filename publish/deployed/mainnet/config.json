@@ -15,7 +15,7 @@
 		"deploy": false
 	},
 	"DebtCache": {
-		"deploy": false
+		"deploy": true
 	},
 	"DelegateApprovals": {
 		"deploy": false
@@ -39,7 +39,7 @@
 		"deploy": false
 	},
 	"FeePool": {
-		"deploy": false
+		"deploy": true
 	},
 	"FeePoolState": {
 		"deploy": false
@@ -48,7 +48,7 @@
 		"deploy": false
 	},
 	"Issuer": {
-		"deploy": false
+		"deploy": true
 	},
 	"EternalStorageLiquidations": {
 		"deploy": false
@@ -66,7 +66,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
@@ -117,7 +117,7 @@
 		"deploy": false
 	},
 	"SynthsUSD": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthsEUR": {
 		"deploy": false
@@ -222,7 +222,7 @@
 		"deploy": false
 	},
 	"SynthsETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"TokenStatesBNB": {
 		"deploy": false
