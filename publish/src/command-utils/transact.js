@@ -20,6 +20,7 @@ const performTransactionalStep = async ({
 	write,
 	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
+	gasPrice,
 	generateSolidity,
 	explorerLinkPrefix,
 	ownerActions,
