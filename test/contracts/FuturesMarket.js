@@ -2477,11 +2477,12 @@ contract('FuturesMarket', accounts => {
 			beforeEach(async () => {
 				await setPrice(baseAsset, toUnit('250'));
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
-				await futuresMarket.modifyPosition(toUnit('40'), { from: trader });
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
-				await futuresMarket.modifyPosition(toUnit('20'), { from: trader2 });
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader3 });
+				await futuresMarket.modifyPosition(toUnit('40'), { from: trader });
+				await futuresMarket.modifyPosition(toUnit('20'), { from: trader2 });
 				await futuresMarket.modifyPosition(toUnit('-20'), { from: trader3 });
+				// Exchange fees total 60 * 250 * 0.003 + 20 * 250 * 0.001 = 50
 			});
 
 			it('Cannot liquidate nonexistent positions', async () => {
@@ -2511,7 +2512,7 @@ contract('FuturesMarket', accounts => {
 				// However, the long positions are actually underwater and the negative contribution is not removed until liquidation
 				assert.bnClose(
 					(await futuresMarket.marketDebt())[0],
-					toUnit('600').sub(toUnit('60')),
+					toUnit('600').sub(toUnit('50')),
 					toUnit('0.1')
 				);
 				assert.bnClose((await futuresMarket.unrecordedFunding())[0], toUnit('-10'), toUnit('0.01'));
@@ -2525,7 +2526,7 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(await futuresMarket.marketSkew(), skew.sub(positionSize.abs()));
 				assert.bnClose(
 					(await futuresMarket.marketDebt())[0],
-					toUnit('2000').sub(toUnit('30')),
+					toUnit('2000').sub(toUnit('20')),
 					toUnit('0.01')
 				);
 
@@ -2542,7 +2543,7 @@ contract('FuturesMarket', accounts => {
 				// Market debt is now just the remaining position, plus the funding they've made.
 				assert.bnClose(
 					(await futuresMarket.marketDebt())[0],
-					toUnit('2200').sub(toUnit('15')),
+					toUnit('2200').sub(toUnit('5')),
 					toUnit('0.01')
 				);
 			});
@@ -2558,7 +2559,7 @@ contract('FuturesMarket', accounts => {
 
 				assert.bnClose(
 					(await futuresMarket.marketDebt())[0],
-					toUnit('6300').sub(toUnit('60')),
+					toUnit('6300').sub(toUnit('50')),
 					toUnit('0.1')
 				);
 				assert.bnClose(
@@ -2617,7 +2618,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader, toBN('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [positionId, trader, toBN('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
 					log: decodedLogs[2],
 				});
 				decodedEventEqual({
@@ -2659,7 +2660,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader3, toBN('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [positionId, trader3, toBN('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
 					log: decodedLogs[2],
 				});
 				decodedEventEqual({
@@ -2696,7 +2697,7 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [trader, toBN('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [positionId, trader, toBN('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
 					log: decodedLogs[2],
 				});
 				decodedEventEqual({
