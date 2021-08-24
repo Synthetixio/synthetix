@@ -985,6 +985,65 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
     }
 
+    function calcliquidationPrice(
+        uint margin,
+        int size,
+        uint price,
+        uint fundingIndex
+    ) public returns (uint) {
+        Position memory position = Position(0, margin, size, price, fundingIndex);
+        (uint aPrice, ) = _assetPrice(_exchangeRates());
+        return _calcLiqPrice(position, true, fundingIndex, aPrice);
+    }
+
+    function _calcLiqPrice(
+        Position memory position,
+        bool includeFunding,
+        uint fundingIndex,
+        uint currentPrice
+    ) internal returns (uint) {
+        // A position can be liquidated whenever:
+        //     remainingMargin <= liquidationFee
+        // Hence, expanding the definition of remainingMargin the exact price
+        // at which a position can first be liquidated is:
+        //     margin + profitLoss + funding  =  liquidationFee
+        //     price                          =  lastPrice + (liquidationFee - margin) / positionSize - netFundingPerUnit
+        // This is straightforward if we neglect the funding term.
+
+        int positionSize = position.size;
+
+        if (positionSize == 0) {
+            return 0;
+        }
+
+        int result =
+            int(position.lastPrice).add(int(_liquidationFee()).sub(int(position.margin)).divideDecimalRound(positionSize));
+
+        if (includeFunding) {
+            // If we pay attention to funding, we have to expanding netFundingPerUnit and solve again for the price:
+            //     price         =  (lastPrice + (liquidationFee - margin) / positionSize - netAccrued) / (1 + netUnrecorded)
+            // Where, if fundingIndex == sequenceLength:
+            //     netAccrued    =  fundingSequence[fundingSequenceLength - 1] - fundingSequence[position.fundingIndex]
+            //     netUnrecorded =  currentFundingRate * (block.timestamp - fundingLastRecomputed)
+            // And otherwise:
+            //     netAccrued    =  fundingSequence[fundingIndex] - fundingSequence[position.fundingIndex]
+            //     netUnrecorded =  0
+
+            uint sequenceLength = fundingSequence.length;
+            int denominator = _UNIT;
+            if (fundingIndex == sequenceLength) {
+                fundingIndex = sequenceLength.sub(1);
+                denominator = _UNIT.add(_unrecordedFunding(currentPrice).divideDecimalRound(int(currentPrice)));
+            }
+            result = result
+                .sub(_netFundingPerUnit(position.fundingIndex, fundingIndex, sequenceLength, currentPrice))
+                .divideDecimalRound(denominator);
+        }
+
+        // If the user has leverage less than 1, their liquidation price may actually be negative; return 0 instead.
+        return uint(_max(0, result));
+    }
+
     /*
      * Adjust the sender's position size.
      * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
