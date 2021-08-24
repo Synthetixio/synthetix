@@ -134,10 +134,6 @@ class Deployer {
 
 		const params = {
 			gasLimit,
-			gasPrice:
-				this.gasPrice === 'auto'
-					? this.gasPrice
-					: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		};
 
 		if (this.nonceManager) {
