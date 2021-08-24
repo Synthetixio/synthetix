@@ -1294,100 +1294,43 @@ contract('FuturesMarket', accounts => {
 						await futuresMarket.modifyPosition(orderSize.add(toBN('1')), { from: trader });
 					});
 
-					it('Max order size is caught when an account has a position open already', async () => {
-						const unitLeverage = divideDecimalRound(leverage, leverage.abs());
+					it('Orders are allowed a touch of extra size to account for price motion on confirmation', async () => {
+						// Ensure there's some existing order size for prices to shunt around.
+						await futuresMarket.transferMargin(maxMargin, {
+							from: trader2,
+						});
+						await futuresMarket.modifyPosition(orderSize.div(toBN(10)).mul(toBN(7)), {
+							from: trader2,
+						});
 
-						// Confirm a big order
 						await futuresMarket.transferMargin(maxMargin, {
 							from: trader,
 						});
-						await futuresMarket.modifyPosition(
-							orderSize
-								.mul(unitLeverage)
-								.div(toBN('10'))
-								.mul(toBN('8')),
-							{
-								from: trader,
-							}
-						);
 
-						// Try to submit an order that's too big for the market
-						await assert.revert(
-							futuresMarket.modifyPosition(
-								orderSize
-									.mul(unitLeverage)
-									.div(toBN('10'))
-									.mul(toBN('3')),
-								{
-									from: trader,
-								}
-							),
-							'Max market size exceeded'
-						);
-
-						// Submit an order that's not too big, then the price will spike
-						await futuresMarket.modifyPosition(
-							orderSize
-								.mul(unitLeverage)
-								.div(toBN('10'))
-								.mul(toBN('2'))
-								.neg(),
-							{
-								from: trader,
-							}
-						);
-						let spike = toUnit('2');
-						if (leverage.lt(toBN('0'))) {
-							spike = toUnit('0.5');
-						}
-						await setPrice(baseAsset, spike);
-
-						await assert.revert(
-							futuresMarket.modifyPosition(
-								orderSize
-									.mul(unitLeverage)
-									.div(toBN('10'))
-									.mul(toBN('2'))
-									.neg(),
-								{
-									from: trader,
-								}
-							),
-							'Max market size exceeded'
-						);
-					});
-
-					it('Orders are allowed a touch of extra size to account for price motion on confirmation', async () => {
-						// Ensure there's some existing order size for prices to shunt around.
-						await futuresMarket.transferMargin(maxMargin.div(toBN(10)).mul(toBN(7)), {
-							from: trader2,
-						});
-						await futuresMarket.modifyPosition(leverage, { from: trader2 });
-
-						await futuresMarket.transferMargin(maxMargin.div(toBN(10)).mul(toBN(3)), {
-							from: trader,
-						});
-
-						// The price moves, so the value of the already-confirmed order, shunts out the pending one.
+						// The price moves, so the value of the already-confirmed order shunts out the pending one.
 						await setPrice(baseAsset, toUnit('1.08'));
 						await assert.revert(
-							futuresMarket.modifyPosition(leverage, { from: trader }),
+							futuresMarket.modifyPosition(orderSize.div(toBN(100)).mul(toBN(25)), {
+								from: trader,
+							}),
 							'Max market size exceeded'
 						);
 
 						// Price moves back partially and allows the order to confirm
 						await setPrice(baseAsset, toUnit('1.04'));
-						await futuresMarket.modifyPosition(leverage, { from: trader });
+						await futuresMarket.modifyPosition(orderSize.div(toBN(100)).mul(toBN(25)), {
+							from: trader,
+						});
 					});
 
 					it('Orders are allowed to reduce in size (or close) even if the result is still over the max', async () => {
-						const unitLeverage = divideDecimalRound(leverage, leverage.abs());
-						const initialMargin = maxMargin.mul(toBN('8'));
+						const sideVar = leverage.div(leverage.abs());
+						const initialSize = orderSize.div(toBN('10')).mul(toBN('8'));
 
-						await futuresMarket.transferMargin(initialMargin, {
+						await futuresMarket.transferMargin(maxMargin.mul(toBN('10')), {
 							from: trader,
 						});
-						await futuresMarket.modifyPosition(unitLeverage, { from: trader });
+						await futuresMarket.modifyPosition(initialSize, { from: trader });
 
 						// Now exceed max size (but price isn't so high that shorts would be liquidated)
 						await setPrice(baseAsset, toUnit('1.9'));
@@ -1396,10 +1339,7 @@ contract('FuturesMarket', accounts => {
 						assert.bnEqual(sizes[leverage.gt(toBN('0')) ? 0 : 1], toBN('0'));
 
 						// Reduce the order size, even though we are above the maximum
-						await futuresMarket.transferMargin(initialMargin.sub(toUnit('0.01')), {
-							from: trader,
-						});
-						await futuresMarket.modifyPosition((await futuresMarket.currentLeverage(trader))[0], {
+						await futuresMarket.modifyPosition(toUnit('-1').mul(sideVar), {
 							from: trader,
 						});
 					});
@@ -1920,7 +1860,7 @@ contract('FuturesMarket', accounts => {
 									.div(toBN(points));
 								const oppLev = lowLev.add(frac).neg();
 								const size = oppLev.mul(toBN('10'));
-								if (size.gt(toBN('0'))) {
+								if (size.abs().gt(toBN('0'))) {
 									await futuresMarket.modifyPosition(size, { from: trader2 });
 								}
 
@@ -1949,7 +1889,9 @@ contract('FuturesMarket', accounts => {
 
 								assert.bnClose(await futuresMarket.currentFundingRate(), expected, toUnit('0.01'));
 
-								await futuresMarket.closePosition({ from: trader2 });
+								if (size.abs().gt(toBN(0))) {
+									await futuresMarket.closePosition({ from: trader2 });
+								}
 							}
 						}
 					}
