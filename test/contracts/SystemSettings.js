@@ -950,7 +950,7 @@ contract('SystemSettings', async accounts => {
 			const minimum = await systemSettings.MIN_ATOMIC_TWAP_WINDOW();
 			await assert.revert(
 				systemSettings.setAtomicTwapWindow(minimum.sub(toBN('1')), { from: owner }),
-				'Atomic twap window under minimum 30 min'
+				'Atomic twap window under minimum 1 min'
 			);
 		});
 
