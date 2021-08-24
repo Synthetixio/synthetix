@@ -459,10 +459,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint synthSupply = IERC20(synthToRemove).totalSupply();
 
         if (synthSupply > 0) {
-            uint rateToRedeem = exchangeRates().rateForCurrency(currencyKey);
+            (uint amountOfsUSD, uint rateToRedeem, ) =
+                exchangeRates().effectiveValueAndRates(currencyKey, synthSupply, "sUSD");
             require(rateToRedeem > 0, "Cannot remove synth to redeem without rate");
             ISynthRedeemer _synthRedeemer = synthRedeemer();
-            synths[sUSD].issue(address(_synthRedeemer), synthSupply.mul(rateToRedeem));
+            synths[sUSD].issue(address(_synthRedeemer), amountOfsUSD);
             _synthRedeemer.deprecate(ISynth(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem, synthSupply);
         }
 

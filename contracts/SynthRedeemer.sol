@@ -5,7 +5,7 @@ import "./MixinResolver.sol";
 import "./interfaces/ISynthRedeemer.sol";
 
 // Libraries
-import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
+import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/IERC20.sol";
@@ -14,7 +14,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynth.sol";
 
 contract SynthRedeemer is ISynthRedeemer, MixinResolver {
-    using SafeMath for uint;
+    using SafeDecimalMath for uint;
 
     mapping(address => uint) public redemptions;
 
@@ -38,11 +38,11 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
     }
 
     function totalSupply(IERC20 synthProxy) public view returns (uint supplyInsUSD) {
-        supplyInsUSD = synthProxy.totalSupply().mul(redemptions[address(synthProxy)]);
+        supplyInsUSD = synthProxy.totalSupply().multiplyDecimal(redemptions[address(synthProxy)]);
     }
 
     function balanceOf(IERC20 synthProxy, address account) external view returns (uint balanceInsUSD) {
-        balanceInsUSD = synthProxy.balanceOf(account).mul(redemptions[address(synthProxy)]);
+        balanceInsUSD = synthProxy.balanceOf(account).multiplyDecimal(redemptions[address(synthProxy)]);
     }
 
     function redeem(IERC20 synthProxy) external {
@@ -55,7 +55,7 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         require(amountOfSynth > 0, "No balance of synth to redeem");
         require(synthProxy.balanceOf(msg.sender) >= amountOfSynth, "Insufficent balance");
         _issuer().burnForRedemption(ISynth(address(synthProxy)), msg.sender, amountOfSynth);
-        uint amountInsUSD = amountOfSynth.mul(rateToRedeem);
+        uint amountInsUSD = amountOfSynth.multiplyDecimal(rateToRedeem);
         _sUSD().transfer(msg.sender, amountInsUSD);
         emit SynthRedeemed(address(synthProxy), msg.sender, amountOfSynth, amountInsUSD);
     }
