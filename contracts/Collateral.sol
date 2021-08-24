@@ -255,7 +255,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         require(amount <= maxLoan(collateral, currency), "Exceed max borrow power");
 
         // 6. This fee is denominated in the currency of the loan
-        uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
+        uint issueFee = amount.multiplyDecimalRound(getIssueFeeRate(address(this)));
 
         // 7. Calculate the minting fee and subtract it from the loan amount
         uint loanAmountMinusFee = amount.sub(issueFee);
@@ -423,7 +423,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _checkSynthBalance(msg.sender, loan.currency, payment);
 
         // 1. Check the payment amount.
-        require(payment > 0);
+        require(payment > 0, "Payment must be above 0");
 
         // 6. Check they are eligible for liquidation.
         // Note: this will revert if collateral is 0, however that should only be possible if the loan amount is 0.
@@ -547,7 +547,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _checkLoanRatio(loan);
 
         // 6. This fee is denominated in the currency of the loan
-        uint issueFee = amount.multiplyDecimalRound(issueFeeRate);
+        uint issueFee = amount.multiplyDecimalRound(getIssueFeeRate(address(this)));
 
         // 7. Calculate the minting fee and subtract it from the draw amount
         uint amountMinusFee = amount.sub(issueFee);

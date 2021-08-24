@@ -1,6 +1,6 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('hardhat');
+const { contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -8,17 +8,11 @@ const BN = require('bn.js');
 
 const { fastForward, getEthBalance, toUnit, fromUnit, currentTime } = require('../utils')();
 
-const { setupAllContracts, setupContract } = require('./setup');
+const { setupAllContracts } = require('./setup');
 
 const { ensureOnlyExpectedMutativeFunctions, setStatus } = require('./helpers');
 
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../..');
-
-let CollateralManager;
-let CollateralManagerState;
+const { toBytes32 } = require('../..');
 
 contract('CollateralEth', async accounts => {
 	const YEAR = 31556926;
@@ -36,13 +30,13 @@ contract('CollateralEth', async accounts => {
 	const onesUSD = toUnit(1);
 	const tensUSD = toUnit(10);
 	const oneHundredsUSD = toUnit(100);
-	const fiveHundredSUSD = toUnit(500);
+	const fiveHundredsUSD = toUnit(500);
 
 	let tx;
 	let loan;
 	let id;
 
-	const [deployerAccount, owner, oracle, , account1, account2] = accounts;
+	const [, owner, oracle, , account1, account2] = accounts;
 
 	let ceth,
 		managerState,
@@ -50,11 +44,11 @@ contract('CollateralEth', async accounts => {
 		issuer,
 		synths,
 		feePool,
-		util,
 		exchangeRates,
 		addressResolver,
 		sUSDSynth,
 		sETHSynth,
+		systemSettings,
 		systemStatus,
 		debtCache,
 		FEE_ADDRESS;
@@ -75,25 +69,10 @@ contract('CollateralEth', async accounts => {
 		await sETHSynth.issue(receiver, issueAmount, { from: owner });
 	};
 
-	const deployCollateral = async ({
-		state,
-		owner,
-		manager,
-		resolver,
-		collatKey,
-		minColat,
-		minSize,
-	}) => {
-		return setupContract({
-			accounts,
-			contract: 'CollateralEth',
-			args: [state, owner, manager, resolver, collatKey, minColat, minSize],
-		});
-	};
-
 	const setupMultiCollateral = async () => {
 		synths = ['sUSD', 'sETH'];
 		({
+			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
@@ -101,8 +80,10 @@ contract('CollateralEth', async accounts => {
 			FeePool: feePool,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
-			CollateralUtil: util,
 			DebtCache: debtCache,
+			CollateralEth: ceth,
+			CollateralManager: manager,
+			CollateralManagerState: managerState,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -113,40 +94,19 @@ contract('CollateralEth', async accounts => {
 				'ExchangeRates',
 				'Exchanger',
 				'SystemStatus',
+				'SystemSettings',
 				'Issuer',
+				'CollateralEth',
 				'CollateralUtil',
+				'CollateralManager',
+				'CollateralManagerState',
 				'DebtCache',
 			],
 		}));
 
-		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
-
-		const maxDebt = toUnit(10000000);
-
-		manager = await CollateralManager.new(
-			managerState.address,
-			owner,
-			addressResolver.address,
-			maxDebt,
-			0,
-			0,
-			{
-				from: deployerAccount,
-			}
-		);
-
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
-
-		ceth = await deployCollateral({
-			owner: owner,
-			manager: manager.address,
-			resolver: addressResolver.address,
-			collatKey: sETH,
-			minColat: toUnit('1.3'),
-			minSize: toUnit('2'),
-		});
 
 		await addressResolver.importAddresses(
 			[toBytes32('CollateralEth'), toBytes32('CollateralManager')],
@@ -178,7 +138,7 @@ contract('CollateralEth', async accounts => {
 		// rebuild the cache to add the synths we need.
 		await manager.rebuildCache();
 
-		await ceth.setIssueFeeRate(toUnit('0.001'), { from: owner });
+		await systemSettings.setIssueFeeRate(ceth.address, toUnit('0.001'), { from: owner });
 	};
 
 	const updateRatesWithDefaults = async () => {
@@ -201,9 +161,6 @@ contract('CollateralEth', async accounts => {
 	};
 
 	before(async () => {
-		CollateralManager = artifacts.require(`CollateralManager`);
-		CollateralManagerState = artifacts.require('CollateralManagerState');
-
 		await setupMultiCollateral();
 	});
 
@@ -257,11 +214,10 @@ contract('CollateralEth', async accounts => {
 				});
 
 				id = getid(tx);
-				loan = ceth.loans[id];
 			});
 
 			it('when we issue at 200%, our c ratio is 200%', async () => {
-				const ratio = await ceth.collateralRatio(loan);
+				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(2));
 			});
 
@@ -270,7 +226,7 @@ contract('CollateralEth', async accounts => {
 					from: oracle,
 				});
 
-				const ratio = await ceth.collateralRatio(loan);
+				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1.5));
 			});
 
@@ -279,7 +235,7 @@ contract('CollateralEth', async accounts => {
 					from: oracle,
 				});
 
-				const ratio = await ceth.collateralRatio(loan);
+				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(4));
 			});
 
@@ -288,7 +244,7 @@ contract('CollateralEth', async accounts => {
 					from: oracle,
 				});
 
-				const ratio = await ceth.collateralRatio(loan);
+				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(1));
 			});
 		});
@@ -300,11 +256,10 @@ contract('CollateralEth', async accounts => {
 				});
 
 				id = getid(tx);
-				loan = ceth.loans[id];
 			});
 
 			it('when we issue at 200%, our c ratio is 200%', async () => {
-				const ratio = await ceth.collateralRatio(loan);
+				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(2));
 			});
 
@@ -313,7 +268,7 @@ contract('CollateralEth', async accounts => {
 					from: oracle,
 				});
 
-				const ratio = await ceth.collateralRatio(loan);
+				const ratio = await ceth.collateralRatio(id);
 				assert.bnEqual(ratio, toUnit(2));
 			});
 		});
@@ -334,121 +289,6 @@ contract('CollateralEth', async accounts => {
 	});
 
 	// END PUBLIC VIEW TESTS
-
-	// SETTER TESTS
-
-	describe('setting variables', async () => {
-		describe('setMinCratio', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						ceth.setMinCratio(toUnit(1), { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-				it('should fail if the minimum is less than 1', async () => {
-					await assert.revert(
-						ceth.setMinCratio(toUnit(0.99), { from: owner }),
-						'Cratio must be above 1'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await ceth.setMinCratio(toUnit(2), { from: owner });
-				});
-				it('should update the minimum collateralisation', async () => {
-					assert.bnEqual(await ceth.minCratio(), toUnit(2));
-				});
-			});
-		});
-
-		describe('setIssueFeeRate', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						ceth.setIssueFeeRate(toUnit(1), { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await ceth.setIssueFeeRate(toUnit(0.2), { from: owner });
-				});
-				it('should update the liquidation penalty', async () => {
-					assert.bnEqual(await ceth.issueFeeRate(), toUnit(0.2));
-				});
-				it('should allow the issue fee rate to be  0', async () => {
-					await ceth.setIssueFeeRate(toUnit(0), { from: owner });
-					assert.bnEqual(await ceth.issueFeeRate(), toUnit(0));
-				});
-			});
-		});
-
-		describe('setInteractionDelay', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						ceth.setInteractionDelay(toUnit(1), { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-				it('should fail if the owner passes to big of a value', async () => {
-					await assert.revert(
-						ceth.setInteractionDelay(toUnit(3601), { from: owner }),
-						'Max 1 hour'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await ceth.setInteractionDelay(toUnit(50), { from: owner });
-				});
-				it('should update the interaction delay', async () => {
-					assert.bnEqual(await ceth.interactionDelay(), toUnit(50));
-				});
-			});
-		});
-
-		describe('setManager', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						ceth.setManager(ZERO_ADDRESS, { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await ceth.setManager(ZERO_ADDRESS, { from: owner });
-				});
-				it('should update the manager', async () => {
-					assert.bnEqual(await ceth.manager(), ZERO_ADDRESS);
-				});
-			});
-		});
-
-		describe('setCanOpenLoans', async () => {
-			describe('revert condtions', async () => {
-				it('should fail if not called by the owner', async () => {
-					await assert.revert(
-						ceth.setCanOpenLoans(false, { from: account1 }),
-						'Only the contract owner may perform this action'
-					);
-				});
-			});
-			describe('when it succeeds', async () => {
-				beforeEach(async () => {
-					await ceth.setCanOpenLoans(false, { from: owner });
-				});
-				it('should update the manager', async () => {
-					assert.isFalse(await ceth.canOpenLoans());
-				});
-			});
-		});
-	});
 
 	// LOAN INTERACTIONS
 
@@ -516,34 +356,33 @@ contract('CollateralEth', async accounts => {
 
 			it('should revert if the requested loan exceeds borrowing power', async () => {
 				await assert.revert(
-					ceth.open(fiveHundredSUSD, sUSD, { value: twoETH, from: account1 }),
+					ceth.open(fiveHundredsUSD, sUSD, { value: twoETH, from: account1 }),
 					'Exceed max borrow power'
 				);
 			});
 		});
-
 		describe('should open an eth loan denominated in sUSD', async () => {
 			beforeEach(async () => {
-				tx = await ceth.open(fiveHundredSUSD, sUSD, {
+				tx = await ceth.open(fiveHundredsUSD, sUSD, {
 					value: tenETH,
 					from: account1,
 				});
 
 				id = getid(tx);
 
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 			});
 
 			it('should set the loan correctly', async () => {
 				assert.equal(loan.account, account1);
 				assert.equal(loan.collateral, tenETH.toString());
 				assert.equal(loan.currency, sUSD);
-				assert.equal(loan.amount, fiveHundredSUSD.toString());
-				assert.equal(loan.accruedInterest, toUnit(0));
+				assert.equal(loan.amount, fiveHundredsUSD.toString());
+				assert.bnEqual(loan.accruedInterest, toUnit(0));
 			});
 
 			it('should issue the correct amount to the borrower', async () => {
-				// 0.001 issue fee rate.
+				// 0.001% issue fee rate.
 				const expectedBal = toUnit('499.5');
 
 				assert.bnEqual(await sUSDSynth.balanceOf(account1), expectedBal);
@@ -559,7 +398,7 @@ contract('CollateralEth', async accounts => {
 				assert.eventEqual(tx, 'LoanCreated', {
 					account: account1,
 					id: id,
-					amount: fiveHundredSUSD,
+					amount: fiveHundredsUSD,
 					collateral: tenETH,
 					currency: sUSD,
 				});
@@ -575,7 +414,7 @@ contract('CollateralEth', async accounts => {
 
 				id = getid(tx);
 
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 			});
 
 			it('should set the loan correctly', async () => {
@@ -583,14 +422,14 @@ contract('CollateralEth', async accounts => {
 				assert.equal(loan.collateral, tenETH.toString());
 				assert.equal(loan.currency, sETH);
 				assert.equal(loan.amount, fiveETH.toString());
-				assert.equal(loan.accruedInterest, toUnit(0));
+				assert.bnEqual(loan.accruedInterest, toUnit(0));
 			});
 
 			it('should issue the correct amount to the borrower', async () => {
-				// 0.001 issue fee rate.
-				const expecetdBalance = toUnit('4.995');
+				// 0.001% issue fee rate.
+				const expectedBal = toUnit('4.995');
 
-				assert.bnEqual(await sETHSynth.balanceOf(account1), expecetdBalance);
+				assert.bnEqual(await sETHSynth.balanceOf(account1), expectedBal);
 			});
 
 			it('should issue the minting fee to the fee pool', async () => {
@@ -629,7 +468,7 @@ contract('CollateralEth', async accounts => {
 					beforeEach(async () => {
 						await setStatus({ owner, systemStatus, section, suspend: true });
 					});
-					it('then calling depopsit() reverts', async () => {
+					it('then calling deposit() reverts', async () => {
 						await assert.revert(
 							ceth.deposit(account1, id, { value: tenETH, from: account1 }),
 							'Operation prohibited'
@@ -662,7 +501,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should increase the total collateral of the loan', async () => {
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 
 				assert.bnEqual(loan.collateral, twentyETH);
 			});
@@ -728,7 +567,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should decrease the total collateral of the loan', async () => {
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 
 				const expectedCollateral = tenETH.sub(oneETH);
 
@@ -823,7 +662,7 @@ contract('CollateralEth', async accounts => {
 			beforeEach(async () => {
 				await issuesUSDToAccount(oneHundredsUSD, account2);
 				tx = await ceth.repay(account1, id, tensUSD, { from: account2 });
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 			});
 
 			it('should work reduce the repayers balance', async () => {
@@ -832,7 +671,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should update the loan', async () => {
-				assert.equal(loan.amount.substring(0, 5), expectedString);
+				assert.equal(loan.amount.toString().substring(0, 5), expectedString);
 			});
 
 			it('should emit the event properly', async () => {
@@ -864,7 +703,7 @@ contract('CollateralEth', async accounts => {
 
 				tx = await ceth.repay(account1, id, oneETH, { from: account2 });
 
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 			});
 
 			it('should work reduce the repayers balance', async () => {
@@ -874,7 +713,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should update the loan', async () => {
-				assert.equal(loan.amount.substring(0, 5), expectedString);
+				assert.equal(loan.amount.toString().substring(0, 5), expectedString);
 			});
 
 			it('should emit the event properly', async () => {
@@ -953,8 +792,6 @@ contract('CollateralEth', async accounts => {
 		describe('should allow liquidations on an undercollateralised sUSD loan', async () => {
 			const liquidatedCollateral = new BN('1588888888888888880');
 			let liquidationAmount;
-			let minCratio;
-			let collateralKey;
 
 			beforeEach(async () => {
 				const timestamp = await currentTime();
@@ -964,13 +801,9 @@ contract('CollateralEth', async accounts => {
 
 				await issuesUSDToAccount(toUnit(1000), account2);
 
-				loan = ceth.loans[id];
-				minCratio = await ceth.minCratio();
-				collateralKey = await ceth.collateralKey();
-
 				liquidatorEthBalBefore = new BN(await getEthBalance(account2));
 
-				liquidationAmount = await util.liquidationAmount(loan, minCratio, collateralKey);
+				liquidationAmount = await ceth.liquidationAmount(id);
 
 				tx = await ceth.liquidate(account1, id, liquidationAmount, {
 					from: account2,
@@ -1007,9 +840,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should fix the collateralisation ratio of the loan', async () => {
-				loan = ceth.loans[id];
-
-				const ratio = await ceth.collateralRatio(loan);
+				const ratio = await ceth.collateralRatio(id);
 
 				// the loan is very close 150%, we are in 10^18 land.
 				assert.bnClose(ratio, toUnit('1.3'), '10000000000000');
@@ -1033,7 +864,7 @@ contract('CollateralEth', async accounts => {
 					from: oracle,
 				});
 
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 
 				await issuesUSDToAccount(toUnit(1000), account2);
 
@@ -1055,7 +886,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should close the loan correctly', async () => {
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 
 				assert.equal(loan.amount, 0);
 				assert.equal(loan.collateral, 0);
@@ -1126,7 +957,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should revert if they are not the borrower', async () => {
-				await assert.revert(ceth.close(id, { from: account2 }), 'Loan does not exist');
+				await assert.revert(ceth.close(id, { from: account2 }), 'Must be borrower');
 			});
 		});
 
@@ -1139,7 +970,7 @@ contract('CollateralEth', async accounts => {
 			});
 
 			it('should record the loan as closed', async () => {
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 
 				assert.equal(loan.amount, 0);
 				assert.equal(loan.collateral, 0);
@@ -1230,10 +1061,7 @@ contract('CollateralEth', async accounts => {
 
 		describe('revert conditions', async () => {
 			it('should revert if the draw would under collateralise the loan', async () => {
-				await assert.revert(
-					ceth.draw(id, oneHundredsUSD, { from: account1 }),
-					'Cannot draw this much'
-				);
+				await assert.revert(ceth.draw(id, oneHundredsUSD, { from: account1 }), 'Cratio too low');
 			});
 		});
 
@@ -1241,7 +1069,7 @@ contract('CollateralEth', async accounts => {
 			beforeEach(async () => {
 				tx = await ceth.draw(id, toUnit(30), { from: account1 });
 
-				loan = ceth.loans[id];
+				loan = await ceth.loans(id);
 			});
 
 			it('should update the amount on the loan', async () => {
@@ -1252,8 +1080,8 @@ contract('CollateralEth', async accounts => {
 
 	describe('Accrue Interest', async () => {
 		beforeEach(async () => {
-			// 0.005% / 31556926 (seconds in common year)
-			await manager.setBaseBorrowRate(158443823, { from: owner });
+			// 0.001% / 31556926 (seconds in common year)
+			await manager.setBaseBorrowRate(316887646, { from: owner });
 		});
 
 		it('should correctly determine the interest on loans', async () => {
@@ -1264,7 +1092,7 @@ contract('CollateralEth', async accounts => {
 
 			id = getid(tx);
 
-			// after a year we should have accrued about 0.005% + (100/2100) = 0.05261904762
+			// after a year we should have accrued about 0.001% + (100/2100) = 0.04762904761
 
 			await fastForwardAndUpdateRates(YEAR);
 
@@ -1272,11 +1100,11 @@ contract('CollateralEth', async accounts => {
 
 			tx = await ceth.deposit(account1, id, { from: account1, value: oneETH });
 
-			loan = ceth.loans[id];
+			loan = await ceth.loans(id);
 
 			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 5.2619);
+			assert.equal(interest, 4.7629);
 
 			tx = await ceth.open(oneHundredsUSD, sUSD, {
 				value: twoETH,
@@ -1285,30 +1113,30 @@ contract('CollateralEth', async accounts => {
 
 			const id2 = getid(tx);
 
-			// after a year we should have accrued about 0.005% + (200/2200) = 0.09590909091
+			// after a year we should have accrued about 0.001% + (200/2200) = 0.09524809523
 
 			await fastForwardAndUpdateRates(YEAR);
 
 			tx = await ceth.deposit(account1, id2, { from: account1, value: oneETH });
 
-			loan = ceth.loans[id];
+			loan = await ceth.loans(id);
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 9.5909);
+			assert.equal(interest, 9.59248);
 
 			// after two years we should have accrued (this math is rough)
-			// 0.005% + (100/2100) = 0.05261904762 +
-			// 0.005% + (200/2200) = 0.09590909091 +
-			//                     = 0.1485281385
+			// 0.001% + (100/2100) = 0.04762904761 +
+			// 0.001% + (200/2200) = 0.09524809523 +
+			//                     = 0.14287714284
 
 			tx = await ceth.deposit(account1, id, { from: account1, value: oneETH });
 
-			loan = ceth.loans[id];
+			loan = await ceth.loans(id);
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 14.8528);
+			assert.equal(interest, 14.2877);
 		});
 	});
 });

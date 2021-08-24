@@ -128,6 +128,28 @@ contract('CollateralShort', async accounts => {
 			{ from: owner }
 		);
 
+		await manager.addSynths(
+			[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
+			[toBytes32('sUSD'), toBytes32('sBTC'), toBytes32('sETH')],
+			{
+				from: owner,
+			}
+		);
+
+		await manager.addShortableSynths(
+			['SynthsBTC', 'SynthsETH'].map(toBytes32),
+			['sBTC', 'sETH'].map(toBytes32),
+			{ from: owner }
+		);
+
+		// check synths are set and currencyKeys set
+		assert.isTrue(
+			await manager.areSynthsAndCurrenciesSet(
+				['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
+				['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+			)
+		);
+
 		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
 	};
 
@@ -224,7 +246,7 @@ contract('CollateralShort', async accounts => {
 				assert.equal(loan.currency, sBTC);
 				assert.equal(loan.short, true);
 				assert.equal(loan.amount, oneBTC.toString());
-				assert.equal(loan.accruedInterest, toUnit(0));
+				assert.bnEqual(loan.accruedInterest, toUnit(0));
 			});
 
 			it('should correclty issue the right balance to the shorter', async () => {
@@ -272,7 +294,7 @@ contract('CollateralShort', async accounts => {
 				assert.equal(loan.currency, sETH);
 				assert.equal(loan.short, true);
 				assert.equal(loan.amount, oneETH.toString());
-				assert.equal(loan.accruedInterest, toUnit(0));
+				assert.bnEqual(loan.accruedInterest, toUnit(0));
 			});
 
 			it('should correclty issue the right balance to the shorter', async () => {
@@ -394,7 +416,7 @@ contract('CollateralShort', async accounts => {
 
 		it('should not let them draw too much', async () => {
 			await fastForwardAndUpdateRates(3600);
-			await assert.revert(short.draw(id, toUnit(8), { from: account1 }), 'Cannot draw this much');
+			await assert.revert(short.draw(id, toUnit(8), { from: account1 }), 'Cratio too low');
 		});
 	});
 
