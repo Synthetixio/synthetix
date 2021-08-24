@@ -329,6 +329,14 @@
 			"sources": ["DebtCache"]
 		},
 		{
+			"sip": 167,
+			"layer": "both",
+			"sources": {
+				"base": ["SystemSettings", "OwnerRelayOnEthereum"],
+				"ovm": ["OwnerRelayOnOptimism"]
+			}
+		},
+		{
 			"sip": 170,
 			"layer": "base"
 		}
