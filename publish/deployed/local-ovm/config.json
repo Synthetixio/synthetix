@@ -116,7 +116,16 @@
 	"TokenStatesETH": {
 		"deploy": true
 	},
+	"TokenStatesBTC": {
+		"deploy": true
+	},
 	"ProxysETH": {
+		"deploy": true
+	},
+	"ProxysBTC": {
+		"deploy": true
+	},
+	"SynthsBTC": {
 		"deploy": true
 	},
 	"SynthsETH": {
