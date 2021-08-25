@@ -493,7 +493,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return false;
     }
 
-    function _notionalValue(Position storage position, uint price) internal view returns (int value) {
+    function _notionalValue(Position memory position, uint price) internal pure returns (int value) {
         return position.size.multiplyDecimalRound(int(price));
     }
 
@@ -505,7 +505,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return (_notionalValue(positions[account], price), isInvalid);
     }
 
-    function _profitLoss(Position storage position, uint price) internal view returns (int pnl) {
+    function _profitLoss(Position memory position, uint price) internal pure returns (int pnl) {
         int priceShift = int(price).sub(int(position.lastPrice));
         return position.size.multiplyDecimalRound(priceShift);
     }
@@ -520,7 +520,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function _accruedFunding(
-        Position storage position,
+        Position memory position,
         uint endFundingIndex,
         uint price
     ) internal view returns (int funding) {
@@ -544,7 +544,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * The initial margin of a position, plus any PnL and funding it has accrued. The resulting value may be negative.
      */
     function _marginPlusProfitFunding(
-        Position storage position,
+        Position memory position,
         uint endFundingIndex,
         uint price
     ) internal view returns (int) {
@@ -552,7 +552,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function _remainingMargin(
-        Position storage position,
+        Position memory position,
         uint endFundingIndex,
         uint price
     ) internal view returns (uint) {
@@ -637,6 +637,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint margin,
         int size,
         uint price,
+        uint fundingIndex,
         bool includeFunding
     ) public view returns (uint) {
         Position memory position = Position(0, margin, size, price, fundingIndex);
@@ -645,7 +646,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function _canLiquidate(
-        Position storage position,
+        Position memory position,
         uint liquidationFee,
         uint fundingIndex,
         uint price
@@ -1075,6 +1076,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * Returns all new position details if a given order was confirmed at the current price.
      */
     function calcPositionDetails(
+        uint newMargin,
         int sizeDelta,
         uint price,
         uint fundingIndex,
@@ -1085,23 +1087,25 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         returns (
             uint fee,
             int size,
-            uint _lPrice,
+            uint lPrice,
             uint margin,
             int leverage
         )
     {
-        PositionDetails memory details = _calcPositionDetails(sizeDelta, price, fundingIndex, sender);
+        PositionDetails memory details = _calcPositionDetails(newMargin, sizeDelta, price, fundingIndex, sender);
         return (details.fee, details.size, details.liquidationPrice, details.margin, details.leverage);
     }
 
     function _calcPositionDetails(
+        uint newMargin,
         int sizeDelta,
         uint price,
         uint fundingIndex,
         address sender
     ) internal view returns (PositionDetails memory details) {
         // Fetch position from storage, if there is one.
-        Position storage position = positions[sender];
+        Position memory position = positions[sender];
+        position.margin = newMargin;
         PositionDetailsLocalVars memory vars;
 
         _revertIfError(_canLiquidate(position, _liquidationFee(), fundingIndex, price), Status.CanLiquidate);
