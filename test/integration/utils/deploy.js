@@ -22,8 +22,8 @@ async function compileInstance({ useOvm, buildPath }) {
 	});
 }
 
-async function prepareDeploy() {
-	await commands.prepareDeploy({ network: 'mainnet' });
+async function prepareDeploy(...args) {
+	await commands.prepareDeploy(...args);
 }
 
 async function deployInstance({
