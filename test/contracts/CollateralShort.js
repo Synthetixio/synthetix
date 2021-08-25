@@ -519,7 +519,7 @@ contract('CollateralShort', async accounts => {
 			assert.bnEqual(loan.amount, expectedLoanRemaining);
 			assert.bnEqual(loan.collateral, expectedCollateralRemaining);
 
-			const ratio = await short.collateralRatio(loan);
+			const ratio = await short.collateralRatio(id);
 
 			assert.bnClose(ratio, await short.minCratio(), '100');
 		});
@@ -671,6 +671,16 @@ contract('CollateralShort', async accounts => {
 	});
 
 	describe('Determining the skew and interest rate', async () => {
+		beforeEach(async () => {
+			// Open a short to make the long/short supply balanced.
+			const oneBTC = toUnit(1);
+			const susdCollateral = toUnit(15000);
+
+			await issue(sUSDSynth, susdCollateral, account1);
+
+			await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
+		});
+
 		it('should correctly determine the interest on a short', async () => {
 			const oneBTC = toUnit(1);
 			const susdCollateral = toUnit(15000);

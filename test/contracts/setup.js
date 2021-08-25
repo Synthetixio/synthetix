@@ -266,7 +266,7 @@ const setupContract = async ({
 			tryGetAddressOf('AddressResolver'),
 			toBytes32('sUSD'),
 			toUnit(1.2),
-			toUnit(200),
+			toUnit(100),
 		],
 		WETH: [],
 	};

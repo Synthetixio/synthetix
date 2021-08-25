@@ -222,28 +222,26 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         anyRateIsInvalid = ratesInvalid;
     }
 
-    // TODO: Enforce a maximum?
     function getShortRate(bytes32 synthKey) public view returns (uint shortRate, bool rateIsInvalid) {
         rateIsInvalid = _exchangeRates().rateIsInvalid(synthKey);
 
-        // get the long supply of
-        uint longSupply = IERC20(address(_synth(shortableSynthsByKey[synthKey]))).totalSupply();
-        // add the iSynth to supply properly reflect the market skew.
+        // Get the long and short supply.
+        uint longSupply = IERC20(address(_synth(synthsByKey[synthKey]))).totalSupply();
         uint shortSupply = state.short(synthKey);
 
-        // in this case, the market is skewed long so its free to short.
+        // In this case, the market is skewed long so its free to short.
         if (longSupply > shortSupply) {
             return (0, rateIsInvalid);
         }
 
-        // otherwise workout the skew towards the short side.
+        // Otherwise workout the skew towards the short side.
         uint skew = shortSupply.sub(longSupply);
 
-        // divide through by the size of the market
-        // TOOD: add a maximum here
+        // Divide through by the size of the market.
+        // TODO: Enforce a maximum here?
         uint proportionalSkew = skew.divideDecimal(longSupply.add(shortSupply)).divideDecimal(SECONDS_IN_A_YEAR);
 
-        // finally, add the base short rate.
+        // Finally, add the base short rate.
         shortRate = proportionalSkew.add(baseShortRate);
     }
 
@@ -386,15 +384,12 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         require(requiredSynthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
 
         for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
-            // setting these explicitly for clarity
-            // Each entry in the array is [Synth, iSynth]
             bytes32 synth = requiredSynthNamesInResolver[i];
 
             if (!_shortableSynths.contains(synth)) {
                 // Add it to the address set lib.
                 _shortableSynths.add(synth);
 
-                // store the mapping to the iSynth so we can get its total supply for the borrow rate.
                 shortableSynthsByKey[synthKeys[i]] = synth;
 
                 emit ShortableSynthAdded(synth);
