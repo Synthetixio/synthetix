@@ -294,6 +294,19 @@
 			"released": "base"
 		},
 		{
+			"sip": 135,
+			"layer": "ovm",
+			"sources": [
+				"Collateral",
+				"CollateralManager",
+				"CollateralShort",
+				"CollateralUtil",
+				"MixinSystemSettings",
+				"ShortingRewards",
+				"SystemSettings"
+			]
+		},
+		{
 			"sip": 136,
 			"layer": "base",
 			"released": "base",
