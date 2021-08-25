@@ -220,7 +220,9 @@ program
 			.filter(({ released }) => layers.includes(released) === !unreleased)
 			.filter(({ sources }) => {
 				if (!withSources) return true;
-				return Array.isArray(sources) && sources.length > 0;
+				if (!sources) return false;
+				if (Array.isArray(sources)) return sources.length > 0;
+				return layers.flatMap(layer => sources[layer]).length > 0;
 			});
 
 		if (result.length > 0) {

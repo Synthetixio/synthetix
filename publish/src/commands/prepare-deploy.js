@@ -50,16 +50,26 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm, useSips }) =>
 	let sources;
 	if (useSips) {
 		// Pick unreleased sips that have sources that need to be prepared
-		sources = getSips().flatMap(sip => getSipSources(sip, useOvm));
+		const sips = getSips();
+		sources = sips.flatMap(sip => getSipSources(sip, useOvm));
+
+		if (sources.length > 0) {
+			console.log(gray(`Preparing SIPs: ${sips.map(({ sip }) => sip).join(', ')}`));
+		}
 	} else {
 		// Get all the sources coming from the SIPs from the release on the required layer
-		sources = getReleases()
+		const releases = getReleases();
+		sources = releases
 			.flatMap(({ sips }) => sips)
 			.flatMap(sipNumber => {
 				const sip = releases.sips.find(sip => sip.sip === sipNumber);
 				if (!sip) throw new Error(`Invalid SIP number "${sipNumber}"`);
 				return getSipSources(sipNumber, useOvm);
 			});
+
+		if (sources.length > 0) {
+			console.log(gray(`Preparing releases: ${releases.map(({ name }) => name).join(', ')}`));
+		}
 	}
 
 	sources = uniq(sources);
