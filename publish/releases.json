@@ -1,188 +1,675 @@
-[
-	{
-		"name": "Pollux",
-		"version": {
-			"major": 2,
-			"minor": 27
+{
+	"sips": [
+		{
+			"sip": 60,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"FeePool",
+				"Issuer",
+				"RewardEscrowV2",
+				"Synthetix",
+				"SystemSettings"
+			]
 		},
-		"sources": [
-			"Exchanger",
-			"ExchangeRates",
-			"FeePool",
-			"FlexibleStorage",
-			"Issuer",
-			"Liquidations",
-			"Synthetix",
-			"SystemSettings",
-			"TradingRewards"
-		],
-		"sips": [63, 64, 75, 76, 78]
-	},
-	{
-		"name": "Formalhaut",
-		"version": {
-			"major": 2,
-			"minor": 28
+		{
+			"sip": 63,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "Synthetix", "SystemSettings", "TradingRewards"]
 		},
-		"sources": [
-			"ExchangeRates",
-			"Issuer",
-			"FeePool",
-			"EtherCollateralsUSD",
-			"SynthsUSD"
-		],
-		"sips": [85, 86]
-	},
-	{
-		"name": "Deneb",
-		"version": {
-			"major": 2,
-			"minor": 30
+		{
+			"sip": 64,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"Exchanger",
+				"ExchangeRates",
+				"FeePool",
+				"FlexibleStorage",
+				"Issuer",
+				"FeePool",
+				"Liquidations",
+				"SystemSettings"
+			]
 		},
-		"sources": ["Exchanger", "ExchangeRates", "Issuer", "SystemSettings"],
-		"sips": [83, 84, 88]
-	},
-	{
-		"name": "Mimosa",
-		"version": {
-			"major": 2,
-			"minor": 31
+		{
+			"sip": 75,
+			"layer": "base",
+			"released": "base",
+			"sources": ["ExchangeRates"]
 		},
-		"sources": [
-			"DebtCache",
-			"Exchanger",
-			"ExchangeRates",
-			"Issuer",
-			"Synthetix"
-		],
-		"sips": [89, 91, 92]
-	},
-	{
-		"name": "Regulus",
-		"version": {
-			"major": 2,
-			"minor": 32
+		{
+			"sip": 76,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"Exchanger",
+				"ExchangeRates",
+				"FeePool",
+				"Issuer",
+				"Liquidations",
+				"Synthetix",
+				"SystemSettings"
+			]
 		},
-		"sources": ["Exchanger", "Synthetix"],
-		"sips": [94]
-	},
-	{
-		"name": "Adhara",
-		"version": {
-			"major": 2,
-			"minor": 34
+		{
+			"sip": 78,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "ExchangeRates"]
 		},
-		"sources": ["Exchanger"],
-		"sips": [98, 99]
-	},
-	{
-		"name": "Shaula",
-		"version": {
-			"major": 2,
-			"minor": 35
+		{
+			"sip": 83,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "ExchangeRates", "Issuer", "SystemSettings"]
 		},
-		"sources": [
-			"AddressResolver",
-			"BinaryOptionMarketFactory",
-			"BinaryOptionMarketManager",
-			"CollateralErc20",
-			"CollateralEth",
-			"CollateralManager",
-			"CollateralManagerState",
-			"CollateralStateErc20",
-			"CollateralStateEth",
-			"CollateralStateShort",
-			"CollateralShort",
-			"DebtCache",
-			"ExchangeRates",
-			"Exchanger",
-			"FeePool",
-			"Issuer",
-			"Liquidations",
-			"RewardEscrowV2",
-			"SystemSettings",
-			"Synthetix",
-			"TradingRewards",
-			"Synth(s|i).+"
-		],
-		"sips": [97, 100, 103]
-	},
-	{
-		"name": "Castor",
-		"version": {
-			"major": 2,
-			"minor": 36
+		{
+			"sip": 85,
+			"layer": "base",
+			"released": "base",
+			"sources": ["EtherCollateralsUSD", "FeePool", "Issuer", "SynthsUSD"]
 		},
-		"sources": [
-			"CollateralErc20",
-			"CollateralEth",
-			"CollateralStateErc20",
-			"CollateralStateEth",
-			"CollateralStateShort",
-			"CollateralShort",
-			"FeePool",
-			"Issuer",
-			"RewardEscrowV2",
-			"Synthetix",
-			"SynthetixBridgeToOptimism",
-			"SystemSettings"
-		],
-		"sips": [60, 102, 105]
-	},
-	{
-		"name": "Gacrux",
-		"version": {
-			"major": 2,
-			"minor": 37
+		{
+			"sip": 86,
+			"layer": "base",
+			"released": "base",
+			"sources": ["ExchangeRates"]
 		},
-		"ovm": true,
-		"sources": ["FeePool", "FeePoolState", "SynthetixState"],
-		"sips": [106]
-	},
-	{
-		"name": "Bellatrix",
-		"version": {
-			"major": 2,
-			"minor": 38
+		{
+			"sip": 88,
+			"layer": "base",
+			"released": "base",
+			"sources": ["ExchangeRates"]
 		},
-		"sources": ["Synthetix", "SystemStatus"],
-		"sips": [109]
-	},
-	{
-		"name": "Elnath",
-		"version": {
-			"major": 2,
-			"minor": 39
+		{
+			"sip": 89,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "Synthetix"]
 		},
-		"sources": [],
-		"sips": [110]
-	},
-	{
-		"name": "L2 Phase 1 OVM (Kovan)",
-		"version": {
-			"major": 2,
-			"minor": 40
+		{
+			"sip": 91,
+			"layer": "base",
+			"released": "base",
+			"sources": ["DebtCache", "Exchanger", "Issuer"]
 		},
-		"ovm": true,
-		"sources": ["Synthetix", "Exchanger", "SystemStatus"],
-		"sips": [109, 117, 118]
-	},
-	{
-		"name": "Miaplacidus",
-		"version": {
-			"major": 2,
-			"minor": 41
+		{
+			"sip": 92,
+			"layer": "base",
+			"released": "base",
+			"sources": ["ExchangeRates"]
 		},
-		"sources": [],
-		"sips": [113]
-	},
-	{
-		"name": "",
-		"version": {
-			"major": 2,
-			"minor": 42
+		{
+			"sip": 94,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "Synthetix"]
 		},
-		"sources": ["DelegateApprovals"],
-		"sips": [131]
-	}
-]
+		{
+			"sip": 97,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"CollateralErc20",
+				"CollateralEth",
+				"CollateralManager",
+				"CollateralManagerState",
+				"CollateralStateErc20",
+				"CollateralStateEth",
+				"DebtCache",
+				"FeePool",
+				"Issuer",
+				"SynthsBTC",
+				"SynthsETH",
+				"SynthsUSD"
+			]
+		},
+		{
+			"sip": 98,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger"]
+		},
+		{
+			"sip": 100,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"AddressResolver",
+				"BinaryOptionMarketFactory",
+				"BinaryOptionMarketManager",
+				"DebtCache",
+				"ExchangeRates",
+				"Exchanger",
+				"FeePool",
+				"Issuer",
+				"Liquidations",
+				"RewardEscrowV2",
+				"SystemSettings",
+				"Synthetix",
+				"TradingRewards",
+				"Synth(s|i).+"
+			]
+		},
+		{
+			"sip": 102,
+			"layer": "both",
+			"released": "both",
+			"sources": {
+				"base": ["SynthetixBridgeToOptimism"],
+				"ovm": [
+					"AddressResolver",
+					"CollateralManager",
+					"DappMaintenance",
+					"DebtCache",
+					"EscrowChecker",
+					"EtherCollateral",
+					"EtherCollateralsUSD",
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeState",
+					"FeePool",
+					"FeePoolState",
+					"FlexibleStorage",
+					"Issuer",
+					"Math",
+					"ProxyERC20",
+					"ProxyERC20sUSD",
+					"ProxyFeePool",
+					"ProxysUSD",
+					"ProxySynthetix",
+					"ReadProxyAddressResolver",
+					"RewardEscrow",
+					"RewardEscrowV2",
+					"RewardsDistribution",
+					"SafeDecimalMath",
+					"Synthetix",
+					"SynthetixBridgeToBase",
+					"SynthetixEscrow",
+					"SynthetixState",
+					"SynthsUSD",
+					"SynthUtil",
+					"SystemSettings",
+					"SystemStatus",
+					"TokenStatesUSD",
+					"TokenStateSynthetix",
+					"TradingRewards"
+				]
+			}
+		},
+		{
+			"sip": 103,
+			"layer": "base",
+			"released": "base",
+			"sources": ["CollateralStateShort", "CollateralShort", "SynthsUSD"]
+		},
+		{
+			"sip": 105,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"CollateralErc20",
+				"CollateralEth",
+				"CollateralStateErc20",
+				"CollateralStateEth",
+				"CollateralStateShort",
+				"CollateralShort"
+			]
+		},
+		{
+			"sip": 106,
+			"layer": "ovm",
+			"released": "ovm",
+			"sources": ["FeePool", "FeePoolState", "SynthetixState"]
+		},
+		{
+			"sip": 109,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Synthetix", "SystemStatus"]
+		},
+		{
+			"sip": 112,
+			"released": "base",
+			"layer": "base",
+			"sources": [
+				"DebtCache",
+				"EtherWrapper",
+				"FeePool",
+				"NativeEtherWrapper",
+				"SynthsETH",
+				"SynthsUSD",
+				"SystemSettings"
+			]
+		},
+		{
+			"sip": 115,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 116,
+			"layer": "both",
+			"released": "both",
+			"sources": {
+				"base": ["SynthetixBridgeToOptimism", "SynthetixBridgeEscrow"],
+				"ovm": [
+					"DebtCache",
+					"Exchanger",
+					"Synthetix",
+					"SynthetixBridgeToBase",
+					"SystemStatus"
+				]
+			}
+		},
+		{
+			"sip": 117,
+			"layer": "ovm",
+			"released": "ovm",
+			"sources": ["DebtCache", "Exchanger", "Synthetix"]
+		},
+		{
+			"sip": 118,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Exchanger"]
+		},
+		{
+			"sip": 121,
+			"layer": "ovm",
+			"released": "ovm",
+			"sources": ["EtherWrapper", "Exchanger", "Synthetix", "SystemSettings"]
+		},
+		{
+			"sip": 127,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "VirtualSynthMastercopy"]
+		},
+		{
+			"sip": 128,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 136,
+			"layer": "base",
+			"released": "base",
+			"sources": ["DebtCache", "Issuer"]
+		},
+		{
+			"sip": 138,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Exchanger", "Synthetix"]
+		},
+		{
+			"sip": 139,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger"]
+		},
+		{
+			"sip": 142,
+			"layer": "base",
+			"sources": [
+				"DebtCache",
+				"FeePool",
+				"Issuer",
+				"Synthetix",
+				"SynthsETH",
+				"SynthsUSD"
+			]
+		},
+		{
+			"sip": 145,
+			"layer": "base",
+			"sources": ["DebtCache"]
+		},
+		{
+			"sip": 170,
+			"layer": "base"
+		}
+	],
+	"releases": [
+		{
+			"name": "Pollux",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 27
+			},
+			"sips": [63, 64, 75, 76, 78]
+		},
+		{
+			"name": "Formalhaut",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 28
+			},
+			"sips": [85, 86]
+		},
+		{
+			"name": "Deneb",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 30
+			},
+			"sips": [83, 84, 88]
+		},
+		{
+			"name": "Mimosa",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 31
+			},
+			"sips": [89, 91, 92]
+		},
+		{
+			"name": "Regulus",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 32
+			},
+			"sips": [94]
+		},
+		{
+			"name": "Adhara",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 34
+			},
+			"sips": [98, 99]
+		},
+		{
+			"name": "Shaula",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 35
+			},
+			"sips": [97, 100, 103]
+		},
+		{
+			"name": "Castor",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 36
+			},
+			"sips": [60, 102, 105]
+		},
+		{
+			"name": "Castor (Optimism)",
+			"released": true,
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 36
+			},
+			"sips": [102]
+		},
+		{
+			"name": "Gacrux (Optimism)",
+			"released": true,
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 37
+			},
+			"sips": [106]
+		},
+		{
+			"name": "Bellatrix",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 38
+			},
+			"sips": [109]
+		},
+		{
+			"name": "Elnath",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 39
+			},
+			"sips": [110]
+		},
+		{
+			"name": "L2 Phase 1 (Optimism Kovan)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 40
+			},
+			"sips": []
+		},
+		{
+			"name": "Miaplacidus",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 41
+			},
+			"sips": [113]
+		},
+		{
+			"name": "Alnilam",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 42
+			},
+			"sips": [107, 114, 126, 127]
+		},
+		{
+			"name": "Regora",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 43
+			},
+			"sips": [115, 128]
+		},
+		{
+			"name": "Alnair",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 44
+			},
+			"sips": [116]
+		},
+		{
+			"name": "Alnair (Optimism)",
+			"released": true,
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 44
+			},
+			"sips": [109, 116, 117, 118]
+		},
+		{
+			"name": "Alioth",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 45
+			},
+			"sips": [112, 136]
+		},
+		{
+			"name": "Alnitak",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 46
+			},
+			"sips": [138, 139, 140, 151]
+		},
+		{
+			"name": "Alnitak (Optimism)",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 46
+			},
+			"ovm": true,
+			"sips": [138, 139, 140]
+		},
+		{
+			"name": "Dubhe (Optimism)",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 47
+			},
+			"ovm": true,
+			"sips": [121]
+		},
+		{
+			"name": "Mirfak",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 48
+			},
+			"sips": []
+		},
+		{
+			"name": "Mirfak (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 48
+			},
+			"sips": []
+		},
+		{
+			"name": "Wezen",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 49
+			},
+			"sips": []
+		},
+		{
+			"name": "Wezen (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 49
+			},
+			"sips": []
+		},
+		{
+			"name": "Sargas",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 50
+			},
+			"sips": []
+		},
+		{
+			"name": "Sargas (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 50
+			},
+			"sips": []
+		},
+		{
+			"name": "Kaus",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 51
+			},
+			"sips": []
+		},
+		{
+			"name": "Kaus (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 51
+			},
+			"sips": []
+		},
+		{
+			"name": "Avior",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 52
+			},
+			"sips": []
+		},
+		{
+			"name": "Avior (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 52
+			},
+			"sips": []
+		},
+		{
+			"name": "Alkaid",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 53
+			},
+			"sips": []
+		},
+		{
+			"name": "Alkaid (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 53
+			},
+			"sips": []
+		},
+		{
+			"name": "Menkalinan",
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 54
+			},
+			"sips": []
+		},
+		{
+			"name": "Menkalinan (Optimism)",
+			"ovm": true,
+			"released": false,
+			"version": {
+				"major": 2,
+				"minor": 54
+			},
+			"sips": []
+		}
+	]
+}

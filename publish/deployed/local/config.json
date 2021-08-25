@@ -5,6 +5,9 @@
 	"SynthetixBridgeToOptimism": {
 		"deploy": true
 	},
+	"SynthetixBridgeEscrow": {
+		"deploy": true
+	},
 	"AddressResolver": {
 		"deploy": true
 	},
@@ -44,6 +47,9 @@
 	"CollateralStateShort": {
 		"deploy": true
 	},
+	"CollateralUtil": {
+		"deploy": true
+	},
 	"DebtCache": {
 		"deploy": true
 	},
@@ -62,13 +68,10 @@
 	"Exchanger": {
 		"deploy": true
 	},
+	"VirtualSynthMastercopy": {
+		"deploy": true
+	},
 	"ExchangeState": {
-		"deploy": true
-	},
-	"EtherCollateral": {
-		"deploy": true
-	},
-	"EtherCollateralsUSD": {
 		"deploy": true
 	},
 	"FeePool": {
@@ -447,6 +450,15 @@
 		"deploy": true
 	},
 	"MockToken": {
+		"deploy": true
+	},
+	"EtherWrapper": {
+		"deploy": true
+	},
+	"NativeEtherWrapper": {
+		"deploy": true
+	},
+	"WETH": {
 		"deploy": true
 	}
 }

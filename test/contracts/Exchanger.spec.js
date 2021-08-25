@@ -1703,7 +1703,17 @@ contract('Exchanger (spec tests)', async accounts => {
 				await onlyGivenAddressCanInvoke({
 					fnc: exchanger.exchange,
 					accounts,
-					args: [account1, sUSD, toUnit('100'), sAUD, account1],
+					args: [
+						account1,
+						account1,
+						sUSD,
+						toUnit('100'),
+						sAUD,
+						account1,
+						false,
+						account1,
+						toBytes32(''),
+					],
 					reason: 'Only synthetix or a synth contract can perform this action',
 				});
 			});
@@ -1742,15 +1752,6 @@ contract('Exchanger (spec tests)', async accounts => {
 						await synthetix.exchange(sUSD, toUnit('1'), sETH, { from: account1 });
 						await synthetix.exchange(sAUD, toUnit('1'), sETH, { from: account2 });
 					});
-				});
-			});
-
-			it('exchangeWithTracking() cannot be invoked directly by any account via Exchanger', async () => {
-				await onlyGivenAddressCanInvoke({
-					fnc: exchanger.exchangeWithTracking,
-					accounts,
-					args: [account1, sUSD, toUnit('100'), sAUD, account2, account3, trackingCode],
-					reason: 'Only synthetix or a synth contract can perform this action',
 				});
 			});
 
@@ -1813,6 +1814,9 @@ contract('Exchanger (spec tests)', async accounts => {
 							}
 						);
 
+						const { fee } = await exchanger.getAmountsForExchange(amountIssued, sUSD, sAUD);
+						const usdFeeAmount = await exchangeRates.effectiveValue(sAUD, fee, sUSD);
+
 						const sAUDBalance = await sAUDContract.balanceOf(account1);
 
 						const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
@@ -1830,6 +1834,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							trackingCode,
 							toCurrencyKey: toBytes32('sAUD'),
 							toAmount: sAUDBalance,
+							fee: usdFeeAmount,
 						});
 					});
 
@@ -1931,16 +1936,6 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('exchanging on behalf', async () => {
 						const authoriser = account1;
 						const delegate = account2;
-
-						it('exchangeOnBehalf() cannot be invoked directly by any account via Exchanger', async () => {
-							await onlyGivenAddressCanInvoke({
-								fnc: exchanger.exchangeOnBehalf,
-								accounts,
-								args: [authoriser, delegate, sUSD, toUnit('100'), sAUD],
-								reason: 'Only synthetix or a synth contract can perform this action',
-							});
-						});
-
 						describe('when not approved it should revert on', async () => {
 							it('exchangeOnBehalf', async () => {
 								await assert.revert(
@@ -2005,7 +2000,9 @@ contract('Exchanger (spec tests)', async accounts => {
 								await onlyGivenAddressCanInvoke({
 									fnc: synthetix.exchangeOnBehalf,
 									args: [authoriser, sUSD, amountIssued, sAUD],
-									accounts,
+									// We cannot test the revert condition with the authoriser as the recipient
+									// because this will lead to a regular exchange, not one on behalf
+									accounts: accounts.filter(a => a !== authoriser),
 									address: delegate,
 									reason: 'Not approved to act on behalf',
 								});
@@ -2037,15 +2034,6 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('exchanging on behalf with tracking', async () => {
 						const authoriser = account1;
 						const delegate = account2;
-
-						it('exchangeOnBehalfWithTracking() cannot be invoked directly by any account via Exchanger', async () => {
-							await onlyGivenAddressCanInvoke({
-								fnc: exchanger.exchangeOnBehalfWithTracking,
-								accounts,
-								args: [authoriser, delegate, sUSD, toUnit('100'), sAUD, authoriser, trackingCode],
-								reason: 'Only synthetix or a synth contract can perform this action',
-							});
-						});
 
 						describe('when not approved it should revert on', async () => {
 							it('exchangeOnBehalfWithTracking', async () => {
@@ -2141,7 +2129,9 @@ contract('Exchanger (spec tests)', async accounts => {
 								await onlyGivenAddressCanInvoke({
 									fnc: synthetix.exchangeOnBehalfWithTracking,
 									args: [authoriser, sUSD, amountIssued, sAUD, authoriser, trackingCode],
-									accounts,
+									// We cannot test the revert condition with the authoriser as the recipient
+									// because this will lead to a regular exchange, not one on behalf
+									accounts: accounts.filter(a => a !== authoriser),
 									address: delegate,
 									reason: 'Not approved to act on behalf',
 								});
@@ -2181,6 +2171,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									trackingCode,
 									toCurrencyKey: toBytes32('sAUD'),
 									toAmount: sAUDBalance,
+									fee: usdFeeAmount,
 								});
 							});
 						});
@@ -2930,6 +2921,24 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 			};
 
+			describe('resetLastExchangeRate() SIP-139', () => {
+				it('cannot be invoked by any user', async () => {
+					await onlyGivenAddressCanInvoke({
+						fnc: exchanger.resetLastExchangeRate,
+						args: [[sEUR, sAUD]],
+						accounts,
+						address: owner,
+						reason: 'Only the contract owner may perform this action',
+					});
+				});
+				it('when invoked without valid exchange rates, it reverts', async () => {
+					await assert.revert(
+						exchanger.resetLastExchangeRate([sEUR, sAUD, toBytes32('sUNKNOWN')], { from: owner }),
+						'Rates for given synths not valid'
+					);
+				});
+			});
+
 			describe(`when the price of sETH is ${baseRate}`, () => {
 				updateRate({ target: sETH, rate: baseRate });
 
@@ -3044,6 +3053,23 @@ contract('Exchanger (spec tests)', async accounts => {
 									});
 									it('and the dest side has not persisted the rate', async () => {
 										assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('2'));
+									});
+
+									describe('when the owner invokes resetLastExchangeRate([sEUR, sETH])', () => {
+										beforeEach(async () => {
+											await exchanger.resetLastExchangeRate([sEUR, sETH], { from: owner });
+										});
+
+										it('then the sEUR last exchange rate is updated to the current price', async () => {
+											assert.bnEqual(await exchanger.lastExchangeRate(sEUR), toUnit('10'));
+										});
+
+										it('and the sETH rate has not changed', async () => {
+											assert.bnEqual(
+												await exchanger.lastExchangeRate(sETH),
+												toUnit((baseRate * 1.1).toString())
+											);
+										});
 									});
 								});
 							});
@@ -3705,6 +3731,8 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	describe('When using Synthetix', () => {
 		before(async () => {
+			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
+
 			({
 				Exchanger: exchanger,
 				Synthetix: synthetix,
@@ -3742,6 +3770,10 @@ contract('Exchanger (spec tests)', async accounts => {
 					'FlexibleStorage',
 					'CollateralManager',
 				],
+				mocks: {
+					// Use a real VirtualSynthMastercopy so the spec tests can interrogate deployed vSynths
+					VirtualSynthMastercopy: await VirtualSynthMastercopy.new(),
+				},
 			}));
 
 			// Send a price update to guarantee we're not stale.

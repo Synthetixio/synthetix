@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./BaseRewardEscrowV2.sol";
 
-
 // https://docs.synthetix.io/contracts/RewardEscrow
 contract ImportableRewardEscrowV2 is BaseRewardEscrowV2 {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */

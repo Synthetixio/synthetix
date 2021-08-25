@@ -29,12 +29,6 @@
 	"ExchangeState": {
 		"deploy": false
 	},
-	"EtherCollateral": {
-		"deploy": false
-	},
-	"EtherCollateralsUSD": {
-		"deploy": false
-	},
 	"FeePool": {
 		"deploy": false
 	},
@@ -165,6 +159,9 @@
 		"deploy": false
 	},
 	"SynthsAAVE": {
+		"deploy": false
+	},
+	"EtherWrapper": {
 		"deploy": false
 	}
 }

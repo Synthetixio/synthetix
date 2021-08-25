@@ -10,7 +10,6 @@ import "./interfaces/ICollateralErc20.sol";
 import "./CollateralState.sol";
 import "./interfaces/IERC20.sol";
 
-
 // This contract handles the specific ERC20 implementation details of managing a loan.
 contract CollateralErc20 is ICollateralErc20, Collateral {
     // The underlying asset for this ERC20 collateral
@@ -21,7 +20,7 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
     constructor(
         CollateralState _state,
         address _owner,
-        address _manager,
+        ICollateralManager _manager,
         address _resolver,
         bytes32 _collateralKey,
         uint _minCratio,

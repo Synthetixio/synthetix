@@ -3,21 +3,14 @@ pragma experimental ABIEncoderV2;
 
 import "./IRewardEscrowV2.sol";
 
-
 interface ISynthetixBridgeToBase {
-    // invoked by users on L2
-    function initiateWithdrawal(uint amount) external;
-
-    //  // The following functions can only be invoked by the xDomain messenger on L2
-    function completeDeposit(address account, uint depositAmount) external;
-
     // invoked by the xDomain messenger on L2
-    function completeEscrowMigration(
+    function finalizeEscrowMigration(
         address account,
         uint256 escrowedAmount,
         VestingEntries.VestingEntry[] calldata vestingEntries
     ) external;
 
     // invoked by the xDomain messenger on L2
-    function completeRewardDeposit(uint amount) external;
+    function finalizeRewardDeposit(address from, uint amount) external;
 }

@@ -5,7 +5,7 @@ const fs = require('fs');
 const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
 const { table } = require('table');
-const w3utils = require('web3-utils');
+const { BigNumber } = require('ethers');
 
 const {
 	constants: {
@@ -35,7 +35,13 @@ const {
 });
 
 const { networks } = require('../..');
-const stringify = input => JSON.stringify(input, null, '\t') + '\n';
+const JSONreplacer = (key, value) => {
+	if (typeof value === 'object' && value.type && value.type === 'BigNumber') {
+		return BigNumber.from(value).toString();
+	}
+	return value;
+};
+const stringify = input => JSON.stringify(input, JSONreplacer, '\t') + '\n';
 
 const ensureNetwork = network => {
 	if (!networks.includes(network)) {
@@ -59,7 +65,7 @@ const ensureDeploymentPath = deploymentPath => {
 };
 
 // Load up all contracts in the flagged source, get their deployed addresses (if any) and compiled sources
-const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
+const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) => {
 	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
 	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
 	const synths = getSynths({ network, deploymentPath });
@@ -97,6 +103,11 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	}
 	const deployment = JSON.parse(fs.readFileSync(deploymentFile));
 
+	if (freshDeploy) {
+		deployment.targets = {};
+		deployment.sources = {};
+	}
+
 	const ownerActionsFile = path.join(deploymentPath, OWNER_ACTIONS_FILENAME);
 	if (!fs.existsSync(ownerActionsFile)) {
 		fs.writeFileSync(ownerActionsFile, stringify({}));
@@ -124,35 +135,40 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network }) => {
 	};
 };
 
-const getEtherscanLinkPrefix = network => {
-	return `https://${network !== 'mainnet' ? network + '.' : ''}etherscan.io`;
+const getExplorerLinkPrefix = ({ network, useOvm }) => {
+	return `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${
+		useOvm ? 'explorer.optimism' : 'etherscan'
+	}.io`;
 };
 
-const loadConnections = ({ network, useFork }) => {
+const loadConnections = ({ network, useFork, useOvm }) => {
 	// Note: If using a fork, providerUrl will need to be 'localhost', even if the target network is not 'local'.
 	// This is because the fork command is assumed to be running at 'localhost:8545'.
 	let providerUrl;
 	if (network === 'local' || useFork) {
 		providerUrl = 'http://127.0.0.1:8545';
 	} else {
-		if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
-			providerUrl = process.env.PROVIDER_URL_MAINNET;
+		if (useOvm) {
+			providerUrl = `https://${network}.optimism.io`;
 		} else {
-			providerUrl = process.env.PROVIDER_URL.replace('network', network);
+			if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
+				providerUrl = process.env.PROVIDER_URL_MAINNET;
+			} else {
+				providerUrl = process.env.PROVIDER_URL.replace('network', network);
+			}
 		}
 	}
 
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 
-	const etherscanUrl =
-		network === 'mainnet'
-			? 'https://api.etherscan.io/api'
-			: `https://api-${network}.etherscan.io/api`;
+	const etherscanUrl = `https://api${network !== 'mainnet' ? `-${network}` : ''}${
+		useOvm ? '-optimistic' : ''
+	}.etherscan.io/api`;
 
-	const etherscanLinkPrefix = getEtherscanLinkPrefix(network);
+	const explorerLinkPrefix = getExplorerLinkPrefix({ network, useOvm });
 
-	return { providerUrl, privateKey, etherscanUrl, etherscanLinkPrefix };
+	return { providerUrl, privateKey, etherscanUrl, explorerLinkPrefix };
 };
 
 const confirmAction = prompt =>
@@ -166,7 +182,7 @@ const confirmAction = prompt =>
 		});
 	});
 
-const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanLinkPrefix }) => ({
+const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, explorerLinkPrefix }) => ({
 	key,
 	action,
 	target,
@@ -176,151 +192,11 @@ const appendOwnerActionGenerator = ({ ownerActions, ownerActionsFile, etherscanL
 		target,
 		action,
 		complete: false,
-		link: `${etherscanLinkPrefix}/address/${target}#writeContract`,
+		link: `${explorerLinkPrefix}/address/${target}#writeContract`,
 		data,
 	};
 	fs.writeFileSync(ownerActionsFile, stringify(ownerActions));
 	console.log(cyan(`Cannot invoke ${key} as not owner. Appended to actions.`));
-};
-
-let _dryRunCounter = 0;
-/**
- * Run a single transaction step, first checking to see if the value needs
- * changing at all, and then whether or not its the owner running it.
- *
- * @returns transaction hash if successful, true if user completed, or falsy otherwise
- */
-const performTransactionalStep = async ({
-	account,
-	contract,
-	target,
-	read,
-	readArg, // none, 1 or an array of args, array will be spread into params
-	expected,
-	write,
-	writeArg, // none, 1 or an array of args, array will be spread into params
-	gasLimit,
-	gasPrice,
-	etherscanLinkPrefix,
-	ownerActions,
-	ownerActionsFile,
-	dryRun,
-	encodeABI,
-	nonceManager,
-	publiclyCallable,
-}) => {
-	const argumentsForWriteFunction = [].concat(writeArg).filter(entry => entry !== undefined); // reduce to array of args
-	const action = `${contract}.${write}(${argumentsForWriteFunction.map(arg =>
-		arg.length === 66 ? w3utils.hexToAscii(arg) : arg
-	)})`;
-
-	// check to see if action required
-	console.log(yellow(`Attempting action: ${action}`));
-
-	if (read) {
-		// web3 counts provided arguments - even undefined ones - and they must match the expected args, hence the below
-		const argumentsForReadFunction = [].concat(readArg).filter(entry => entry !== undefined); // reduce to array of args
-		const response = await target.methods[read](...argumentsForReadFunction).call();
-
-		if (expected(response)) {
-			console.log(gray(`Nothing required for this action.`));
-			return { noop: true };
-		}
-	}
-	// otherwise check the owner
-	const owner = await target.methods.owner().call();
-	if (owner === account || publiclyCallable) {
-		// perform action
-		let hash;
-		let gasUsed = 0;
-		if (dryRun) {
-			_dryRunCounter++;
-			hash = '0x' + _dryRunCounter.toString().padStart(64, '0');
-		} else {
-			const params = {
-				from: account,
-				gas: Number(gasLimit),
-				gasPrice: w3utils.toWei(gasPrice.toString(), 'gwei'),
-			};
-
-			if (nonceManager) {
-				params.nonce = await nonceManager.getNonce();
-			}
-
-			const txn = await target.methods[write](...argumentsForWriteFunction).send(params);
-
-			hash = txn.transactionHash;
-			gasUsed = txn.gasUsed;
-
-			if (nonceManager) {
-				nonceManager.incrementNonce();
-			}
-		}
-
-		console.log(
-			green(
-				`${
-					dryRun ? '[DRY RUN] ' : ''
-				}Successfully completed ${action} in hash: ${hash}. Gas used: ${(gasUsed / 1e6).toFixed(
-					2
-				)}m `
-			)
-		);
-
-		return { mined: true, hash };
-	} else {
-		console.log(gray(`  > Account ${account} is not owner ${owner}`));
-	}
-
-	let data;
-	if (ownerActions && ownerActionsFile) {
-		// append to owner actions if supplied
-		const appendOwnerAction = appendOwnerActionGenerator({
-			ownerActions,
-			ownerActionsFile,
-			etherscanLinkPrefix,
-		});
-
-		data = target.methods[write](...argumentsForWriteFunction).encodeABI();
-
-		const ownerAction = {
-			key: action,
-			target: target.options.address,
-			action: `${write}(${argumentsForWriteFunction})`,
-			data: data,
-		};
-
-		if (dryRun) {
-			console.log(
-				gray(`[DRY RUN] Would append owner action of the following:\n${stringify(ownerAction)}`)
-			);
-		} else {
-			appendOwnerAction(ownerAction);
-		}
-		return { pending: true };
-	} else {
-		// otherwise wait for owner in real time
-		try {
-			data = target.methods[write](...argumentsForWriteFunction).encodeABI();
-			if (encodeABI) {
-				console.log(green(`Tx payload for target address ${target.options.address} - ${data}`));
-				return { pending: true };
-			}
-
-			await confirmAction(
-				redBright(
-					`Confirm: Invoke ${write}(${argumentsForWriteFunction}) via https://gnosis-safe.io/app/#/safes/${owner}/transactions` +
-						`to recipient ${target.options.address}` +
-						`with data: ${data}`
-				) + '\nPlease enter Y when the transaction has been mined and not earlier. '
-			);
-
-			return { pending: true };
-		} catch (err) {
-			console.log(gray('Cancelled'));
-			return {};
-		}
-	}
 };
 
 const parameterNotice = props => {
@@ -354,17 +230,39 @@ function reportDeployedContracts({ deployer }) {
 	}
 }
 
+const catchMissingResolverWhenGeneratingSolidity = ({
+	contract,
+	dryRun,
+	err,
+	generateSolidity,
+}) => {
+	if (
+		(generateSolidity || dryRun) &&
+		/VM Exception while processing transaction: revert Missing address/.test(err.message)
+	) {
+		console.log(
+			gray(
+				`WARNING: Error thrown reading state from ${yellow(
+					contract
+				)} with missing resolver addresses (expected for new contracts that need their resolvers cached). Ignoring as this is generate-solidity mode.`
+			)
+		);
+	} else {
+		throw err;
+	}
+};
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
 	getDeploymentPathForNetwork,
 	loadAndCheckRequiredSources,
-	getEtherscanLinkPrefix,
+	getExplorerLinkPrefix,
 	loadConnections,
 	confirmAction,
 	appendOwnerActionGenerator,
 	stringify,
-	performTransactionalStep,
 	parameterNotice,
 	reportDeployedContracts,
+	catchMissingResolverWhenGeneratingSolidity,
 };

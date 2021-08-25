@@ -53,12 +53,6 @@
 	"EscrowChecker": {
 		"deploy": false
 	},
-	"EtherCollateral": {
-		"deploy": false
-	},
-	"EtherCollateralsUSD": {
-		"deploy": false
-	},
 	"ExchangeRates": {
 		"deploy": false
 	},
@@ -513,6 +507,18 @@
 		"deploy": false
 	},
 	"SynthsKRW": {
+		"deploy": false
+	},
+	"VirtualSynthMastercopy": {
+		"deploy": false
+	},
+	"SynthetixBridgeEscrow": {
+		"deploy": false
+	},
+	"EtherWrapper": {
+		"deploy": false
+	},
+	"NativeEtherWrapper": {
 		"deploy": false
 	}
 }

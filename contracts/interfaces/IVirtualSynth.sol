@@ -2,7 +2,6 @@ pragma solidity >=0.4.24;
 
 import "./ISynth.sol";
 
-
 interface IVirtualSynth {
     // Views
     function balanceOfUnderlying(address account) external view returns (uint);

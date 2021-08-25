@@ -2,7 +2,6 @@ pragma solidity >=0.4.24;
 
 import "./IVirtualSynth.sol";
 
-
 // https://docs.synthetix.io/contracts/source/interfaces/iexchanger
 interface IExchanger {
     // Views
@@ -52,47 +51,14 @@ interface IExchanger {
 
     // Mutative functions
     function exchange(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress
-    ) external returns (uint amountReceived);
-
-    function exchangeOnBehalf(
-        address exchangeForAddress,
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey
-    ) external returns (uint amountReceived);
-
-    function exchangeWithTracking(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
-        address destinationAddress,
-        address originator,
-        bytes32 trackingCode
-    ) external returns (uint amountReceived);
-
-    function exchangeOnBehalfWithTracking(
         address exchangeForAddress,
         address from,
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address originator,
-        bytes32 trackingCode
-    ) external returns (uint amountReceived);
-
-    function exchangeWithVirtual(
-        address from,
-        bytes32 sourceCurrencyKey,
-        uint sourceAmount,
-        bytes32 destinationCurrencyKey,
         address destinationAddress,
+        bool virtualSynth,
+        address rewardAddress,
         bytes32 trackingCode
     ) external returns (uint amountReceived, IVirtualSynth vSynth);
 
@@ -105,6 +71,8 @@ interface IExchanger {
         );
 
     function setLastExchangeRateForSynth(bytes32 currencyKey, uint rate) external;
+
+    function resetLastExchangeRate(bytes32[] calldata currencyKeys) external;
 
     function suspendSynthWithInvalidRate(bytes32 currencyKey) external;
 }

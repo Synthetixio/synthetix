@@ -2,7 +2,6 @@ pragma solidity >=0.4.24;
 
 pragma experimental ABIEncoderV2;
 
-
 interface ICollateralLoan {
     struct Loan {
         // ID for the loan

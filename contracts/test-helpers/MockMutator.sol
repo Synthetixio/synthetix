@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 contract MockMutator {
     uint256 public count;
 

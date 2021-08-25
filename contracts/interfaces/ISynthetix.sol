@@ -3,7 +3,6 @@ pragma solidity >=0.4.24;
 import "./ISynth.sol";
 import "./IVirtualSynth.sol";
 
-
 // https://docs.synthetix.io/contracts/source/interfaces/isynthetix
 interface ISynthetix {
     // Views
@@ -40,7 +39,7 @@ interface ISynthetix {
 
     function totalIssuedSynths(bytes32 currencyKey) external view returns (uint);
 
-    function totalIssuedSynthsExcludeEtherCollateral(bytes32 currencyKey) external view returns (uint);
+    function totalIssuedSynthsExcludeOtherCollateral(bytes32 currencyKey) external view returns (uint);
 
     function transferableSynthetix(address account) external view returns (uint transferable);
 
@@ -70,7 +69,15 @@ interface ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address originator,
+        address rewardAddress,
+        bytes32 trackingCode
+    ) external returns (uint amountReceived);
+
+    function exchangeWithTrackingForInitiator(
+        bytes32 sourceCurrencyKey,
+        uint sourceAmount,
+        bytes32 destinationCurrencyKey,
+        address rewardAddress,
         bytes32 trackingCode
     ) external returns (uint amountReceived);
 
@@ -79,7 +86,7 @@ interface ISynthetix {
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        address originator,
+        address rewardAddress,
         bytes32 trackingCode
     ) external returns (uint amountReceived);
 

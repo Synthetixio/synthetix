@@ -1,6 +1,5 @@
 pragma solidity >=0.4.24;
 
-
 // https://docs.synthetix.io/contracts/source/interfaces/isystemsettings
 interface ISystemSettings {
     // Views
@@ -25,4 +24,10 @@ interface ISystemSettings {
     function exchangeFeeRate(bytes32 currencyKey) external view returns (uint);
 
     function minimumStakeTime() external view returns (uint);
+
+    function etherWrapperMaxETH() external view returns (uint);
+
+    function etherWrapperBurnFeeRate() external view returns (uint);
+
+    function etherWrapperMintFeeRate() external view returns (uint);
 }

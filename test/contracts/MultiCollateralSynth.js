@@ -18,7 +18,7 @@ const {
 
 const { setupAllContracts, setupContract } = require('./setup');
 
-contract('MultiCollateralSynth @gas-skip', accounts => {
+contract('MultiCollateralSynth', accounts => {
 	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	const sETH = toBytes32('sETH');
@@ -103,6 +103,7 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 				'SystemStatus',
 				'Exchanger',
 				'FeePool',
+				'CollateralUtil',
 				'CollateralManager',
 			],
 		}));
@@ -234,7 +235,7 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 					fnc: this.synth.issue,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
+					reason: 'Only FeePool, Exchanger, Issuer, MultiCollateral contracts allowed',
 				});
 			});
 		});
@@ -244,7 +245,7 @@ contract('MultiCollateralSynth @gas-skip', accounts => {
 					fnc: this.synth.burn,
 					args: [account1, toUnit('1')],
 					accounts,
-					reason: 'Only FeePool, Exchanger, Issuer or MultiCollateral contracts allowed',
+					reason: 'Only FeePool, Exchanger, Issuer, MultiCollateral contracts allowed',
 				});
 			});
 		});

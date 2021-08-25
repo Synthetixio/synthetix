@@ -29,12 +29,6 @@
 	"ExchangeState": {
 		"deploy": true
 	},
-	"EtherCollateral": {
-		"deploy": true
-	},
-	"EtherCollateralsUSD": {
-		"deploy": true
-	},
 	"FeePool": {
 		"deploy": true
 	},
@@ -60,9 +54,6 @@
 		"deploy": true
 	},
 	"Liquidations": {
-		"deploy": true
-	},
-	"SupplySchedule": {
 		"deploy": true
 	},
 	"Synthetix": {
@@ -135,6 +126,12 @@
 		"deploy": true
 	},
 	"CollateralManager": {
+		"deploy": true
+	},
+	"EtherWrapper": {
+		"deploy": true
+	},
+	"WETH": {
 		"deploy": true
 	}
 }

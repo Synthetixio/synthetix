@@ -15,8 +15,11 @@ import "./interfaces/IExchanger.sol";
 // during the build
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/virtualsynth
+// Note: this contract should be treated as an abstract contract and should not be directly deployed.
+//       On higher versions of solidity, it would be marked with the `abstract` keyword.
+//       This contracts implements logic that is only intended to be accessed behind a proxy.
+//       For the deployed "mastercopy" version, see VirtualSynthMastercopy.
 contract VirtualSynth is ERC20, IVirtualSynth {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -36,13 +39,18 @@ contract VirtualSynth is ERC20, IVirtualSynth {
 
     bytes32 public currencyKey;
 
-    constructor(
+    bool public initialized = false;
+
+    function initialize(
         IERC20 _synth,
         IAddressResolver _resolver,
         address _recipient,
         uint _amount,
         bytes32 _currencyKey
-    ) public ERC20() {
+    ) external {
+        require(!initialized, "vSynth already initialized");
+        initialized = true;
+
         synth = _synth;
         resolver = _resolver;
         currencyKey = _currencyKey;
@@ -52,6 +60,9 @@ contract VirtualSynth is ERC20, IVirtualSynth {
         _mint(_recipient, _amount);
 
         initialSupply = _amount;
+
+        // Note: the ERC20 base contract does not have a constructor, so we do not have to worry
+        // about initializing its state separately
     }
 
     // INTERNALS

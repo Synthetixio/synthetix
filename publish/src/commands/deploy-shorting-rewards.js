@@ -1,9 +1,9 @@
 'use strict';
 
 const path = require('path');
+const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const { table } = require('table');
-const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
 const NonceManager = require('../NonceManager');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
@@ -16,8 +16,8 @@ const {
 	loadConnections,
 	confirmAction,
 	parameterNotice,
-	performTransactionalStep,
 } = require('../util');
+const { performTransactionalStep } = require('../command-utils/transact');
 
 const {
 	toBytes32,
@@ -39,7 +39,7 @@ const DEFAULTS = {
 	rewardsToDeploy: [],
 };
 
-const addressOf = c => (c ? c.options.address : '');
+const addressOf = c => (c ? c.address : '');
 
 const deployShortingRewards = async ({
 	rewardsToDeploy = DEFAULTS.rewardsToDeploy,
@@ -79,7 +79,7 @@ const deployShortingRewards = async ({
 	const requiredContractDeployments = ['RewardsDistribution', 'CollateralShort'];
 	const requiredTokenDeployments = shortingRewards
 		.map(x => {
-			return [x.rewardsToken].filter(y => !w3utils.isAddress(y));
+			return [x.rewardsToken].filter(y => !ethers.utils.isAddress(y));
 		})
 		.reduce((acc, x) => acc.concat(x), [])
 		.filter(x => x !== undefined);
@@ -106,7 +106,7 @@ const deployShortingRewards = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 	});
 
@@ -138,7 +138,7 @@ const deployShortingRewards = async ({
 		dryRun,
 	});
 
-	const { account } = deployer;
+	const { account, signer } = deployer;
 
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
@@ -201,7 +201,7 @@ const deployShortingRewards = async ({
 			if (token) {
 				// If its an address, its likely an external dependency
 				// e.g. Unipool V1 Token, Curve V1 Token
-				if (w3utils.isAddress(token)) {
+				if (ethers.utils.isAddress(token)) {
 					return token;
 				}
 
@@ -237,7 +237,7 @@ const deployShortingRewards = async ({
 		// Deploy contract with deployer as RewardsDistribution.
 		const rewardsContract = await deployer.deployContract({
 			name: shortingRewardNameFixed,
-			deps: [rewardsToken].filter(x => !w3utils.isAddress(x)),
+			deps: [rewardsToken].filter(x => !ethers.utils.isAddress(x)),
 			source: 'ShortingRewards',
 			args: [account, resolverAddress, account, rewardsTokenAddress],
 		});
@@ -249,9 +249,10 @@ const deployShortingRewards = async ({
 			performTransactionalStep({
 				gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 				...opts,
+				signer,
 				deployer,
 				gasPrice,
-				etherscanLinkPrefix,
+				explorerLinkPrefix,
 				ownerActions,
 				ownerActionsFile,
 				nonceManager: manageNonces ? nonceManager : undefined,
@@ -285,7 +286,7 @@ const deployShortingRewards = async ({
 	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
 		name,
 		address,
-		`${etherscanLinkPrefix}/address/${address}`,
+		`${explorerLinkPrefix}/address/${address}`,
 	]);
 	console.log();
 	if (tableData.length) {

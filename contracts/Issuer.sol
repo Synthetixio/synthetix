@@ -17,19 +17,15 @@ import "./interfaces/ISynthetixState.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IEtherCollateral.sol";
-import "./interfaces/IEtherCollateralsUSD.sol";
 import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidations.sol";
 import "./interfaces/ICollateralManager.sol";
 
-
 interface IRewardEscrowV2 {
     // Views
     function balanceOf(address account) external view returns (uint);
 }
-
 
 interface IIssuerInternalDebtCache {
     function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external;
@@ -37,6 +33,8 @@ interface IIssuerInternalDebtCache {
     function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
 
     function updateDebtCacheValidity(bool currentlyInvalid) external;
+
+    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid);
 
     function cacheInfo()
         external
@@ -48,7 +46,6 @@ interface IIssuerInternalDebtCache {
             bool isStale
         );
 }
-
 
 // https://docs.synthetix.io/contracts/source/contracts/issuer
 contract Issuer is Owned, MixinSystemSettings, IIssuer {
@@ -79,8 +76,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     bytes32 private constant CONTRACT_SYNTHETIXSTATE = "SynthetixState";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
-    bytes32 private constant CONTRACT_ETHERCOLLATERAL = "EtherCollateral";
-    bytes32 private constant CONTRACT_ETHERCOLLATERAL_SUSD = "EtherCollateralsUSD";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_SYNTHETIXESCROW = "SynthetixEscrow";
@@ -92,20 +87,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](13);
+        bytes32[] memory newAddresses = new bytes32[](11);
         newAddresses[0] = CONTRACT_SYNTHETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
         newAddresses[3] = CONTRACT_SYNTHETIXSTATE;
         newAddresses[4] = CONTRACT_FEEPOOL;
         newAddresses[5] = CONTRACT_DELEGATEAPPROVALS;
-        newAddresses[6] = CONTRACT_ETHERCOLLATERAL;
-        newAddresses[7] = CONTRACT_ETHERCOLLATERAL_SUSD;
-        newAddresses[8] = CONTRACT_REWARDESCROW_V2;
-        newAddresses[9] = CONTRACT_SYNTHETIXESCROW;
-        newAddresses[10] = CONTRACT_LIQUIDATIONS;
-        newAddresses[11] = CONTRACT_DEBTCACHE;
-        newAddresses[12] = CONTRACT_COLLATERALMANAGER;
+        newAddresses[6] = CONTRACT_REWARDESCROW_V2;
+        newAddresses[7] = CONTRACT_SYNTHETIXESCROW;
+        newAddresses[8] = CONTRACT_LIQUIDATIONS;
+        newAddresses[9] = CONTRACT_DEBTCACHE;
+        newAddresses[10] = CONTRACT_COLLATERALMANAGER;
         return combineArrays(existingAddresses, newAddresses);
     }
 
@@ -135,14 +128,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     function delegateApprovals() internal view returns (IDelegateApprovals) {
         return IDelegateApprovals(requireAndGetAddress(CONTRACT_DELEGATEAPPROVALS));
-    }
-
-    function etherCollateral() internal view returns (IEtherCollateral) {
-        return IEtherCollateral(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL));
-    }
-
-    function etherCollateralsUSD() internal view returns (IEtherCollateralsUSD) {
-        return IEtherCollateralsUSD(requireAndGetAddress(CONTRACT_ETHERCOLLATERAL_SUSD));
     }
 
     function collateralManager() internal view returns (ICollateralManager) {
@@ -179,6 +164,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return currencyKeys;
     }
 
+    // Returns the total value of the debt pool in currency specified by `currencyKey`.
+    // To return only the SNX-backed debt, set `excludeCollateral` to true.
     function _totalIssuedSynths(bytes32 currencyKey, bool excludeCollateral)
         internal
         view
@@ -191,19 +178,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Add total issued synths from non snx collateral back into the total if not excluded
         if (!excludeCollateral) {
-            // Get the sUSD equivalent amount of all the MC issued synths.
-            (uint nonSnxDebt, bool invalid) = collateralManager().totalLong();
+            (uint nonSnxDebt, bool invalid) = debtCache().totalNonSnxBackedDebt();
             debt = debt.add(nonSnxDebt);
             anyRateIsInvalid = anyRateIsInvalid || invalid;
-
-            // Now add the ether collateral stuff as we are still supporting it.
-            debt = debt.add(etherCollateralsUSD().totalIssuedSynths());
-
-            // Add ether collateral sETH
-            (uint ethRate, bool ethRateInvalid) = exRates.rateAndInvalid(sETH);
-            uint ethIssuedDebt = etherCollateral().totalIssuedSynths().multiplyDecimalRound(ethRate);
-            debt = debt.add(ethIssuedDebt);
-            anyRateIsInvalid = anyRateIsInvalid || ethRateInvalid;
         }
 
         if (currencyKey == sUSD) {
@@ -238,15 +215,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         // Figure out the global debt percentage delta from when they entered the system.
         // This is a high precision integer of 27 (1e27) decimals.
-        uint currentDebtOwnership = state
-            .lastDebtLedgerEntry()
-            .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
-            .multiplyDecimalRoundPrecise(initialDebtOwnership);
+        uint currentDebtOwnership =
+            state
+                .lastDebtLedgerEntry()
+                .divideDecimalRoundPrecise(state.debtLedger(debtEntryIndex))
+                .multiplyDecimalRoundPrecise(initialDebtOwnership);
 
         // Their debt balance is their portion of the total system value.
-        uint highPrecisionBalance = totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(
-            currentDebtOwnership
-        );
+        uint highPrecisionBalance =
+            totalSystemValue.decimalToPreciseDecimal().multiplyDecimalRoundPrecise(currentDebtOwnership);
 
         // Convert back into 18 decimals (1e18)
         debtBalance = highPrecisionBalance.preciseDecimalToDecimal();
@@ -345,8 +322,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (, anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(_availableCurrencyKeysWithOptionalSNX(true));
     }
 
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeEtherCollateral) external view returns (uint totalIssued) {
-        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeEtherCollateral);
+    function totalIssuedSynths(bytes32 currencyKey, bool excludeOtherCollateral) external view returns (uint totalIssued) {
+        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeOtherCollateral);
     }
 
     function lastIssueEvent(address account) external view returns (uint) {
@@ -587,10 +564,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
         uint collateralForAccount = _collateral(account);
-        uint amountToFixRatio = liquidations().calculateAmountToFixCollateral(
-            debtBalance,
-            _snxToUSD(collateralForAccount, snxRate)
-        );
+        uint amountToFixRatio =
+            liquidations().calculateAmountToFixCollateral(debtBalance, _snxToUSD(collateralForAccount, snxRate));
 
         // Cap amount to liquidate to repair collateral ratio based on issuance ratio
         amountToLiquidate = amountToFixRatio < susdAmount ? amountToFixRatio : susdAmount;

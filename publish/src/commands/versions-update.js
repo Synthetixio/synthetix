@@ -30,7 +30,7 @@ const versionsUpdate = async ({ versionTag, release, useOvm }) => {
 		for (const tag of Object.keys(versions)) {
 			if (tag === versionTag) {
 				throw Error(`Version: ${versionTag} already used in network: ${network}`);
-			} else if (semver.lt(versionTag, semver.coerce(tag))) {
+			} else if (semver.lt(versionTag, semver.coerce(tag)) && !/-ovm$/.test(versionTag)) {
 				throw Error(
 					`Version: ${versionTag} is less than existing version ${tag} in network: ${network}`
 				);

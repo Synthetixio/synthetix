@@ -23,17 +23,18 @@ const {
 const CONTRACT_OVERRIDES = require('../contract-overrides');
 const { optimizerRuns } = require('./build').DEFAULTS;
 
-const verify = async ({ buildPath, network, deploymentPath }) => {
+const verify = async ({ buildPath, deploymentPath, network, useOvm }) => {
 	// Note: require this here as silent error is detected on require that impacts pretty-error
 	const solc = require('solc');
 
 	ensureNetwork(network);
-	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network });
+	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
 	const { config, deployment, deploymentFile } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
+		useOvm,
 	});
 
 	// ensure that every contract in the flag file has a matching deployed address
@@ -50,7 +51,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 		);
 	}
 
-	const { etherscanUrl, etherscanLinkPrefix } = loadConnections({ network });
+	const { etherscanUrl, explorerLinkPrefix } = loadConnections({ network, useOvm });
 	console.log(gray(`Starting ${network.toUpperCase()} contract verification on Etherscan...`));
 
 	const tableData = [];
@@ -101,7 +102,7 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 			const deployedBytecode = result.data.result[0].input;
 
 			// add the transaction and timestamp to the json file
-			deployment.targets[name].txn = `${etherscanLinkPrefix}/tx/${result.data.result[0].hash}`;
+			deployment.targets[name].txn = `${explorerLinkPrefix}/tx/${result.data.result[0].hash}`;
 			deployment.targets[name].timestamp = new Date(result.data.result[0].timeStamp * 1000);
 
 			fs.writeFileSync(deploymentFile, stringify(deployment));
@@ -164,6 +165,9 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 				? CONTRACT_OVERRIDES[`${source}.sol`].runs
 				: optimizerRuns;
 
+			// The version reported by solc-js is too verbose and needs a v at the front
+			const solcVersion = 'v' + solc.version().replace('.Emscripten.clang', '');
+
 			result = await axios.post(
 				etherscanUrl,
 				qs.stringify({
@@ -174,7 +178,8 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 					contractname: source,
 					// note: spelling mistake is on etherscan's side
 					constructorArguements: constructorArguments,
-					compilerversion: 'v' + solc.version().replace('.Emscripten.clang', ''), // The version reported by solc-js is too verbose and needs a v at the front
+					// if ovm remove the +commit... info
+					compilerversion: useOvm ? solcVersion.replace(/\+commit.+$/, '') : solcVersion,
 					optimizationUsed: 1,
 					runs,
 					libraryname1: 'SafeDecimalMath',
@@ -225,7 +230,6 @@ const verify = async ({ buildPath, network, deploymentPath }) => {
 				if (status === 'Fail - Unable to verify') {
 					console.log(red(` - Unable to verify ${name}.`));
 					tableData.push([name, address, 'Unable to verify']);
-
 					break;
 				}
 
@@ -258,10 +262,12 @@ module.exports = {
 				'Path to a folder hosting compiled files from the "build" step in this script',
 				path.join(__dirname, '..', '..', '..', BUILD_FOLDER)
 			)
-			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
+			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
+			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+
 			.action(verify),
 };

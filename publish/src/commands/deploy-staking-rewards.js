@@ -1,9 +1,9 @@
 'use strict';
 
 const path = require('path');
+const ethers = require('ethers');
 const { gray, green, yellow } = require('chalk');
 const { table } = require('table');
-const w3utils = require('web3-utils');
 const Deployer = require('../Deployer');
 const { loadCompiledFiles, getLatestSolTimestamp } = require('../solidity');
 
@@ -86,7 +86,7 @@ const deployStakingRewards = async ({
 	const requiredContractDeployments = ['RewardsDistribution'];
 	const requiredTokenDeployments = stakingRewards
 		.map(x => {
-			return [x.rewardsToken, x.stakingToken].filter(y => !w3utils.isAddress(y));
+			return [x.rewardsToken, x.stakingToken].filter(y => !ethers.utils.isAddress(y));
 		})
 		.reduce((acc, x) => acc.concat(x), [])
 		.filter(x => x !== undefined);
@@ -113,7 +113,7 @@ const deployStakingRewards = async ({
 	// now get the latest time a Solidity file was edited
 	const latestSolTimestamp = getLatestSolTimestamp(CONTRACTS_FOLDER);
 
-	const { providerUrl, privateKey: envPrivateKey, etherscanLinkPrefix } = loadConnections({
+	const { providerUrl, privateKey: envPrivateKey, explorerLinkPrefix } = loadConnections({
 		network,
 	});
 
@@ -208,7 +208,7 @@ const deployStakingRewards = async ({
 			if (token) {
 				// If its an address, its likely an external dependency
 				// e.g. Unipool V1 Token, Curve V1 Token
-				if (w3utils.isAddress(token)) {
+				if (ethers.utils.isAddress(token)) {
 					return token;
 				}
 
@@ -246,7 +246,7 @@ const deployStakingRewards = async ({
 		// Deploy contract
 		await deployer.deployContract({
 			name: stakingRewardNameFixed,
-			deps: [stakingToken, rewardsToken].filter(x => !w3utils.isAddress(x)),
+			deps: [stakingToken, rewardsToken].filter(x => !ethers.utils.isAddress(x)),
 			source: 'StakingRewards',
 			args: [account, rewardsDistributionAddress, rewardsTokenAddress, stakingTokenAddress],
 		});
@@ -259,7 +259,7 @@ const deployStakingRewards = async ({
 	const tableData = deployer.newContractsDeployed.map(({ name, address }) => [
 		name,
 		address,
-		`${etherscanLinkPrefix}/address/${address}`,
+		`${explorerLinkPrefix}/address/${address}`,
 	]);
 	console.log();
 	if (tableData.length) {

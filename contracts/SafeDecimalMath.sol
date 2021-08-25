@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 
-
 // https://docs.synthetix.io/contracts/source/libraries/safedecimalmath
 library SafeDecimalMath {
     using SafeMath for uint;
@@ -184,5 +183,10 @@ library SafeDecimalMath {
         }
 
         return quotientTimesTen / 10;
+    }
+
+    // Computes `a - b`, setting the value to 0 if b > a.
+    function floorsub(uint a, uint b) internal pure returns (uint) {
+        return b >= a ? 0 : a - b;
     }
 }

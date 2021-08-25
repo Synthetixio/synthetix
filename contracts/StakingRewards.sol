@@ -11,7 +11,6 @@ import "./interfaces/IStakingRewards.sol";
 import "./RewardsDistributionRecipient.sol";
 import "./Pausable.sol";
 
-
 // https://docs.synthetix.io/contracts/source/contracts/stakingrewards
 contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
@@ -131,11 +130,6 @@ contract StakingRewards is IStakingRewards, RewardsDistributionRecipient, Reentr
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(rewardsDuration);
         emit RewardAdded(reward);
-    }
-
-    // End rewards emission earlier
-    function updatePeriodFinish(uint timestamp) external onlyOwner updateReward(address(0)) {
-        periodFinish = timestamp;
     }
 
     // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders

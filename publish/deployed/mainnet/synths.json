@@ -122,6 +122,14 @@
 		"asset": "COMP"
 	},
 	{
+		"name": "s1INCH",
+		"asset": "1INCH"
+	},
+	{
+		"name": "sRUNE",
+		"asset": "RUNE"
+	},
+	{
 		"name": "sFTSE",
 		"asset": "FTSE100"
 	},
@@ -132,6 +140,38 @@
 	{
 		"name": "sTSLA",
 		"asset": "TSLA"
+	},
+	{
+		"name": "sCRV",
+		"asset": "CRV"
+	},
+	{
+		"name": "sAAPL",
+		"asset": "AAPL"
+	},
+	{
+		"name": "sFB",
+		"asset": "FB"
+	},
+	{
+		"name": "sGOOG",
+		"asset": "GOOG"
+	},
+	{
+		"name": "sNFLX",
+		"asset": "NFLX"
+	},
+	{
+		"name": "sAMZN",
+		"asset": "AMZN"
+	},
+	{
+		"name": "sCOIN",
+		"asset": "COIN"
+	},
+	{
+		"name": "sMSFT",
+		"asset": "MSFT"
 	},
 	{
 		"name": "sCEX",
@@ -180,74 +220,104 @@
 		"asset": "DEFI",
 		"index": [
 			{
-				"asset": "COMP",
-				"units": 1.55,
-				"weight": 5
-			},
-			{
-				"asset": "MKR",
-				"units": 0.54,
-				"weight": 10
+				"asset": "UNI",
+				"units": 66.3052,
+				"weight": 15
 			},
 			{
 				"asset": "AAVE",
-				"units": 4.72,
-				"weight": 15
+				"units": 4.1634,
+				"weight": 11
 			},
 			{
-				"asset": "UMA",
-				"units": 26.06,
-				"weight": 5
+				"asset": "LUNA",
+				"units": 143.0753,
+				"weight": 10
+			},
+			{
+				"asset": "MKR",
+				"units": 0.3116,
+				"weight": 9
 			},
 			{
 				"asset": "SNX",
-				"units": 87.2,
-				"weight": 15
+				"units": 92.2672,
+				"weight": 8
 			},
 			{
-				"asset": "REN",
-				"units": 680.59,
-				"weight": 5
-			},
-			{
-				"asset": "UNI",
-				"units": 100.71,
-				"weight": 15
-			},
-			{
-				"asset": "KNC",
-				"units": 334.06,
-				"weight": 5
-			},
-			{
-				"asset": "CRV",
-				"units": 254.94,
-				"weight": 5
+				"asset": "RUNE",
+				"units": 105.8407,
+				"weight": 8
 			},
 			{
 				"asset": "SUSHI",
-				"units": 43.111,
-				"weight": 5
+				"units": 78.2258,
+				"weight": 7
+			},
+			{
+				"asset": "COMP",
+				"units": 2.2499,
+				"weight": 7
 			},
 			{
 				"asset": "YFI",
-				"units": 0.01604,
-				"weight": 5
-			},
-			{
-				"asset": "BAL",
-				"units": 14.84,
-				"weight": 5
+				"units": 0.01503,
+				"weight": 6
 			},
 			{
 				"asset": "BNT",
-				"units": 90.661,
+				"units": 74.5498,
+				"weight": 3
+			},
+			{
+				"asset": "UMA",
+				"units": 25.608,
+				"weight": 3
+			},
+			{
+				"asset": "ZRX",
+				"units": 294.7857,
+				"weight": 2.5
+			},
+			{
+				"asset": "CRV",
+				"units": 124.2496,
 				"weight": 2.5
 			},
 			{
 				"asset": "1INCH",
-				"units": 71.837,
-				"weight": 2.5
+				"units": 59.0185,
+				"weight": 2
+			},
+			{
+				"asset": "REN",
+				"units": 440.8356,
+				"weight": 2
+			},
+			{
+				"asset": "BAL",
+				"units": 4.4333,
+				"weight": 1
+			},
+			{
+				"asset": "KNC",
+				"units": 57.667,
+				"weight": 1
+			},
+			{
+				"asset": "BOND",
+				"units": 2.274,
+				"weight": 1
+			},
+			{
+				"asset": "CREAM",
+				"units": 0.2667,
+				"weight": 0.5
+			},
+			{
+				"asset": "ALPHA",
+				"units": 102.3121,
+				"weight": 0.5
 			}
 		],
 		"subclass": "PurgeableSynth"

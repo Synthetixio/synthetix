@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const util = require('util');
 
-const { getSuspensionReasons, networks, toBytes32, wrap } = require('./index');
+const { getSuspensionReasons, networks, toBytes32, wrap, releases } = require('./index');
 
 const {
 	decode,
@@ -180,6 +180,52 @@ program
 	.action(async ({ network, useOvm, byContract }) => {
 		const versions = getVersions({ network, useOvm, byContract });
 		console.log(JSON.stringify(versions, null, 2));
+	});
+
+program
+	.command('releases')
+	.description('Get the list of releases')
+	.option('--unreleased', 'Only retrieve the unreleased ones.')
+	.option('--with-sources', 'Only retrieve ones with files.')
+	.action(async ({ unreleased, withSources }) => {
+		const getSip = sipNumber => releases.sips.find(({ sip }) => sip === sipNumber);
+
+		const result = releases.releases
+			.filter(release => release.released === !unreleased)
+			.filter(release => {
+				if (!withSources) return true;
+				return release.sips.some(s => !!getSip(s).sources);
+			});
+
+		if (result.length > 0) {
+			console.log(JSON.stringify(result, null, 2));
+		}
+	});
+
+program
+	.command('sips')
+	.description('Get the list of released or unreleased SIPs.')
+	.option('--unreleased', 'Only retrieve the SIPs that are not released on the given layer.')
+	.option('--with-sources', 'Only retrieve ones with source files.')
+	.addOption(
+		new commander.Option('-l, --layer <value>', `The layer(s) corresponding to the SIPs`)
+			.choices(['base', 'ovm', 'both'])
+			.default('both')
+	)
+	.action(async ({ unreleased, withSources, layer }) => {
+		const layers = ['both', ...(layer === 'both' ? ['base', 'ovm'] : [layer])];
+
+		const result = releases.sips
+			.filter(({ layer }) => layers.includes(layer))
+			.filter(({ released }) => layers.includes(released) === !unreleased)
+			.filter(({ sources }) => {
+				if (!withSources) return true;
+				return Array.isArray(sources) && sources.length > 0;
+			});
+
+		if (result.length > 0) {
+			console.log(JSON.stringify(result, null, 2));
+		}
 	});
 
 // perform as CLI tool if args given

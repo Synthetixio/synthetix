@@ -81,7 +81,6 @@ pragma solidity 0.5.16;
 import 'synthetix/contracts/interfaces/IAddressResolver.sol';
 import 'synthetix/contracts/interfaces/ISynthetix.sol';
 
-
 contract MyContract {
   // This should be instantiated with our ReadProxyAddressResolver
   // it's a ReadProxy that won't change, so safe to code it here without a setter
@@ -159,7 +158,6 @@ snx.getAST({ source: 'Synthetix.sol' });
      'contracts/interfaces/IERC20.sol',
      'contracts/interfaces/ISystemStatus.sol',
      'contracts/interfaces/IExchanger.sol',
-     'contracts/interfaces/IEtherCollateral.sol',
      'contracts/interfaces/IIssuer.sol',
      'contracts/interfaces/ISynthetixState.sol',
      'contracts/interfaces/IExchangeRates.sol',
