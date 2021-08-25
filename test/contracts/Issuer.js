@@ -2540,13 +2540,33 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 			describe('burnForRedemption', () => {
 				it('only allowed by the synth redeemer', async () => {
-					await sETHContract.issue(account1, toUnit('5'));
-
 					await onlyGivenAddressCanInvoke({
 						fnc: issuer.burnForRedemption,
-						args: [sETHContract.address, account1, toUnit('5')],
+						args: [ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1')],
 						accounts,
 						reason: 'Issuer: Only the SynthRedeemer contract can perform this action',
+					});
+				});
+				describe('when a user has 100 sETH', () => {
+					beforeEach(async () => {
+						await sETHContract.issue(account1, toUnit('100'));
+					});
+					describe('when burnForRedemption is invoked on the user for 75 sETH', () => {
+						beforeEach(async () => {
+							// spoof the synth redeemer
+							await addressResolver.importAddresses([toBytes32('SynthRedeemer')], [account6], {
+								from: owner,
+							});
+							// rebuild the resolver cache in the issuer
+							await issuer.rebuildCache();
+							// now invoke the burn
+							await issuer.burnForRedemption(await sETHContract.proxy(), account1, toUnit('75'), {
+								from: account6,
+							});
+						});
+						it('then the user has 25 sETH remaining', async () => {
+							assert.bnEqual(await sETHContract.balanceOf(account1), toUnit('25'));
+						});
 					});
 				});
 			});
