@@ -296,7 +296,6 @@
 		{
 			"sip": 131,
 			"layer": "base",
-			"released": "base",
 			"sources": ["DelegateApprovals"]
 		},
 		{
