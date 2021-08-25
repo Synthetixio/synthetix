@@ -1,5 +1,8 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const { toBytes32 } = require('../..');
+const {
+	toBytes32,
+	constants: { ZERO_ADDRESS },
+} = require('../..');
 const {
 	currentTime,
 	fastForward,
@@ -2728,6 +2731,30 @@ contract('FuturesMarket', accounts => {
 				const { id: newPositionId } = await futuresMarket.positions(trader);
 				assert.bnGte(newPositionId, oldPositionId);
 			});
+		});
+	});
+
+	describe('View helpers', async () => {
+		it('can get position details', async () => {
+			const { marginDelta, sizeDelta, price } = {
+				marginDelta: toUnit('1000'),
+				sizeDelta: toUnit('10'),
+				price: toUnit('240'),
+			};
+
+			const details = await futuresMarket.calcPositionDetails(
+				marginDelta,
+				sizeDelta,
+				price,
+				toBN(0),
+				ZERO_ADDRESS
+			);
+
+			assert.bnEqual(details.fee, toBN('7200000000000000000'));
+			assert.bnEqual(details.size, toBN('10000000000000000000'));
+			assert.bnEqual(details.lPrice, toBN('142000000000000000000'));
+			assert.bnEqual(details.margin, marginDelta.sub(details.fee));
+			assert.bnEqual(details.leverage, toBN('2400000000000000000'));
 		});
 	});
 });
