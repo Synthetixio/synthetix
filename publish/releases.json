@@ -294,6 +294,12 @@
 			"released": "base"
 		},
 		{
+			"sip": 131,
+			"layer": "base",
+			"released": "base",
+			"sources": ["DelegateApprovals"]
+		},
+		{
 			"sip": 136,
 			"layer": "base",
 			"released": "base",
