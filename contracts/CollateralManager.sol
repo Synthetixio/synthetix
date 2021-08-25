@@ -226,7 +226,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         rateIsInvalid = _exchangeRates().rateIsInvalid(synthKey);
 
         // Get the long and short supply.
-        uint longSupply = IERC20(address(_synth(synthsByKey[synthKey]))).totalSupply();
+        uint longSupply = IERC20(address(_synth(shortableSynthsByKey[synthKey]))).totalSupply();
         uint shortSupply = state.short(synthKey);
 
         // In this case, the market is skewed long so its free to short.
