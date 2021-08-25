@@ -88,8 +88,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     // This is the same unit as used inside `SignedSafeDecimalMath`.
     int private constant _UNIT = int(10**uint(18));
-    // Orders can potentially move the market past its configured max by up to 5%.
-    uint private constant _MAX_MARKET_VALUE_PLAY_FACTOR = (5 * uint(_UNIT)) / 100;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -118,10 +116,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     int[] public fundingSequence;
 
     /*
-     * Each user's order and position.
-     * Multiple positions can always be merged, so each user can only have one position at a time.
+     * Each user's position. Multiple positions can always be merged, so each user has
+     * only have one position at a time.
      */
-    mapping(address => Order) public orders;
     mapping(address => Position) public positions;
 
     /*
@@ -130,9 +127,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * which is equivalent to the sum of remaining margins in all positions.
      */
     int internal _entryDebtCorrection;
-
-    // This increments for each order; zero reflects an order that does not exist.
-    uint internal _nextOrderId = 1;
 
     // This increments for each position; zero reflects a position that does not exist.
     uint internal _nextPositionId = 1;
@@ -160,17 +154,16 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         fundingSequence.push(0);
 
         // Set up the mapping between error codes and their revert messages.
-        _errorMessages[uint8(Status.NoOrderExists)] = "No pending order";
-        _errorMessages[uint8(Status.AwaitingPriceUpdate)] = "Awaiting next price";
-        _errorMessages[uint8(Status.PriceOutOfBounds)] = "Price out of acceptable range";
         _errorMessages[uint8(Status.InvalidPrice)] = "Invalid price";
+        _errorMessages[uint8(Status.PriceOutOfBounds)] = "Price out of acceptable range";
         _errorMessages[uint8(Status.CanLiquidate)] = "Position can be liquidated";
         _errorMessages[uint8(Status.CannotLiquidate)] = "Position cannot be liquidated";
         _errorMessages[uint8(Status.MaxMarketSizeExceeded)] = "Max market size exceeded";
         _errorMessages[uint8(Status.MaxLeverageExceeded)] = "Max leverage exceeded";
         _errorMessages[uint8(Status.InsufficientMargin)] = "Insufficient margin";
         _errorMessages[uint8(Status.NotPermitted)] = "Not permitted by this address";
-        _errorMessages[uint8(Status.AlreadyClosedPosition)] = "Cannot close an already-closed position";
+        _errorMessages[uint8(Status.NilOrder)] = "Cannot submit empty order";
+        _errorMessages[uint8(Status.NoPositionOpen)] = "No position open";
     }
 
     /* ========== VIEWS ========== */
@@ -222,17 +215,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return _assetPrice(_exchangeRates());
     }
 
-    function _currentRoundId(IExchangeRates exchangeRates) internal view returns (uint roundId) {
-        return exchangeRates.getCurrentRoundId(baseAsset);
-    }
-
-    /*
-     * The current ChainLink round id from the oracle for the base asset price.
-     */
-    function currentRoundId() external view returns (uint roundId) {
-        return _currentRoundId(_exchangeRates());
-    }
-
     function _marketSizes() internal view returns (uint long, uint short) {
         int size = int(marketSize);
         int skew = marketSkew;
@@ -246,6 +228,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return _marketSizes();
     }
 
+    /*
+     * The remaining units on each side of the market left to be filled before hitting the cap.
+     */
     function _maxOrderSizes(uint price) internal view returns (uint, uint) {
         (uint long, uint short) = _marketSizes();
         int sizeLimit = int(_maxMarketValue(baseAsset)).divideDecimalRound(int(price));
@@ -279,7 +264,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * The total debt contributed by this market to the Synthetix system.
+     * The debt contributed by this market to the overall system.
      * The total market debt is equivalent to the sum of remaining margins in all open positions.
      */
     function marketDebt() external view returns (uint debt, bool invalid) {
@@ -409,60 +394,17 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /* ---------- Position Details ---------- */
 
-    function _orderPending(Order storage order) internal view returns (bool pending) {
-        return order.id != 0;
-    }
-
-    /*
-     * True if and only if the specified order actually exists.
-     */
-    function orderPending(address account) external view returns (bool pending) {
-        return _orderPending(orders[account]);
-    }
-
-    /*
-     * The position size that a given margin/leverage/price would produce.
-     */
-    function _orderSize(
-        uint price,
-        uint margin,
-        int leverage
-    ) internal pure returns (int) {
-        return int(margin).multiplyDecimalRound(leverage).divideDecimalRound(int(price));
-    }
-
-    /*
-     * The position size that a given order would receive if it was confirmed at the current price.
-     */
-    function orderSize(address account) external view returns (int size, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        Order storage order = orders[account];
-        return (_orderSize(price, _remainingMargin(position, fundingSequence.length, price), order.leverage), isInvalid);
-    }
-
-    /*
-     * The maximum order size at current prices, with a little bit of extra freedom.
-     */
-    function _maxSize(
-        uint price,
-        uint maxValue,
-        uint play
-    ) internal pure returns (uint) {
-        return uint(int(maxValue.add(play)).divideDecimalRound(int(price)));
-    }
-
     /*
      * Determines whether a change in a position's size would violate the max market value constraint.
      */
-    function _orderSizeSmallEnough(
+    function _orderSizeTooLarge(
         uint maxSize,
         int oldSize,
         int newSize
-    ) internal view returns (Status) {
+    ) internal view returns (bool) {
         // Allow users to reduce an order no matter the market conditions.
         if (_sameSide(oldSize, newSize) && _abs(newSize) <= _abs(oldSize)) {
-            return Status.Ok;
+            return false;
         }
 
         // Either the user is flipping sides, or they are increasing an order on the same side they're already on;
@@ -485,102 +427,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // newSideSize still includes an extra factor of 2 here, so we will divide by 2 in the actual condition
         if (maxSize < _abs(newSideSize.div(2))) {
-            return Status.MaxMarketSizeExceeded;
+            return true;
         }
 
-        return Status.Ok;
-    }
-
-    /*
-     * Determines the current status of an order. If the order cannot be confirmed, an error is returned indicating
-     * why. If Error.Ok is returned, then the order is confirmable. This also returns a few results to save on
-     * extra calculations at the call site.
-     */
-    function _orderStatusDetails(
-        uint price,
-        uint fundingIndex,
-        address account
-    )
-        internal
-        view
-        returns (
-            uint newMargin,
-            int newSize,
-            uint orderFee_,
-            Status status
-        )
-    {
-        // TODO: Ensure that this is fine if the position is swapping sides
-        // TODO: Check that everything is fine if a position already exists.
-        // Is an order is pending?
-        if (!_orderPending(orders[account])) {
-            return (0, 0, 0, Status.NoOrderExists);
-        }
-
-        Order memory order = orders[account];
-
-        // Is the price within the acceptable range?
-        if (price < order.minPrice || order.maxPrice < price) {
-            return (0, 0, 0, Status.PriceOutOfBounds);
-        }
-
-        Position storage position = positions[account];
-
-        // Can the existing position be liquidated?
-        // You can't outrun an impending liquidation by closing your position quickly, for example.
-        if (_canLiquidate(position, _liquidationFee(), fundingIndex, price)) {
-            return (0, 0, 0, Status.CanLiquidate);
-        }
-
-        // We weren't liquidated, so we realise the margin to compute the new position size.
-        // The fee is deducted at this stage; it is an error if the realised margin minus the fee
-        // is negative or subject to liquidation.
-        uint fee = order.fee;
-        (uint margin, Status marginStatus) = _realisedMargin(position, fundingIndex, price, -int(fee));
-        if (_isError(marginStatus)) {
-            return (margin, 0, fee, marginStatus);
-        }
-
-        // The fee is added back in because order size is computed pre-fee, though their leverage will
-        // be slightly higher than what was requested if the fee is nonzero.
-        int size = _orderSize(price, margin.add(fee), order.leverage);
-
-        // Ensure the order is actually allowed given the market size limit.
-        // Give an extra percentage of play in case multiple orders were submitted simultaneously or the price moved.
-        uint maxMarketValue = _maxMarketValue(baseAsset);
-        uint maxMarketSize =
-            _maxSize(
-                price,
-                maxMarketValue,
-                uint(int(maxMarketValue).multiplyDecimalRound(int(_MAX_MARKET_VALUE_PLAY_FACTOR)))
-            );
-        Status marketSizeStatus = _orderSizeSmallEnough(maxMarketSize, position.size, size);
-        return (margin, size, fee, marketSizeStatus);
-    }
-
-    function _orderStatus(address account) internal view returns (Status) {
-        IExchangeRates exRates = _exchangeRates();
-        (uint price, bool invalid) = _assetPrice(exRates);
-        if (invalid) {
-            return Status.InvalidPrice;
-        }
-        (, , , Status status) = _orderStatusDetails(price, fundingSequence.length, account);
-        return status;
-    }
-
-    /*
-     * Returns the current status of an order. If its status is Error.Ok, then it can be confirmed.
-     * Otherwise, some condition is blocking its confirmation; which is distinguished by the returned error code.
-     */
-    function orderStatus(address account) external view returns (Status) {
-        return _orderStatus(account);
-    }
-
-    /*
-     * True if and only if an order can be confirmed.
-     */
-    function canConfirmOrder(address account) external view returns (bool) {
-        return !_isError(_orderStatus(account));
+        return false;
     }
 
     function _notionalValue(Position storage position, uint price) internal view returns (int value) {
@@ -769,19 +619,19 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     function _orderFee(
-        uint margin,
-        int leverage,
+        int newSize,
         int existingSize,
         uint price
     ) internal view returns (uint) {
         int existingNotional = existingSize.multiplyDecimalRound(int(price));
 
         // Charge the closure fee if closing a position entirely.
-        if (margin == 0 || leverage == 0) {
+        if (newSize == 0) {
             return _abs(existingNotional.multiplyDecimalRound(int(_closureFee(baseAsset))));
         }
 
-        int newNotional = int(margin).multiplyDecimalRound(leverage);
+        int newNotional = newSize.multiplyDecimalRound(int(price));
+
         int notionalDiff = newNotional;
         if (_sameSide(newNotional, existingNotional)) {
             // If decreasing a position, charge the closure fee.
@@ -825,28 +675,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * Reports the fee for submitting an order of a given size. Orders that increase the skew will be more
      * expensive than ones that decrease it; closing positions implies a different fee rate.
      */
-    function orderFee(address account, int leverage) external view returns (uint fee, bool invalid) {
+    function orderFee(address account, int sizeDelta) external view returns (uint fee, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        uint margin = _remainingMargin(position, fundingSequence.length, price);
-        return (_orderFee(margin, leverage, position.size, price), isInvalid);
-    }
-
-    /*
-     * Reports the fee for submitting an order of a given size after also adjusting margin.
-     */
-    function orderFeeWithMarginDelta(
-        address account,
-        int marginDelta,
-        int leverage
-    ) external view returns (uint fee, bool invalid) {
-        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        int margin = _marginPlusProfitFunding(position, fundingSequence.length, price).add(marginDelta);
-        if (margin < 0) {
-            margin = 0;
-        }
-        return (_orderFee(uint(margin), leverage, position.size, price), isInvalid);
+        int positionSize = positions[account].size;
+        return (_orderFee(positionSize.add(sizeDelta), positionSize, price), isInvalid);
     }
 
     /* ---------- Utilities ---------- */
@@ -1019,7 +851,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             position.fundingIndex = fundingIndex;
         }
 
-        // The user can decrease their position if they have no position, or as long as:
+        // The user can decrease their margin if they have no position, or as long as:
         //     * they have sufficient margin to do so
         //     * the resulting margin would not be lower than the minimum margin
         //     * the resulting leverage is lower than the maximum leverage
@@ -1041,14 +873,16 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             sender,
             margin,
             positionSize,
-            positionSize > 0 ? price : 0,
-            positionSize > 0 ? fundingIndex : 0
+            positionSize > 0 ? price : position.lastPrice,
+            positionSize > 0 ? fundingIndex : position.fundingIndex,
+            0
         );
     }
 
     /*
-     * Alter the amount of margin in a position. Positive arguments correspond to deposits, negative arguments to
-     * withdrawals. The margin will be burnt or issued directly into/out of the caller's sUSD wallet.
+     * Alter the amount of margin in a position. A positive input triggers a deposit; a negative one, a
+     * withdrawal. The margin will be burnt or issued directly into/out of the caller's sUSD wallet.
+     * Reverts on deposit if the caller lacks a sufficient sUSD balance.
      * Reverts on withdrawal if the amount to be withdrawn would expose an open position to liquidation.
      */
     function transferMargin(int marginDelta) external optionalProxy {
@@ -1068,169 +902,59 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _transferMargin(marginDelta, price, fundingIndex, sender);
     }
 
-    function _cancelOrder(address account) internal {
-        Order storage order = orders[account];
-        _revertIfError(!_orderPending(order), Status.NoOrderExists);
-        emitOrderCancelled(order.id, account);
-        delete orders[account];
-    }
-
-    /*
-     * Deletes an outstanding order if it has not yet been confirmed.
-     */
-    function cancelOrder() external optionalProxy {
-        _cancelOrder(messageSender);
-    }
-
-    function _checkMargin(
-        Position storage position,
+    function _modifyPosition(
+        int sizeDelta,
         uint price,
-        uint margin,
-        int desiredLeverage,
-        uint fee,
-        bool sameSide
-    ) internal view {
-        int currentLeverage_ = _currentLeverage(position, price, margin);
-
-        // We don't check the margin requirement if leverage is decreasing
-        if (sameSide && _abs(currentLeverage_) <= _abs(desiredLeverage)) {
-            // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
-            // except that we get a nicer error message if fee > margin, rather than arithmetic overflow.
-            _revertIfError(margin < _minInitialMargin().add(fee), Status.InsufficientMargin);
-        }
-    }
-
-    function _submitOrder(
-        int leverage,
-        uint price,
-        uint[2] memory priceBounds,
         uint fundingIndex,
         address sender
     ) internal {
-        _revertIfError(_maxLeverage(baseAsset) < _abs(leverage), Status.MaxLeverageExceeded);
-        Position storage position = positions[sender];
+        // Reverts if the user is trying to submit a size-zero order.
+        _revertIfError(sizeDelta == 0, Status.NilOrder);
 
-        // The order is not submitted if the user's existing position needed to be liquidated.
-        // We know that the price is not invalid now that we're in this function
+        // The order is not submitted if the user's existing position needs to be liquidated.
+        Position storage position = positions[sender];
         _revertIfError(_canLiquidate(position, _liquidationFee(), fundingIndex, price), Status.CanLiquidate);
 
-        // Reverts if the user is trying to close an already-closed position.
-        _revertIfError(leverage == position.size && position.size == 0, Status.AlreadyClosedPosition);
+        int oldSize = position.size;
+        int newSize = position.size.add(sizeDelta);
 
-        uint margin = _remainingMargin(position, fundingIndex, price);
-        int size = position.size;
+        // Deduct the fee.
+        // It is an error if the realised margin minus the fee is negative or subject to liquidation.
+        uint fee = _orderFee(newSize, oldSize, price);
+        (uint margin, Status marginStatus) = _realisedMargin(position, fundingIndex, price, -int(fee));
+        _revertIfError(marginStatus);
 
-        // Compute the fee owed, which will be charged to the margin after the order is confirmed.
-        uint fee = _orderFee(margin, leverage, size, price);
-
-        // Check that the user has sufficient margin
-        _checkMargin(position, price, margin, leverage, fee, _sameSide(leverage, size));
-
-        // Check that the order isn't too large for the market
-        // Note that this in principle allows several orders to be placed at once
-        // that collectively violate the maximum, but this is checked again when
-        // the orders are confirmed.
-        // Allow a bit of extra value in case of rounding errors
-        int newSize = _orderSize(price, margin, leverage);
-        _revertIfError(_orderSizeSmallEnough(_maxSize(price, _maxMarketValue(baseAsset), 100 * uint(_UNIT)), size, newSize));
-
-        // Cancel any open order
-        Order storage order = orders[sender];
-        if (_orderPending(order)) {
-            _cancelOrder(sender);
+        // Check that the user has sufficient margin given their order.
+        // We don't check the margin requirement if the position size is decreasing
+        bool positionDecreasing = _sameSide(oldSize, newSize) && _abs(newSize) < _abs(oldSize);
+        if (!positionDecreasing) {
+            // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
+            // except that we get a nicer error message if fee > margin, rather than arithmetic overflow.
+            _revertIfError(margin.add(fee) < _minInitialMargin(), Status.InsufficientMargin);
         }
 
-        // Lodge the order, which can be confirmed at the next price update
-        uint id = _nextOrderId;
-        _nextOrderId += 1;
+        // Check that the maximum leverage is not exceeded (ignoring the fee).
+        // We'll allow a little extra headroom for rounding errors.
+        int desiredLeverage = newSize.multiplyDecimalRound(int(price)).divideDecimalRound(int(margin.add(fee)));
+        _revertIfError(_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(desiredLeverage), Status.MaxLeverageExceeded);
 
-        order.id = id;
-        order.leverage = leverage;
-        order.fee = fee;
-        order.minPrice = priceBounds[0];
-        order.maxPrice = priceBounds[1];
-        emitOrderSubmitted(id, sender, leverage, fee, order.minPrice, order.maxPrice);
-    }
+        // Check that the order isn't too large for the market.
+        // Allow a bit of extra value in case of rounding errors.
+        _revertIfError(
+            _orderSizeTooLarge(
+                uint(int(_maxMarketValue(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(price))),
+                oldSize,
+                newSize
+            ),
+            Status.MaxMarketSizeExceeded
+        );
 
-    /*
-     * Submit an order, but which cannot be confirmed unless the confirmation price is within desired bounds.
-     * Reverts if the resulting position is too large, outside the max leverage, or if an existing position is liquidating.
-     */
-    function submitOrderWithPriceBounds(
-        int leverage,
-        uint minPrice,
-        uint maxPrice
-    ) public optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
-        uint fundingIndex = _recomputeFunding(price);
-        _submitOrder(leverage, price, [minPrice, maxPrice], fundingIndex, messageSender);
-    }
-
-    /*
-     * Submit an order to adjust the position leverage to a target level.
-     * Reverts if the resulting position is too large, outside the max leverage, or if an existing position is liquidating.
-     */
-    function submitOrder(int leverage) external optionalProxy {
-        submitOrderWithPriceBounds(leverage, 0, uint(-1));
-    }
-
-    // Submit an order to close a position. This is equivalent to `submitOrder(0)`.
-    function closePosition() external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
-        uint fundingIndex = _recomputeFunding(price);
-        _submitOrder(0, price, [0, uint(-1)], fundingIndex, messageSender);
-    }
-
-    /*
-     * Atomically alter margin and submit an order, but which cannot be confirmed unless the confirmation price
-     * is within desired bounds.
-     */
-    function transferMarginAndSubmitOrderWithPriceBounds(
-        int marginDelta,
-        int leverage,
-        uint minPrice,
-        uint maxPrice
-    ) public optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
-        uint fundingIndex = _recomputeFunding(price);
-        address sender = messageSender;
-        _transferMargin(marginDelta, price, fundingIndex, sender);
-        _submitOrder(leverage, price, [minPrice, maxPrice], fundingIndex, sender);
-    }
-
-    /*
-     * Atomically alter a position's margin and then submit an order.
-     * This is the same as performing the steps in two transactions, except only one entry will be added to
-     * the funding sequence.
-     */
-    function transferMarginAndSubmitOrder(int marginDelta, int leverage) external optionalProxy {
-        transferMarginAndSubmitOrderWithPriceBounds(marginDelta, leverage, 0, uint(-1));
-    }
-
-    /*
-     * Confirm an outstanding order, modifying the underlying position. This will succeed if and only if
-     * `canConfirmOrder(account)` is true, and reverts otherwise.
-     */
-    function confirmOrder(address account) external optionalProxy {
-        uint price = _assetPriceRequireNotInvalid();
-        uint fundingIndex = _recomputeFunding(price);
-
-        (uint margin, int newSize, uint fee, Status status) = _orderStatusDetails(price, fundingIndex, account);
-        _revertIfError(status);
-
-        // Update the margin, which will need to be realised
-        Position storage position = positions[account];
-
-        uint oldMargin = position.margin;
-
-        int oldSize = position.size;
-        position.margin = margin;
-
-        // Apply debt corrections
+        // Update the margin, and apply the resulting debt correction
         _applyDebtCorrection(
             Position(0, margin, newSize, price, fundingIndex),
-            Position(0, oldMargin, oldSize, position.lastPrice, position.fundingIndex)
+            Position(0, position.margin, oldSize, position.lastPrice, position.fundingIndex)
         );
+        position.margin = margin;
 
         // Update the aggregated market size and skew with the new order size
         marketSkew = marketSkew.add(newSize).sub(oldSize);
@@ -1248,7 +972,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             delete position.size;
             delete position.lastPrice;
             delete position.fundingIndex;
-            emitPositionModified(position.id, account, margin, 0, 0, 0);
+            emitPositionModified(position.id, sender, margin, 0, 0, 0, fee);
         } else {
             if (oldSize == 0) {
                 position.id = _nextPositionId;
@@ -1257,11 +981,64 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             position.size = newSize;
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-            emitPositionModified(position.id, account, margin, newSize, price, fundingIndex);
+            emitPositionModified(position.id, sender, margin, newSize, price, fundingIndex, fee);
         }
-        Order storage order = orders[account];
-        emitOrderConfirmed(order.id, account, price);
-        delete orders[account];
+    }
+
+    /*
+     * Adjust the sender's position size.
+     * Reverts if the resulting position is too large, outside the max leverage, or is liquidating.
+     */
+    function modifyPosition(int sizeDelta) external optionalProxy {
+        uint price = _assetPriceRequireNotInvalid();
+        uint fundingIndex = _recomputeFunding(price);
+        _modifyPosition(sizeDelta, price, fundingIndex, messageSender);
+    }
+
+    function _revertIfPriceOutsideBounds(
+        uint price,
+        uint minPrice,
+        uint maxPrice
+    ) internal view {
+        _revertIfError(price < minPrice || maxPrice < price, Status.PriceOutOfBounds);
+    }
+
+    /*
+     * Adjust the sender's position size, but with an acceptable slippage range in case
+     * the price updates while the transaction is in flight.
+     * Reverts if the oracle price is outside the specified bounds, or the resulting position is too large,
+     * outside the max leverage, or is liquidating.
+     */
+    function modifyPositionWithPriceBounds(
+        int sizeDelta,
+        uint minPrice,
+        uint maxPrice
+    ) external optionalProxy {
+        uint price = _assetPriceRequireNotInvalid();
+        _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
+        uint fundingIndex = _recomputeFunding(price);
+        _modifyPosition(sizeDelta, price, fundingIndex, messageSender);
+    }
+
+    /*
+     * Submit an order to close a position.
+     */
+    function closePosition() external optionalProxy {
+        int size = positions[messageSender].size;
+        _revertIfError(size == 0, Status.NoPositionOpen);
+        uint price = _assetPriceRequireNotInvalid();
+        _modifyPosition(-size, price, _recomputeFunding(price), messageSender);
+    }
+
+    /*
+     * Submit an order to close a position; reverts if the asset price is outside the specified bounds.
+     */
+    function closePositionWithPriceBounds(uint minPrice, uint maxPrice) external optionalProxy {
+        int size = positions[messageSender].size;
+        _revertIfError(size == 0, Status.NoPositionOpen);
+        uint price = _assetPriceRequireNotInvalid();
+        _revertIfPriceOutsideBounds(price, minPrice, maxPrice);
+        _modifyPosition(-size, price, _recomputeFunding(price), messageSender);
     }
 
     function _liquidatePosition(
@@ -1271,11 +1048,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint price,
         uint liquidationFee
     ) internal {
-        // If there are any pending orders, the liquidation will cancel them.
-        if (_orderPending(orders[account])) {
-            _cancelOrder(account);
-        }
-
         Position storage position = positions[account];
 
         // Retrieve the liquidation price before we close the order.
@@ -1299,7 +1071,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Issue the reward to the liquidator.
         _manager().issueSUSD(liquidator, liquidationFee);
 
-        emitPositionModified(positionId, account, 0, 0, 0, 0);
+        emitPositionModified(positionId, account, 0, 0, 0, 0, 0);
         emitPositionLiquidated(positionId, account, liquidator, positionSize, lPrice, liquidationFee);
     }
 
@@ -1314,11 +1086,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         uint liquidationFee = _liquidationFee();
         _revertIfError(!_canLiquidate(positions[account], liquidationFee, fundingIndex, price), Status.CannotLiquidate);
-
-        // If there are any pending orders, the liquidation will cancel them.
-        if (_orderPending(orders[account])) {
-            _cancelOrder(account);
-        }
 
         _liquidatePosition(account, messageSender, fundingIndex, price, liquidationFee);
     }
@@ -1336,56 +1103,17 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         proxy._emit(abi.encode(marginDelta), 2, SIG_MARGINTRANSFERRED, addressToBytes32(account), 0, 0);
     }
 
-    event OrderSubmitted(uint indexed id, address indexed account, int leverage, uint fee, uint minPrice, uint maxPrice);
-    bytes32 internal constant SIG_ORDERSUBMITTED =
-        keccak256("OrderSubmitted(uint256,address,int256,uint256,uint256,uint256)");
-
-    function emitOrderSubmitted(
-        uint id,
-        address account,
-        int leverage,
-        uint fee,
-        uint minPrice,
-        uint maxPrice
-    ) internal {
-        proxy._emit(
-            abi.encode(leverage, fee, minPrice, maxPrice),
-            4,
-            SIG_ORDERSUBMITTED,
-            bytes32(id),
-            addressToBytes32(account),
-            0
-        );
-    }
-
-    event OrderConfirmed(uint indexed id, address indexed account, uint price);
-    bytes32 internal constant SIG_ORDERCONFIRMED = keccak256("OrderConfirmed(uint256,address,uint256)");
-
-    function emitOrderConfirmed(
-        uint id,
-        address account,
-        uint price
-    ) internal {
-        proxy._emit(abi.encode(price), 3, SIG_ORDERCONFIRMED, bytes32(id), addressToBytes32(account), 0);
-    }
-
-    event OrderCancelled(uint indexed id, address indexed account);
-    bytes32 internal constant SIG_ORDERCANCELLED = keccak256("OrderCancelled(uint256,address)");
-
-    function emitOrderCancelled(uint id, address account) internal {
-        proxy._emit(abi.encode(), 3, SIG_ORDERCANCELLED, bytes32(id), addressToBytes32(account), 0);
-    }
-
     event PositionModified(
         uint indexed id,
         address indexed account,
         uint margin,
         int size,
         uint lastPrice,
-        uint fundingIndex
+        uint fundingIndex,
+        uint fee
     );
     bytes32 internal constant SIG_POSITIONMODIFIED =
-        keccak256("PositionModified(uint256,address,uint256,int256,uint256,uint256)");
+        keccak256("PositionModified(uint256,address,uint256,int256,uint256,uint256,uint256)");
 
     function emitPositionModified(
         uint id,
@@ -1393,10 +1121,11 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint margin,
         int size,
         uint lastPrice,
-        uint fundingIndex
+        uint fundingIndex,
+        uint fee
     ) internal {
         proxy._emit(
-            abi.encode(margin, size, lastPrice, fundingIndex),
+            abi.encode(margin, size, lastPrice, fundingIndex, fee),
             3,
             SIG_POSITIONMODIFIED,
             bytes32(id),
