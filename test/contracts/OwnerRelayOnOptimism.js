@@ -135,7 +135,7 @@ contract('OwnerRelayOnOptimism', () => {
 		let relayedMessageData;
 		let nominateNewOwnerCalldata;
 
-		async function finalizeRelay(isBatch, targets, calldata) {
+		async function triggerFinalizeRelay(isBatch, targets, calldata) {
 			let relayReceipt, sendMessageError;
 			const relayFnc = isBatch ? 'finalizeRelayBatch' : 'finalizeRelay';
 
@@ -181,11 +181,11 @@ contract('OwnerRelayOnOptimism', () => {
 				});
 
 				before('attempt to finalize the relay', async () => {
-					({ sendMessageError } = await finalizeRelay(
-						false,
+					({ sendMessageError } = await triggerFinalizeRelay(
+						false, // 1st param: isBatch == false then call finalizeRelay()
 						mockedContractAddressOnL2,
 						mockedRelayData
-					)); // isBatch == false i.e. finalizeRelay
+					));
 				});
 
 				it('reverts with the expected error', async () => {
@@ -206,11 +206,11 @@ contract('OwnerRelayOnOptimism', () => {
 				);
 
 				before('finalize the relay', async () => {
-					({ relayReceipt } = await finalizeRelay(
-						false,
+					({ relayReceipt } = await triggerFinalizeRelay(
+						false, // 1st param: isBatch == false then call finalizeRelay()
 						MockedOwned1OnL2.address,
 						nominateNewOwnerCalldata
-					)); // isBatch == false i.e. finalizeRelay
+					));
 				});
 
 				it('should ultimately relayed contract.nominateNewOwner(...) with the correct data', async () => {
@@ -245,11 +245,11 @@ contract('OwnerRelayOnOptimism', () => {
 				before('attempt to finalize the relay batch', async () => {
 					mockedTargets = [MockedOwned2OnL2.address, MockedOwned2OnL2.address];
 					nominateNewOwnerCalldataBatch = [nominateNewOwnerCalldata, nominateNewOwnerCalldata];
-					({ sendMessageError } = await finalizeRelay(
-						true,
+					({ sendMessageError } = await triggerFinalizeRelay(
+						true, // 1st param: isBatch == true then call finalizeRelayBatch()
 						mockedTargets,
 						nominateNewOwnerCalldataBatch
-					)); // isBatch == true i.e. finalizeRelayBatch
+					));
 				});
 
 				it('reverts with the expected error', async () => {
@@ -270,11 +270,11 @@ contract('OwnerRelayOnOptimism', () => {
 				);
 
 				before('finalize the relay', async () => {
-					({ relayReceipt } = await finalizeRelay(
-						true,
+					({ relayReceipt } = await triggerFinalizeRelay(
+						true, // 1st param: isBatch == true then call finalizeRelayBatch()
 						mockedTargets,
 						nominateNewOwnerCalldataBatch
-					)); // isBatch == true i.e. finalizeRelayBatch
+					));
 				});
 
 				it('should ultimately relay contract.nominateNewOwner(...) with the correct data', async () => {
