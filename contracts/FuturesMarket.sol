@@ -923,7 +923,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             position.fundingIndex = fundingIndex;
         }
 
-        // The user can decrease their position if they have no position, or as long as:
+        // The user can decrease their margin if they have no position, or as long as:
         //     * they have sufficient margin to do so
         //     * the resulting margin would not be lower than the minimum margin
         //     * the resulting leverage is lower than the maximum leverage
