@@ -158,6 +158,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
 
+    function lockedBalance(address account, bytes32 currencyKey) public view returns (uint) {
+        return exchangeState().getLockedValue(account, currencyKey, getWaitingPeriodSecs());
+    }
+
     function waitingPeriodSecs() external view returns (uint) {
         return getWaitingPeriodSecs();
     }

@@ -209,7 +209,7 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
-        require(exchanger().maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot transfer during waiting period");
+        require(tokenState.balanceOf(from).sub(exchanger().lockedBalance(from, currencyKey)) > value, "Cannot transfer during waiting period");
         require(transferableSynths(from) >= value, "Insufficient balance after any settlement owing");
         systemStatus().requireSynthActive(currencyKey);
     }
