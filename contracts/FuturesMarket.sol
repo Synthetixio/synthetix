@@ -831,9 +831,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         }
 
         Position storage position = positions[sender];
+        Position memory _position = position;
 
         // Determine new margin, ensuring that the result is positive.
-        (uint margin, Status status) = _realisedMargin(position, fundingIndex, price, marginDelta);
+        (uint margin, Status status) = _realisedMargin(_position, fundingIndex, price, marginDelta);
         _revertIfError(status);
 
         // Update the debt correction.
@@ -913,7 +914,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // The order is not submitted if the user's existing position needs to be liquidated.
         Position storage position = positions[sender];
-        _revertIfError(_canLiquidate(position, _liquidationFee(), fundingIndex, price), Status.CanLiquidate);
+        Position memory _position = position;
+        _revertIfError(_canLiquidate(_position, _liquidationFee(), fundingIndex, price), Status.CanLiquidate);
 
         int oldSize = position.size;
         int newSize = position.size.add(sizeDelta);
@@ -921,7 +923,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Deduct the fee.
         // It is an error if the realised margin minus the fee is negative or subject to liquidation.
         uint fee = _orderFee(newSize, oldSize, price);
-        (uint margin, Status marginStatus) = _realisedMargin(position, fundingIndex, price, -int(fee));
+        (uint margin, Status marginStatus) = _realisedMargin(_position, fundingIndex, price, -int(fee));
         _revertIfError(marginStatus);
 
         // Check that the user has sufficient margin given their order.
