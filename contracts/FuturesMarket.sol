@@ -914,7 +914,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
         // Compute new position details: size, margin.
         (Position memory newPosition, uint fee, , Status status) =
-            _newPositionDetails(oldPosition, sizeDelta, price, fundingIndex);
+            _postTradePositionDetails(oldPosition, sizeDelta, price, fundingIndex);
         _revertIfError(status);
 
         // Update the aggregated market size and skew with the new order size
@@ -963,9 +963,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * Returns all new position details if a given order was confirmed at the current price.
-     * If `account` is set, it will load an existing position from storage. Else,
-     * a new position will be assumed, with a default margin of `minInitialMargin`.
+     * Returns all new position details if a given order from `sender` was confirmed at the current price.
      */
     function postTradePositionDetails(int sizeDelta, address sender)
         public
@@ -986,7 +984,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = fundingSequence.length;
 
-        (newPosition, details.fee, details.leverage, details.status) = _newPositionDetails(
+        (newPosition, details.fee, details.leverage, details.status) = _postTradePositionDetails(
             oldPosition,
             sizeDelta,
             price,
@@ -1001,7 +999,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return (details.fee, details.size, details.margin, details.leverage, details.liquidationPrice, details.status);
     }
 
-    function _newPositionDetails(
+    function _postTradePositionDetails(
         Position memory position,
         int sizeDelta,
         uint price,
