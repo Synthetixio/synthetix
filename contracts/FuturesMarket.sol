@@ -909,12 +909,12 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint fundingIndex,
         address sender
     ) internal {
-        Position memory oldPosition = positions[sender];
         Position storage position = positions[sender];
+        Position memory oldPosition = positions[sender];
 
         // Compute new position details: size, margin.
         (Position memory newPosition, uint fee, , Status status) =
-            _newPositionDetails(sizeDelta, price, fundingIndex, sender);
+            _newPositionDetails(oldPosition, sizeDelta, price, fundingIndex);
         _revertIfError(status);
 
         // Update the aggregated market size and skew with the new order size
@@ -967,7 +967,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * If `account` is set, it will load an existing position from storage. Else,
      * a new position will be assumed, with a default margin of `minInitialMargin`.
      */
-    function postTradePositionDetails(int sizeDelta, address account)
+    function postTradePositionDetails(int sizeDelta, address sender)
         public
         view
         returns (
@@ -980,44 +980,42 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         )
     {
         PositionDetails memory details;
-        Position memory position;
+        Position memory newPosition;
+        Position memory oldPosition = positions[sender];
 
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = fundingSequence.length;
 
-        (position, details.fee, details.leverage, details.status) = _newPositionDetails(
+        (newPosition, details.fee, details.leverage, details.status) = _newPositionDetails(
+            oldPosition,
             sizeDelta,
             price,
-            fundingIndex,
-            account
+            fundingIndex
         );
-        details.size = position.size;
-        details.margin = position.margin;
+        details.size = newPosition.size;
+        details.margin = newPosition.margin;
 
         details.lastPrice = price;
-        details.liquidationPrice = _liquidationPrice(position, true, fundingIndex, price);
+        details.liquidationPrice = _liquidationPrice(newPosition, true, fundingIndex, price);
 
         return (details.fee, details.size, details.margin, details.leverage, details.liquidationPrice, details.status);
     }
 
     function _newPositionDetails(
+        Position memory position,
         int sizeDelta,
         uint price,
-        uint fundingIndex,
-        address sender
+        uint fundingIndex
     )
         internal
         view
         returns (
-            Position memory position,
+            Position memory,
             uint fee,
             int leverage,
             Status status
         )
     {
-        // Load position from storage into memory.
-        position = positions[sender];
-
         // Reverts if the user is trying to submit a size-zero order.
         if (sizeDelta == 0) {
             return (position, fee, leverage, Status.NilOrder);
