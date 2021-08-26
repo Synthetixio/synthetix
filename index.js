@@ -84,6 +84,7 @@ const constants = {
 	AST_FOLDER: 'ast',
 
 	CONFIG_FILENAME: 'config.json',
+	RELEASES_FILENAME: 'releases.json',
 	PARAMS_FILENAME: 'params.json',
 	SYNTHS_FILENAME: 'synths.json',
 	STAKING_REWARDS_FILENAME: 'rewards.json',
@@ -175,7 +176,7 @@ const defaults = {
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
 	CROSS_DOMAIN_DEPOSIT_GAS_LIMIT: `${3e6}`,
 	CROSS_DOMAIN_ESCROW_GAS_LIMIT: `${8e6}`,
-	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${3e6}`,
+	CROSS_DOMAIN_REWARD_GAS_LIMIT: `${8e6}`,
 	CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT: `${3e6}`,
 
 	COLLATERAL_MANAGER: {

@@ -186,13 +186,13 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function _totalNonSnxBackedDebt() internal view returns (uint excludedDebt, bool isInvalid) {
         // Calculate excluded debt.
-        // 2. MultiCollateral long debt + short debt.
+        // 1. MultiCollateral long debt + short debt.
         (uint longValue, bool anyTotalLongRateIsInvalid) = collateralManager().totalLong();
         (uint shortValue, bool anyTotalShortRateIsInvalid) = collateralManager().totalShort();
-        isInvalid = isInvalid || anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
-        excludedDebt = excludedDebt.add(longValue).add(shortValue);
+        isInvalid = anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
+        excludedDebt = longValue.add(shortValue);
 
-        // 3. EtherWrapper.
+        // 2. EtherWrapper.
         // Subtract sETH and sUSD issued by EtherWrapper.
         excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
 
