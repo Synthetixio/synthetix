@@ -85,14 +85,18 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
 
         // Normalize decimals in case equivalent asset uses different decimals from internal unit
         uint sourceAmountInEquivalent = (sourceAmount * 10**uint(sourceEquivalent.decimals())) / SafeDecimalMath.unit();
-        // TODO: add sanity check here to make sure the price window isn't 0?
+
+        uint twapWindow = getAtomicTwapWindow();
+        require(twapWindow != 0, "Uninitialized atomic twap window");
+
         uint twapValueInEquivalent =
             dexPriceAggregator().assetToAsset(
                 address(sourceEquivalent),
                 sourceAmountInEquivalent,
                 address(destEquivalent),
-                getAtomicTwapWindow()
+                twapWindow
             );
+
         // Similar to source amount, normalize decimals back to internal unit for output amount
         uint pDexValue = (twapValueInEquivalent * SafeDecimalMath.unit()) / 10**uint(destEquivalent.decimals());
 
