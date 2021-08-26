@@ -6,13 +6,8 @@ import "./Owned.sol";
 import "./MixinSystemSettings.sol";
 
 // Internal references
+import "./interfaces/IOwnerRelayOnOptimism.sol";
 import "@eth-optimism/contracts/iOVM/bridge/messaging/iAbs_BaseCrossDomainMessenger.sol";
-
-interface IOwnerRelayOnOptimism {
-    function finalizeRelay(address target, bytes calldata payload) external;
-
-    function finalizeRelayBatch(address[] calldata target, bytes[] calldata payloads) external;
-}
 
 contract OwnerRelayOnEthereum is MixinSystemSettings, Owned {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
