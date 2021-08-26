@@ -2992,6 +2992,16 @@ contract('Exchanger (spec tests)', async accounts => {
 							});
 						});
 
+						it('emits an AtomicSynthExchange directly to the user', async () => {
+							decodedEventEqual({
+								log: logs.find(({ name }) => name === 'AtomicSynthExchange'),
+								event: 'AtomicSynthExchange',
+								emittedFrom: await synthetix.proxy(),
+								args: [account1, sUSD, amountIn, sETH, amountReceived, account1],
+								bnCloseVariance: '0',
+							});
+						});
+
 						it('emits an ExchangeTracking event with the correct code', async () => {
 							const usdFeeAmount = await exchangeRates.effectiveValue(sETH, amountFee, sUSD);
 							decodedEventEqual({

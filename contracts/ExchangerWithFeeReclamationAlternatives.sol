@@ -232,6 +232,16 @@ contract ExchangerWithFeeReclamationAlternatives is MinimalProxyFactory, Exchang
             destinationAddress
         );
 
+        // Emit separate event to track atomic exchanges
+        ISynthetixInternal(address(synthetix())).emitAtomicSynthExchange(
+            from,
+            sourceCurrencyKey,
+            sourceAmountAfterSettlement,
+            destinationCurrencyKey,
+            amountReceived,
+            destinationAddress
+        );
+
         // No need to persist any exchange information, as no settlement is required for atomic exchanges
     }
 

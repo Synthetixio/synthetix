@@ -43,6 +43,15 @@ interface ISynthetixInternal {
         address toAddress
     ) external;
 
+    function emitAtomicSynthExchange(
+        address account,
+        bytes32 fromCurrencyKey,
+        uint fromAmount,
+        bytes32 toCurrencyKey,
+        uint toAmount,
+        address toAddress
+    ) external;
+
     function emitExchangeReclaim(
         address account,
         bytes32 currencyKey,

@@ -726,6 +726,34 @@ contract('ExchangerWithFeeReclamationAlternatives (unit tests)', async accounts 
 																				);
 																				assert.equal(synthetixEmitExchangeCall.calls[0][5], owner);
 																			});
+																			it('asked Synthetix to emit an atomic exchange event', () => {
+																				const synthetixEmitAtomicExchangeCall = this.mocks.Synthetix
+																					.smocked.emitAtomicSynthExchange;
+																				assert.equal(
+																					synthetixEmitAtomicExchangeCall.calls[0][0],
+																					owner
+																				);
+																				assert.equal(
+																					synthetixEmitAtomicExchangeCall.calls[0][1],
+																					sUSD
+																				);
+																				assert.bnEqual(
+																					synthetixEmitAtomicExchangeCall.calls[0][2],
+																					amountIn
+																				);
+																				assert.equal(
+																					synthetixEmitAtomicExchangeCall.calls[0][3],
+																					sETH
+																				);
+																				assert.bnEqual(
+																					synthetixEmitAtomicExchangeCall.calls[0][4],
+																					expectedAmountReceived
+																				);
+																				assert.equal(
+																					synthetixEmitAtomicExchangeCall.calls[0][5],
+																					owner
+																				);
+																			});
 																			it('did not add any fee reclamation entries to exchange state', () => {
 																				assert.equal(
 																					this.mocks.ExchangeState.smocked.appendExchangeEntry.calls

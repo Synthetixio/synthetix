@@ -397,7 +397,6 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
     }
 
     // ========== EVENTS ==========
-    // TODO: another event for atomic exchanges?
     event SynthExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
@@ -406,7 +405,7 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         uint256 toAmount,
         address toAddress
     );
-    bytes32 internal constant SYNTHEXCHANGE_SIG =
+    bytes32 internal constant SYNTH_EXCHANGE_SIG =
         keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
 
     function emitSynthExchange(
@@ -420,7 +419,36 @@ contract BaseSynthetix is IERC20, ExternStateToken, MixinResolver, ISynthetix {
         proxy._emit(
             abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
             2,
-            SYNTHEXCHANGE_SIG,
+            SYNTH_EXCHANGE_SIG,
+            addressToBytes32(account),
+            0,
+            0
+        );
+    }
+
+    event AtomicSynthExchange(
+        address indexed account,
+        bytes32 fromCurrencyKey,
+        uint256 fromAmount,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        address toAddress
+    );
+    bytes32 internal constant ATOMIC_SYNTH_EXCHANGE_SIG =
+        keccak256("AtomicSynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
+
+    function emitAtomicSynthExchange(
+        address account,
+        bytes32 fromCurrencyKey,
+        uint256 fromAmount,
+        bytes32 toCurrencyKey,
+        uint256 toAmount,
+        address toAddress
+    ) external onlyExchanger {
+        proxy._emit(
+            abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
+            2,
+            ATOMIC_SYNTH_EXCHANGE_SIG,
             addressToBytes32(account),
             0,
             0
