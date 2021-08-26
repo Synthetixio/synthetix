@@ -120,34 +120,26 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         // updates is a good proxy for price volatility.
         uint considerationWindowStart = block.timestamp.sub(considerationWindow);
         uint roundId = _getCurrentRoundId(currencyKey);
-        while (true) {
-            if (updateThreshold == 0) {
-                // Oracle updates reached allowed threshold in consideration window
-                // Consider the asset volatile
-                return true;
-            }
-
+        for (updateThreshold; updateThreshold > 0; updateThreshold--) {
             (uint rate, uint time) = _getRateAndTimestampAtRound(currencyKey, roundId);
             if (time != 0 && time < considerationWindowStart) {
                 // Round was outside consideration window so we can stop querying further rounds
-                break;
+                return false;
             } else if (rate == 0 || time == 0) {
                 // Either entire round or a rate inside consideration window was not available
                 // Consider the asset volatile
-                return true;
+                break;
             }
 
             if (roundId == 0) {
                 // Not enough historical data to continue further
                 // Consider the asset volatile
-                return true;
+                break;
             }
-
             roundId--;
-            updateThreshold--;
         }
 
-        return false;
+        return true;
     }
 
     /* ========== EVENTS ========== */
