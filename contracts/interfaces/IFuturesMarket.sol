@@ -5,29 +5,21 @@ interface IFuturesMarket {
 
     enum Status {
         Ok,
-        NoOrderExists,
-        AwaitingPriceUpdate,
-        PriceOutOfBounds,
         InvalidPrice,
+        PriceOutOfBounds,
         CanLiquidate,
         CannotLiquidate,
         MaxMarketSizeExceeded,
         MaxLeverageExceeded,
         InsufficientMargin,
-        NotPermitted
-    }
-
-    struct Order {
-        uint id;
-        int leverage;
-        uint fee;
-        uint roundId;
-        uint minPrice;
-        uint maxPrice;
+        NotPermitted,
+        NilOrder,
+        NoPositionOpen
     }
 
     // If margin/size are positive, the position is long; if negative then it is short.
     struct Position {
+        uint id;
         uint margin;
         int size;
         uint lastPrice;
@@ -48,22 +40,11 @@ interface IFuturesMarket {
 
     function fundingSequence(uint index) external view returns (int netFunding);
 
-    function orders(address account)
-        external
-        view
-        returns (
-            uint id,
-            int leverage,
-            uint fee,
-            uint roundId,
-            uint minPrice,
-            uint maxPrice
-        );
-
     function positions(address account)
         external
         view
         returns (
+            uint id,
             uint margin,
             int size,
             uint lastPrice,
@@ -71,8 +52,6 @@ interface IFuturesMarket {
         );
 
     function assetPrice() external view returns (uint price, bool invalid);
-
-    function currentRoundId() external view returns (uint roundId);
 
     function marketSizes() external view returns (uint long, uint short);
 
@@ -111,14 +90,6 @@ interface IFuturesMarket {
 
     /* ---------- Position Details ---------- */
 
-    function orderPending(address account) external view returns (bool pending);
-
-    function orderSize(address account) external view returns (int size, bool invalid);
-
-    function orderStatus(address account) external view returns (Status);
-
-    function canConfirmOrder(address account) external view returns (bool);
-
     function notionalValue(address account) external view returns (int value, bool invalid);
 
     function profitLoss(address account) external view returns (int pnl, bool invalid);
@@ -135,13 +106,7 @@ interface IFuturesMarket {
 
     function currentLeverage(address account) external view returns (int leverage, bool invalid);
 
-    function orderFee(address account, int leverage) external view returns (uint fee, bool invalid);
-
-    function orderFeeWithMarginDelta(
-        address account,
-        int marginDelta,
-        int leverage
-    ) external view returns (uint fee, bool invalid);
+    function orderFee(address account, int sizeDelta) external view returns (uint fee, bool invalid);
 
     /* ---------- Market Operations ---------- */
 
@@ -151,28 +116,17 @@ interface IFuturesMarket {
 
     function withdrawAllMargin() external;
 
-    function cancelOrder() external;
+    function modifyPosition(int sizeDelta) external;
 
-    function submitOrderWithPriceBounds(
-        int leverage,
+    function modifyPositionWithPriceBounds(
+        int sizeDelta,
         uint minPrice,
         uint maxPrice
     ) external;
-
-    function submitOrder(int leverage) external;
 
     function closePosition() external;
 
-    function transferMarginAndSubmitOrderWithPriceBounds(
-        int marginDelta,
-        int leverage,
-        uint minPrice,
-        uint maxPrice
-    ) external;
-
-    function transferMarginAndSubmitOrder(int marginDelta, int leverage) external;
-
-    function confirmOrder(address account) external;
+    function closePositionWithPriceBounds(uint minPrice, uint maxPrice) external;
 
     function liquidatePosition(address account) external;
 }
