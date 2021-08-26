@@ -633,18 +633,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return (_liquidationPrice(position, includeFunding, fundingSequence.length, aPrice), isInvalid);
     }
 
-    function calcLiquidationPrice(
-        uint margin,
-        int size,
-        uint price,
-        uint fundingIndex,
-        bool includeFunding
-    ) public view returns (uint) {
-        Position memory position = Position(0, margin, size, price, fundingIndex);
-        (uint aPrice, ) = _assetPrice(_exchangeRates());
-        return _liquidationPrice(position, includeFunding, fundingSequence.length, aPrice);
-    }
-
     function _canLiquidate(
         Position memory position,
         uint liquidationFee,
@@ -1074,6 +1062,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
 
     /*
      * Returns all new position details if a given order was confirmed at the current price.
+     * If `account` is set, it will load an existing position from storage. Else,
+     * a new position will be assumed, with a default margin of `minInitialMargin`.
      */
     function calcPositionDetails(int sizeDelta, address account)
         public
