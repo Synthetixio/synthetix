@@ -26,7 +26,6 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
     /* ========== VIEWS ========== */
 
     function dexPriceAggregator() public view returns (IDexPriceAggregator) {
-        // TODO: this fetch could be made cheaper with an internal cache that gets wiped on `setDexPriceAggregator()` calls
         return IDexPriceAggregator(flexibleStorage().getAddressValue(CONTRACT_NAME, SETTING_DEX_PRICE_AGGREGATOR));
     }
 
@@ -73,7 +72,6 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         IERC20 destEquivalent = IERC20(getAtomicEquivalentForDexPricing(destinationCurrencyKey));
         require(address(destEquivalent) != address(0), "No atomic equivalent for dest");
 
-        // TODO: this may return 0s if the CL aggregator reverts on latestRoundData()--should it revert?
         (systemValue, systemSourceRate, systemDestinationRate) = _effectiveValueAndRates(
             sourceCurrencyKey,
             sourceAmount,
@@ -129,9 +127,6 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
                 return true;
             }
 
-            // TODO: this assumes chainlink may be unreliable in reporting rates, but **must** be
-            // reliable in reporting times (always incrementing, roughly similar to reported
-            // block.timestamps). Is this a good assumption?
             (uint rate, uint time) = _getRateAndTimestampAtRound(currencyKey, roundId);
             if (time != 0 && time < considerationWindowStart) {
                 // Round was outside consideration window so we can stop querying further rounds

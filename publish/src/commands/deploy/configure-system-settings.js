@@ -301,7 +301,7 @@ module.exports = async ({
 	}
 
 	if (!useOvm) {
-		// TODO: finish configuring new atomic exchange system settings
+		// TODO (SIP-120): finish configuring new atomic exchange system settings
 		const atomicMaxVolumePerBlock = await getDeployParameter('ATOMIC_MAX_VOLUME_PER_BLOCK');
 		await runStep({
 			contract: 'SystemSettings',

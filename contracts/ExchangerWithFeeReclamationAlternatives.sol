@@ -73,7 +73,6 @@ contract ExchangerWithFeeReclamationAlternatives is MinimalProxyFactory, Exchang
         bytes32 sourceCurrencyKey,
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
-        // TODO: this destinationAddress variable doesn't seem to be needed since it's always the same as from
         address destinationAddress,
         bytes32 trackingCode
     ) external onlySynthetixorSynth returns (uint amountReceived) {

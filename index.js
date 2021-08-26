@@ -209,9 +209,9 @@ const defaults = {
 	ETHER_WRAPPER_BURN_FEE_RATE: w3utils.toWei('0.0005'), // 5 bps
 
 	/***********************************
-	 * TODO: spec atomic configuration *
+	 * TODO (SIP-120): spec atomic configuration *
 	 ***********************************/
-	/** TODO
+	/** TODO (SIP-120)
 	DEX_PRICE_AGGREGATOR: {
 		mainnet: '',
 	},
@@ -220,13 +220,17 @@ const defaults = {
 	ATOMIC_TWAP_WINDOW: '3600', // 1 hour
 	/**
 	 * Do these need defaults?
-	ATOMIC_PRICE_BUFFERS: {
-		crypto: w3utils.toWei('0.0025'), // 25 bps
-	},
 	ATOMIC_EQUIVALENTS_ON_DEX: {
 	},
 	ATOMIC_EXCHANGE_FEE_RATES: {
 		crypto: w3utils.toWei('0.01'),
+	},
+	ATOMIC_PRICE_BUFFERS: {
+		crypto: w3utils.toWei('0.0025'), // 25 bps
+	},
+	ATOMIC_VOLATILITY_CONSIDERATION_WINDOWS: {
+	},
+	ATOMIC_VOLATILITY_UPDATE_THRESHOLD: {
 	},
 	*/
 };

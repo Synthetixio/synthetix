@@ -29,7 +29,7 @@ module.exports = async ({ deployer, runStep, standaloneFeeds, useOvm }) => {
 
 	if (!useOvm && ExchangeRates) {
 		/*
-			TODO: set up DEX price oracle for exchange rates
+			TODO (SIP-120): set up DEX price oracle for exchange rates
 			await runStep({
 				contract: `ExchangeRates`,
 				target: ExchangeRates,
