@@ -1075,13 +1075,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     /*
      * Returns all new position details if a given order was confirmed at the current price.
      */
-    function calcPositionDetails(
-        uint newMargin,
-        int sizeDelta,
-        uint price,
-        uint fundingIndex,
-        address sender // can be address(0), in which case a new position is assumed
-    )
+    function calcPositionDetails(int sizeDelta, address account)
         public
         view
         returns (
@@ -1092,20 +1086,23 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             int leverage
         )
     {
-        PositionDetails memory details = _calcPositionDetails(newMargin, sizeDelta, price, fundingIndex, sender);
+        (uint _price, ) = _assetPrice(_exchangeRates());
+        PositionDetails memory details = _calcPositionDetails(sizeDelta, _price, account);
         return (details.fee, details.size, details.liquidationPrice, details.margin, details.leverage);
     }
 
     function _calcPositionDetails(
-        uint newMargin,
         int sizeDelta,
         uint price,
-        uint fundingIndex,
-        address sender
+        address account
     ) internal view returns (PositionDetails memory details) {
+        uint fundingIndex = fundingSequence.length;
+
         // Fetch position from storage, if there is one.
-        Position memory position = positions[sender];
-        position.margin = newMargin;
+        Position memory position = positions[account];
+        if (position.margin == 0) {
+            position.margin = _minInitialMargin();
+        }
         PositionDetailsLocalVars memory vars;
 
         _revertIfError(_canLiquidate(position, _liquidationFee(), fundingIndex, price), Status.CanLiquidate);

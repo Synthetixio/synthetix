@@ -2586,26 +2586,74 @@ contract('FuturesMarket', accounts => {
 	});
 
 	describe('View helpers', async () => {
-		it('can get position details', async () => {
-			const { marginDelta, sizeDelta, price } = {
-				marginDelta: toUnit('1000'),
-				sizeDelta: toUnit('10'),
-				price: toUnit('240'),
-			};
+		let minInitialMargin;
+		before(async () => {
+			minInitialMargin = await futuresMarketSettings.minInitialMargin();
+		});
 
-			const details = await futuresMarket.calcPositionDetails(
-				marginDelta,
-				sizeDelta,
-				price,
-				toBN(0),
-				ZERO_ADDRESS
-			);
+		describe('position details', async () => {
+			it('can get position details for new position', async () => {
+				const { marginDelta, sizeDelta } = {
+					marginDelta: minInitialMargin,
+					sizeDelta: toUnit('10'),
+				};
 
-			assert.bnEqual(details.fee, toBN('7200000000000000000'));
-			assert.bnEqual(details.size, toBN('10000000000000000000'));
-			assert.bnEqual(details.lPrice, toBN('142000000000000000000'));
-			assert.bnEqual(details.margin, marginDelta.sub(details.fee));
-			assert.bnEqual(details.leverage, toBN('2400000000000000000'));
+				const details = await futuresMarket.calcPositionDetails(sizeDelta, ZERO_ADDRESS);
+
+				assert.bnEqual(details.fee, toBN('3000000000000000000'));
+				assert.bnEqual(details.size, toBN('10000000000000000000'));
+				assert.bnEqual(details.lPrice, toBN('92000000000000000000'));
+				assert.bnEqual(details.margin, marginDelta.sub(details.fee));
+				assert.bnEqual(details.leverage, toBN('10000000000000000000'));
+			});
+
+			describe('existing position', async () => {
+				const { marginDelta, sizeDelta, price } = {
+					marginDelta: toUnit('1000'),
+					sizeDelta: toUnit('10'),
+					price: toUnit('240'),
+				};
+
+				it('uses the margin of an existing position', async () => {
+					await transferMarginAndModifyPosition({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: price,
+						marginDelta,
+						sizeDelta,
+					});
+
+					const details = await futuresMarket.calcPositionDetails(sizeDelta, trader);
+
+					assert.bnEqual(details.fee, toBN('7200000000000000000'));
+					assert.bnEqual(details.size, toBN('20000000000000000000'));
+					assert.bnEqual(details.margin, marginDelta.sub(details.fee).sub(details.fee));
+					assert.bnEqual(details.lPrice, toBN('191360000000000000000'));
+					assert.bnEqual(details.leverage, toBN('4834810636583400483'));
+				});
+
+				it('returns existing details with no change for sizeDelta = 0', async () => {
+					await transferMarginAndModifyPosition({
+						market: futuresMarket,
+						account: trader,
+						fillPrice: price,
+						marginDelta,
+						sizeDelta,
+					});
+
+					const position = await futuresMarket.positions(trader);
+					const { leverage } = await futuresMarket.currentLeverage(trader);
+					const { price: lPrice } = await futuresMarket.liquidationPrice(trader, true);
+
+					const details = await futuresMarket.calcPositionDetails(toUnit('0'), trader);
+
+					assert.bnEqual(details.fee, toBN('0'));
+					assert.bnEqual(details.size, position.size);
+					assert.bnEqual(details.margin, position.margin);
+					assert.bnEqual(details.lPrice, lPrice);
+					assert.bnEqual(details.leverage, leverage);
+				});
+			});
 		});
 	});
 });
