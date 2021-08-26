@@ -76,65 +76,6 @@ interface IFuturesMarketManagerInternal {
     function payFee(uint amount) external;
 }
 
-library FuturesMarketPositionLib {
-    /* ========== LIBRARIES ========== */
-
-    using SafeMath for uint;
-    using SignedSafeMath for int;
-    using SignedSafeDecimalMath for int;
-
-    function _accruedFunding(IFuturesMarket.Position memory position, int netFundingPerUnit)
-        internal
-        pure
-        returns (int funding)
-    {
-        return position.size.multiplyDecimalRound(netFundingPerUnit);
-    }
-
-    function _profitLoss(IFuturesMarket.Position memory position, uint price) internal pure returns (int pnl) {
-        int priceShift = int(price).sub(int(position.lastPrice));
-        return position.size.multiplyDecimalRound(priceShift);
-    }
-
-    /*
-     * The initial margin of a position, plus any PnL and funding it has accrued. The resulting value may be negative.
-     */
-    function _marginPlusProfitFunding(
-        IFuturesMarket.Position memory position,
-        int netFundingPerUnit,
-        uint price
-    ) internal pure returns (int) {
-        return int(position.margin).add(_profitLoss(position, price)).add(_accruedFunding(position, netFundingPerUnit));
-    }
-
-    /*
-     * The value in a position's margin after a deposit or withdrawal, accounting for funding and profit.
-     * If the resulting margin would be negative or below the liquidation threshold, an appropriate error is returned.
-     * If the result is not an error, callers of this function that use it to update a position's margin
-     * must ensure that this is accompanied by a corresponding debt correction update, as per `_applyDebtCorrection`.
-     */
-    function _calcRealisedMargin(
-        IFuturesMarket.Position memory position,
-        int netFundingPerUnit,
-        uint price,
-        int marginDelta,
-        uint _liquidationFee
-    ) internal pure returns (uint margin, IFuturesMarket.Status statusCode) {
-        int newMargin = _marginPlusProfitFunding(position, netFundingPerUnit, price).add(marginDelta);
-        if (newMargin < 0) {
-            return (0, IFuturesMarket.Status.InsufficientMargin);
-        }
-
-        uint uMargin = uint(newMargin);
-        int positionSize = position.size;
-        if (positionSize != 0 && uMargin <= _liquidationFee) {
-            return (uMargin, IFuturesMarket.Status.CanLiquidate);
-        }
-
-        return (uMargin, IFuturesMarket.Status.Ok);
-    }
-}
-
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
 contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFuturesMarket {
     /* ========== LIBRARIES ========== */
@@ -142,7 +83,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     using SafeMath for uint;
     using SignedSafeMath for int;
     using SignedSafeDecimalMath for int;
-    using FuturesMarketPositionLib for Position;
 
     /* ========== CONSTANTS ========== */
 
@@ -659,7 +599,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         Position storage position,
         uint price,
         uint remainingMargin_
-    ) internal view returns (int leverage) {
+    ) internal pure returns (int leverage) {
         // No position is open, or it is ready to be liquidated; leverage goes to nil
         if (remainingMargin_ == 0) {
             return 0;
@@ -847,7 +787,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      * must ensure that this is accompanied by a corresponding debt correction update, as per `_applyDebtCorrection`.
      */
     function _realisedMargin(
-        Position storage position,
+        Position memory position,
         uint currentFundingIndex,
         uint price,
         int marginDelta
@@ -1106,8 +1046,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         details.fee = _orderFee(newSize, oldSize, price);
 
         // Calculate the margin.
-        vars.net = _netFundingPerUnit(position.fundingIndex, fundingSequence.length, fundingSequence.length, price);
-        (details.margin, vars.status) = position._calcRealisedMargin(vars.net, price, -int(details.fee), _liquidationFee());
+        (details.margin, vars.status) = _realisedMargin(position, fundingSequence.length, price, -int(details.fee));
         _revertIfError(vars.status);
 
         // Check that the user has sufficient margin given their order.
