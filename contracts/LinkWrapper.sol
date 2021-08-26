@@ -5,22 +5,21 @@ import "./Owned.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/ILinkWrapper.sol";
 import "./interfaces/ISynth.sol";
-import "./interfaces/IERC20.sol";
 
 // Internal references
 import "./Pausable.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IFeePool.sol";
-import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
+import "./interfaces/IERC20.sol";
 
 // Libraries
 import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./SafeDecimalMath.sol";
 
-// https://docs.synthetix.io/contracts/source/contracts/linkWrapper
-contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILinkWrapper {
+// https://docs.synthetix.io/contracts/source/contracts/linkwrapper
+contract LinkWrapper is Owned, Pausable, MixinSystemSettings, ILinkWrapper {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
@@ -39,7 +38,7 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
 
     // ========== STATE VARIABLES ==========
-    IERC20 internal _link;
+    IERC20 public _link;
 
     uint public sLINKIssued = 0;
     uint public sUSDIssued = 0;
@@ -48,9 +47,9 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
     constructor(
         address _owner,
         address _resolver,
-        address payable _LINK
+        address _linkToken
     ) public Owned(_owner) Pausable() MixinSystemSettings(_resolver) {
-        _link = IERC20(_LINK);
+        _link = IERC20(_linkToken);
     }
 
     /* ========== VIEWS ========== */
@@ -122,20 +121,16 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
         return amount.multiplyDecimalRound(burnFeeRate());
     }
 
-    function maxLink() public view returns (uint256) {
+    function maxLink() public view returns (uint) {
         return getLinkWrapperMaxLink();
     }
 
-    function mintFeeRate() public view returns (uint256) {
+    function mintFeeRate() public view returns (uint) {
         return getLinkWrapperMintFeeRate();
     }
 
-    function burnFeeRate() public view returns (uint256) {
+    function burnFeeRate() public view returns (uint) {
         return getLinkWrapperBurnFeeRate();
-    }
-
-    function link() public view returns (IERC20) {
-        return _link;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -160,7 +155,7 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
     // `amountIn` is inclusive of fees, calculable via `calculateBurnFee`.
     function burn(uint amountIn) external notPaused {
         uint reserves = getReserves();
-        require(reserves > 0, "Contract cannot burn sLINK for link, link balance is zero");
+        require(reserves > 0, "Contract cannot burn sLINK for LINK, LINK balance is zero");
 
         // principal = [amountIn / (1 + burnFeeRate)]
         uint principal = amountIn.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
@@ -198,7 +193,7 @@ contract LinkWrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, ILi
      * @notice Fallback function
      */
     function() external payable {
-        revert("Fallback disabled, use mint()");
+        revert("Fallback disabled");
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */

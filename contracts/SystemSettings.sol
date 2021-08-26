@@ -46,6 +46,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     uint public constant MAX_ETHER_WRAPPER_MINT_FEE_RATE = 1e18;
     uint public constant MAX_ETHER_WRAPPER_BURN_FEE_RATE = 1e18;
 
+    uint public constant MAX_LINK_WRAPPER_MINT_FEE_RATE = 1e18;
+    uint public constant MAX_LINK_WRAPPER_BURN_FEE_RATE = 1e18;
+
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     // ========== VIEWS ==========
@@ -305,6 +308,23 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit EtherWrapperBurnFeeRateUpdated(_rate);
     }
 
+    function setLinkWrapperMaxLINK(uint _maxLINK) external onlyOwner {
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LINK_WRAPPER_MAX_LINK, _maxLINK);
+        emit LinkWrapperMaxLINKUpdated(_maxLINK);
+    }
+
+    function setLinkWrapperMintFeeRate(uint _rate) external onlyOwner {
+        require(_rate <= MAX_ETHER_WRAPPER_MINT_FEE_RATE, "rate > MAX_LINK_WRAPPER_MINT_FEE_RATE");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LINK_WRAPPER_MINT_FEE_RATE, _rate);
+        emit LinkWrapperMintFeeRateUpdated(_rate);
+    }
+
+    function setLinkWrapperBurnFeeRate(uint _rate) external onlyOwner {
+        require(_rate <= MAX_ETHER_WRAPPER_BURN_FEE_RATE, "rate > MAX_LINK_WRAPPER_BURN_FEE_RATE");
+        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_LINK_WRAPPER_BURN_FEE_RATE, _rate);
+        emit LinkWrapperBurnFeeRateUpdated(_rate);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
@@ -324,4 +344,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event EtherWrapperMaxETHUpdated(uint maxETH);
     event EtherWrapperMintFeeRateUpdated(uint rate);
     event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event LinkWrapperMaxLINKUpdated(uint maxETH);
+    event LinkWrapperMintFeeRateUpdated(uint rate);
+    event LinkWrapperBurnFeeRateUpdated(uint rate);
 }

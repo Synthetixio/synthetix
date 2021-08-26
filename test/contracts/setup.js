@@ -27,6 +27,9 @@ const {
 		ETHER_WRAPPER_MAX_ETH,
 		ETHER_WRAPPER_MINT_FEE_RATE,
 		ETHER_WRAPPER_BURN_FEE_RATE,
+		LINK_WRAPPER_MAX_LINK,
+		LINK_WRAPPER_MINT_FEE_RATE,
+		LINK_WRAPPER_BURN_FEE_RATE,
 	},
 } = require('../../');
 
@@ -204,6 +207,7 @@ const setupContract = async ({
 		TokenState: [owner, deployerAccount],
 		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
 		LinkWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('LINK')],
+		LINK: ['Link Token', 'LINK', 18],
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
@@ -255,7 +259,6 @@ const setupContract = async ({
 		],
 		CollateralState: [owner, tryGetAddressOf('Collateral')],
 		WETH: [],
-		LINK: [],
 	};
 
 	let instance;
@@ -650,7 +653,7 @@ const setupAllContracts = async ({
 		{ contract: 'SynthUtil', deps: ['AddressResolver'] },
 		{ contract: 'DappMaintenance' },
 		{ contract: 'WETH' },
-		{ contract: 'LINK' },
+		{ contract: 'LINK', source: 'MockToken' },
 		{
 			contract: 'EtherWrapper',
 			mocks: [],
@@ -664,7 +667,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'LinkWrapper',
 			mocks: [],
-			deps: ['AddressResolver', 'LINK'],
+			deps: ['AddressResolver', 'LINK', 'SynthsLINK'],
 		},
 		{
 			contract: 'DebtCache',
@@ -1043,6 +1046,15 @@ const setupAllContracts = async ({
 				from: owner,
 			}),
 			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setLinkWrapperMaxLINK(LINK_WRAPPER_MAX_LINK, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setLinkWrapperMintFeeRate(LINK_WRAPPER_MINT_FEE_RATE, {
+				from: owner,
+			}),
+			returnObj['SystemSettings'].setLinkWrapperBurnFeeRate(LINK_WRAPPER_BURN_FEE_RATE, {
 				from: owner,
 			}),
 		]);

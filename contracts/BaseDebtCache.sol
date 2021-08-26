@@ -85,7 +85,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
     }
 
-    function linkWrapper() internal view returns (IEtherWrapper) {
+    function linkWrapper() internal view returns (ILinkWrapper) {
         return ILinkWrapper(requireAndGetAddress(CONTRACT_LINK_WRAPPER));
     }
 

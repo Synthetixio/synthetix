@@ -12,18 +12,18 @@ const {
 	decodedEventEqual,
 } = require('./helpers');
 
-const { mockToken, setupAllContracts } = require('./setup');
+const { setupAllContracts } = require('./setup');
 
 const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');
 
 contract('LinkWrapper', async accounts => {
-	const synths = ['sUSD', 'sLINK', 'SNX'];
+	const synths = ['sUSD', 'sLINK'];
 	const [sLINK, sUSD] = ['sLINK', 'sUSD'].map(toBytes32);
 
 	const ONE = toBN('1');
 
-	const [, owner, oracle, , account1] = accounts;
+	const [deployerAccount, owner, oracle, , account1] = accounts;
 
 	let systemSettings,
 		feePool,
@@ -65,6 +65,7 @@ contract('LinkWrapper', async accounts => {
 			LinkWrapper: linkWrapper,
 			SynthsUSD: sUSDSynth,
 			SynthsLINK: sLINKSynth,
+			LINK: linkToken,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -73,21 +74,15 @@ contract('LinkWrapper', async accounts => {
 				'AddressResolver',
 				'SystemStatus',
 				'Issuer',
-				'Depot',
 				'ExchangeRates',
 				'FeePool',
 				'FeePoolEternalStorage',
 				'DebtCache',
 				'Exchanger',
+				'LINK',
 				'LinkWrapper',
 				'CollateralManager',
 			],
-		}));
-
-		({ token: linkToken } = await mockToken({
-			accounts,
-			name: 'Link Token',
-			symbol: 'LINK',
 		}));
 
 		// set defaults for test - 50bps mint and burn fees
@@ -135,13 +130,13 @@ contract('LinkWrapper', async accounts => {
 		});
 
 		describe('should have a default', async () => {
-			const MAX_LINK = toUnit('5000');
+			const MAX_LINK = toUnit('10000');
 			const FIFTY_BIPS = toUnit('0.005');
 
-			it('maxLink of 5,000 LINK', async () => {
+			it('maxLink of 10,000 LINK', async () => {
 				assert.bnEqual(await linkWrapper.maxLink(), MAX_LINK);
 			});
-			it('capacity of 5,000 LINK', async () => {
+			it('capacity of 10,000 LINK', async () => {
 				assert.bnEqual(await linkWrapper.capacity(), MAX_LINK);
 			});
 			it('mintFeeRate of 50 bps', async () => {
@@ -166,7 +161,7 @@ contract('LinkWrapper', async accounts => {
 			const mintAmount = toUnit('1.0');
 
 			beforeEach(async () => {
-				await linkToken.transfer(account1, toUnit('1000'), { from: owner });
+				await linkToken.transfer(account1, toUnit('100'), { from: deployerAccount });
 				await linkToken.approve(linkWrapper.address, mintAmount, { from: account1 });
 				await linkWrapper.mint(mintAmount, { from: account1 });
 			});
@@ -231,6 +226,7 @@ contract('LinkWrapper', async accounts => {
 
 				feesEscrowed = await linkWrapper.feesEscrowed();
 
+				await linkToken.transfer(account1, initialCapacity, { from: deployerAccount });
 				await linkToken.approve(linkWrapper.address, amount, { from: account1 });
 				mintTx = await linkWrapper.mint(amount, { from: account1 });
 			});
@@ -289,6 +285,7 @@ contract('LinkWrapper', async accounts => {
 
 				feesEscrowed = await linkWrapper.feesEscrowed();
 
+				await linkToken.transfer(account1, amount, { from: deployerAccount });
 				await linkToken.approve(linkWrapper.address, amount, { from: account1 });
 				mintTx = await linkWrapper.mint(amount, { from: account1 });
 			});
@@ -319,7 +316,7 @@ contract('LinkWrapper', async accounts => {
 
 		describe('when capacity = 0', () => {
 			beforeEach(async () => {
-				await linkToken.transfer(account1, toUnit('1000'), { from: owner });
+				await linkToken.transfer(account1, toUnit('1000'), { from: deployerAccount });
 				await systemSettings.setLinkWrapperMaxLINK('0', { from: owner });
 			});
 
@@ -350,7 +347,7 @@ contract('LinkWrapper', async accounts => {
 
 			beforeEach(async () => {
 				const amount = toUnit('1');
-				await linkToken.transfer(account1, toUnit('10'), { from: owner });
+				await linkToken.transfer(account1, toUnit('10'), { from: deployerAccount });
 				await linkToken.approve(linkWrapper.address, amount, { from: account1 });
 				await linkWrapper.mint(amount, { from: account1 });
 			});
@@ -492,7 +489,7 @@ contract('LinkWrapper', async accounts => {
 
 				before(async () => {
 					const amount = toUnit('1.2');
-					await linkToken.deposit({ from: account1, value: amount });
+					await linkToken.transfer(account1, amount, { from: deployerAccount });
 					await linkToken.approve(linkWrapper.address, amount, { from: account1 });
 					await linkWrapper.mint(amount, { from: account1 });
 
@@ -526,7 +523,7 @@ contract('LinkWrapper', async accounts => {
 
 		before(async () => {
 			const amount = toUnit('10');
-			await linkToken.deposit({ from: account1, value: amount });
+			await linkToken.transfer(account1, amount, { from: deployerAccount });
 			await linkToken.approve(linkWrapper.address, amount, { from: account1 });
 			await linkWrapper.mint(amount, { from: account1 });
 

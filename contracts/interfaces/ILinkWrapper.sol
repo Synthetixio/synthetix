@@ -1,9 +1,7 @@
 pragma solidity >=0.4.24;
 
-import "./IERC20.sol";
-
 // https://docs.synthetix.io/contracts/source/interfaces/ilinkwrapper
-interface ILinkWrapper {
+contract ILinkWrapper {
     function mint(uint amount) external;
 
     function burn(uint amount) external;
@@ -16,15 +14,13 @@ interface ILinkWrapper {
 
     function totalIssuedSynths() external view returns (uint);
 
-    function calculateMintFee(uint amount) external view returns (uint);
+    function calculateMintFee(uint amount) public view returns (uint);
 
-    function calculateBurnFee(uint amount) external view returns (uint);
+    function calculateBurnFee(uint amount) public view returns (uint);
 
-    function maxLINK() external view returns (uint256);
+    function maxLink() public view returns (uint256);
 
-    function mintFeeRate() external view returns (uint256);
+    function mintFeeRate() public view returns (uint256);
 
-    function burnFeeRate() external view returns (uint256);
-
-    function link() external view returns (IERC20);
+    function burnFeeRate() public view returns (uint256);
 }
