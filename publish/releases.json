@@ -294,17 +294,20 @@
 			"released": "base"
 		},
 		{
-			"sip": 135,
-			"layer": "ovm",
-			"sources": [
-				"Collateral",
-				"CollateralManager",
-				"CollateralShort",
-				"CollateralUtil",
-				"MixinSystemSettings",
-				"ShortingRewards",
-				"SystemSettings"
-			]
+			"sip": 116,
+			"layer": "both",
+			"sources": {
+				"base": ["SystemSettings"],
+				"ovm": [
+					"Collateral",
+					"CollateralManager",
+					"CollateralShort",
+					"CollateralUtil",
+					"MixinSystemSettings",
+					"ShortingRewards",
+					"SystemSettings"
+				]
+			}
 		},
 		{
 			"sip": 136,
