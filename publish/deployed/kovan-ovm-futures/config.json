@@ -1,6 +1,6 @@
 {
 	"SystemSettings": {
-		"deploy": false
+		"deploy": true
 	},
 	"AddressResolver": {
 		"deploy": false
@@ -24,7 +24,7 @@
 		"deploy": false
 	},
 	"Exchanger": {
-		"deploy": false
+		"deploy": true
 	},
 	"ExchangeState": {
 		"deploy": false
@@ -63,7 +63,7 @@
 		"deploy": false
 	},
 	"Synthetix": {
-		"deploy": false
+		"deploy": true
 	},
 	"SynthetixEscrow": {
 		"deploy": false
@@ -138,34 +138,34 @@
 		"deploy": false
 	},
 	"ProxyFuturesMarketBTC": {
-		"deploy": false
+		"deploy": true
 	},
 	"FuturesMarketBTC": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyFuturesMarketETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"FuturesMarketETH": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyFuturesMarketLINK": {
-		"deploy": false
+		"deploy": true
 	},
 	"FuturesMarketLINK": {
-		"deploy": false
+		"deploy": true
 	},
 	"ProxyFuturesMarketManager": {
-		"deploy": false
+		"deploy": true
 	},
 	"FuturesMarketManager": {
-		"deploy": false
+		"deploy": true
 	},
 	"FuturesMarketSettings": {
-		"deploy": false
+		"deploy": true
 	},
 	"FuturesMarketData": {
-		"deploy": false
+		"deploy": true
 	},
 	"WETH": {
 		"deploy": true
