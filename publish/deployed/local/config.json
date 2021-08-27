@@ -460,5 +460,11 @@
 	},
 	"WETH": {
 		"deploy": true
+	},
+	"LinkWrapper": {
+		"deploy": true
+	},
+	"LINK": {
+		"deploy": true
 	}
 }
