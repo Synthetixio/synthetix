@@ -62,6 +62,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		const link = await deployer.deployContract({
 			name: 'LINK',
 			source: 'MockToken',
+			args: ['Link Token', 'LINK', 18],
 		});
 		link.skipResolver = true;
 		LINK_ADDRESS = link.address;
