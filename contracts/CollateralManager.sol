@@ -52,6 +52,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     // The set of all synths that are shortable.
     Bytes32SetLib.Bytes32Set internal _shortableSynths;
 
+    mapping(bytes32 => bytes32) public shortableSynthsByKey;
+
     // The factor that will scale the utilisation ratio.
     uint public utilisationMultiplier = 1e18;
 
@@ -224,7 +226,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         rateIsInvalid = _exchangeRates().rateIsInvalid(synthKey);
 
         // Get the long and short supply.
-        uint longSupply = IERC20(address(_synth(synthsByKey[synthKey]))).totalSupply();
+        uint longSupply = IERC20(address(_synth(shortableSynthsByKey[synthKey]))).totalSupply();
         uint shortSupply = state.short(synthKey);
 
         // In this case, the market is skewed long so its free to short.
@@ -388,6 +390,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
                 // Add it to the address set lib.
                 _shortableSynths.add(synth);
 
+                shortableSynthsByKey[synthKeys[i]] = synth;
+
                 emit ShortableSynthAdded(synth);
 
                 // now the associated synth key to the CollateralManagerState
@@ -426,6 +430,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
                 _shortableSynths.remove(synths[i]);
 
                 bytes32 synthKey = _synth(synths[i]).currencyKey();
+
+                delete shortableSynthsByKey[synthKey];
 
                 state.removeShortCurrency(synthKey);
 
