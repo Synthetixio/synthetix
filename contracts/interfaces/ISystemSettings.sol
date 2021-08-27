@@ -30,4 +30,10 @@ interface ISystemSettings {
     function etherWrapperBurnFeeRate() external view returns (uint);
 
     function etherWrapperMintFeeRate() external view returns (uint);
+
+    function linkWrapperMaxLINK() external view returns (uint);
+
+    function linkWrapperMintFeeRate() external view returns (uint);
+
+    function linkWrapperBurnFeeRate() external view returns (uint);
 }

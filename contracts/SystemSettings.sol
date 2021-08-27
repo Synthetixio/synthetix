@@ -154,6 +154,24 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getEtherWrapperBurnFeeRate();
     }
 
+    // SIP 153: LINK Wrappr
+    // The maximum amount of LINK held by the LinkWrapper.
+    function linkWrapperMaxLINK() external view returns (uint) {
+        return getLinkWrapperMaxLink();
+    }
+
+    // SIP 153: LINK Wrappr
+    // The fee for minting sLINK in the LinkWrapper.
+    function linkWrapperMintFeeRate() external view returns (uint) {
+        return getLinkWrapperMintFeeRate();
+    }
+
+    // SIP 153: LINK Wrappr
+    // The fee for burning sLINK and releasing LINK from the LinkWrapper.
+    function linkWrapperBurnFeeRate() external view returns (uint) {
+        return getLinkWrapperBurnFeeRate();
+    }
+
     // ========== RESTRICTED ==========
 
     function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
