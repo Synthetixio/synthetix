@@ -1,8 +1,5 @@
 const { artifacts, contract, web3 } = require('hardhat');
-const {
-	toBytes32,
-	constants: { ZERO_ADDRESS },
-} = require('../..');
+const { toBytes32 } = require('../..');
 const {
 	currentTime,
 	fastForward,
@@ -2586,72 +2583,68 @@ contract('FuturesMarket', accounts => {
 	});
 
 	describe('View helpers', async () => {
-		let minInitialMargin;
-		before(async () => {
-			minInitialMargin = await futuresMarketSettings.minInitialMargin();
-		});
+		const getPositionDetails = async ({ account }) => {
+			const newPosition = await futuresMarket.positions(account);
+			const { leverage } = await futuresMarket.currentLeverage(account);
+			const { price: liquidationPrice } = await futuresMarket.liquidationPrice(account, true);
+			return {
+				...newPosition,
+				leverage,
+				liquidationPrice,
+			};
+		};
 
-		describe('position details', async () => {
+		describe('post-trade position details', async () => {
+			const sizeDelta = toUnit('10');
+
 			it('can get position details for new position', async () => {
-				const { marginDelta, sizeDelta } = {
-					marginDelta: minInitialMargin,
-					sizeDelta: toUnit('10'),
-				};
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await setPrice(await futuresMarket.baseAsset(), toUnit('240'));
 
-				const details = await futuresMarket.calcPositionDetails(sizeDelta, ZERO_ADDRESS);
+				const expectedDetails = await futuresMarket.postTradePositionDetails(sizeDelta, trader);
 
-				assert.bnEqual(details.fee, toBN('3000000000000000000'));
-				assert.bnEqual(details.size, toBN('10000000000000000000'));
-				assert.bnEqual(details.lPrice, toBN('92000000000000000000'));
-				assert.bnEqual(details.margin, marginDelta.sub(details.fee));
-				assert.bnEqual(details.leverage, toBN('10000000000000000000'));
+				// Now execute the trade.
+				await futuresMarket.modifyPosition(sizeDelta, {
+					from: trader,
+				});
+
+				const details = await getPositionDetails({ account: trader });
+
+				assert.bnEqual(expectedDetails.status, toBN('0'));
+				assert.bnEqual(expectedDetails.fee, toBN('7200000000000000000'));
+				assert.bnEqual(expectedDetails.size, details.size);
+				assert.bnClose(expectedDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
+				assert.bnEqual(expectedDetails.price, details.lastPrice);
+				assert.bnClose(expectedDetails.leverage, details.leverage, toUnit(0.1));
+				assert.bnClose(expectedDetails.liqPrice, details.liquidationPrice, toUnit(0.01));
 			});
 
 			describe('existing position', async () => {
-				const { marginDelta, sizeDelta, price } = {
-					marginDelta: toUnit('1000'),
-					sizeDelta: toUnit('10'),
-					price: toUnit('240'),
-				};
-
 				it('uses the margin of an existing position', async () => {
 					await transferMarginAndModifyPosition({
 						market: futuresMarket,
 						account: trader,
-						fillPrice: price,
-						marginDelta,
+						fillPrice: toUnit('240'),
+						marginDelta: toUnit('1000'),
 						sizeDelta,
 					});
 
-					const details = await futuresMarket.calcPositionDetails(sizeDelta, trader);
+					const expectedDetails = await futuresMarket.postTradePositionDetails(sizeDelta, trader);
 
-					assert.bnEqual(details.fee, toBN('7200000000000000000'));
-					assert.bnEqual(details.size, toBN('20000000000000000000'));
-					assert.bnEqual(details.margin, marginDelta.sub(details.fee).sub(details.fee));
-					assert.bnEqual(details.lPrice, toBN('191360000000000000000'));
-					assert.bnEqual(details.leverage, toBN('4834810636583400483'));
-				});
-
-				it('returns existing details with no change for sizeDelta = 0', async () => {
-					await transferMarginAndModifyPosition({
-						market: futuresMarket,
-						account: trader,
-						fillPrice: price,
-						marginDelta,
-						sizeDelta,
+					// Now execute the trade.
+					await futuresMarket.modifyPosition(sizeDelta, {
+						from: trader,
 					});
 
-					const position = await futuresMarket.positions(trader);
-					const { leverage } = await futuresMarket.currentLeverage(trader);
-					const { price: lPrice } = await futuresMarket.liquidationPrice(trader, true);
+					const details = await getPositionDetails({ account: trader });
 
-					const details = await futuresMarket.calcPositionDetails(toUnit('0'), trader);
-
-					assert.bnEqual(details.fee, toBN('0'));
-					assert.bnEqual(details.size, position.size);
-					assert.bnEqual(details.margin, position.margin);
-					assert.bnEqual(details.lPrice, lPrice);
-					assert.bnEqual(details.leverage, leverage);
+					assert.bnEqual(expectedDetails.status, toBN('0'));
+					assert.bnEqual(expectedDetails.fee, toBN('7200000000000000000'));
+					assert.bnEqual(expectedDetails.size, details.size);
+					assert.bnClose(expectedDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
+					assert.bnEqual(expectedDetails.price, details.lastPrice);
+					assert.bnClose(expectedDetails.leverage, details.leverage, toUnit(0.1));
+					assert.bnClose(expectedDetails.positionLiquidationPrice, details.liqPrice, toUnit(0.01));
 				});
 			});
 		});

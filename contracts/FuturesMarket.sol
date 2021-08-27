@@ -933,7 +933,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         _applyDebtCorrection(newPosition, oldPosition);
 
         // Actually lodge the position and delete the order
-        // Updating the margin was already handled above
         if (newSize == 0) {
             // If the position is being closed, we no longer need to track these details.
             delete position.size;
@@ -945,10 +944,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
                 position.id = _nextPositionId;
                 _nextPositionId += 1;
             }
-            position.size = newSize;
+            position.size = newPosition.size;
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-            emitPositionModified(position.id, sender, position.margin, newSize, price, fundingIndex, fee);
+            emitPositionModified(position.id, sender, position.margin, position.size, price, fundingIndex, fee);
         }
     }
 
@@ -957,8 +956,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         int size;
         uint margin;
         int leverage;
+        uint price;
         uint liquidationPrice;
-        uint lastPrice;
         Status status;
     }
 
@@ -973,15 +972,32 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             int size,
             uint margin,
             int leverage,
-            uint lPrice,
+            uint price,
+            uint liqPrice,
             Status status
         )
     {
         PositionDetails memory details;
-        Position memory newPosition;
         Position memory oldPosition = positions[sender];
+        Position memory newPosition;
 
-        uint price = _assetPriceRequireNotInvalid();
+        // stack too deep.
+        {
+            (uint _price, bool invalid) = _assetPrice(_exchangeRates());
+            if (invalid) {
+                return (
+                    details.fee,
+                    details.size,
+                    details.margin,
+                    details.leverage,
+                    details.price,
+                    details.liquidationPrice,
+                    Status.InvalidPrice
+                );
+            }
+            price = _price;
+        }
+
         uint fundingIndex = fundingSequence.length;
 
         (newPosition, details.fee, details.leverage, details.status) = _postTradePositionDetails(
@@ -992,15 +1008,23 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         );
         details.size = newPosition.size;
         details.margin = newPosition.margin;
+        details.price = price;
 
-        details.lastPrice = price;
         details.liquidationPrice = _liquidationPrice(newPosition, true, fundingIndex, price);
 
-        return (details.fee, details.size, details.margin, details.leverage, details.liquidationPrice, details.status);
+        return (
+            details.fee,
+            details.size,
+            details.margin,
+            details.leverage,
+            details.price,
+            details.liquidationPrice,
+            details.status
+        );
     }
 
     function _postTradePositionDetails(
-        Position memory position,
+        Position memory oldPosition,
         int sizeDelta,
         uint price,
         uint fundingIndex
@@ -1008,12 +1032,19 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         internal
         view
         returns (
-            Position memory,
+            Position memory position,
             uint fee,
             int leverage,
             Status status
         )
     {
+        // Copy existing position.
+        position.id = oldPosition.id;
+        position.margin = oldPosition.margin;
+        position.size = oldPosition.size;
+        position.lastPrice = oldPosition.lastPrice;
+        position.fundingIndex = oldPosition.fundingIndex;
+
         // Reverts if the user is trying to submit a size-zero order.
         if (sizeDelta == 0) {
             return (position, fee, leverage, Status.NilOrder);
@@ -1065,9 +1096,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             return (position, fee, leverage, Status.MaxMarketSizeExceeded);
         }
         position.size = newSize;
-
-        // Useful for later in _modifyPosition.
         position.fundingIndex = fundingIndex;
+        position.lastPrice = price;
 
         return (position, fee, leverage, Status.Ok);
     }
