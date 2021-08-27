@@ -58,14 +58,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     // The minimum amount of collateral to create a loan.
     uint public minCollateral;
 
-    // The fee charged for issuing a loan.
-    uint public issueFeeRate;
-
-    // The maximum number of loans that an account can create with this collateral.
-    uint public maxLoansPerAccount = 50;
-
     // Time in seconds that a user must wait between interacting with a loan.
-    uint public interactionDelay = 0;
+    uint public interactionDelay;
 
     bool public canOpenLoans = true;
 

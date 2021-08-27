@@ -58,6 +58,7 @@ contract('CollateralErc20', async accounts => {
 		sBTCSynth,
 		renBTC,
 		systemStatus,
+		systemSettings,
 		synths,
 		manager,
 		issuer,
@@ -124,6 +125,7 @@ contract('CollateralErc20', async accounts => {
 		synths = ['sUSD', 'sBTC'];
 		({
 			SystemStatus: systemStatus,
+			SystemSettings: systemSettings,
 			ExchangeRates: exchangeRates,
 			SynthsUSD: sUSDSynth,
 			SynthsBTC: sBTCSynth,
@@ -140,6 +142,7 @@ contract('CollateralErc20', async accounts => {
 				'AddressResolver',
 				'ExchangeRates',
 				'SystemStatus',
+				'SystemSettings',
 				'Issuer',
 				'DebtCache',
 				'Exchanger',
@@ -494,7 +497,7 @@ contract('CollateralErc20', async accounts => {
 
 				loan = await cerc20.loans(id);
 
-				issueFeeRate = new BN(await cerc20.issueFeeRate());
+				issueFeeRate = new BN(await systemSettings.issueFeeRate(cerc20.address));
 				issueFee = fiveHundredSUSD.mul(issueFeeRate);
 			});
 
@@ -542,7 +545,7 @@ contract('CollateralErc20', async accounts => {
 
 				loan = await cerc20.loans(id);
 
-				issueFeeRate = await cerc20.issueFeeRate();
+				issueFeeRate = await systemSettings.issueFeeRate(cerc20.address);
 				issueFee = toUnit(2).mul(issueFeeRate);
 			});
 
