@@ -361,7 +361,7 @@ contract('CollateralShort', async accounts => {
 			assert.bnClose(loan.collateral, toUnit(950).toString(), tolerance);
 		});
 
-		it('should repay accrued interest', async () => {
+		it('should repay the whole amount and the accrued interest', async () => {
 			tx = await short.repayWithCollateral(account1, id, toUnit(1), payInterest, {
 				from: account1,
 			});
