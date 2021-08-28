@@ -333,7 +333,7 @@ contract('CollateralShort', async accounts => {
 		});
 
 		it('should repay with collateral and update the loan', async () => {
-			tx = await short.repayWithCollateral(account1, id, toUnit(0.5), !payInterest, {
+			tx = await short.repayWithCollateral(id, toUnit(0.5), !payInterest, {
 				from: account1,
 			});
 
@@ -362,7 +362,7 @@ contract('CollateralShort', async accounts => {
 		});
 
 		it('should repay the whole amount and the accrued interest', async () => {
-			tx = await short.repayWithCollateral(account1, id, toUnit(1), payInterest, {
+			tx = await short.repayWithCollateral(id, toUnit(1), payInterest, {
 				from: account1,
 			});
 
@@ -376,14 +376,14 @@ contract('CollateralShort', async accounts => {
 
 		it('should only let the borrower repay with collateral', async () => {
 			await assert.revert(
-				short.repayWithCollateral(account1, id, toUnit(0.1), payInterest, { from: account2 }),
+				short.repayWithCollateral(id, toUnit(0.1), payInterest, { from: account2 }),
 				'Must be borrower'
 			);
 		});
 
 		it('should not let them repay too much', async () => {
 			await assert.revert(
-				short.repayWithCollateral(account1, id, toUnit(2000), payInterest, { from: account1 }),
+				short.repayWithCollateral(id, toUnit(2000), payInterest, { from: account1 }),
 				'Payment too high'
 			);
 		});
