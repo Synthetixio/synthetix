@@ -895,20 +895,14 @@ contract('FuturesMarket', accounts => {
 					log: decodedLogs[4],
 				});
 
-				// Zero delta means no MarginTransferred or sUSD events
+				// Zero delta means no PositionModified, MarginTransferred, or sUSD events
 				tx = await futuresMarket.transferMargin(toUnit('0'), { from: trader3 });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [futuresMarketManager, sUSD, futuresMarket],
 				});
-
-				// But it does realise the margin
-				decodedEventEqual({
-					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
-					args: [toBN('1'), trader3, toUnit('1000'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
-					log: decodedLogs[1],
-				});
+				assert.equal(decodedLogs.length, 1);
+				assert.equal(decodedLogs[0].name, 'FundingRecomputed');
 
 				// Now withdraw the margin back out
 				tx = await futuresMarket.transferMargin(toUnit('-1000'), { from: trader3 });
@@ -1804,10 +1798,7 @@ contract('FuturesMarket', accounts => {
 				await setPrice(baseAsset, toUnit('80'));
 				assert.isTrue(await futuresMarket.canLiquidate(trader3));
 				assert.bnEqual((await futuresMarket.accessibleMargin(trader3))[0], toUnit('0'));
-				await assert.revert(
-					futuresMarket.transferMargin(toBN('0'), { from: trader3 }),
-					'Insufficient margin'
-				);
+				await withdrawAccessibleAndValidate(trader3);
 
 				await transferMarginAndModifyPosition({
 					market: futuresMarket,
@@ -1820,10 +1811,7 @@ contract('FuturesMarket', accounts => {
 				await setPrice(baseAsset, toUnit('120'));
 				assert.isTrue(await futuresMarket.canLiquidate(trader2));
 				assert.bnEqual((await futuresMarket.accessibleMargin(trader2))[0], toUnit('0'));
-				await assert.revert(
-					futuresMarket.transferMargin(toBN('0'), { from: trader2 }),
-					'Insufficient margin'
-				);
+				await withdrawAccessibleAndValidate(trader2);
 			});
 
 			it('If remaining margin is below minimum initial margin, no margin is accessible.', async () => {
