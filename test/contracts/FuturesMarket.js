@@ -19,6 +19,20 @@ const {
 
 const MockExchanger = artifacts.require('MockExchanger');
 
+const Status = {
+	Ok: 0,
+	InvalidPrice: 1,
+	PriceOutOfBounds: 2,
+	CanLiquidate: 3,
+	CannotLiquidate: 4,
+	MaxMarketSizeExceeded: 5,
+	MaxLeverageExceeded: 6,
+	InsufficientMargin: 7,
+	NotPermitted: 8,
+	NilOrder: 9,
+	NoPositionOpen: 10,
+};
+
 contract('FuturesMarket', accounts => {
 	let proxyFuturesMarket,
 		futuresMarketSettings,
@@ -1040,7 +1054,21 @@ contract('FuturesMarket', accounts => {
 
 			await fastForward(4 * 7 * 24 * 60 * 60);
 
+			const postDetails = await futuresMarket.postTradeDetails(size, trader);
+			assert.equal(postDetails.status, Status.InvalidPrice);
+
 			await assert.revert(futuresMarket.modifyPosition(size, { from: trader }), 'Invalid price');
+		});
+
+		it('Empty orders fail', async () => {
+			const margin = toUnit('1000');
+			await futuresMarket.transferMargin(margin, { from: trader });
+			await assert.revert(
+				futuresMarket.modifyPosition(toBN('0'), { from: trader }),
+				'Cannot submit empty order'
+			);
+			const postDetails = await futuresMarket.postTradeDetails(toBN('0'), trader);
+			assert.equal(postDetails.status, Status.NilOrder);
 		});
 
 		it('Cannot modify a position if the price has slipped too far', async () => {
@@ -1103,8 +1131,13 @@ contract('FuturesMarket', accounts => {
 
 			await setPrice(baseAsset, toUnit('100'));
 			// User realises the price has crashed and tries to outrun their liquidation, but it fails
+
+			const sizeDelta = toUnit('-50');
+			const postDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+			assert.equal(postDetails.status, Status.CanLiquidate);
+
 			await assert.revert(
-				futuresMarket.modifyPosition(toUnit('-50'), { from: trader }),
+				futuresMarket.modifyPosition(sizeDelta, { from: trader }),
 				'Position can be liquidated'
 			);
 		});
@@ -1156,11 +1189,15 @@ contract('FuturesMarket', accounts => {
 				futuresMarket.modifyPosition(toUnit('101'), { from: trader }),
 				'Max leverage exceeded'
 			);
+			let postDetails = await futuresMarket.postTradeDetails(toUnit('101'), trader);
+			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			await assert.revert(
 				futuresMarket.modifyPosition(toUnit('-101'), { from: trader2 }),
 				'Max leverage exceeded'
 			);
+			postDetails = await futuresMarket.postTradeDetails(toUnit('-101'), trader2);
+			assert.equal(postDetails.status, Status.MaxLeverageExceeded);
 
 			// But we actually allow up to 10.01x leverage to account for rounding issues.
 			await futuresMarket.modifyPosition(toUnit('100.09'), { from: trader });
@@ -1174,6 +1211,9 @@ contract('FuturesMarket', accounts => {
 				futuresMarket.modifyPosition(toUnit('10'), { from: trader }),
 				'Insufficient margin'
 			);
+
+			const postDetails = await futuresMarket.postTradeDetails(toUnit('10'), trader);
+			assert.equal(postDetails.status, Status.InsufficientMargin);
 		});
 
 		describe('Max market size constraints', () => {
@@ -1283,6 +1323,10 @@ contract('FuturesMarket', accounts => {
 					it('Orders are blocked if they exceed max market size', async () => {
 						await futuresMarket.transferMargin(maxMargin.add(toUnit('11')), { from: trader });
 						const tooBig = orderSize.div(toBN('10')).mul(toBN('11'));
+
+						const postDetails = await futuresMarket.postTradeDetails(tooBig, trader);
+						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
+
 						await assert.revert(
 							futuresMarket.modifyPosition(tooBig, {
 								from: trader,
@@ -1309,8 +1353,12 @@ contract('FuturesMarket', accounts => {
 
 						// The price moves, so the value of the already-confirmed order shunts out the pending one.
 						await setPrice(baseAsset, toUnit('1.08'));
+
+						const sizeDelta = orderSize.div(toBN(100)).mul(toBN(25));
+						const postDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+						assert.equal(postDetails.status, Status.MaxMarketSizeExceeded);
 						await assert.revert(
-							futuresMarket.modifyPosition(orderSize.div(toBN(100)).mul(toBN(25)), {
+							futuresMarket.modifyPosition(sizeDelta, {
 								from: trader,
 							}),
 							'Max market size exceeded'
@@ -1457,6 +1505,65 @@ contract('FuturesMarket', accounts => {
 
 				const { id: newPositionId } = await futuresMarket.positions(trader);
 				assert.bnEqual(newPositionId, toBN('2'));
+			});
+		});
+
+		describe('post-trade position details', async () => {
+			const getPositionDetails = async ({ account }) => {
+				const newPosition = await futuresMarket.positions(account);
+				const { price: liquidationPrice } = await futuresMarket.liquidationPrice(account, true);
+				return {
+					...newPosition,
+					liquidationPrice,
+				};
+			};
+			const sizeDelta = toUnit('10');
+
+			it('can get position details for new position', async () => {
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await setPrice(await futuresMarket.baseAsset(), toUnit('240'));
+
+				const expectedDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+
+				// Now execute the trade.
+				await futuresMarket.modifyPosition(sizeDelta, {
+					from: trader,
+				});
+
+				const details = await getPositionDetails({ account: trader });
+
+				assert.bnClose(expectedDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
+				assert.bnEqual(expectedDetails.size, details.size);
+				assert.bnEqual(expectedDetails.price, details.lastPrice);
+				assert.bnClose(expectedDetails.liqPrice, details.liquidationPrice, toUnit(0.01));
+				assert.bnEqual(expectedDetails.fee, toUnit('7.2'));
+				assert.bnEqual(expectedDetails.status, Status.Ok);
+			});
+
+			it('uses the margin of an existing position', async () => {
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader,
+					fillPrice: toUnit('240'),
+					marginDelta: toUnit('1000'),
+					sizeDelta,
+				});
+
+				const expectedDetails = await futuresMarket.postTradeDetails(sizeDelta, trader);
+
+				// Now execute the trade.
+				await futuresMarket.modifyPosition(sizeDelta, {
+					from: trader,
+				});
+
+				const details = await getPositionDetails({ account: trader });
+
+				assert.bnClose(expectedDetails.margin, details.margin, toUnit(0.01)); // one block of funding rate has accrued
+				assert.bnEqual(expectedDetails.size, details.size);
+				assert.bnEqual(expectedDetails.price, details.lastPrice);
+				assert.bnClose(expectedDetails.positionLiquidationPrice, details.liqPrice, toUnit(0.01));
+				assert.bnEqual(expectedDetails.fee, toUnit('7.2'));
+				assert.bnEqual(expectedDetails.status, Status.Ok);
 			});
 		});
 	});
