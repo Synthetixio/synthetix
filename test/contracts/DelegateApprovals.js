@@ -297,7 +297,7 @@ contract('DelegateApprovals', async accounts => {
 
 			// check revoked
 			assert.isNotTrue(await delegateApprovals[powers[0][2]](authoriser, delegate));
-			
+
 			// check other approval should be still active
 			assert.isTrue(await delegateApprovals[powers[1][2]](authoriser, delegate));
 		});
