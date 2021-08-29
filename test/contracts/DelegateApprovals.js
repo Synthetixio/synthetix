@@ -287,20 +287,19 @@ contract('DelegateApprovals', async accounts => {
 			];
 
 			await delegateApprovals.approveAllDelegatePowers(delegate, { from: authoriser });
-			for (const [approve] of powers) {
-				await delegateApprovals[approve](delegate, { from: authoriser });
-			}
 
-			for (const [, remove, can] of powers) {
-				// check approval is set
-				assert.isTrue(await delegateApprovals[can](authoriser, delegate));
+			// check approval is set
+			assert.isTrue(await delegateApprovals[powers[0][2]](authoriser, delegate));
+			assert.isTrue(await delegateApprovals[powers[1][2]](authoriser, delegate));
 
-				// revoke
-				await await delegateApprovals[remove](delegate, { from: authoriser });
+			// revoke
+			await await delegateApprovals[powers[0][1]](delegate, { from: authoriser });
 
-				// check revoked
-				assert.isNotTrue(await delegateApprovals[can](authoriser, delegate));
-			}
+			// check revoked
+			assert.isNotTrue(await delegateApprovals[powers[0][2]](authoriser, delegate));
+			
+			// check other approval should be still active
+			assert.isTrue(await delegateApprovals[powers[1][2]](authoriser, delegate));
 		});
 	});
 });
