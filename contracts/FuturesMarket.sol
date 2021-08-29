@@ -76,7 +76,6 @@ interface IFuturesMarketManagerInternal {
     function payFee(uint amount) external;
 }
 
-// TODO: Check that a user has sufficient margin BEFORE deducting the fee, and only check that the fee does not exceed their remaining balance afterwards. (otherwise they can't submit an order with minMargin)
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
 contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFuturesMarket {
     /* ========== LIBRARIES ========== */
@@ -541,13 +540,20 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         uint fundingIndex,
         uint price
     ) internal view returns (uint) {
-        int maxLeverage = int(_maxLeverage(baseAsset));
+        // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
+        // This should guarantee that the value returned here can always been withdrawn, but there may be
+        // a little extra actually-accessible value left over, depending on the position size and margin.
+        uint mill = uint(_UNIT / 1000);
+        int maxLeverage = int(_maxLeverage(baseAsset).sub(mill));
         uint inaccessible = _abs(_notionalValue(position, price).divideDecimalRound(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
-        uint minInitialMargin = _minInitialMargin();
-        if (0 < inaccessible && inaccessible < minInitialMargin) {
-            inaccessible = minInitialMargin;
+        if (0 < inaccessible) {
+            uint minInitialMargin = _minInitialMargin();
+            if (inaccessible < minInitialMargin) {
+                inaccessible = minInitialMargin;
+            }
+            inaccessible = inaccessible.add(mill);
         }
 
         uint remaining = _remainingMargin(position, fundingIndex, price);
@@ -558,6 +564,10 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return remaining.sub(inaccessible);
     }
 
+    /*
+     * The approximate amount of margin the user may withdraw given their current position; this underestimates the
+     * true value slightly.
+     */
     function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
         return (_accessibleMargin(positions[account], fundingSequence.length, price), isInvalid);
@@ -975,7 +985,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Update the account's position with the realised margin.
         position.margin = margin;
         // We only need to update their funding/PnL details if they actually have a position open
-        if (positionSize > 0) {
+        if (positionSize != 0) {
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
         }
@@ -984,13 +994,11 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         //     * they have sufficient margin to do so
         //     * the resulting margin would not be lower than the minimum margin
         //     * the resulting leverage is lower than the maximum leverage
-        if (0 < positionSize && marginDelta <= 0) {
-            if (margin < _minInitialMargin()) {
-                status = Status.InsufficientMargin;
-            } else if (_maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin))) {
-                status = Status.MaxLeverageExceeded;
-            }
-            _revertIfError(status);
+        if (positionSize != 0 && marginDelta < 0) {
+            _revertIfError(
+                margin < _minInitialMargin() || _maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin)),
+                Status.InsufficientMargin
+            );
         }
 
         // Emit relevant events
@@ -1002,8 +1010,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             sender,
             margin,
             positionSize,
-            positionSize > 0 ? price : position.lastPrice,
-            positionSize > 0 ? fundingIndex : position.fundingIndex,
+            positionSize != 0 ? price : position.lastPrice,
+            positionSize != 0 ? fundingIndex : position.fundingIndex,
             0
         );
     }
