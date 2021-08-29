@@ -491,6 +491,32 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return int(position.margin).add(_profitLoss(position, price)).add(_accruedFunding(position, endFundingIndex, price));
     }
 
+    /*
+     * The value in a position's margin after a deposit or withdrawal, accounting for funding and profit.
+     * If the resulting margin would be negative or below the liquidation threshold, an appropriate error is returned.
+     * If the result is not an error, callers of this function that use it to update a position's margin
+     * must ensure that this is accompanied by a corresponding debt correction update, as per `_applyDebtCorrection`.
+     */
+    function _realisedMargin(
+        Position memory position,
+        uint currentFundingIndex,
+        uint price,
+        int marginDelta
+    ) internal view returns (uint margin, Status statusCode) {
+        int newMargin = _marginPlusProfitFunding(position, currentFundingIndex, price).add(marginDelta);
+        if (newMargin < 0) {
+            return (0, Status.InsufficientMargin);
+        }
+
+        uint uMargin = uint(newMargin);
+        int positionSize = position.size;
+        if (positionSize != 0 && uMargin <= _liquidationFee()) {
+            return (uMargin, Status.CanLiquidate);
+        }
+
+        return (uMargin, Status.Ok);
+    }
+
     function _remainingMargin(
         Position memory position,
         uint endFundingIndex,
@@ -681,6 +707,109 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         return (_orderFee(positionSize.add(sizeDelta), positionSize, price), isInvalid);
     }
 
+    function _postTradeDetails(
+        Position memory oldPos,
+        int sizeDelta,
+        uint price,
+        uint fundingIndex
+    )
+        internal
+        view
+        returns (
+            Position memory newPosition,
+            uint _fee,
+            Status tradeStatus
+        )
+    {
+        // Reverts if the user is trying to submit a size-zero order.
+        if (sizeDelta == 0) {
+            return (oldPos, 0, Status.NilOrder);
+        }
+
+        // The order is not submitted if the user's existing position needs to be liquidated.
+        if (_canLiquidate(oldPos, _liquidationFee(), fundingIndex, price)) {
+            return (oldPos, 0, Status.CanLiquidate);
+        }
+
+        int newSize = oldPos.size.add(sizeDelta);
+
+        // Deduct the fee.
+        // It is an error if the realised margin minus the fee is negative or subject to liquidation.
+        uint fee = _orderFee(newSize, oldPos.size, price);
+        (uint newMargin, Status status) = _realisedMargin(oldPos, fundingIndex, price, -int(fee));
+        if (_isError(status)) {
+            return (oldPos, 0, status);
+        }
+        Position memory newPos = Position(oldPos.id, newMargin, newSize, price, fundingIndex);
+
+        // Check that the user has sufficient margin given their order.
+        // We don't check the margin requirement if the position size is decreasing
+        bool positionDecreasing = _sameSide(oldPos.size, newPos.size) && _abs(newPos.size) < _abs(oldPos.size);
+        if (!positionDecreasing) {
+            // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
+            // except that we get a nicer error message if fee > margin, rather than arithmetic overflow.
+            if (newPos.margin.add(fee) < _minInitialMargin()) {
+                return (oldPos, 0, Status.InsufficientMargin);
+            }
+        }
+
+        // Check that the maximum leverage is not exceeded (ignoring the fee).
+        // We'll allow a little extra headroom for rounding errors.
+        int leverage = newSize.multiplyDecimalRound(int(price)).divideDecimalRound(int(newMargin.add(fee)));
+        if (_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(leverage)) {
+            return (oldPos, 0, Status.MaxLeverageExceeded);
+        }
+
+        // Check that the order isn't too large for the market.
+        // Allow a bit of extra value in case of rounding errors.
+        if (
+            _orderSizeTooLarge(
+                uint(int(_maxMarketValue(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(price))),
+                oldPos.size,
+                newPos.size
+            )
+        ) {
+            return (oldPos, 0, Status.MaxMarketSizeExceeded);
+        }
+
+        return (newPos, fee, Status.Ok);
+    }
+
+    /*
+     * Returns all new position details if a given order from `sender` was confirmed at the current price.
+     */
+    function postTradeDetails(int sizeDelta, address sender)
+        external
+        view
+        returns (
+            uint margin,
+            int size,
+            uint price,
+            uint liqPrice,
+            uint fee,
+            Status status
+        )
+    {
+        bool invalid;
+        (price, invalid) = _assetPrice(_exchangeRates());
+        if (invalid) {
+            return (0, 0, 0, 0, 0, Status.InvalidPrice);
+        }
+
+        uint fundingIndex = fundingSequence.length;
+        (Position memory newPosition, uint fee_, Status status_) =
+            _postTradeDetails(positions[sender], sizeDelta, price, fundingIndex);
+
+        return (
+            newPosition.margin,
+            newPosition.size,
+            newPosition.lastPrice,
+            _liquidationPrice(newPosition, true, fundingIndex, newPosition.lastPrice),
+            fee_,
+            status_
+        );
+    }
+
     /* ---------- Utilities ---------- */
 
     /*
@@ -778,32 +907,6 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         int newCorrection = _positionDebtCorrection(newPosition);
         int oldCorrection = _positionDebtCorrection(oldPosition);
         _entryDebtCorrection = _entryDebtCorrection.add(newCorrection).sub(oldCorrection);
-    }
-
-    /*
-     * The value in a position's margin after a deposit or withdrawal, accounting for funding and profit.
-     * If the resulting margin would be negative or below the liquidation threshold, an appropriate error is returned.
-     * If the result is not an error, callers of this function that use it to update a position's margin
-     * must ensure that this is accompanied by a corresponding debt correction update, as per `_applyDebtCorrection`.
-     */
-    function _realisedMargin(
-        Position memory position,
-        uint currentFundingIndex,
-        uint price,
-        int marginDelta
-    ) internal view returns (uint margin, Status statusCode) {
-        int newMargin = _marginPlusProfitFunding(position, currentFundingIndex, price).add(marginDelta);
-        if (newMargin < 0) {
-            return (0, Status.InsufficientMargin);
-        }
-
-        uint uMargin = uint(newMargin);
-        int positionSize = position.size;
-        if (positionSize != 0 && uMargin <= _liquidationFee()) {
-            return (uMargin, Status.CanLiquidate);
-        }
-
-        return (uMargin, Status.Ok);
     }
 
     function _transferMargin(
@@ -910,18 +1013,16 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         address sender
     ) internal {
         Position storage position = positions[sender];
-        Position memory oldPosition = positions[sender];
+        Position memory oldPosition = position;
 
-        // Compute new position details: size, margin.
-        (Position memory newPosition, uint fee, , Status status) =
-            _postTradePositionDetails(oldPosition, sizeDelta, price, fundingIndex);
+        // Compute the new position after performing the trade
+        (Position memory newPosition, uint fee, Status status) =
+            _postTradeDetails(oldPosition, sizeDelta, price, fundingIndex);
         _revertIfError(status);
 
         // Update the aggregated market size and skew with the new order size
-        int newSize = newPosition.size;
-        int oldSize = oldPosition.size;
-        marketSkew = marketSkew.add(newSize).sub(oldSize);
-        marketSize = marketSize.add(_abs(newSize)).sub(_abs(oldSize));
+        marketSkew = marketSkew.add(newPosition.size).sub(oldPosition.size);
+        marketSize = marketSize.add(_abs(newPosition.size)).sub(_abs(oldPosition.size));
 
         // Send the fee to the fee pool
         if (0 < fee) {
@@ -932,174 +1033,24 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         position.margin = newPosition.margin;
         _applyDebtCorrection(newPosition, oldPosition);
 
-        // Actually lodge the position and delete the order
-        if (newSize == 0) {
+        // Record the trade
+        if (newPosition.size == 0) {
             // If the position is being closed, we no longer need to track these details.
             delete position.size;
             delete position.lastPrice;
             delete position.fundingIndex;
-            emitPositionModified(position.id, sender, position.margin, 0, 0, 0, fee);
+            emitPositionModified(newPosition.id, sender, newPosition.margin, 0, 0, 0, fee);
         } else {
-            if (oldSize == 0) {
+            // New positions get new id's
+            if (oldPosition.size == 0) {
                 position.id = _nextPositionId;
                 _nextPositionId += 1;
             }
             position.size = newPosition.size;
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-            emitPositionModified(position.id, sender, position.margin, position.size, price, fundingIndex, fee);
+            emitPositionModified(newPosition.id, sender, newPosition.margin, newPosition.size, price, fundingIndex, fee);
         }
-    }
-
-    struct PositionDetails {
-        uint fee;
-        int size;
-        uint margin;
-        int leverage;
-        uint price;
-        uint liquidationPrice;
-        Status status;
-    }
-
-    /*
-     * Returns all new position details if a given order from `sender` was confirmed at the current price.
-     */
-    function postTradePositionDetails(int sizeDelta, address sender)
-        public
-        view
-        returns (
-            uint fee,
-            int size,
-            uint margin,
-            int leverage,
-            uint price,
-            uint liqPrice,
-            Status status
-        )
-    {
-        PositionDetails memory details;
-        Position memory oldPosition = positions[sender];
-        Position memory newPosition;
-
-        // stack too deep.
-        {
-            (uint _price, bool invalid) = _assetPrice(_exchangeRates());
-            if (invalid) {
-                return (
-                    details.fee,
-                    details.size,
-                    details.margin,
-                    details.leverage,
-                    details.price,
-                    details.liquidationPrice,
-                    Status.InvalidPrice
-                );
-            }
-            price = _price;
-        }
-
-        uint fundingIndex = fundingSequence.length;
-
-        (newPosition, details.fee, details.leverage, details.status) = _postTradePositionDetails(
-            oldPosition,
-            sizeDelta,
-            price,
-            fundingIndex
-        );
-        details.size = newPosition.size;
-        details.margin = newPosition.margin;
-        details.price = price;
-
-        details.liquidationPrice = _liquidationPrice(newPosition, true, fundingIndex, price);
-
-        return (
-            details.fee,
-            details.size,
-            details.margin,
-            details.leverage,
-            details.price,
-            details.liquidationPrice,
-            details.status
-        );
-    }
-
-    function _postTradePositionDetails(
-        Position memory oldPosition,
-        int sizeDelta,
-        uint price,
-        uint fundingIndex
-    )
-        internal
-        view
-        returns (
-            Position memory position,
-            uint fee,
-            int leverage,
-            Status status
-        )
-    {
-        // Copy existing position.
-        position.id = oldPosition.id;
-        position.margin = oldPosition.margin;
-        position.size = oldPosition.size;
-        position.lastPrice = oldPosition.lastPrice;
-        position.fundingIndex = oldPosition.fundingIndex;
-
-        // Reverts if the user is trying to submit a size-zero order.
-        if (sizeDelta == 0) {
-            return (position, fee, leverage, Status.NilOrder);
-        }
-
-        // The order is not submitted if the user's existing position needs to be liquidated.
-        if (_canLiquidate(position, _liquidationFee(), fundingIndex, price)) {
-            return (position, fee, leverage, Status.CanLiquidate);
-        }
-
-        int oldSize = position.size;
-        int newSize = position.size.add(sizeDelta);
-
-        // Deduct the fee.
-        // It is an error if the realised margin minus the fee is negative or subject to liquidation.
-        fee = _orderFee(newSize, oldSize, price);
-        (position.margin, status) = _realisedMargin(position, fundingIndex, price, -int(fee));
-        if (_isError(status)) {
-            return (position, fee, leverage, status);
-        }
-
-        // Check that the user has sufficient margin given their order.
-        // We don't check the margin requirement if the position size is decreasing
-        bool positionDecreasing = _sameSide(oldSize, newSize) && _abs(newSize) < _abs(oldSize);
-        if (!positionDecreasing) {
-            // minMargin + fee <= margin is equivalent to minMargin <= margin - fee
-            // except that we get a nicer error message if fee > margin, rather than arithmetic overflow.
-            if (position.margin.add(fee) < _minInitialMargin()) {
-                return (position, fee, leverage, Status.InsufficientMargin);
-            }
-        }
-
-        // Check that the maximum leverage is not exceeded (ignoring the fee).
-        // We'll allow a little extra headroom for rounding errors.
-        leverage = newSize.multiplyDecimalRound(int(price)).divideDecimalRound(int(position.margin.add(fee)));
-        if (_maxLeverage(baseAsset).add(uint(_UNIT) / 100) < _abs(leverage)) {
-            return (position, fee, leverage, Status.MaxLeverageExceeded);
-        }
-
-        // Check that the order isn't too large for the market.
-        // Allow a bit of extra value in case of rounding errors.
-        if (
-            _orderSizeTooLarge(
-                uint(int(_maxMarketValue(baseAsset).add(100 * uint(_UNIT))).divideDecimalRound(int(price))),
-                oldSize,
-                newSize
-            )
-        ) {
-            return (position, fee, leverage, Status.MaxMarketSizeExceeded);
-        }
-        position.size = newSize;
-        position.fundingIndex = fundingIndex;
-        position.lastPrice = price;
-
-        return (position, fee, leverage, Status.Ok);
     }
 
     /*
