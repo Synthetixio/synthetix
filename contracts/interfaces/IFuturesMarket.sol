@@ -106,6 +106,18 @@ interface IFuturesMarket {
 
     function orderFee(address account, int sizeDelta) external view returns (uint fee, bool invalid);
 
+    function postTradeDetails(int sizeDelta, address sender)
+        external
+        view
+        returns (
+            uint margin,
+            int size,
+            uint price,
+            uint liqPrice,
+            uint fee,
+            Status status
+        );
+
     /* ---------- Market Operations ---------- */
 
     function recomputeFunding() external returns (uint lastIndex);
