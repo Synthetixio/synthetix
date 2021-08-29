@@ -2033,6 +2033,96 @@ contract('FuturesMarket', accounts => {
 				await fastForward(7 * 24 * 60 * 60);
 				assert.isTrue((await futuresMarket.accessibleMargin(trader))[1]);
 			});
+
+			describe('withdrawAllMargin', () => {
+				it('Reverts if the price is invalid', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+					await fastForward(7 * 24 * 60 * 60);
+					await assert.revert(futuresMarket.withdrawAllMargin({ from: trader }), 'Invalid price');
+				});
+
+				it('allows users to withdraw all their margin', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+					await futuresMarket.transferMargin(toUnit('3000'), { from: trader2 });
+					await futuresMarket.transferMargin(toUnit('10000'), { from: trader3 });
+
+					await setPrice(baseAsset, toUnit('10'));
+
+					await futuresMarket.modifyPosition(toUnit('500'), { from: trader });
+					await futuresMarket.modifyPosition(toUnit('-1100'), { from: trader2 });
+					await futuresMarket.modifyPosition(toUnit('9000'), { from: trader3 });
+
+					assert.bnGt((await futuresMarket.accessibleMargin(trader))[0], toBN('0'));
+					assert.bnGt((await futuresMarket.accessibleMargin(trader2))[0], toBN('0'));
+					assert.bnGt((await futuresMarket.accessibleMargin(trader3))[0], toBN('0'));
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+
+					await setPrice(baseAsset, toUnit('11.4847'));
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					await futuresMarket.withdrawAllMargin({ from: trader2 });
+					await futuresMarket.withdrawAllMargin({ from: trader3 });
+
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader2))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader3))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+				});
+
+				it('Does nothing with an empty margin', async () => {
+					let margin = await futuresMarket.remainingMargin(trader);
+					assert.bnEqual(margin[0], toBN('0'));
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					margin = await futuresMarket.remainingMargin(trader);
+					assert.bnEqual(margin[0], toBN('0'));
+				});
+
+				it('Withdraws everything with no position', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+					let margin = await futuresMarket.remainingMargin(trader);
+					assert.bnEqual(margin[0], toUnit('1000'));
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					margin = await futuresMarket.remainingMargin(trader);
+					assert.bnEqual(margin[0], toBN('0'));
+				});
+
+				it('Profit allows more to be withdrawn', async () => {
+					await futuresMarket.transferMargin(toUnit('1239.2487'), { from: trader });
+
+					await setPrice(baseAsset, toUnit('15.53'));
+					await futuresMarket.modifyPosition(toUnit('-322'), { from: trader });
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+					await setPrice(baseAsset, toUnit('1.777'));
+					assert.bnGt((await futuresMarket.accessibleMargin(trader))[0], toBN('0'));
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+				});
+			});
 		});
 
 		describe('Leverage', async () => {

@@ -966,6 +966,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             // A negative margin delta corresponds to a withdrawal, which will be minted into
             // their sUSD balance, and debited from their margin account.
             _manager().issueSUSD(sender, absDelta);
+        } else {
+            // Zero delta is a no-op
+            return;
         }
 
         Position storage position = positions[sender];
@@ -1029,13 +1032,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * Withdraws all margin remaining in a position. This will revert if the sending account has a position open.
+     * Withdraws all accessible margin in a position. This will leave some remaining margin
+     * in the account if the caller has a position open. Equivalent to `transferMargin(-accessibleMargin(sender))`.
      */
     function withdrawAllMargin() external optionalProxy {
         address sender = messageSender;
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
-        int marginDelta = -int(_remainingMargin(positions[sender], fundingIndex, price));
+        int marginDelta = -int(_accessibleMargin(positions[sender], fundingIndex, price));
         _transferMargin(marginDelta, price, fundingIndex, sender);
     }
 
