@@ -7,9 +7,9 @@ import "./interfaces/IFlexibleStorage.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/MixinFuturesMarketSettings
 contract MixinFuturesMarketSettings is MixinResolver {
-    bytes32 internal constant SETTING_CONTRACT_NAME = "FuturesMarketSettings";
-
     /* ========== CONSTANTS ========== */
+
+    bytes32 internal constant SETTING_CONTRACT_NAME = "FuturesMarketSettings";
 
     /* ---------- Parameter Names ---------- */
 

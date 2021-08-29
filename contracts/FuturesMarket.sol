@@ -76,6 +76,7 @@ interface IFuturesMarketManagerInternal {
     function payFee(uint amount) external;
 }
 
+// TODO: Check that a user has sufficient margin BEFORE deducting the fee, and only check that the fee does not exceed their remaining balance afterwards. (otherwise they can't submit an order with minMargin)
 // https://docs.synthetix.io/contracts/source/contracts/FuturesMarket
 contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFuturesMarket {
     /* ========== LIBRARIES ========== */
@@ -455,8 +456,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function profitLoss(address account) external view returns (int pnl, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        return (_profitLoss(position, price), isInvalid);
+        return (_profitLoss(positions[account], price), isInvalid);
     }
 
     function _accruedFunding(
@@ -533,8 +533,34 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        return (_remainingMargin(position, fundingSequence.length, price), isInvalid);
+        return (_remainingMargin(positions[account], fundingSequence.length, price), isInvalid);
+    }
+
+    function _accessibleMargin(
+        Position storage position,
+        uint fundingIndex,
+        uint price
+    ) internal view returns (uint) {
+        int maxLeverage = int(_maxLeverage(baseAsset));
+        uint inaccessible = _abs(_notionalValue(position, price).divideDecimalRound(maxLeverage));
+
+        // If the user has a position open, we'll enforce a min initial margin requirement.
+        uint minInitialMargin = _minInitialMargin();
+        if (0 < inaccessible && inaccessible < minInitialMargin) {
+            inaccessible = minInitialMargin;
+        }
+
+        uint remaining = _remainingMargin(position, fundingIndex, price);
+        if (remaining <= inaccessible) {
+            return 0;
+        }
+
+        return remaining.sub(inaccessible);
+    }
+
+    function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
+        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        return (_accessibleMargin(positions[account], fundingSequence.length, price), isInvalid);
     }
 
     function _liquidationPrice(
@@ -595,8 +621,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
         (uint aPrice, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        return (_liquidationPrice(position, includeFunding, fundingSequence.length, aPrice), isInvalid);
+        return (_liquidationPrice(positions[account], includeFunding, fundingSequence.length, aPrice), isInvalid);
     }
 
     function _canLiquidate(
