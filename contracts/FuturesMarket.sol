@@ -455,8 +455,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function profitLoss(address account) external view returns (int pnl, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        return (_profitLoss(position, price), isInvalid);
+        return (_profitLoss(positions[account], price), isInvalid);
     }
 
     function _accruedFunding(
@@ -533,8 +532,45 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid) {
         (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        return (_remainingMargin(position, fundingSequence.length, price), isInvalid);
+        return (_remainingMargin(positions[account], fundingSequence.length, price), isInvalid);
+    }
+
+    function _accessibleMargin(
+        Position storage position,
+        uint fundingIndex,
+        uint price
+    ) internal view returns (uint) {
+        // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
+        // This should guarantee that the value returned here can always been withdrawn, but there may be
+        // a little extra actually-accessible value left over, depending on the position size and margin.
+        uint milli = uint(_UNIT / 1000);
+        int maxLeverage = int(_maxLeverage(baseAsset).sub(milli));
+        uint inaccessible = _abs(_notionalValue(position, price).divideDecimalRound(maxLeverage));
+
+        // If the user has a position open, we'll enforce a min initial margin requirement.
+        if (0 < inaccessible) {
+            uint minInitialMargin = _minInitialMargin();
+            if (inaccessible < minInitialMargin) {
+                inaccessible = minInitialMargin;
+            }
+            inaccessible = inaccessible.add(milli);
+        }
+
+        uint remaining = _remainingMargin(position, fundingIndex, price);
+        if (remaining <= inaccessible) {
+            return 0;
+        }
+
+        return remaining.sub(inaccessible);
+    }
+
+    /*
+     * The approximate amount of margin the user may withdraw given their current position; this underestimates the
+     * true value slightly.
+     */
+    function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid) {
+        (uint price, bool isInvalid) = _assetPrice(_exchangeRates());
+        return (_accessibleMargin(positions[account], fundingSequence.length, price), isInvalid);
     }
 
     function _liquidationPrice(
@@ -595,8 +631,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
      */
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid) {
         (uint aPrice, bool isInvalid) = _assetPrice(_exchangeRates());
-        Position storage position = positions[account];
-        return (_liquidationPrice(position, includeFunding, fundingSequence.length, aPrice), isInvalid);
+        return (_liquidationPrice(positions[account], includeFunding, fundingSequence.length, aPrice), isInvalid);
     }
 
     function _canLiquidate(
@@ -931,6 +966,9 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             // A negative margin delta corresponds to a withdrawal, which will be minted into
             // their sUSD balance, and debited from their margin account.
             _manager().issueSUSD(sender, absDelta);
+        } else {
+            // Zero delta is a no-op
+            return;
         }
 
         Position storage position = positions[sender];
@@ -950,22 +988,21 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Update the account's position with the realised margin.
         position.margin = margin;
         // We only need to update their funding/PnL details if they actually have a position open
-        if (positionSize > 0) {
+        if (positionSize != 0) {
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-        }
 
-        // The user can decrease their margin if they have no position, or as long as:
-        //     * they have sufficient margin to do so
-        //     * the resulting margin would not be lower than the minimum margin
-        //     * the resulting leverage is lower than the maximum leverage
-        if (0 < positionSize && marginDelta <= 0) {
-            if (margin < _minInitialMargin()) {
-                status = Status.InsufficientMargin;
-            } else if (_maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin))) {
-                status = Status.MaxLeverageExceeded;
+            // The user can always decrease their margin if they have no position, or as long as:
+            //     * they have sufficient margin to do so
+            //     * the resulting margin would not be lower than the minimum margin
+            //     * the resulting leverage is lower than the maximum leverage
+            if (marginDelta < 0) {
+                _revertIfError(
+                    margin < _minInitialMargin() ||
+                        _maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin)),
+                    Status.InsufficientMargin
+                );
             }
-            _revertIfError(status);
         }
 
         // Emit relevant events
@@ -977,8 +1014,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             sender,
             margin,
             positionSize,
-            positionSize > 0 ? price : position.lastPrice,
-            positionSize > 0 ? fundingIndex : position.fundingIndex,
+            positionSize != 0 ? price : position.lastPrice,
+            positionSize != 0 ? fundingIndex : position.fundingIndex,
             0
         );
     }
@@ -996,13 +1033,14 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
     }
 
     /*
-     * Withdraws all margin remaining in a position. This will revert if the sending account has a position open.
+     * Withdraws all accessible margin in a position. This will leave some remaining margin
+     * in the account if the caller has a position open. Equivalent to `transferMargin(-accessibleMargin(sender))`.
      */
     function withdrawAllMargin() external optionalProxy {
         address sender = messageSender;
         uint price = _assetPriceRequireNotInvalid();
         uint fundingIndex = _recomputeFunding(price);
-        int marginDelta = -int(_remainingMargin(positions[sender], fundingIndex, price));
+        int marginDelta = -int(_accessibleMargin(positions[sender], fundingIndex, price));
         _transferMargin(marginDelta, price, fundingIndex, sender);
     }
 
