@@ -208,6 +208,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     {
         // Need to sum up all reclaim and rebate amounts for the user and the currency key
         numEntries = exchangeState().getLengthOfEntries(account, currencyKey);
+        uint waitingPeriod = getWaitingPeriodSecs();
 
         // For each unsettled exchange
         ExchangeEntrySettlement[] memory settlements = new ExchangeEntrySettlement[](numEntries);
@@ -217,7 +218,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             // fetch the entry from storage
             IExchangeState.ExchangeEntry memory exchangeEntry = _getExchangeEntry(account, currencyKey, i);
 
-            if (includeTotalBalanceForOngoing && exchangeEntry.timestamp < block.timestamp) {
+            if (includeTotalBalanceForOngoing && exchangeEntry.timestamp.add(waitingPeriod) > block.timestamp) {
                 // when includeTotalBalanceForOngoing then all entries not yet ready to be settled will
                 // include their total amoutns
                 reclaimAmount = reclaimAmount.add(exchangeEntry.amountReceived);
