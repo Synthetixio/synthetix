@@ -36,7 +36,7 @@ contract('CollateralEth', async accounts => {
 	let loan;
 	let id;
 
-	const [, owner, oracle, , account1, account2] = accounts;
+	const [owner, oracle, account1, account2] = accounts;
 
 	let ceth,
 		managerState,
