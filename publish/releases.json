@@ -299,7 +299,6 @@
 			"sources": {
 				"base": ["SystemSettings"],
 				"ovm": [
-					"Collateral",
 					"CollateralManager",
 					"CollateralShort",
 					"CollateralUtil",
