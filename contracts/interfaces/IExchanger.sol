@@ -14,6 +14,8 @@ interface IExchanger {
 
     function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool);
 
+    function lockedBalance(address account, bytes32 currencyKey) external view returns (uint locked);
+
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) external view returns (uint);
 
     function settlementOwing(address account, bytes32 currencyKey)

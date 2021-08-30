@@ -158,8 +158,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         return secsLeftInWaitingPeriodForExchange(exchangeState().getMaxTimestamp(account, currencyKey));
     }
 
-    function lockedBalance(address account, bytes32 currencyKey) public view returns (uint) {
-        return exchangeState().getLockedValue(account, currencyKey, getWaitingPeriodSecs());
+    function lockedBalance(address account, bytes32 currencyKey) external view returns (uint locked) {
+        (uint reclaimAmount, , , ) = _settlementOwing(account, currencyKey, true);
+        return reclaimAmount;
     }
 
     function waitingPeriodSecs() external view returns (uint) {
@@ -183,11 +184,15 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint numEntries
         )
     {
-        (reclaimAmount, rebateAmount, numEntries, ) = _settlementOwing(account, currencyKey);
+        (reclaimAmount, rebateAmount, numEntries, ) = _settlementOwing(account, currencyKey, false);
     }
 
     // Internal function to emit events for each individual rebate and reclaim entry
-    function _settlementOwing(address account, bytes32 currencyKey)
+    function _settlementOwing(
+        address account,
+        bytes32 currencyKey,
+        bool includeTotalBalanceForOngoing
+    )
         internal
         view
         returns (
@@ -208,6 +213,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             // fetch the entry from storage
             IExchangeState.ExchangeEntry memory exchangeEntry = _getExchangeEntry(account, currencyKey, i);
 
+            if (includeTotalBalanceForOngoing && exchangeEntry.timestamp < block.timestamp) {
+                // when includeTotalBalanceForOngoing then all entries not yet ready to be settled will
+                // include their total amoutns
+                reclaimAmount = reclaimAmount.add(exchangeEntry.amountReceived);
+
+                // we can end the loop early here as the settlement doesn't need tracking - only necessary for internal settle
+                continue;
+            }
             // determine the last round ids for src and dest pairs when period ended or latest if not over
             (uint srcRoundIdAtPeriodEnd, uint destRoundIdAtPeriodEnd) = getRoundIdsAtPeriodEnd(exchangeEntry);
 
@@ -287,7 +300,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return true;
         }
 
-        (uint reclaimAmount, , , ) = _settlementOwing(account, currencyKey);
+        (uint reclaimAmount, , , ) = _settlementOwing(account, currencyKey, false);
 
         return reclaimAmount > 0;
     }
@@ -654,7 +667,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         require(maxSecsLeftInWaitingPeriod(from, currencyKey) == 0, "Cannot settle during waiting period");
 
         (uint reclaimAmount, uint rebateAmount, uint entries, ExchangeEntrySettlement[] memory settlements) =
-            _settlementOwing(from, currencyKey);
+            _settlementOwing(from, currencyKey, false);
 
         if (reclaimAmount > rebateAmount) {
             reclaimed = reclaimAmount.sub(rebateAmount);

@@ -331,6 +331,11 @@
 		{
 			"sip": 170,
 			"layer": "base"
+		},
+		{
+			"sip": 171,
+			"layer": "base",
+			"sources": ["Exchanger", "Synth(s|i).+"]
 		}
 	],
 	"releases": [
