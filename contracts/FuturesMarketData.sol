@@ -84,6 +84,7 @@ contract FuturesMarketData {
         int profitLoss;
         int accruedFunding;
         uint remainingMargin;
+        uint accessibleMargin;
         uint liquidationPrice;
         bool canLiquidatePosition;
     }
@@ -252,6 +253,11 @@ contract FuturesMarketData {
         return value;
     }
 
+    function _accessibleMargin(IFuturesMarket market, address account) internal view returns (uint) {
+        (uint value, ) = market.accessibleMargin(account);
+        return value;
+    }
+
     function _liquidationPrice(IFuturesMarket market, address account) internal view returns (uint) {
         (uint liquidationPrice, ) = market.liquidationPrice(account, true);
         return liquidationPrice;
@@ -265,6 +271,7 @@ contract FuturesMarketData {
                 _profitLoss(market, account),
                 _accruedFunding(market, account),
                 _remainingMargin(market, account),
+                _accessibleMargin(market, account),
                 _liquidationPrice(market, account),
                 market.canLiquidate(account)
             );

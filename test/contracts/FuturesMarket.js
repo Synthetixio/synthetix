@@ -63,6 +63,7 @@ contract('FuturesMarket', accounts => {
 	const maxFundingRateDelta = toUnit('0.0125');
 	const initialPrice = toUnit('100');
 	const liquidationFee = toUnit('20');
+	const minInitialMargin = toUnit('100');
 
 	const initialFundingIndex = toBN(4);
 
@@ -894,19 +895,14 @@ contract('FuturesMarket', accounts => {
 					log: decodedLogs[4],
 				});
 
-				// Zero delta means no MarginTransferred or sUSD events
+				// Zero delta means no PositionModified, MarginTransferred, or sUSD events
 				tx = await futuresMarket.transferMargin(toUnit('0'), { from: trader3 });
 				decodedLogs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [futuresMarketManager, sUSD, futuresMarket],
 				});
-
-				decodedEventEqual({
-					event: 'PositionModified',
-					emittedFrom: proxyFuturesMarket.address,
-					args: [toBN('1'), trader3, toUnit('1000'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
-					log: decodedLogs[1],
-				});
+				assert.equal(decodedLogs.length, 1);
+				assert.equal(decodedLogs[0].name, 'FundingRecomputed');
 
 				// Now withdraw the margin back out
 				tx = await futuresMarket.transferMargin(toUnit('-1000'), { from: trader3 });
@@ -1206,14 +1202,27 @@ contract('FuturesMarket', accounts => {
 
 		it('min margin must be provided', async () => {
 			await setPrice(baseAsset, toUnit('10'));
-			await futuresMarket.transferMargin(toUnit('99'), { from: trader });
+			await futuresMarket.transferMargin(minInitialMargin.sub(toUnit('1')), { from: trader });
 			await assert.revert(
 				futuresMarket.modifyPosition(toUnit('10'), { from: trader }),
 				'Insufficient margin'
 			);
 
-			const postDetails = await futuresMarket.postTradeDetails(toUnit('10'), trader);
+			let postDetails = await futuresMarket.postTradeDetails(toUnit('10'), trader);
 			assert.equal(postDetails.status, Status.InsufficientMargin);
+
+			// But it works after transferring the remaining $1
+			await futuresMarket.transferMargin(toUnit('1'), { from: trader });
+
+			postDetails = await futuresMarket.postTradeDetails(toUnit('10'), trader);
+			assert.bnEqual(postDetails.margin, minInitialMargin.sub(toUnit('0.3')));
+			assert.bnEqual(postDetails.size, toUnit('10'));
+			assert.bnEqual(postDetails.price, toUnit('10'));
+			assert.bnEqual(postDetails.liqPrice, toUnit('2.03'));
+			assert.bnEqual(postDetails.fee, toUnit('0.3'));
+			assert.equal(postDetails.status, Status.Ok);
+
+			await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
 		});
 
 		describe('Max market size constraints', () => {
@@ -1670,6 +1679,437 @@ contract('FuturesMarket', accounts => {
 				assert.isFalse((await futuresMarket.remainingMargin(trader))[1]);
 				await fastForward(7 * 24 * 60 * 60); // Stale the prices
 				assert.isTrue((await futuresMarket.remainingMargin(trader))[1]);
+			});
+		});
+
+		describe('Accessible margin', async () => {
+			const withdrawAccessibleAndValidate = async account => {
+				let accessible = (await futuresMarket.accessibleMargin(account))[0];
+				await futuresMarket.transferMargin(accessible.neg(), { from: account });
+				accessible = (await futuresMarket.accessibleMargin(account))[0];
+				assert.bnClose(accessible, toBN('0'), toUnit('1'));
+				await assert.revert(
+					futuresMarket.transferMargin(toUnit('-1'), { from: account }),
+					'Insufficient margin'
+				);
+			};
+
+			it('With no position, entire margin is accessible.', async () => {
+				const margin = toUnit('1234.56789');
+				await futuresMarket.transferMargin(margin, { from: trader3 });
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader3))[0], margin);
+				await withdrawAccessibleAndValidate(trader3);
+			});
+
+			it('With a tiny position, minimum margin requirement is enforced.', async () => {
+				const margin = toUnit('1234.56789');
+				const size = margin.div(toBN(10000));
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader3,
+					fillPrice: toUnit('100'),
+					marginDelta: margin,
+					sizeDelta: size,
+				});
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader3))[0],
+					margin.sub(minInitialMargin),
+					toUnit('0.1')
+				);
+				await withdrawAccessibleAndValidate(trader3);
+
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader2,
+					fillPrice: toUnit('100'),
+					marginDelta: margin,
+					sizeDelta: size.neg(),
+				});
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader2))[0],
+					margin.sub(minInitialMargin),
+					toUnit('0.1')
+				);
+				await withdrawAccessibleAndValidate(trader2);
+			});
+
+			it('At max leverage, no margin is accessible.', async () => {
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader3,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1234'),
+					sizeDelta: toUnit('123.4'),
+				});
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader3))[0], toUnit('0'));
+				await withdrawAccessibleAndValidate(trader3);
+
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader2,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1234'),
+					sizeDelta: toUnit('-123.4'),
+				});
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader2))[0], toUnit('0'));
+				await withdrawAccessibleAndValidate(trader2);
+			});
+
+			it('At above max leverage, no margin is accessible.', async () => {
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader3,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1234'),
+					sizeDelta: toUnit('12.34').mul(toBN('8')),
+				});
+
+				await setPrice(baseAsset, toUnit('90'));
+
+				assert.bnGt((await futuresMarket.currentLeverage(trader3))[0], maxLeverage);
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader3))[0], toUnit('0'));
+				await withdrawAccessibleAndValidate(trader3);
+
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader2,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1234'),
+					sizeDelta: toUnit('-12.34').mul(toBN('8')),
+					leverage: toUnit('-8'),
+				});
+
+				await setPrice(baseAsset, toUnit('110'));
+
+				assert.bnGt((await futuresMarket.currentLeverage(trader2))[0].neg(), maxLeverage);
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader2))[0], toUnit('0'));
+				await withdrawAccessibleAndValidate(trader2);
+			});
+
+			it('If a position is subject to liquidation, no margin is accessible.', async () => {
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader3,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1234'),
+					sizeDelta: toUnit('12.34').mul(toBN('8')),
+				});
+
+				await setPrice(baseAsset, toUnit('80'));
+				assert.isTrue(await futuresMarket.canLiquidate(trader3));
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader3))[0], toUnit('0'));
+				await withdrawAccessibleAndValidate(trader3);
+
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader2,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1234'),
+					sizeDelta: toUnit('12.34').mul(toBN('-8')),
+				});
+
+				await setPrice(baseAsset, toUnit('120'));
+				assert.isTrue(await futuresMarket.canLiquidate(trader2));
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader2))[0], toUnit('0'));
+				await withdrawAccessibleAndValidate(trader2);
+			});
+
+			it('If remaining margin is below minimum initial margin, no margin is accessible.', async () => {
+				const size = toUnit('10.5');
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader3,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('105'),
+					sizeDelta: size,
+				});
+
+				// The price moves down, eating into the margin, but the leverage is reduced to acceptable levels
+				let price = toUnit('95');
+				await setPrice(baseAsset, price);
+				let remaining = (await futuresMarket.remainingMargin(trader3))[0];
+				const sizeFor9x = divideDecimalRound(remaining.mul(toBN('9')), price);
+				await futuresMarket.modifyPosition(sizeFor9x.sub(size), { from: trader3 });
+
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader3))[0], toUnit('0'));
+
+				price = toUnit('100');
+				await setPrice(baseAsset, price);
+				remaining = (await futuresMarket.remainingMargin(trader3))[0];
+				const sizeForNeg10x = divideDecimalRound(remaining.mul(toBN('-10')), price);
+
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader3,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('105'),
+					sizeDelta: sizeForNeg10x.sub(sizeFor9x),
+				});
+
+				// The price moves up, eating into the margin, but the leverage is reduced to acceptable levels
+				price = toUnit('111');
+				await setPrice(baseAsset, price);
+				remaining = (await futuresMarket.remainingMargin(trader3))[0];
+				const sizeForNeg9x = divideDecimalRound(remaining.mul(toBN('-9')), price);
+				await futuresMarket.modifyPosition(sizeForNeg10x.sub(sizeForNeg9x), { from: trader3 });
+
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader3))[0], toUnit('0'));
+				await withdrawAccessibleAndValidate(trader3);
+			});
+
+			it('With a fraction of max leverage position, a complementary fraction of margin is accessible', async () => {
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					sizeDelta: toUnit('50'),
+				});
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader2,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					sizeDelta: toUnit('-20'),
+				});
+
+				// Give fairly wide bands to account for fees
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader))[0],
+					toUnit('500'),
+					toUnit('20')
+				);
+				await withdrawAccessibleAndValidate(trader);
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader2))[0],
+					toUnit('800'),
+					toUnit('5')
+				);
+				await withdrawAccessibleAndValidate(trader2);
+			});
+
+			it('After some profit, more margin becomes accessible', async () => {
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					sizeDelta: toUnit('100'),
+				});
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader2,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					sizeDelta: toUnit('-50'),
+				});
+
+				// No margin is accessible at max leverage
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader))[0], toUnit('0'));
+
+				// The more conservative trader has about half margin accessible
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader2))[0],
+					toUnit('500'),
+					toUnit('10')
+				);
+
+				// Price goes up 10%
+				await setPrice(baseAsset, toUnit('110'));
+
+				// At 10x, the trader makes 100% on their margin
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader))[0],
+					toUnit('1000').sub(minInitialMargin),
+					toUnit('40')
+				);
+				await withdrawAccessibleAndValidate(trader);
+
+				// Price goes down 10% relative to the original price
+				await setPrice(baseAsset, toUnit('90'));
+
+				// The 5x short trader makes 50% on their margin
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader2))[0],
+					toUnit('1000'), // no deduction of min initial margin because the trader would still be above the min at max leverage
+					toUnit('50')
+				);
+				await withdrawAccessibleAndValidate(trader2);
+			});
+
+			it('After a loss, less margin is accessible', async () => {
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					sizeDelta: toUnit('20'),
+				});
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader2,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('1000'),
+					sizeDelta: toUnit('-50'),
+				});
+
+				// The more conservative trader has about 80% margin accessible
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader))[0],
+					toUnit('800'),
+					toUnit('10')
+				);
+
+				// The other, about 50% margin accessible
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader2))[0],
+					toUnit('500'),
+					toUnit('15')
+				);
+
+				// Price goes falls 10%
+				await setPrice(baseAsset, toUnit('90'));
+
+				// At 2x, the trader loses 20% of their margin
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader))[0],
+					toUnit('600'),
+					toUnit('40')
+				);
+				await withdrawAccessibleAndValidate(trader);
+
+				// Price goes up 5% relative to the original price
+				await setPrice(baseAsset, toUnit('105'));
+
+				// The 5x short trader loses 25% of their margin
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader2))[0],
+					toUnit('250'),
+					toUnit('50')
+				);
+				await withdrawAccessibleAndValidate(trader2);
+			});
+
+			it('Larger position', async () => {
+				await transferMarginAndModifyPosition({
+					market: futuresMarket,
+					account: trader,
+					fillPrice: toUnit('100'),
+					marginDelta: toUnit('10000'),
+					sizeDelta: toUnit('1000'),
+				});
+
+				// No margin is accessible at max leverage
+				assert.bnEqual((await futuresMarket.accessibleMargin(trader))[0], toUnit('0'));
+
+				// Price goes up 10%
+				await setPrice(baseAsset, toUnit('110'));
+
+				// At 10x, the trader makes 100% on their margin
+				assert.bnClose(
+					(await futuresMarket.accessibleMargin(trader))[0],
+					toUnit('10000')
+						.sub(minInitialMargin)
+						.sub(toUnit('1200')),
+					toUnit('10')
+				);
+				await withdrawAccessibleAndValidate(trader);
+			});
+
+			it('Accessible margin function properly reports invalid price', async () => {
+				assert.isFalse((await futuresMarket.accessibleMargin(trader))[1]);
+				await fastForward(7 * 24 * 60 * 60);
+				assert.isTrue((await futuresMarket.accessibleMargin(trader))[1]);
+			});
+
+			describe('withdrawAllMargin', () => {
+				it('Reverts if the price is invalid', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+					await fastForward(7 * 24 * 60 * 60);
+					await assert.revert(futuresMarket.withdrawAllMargin({ from: trader }), 'Invalid price');
+				});
+
+				it('allows users to withdraw all their margin', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+					await futuresMarket.transferMargin(toUnit('3000'), { from: trader2 });
+					await futuresMarket.transferMargin(toUnit('10000'), { from: trader3 });
+
+					await setPrice(baseAsset, toUnit('10'));
+
+					await futuresMarket.modifyPosition(toUnit('500'), { from: trader });
+					await futuresMarket.modifyPosition(toUnit('-1100'), { from: trader2 });
+					await futuresMarket.modifyPosition(toUnit('9000'), { from: trader3 });
+
+					assert.bnGt((await futuresMarket.accessibleMargin(trader))[0], toBN('0'));
+					assert.bnGt((await futuresMarket.accessibleMargin(trader2))[0], toBN('0'));
+					assert.bnGt((await futuresMarket.accessibleMargin(trader3))[0], toBN('0'));
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+
+					await setPrice(baseAsset, toUnit('11.4847'));
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					await futuresMarket.withdrawAllMargin({ from: trader2 });
+					await futuresMarket.withdrawAllMargin({ from: trader3 });
+
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader2))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader3))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+				});
+
+				it('Does nothing with an empty margin', async () => {
+					let margin = await futuresMarket.remainingMargin(trader);
+					assert.bnEqual(margin[0], toBN('0'));
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					margin = await futuresMarket.remainingMargin(trader);
+					assert.bnEqual(margin[0], toBN('0'));
+				});
+
+				it('Withdraws everything with no position', async () => {
+					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+					let margin = await futuresMarket.remainingMargin(trader);
+					assert.bnEqual(margin[0], toUnit('1000'));
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					margin = await futuresMarket.remainingMargin(trader);
+					assert.bnEqual(margin[0], toBN('0'));
+				});
+
+				it('Profit allows more to be withdrawn', async () => {
+					await futuresMarket.transferMargin(toUnit('1239.2487'), { from: trader });
+
+					await setPrice(baseAsset, toUnit('15.53'));
+					await futuresMarket.modifyPosition(toUnit('-322'), { from: trader });
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+					await setPrice(baseAsset, toUnit('1.777'));
+					assert.bnGt((await futuresMarket.accessibleMargin(trader))[0], toBN('0'));
+
+					await futuresMarket.withdrawAllMargin({ from: trader });
+					assert.bnClose(
+						(await futuresMarket.accessibleMargin(trader))[0],
+						toBN('0'),
+						toUnit('0.1')
+					);
+				});
 			});
 		});
 

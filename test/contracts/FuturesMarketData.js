@@ -203,6 +203,8 @@ contract('FuturesMarketData', accounts => {
 			assert.bnEqual(details2.accruedFunding, accruedFunding.funding);
 			const remaining = await futuresMarket.remainingMargin(trader1);
 			assert.bnEqual(details2.remainingMargin, remaining.marginRemaining);
+			const accessible = await futuresMarket.accessibleMargin(trader1);
+			assert.bnEqual(details2.accessibleMargin, accessible.marginAccessible);
 			const lp = await futuresMarket.liquidationPrice(trader1, true);
 			assert.bnEqual(details2.liquidationPrice, lp[0]);
 			assert.equal(details.canLiquidatePosition, await futuresMarket.canLiquidate(trader1));
