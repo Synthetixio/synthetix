@@ -991,17 +991,18 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         if (positionSize != 0) {
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-        }
 
-        // The user can decrease their margin if they have no position, or as long as:
-        //     * they have sufficient margin to do so
-        //     * the resulting margin would not be lower than the minimum margin
-        //     * the resulting leverage is lower than the maximum leverage
-        if (positionSize != 0 && marginDelta < 0) {
-            _revertIfError(
-                margin < _minInitialMargin() || _maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin)),
-                Status.InsufficientMargin
-            );
+            // The user can always decrease their margin if they have no position, or as long as:
+            //     * they have sufficient margin to do so
+            //     * the resulting margin would not be lower than the minimum margin
+            //     * the resulting leverage is lower than the maximum leverage
+            if (marginDelta < 0) {
+                _revertIfError(
+                    margin < _minInitialMargin() ||
+                        _maxLeverage(baseAsset) < _abs(_currentLeverage(position, price, margin)),
+                    Status.InsufficientMargin
+                );
+            }
         }
 
         // Emit relevant events
