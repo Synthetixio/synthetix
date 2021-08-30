@@ -21,21 +21,21 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
     ) public Collateral(_owner, _manager, _resolver, _collateralKey, _minCratio, _minCollateral) {}
 
     function open(uint amount, bytes32 currency) external payable returns (uint id) {
-        id = _openInternal(msg.value, amount, currency, false);
+        id = _open(msg.value, amount, currency, false);
     }
 
     function close(uint id) external returns (uint amount, uint collateral) {
-        (amount, collateral) = _closeInternal(msg.sender, id);
+        (amount, collateral) = _close(msg.sender, id);
 
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateral);
     }
 
     function deposit(address borrower, uint id) external payable returns (uint principal, uint collateral) {
-        (principal, collateral) = _depositInternal(borrower, id, msg.value);
+        (principal, collateral) = _deposit(borrower, id, msg.value);
     }
 
     function withdraw(uint id, uint amount) external returns (uint principal, uint collateral) {
-        (principal, collateral) = _withdrawInternal(id, amount);
+        (principal, collateral) = _withdraw(id, amount);
 
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(amount);
     }
@@ -45,11 +45,11 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         uint id,
         uint amount
     ) external returns (uint principal, uint collateral) {
-        (principal, collateral) = _repayInternal(borrower, msg.sender, id, amount);
+        (principal, collateral) = _repay(borrower, msg.sender, id, amount);
     }
 
     function draw(uint id, uint amount) external returns (uint principal, uint collateral) {
-        (principal, collateral) = _drawInternal(id, amount);
+        (principal, collateral) = _draw(id, amount);
     }
 
     function liquidate(
@@ -57,7 +57,7 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         uint id,
         uint amount
     ) external {
-        uint collateralLiquidated = _liquidateInternal(borrower, id, amount);
+        uint collateralLiquidated = _liquidate(borrower, id, amount);
 
         pendingWithdrawals[msg.sender] = pendingWithdrawals[msg.sender].add(collateralLiquidated);
     }

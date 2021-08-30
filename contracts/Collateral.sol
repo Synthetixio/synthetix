@@ -224,7 +224,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- LOAN INTERACTIONS ---------- */
 
-    function _openInternal(
+    function _open(
         uint collateral,
         uint amount,
         bytes32 currency,
@@ -299,7 +299,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         emit LoanCreated(msg.sender, id, amount, collateral, currency, issueFee);
     }
 
-    function _closeInternal(address borrower, uint id) internal rateIsValid returns (uint amount, uint collateral) {
+    function _close(address borrower, uint id) internal rateIsValid returns (uint amount, uint collateral) {
         // 0. Get the loan and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
@@ -313,7 +313,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         emit LoanClosed(borrower, id);
     }
 
-    function _closeByLiquidationInternal(
+    function _closeByLiquidation(
         address borrower,
         address liquidator,
         Loan storage loan
@@ -366,7 +366,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         loan.lastInteraction = block.timestamp;
     }
 
-    function _depositInternal(
+    function _deposit(
         address account,
         uint id,
         uint amount
@@ -396,7 +396,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function _withdrawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
+    function _withdraw(uint id, uint amount) internal rateIsValid returns (uint, uint) {
         // 0. Get the loan and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
@@ -412,7 +412,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function _liquidateInternal(
+    function _liquidate(
         address borrower,
         uint id,
         uint payment
@@ -443,7 +443,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 7. If its greater than the amount owing, we need to close the loan.
         if (amountToLiquidate >= amountOwing) {
-            (, collateralLiquidated) = _closeByLiquidationInternal(borrower, msg.sender, loan);
+            (, collateralLiquidated) = _closeByLiquidation(borrower, msg.sender, loan);
             return collateralLiquidated;
         }
 
@@ -464,7 +464,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         emit LoanPartiallyLiquidated(borrower, id, msg.sender, amountToLiquidate, collateralLiquidated);
     }
 
-    function _repayInternal(
+    function _repay(
         address borrower,
         address repayer,
         uint id,
@@ -501,7 +501,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function _repayWithCollateralInternal(
+    function _repayWithCollateral(
         address borrower,
         uint id,
         uint payment,
@@ -540,7 +540,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return (loan.amount, loan.collateral);
     }
 
-    function _drawInternal(uint id, uint amount) internal rateIsValid returns (uint, uint) {
+    function _draw(uint id, uint amount) internal rateIsValid returns (uint, uint) {
         // 0. Get the loan and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, msg.sender);
 
