@@ -543,8 +543,8 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Ugly solution to rounding safety: leave up to an extra tenth of a cent in the account/leverage
         // This should guarantee that the value returned here can always been withdrawn, but there may be
         // a little extra actually-accessible value left over, depending on the position size and margin.
-        uint mill = uint(_UNIT / 1000);
-        int maxLeverage = int(_maxLeverage(baseAsset).sub(mill));
+        uint milli = uint(_UNIT / 1000);
+        int maxLeverage = int(_maxLeverage(baseAsset).sub(milli));
         uint inaccessible = _abs(_notionalValue(position, price).divideDecimalRound(maxLeverage));
 
         // If the user has a position open, we'll enforce a min initial margin requirement.
@@ -553,7 +553,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             if (inaccessible < minInitialMargin) {
                 inaccessible = minInitialMargin;
             }
-            inaccessible = inaccessible.add(mill);
+            inaccessible = inaccessible.add(milli);
         }
 
         uint remaining = _remainingMargin(position, fundingIndex, price);
