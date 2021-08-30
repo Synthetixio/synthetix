@@ -241,4 +241,10 @@ module.exports = async ({
 		deps: ['AddressResolver'],
 		args: [account],
 	});
+
+	await deployer.deployContract({
+		name: 'SynthRedeemer',
+		deps: ['AddressResolver'],
+		args: [addressOf(readProxyForResolver)],
+	});
 };
