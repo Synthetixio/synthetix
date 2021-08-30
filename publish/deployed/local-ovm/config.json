@@ -136,5 +136,8 @@
 	},
 	"LinkWrapper": {
 		"deploy": true
+	},
+	"LINK": {
+		"deploy": true
 	}
 }
