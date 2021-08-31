@@ -2,7 +2,7 @@ const ethers = require('ethers');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
-const { skipWaitingPeriod } = require('../utils/skip');
+const { skipWaitingPeriod, skipFeePeriod } = require('../utils/skip');
 
 function itCanExchange({ ctx }) {
 	describe('exchanging and settling', () => {
@@ -59,6 +59,8 @@ function itCanExchange({ ctx }) {
 			describe('when settle is called', () => {
 				before('skip waiting period', async () => {
 					await skipWaitingPeriod({ ctx });
+					await skipFeePeriod({ ctx });
+					// await skipMinimumStakeTime({ctx});
 				});
 
 				before('settle', async () => {
