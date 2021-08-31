@@ -1,9 +1,9 @@
 // @unsupported: ovm
 pragma solidity ^0.5.16;
 
-import "../interfaces/IWETH.sol";
+import "../interfaces/IERC20.sol";
 
-contract WETH is IWETH {
+contract WETH is IERC20 {
     string public name = "Wrapped Ether";
     string public symbol = "WETH";
     uint8 public decimals = 18;

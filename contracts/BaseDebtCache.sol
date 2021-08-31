@@ -16,7 +16,7 @@ import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICollateralManager.sol";
-import "./interfaces/IEtherWrapper.sol";
+import "./interfaces/IWrapperFactory.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/debtcache
 contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
@@ -40,7 +40,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_COLLATERALMANAGER = "CollateralManager";
-    bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
+    bytes32 private constant CONTRACT_WRAPPERFACTORY = "EtherWrapper";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -54,7 +54,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         newAddresses[2] = CONTRACT_EXRATES;
         newAddresses[3] = CONTRACT_SYSTEMSTATUS;
         newAddresses[4] = CONTRACT_COLLATERALMANAGER;
-        newAddresses[5] = CONTRACT_ETHER_WRAPPER;
+        newAddresses[5] = CONTRACT_WRAPPERFACTORY;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -78,8 +78,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return ICollateralManager(requireAndGetAddress(CONTRACT_COLLATERALMANAGER));
     }
 
-    function etherWrapper() internal view returns (IEtherWrapper) {
-        return IEtherWrapper(requireAndGetAddress(CONTRACT_ETHER_WRAPPER));
+    function wrapperFactory() internal view returns (IWrapperFactory) {
+        return IWrapperFactory(requireAndGetAddress(CONTRACT_WRAPPERFACTORY));
     }
 
     function debtSnapshotStaleTime() external view returns (uint) {
@@ -185,9 +185,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         isInvalid = anyTotalLongRateIsInvalid || anyTotalShortRateIsInvalid;
         excludedDebt = longValue.add(shortValue);
 
-        // 2. EtherWrapper.
-        // Subtract sETH and sUSD issued by EtherWrapper.
-        excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
+        // 2. Wrapper.
+        // Subtract totalIssuedSynths issued by all wrappers.
+        excludedDebt = excludedDebt.add(wrapperFactory().totalIssuedSynths());
 
         return (excludedDebt, isInvalid);
     }

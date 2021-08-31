@@ -43,8 +43,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // TODO(liamz): these are simple bounds for the mint/burn fee rates (max 100%).
     // Can we come up with better values?
-    uint public constant MAX_ETHER_WRAPPER_MINT_FEE_RATE = 1e18;
-    uint public constant MAX_ETHER_WRAPPER_BURN_FEE_RATE = 1e18;
+    uint public constant MAX_WRAPPER_MINT_FEE_RATE = 1e18;
+    uint public constant MAX_WRAPPER_BURN_FEE_RATE = 1e18;
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -135,20 +135,20 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP 112: ETH Wrappr
     // The maximum amount of ETH held by the EtherWrapper.
-    function etherWrapperMaxETH() external view returns (uint) {
-        return getEtherWrapperMaxETH();
+    function wrapperMaxETH(bytes32 currencyKey) external view returns (uint) {
+        return getWrapperMaxTokenAmount(currencyKey);
     }
 
     // SIP 112: ETH Wrappr
     // The fee for depositing ETH into the EtherWrapper.
-    function etherWrapperMintFeeRate() external view returns (uint) {
-        return getEtherWrapperMintFeeRate();
+    function wrapperMintFeeRate(bytes32 currencyKey) external view returns (uint) {
+        return getWrapperMintFeeRate(currencyKey);
     }
 
     // SIP 112: ETH Wrappr
     // The fee for burning sETH and releasing ETH from the EtherWrapper.
-    function etherWrapperBurnFeeRate() external view returns (uint) {
-        return getEtherWrapperBurnFeeRate();
+    function wrapperBurnFeeRate(bytes32 currencyKey) external view returns (uint) {
+        return getWrapperBurnFeeRate(currencyKey);
     }
 
     // ========== RESTRICTED ==========
@@ -288,21 +288,44 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
-    function setEtherWrapperMaxETH(uint _maxETH) external onlyOwner {
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MAX_ETH, _maxETH);
-        emit EtherWrapperMaxETHUpdated(_maxETH);
+    function setWrapperMaxTokenAmount(bytes32 _currencyKey, uint _maxTokenAmount) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _currencyKey)),
+            _maxTokenAmount
+        );
+        emit WrapperMaxETHUpdated(_currencyKey, _maxTokenAmount);
     }
 
-    function setEtherWrapperMintFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_ETHER_WRAPPER_MINT_FEE_RATE, "rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_MINT_FEE_RATE, _rate);
-        emit EtherWrapperMintFeeRateUpdated(_rate);
+    function setWrapperMintFeeRate(bytes32 _currencyKey, uint _rate) external onlyOwner {
+        require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, _currencyKey)),
+            _rate
+        );
+        emit WrapperMintFeeRateUpdated(_currencyKey, _rate);
     }
 
-    function setEtherWrapperBurnFeeRate(uint _rate) external onlyOwner {
-        require(_rate <= MAX_ETHER_WRAPPER_BURN_FEE_RATE, "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
-        flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_ETHER_WRAPPER_BURN_FEE_RATE, _rate);
-        emit EtherWrapperBurnFeeRateUpdated(_rate);
+    function setWrapperBurnFeeRate(bytes32 _currencyKey, uint _rate) external onlyOwner {
+        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _currencyKey)),
+            _rate
+        );
+        emit WrapperBurnFeeRateUpdated(_currencyKey, _rate);
+    }
+
+    function setWrapperSettings(
+        bytes32 _currencyKey,
+        uint _maxTokenAmount,
+        uint _mintFeeRate,
+        uint _burnFeeRate
+    ) external onlyOwner {
+        this.setWrapperMaxTokenAmount(_currencyKey, _maxTokenAmount);
+        this.setWrapperMintFeeRate(_currencyKey, _mintFeeRate);
+        this.setWrapperBurnFeeRate(_currencyKey, _burnFeeRate);
     }
 
     // ========== EVENTS ==========
@@ -321,7 +344,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
-    event EtherWrapperMaxETHUpdated(uint maxETH);
-    event EtherWrapperMintFeeRateUpdated(uint rate);
-    event EtherWrapperBurnFeeRateUpdated(uint rate);
+    event WrapperMaxETHUpdated(bytes32 currencyKey, uint maxTokenAmount);
+    event WrapperMintFeeRateUpdated(bytes32 currencyKey, uint rate);
+    event WrapperBurnFeeRateUpdated(bytes32 currencyKey, uint rate);
 }
