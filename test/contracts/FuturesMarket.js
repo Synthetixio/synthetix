@@ -1502,7 +1502,16 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [toBN('1'), trader, toUnit('2000'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [
+						toBN('1'),
+						trader,
+						toUnit('2000'),
+						toBN('0'),
+						toUnit('-10'),
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+					],
 					log: decodedLogs[1],
 					bnCloseVariance: toUnit('5'),
 				});
