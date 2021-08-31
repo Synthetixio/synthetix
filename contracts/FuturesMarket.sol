@@ -1224,7 +1224,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         address indexed account,
         uint margin,
         int size,
-        int sizeDelta,
+        int tradeSize,
         uint lastPrice,
         uint fundingIndex,
         uint fee
@@ -1237,13 +1237,13 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         address account,
         uint margin,
         int size,
-        int sizeDelta,
+        int tradeSize,
         uint lastPrice,
         uint fundingIndex,
         uint fee
     ) internal {
         proxy._emit(
-            abi.encode(margin, size, sizeDelta, lastPrice, fundingIndex, fee),
+            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
             3,
             SIG_POSITIONMODIFIED,
             bytes32(id),
