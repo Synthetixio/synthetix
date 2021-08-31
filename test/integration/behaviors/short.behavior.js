@@ -6,6 +6,7 @@ const {
 const { approveIfNeeded } = require('../utils/approve');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
+const { getLoan } = require('../utils/loans');
 const { ensureBalance } = require('../utils/balances');
 const { exchangeSynths } = require('../utils/exchanging');
 const { skipWaitingPeriod } = require('../utils/skip');
@@ -90,7 +91,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const event = events.find(l => l.event === 'LoanCreated');
 					loanId = event.args.id;
 
-					loan = await CollateralShort.loans(loanId);
+					loan = await getLoan({ ctx, id: loanId, user, ovm: ctx.useOvm });
 				});
 
 				before('deposit more collateral', async () => {
@@ -102,7 +103,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const event = events.find(l => l.event === 'CollateralDeposited');
 					loanId = event.args.id;
 
-					loan = await CollateralShort.loans(loanId);
+					loan = await getLoan({ ctx, id: loanId, user, ovm: ctx.useOvm });
 					assert.bnEqual(loan.collateral, parseEther('20000'));
 				});
 
@@ -115,7 +116,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const event = events.find(l => l.event === 'CollateralWithdrawn');
 					loanId = event.args.id;
 
-					loan = await CollateralShort.loans(loanId);
+					loan = await getLoan({ ctx, id: loanId, user, ovm: ctx.useOvm });
 					assert.bnEqual(loan.collateral, parseEther('15000'));
 				});
 
@@ -128,7 +129,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const event = events.find(l => l.event === 'LoanDrawnDown');
 					loanId = event.args.id;
 
-					loan = await CollateralShort.loans(loanId);
+					loan = await getLoan({ ctx, id: loanId, user, ovm: ctx.useOvm });
 					assert.bnEqual(loan.amount, parseEther('2'));
 				});
 
@@ -156,7 +157,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 						const event = events.find(l => l.event === 'LoanClosed');
 						loanId = event.args.id;
 
-						loan = await CollateralShort.loans(loanId);
+						loan = await getLoan({ ctx, id: loanId, user, ovm: ctx.useOvm });
 					});
 
 					before('skip waiting period', async () => {
