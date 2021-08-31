@@ -334,7 +334,7 @@
 		},
 		{
 			"sip": 174,
-			"layer": "base",
+			"layer": "both",
 			"sources": ["Issuer", "SynthRedeemer"]
 		}
 	],
