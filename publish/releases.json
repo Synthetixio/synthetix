@@ -254,8 +254,8 @@
 		},
 		"sources": [
 			"Exchanger",
-			"Synthetix",
 			"FuturesMarketManager",
+			"Synthetix",
 			"SystemSettings"
 		],
 		"sips": [80]
@@ -269,16 +269,17 @@
 		"ovm": true,
 		"sources": [
 			"Exchanger",
-			"Synthetix",
-			"ProxyFuturesMarketBTC",
 			"FuturesMarketBTC",
-			"ProxyFuturesMarketETH",
-			"FuturesMarketETH",
-			"ProxyFuturesMarketLINK",
-			"FuturesMarketLINK",
-			"ProxyFuturesMarketManager",
-			"FuturesMarketManager",
 			"FuturesMarketData",
+			"FuturesMarketETH",
+			"FuturesMarketLINK",
+			"FuturesMarketManager",
+			"FuturesMarketSettings",
+			"ProxyFuturesMarketBTC",
+			"ProxyFuturesMarketETH",
+			"ProxyFuturesMarketLINK",
+			"ProxyFuturesMarketManager",
+			"Synthetix",
 			"SystemSettings"
 		],
 		"sips": [80]
