@@ -315,6 +315,7 @@ contract('FuturesMarket', accounts => {
 							trader,
 							margin.mul(toBN(3)).sub(toUnit('17.5')),
 							t1size.mul(toBN(3)),
+							t1size.mul(toBN(2)),
 							toUnit('100'),
 							toBN(3),
 							fee,
@@ -891,7 +892,16 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [toBN('1'), trader3, toUnit('1000'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [
+						toBN('1'),
+						trader3,
+						toUnit('1000'),
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+					],
 					log: decodedLogs[4],
 				});
 
@@ -928,7 +938,16 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [toBN('1'), trader3, toUnit('0'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [
+						toBN('1'),
+						trader3,
+						toUnit('0'),
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+					],
 					log: decodedLogs[3],
 				});
 			});
@@ -1035,7 +1054,7 @@ contract('FuturesMarket', accounts => {
 			decodedEventEqual({
 				event: 'PositionModified',
 				emittedFrom: proxyFuturesMarket.address,
-				args: [toBN('1'), trader, margin.sub(fee), size, price, toBN(2), fee],
+				args: [toBN('1'), trader, margin.sub(fee), size, size, price, toBN(2), fee],
 				log: decodedLogs[2],
 			});
 		});
@@ -1483,7 +1502,16 @@ contract('FuturesMarket', accounts => {
 				decodedEventEqual({
 					event: 'PositionModified',
 					emittedFrom: proxyFuturesMarket.address,
-					args: [toBN('1'), trader, toUnit('2000'), toBN('0'), toBN('0'), toBN('0'), toBN('0')],
+					args: [
+						toBN('1'),
+						trader,
+						toUnit('2000'),
+						toBN('0'),
+						toUnit('-10'),
+						toBN('0'),
+						toBN('0'),
+						toBN('0'),
+					],
 					log: decodedLogs[1],
 					bnCloseVariance: toUnit('5'),
 				});

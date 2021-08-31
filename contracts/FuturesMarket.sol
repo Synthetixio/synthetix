@@ -1014,6 +1014,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             sender,
             margin,
             positionSize,
+            0,
             positionSize != 0 ? price : position.lastPrice,
             positionSize != 0 ? fundingIndex : position.fundingIndex,
             0
@@ -1077,7 +1078,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             delete position.size;
             delete position.lastPrice;
             delete position.fundingIndex;
-            emitPositionModified(newPosition.id, sender, newPosition.margin, 0, 0, 0, fee);
+            emitPositionModified(newPosition.id, sender, newPosition.margin, 0, sizeDelta, 0, 0, fee);
         } else {
             // New positions get new id's
             if (oldPosition.size == 0) {
@@ -1087,7 +1088,16 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
             position.size = newPosition.size;
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-            emitPositionModified(newPosition.id, sender, newPosition.margin, newPosition.size, price, fundingIndex, fee);
+            emitPositionModified(
+                newPosition.id,
+                sender,
+                newPosition.margin,
+                newPosition.size,
+                sizeDelta,
+                price,
+                fundingIndex,
+                fee
+            );
         }
     }
 
@@ -1177,7 +1187,7 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Issue the reward to the liquidator.
         _manager().issueSUSD(liquidator, liquidationFee);
 
-        emitPositionModified(positionId, account, 0, 0, 0, 0, 0);
+        emitPositionModified(positionId, account, 0, 0, 0, 0, 0, 0);
         emitPositionLiquidated(positionId, account, liquidator, positionSize, lPrice, liquidationFee);
     }
 
@@ -1214,24 +1224,26 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         address indexed account,
         uint margin,
         int size,
+        int tradeSize,
         uint lastPrice,
         uint fundingIndex,
         uint fee
     );
     bytes32 internal constant SIG_POSITIONMODIFIED =
-        keccak256("PositionModified(uint256,address,uint256,int256,uint256,uint256,uint256)");
+        keccak256("PositionModified(uint256,address,uint256,int256,int256,uint256,uint256,uint256)");
 
     function emitPositionModified(
         uint id,
         address account,
         uint margin,
         int size,
+        int tradeSize,
         uint lastPrice,
         uint fundingIndex,
         uint fee
     ) internal {
         proxy._emit(
-            abi.encode(margin, size, lastPrice, fundingIndex, fee),
+            abi.encode(margin, size, tradeSize, lastPrice, fundingIndex, fee),
             3,
             SIG_POSITIONMODIFIED,
             bytes32(id),
