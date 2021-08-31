@@ -1,10 +1,10 @@
-async function getLoan({ ctx, id, user, fork }) {
+async function getLoan({ ctx, id, user }) {
 	let { CollateralShort } = ctx.contracts;
 	CollateralShort = CollateralShort.connect(user);
 
 	let loan;
 
-	if (!fork) {
+	if (!ctx.useFork) {
 		loan = await CollateralShort.loans(id);
 	} else {
 		loan = await CollateralShort.getLoan(user.address, id);

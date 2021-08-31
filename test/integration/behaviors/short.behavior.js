@@ -91,7 +91,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const event = events.find(l => l.event === 'LoanCreated');
 					loanId = event.args.id;
 
-					loan = await getLoan({ ctx, id: loanId, user, fork: ctx.useFork });
+					loan = await getLoan({ ctx, id: loanId, user });
 				});
 
 				before('deposit more collateral', async () => {
@@ -103,7 +103,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const event = events.find(l => l.event === 'CollateralDeposited');
 					loanId = event.args.id;
 
-					loan = await getLoan({ ctx, id: loanId, user, fork: ctx.useFork });
+					loan = await getLoan({ ctx, id: loanId, user });
 					assert.bnEqual(loan.collateral, parseEther('20000'));
 				});
 
@@ -116,7 +116,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const event = events.find(l => l.event === 'CollateralWithdrawn');
 					loanId = event.args.id;
 
-					loan = await getLoan({ ctx, id: loanId, user, fork: ctx.useFork });
+					loan = await getLoan({ ctx, id: loanId, user });
 					assert.bnEqual(loan.collateral, parseEther('15000'));
 				});
 
@@ -129,7 +129,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					const event = events.find(l => l.event === 'LoanDrawnDown');
 					loanId = event.args.id;
 
-					loan = await getLoan({ ctx, id: loanId, user, fork: ctx.useFork });
+					loan = await getLoan({ ctx, id: loanId, user });
 					assert.bnEqual(loan.amount, parseEther('2'));
 				});
 
@@ -157,7 +157,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 						const event = events.find(l => l.event === 'LoanClosed');
 						loanId = event.args.id;
 
-						loan = await getLoan({ ctx, id: loanId, user, fork: ctx.useFork });
+						loan = await getLoan({ ctx, id: loanId, user });
 					});
 
 					before('skip waiting period', async () => {
