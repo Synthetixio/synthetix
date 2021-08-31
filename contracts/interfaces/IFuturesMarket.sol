@@ -98,6 +98,8 @@ interface IFuturesMarket {
 
     function remainingMargin(address account) external view returns (uint marginRemaining, bool invalid);
 
+    function accessibleMargin(address account) external view returns (uint marginAccessible, bool invalid);
+
     function liquidationPrice(address account, bool includeFunding) external view returns (uint price, bool invalid);
 
     function canLiquidate(address account) external view returns (bool);
@@ -105,6 +107,18 @@ interface IFuturesMarket {
     function currentLeverage(address account) external view returns (int leverage, bool invalid);
 
     function orderFee(address account, int sizeDelta) external view returns (uint fee, bool invalid);
+
+    function postTradeDetails(int sizeDelta, address sender)
+        external
+        view
+        returns (
+            uint margin,
+            int size,
+            uint price,
+            uint liqPrice,
+            uint fee,
+            Status status
+        );
 
     /* ---------- Market Operations ---------- */
 
