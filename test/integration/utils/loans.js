@@ -3,7 +3,7 @@ async function getLoan({ ctx, id, user }) {
 
 	let loan;
 
-	if (!ctx.useFork) {
+	if (!CollateralStateShort) {
 		loan = await CollateralShort.loans(id);
 	} else {
 		loan = await CollateralStateShort.getLoan(user.address, id);
