@@ -9,10 +9,6 @@ const { normalizeHardhatNetworkAccountsConfig } = require('hardhat/internal/core
 const ethers = require('ethers');
 
 const {
-	utils: { formatUnits, parseUnits },
-} = ethers;
-
-const {
 	config: {
 		networks: {
 			hardhat: { accounts },
@@ -22,7 +18,7 @@ const {
 
 const BN = require('bn.js');
 
-const { toBN, toWei, hexToAscii } = require('web3-utils');
+const { toBN, toWei, fromWei, hexToAscii } = require('web3-utils');
 const UNIT = toWei(new BN('1'), 'ether');
 
 const {
@@ -149,8 +145,8 @@ module.exports = ({ web3 } = {}) => {
 	 *  we should be able to update the conversion factor here.
 	 *  @param amount The amount you want to re-base to UNIT
 	 */
-	const toUnit = amount => parseUnits(amount.toString(), 'ether');
-	const fromUnit = amount => formatUnits(amount, 'ether');
+	const toUnit = amount => toBN(toWei(amount.toString(), 'ether'));
+	const fromUnit = amount => fromWei(amount, 'ether');
 
 	/**
 	 *  Translates an amount to our canonical precise unit. We happen to use 10^27, which means we can
