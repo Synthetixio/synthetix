@@ -68,8 +68,9 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         address synthProxyAddress = address(synthProxy);
         require(redemptions[synthProxyAddress] == 0, "Synth is already deprecated");
         require(rateToRedeem > 0, "No rate for synth to redeem");
-        require(_sUSD().balanceOf(address(this)) >= totalSupply(IERC20(address(synthProxy))), "sUSD must first be supplied");
         redemptions[synthProxyAddress] = rateToRedeem;
+        // Note: we must check the totalSupply after setting the redemption as it uses the persisted redemption rate for its calculation
+        require(_sUSD().balanceOf(address(this)) >= totalSupply(IERC20(address(synthProxy))), "sUSD must first be supplied");
         emit SynthDeprecated(address(synthProxy), rateToRedeem, totalSynthSupply);
     }
 

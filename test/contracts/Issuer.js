@@ -751,7 +751,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 										// 100 units of sBTC at a rate of 2:1
 										assert.bnEqual(amountOfsUSDIssued, toUnit('200'));
 									});
-									it('it invokes deprecate on the redeemer', async () => {
+									it('it invokes deprecate on the redeemer via the proxy', async () => {
 										const redeemRate = await synthRedeemer.redemptions(synthProxy.address);
 
 										assert.bnEqual(redeemRate, toUnit('2'));
