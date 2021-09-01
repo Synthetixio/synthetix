@@ -53,7 +53,7 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         uint rateToRedeem = redemptions[address(synthProxy)];
         require(rateToRedeem > 0, "Synth not redeemable");
         require(amountOfSynth > 0, "No balance of synth to redeem");
-        require(synthProxy.balanceOf(msg.sender) >= amountOfSynth, "Insufficent balance");
+        require(synthProxy.balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
         _issuer().burnForRedemption(ISynth(address(synthProxy)), msg.sender, amountOfSynth);
         uint amountInsUSD = amountOfSynth.multiplyDecimal(rateToRedeem);
         _sUSD().transfer(msg.sender, amountInsUSD);

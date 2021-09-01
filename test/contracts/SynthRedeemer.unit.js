@@ -210,5 +210,147 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 				});
 			});
 		});
+		describe('redemption', () => {
+			describe('redeem()', () => {
+				it('reverts when synth not redeemable', async () => {
+					await assert.revert(
+						instance.redeem(synth.address, {
+							from: account1,
+						}),
+						'Synth not redeemable'
+					);
+				});
+
+				describe('when synth marked for redemption', () => {
+					beforeEach(async () => {
+						// smock sUSD balance to prevent the deprecation failing
+						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
+						await instance.deprecate(synth.address, parseEther('2'), '1', {
+							from: this.mocks['Issuer'].address,
+						});
+					});
+					it('redemption reverts when user has no balance', async () => {
+						await assert.revert(
+							instance.redeem(synth.address, {
+								from: account1,
+							}),
+							'No balance of synth to redeem'
+						);
+					});
+					describe('when the user has a synth balance', () => {
+						let userBalance;
+						beforeEach(async () => {
+							userBalance = parseEther('5');
+							synth.smocked.balanceOf.will.return.with(userBalance);
+						});
+						describe('when redemption is called by the user', () => {
+							let txn;
+							beforeEach(async () => {
+								txn = await instance.redeem(synth.address, { from: account1 });
+							});
+							it('then Issuer.burnForRedemption is called with the correct arguments', async () => {
+								assert.equal(this.mocks['Issuer'].smocked.burnForRedemption.calls.length, 1);
+								assert.equal(
+									this.mocks['Issuer'].smocked.burnForRedemption.calls[0][0],
+									synth.address
+								);
+								assert.equal(this.mocks['Issuer'].smocked.burnForRedemption.calls[0][1], account1);
+								assert.bnEqual(
+									this.mocks['Issuer'].smocked.burnForRedemption.calls[0][2],
+									userBalance
+								);
+							});
+							it('transfers the correct amount of sUSD to the user', async () => {
+								assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls.length, 1);
+								assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls[0][0], account1);
+								assert.bnEqual(
+									this.mocks['SynthsUSD'].smocked.transfer.calls[0][1],
+									parseEther('10') // 5 units deprecated at price 2 is 10
+								);
+							});
+							it('emitting a SynthRedeemed event', async () => {
+								assert.eventEqual(txn, 'SynthRedeemed', {
+									synth: synth.address,
+									account: account1,
+									amountOfSynth: userBalance,
+									amountInsUSD: parseEther('10'),
+								});
+							});
+						});
+					});
+				});
+			});
+			describe('redeemPartial()', () => {
+				it('reverts when synth not redeemable', async () => {
+					await assert.revert(
+						instance.redeemPartial(synth.address, parseEther('1'), {
+							from: account1,
+						}),
+						'Synth not redeemable'
+					);
+				});
+
+				describe('when synth marked for redemption', () => {
+					beforeEach(async () => {
+						// smock sUSD balance to prevent the deprecation failing
+						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
+						await instance.deprecate(synth.address, parseEther('2'), '1', {
+							from: this.mocks['Issuer'].address,
+						});
+					});
+					it('partial redemption reverts when user has no balance', async () => {
+						await assert.revert(
+							instance.redeemPartial(synth.address, parseEther('1'), {
+								from: account1,
+							}),
+							'Insufficient balance'
+						);
+					});
+					describe('when the user has a synth balance', () => {
+						let userBalance;
+						beforeEach(async () => {
+							userBalance = parseEther('5');
+							synth.smocked.balanceOf.will.return.with(userBalance);
+						});
+						describe('when partial redemption is called by the user', () => {
+							let txn;
+							beforeEach(async () => {
+								txn = await instance.redeemPartial(synth.address, parseEther('1'), {
+									from: account1,
+								});
+							});
+							it('then Issuer.burnForRedemption is called with the correct arguments', async () => {
+								assert.equal(this.mocks['Issuer'].smocked.burnForRedemption.calls.length, 1);
+								assert.equal(
+									this.mocks['Issuer'].smocked.burnForRedemption.calls[0][0],
+									synth.address
+								);
+								assert.equal(this.mocks['Issuer'].smocked.burnForRedemption.calls[0][1], account1);
+								assert.bnEqual(
+									this.mocks['Issuer'].smocked.burnForRedemption.calls[0][2],
+									parseEther('1')
+								);
+							});
+							it('transfers the correct amount of sUSD to the user', async () => {
+								assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls.length, 1);
+								assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls[0][0], account1);
+								assert.bnEqual(
+									this.mocks['SynthsUSD'].smocked.transfer.calls[0][1],
+									parseEther('2') // 1 units deprecated at price 2 is 2
+								);
+							});
+							it('emitting a SynthRedeemed event', async () => {
+								assert.eventEqual(txn, 'SynthRedeemed', {
+									synth: synth.address,
+									account: account1,
+									amountOfSynth: parseEther('1'),
+									amountInsUSD: parseEther('2'),
+								});
+							});
+						});
+					});
+				});
+			});
+		});
 	});
 });
