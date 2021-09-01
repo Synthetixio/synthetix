@@ -722,29 +722,45 @@ contract('Issuer (via Synthetix)', async accounts => {
 								});
 							});
 
-							describe('when removed', () => {
-								let txn;
+							describe('when a debt snapshot is taken', () => {
+								let totalIssuedSynths;
 								beforeEach(async () => {
-									// base conditions
-									assert.equal(await sUSDContract.balanceOf(synthRedeemer.address), '0');
-									assert.equal(await synthRedeemer.redemptions(synthProxy.address), '0');
+									await debtCache.takeDebtSnapshot();
 
-									// now do the removal
-									txn = await issuer.removeSynth(currencyKey, { from: owner });
-								});
-								it('emits an event', async () => {
-									assert.eventEqual(txn, 'SynthRemoved', [currencyKey, synth.address]);
-								});
-								it('issues the equivalent amount of sUSD', async () => {
-									const amountOfsUSDIssued = await sUSDContract.balanceOf(synthRedeemer.address);
+									totalIssuedSynths = await issuer.totalIssuedSynths(sUSD, true);
 
-									// 100 units of sBTC at a rate of 2:1
-									assert.bnEqual(amountOfsUSDIssued, toUnit('200'));
+									// 100 sETH at 2 per sETH is 200 total debt
+									assert.bnEqual(totalIssuedSynths, toUnit('200'));
 								});
-								it('it invokes deprecate on the redeemer', async () => {
-									const redeemRate = await synthRedeemer.redemptions(synthProxy.address);
+								describe('when the synth is removed', () => {
+									let txn;
+									beforeEach(async () => {
+										// base conditions
+										assert.equal(await sUSDContract.balanceOf(synthRedeemer.address), '0');
+										assert.equal(await synthRedeemer.redemptions(synthProxy.address), '0');
 
-									assert.bnEqual(redeemRate, toUnit('2'));
+										// now do the removal
+										txn = await issuer.removeSynth(currencyKey, { from: owner });
+									});
+									it('emits an event', async () => {
+										assert.eventEqual(txn, 'SynthRemoved', [currencyKey, synth.address]);
+									});
+									it('issues the equivalent amount of sUSD', async () => {
+										const amountOfsUSDIssued = await sUSDContract.balanceOf(synthRedeemer.address);
+
+										// 100 units of sBTC at a rate of 2:1
+										assert.bnEqual(amountOfsUSDIssued, toUnit('200'));
+									});
+									it('it invokes deprecate on the redeemer', async () => {
+										const redeemRate = await synthRedeemer.redemptions(synthProxy.address);
+
+										assert.bnEqual(redeemRate, toUnit('2'));
+									});
+									it('and total debt remains unchanged', async () => {
+										// await debtCache.takeDebtSnapshot();
+
+										assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), totalIssuedSynths);
+									});
 								});
 							});
 						});

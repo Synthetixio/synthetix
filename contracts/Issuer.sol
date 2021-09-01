@@ -464,6 +464,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             require(rateToRedeem > 0, "Cannot remove synth to redeem without rate");
             ISynthRedeemer _synthRedeemer = synthRedeemer();
             synths[sUSD].issue(address(_synthRedeemer), amountOfsUSD);
+            // ensure the debt cache is aware of the new sUSD issued
+            debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
             _synthRedeemer.deprecate(ISynth(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem, synthSupply);
         }
 
