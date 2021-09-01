@@ -13,8 +13,6 @@ const {
 	prepareSmocks,
 } = require('./helpers');
 
-const { toUnit } = require('../utils')();
-
 const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
@@ -58,7 +56,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 			it('may only be called by the Issuer', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: instance.deprecate,
-					args: [synth.address, toUnit('100'), '1'],
+					args: [synth.address, parseEther('100'), '1'],
 					address: this.mocks['Issuer'].address,
 					accounts,
 					reason: 'Restricted to Issuer contract',
@@ -69,19 +67,19 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 				let txn;
 
 				beforeEach(async () => {
-					txn = await instance.deprecate(synth.address, toUnit('10'), toUnit('999'), {
+					txn = await instance.deprecate(synth.address, parseEther('10'), parseEther('999'), {
 						from: this.mocks['Issuer'].address,
 					});
 				});
 				it('updates the redemption with the supplied rate', async () => {
-					assert.bnEqual(await instance.redemptions(synth.address), toUnit('10'));
+					assert.bnEqual(await instance.redemptions(synth.address), parseEther('10'));
 				});
 
 				it('emits the correct event', async () => {
 					assert.eventEqual(txn, 'SynthDeprecated', {
 						synth: synth.address,
-						rateToRedeem: toUnit('10'),
-						totalSynthSupply: toUnit('999'),
+						rateToRedeem: parseEther('10'),
+						totalSynthSupply: parseEther('999'),
 					});
 				});
 			});
@@ -97,28 +95,40 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 			describe('when the synth has some supply', () => {
 				beforeEach(async () => {
-					synth.smocked.totalSupply.will.return.with('1000');
+					synth.smocked.totalSupply.will.return.with(parseEther('1000'));
 				});
 
 				it('deprecation fails when insufficient sUSD supply', async () => {
 					await assert.revert(
-						instance.deprecate(synth.address, toUnit('1000'), '1', {
+						instance.deprecate(synth.address, parseEther('1000'), '1', {
 							from: this.mocks['Issuer'].address,
 						}),
 						'sUSD must first be supplied'
 					);
 				});
+
+				describe('when there is sufficient sUSD for the synth to be deprecated', () => {
+					beforeEach(async () => {
+						// smock sUSD balance to prevent the deprecation failing
+						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
+					});
+					it('then deprecation succeeds', async () => {
+						await instance.deprecate(synth.address, parseEther('2'), '1', {
+							from: this.mocks['Issuer'].address,
+						});
+					});
+				});
 			});
 
 			describe('when a synth is deprecated', () => {
 				beforeEach(async () => {
-					await instance.deprecate(synth.address, toUnit('100'), '1', {
+					await instance.deprecate(synth.address, parseEther('100'), '1', {
 						from: this.mocks['Issuer'].address,
 					});
 				});
 				it('then it cannot be deprecated again', async () => {
 					await assert.revert(
-						instance.deprecate(synth.address, toUnit('5'), '1', {
+						instance.deprecate(synth.address, parseEther('5'), '1', {
 							from: this.mocks['Issuer'].address,
 						}),
 						'Synth is already deprecated'
@@ -133,7 +143,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 			describe('when a synth is deprecated', () => {
 				beforeEach(async () => {
-					await instance.deprecate(synth.address, toUnit('100'), '1', {
+					await instance.deprecate(synth.address, parseEther('100'), '1', {
 						from: this.mocks['Issuer'].address,
 					});
 				});
@@ -153,12 +163,12 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 					beforeEach(async () => {
 						// smock sUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
-						await instance.deprecate(synth.address, toUnit('2'), '1', {
+						await instance.deprecate(synth.address, parseEther('2'), '1', {
 							from: this.mocks['Issuer'].address,
 						});
 					});
 					it('total supply will be the synth supply multipled by the redemption rate', async () => {
-						assert.bnEqual(await instance.totalSupply(synth.address), toUnit('2000'));
+						assert.bnEqual(await instance.totalSupply(synth.address), parseEther('2000'));
 					});
 				});
 			});
