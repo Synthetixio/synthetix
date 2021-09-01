@@ -1,8 +1,10 @@
 'use strict';
 
-const { artifacts, contract, web3 } = require('hardhat');
+const { artifacts, contract } = require('hardhat');
 const { smockit } = require('@eth-optimism/smock');
-
+const {
+	utils: { parseEther },
+} = require('ethers');
 const { assert } = require('./common');
 
 const {
@@ -25,7 +27,6 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 	before(async () => {
 		SynthRedeemer = artifacts.require('SynthRedeemer');
 	});
-
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthRedeemer.abi,
@@ -36,15 +37,15 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 	describe('when a contract is instantiated', () => {
 		let instance;
+		let synth;
 		beforeEach(async () => {
 			({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 				contracts: ['Issuer', 'Synth:SynthsUSD'],
 				accounts: accounts.slice(10), // mock using accounts after the first few
 			}));
 		});
-
-		before(async () => {
-			// SynthRedeemer.link(await artifacts.require('SafeDecimalMath').new());
+		beforeEach(async () => {
+			synth = await smockit(artifacts.require('ERC20').abi);
 		});
 		beforeEach(async () => {
 			instance = await SynthRedeemer.new(this.resolver.address);
@@ -54,11 +55,6 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 			assert.equal(await instance.redemptions(ZERO_ADDRESS), '0');
 		});
 		describe('deprecate()', () => {
-			let synth;
-			beforeEach(async () => {
-				synth = await smockit(artifacts.require('ERC20').abi);
-			});
-
 			it('may only be called by the Issuer', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: instance.deprecate,
@@ -127,6 +123,43 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 						}),
 						'Synth is already deprecated'
 					);
+				});
+			});
+		});
+		describe('totalSupply()', () => {
+			it('is 0 when no total supply of the underlying synth', async () => {
+				assert.equal(await instance.totalSupply(synth.address), '0');
+			});
+
+			describe('when a synth is deprecated', () => {
+				beforeEach(async () => {
+					await instance.deprecate(synth.address, toUnit('100'), '1', {
+						from: this.mocks['Issuer'].address,
+					});
+				});
+				it('total supply is still 0 as no total supply of the underlying synth', async () => {
+					assert.equal(await instance.totalSupply(synth.address), '0');
+				});
+			});
+
+			describe('when the synth has some supply', () => {
+				beforeEach(async () => {
+					synth.smocked.totalSupply.will.return.with(parseEther('1000'));
+				});
+				it('then totalSupply returns 0 as there is no redemption rate', async () => {
+					assert.equal(await instance.totalSupply(synth.address), '0');
+				});
+				describe('when a synth is deprecated', () => {
+					beforeEach(async () => {
+						// smock sUSD balance to prevent the deprecation failing
+						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
+						await instance.deprecate(synth.address, toUnit('2'), '1', {
+							from: this.mocks['Issuer'].address,
+						});
+					});
+					it('total supply will be the synth supply multipled by the redemption rate', async () => {
+						assert.bnEqual(await instance.totalSupply(synth.address), toUnit('2000'));
+					});
 				});
 			});
 		});
