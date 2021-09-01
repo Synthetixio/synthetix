@@ -10,8 +10,6 @@ import "./SafeDecimalMath.sol";
 // Internal references
 import "./interfaces/IERC20.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/IExchangeRates.sol";
-import "./interfaces/ISynth.sol";
 
 contract SynthRedeemer is ISynthRedeemer, MixinResolver {
     using SafeDecimalMath for uint;
@@ -54,14 +52,14 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         require(rateToRedeem > 0, "Synth not redeemable");
         require(amountOfSynth > 0, "No balance of synth to redeem");
         require(synthProxy.balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
-        _issuer().burnForRedemption(ISynth(address(synthProxy)), msg.sender, amountOfSynth);
+        _issuer().burnForRedemption(address(synthProxy), msg.sender, amountOfSynth);
         uint amountInsUSD = amountOfSynth.multiplyDecimal(rateToRedeem);
         _sUSD().transfer(msg.sender, amountInsUSD);
         emit SynthRedeemed(address(synthProxy), msg.sender, amountOfSynth, amountInsUSD);
     }
 
     function deprecate(
-        ISynth synthProxy,
+        IERC20 synthProxy,
         uint rateToRedeem,
         uint totalSynthSupply
     ) external onlyIssuer {
@@ -70,7 +68,7 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         require(rateToRedeem > 0, "No rate for synth to redeem");
         redemptions[synthProxyAddress] = rateToRedeem;
         // Note: we must check the totalSupply after setting the redemption as it uses the persisted redemption rate for its calculation
-        require(_sUSD().balanceOf(address(this)) >= totalSupply(IERC20(address(synthProxy))), "sUSD must first be supplied");
+        require(_sUSD().balanceOf(address(this)) >= totalSupply(synthProxy), "sUSD must first be supplied");
         emit SynthDeprecated(address(synthProxy), rateToRedeem, totalSynthSupply);
     }
 

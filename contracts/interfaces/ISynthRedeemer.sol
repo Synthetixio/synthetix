@@ -1,7 +1,6 @@
 pragma solidity >=0.4.24;
 
 import "./IERC20.sol";
-import "./ISynth.sol";
 
 interface ISynthRedeemer {
     // Rate of redemption - 0 for none
@@ -19,7 +18,7 @@ interface ISynthRedeemer {
 
     // Restricted to Issuer
     function deprecate(
-        ISynth synthProxy,
+        IERC20 synthProxy,
         uint rateToRedeem,
         uint totalSynthSupply
     ) external;

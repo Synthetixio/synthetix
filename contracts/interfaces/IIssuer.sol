@@ -82,7 +82,7 @@ interface IIssuer {
     function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external;
 
     function burnForRedemption(
-        ISynth deprecatedSynth,
+        address deprecatedSynthProxy,
         address account,
         uint balance
     ) external;

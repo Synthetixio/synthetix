@@ -24,6 +24,10 @@ import "./interfaces/ICollateralManager.sol";
 import "./interfaces/ISynthRedeemer.sol";
 import "./Proxyable.sol";
 
+interface IProxy {
+    function target() external view returns (address);
+}
+
 interface IRewardEscrowV2 {
     // Views
     function balanceOf(address account) external view returns (uint);
@@ -466,7 +470,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             synths[sUSD].issue(address(_synthRedeemer), amountOfsUSD);
             // ensure the debt cache is aware of the new sUSD issued
             debtCache().updateCachedSynthDebtWithRate(sUSD, SafeDecimalMath.unit());
-            _synthRedeemer.deprecate(ISynth(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem, synthSupply);
+            _synthRedeemer.deprecate(IERC20(address(Proxyable(address(synthToRemove)).proxy())), rateToRedeem, synthSupply);
         }
 
         // Remove the synth from the availableSynths array.
@@ -563,11 +567,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function burnForRedemption(
-        ISynth deprecatedSynth,
+        address deprecatedSynthProxy,
         address account,
         uint balance
     ) external onlySynthRedeemer {
-        deprecatedSynth.burn(account, balance);
+        ISynth(IProxy(deprecatedSynthProxy).target()).burn(account, balance);
     }
 
     function liquidateDelinquentAccount(
