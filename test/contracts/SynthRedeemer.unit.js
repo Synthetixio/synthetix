@@ -20,7 +20,7 @@ const {
 let SynthRedeemer;
 
 contract('SynthRedeemer (unit tests)', async accounts => {
-	// const [, owner] = accounts;
+	const [account1] = accounts;
 
 	before(async () => {
 		SynthRedeemer = artifacts.require('SynthRedeemer');
@@ -167,8 +167,45 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 							from: this.mocks['Issuer'].address,
 						});
 					});
-					it('total supply will be the synth supply multipled by the redemption rate', async () => {
+					it('total supply will be the synth supply multiplied by the redemption rate', async () => {
 						assert.bnEqual(await instance.totalSupply(synth.address), parseEther('2000'));
+					});
+				});
+			});
+		});
+		describe('balanceOf()', () => {
+			it('is 0 when no balance of the underlying synth', async () => {
+				assert.equal(await instance.balanceOf(synth.address, account1), '0');
+			});
+
+			describe('when a synth is deprecated', () => {
+				beforeEach(async () => {
+					await instance.deprecate(synth.address, parseEther('100'), '1', {
+						from: this.mocks['Issuer'].address,
+					});
+				});
+				it('balance of is still 0 as no total supply of the underlying synth', async () => {
+					assert.equal(await instance.balanceOf(synth.address, account1), '0');
+				});
+			});
+
+			describe('when the synth has some balance', () => {
+				beforeEach(async () => {
+					synth.smocked.balanceOf.will.return.with(parseEther('5'));
+				});
+				it('then balance of still returns 0 as there is no redemption rate', async () => {
+					assert.equal(await instance.balanceOf(synth.address, account1), '0');
+				});
+				describe('when a synth is deprecated', () => {
+					beforeEach(async () => {
+						// smock sUSD balance to prevent the deprecation failing
+						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
+						await instance.deprecate(synth.address, parseEther('2'), '1', {
+							from: this.mocks['Issuer'].address,
+						});
+					});
+					it('balance of will be the synth supply multiplied by the redemption rate', async () => {
+						assert.bnEqual(await instance.balanceOf(synth.address, account1), parseEther('10'));
 					});
 				});
 			});
