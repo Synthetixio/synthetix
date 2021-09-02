@@ -19,9 +19,5 @@ interface ISynthRedeemer {
     function redeemPartial(IERC20 synthProxy, uint amountOfSynth) external;
 
     // Restricted to Issuer
-    function deprecate(
-        IERC20 synthProxy,
-        uint rateToRedeem,
-        uint totalSynthSupply
-    ) external;
+    function deprecate(IERC20 synthProxy, uint rateToRedeem) external;
 }

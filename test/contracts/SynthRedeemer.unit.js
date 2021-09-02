@@ -57,7 +57,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 			it('may only be called by the Issuer', async () => {
 				await onlyGivenAddressCanInvoke({
 					fnc: instance.deprecate,
-					args: [synth.address, parseEther('100'), '1'],
+					args: [synth.address, parseEther('100')],
 					address: this.mocks['Issuer'].address,
 					accounts,
 					reason: 'Restricted to Issuer contract',
@@ -79,7 +79,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 						let txn;
 
 						beforeEach(async () => {
-							txn = await instance.deprecate(synth.address, parseEther('10'), parseEther('999'), {
+							txn = await instance.deprecate(synth.address, parseEther('10'), {
 								from: this.mocks['Issuer'].address,
 							});
 						});
@@ -101,7 +101,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 			it('reverts when the rate is 0', async () => {
 				await assert.revert(
-					instance.deprecate(synth.address, '0', '1', {
+					instance.deprecate(synth.address, '0', {
 						from: this.mocks['Issuer'].address,
 					}),
 					'No rate for synth to redeem'
@@ -115,7 +115,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 				it('deprecation fails when insufficient sUSD supply', async () => {
 					await assert.revert(
-						instance.deprecate(synth.address, parseEther('1000'), '1', {
+						instance.deprecate(synth.address, parseEther('1000'), {
 							from: this.mocks['Issuer'].address,
 						}),
 						'sUSD must first be supplied'
@@ -128,7 +128,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
 					});
 					it('then deprecation succeeds', async () => {
-						await instance.deprecate(synth.address, parseEther('2'), '1', {
+						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
 						});
 					});
@@ -137,13 +137,13 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 			describe('when a synth is deprecated', () => {
 				beforeEach(async () => {
-					await instance.deprecate(synth.address, parseEther('100'), '1', {
+					await instance.deprecate(synth.address, parseEther('100'), {
 						from: this.mocks['Issuer'].address,
 					});
 				});
 				it('then it cannot be deprecated again', async () => {
 					await assert.revert(
-						instance.deprecate(synth.address, parseEther('5'), '1', {
+						instance.deprecate(synth.address, parseEther('5'), {
 							from: this.mocks['Issuer'].address,
 						}),
 						'Synth is already deprecated'
@@ -158,7 +158,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 			describe('when a synth is deprecated', () => {
 				beforeEach(async () => {
-					await instance.deprecate(synth.address, parseEther('100'), '1', {
+					await instance.deprecate(synth.address, parseEther('100'), {
 						from: this.mocks['Issuer'].address,
 					});
 				});
@@ -178,7 +178,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 					beforeEach(async () => {
 						// smock sUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
-						await instance.deprecate(synth.address, parseEther('2'), '1', {
+						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
 						});
 					});
@@ -195,7 +195,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 
 			describe('when a synth is deprecated', () => {
 				beforeEach(async () => {
-					await instance.deprecate(synth.address, parseEther('100'), '1', {
+					await instance.deprecate(synth.address, parseEther('100'), {
 						from: this.mocks['Issuer'].address,
 					});
 				});
@@ -215,7 +215,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 					beforeEach(async () => {
 						// smock sUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
-						await instance.deprecate(synth.address, parseEther('2'), '1', {
+						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
 						});
 					});
@@ -240,7 +240,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 					beforeEach(async () => {
 						// smock sUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
-						await instance.deprecate(synth.address, parseEther('2'), '1', {
+						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
 						});
 					});
@@ -311,7 +311,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
 					});
 					beforeEach(async () => {
-						await instance.deprecate(synth.address, parseEther('2'), '1', {
+						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
 						});
 					});
@@ -334,7 +334,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 							});
 							describe('when the other synth is also deprecated', () => {
 								beforeEach(async () => {
-									await instance.deprecate(otherSynth.address, parseEther('2'), '1', {
+									await instance.deprecate(otherSynth.address, parseEther('2'), {
 										from: this.mocks['Issuer'].address,
 									});
 								});
@@ -403,7 +403,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 					beforeEach(async () => {
 						// smock sUSD balance to prevent the deprecation failing
 						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
-						await instance.deprecate(synth.address, parseEther('2'), '1', {
+						await instance.deprecate(synth.address, parseEther('2'), {
 							from: this.mocks['Issuer'].address,
 						});
 					});

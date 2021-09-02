@@ -70,18 +70,14 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         emit SynthRedeemed(address(synthProxy), msg.sender, amountOfSynth, amountInsUSD);
     }
 
-    function deprecate(
-        IERC20 synthProxy,
-        uint rateToRedeem,
-        uint totalSynthSupply
-    ) external onlyIssuer {
+    function deprecate(IERC20 synthProxy, uint rateToRedeem) external onlyIssuer {
         address synthProxyAddress = address(synthProxy);
         require(redemptions[synthProxyAddress] == 0, "Synth is already deprecated");
         require(rateToRedeem > 0, "No rate for synth to redeem");
-        redemptions[synthProxyAddress] = rateToRedeem;
-        // Note: we must check the totalSupply after setting the redemption as it uses the persisted redemption rate for its calculation
-        uint supplyInsUSD = totalSupply(synthProxy);
+        uint totalSynthSupply = synthProxy.totalSupply();
+        uint supplyInsUSD = totalSynthSupply.multiplyDecimal(rateToRedeem);
         require(sUSD().balanceOf(address(this)) >= supplyInsUSD, "sUSD must first be supplied");
+        redemptions[synthProxyAddress] = rateToRedeem;
         emit SynthDeprecated(address(synthProxy), rateToRedeem, totalSynthSupply, supplyInsUSD);
     }
 
