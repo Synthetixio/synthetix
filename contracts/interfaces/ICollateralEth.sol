@@ -13,7 +13,13 @@ interface ICollateralEth {
         address borrower,
         uint id,
         uint amount
-    ) external returns (uint principal, uint collateral);
+    )
+        external
+        returns (
+            uint principal,
+            uint collateral,
+            bool isPaidOff
+        );
 
     function draw(uint id, uint amount) external returns (uint principal, uint collateral);
 

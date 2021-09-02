@@ -36,16 +36,16 @@ contract CollateralShort is Collateral {
         address borrower,
         uint id,
         uint amount
-    ) external returns (uint short, uint collateral) {
+    ) external returns (uint principal, uint collateral) {
         require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance too low");
 
         IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), amount);
 
-        (short, collateral) = _deposit(borrower, id, amount);
+        (principal, collateral) = _deposit(borrower, id, amount);
     }
 
-    function withdraw(uint id, uint amount) external returns (uint short, uint collateral) {
-        (short, collateral) = _withdraw(id, amount);
+    function withdraw(uint id, uint amount) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _withdraw(id, amount);
 
         IERC20(address(_synthsUSD())).transfer(msg.sender, amount);
     }
@@ -54,20 +54,42 @@ contract CollateralShort is Collateral {
         address borrower,
         uint id,
         uint amount
-    ) external returns (uint short, uint collateral) {
-        (short, collateral) = _repay(borrower, msg.sender, id, amount);
+    )
+        external
+        returns (
+            uint principal,
+            uint collateral,
+            bool isPaidOff
+        )
+    {
+        (principal, collateral, isPaidOff) = _repay(borrower, msg.sender, id, amount);
+
+        if (isPaidOff) {
+            IERC20(address(_synthsUSD())).transfer(borrower, collateral);
+        }
     }
 
     function repayWithCollateral(
         uint id,
         uint amount,
         bool payInterest
-    ) external returns (uint short, uint collateral) {
-        (short, collateral) = _repayWithCollateral(msg.sender, id, amount, payInterest);
+    )
+        external
+        returns (
+            uint principal,
+            uint collateral,
+            bool isPaidOff
+        )
+    {
+        (principal, collateral, isPaidOff) = _repayWithCollateral(msg.sender, id, amount, payInterest);
+
+        if (isPaidOff) {
+            IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
+        }
     }
 
-    function draw(uint id, uint amount) external returns (uint short, uint collateral) {
-        (short, collateral) = _draw(id, amount);
+    function draw(uint id, uint amount) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _draw(id, amount);
     }
 
     function liquidate(

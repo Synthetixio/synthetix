@@ -460,33 +460,54 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address repayer,
         uint id,
         uint payment
-    ) internal rateIsValid issuanceIsActive returns (uint, uint) {
+    )
+        internal
+        rateIsValid
+        issuanceIsActive
+        returns (
+            uint amount,
+            uint collateral,
+            bool isPaidOff
+        )
+    {
         // 0. Get the loan.
         // Owner is not important here, as it is a donation to repay the loan.
         Loan storage loan = loans[id];
 
-        // 1. Check loan is open and last interaction time.
+        // 1. Return collateral to the child class so it knows how much to transfer if loan is paid in full.
+        collateral = loan.collateral;
+
+        // 2. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
 
-        // 2. Check the spender has enough synths to make the repayment
+        // 3. Check the spender has enough synths to make the repayment
         _checkSynthBalance(repayer, loan.currency, payment);
 
-        // 3. Accrue interest on the loan.
+        // 4. Accrue interest on the loan.
         _accrueInterest(loan);
 
-        // 4. Process the payment.
+        // 5. Process the payment.
         _processPayment(loan, payment);
-
-        // 5. Update the last interaction time.
-        loan.lastInteraction = block.timestamp;
 
         // 6. Burn synths from the payer
         _synth(synthsByKey[loan.currency]).burn(repayer, payment);
 
-        // 7. Emit the event the repayment.
+        // 7. Update the last interaction time.
+        loan.lastInteraction = block.timestamp;
+
+        // 8. Record as closed if paid in full.
+        if (loan.amount == 0) {
+            isPaidOff = true;
+            loan.collateral = 0;
+            loan.accruedInterest = 0;
+            loan.interestIndex = 0;
+        }
+
+        // 9. Emit the event the repayment.
         emit LoanRepaymentMade(borrower, repayer, id, payment, loan.amount);
 
-        return (loan.amount, loan.collateral);
+        // 10. Return the loan amount after repaying.
+        amount = loan.amount;
     }
 
     function _repayWithCollateral(
@@ -494,7 +515,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint id,
         uint payment,
         bool payInterest
-    ) internal rateIsValid issuanceIsActive returns (uint, uint) {
+    )
+        internal
+        rateIsValid
+        issuanceIsActive
+        returns (
+            uint amount,
+            uint collateral,
+            bool isPaidOff
+        )
+    {
         // 0. Get the loan to repay and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
@@ -519,13 +549,25 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _processPayment(loan, payment);
         _payFees(fee, sUSD);
 
-        // 7. Update the last interaction time.
+        // 7. Return collateral to the child class so it knows how much to transfer if loan is paid in full.
+        collateral = loan.collateral;
+
+        // 8. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
 
-        // 8. Emit the event for the collateral repayment.
+        // 9. Record as closed if paid in full.
+        if (loan.amount == 0) {
+            isPaidOff = true;
+            loan.collateral = 0;
+            loan.accruedInterest = 0;
+            loan.interestIndex = 0;
+        }
+
+        // 10. Emit the event for the collateral repayment.
         emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
 
-        return (loan.amount, loan.collateral);
+        // 11. Return the loan amount after repaying.
+        amount = loan.amount;
     }
 
     function _draw(uint id, uint amount) internal rateIsValid issuanceIsActive returns (uint, uint) {
