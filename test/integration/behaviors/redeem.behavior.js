@@ -63,7 +63,7 @@ function itCanRedeem({ ctx }) {
 				await tx.wait();
 			});
 
-			it('then the total system debt is unchanged', async () => {
+			it('then the total system debt is unchanged', async function() {
 				if (ctx.fork) {
 					// Note: removing sETH from the system is a major shift and
 					// the calculation is off due to the skew, so let's not test this in a fork
