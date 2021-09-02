@@ -51,9 +51,10 @@ contract('SystemSettings', async accounts => {
 				'setTradingRewardsEnabled',
 				'setDebtSnapshotStaleTime',
 				'setCrossDomainMessageGasLimit',
-				'setEtherWrapperMaxETH',
-				'setEtherWrapperMintFeeRate',
-				'setEtherWrapperBurnFeeRate',
+				'setWrapperMaxTokenAmount',
+				'setWrapperMintFeeRate',
+				'setWrapperBurnFeeRate',
+				'setWrapperSettings',
 			],
 		});
 	});
@@ -784,11 +785,13 @@ contract('SystemSettings', async accounts => {
 		});
 	});
 
-	describe('setEtherWrapperMaxETH()', () => {
+	const testCurrencyKey = toBytes32('sWRAPPR');
+
+	describe('setWrapperMaxTokenAmount()', () => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setEtherWrapperMaxETH,
-				args: [owner],
+				fnc: systemSettings.setWrapperMaxTokenAmount,
+				args: [testCurrencyKey, 1],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
@@ -799,34 +802,36 @@ contract('SystemSettings', async accounts => {
 			let txn;
 			const newValue = toUnit('6000');
 			beforeEach(async () => {
-				txn = await systemSettings.setEtherWrapperMaxETH(newValue, { from: owner });
+				txn = await systemSettings.setWrapperMaxTokenAmount(testCurrencyKey, newValue, {
+					from: owner,
+				});
 			});
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.etherWrapperMaxETH(), newValue);
+				assert.bnEqual(await systemSettings.wrapperMaxTokenAmount(testCurrencyKey), newValue);
 			});
 
-			it('and emits an EtherWrapperMaxETHUpdated event', async () => {
-				assert.eventEqual(txn, 'EtherWrapperMaxETHUpdated', [newValue]);
+			it('and emits a WrapperMaxTokenAmountUpdated event', async () => {
+				assert.eventEqual(txn, 'WrapperMaxTokenAmountUpdated', [testCurrencyKey, newValue]);
 			});
 		});
 	});
 
-	describe('setEtherWrapperMintFeeRate()', () => {
+	describe('setWrapperMintFeeRate()', () => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setEtherWrapperMintFeeRate,
-				args: [1],
+				fnc: systemSettings.setWrapperMintFeeRate,
+				args: [testCurrencyKey, 1],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
-		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_MINT_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_MINT_FEE_RATE()).add(ONE);
+		it('should revert if the rate exceeds MAX_WRAPPER_MINT_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_WRAPPER_MINT_FEE_RATE()).add(ONE);
 			await assert.revert(
-				systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner }),
-				'rate > MAX_ETHER_WRAPPER_MINT_FEE_RATE'
+				systemSettings.setWrapperMintFeeRate(testCurrencyKey, newValue, { from: owner }),
+				'rate > MAX_WRAPPER_MINT_FEE_RATE'
 			);
 		});
 
@@ -834,34 +839,36 @@ contract('SystemSettings', async accounts => {
 			let txn;
 			const newValue = toUnit('0.06');
 			beforeEach(async () => {
-				txn = await systemSettings.setEtherWrapperMintFeeRate(newValue, { from: owner });
+				txn = await systemSettings.setWrapperMintFeeRate(testCurrencyKey, newValue, {
+					from: owner,
+				});
 			});
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.etherWrapperMintFeeRate(), newValue);
+				assert.bnEqual(await systemSettings.wrapperMintFeeRate(testCurrencyKey), newValue);
 			});
 
-			it('and emits an EtherWrapperMintFeeRateUpdated event', async () => {
-				assert.eventEqual(txn, 'EtherWrapperMintFeeRateUpdated', [newValue]);
+			it('and emits an WrapperMintFeeRateUpdated event', async () => {
+				assert.eventEqual(txn, 'WrapperMintFeeRateUpdated', [testCurrencyKey, newValue]);
 			});
 		});
 	});
 
-	describe('setEtherWrapperBurnFeeRate()', () => {
+	describe('setWrapperBurnFeeRate()', () => {
 		it('can only be invoked by owner', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: systemSettings.setEtherWrapperBurnFeeRate,
-				args: [1],
+				fnc: systemSettings.setWrapperBurnFeeRate,
+				args: [testCurrencyKey, 1],
 				address: owner,
 				accounts,
 				reason: 'Only the contract owner may perform this action',
 			});
 		});
 
-		it('should revert if the rate exceeds MAX_ETHER_WRAPPER_BURN_FEE_RATE', async () => {
-			const newValue = (await systemSettings.MAX_ETHER_WRAPPER_BURN_FEE_RATE()).add(ONE);
+		it('should revert if the rate exceeds MAX_WRAPPER_BURN_FEE_RATE', async () => {
+			const newValue = (await systemSettings.MAX_WRAPPER_BURN_FEE_RATE()).add(ONE);
 			await assert.revert(
-				systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner }),
-				'rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE'
+				systemSettings.setWrapperBurnFeeRate(testCurrencyKey, newValue, { from: owner }),
+				'rate > MAX_WRAPPER_BURN_FEE_RATE'
 			);
 		});
 
@@ -869,14 +876,46 @@ contract('SystemSettings', async accounts => {
 			let txn;
 			const newValue = toUnit('0.06');
 			beforeEach(async () => {
-				txn = await systemSettings.setEtherWrapperBurnFeeRate(newValue, { from: owner });
+				txn = await systemSettings.setWrapperBurnFeeRate(testCurrencyKey, newValue, {
+					from: owner,
+				});
 			});
 			it('then it changes the value as expected', async () => {
-				assert.bnEqual(await systemSettings.etherWrapperBurnFeeRate(), newValue);
+				assert.bnEqual(await systemSettings.wrapperBurnFeeRate(testCurrencyKey), newValue);
 			});
 
 			it('and emits an EtherWrapperBurnFeeRateUpdated event', async () => {
-				assert.eventEqual(txn, 'EtherWrapperBurnFeeRateUpdated', [newValue]);
+				assert.eventEqual(txn, 'WrapperBurnFeeRateUpdated', [testCurrencyKey, newValue]);
+			});
+		});
+	});
+
+	describe('setWrapperSettings()', () => {
+		it('can only be invoked by owner', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setWrapperSettings,
+				args: [testCurrencyKey, 1, 1, 1],
+				address: owner,
+				accounts,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			const newValue = toUnit('0.1');
+			beforeEach(async () => {
+				await systemSettings.setWrapperSettings(
+					testCurrencyKey,
+					newValue,
+					newValue.muln(2),
+					newValue.muln(3),
+					{ from: owner }
+				);
+			});
+			it('then it changes all values as expected', async () => {
+				assert.bnEqual(await systemSettings.wrapperMaxTokenAmount(testCurrencyKey), newValue);
+				assert.bnEqual(await systemSettings.wrapperMintFeeRate(testCurrencyKey), newValue.muln(2));
+				assert.bnEqual(await systemSettings.wrapperBurnFeeRate(testCurrencyKey), newValue.muln(3));
 			});
 		});
 	});

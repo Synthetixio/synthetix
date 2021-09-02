@@ -502,12 +502,20 @@ const setupContract = async ({
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
 			} else if (mock === 'WrapperFactory') {
-				await mockGenericContractFnc({
-					instance,
-					mock,
-					fncName: 'totalIssuedSynths',
-					returns: ['0'],
-				});
+				await Promise.all([
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'totalIssuedSynths',
+						returns: ['0'],
+					}),
+					mockGenericContractFnc({
+						instance,
+						mock,
+						fncName: 'isWrapper',
+						returns: [false],
+					}),
+				]);
 			} else if (mock === 'FeePool') {
 				await Promise.all([
 					mockGenericContractFnc({

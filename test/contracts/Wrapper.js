@@ -339,7 +339,7 @@ contract('Wrapper', async accounts => {
 
 		describe('when capacity = 0', () => {
 			beforeEach(async () => {
-				await systemSettings.setEtherWrapperMaxETH('0', { from: owner });
+				await systemSettings.setWrapperMaxTokenAmount(sETH, '0', { from: owner });
 			});
 
 			it('reverts', async () => {
@@ -360,7 +360,7 @@ contract('Wrapper', async accounts => {
 			it('reverts', async () => {
 				await assert.revert(
 					etherWrapper.burn('1', { from: account1 }),
-					'Contract cannot burn sETH for WETH, WETH balance is zero'
+					'Contract cannot burn for token, token balance is zero'
 				);
 			});
 		});
@@ -499,7 +499,7 @@ contract('Wrapper', async accounts => {
 					assert.bnEqual(await etherWrapper.feesEscrowed(), feesEscrowed.add(burnFee));
 				});
 				it('has a max capacity after', async () => {
-					assert.bnEqual(await etherWrapper.capacity(), await etherWrapper.maxETH());
+					assert.bnEqual(await etherWrapper.capacity(), await etherWrapper.maxTokenAmount());
 				});
 				it('is left with 0 reserves remaining', async () => {
 					assert.equal(await etherWrapper.getReserves(), '0');

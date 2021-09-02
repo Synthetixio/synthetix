@@ -133,20 +133,20 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getCrossDomainMessageGasLimit(gasLimitType);
     }
 
-    // SIP 112: ETH Wrappr
-    // The maximum amount of ETH held by the EtherWrapper.
+    // SIP 112: Wrappr
+    // The maximum amount of token held by the Wrapper.
     function wrapperMaxTokenAmount(bytes32 currencyKey) external view returns (uint) {
         return getWrapperMaxTokenAmount(currencyKey);
     }
 
-    // SIP 112: ETH Wrappr
-    // The fee for depositing ETH into the EtherWrapper.
+    // SIP 112: Wrappr
+    // The fee for depositing token into the Wrapper.
     function wrapperMintFeeRate(bytes32 currencyKey) external view returns (uint) {
         return getWrapperMintFeeRate(currencyKey);
     }
 
-    // SIP 112: ETH Wrappr
-    // The fee for burning sETH and releasing ETH from the EtherWrapper.
+    // SIP 112: Wrappr
+    // The fee for burning synth and releasing token from the Wrapper.
     function wrapperBurnFeeRate(bytes32 currencyKey) external view returns (uint) {
         return getWrapperBurnFeeRate(currencyKey);
     }
@@ -288,16 +288,16 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
-    function setWrapperMaxTokenAmount(bytes32 _currencyKey, uint _maxTokenAmount) external onlyOwner {
+    function setWrapperMaxTokenAmount(bytes32 _currencyKey, uint _maxTokenAmount) external onlyOwnerOrSelf {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _currencyKey)),
             _maxTokenAmount
         );
-        emit WrapperMaxETHUpdated(_currencyKey, _maxTokenAmount);
+        emit WrapperMaxTokenAmountUpdated(_currencyKey, _maxTokenAmount);
     }
 
-    function setWrapperMintFeeRate(bytes32 _currencyKey, uint _rate) external onlyOwner {
+    function setWrapperMintFeeRate(bytes32 _currencyKey, uint _rate) external onlyOwnerOrSelf {
         require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
@@ -307,8 +307,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit WrapperMintFeeRateUpdated(_currencyKey, _rate);
     }
 
-    function setWrapperBurnFeeRate(bytes32 _currencyKey, uint _rate) external onlyOwner {
-        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_ETHER_WRAPPER_BURN_FEE_RATE");
+    function setWrapperBurnFeeRate(bytes32 _currencyKey, uint _rate) external onlyOwnerOrSelf {
+        require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
             keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _currencyKey)),
@@ -328,6 +328,11 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         this.setWrapperBurnFeeRate(_currencyKey, _burnFeeRate);
     }
 
+    modifier onlyOwnerOrSelf {
+        require(msg.sender == owner || msg.sender == address(this), "Only the contract owner may perform this action");
+        _;
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
@@ -344,7 +349,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
-    event WrapperMaxETHUpdated(bytes32 currencyKey, uint maxTokenAmount);
+    event WrapperMaxTokenAmountUpdated(bytes32 currencyKey, uint maxTokenAmount);
     event WrapperMintFeeRateUpdated(bytes32 currencyKey, uint rate);
     event WrapperBurnFeeRateUpdated(bytes32 currencyKey, uint rate);
 }
