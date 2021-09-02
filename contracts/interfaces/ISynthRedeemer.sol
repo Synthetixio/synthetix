@@ -14,6 +14,8 @@ interface ISynthRedeemer {
 
     function redeem(IERC20 synthProxy) external;
 
+    function redeemAll(IERC20[] calldata synthProxies) external;
+
     function redeemPartial(IERC20 synthProxy, uint amountOfSynth) external;
 
     // Restricted to Issuer

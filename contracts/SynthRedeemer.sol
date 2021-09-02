@@ -43,15 +43,27 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         balanceInsUSD = synthProxy.balanceOf(account).multiplyDecimal(redemptions[address(synthProxy)]);
     }
 
-    function redeem(IERC20 synthProxy) external {
-        redeemPartial(synthProxy, synthProxy.balanceOf(msg.sender));
+    function redeemAll(IERC20[] calldata synthProxies) external {
+        for (uint i = 0; i < synthProxies.length; i++) {
+            _redeem(synthProxies[i], synthProxies[i].balanceOf(msg.sender));
+        }
     }
 
-    function redeemPartial(IERC20 synthProxy, uint amountOfSynth) public {
+    function redeem(IERC20 synthProxy) external {
+        _redeem(synthProxy, synthProxy.balanceOf(msg.sender));
+    }
+
+    function redeemPartial(IERC20 synthProxy, uint amountOfSynth) external {
+        // technically this check isn't necessary - Synth.burn would fail due to safe sub,
+        // but this is a useful error message to the user
+        require(synthProxy.balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
+        _redeem(synthProxy, amountOfSynth);
+    }
+
+    function _redeem(IERC20 synthProxy, uint amountOfSynth) internal {
         uint rateToRedeem = redemptions[address(synthProxy)];
         require(rateToRedeem > 0, "Synth not redeemable");
         require(amountOfSynth > 0, "No balance of synth to redeem");
-        require(synthProxy.balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
         issuer().burnForRedemption(address(synthProxy), msg.sender, amountOfSynth);
         uint amountInsUSD = amountOfSynth.multiplyDecimal(rateToRedeem);
         sUSD().transfer(msg.sender, amountInsUSD);

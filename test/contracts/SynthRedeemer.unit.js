@@ -29,13 +29,13 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 		ensureOnlyExpectedMutativeFunctions({
 			abi: SynthRedeemer.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
-			expected: ['deprecate', 'redeem', 'redeemPartial'],
+			expected: ['deprecate', 'redeem', 'redeemAll', 'redeemPartial'],
 		});
 	});
 
 	describe('when a contract is instantiated', () => {
 		let instance;
-		let synth;
+		let synth, otherSynth;
 		beforeEach(async () => {
 			({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 				contracts: ['Issuer', 'Synth:SynthsUSD'],
@@ -44,6 +44,7 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 		});
 		beforeEach(async () => {
 			synth = await smockit(artifacts.require('ERC20').abi);
+			otherSynth = await smockit(artifacts.require('ERC20').abi);
 		});
 		beforeEach(async () => {
 			instance = await SynthRedeemer.new(this.resolver.address);
@@ -294,14 +295,108 @@ contract('SynthRedeemer (unit tests)', async accounts => {
 					});
 				});
 			});
-			describe('redeemPartial()', () => {
-				it('reverts when synth not redeemable', async () => {
+			describe('redeemAll()', () => {
+				it('reverts when neither synths are redeemable', async () => {
 					await assert.revert(
-						instance.redeemPartial(synth.address, parseEther('1'), {
+						instance.redeemAll([synth.address, otherSynth.address], {
 							from: account1,
 						}),
 						'Synth not redeemable'
 					);
+				});
+
+				describe('when a synth marked for redemption', () => {
+					beforeEach(async () => {
+						// smock sUSD balance to prevent the deprecation failing
+						this.mocks['SynthsUSD'].smocked.balanceOf.will.return.with(parseEther('2000'));
+					});
+					beforeEach(async () => {
+						await instance.deprecate(synth.address, parseEther('2'), '1', {
+							from: this.mocks['Issuer'].address,
+						});
+					});
+					describe('when the user has a synth balance for both synths', () => {
+						let userBalance;
+						beforeEach(async () => {
+							userBalance = parseEther('5');
+							// both mocked with 5 units of balance each for the user
+							synth.smocked.balanceOf.will.return.with(userBalance);
+							otherSynth.smocked.balanceOf.will.return.with(userBalance);
+						});
+						describe('when redeemAll is called by the user for both synths', () => {
+							it('reverts when one synth not redeemable', async () => {
+								await assert.revert(
+									instance.redeemAll([synth.address, otherSynth.address], {
+										from: account1,
+									}),
+									'Synth not redeemable'
+								);
+							});
+							describe('when the other synth is also deprecated', () => {
+								beforeEach(async () => {
+									await instance.deprecate(otherSynth.address, parseEther('2'), '1', {
+										from: this.mocks['Issuer'].address,
+									});
+								});
+
+								describe('when redemption is called by the user', () => {
+									beforeEach(async () => {
+										await instance.redeemAll([synth.address, otherSynth.address], {
+											from: account1,
+										});
+									});
+									[0, 1].forEach(i => {
+										describe(`For synth ${i}`, () => {
+											it('then Issuer.burnForRedemption is called with the correct arguments', async () => {
+												assert.equal(
+													this.mocks['Issuer'].smocked.burnForRedemption.calls.length,
+													2
+												);
+												assert.equal(
+													this.mocks['Issuer'].smocked.burnForRedemption.calls[i][0],
+													[synth.address, otherSynth.address][i]
+												);
+												assert.equal(
+													this.mocks['Issuer'].smocked.burnForRedemption.calls[i][1],
+													account1
+												);
+												assert.bnEqual(
+													this.mocks['Issuer'].smocked.burnForRedemption.calls[i][2],
+													userBalance
+												);
+											});
+											it('transfers the correct amount of sUSD to the user', async () => {
+												assert.equal(this.mocks['SynthsUSD'].smocked.transfer.calls.length, 2);
+												assert.equal(
+													this.mocks['SynthsUSD'].smocked.transfer.calls[i][0],
+													account1
+												);
+												assert.bnEqual(
+													this.mocks['SynthsUSD'].smocked.transfer.calls[i][1],
+													parseEther('10') // 5 units deprecated at price 2 is 10
+												);
+											});
+										});
+									});
+								});
+							});
+						});
+					});
+				});
+			});
+			describe('redeemPartial()', () => {
+				describe('when the user has a synth balance', () => {
+					beforeEach(async () => {
+						synth.smocked.balanceOf.will.return.with(parseEther('1'));
+					});
+					it('reverts when synth not redeemable', async () => {
+						await assert.revert(
+							instance.redeemPartial(synth.address, parseEther('1'), {
+								from: account1,
+							}),
+							'Synth not redeemable'
+						);
+					});
 				});
 
 				describe('when synth marked for redemption', () => {
