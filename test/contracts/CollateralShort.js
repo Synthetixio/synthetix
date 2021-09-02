@@ -361,7 +361,7 @@ contract('CollateralShort', async accounts => {
 			assert.bnClose(loan.collateral, toUnit(950).toString(), tolerance);
 		});
 
-		it('should repay the whole amount and the accrued interest', async () => {
+		it('should repay the entire loan amount and report the loan as closed', async () => {
 			tx = await short.repayWithCollateral(id, toUnit(1), payInterest, {
 				from: account1,
 			});
@@ -370,8 +370,16 @@ contract('CollateralShort', async accounts => {
 
 			assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
+			assert.eventEqual(tx, 'LoanRepaymentMade', {
+				account: account1,
+				repayer: account1,
+				id: id,
+				amountRepaid: toUnit(1),
+				amountAfter: loan.amount,
+			});
+
 			assert.equal(loan.amount, toUnit(0).toString());
-			assert.bnClose(loan.collateral, toUnit(900).toString(), toUnit(0.3));
+			assert.equal(loan.collateral, toUnit(0).toString());
 		});
 
 		it('should only let the borrower repay with collateral', async () => {
