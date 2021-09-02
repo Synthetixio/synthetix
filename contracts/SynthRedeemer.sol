@@ -68,8 +68,9 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         require(rateToRedeem > 0, "No rate for synth to redeem");
         redemptions[synthProxyAddress] = rateToRedeem;
         // Note: we must check the totalSupply after setting the redemption as it uses the persisted redemption rate for its calculation
-        require(sUSD().balanceOf(address(this)) >= totalSupply(synthProxy), "sUSD must first be supplied");
-        emit SynthDeprecated(address(synthProxy), rateToRedeem, totalSynthSupply);
+        uint supplyInsUSD = totalSupply(synthProxy);
+        require(sUSD().balanceOf(address(this)) >= supplyInsUSD, "sUSD must first be supplied");
+        emit SynthDeprecated(address(synthProxy), rateToRedeem, totalSynthSupply, supplyInsUSD);
     }
 
     function requireOnlyIssuer() internal view {
@@ -82,5 +83,5 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
     }
 
     event SynthRedeemed(address synth, address account, uint amountOfSynth, uint amountInsUSD);
-    event SynthDeprecated(address synth, uint rateToRedeem, uint totalSynthSupply);
+    event SynthDeprecated(address synth, uint rateToRedeem, uint totalSynthSupply, uint supplyInsUSD);
 }
