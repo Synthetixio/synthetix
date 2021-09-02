@@ -21,13 +21,7 @@ interface ICollateralErc20 {
         address borrower,
         uint id,
         uint amount
-    )
-        external
-        returns (
-            uint principal,
-            uint collateral,
-            bool isPaidOff
-        );
+    ) external returns (uint principal, uint collateral);
 
     function draw(uint id, uint amount) external returns (uint principal, uint collateral);
 

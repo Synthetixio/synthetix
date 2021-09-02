@@ -44,17 +44,10 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         address borrower,
         uint id,
         uint amount
-    )
-        external
-        returns (
-            uint principal,
-            uint collateral,
-            bool isPaidOff
-        )
-    {
-        (principal, collateral, isPaidOff) = _repay(borrower, msg.sender, id, amount);
+    ) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _repay(borrower, msg.sender, id, amount);
 
-        if (isPaidOff) {
+        if (principal == 0) {
             pendingWithdrawals[borrower] = pendingWithdrawals[borrower].add(collateral);
         }
     }

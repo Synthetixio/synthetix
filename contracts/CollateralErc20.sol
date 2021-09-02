@@ -87,17 +87,10 @@ contract CollateralErc20 is ICollateralErc20, Collateral {
         address borrower,
         uint id,
         uint amount
-    )
-        external
-        returns (
-            uint principal,
-            uint collateral,
-            bool isPaidOff
-        )
-    {
-        (principal, collateral, isPaidOff) = _repay(borrower, msg.sender, id, amount);
+    ) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _repay(borrower, msg.sender, id, amount);
 
-        if (isPaidOff) {
+        if (principal == 0) {
             // scale down before transferring back.
             uint scaledCollateral = scaleDownCollateral(collateral);
 

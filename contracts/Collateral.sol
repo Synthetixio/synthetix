@@ -460,16 +460,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         address repayer,
         uint id,
         uint payment
-    )
-        internal
-        rateIsValid
-        issuanceIsActive
-        returns (
-            uint amount,
-            uint collateral,
-            bool isPaidOff
-        )
-    {
+    ) internal rateIsValid issuanceIsActive returns (uint amount, uint collateral) {
         // 0. Get the loan.
         // Owner is not important here, as it is a donation to repay the loan.
         Loan storage loan = loans[id];
@@ -497,7 +488,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 8. Record as closed if paid in full.
         if (loan.amount == 0) {
-            isPaidOff = true;
             loan.collateral = 0;
             loan.accruedInterest = 0;
             loan.interestIndex = 0;
@@ -515,16 +505,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint id,
         uint payment,
         bool payInterest
-    )
-        internal
-        rateIsValid
-        issuanceIsActive
-        returns (
-            uint amount,
-            uint collateral,
-            bool isPaidOff
-        )
-    {
+    ) internal rateIsValid issuanceIsActive returns (uint amount, uint collateral) {
         // 0. Get the loan to repay and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
@@ -557,7 +538,6 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 9. Record as closed if paid in full.
         if (loan.amount == 0) {
-            isPaidOff = true;
             loan.collateral = 0;
             loan.accruedInterest = 0;
             loan.interestIndex = 0;

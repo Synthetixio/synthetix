@@ -54,17 +54,10 @@ contract CollateralShort is Collateral {
         address borrower,
         uint id,
         uint amount
-    )
-        external
-        returns (
-            uint principal,
-            uint collateral,
-            bool isPaidOff
-        )
-    {
-        (principal, collateral, isPaidOff) = _repay(borrower, msg.sender, id, amount);
+    ) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _repay(borrower, msg.sender, id, amount);
 
-        if (isPaidOff) {
+        if (principal == 0) {
             IERC20(address(_synthsUSD())).transfer(borrower, collateral);
         }
     }
@@ -73,17 +66,10 @@ contract CollateralShort is Collateral {
         uint id,
         uint amount,
         bool payInterest
-    )
-        external
-        returns (
-            uint principal,
-            uint collateral,
-            bool isPaidOff
-        )
-    {
-        (principal, collateral, isPaidOff) = _repayWithCollateral(msg.sender, id, amount, payInterest);
+    ) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _repayWithCollateral(msg.sender, id, amount, payInterest);
 
-        if (isPaidOff) {
+        if (principal == 0) {
             IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
         }
     }
