@@ -27,11 +27,11 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         addresses[1] = CONTRACT_SYNTHSUSD;
     }
 
-    function _issuer() internal view returns (IIssuer) {
+    function issuer() internal view returns (IIssuer) {
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
-    function _sUSD() internal view returns (IERC20) {
+    function sUSD() internal view returns (IERC20) {
         return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD));
     }
 
@@ -52,9 +52,9 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         require(rateToRedeem > 0, "Synth not redeemable");
         require(amountOfSynth > 0, "No balance of synth to redeem");
         require(synthProxy.balanceOf(msg.sender) >= amountOfSynth, "Insufficient balance");
-        _issuer().burnForRedemption(address(synthProxy), msg.sender, amountOfSynth);
+        issuer().burnForRedemption(address(synthProxy), msg.sender, amountOfSynth);
         uint amountInsUSD = amountOfSynth.multiplyDecimal(rateToRedeem);
-        _sUSD().transfer(msg.sender, amountInsUSD);
+        sUSD().transfer(msg.sender, amountInsUSD);
         emit SynthRedeemed(address(synthProxy), msg.sender, amountOfSynth, amountInsUSD);
     }
 
@@ -68,12 +68,12 @@ contract SynthRedeemer is ISynthRedeemer, MixinResolver {
         require(rateToRedeem > 0, "No rate for synth to redeem");
         redemptions[synthProxyAddress] = rateToRedeem;
         // Note: we must check the totalSupply after setting the redemption as it uses the persisted redemption rate for its calculation
-        require(_sUSD().balanceOf(address(this)) >= totalSupply(synthProxy), "sUSD must first be supplied");
+        require(sUSD().balanceOf(address(this)) >= totalSupply(synthProxy), "sUSD must first be supplied");
         emit SynthDeprecated(address(synthProxy), rateToRedeem, totalSynthSupply);
     }
 
     function requireOnlyIssuer() internal view {
-        require(msg.sender == address(_issuer()), "Restricted to Issuer contract");
+        require(msg.sender == address(issuer()), "Restricted to Issuer contract");
     }
 
     modifier onlyIssuer() {
