@@ -9,9 +9,10 @@ import "./Pausable.sol";
 import "./Wrapper.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IFlexibleStorage.sol";
+import "./interfaces/IWrapperFactory.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/wrapperfactory
-contract WrapperFactory is Owned, MixinResolver {
+contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
     bytes32 internal constant WRAPPER_FACTORY_CONTRACT_NAME = "WrapperFactory";
@@ -50,11 +51,18 @@ contract WrapperFactory is Owned, MixinResolver {
         // Create the wrapper instance
         Wrapper wrapper = new Wrapper(owner, address(resolver), token, currencyKey, synthContractName);
 
+        // Rebuild caches immediately since it will almost certainly need to be done
+        wrapper.rebuildCache();
+
         // Register it so that MultiCollateralSynth knows to trust it
         flexibleStorage().setUIntValue(WRAPPER_FACTORY_CONTRACT_NAME, bytes32(uint(address(wrapper))), WRAPPER_VERSION);
+
+        emit WrapperCreated(address(token), currencyKey, address(wrapper));
 
         return address(wrapper);
     }
 
     function distributeFees() external {}
+
+    event WrapperCreated(address indexed token, bytes32 indexed currencyKey, address wrapperAddress);
 }

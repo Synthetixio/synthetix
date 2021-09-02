@@ -1,6 +1,6 @@
 'use strict';
 
-const { contract } = require('hardhat');
+const { contract, artifacts } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
@@ -17,7 +17,7 @@ const { setupAllContracts } = require('./setup');
 const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');
 
-contract('EtherWrapper', async accounts => {
+contract('Wrapper', async accounts => {
 	const synths = ['sUSD', 'sETH', 'ETH', 'SNX'];
 	const [sETH, ETH] = ['sETH', 'ETH'].map(toBytes32);
 
@@ -34,6 +34,7 @@ contract('EtherWrapper', async accounts => {
 		FEE_ADDRESS,
 		sUSDSynth,
 		sETHSynth,
+		wrapperFactory,
 		etherWrapper,
 		weth,
 		timestamp;
@@ -64,7 +65,7 @@ contract('EtherWrapper', async accounts => {
 			FeePool: feePool,
 			Depot: depot,
 			ExchangeRates: exchangeRates,
-			EtherWrapper: etherWrapper,
+			WrapperFactory: wrapperFactory,
 			SynthsUSD: sUSDSynth,
 			SynthsETH: sETHSynth,
 			WETH: weth,
@@ -82,15 +83,29 @@ contract('EtherWrapper', async accounts => {
 				'FeePoolEternalStorage',
 				'DebtCache',
 				'Exchanger',
-				'EtherWrapper',
+				'WrapperFactory',
 				'WETH',
 				'CollateralManager',
 			],
 		}));
 
+		// deploy an eth wrapper
+		const etherWrapperCreateTx = await wrapperFactory.createWrapper(
+			weth.address,
+			sETH,
+			toBytes32('SynthsETH'),
+			{ from: owner }
+		);
+
+		// extract address from events
+		const etherWrapperAddress = etherWrapperCreateTx.logs.find(l => l.event === 'WrapperCreated')
+			.args.wrapperAddress;
+		etherWrapper = await artifacts.require('Wrapper').at(etherWrapperAddress);
+
 		// set defaults for test - 50bps mint and burn fees
-		await systemSettings.setEtherWrapperMintFeeRate(toUnit('0.005'), { from: owner });
-		await systemSettings.setEtherWrapperBurnFeeRate(toUnit('0.005'), { from: owner });
+		await systemSettings.setWrapperMaxTokenAmount(sETH, toUnit('5000'), { from: owner });
+		await systemSettings.setWrapperMintFeeRate(sETH, toUnit('0.005'), { from: owner });
+		await systemSettings.setWrapperBurnFeeRate(sETH, toUnit('0.005'), { from: owner });
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 		timestamp = await currentTime();
@@ -131,14 +146,18 @@ contract('EtherWrapper', async accounts => {
 			);
 			assert.equal(await addressResolver.getAddress(toBytes32('Issuer')), issuer.address);
 			assert.equal(await addressResolver.getAddress(toBytes32('FeePool')), feePool.address);
+			assert.equal(
+				await addressResolver.getAddress(toBytes32('WrapperFactory')),
+				wrapperFactory.address
+			);
 		});
 
 		describe('should have a default', async () => {
 			const MAX_ETH = toUnit('5000');
 			const FIFTY_BIPS = toUnit('0.005');
 
-			it('maxETH of 5,000 ETH', async () => {
-				assert.bnEqual(await etherWrapper.maxETH(), MAX_ETH);
+			it('maxTokenAmount of 5,000 ETH', async () => {
+				assert.bnEqual(await etherWrapper.maxTokenAmount(), MAX_ETH);
 			});
 			it('capacity of 5,000 ETH', async () => {
 				assert.bnEqual(await etherWrapper.capacity(), MAX_ETH);
@@ -150,10 +169,10 @@ contract('EtherWrapper', async accounts => {
 				assert.bnEqual(await etherWrapper.burnFeeRate(), FIFTY_BIPS);
 			});
 			describe('totalIssuedSynths', async () => {
-				it('sETH = 0', async () => {
-					assert.bnEqual(await etherWrapper.sETHIssued(), toBN('0'));
+				it('synth = 0', async () => {
+					assert.bnEqual(await etherWrapper.targetSynthIssued(), toBN('0'));
 				});
-				it('sUSD = 0', async () => {
+				it('sUSD  = 0', async () => {
 					assert.bnEqual(await etherWrapper.sUSDIssued(), toBN('0'));
 				});
 			});
@@ -171,7 +190,7 @@ contract('EtherWrapper', async accounts => {
 			});
 
 			it('total issued sETH = 1.0', async () => {
-				assert.bnEqual(await etherWrapper.sETHIssued(), toUnit('1.0'));
+				assert.bnEqual(await etherWrapper.targetSynthIssued(), toUnit('1.0'));
 			});
 			it('fees escrowed = 0.005', async () => {
 				assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.005'));
@@ -189,7 +208,7 @@ contract('EtherWrapper', async accounts => {
 				});
 
 				it('total issued sETH = 0.0', async () => {
-					assert.bnEqual(await etherWrapper.sETHIssued(), toUnit('0.0'));
+					assert.bnEqual(await etherWrapper.targetSynthIssued(), toUnit('0.0'));
 				});
 				it('fees escrowed = 0.01', async () => {
 					assert.bnEqual(await etherWrapper.feesEscrowed(), toUnit('0.01'));
@@ -523,7 +542,7 @@ contract('EtherWrapper', async accounts => {
 	describe('distributeFees', async () => {
 		let tx;
 		let feesEscrowed;
-		let sETHIssued;
+		let targetSynthIssued;
 
 		before(async () => {
 			const amount = toUnit('10');
@@ -532,7 +551,7 @@ contract('EtherWrapper', async accounts => {
 			await etherWrapper.mint(amount, { from: account1 });
 
 			feesEscrowed = await etherWrapper.feesEscrowed();
-			sETHIssued = await etherWrapper.sETHIssued();
+			targetSynthIssued = await etherWrapper.targetSynthIssued();
 			tx = await etherWrapper.distributeFees();
 		});
 
@@ -566,8 +585,8 @@ contract('EtherWrapper', async accounts => {
 					.find(({ name }) => name === 'Issued'),
 			});
 		});
-		it('sETHIssued is reduced by `feesEscrowed`', async () => {
-			assert.bnEqual(await etherWrapper.sETHIssued(), sETHIssued.sub(feesEscrowed));
+		it('targetSynthIssued is reduced by `feesEscrowed`', async () => {
+			assert.bnEqual(await etherWrapper.targetSynthIssued(), targetSynthIssued.sub(feesEscrowed));
 		});
 		it('feesEscrowed = 0', async () => {
 			assert.bnEqual(await etherWrapper.feesEscrowed(), toBN(0));

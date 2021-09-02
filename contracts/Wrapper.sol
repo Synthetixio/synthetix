@@ -33,8 +33,6 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     bytes32 internal constant SNX = "SNX";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    string private constant CONTRACT_PREFIX_SYNTH = "Synth";
-
     bytes32 private constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
@@ -47,7 +45,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     bytes32 public currencyKey;
     bytes32 public synthContractName;
 
-    uint public tokenIssued = 0;
+    uint public targetSynthIssued = 0;
     uint public sUSDIssued = 0;
     uint public feesEscrowed = 0;
 
@@ -121,7 +119,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         //
         // The currencyKey is always backed 1:1 with token.
         // The sUSD fees are backed by token amount that is withheld during minting and burning.
-        return exchangeRates().effectiveValue(currencyKey, tokenIssued, sUSD).add(sUSDIssued);
+        return exchangeRates().effectiveValue(currencyKey, targetSynthIssued, sUSD).add(sUSDIssued);
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
@@ -186,7 +184,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // Burn currencyKey.
         synth().burn(address(this), feesEscrowed);
         // Pay down as much currencyKey debt as we burn. Any other debt is taken on by the stakers.
-        tokenIssued = tokenIssued < feesEscrowed ? 0 : tokenIssued.sub(feesEscrowed);
+        targetSynthIssued = targetSynthIssued < feesEscrowed ? 0 : targetSynthIssued.sub(feesEscrowed);
 
         // Issue sUSD to the fee pool
         issuer().synths(sUSD).issue(feePool().FEE_ADDRESS(), amountSUSD);
@@ -225,7 +223,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         feesEscrowed = feesEscrowed.add(feeAmountEth);
 
         // Add debt for currencyKey.
-        tokenIssued = tokenIssued.add(amountIn);
+        targetSynthIssued = targetSynthIssued.add(amountIn);
 
         emit Minted(msg.sender, principal, feeAmountEth, amountIn);
     }
@@ -240,13 +238,13 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // Burn `amountIn` of currencyKey from user.
         synth().burn(msg.sender, amountIn);
         // debt is repaid by burning.
-        tokenIssued = tokenIssued < principal ? 0 : tokenIssued.sub(principal);
+        targetSynthIssued = targetSynthIssued < principal ? 0 : targetSynthIssued.sub(principal);
 
         // We use burn/issue instead of burning the principal and transferring the fee.
         // This saves an approval and is cheaper.
         // Escrow fee.
         synth().issue(address(this), feeAmountEth);
-        // We don't update tokenIssued, as only the principal was subtracted earlier.
+        // We don't update targetSynthIssued, as only the principal was subtracted earlier.
         feesEscrowed = feesEscrowed.add(feeAmountEth);
 
         // Transfer `amount - fees` token to user.

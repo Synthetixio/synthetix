@@ -33,21 +33,6 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 		throw new Error('WETH address is not known');
 	}
 
-	await deployer.deployContract({
-		name: 'EtherWrapper',
-		source: useOvm ? 'EmptyEtherWrapper' : 'EtherWrapper',
-		deps: ['AddressResolver'],
-		args: useOvm ? [] : [account, addressOf(ReadProxyAddressResolver), WETH_ADDRESS],
-	});
-
-	if (!useOvm) {
-		await deployer.deployContract({
-			name: 'NativeEtherWrapper',
-			deps: ['AddressResolver'],
-			args: [account, addressOf(ReadProxyAddressResolver)],
-		});
-	}
-
 	// ----------------
 	// Multi Collateral System
 	// ----------------

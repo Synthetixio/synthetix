@@ -452,12 +452,6 @@
 	"MockToken": {
 		"deploy": true
 	},
-	"EtherWrapper": {
-		"deploy": true
-	},
-	"NativeEtherWrapper": {
-		"deploy": true
-	},
 	"WETH": {
 		"deploy": true
 	}

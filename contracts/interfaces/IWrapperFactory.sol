@@ -8,7 +8,11 @@ interface IWrapperFactory {
 
     function totalIssuedSynths() external view returns (uint);
 
-    function createWrapper(IERC20 token, bytes32 currencyKey) external returns (address);
+    function createWrapper(
+        IERC20 token,
+        bytes32 currencyKey,
+        bytes32 synthContractName
+    ) external returns (address);
 
     function distributeFees() external;
 }

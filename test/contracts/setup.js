@@ -24,9 +24,6 @@ const {
 		CROSS_DOMAIN_REWARD_GAS_LIMIT,
 		CROSS_DOMAIN_ESCROW_GAS_LIMIT,
 		CROSS_DOMAIN_WITHDRAWAL_GAS_LIMIT,
-		ETHER_WRAPPER_MAX_ETH,
-		ETHER_WRAPPER_MINT_FEE_RATE,
-		ETHER_WRAPPER_BURN_FEE_RATE,
 	},
 } = require('../../');
 
@@ -202,8 +199,7 @@ const setupContract = async ({
 		SynthetixEscrow: [owner, tryGetAddressOf('Synthetix')],
 		// use deployerAccount as associated contract to allow it to call setBalanceOf()
 		TokenState: [owner, deployerAccount],
-		EtherWrapper: [owner, tryGetAddressOf('AddressResolver'), tryGetAddressOf('WETH')],
-		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
+		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
 		FeePoolState: [owner, tryGetAddressOf('FeePool')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
 		Synth: [
@@ -505,7 +501,7 @@ const setupContract = async ({
 		async GenericMock() {
 			if (mock === 'RewardEscrow' || mock === 'SynthetixEscrow') {
 				await mockGenericContractFnc({ instance, mock, fncName: 'balanceOf', returns: ['0'] });
-			} else if (mock === 'EtherWrapper') {
+			} else if (mock === 'WrapperFactory') {
 				await mockGenericContractFnc({
 					instance,
 					mock,
@@ -642,18 +638,13 @@ const setupAllContracts = async ({
 		{ contract: 'DappMaintenance' },
 		{ contract: 'WETH' },
 		{
-			contract: 'EtherWrapper',
+			contract: 'WrapperFactory',
 			mocks: [],
-			deps: ['AddressResolver', 'WETH'],
-		},
-		{
-			contract: 'NativeEtherWrapper',
-			mocks: [],
-			deps: ['AddressResolver', 'EtherWrapper', 'WETH', 'SynthsETH'],
+			deps: ['AddressResolver', 'SystemSettings'],
 		},
 		{
 			contract: 'DebtCache',
-			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper'],
+			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'WrapperFactory'],
 			deps: ['ExchangeRates', 'SystemStatus'],
 		},
 		{
@@ -666,7 +657,7 @@ const setupAllContracts = async ({
 				'FeePool',
 				'DelegateApprovals',
 				'FlexibleStorage',
-				'EtherWrapper',
+				'WrapperFactory',
 			],
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
 		},
@@ -686,7 +677,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'Synth',
-			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper'],
+			mocks: ['Issuer', 'Exchanger', 'FeePool', 'WrapperFactory'],
 			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
 		}, // a generic synth
 		{
@@ -788,7 +779,7 @@ const setupAllContracts = async ({
 				'RewardsDistribution',
 				'FlexibleStorage',
 				'CollateralManager',
-				'EtherWrapper',
+				'WrapperFactory',
 			],
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
@@ -1017,15 +1008,6 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setRateStalePeriod(RATE_STALE_PERIOD, { from: owner }),
 			returnObj['SystemSettings'].setMinimumStakeTime(MINIMUM_STAKE_TIME, { from: owner }),
 			returnObj['SystemSettings'].setDebtSnapshotStaleTime(DEBT_SNAPSHOT_STALE_TIME, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setEtherWrapperMaxETH(ETHER_WRAPPER_MAX_ETH, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setEtherWrapperMintFeeRate(ETHER_WRAPPER_MINT_FEE_RATE, {
-				from: owner,
-			}),
-			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
 				from: owner,
 			}),
 		]);

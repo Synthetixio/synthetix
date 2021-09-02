@@ -331,6 +331,11 @@
 		{
 			"sip": 170,
 			"layer": "base"
+		},
+		{
+			"sip": 180,
+			"layer": "base",
+			"sources": ["DebtCache", "FeePool", "SystemSettings", "WrapperFactory"]
 		}
 	],
 	"releases": [

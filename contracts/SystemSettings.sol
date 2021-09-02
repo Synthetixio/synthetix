@@ -135,7 +135,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP 112: ETH Wrappr
     // The maximum amount of ETH held by the EtherWrapper.
-    function wrapperMaxETH(bytes32 currencyKey) external view returns (uint) {
+    function wrapperMaxTokenAmount(bytes32 currencyKey) external view returns (uint) {
         return getWrapperMaxTokenAmount(currencyKey);
     }
 

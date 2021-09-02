@@ -128,7 +128,7 @@
 	"CollateralManager": {
 		"deploy": true
 	},
-	"EtherWrapper": {
+	"WrapperFactory": {
 		"deploy": true
 	},
 	"WETH": {
