@@ -757,8 +757,6 @@ contract('Issuer (via Synthetix)', async accounts => {
 										assert.bnEqual(redeemRate, toUnit('2'));
 									});
 									it('and total debt remains unchanged', async () => {
-										// await debtCache.takeDebtSnapshot();
-
 										assert.bnEqual(await issuer.totalIssuedSynths(sUSD, true), totalIssuedSynths);
 									});
 								});
