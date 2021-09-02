@@ -6,6 +6,7 @@ const {
 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
 const { skipWaitingPeriod } = require('../utils/skip');
+const { updateExchangeRatesIfNeeded } = require('../utils/rates');
 
 function itCanRedeem({ ctx }) {
 	describe('redemption of deprecated synths', () => {
@@ -26,7 +27,7 @@ function itCanRedeem({ ctx }) {
 				ctx,
 				symbol: 'sUSD',
 				user: someUser,
-				balance: ethers.utils.parseEther('100000'),
+				balance: ethers.utils.parseEther('100'),
 			});
 		});
 
@@ -34,7 +35,7 @@ function itCanRedeem({ ctx }) {
 			Synthetix = Synthetix.connect(someUser);
 			const tx = await Synthetix.exchange(
 				toBytes32('sUSD'),
-				ethers.utils.parseEther('5000'),
+				ethers.utils.parseEther('50'),
 				toBytes32('sETH')
 			);
 			await tx.wait();
@@ -42,6 +43,10 @@ function itCanRedeem({ ctx }) {
 
 		before('skip waiting period', async () => {
 			await skipWaitingPeriod({ ctx });
+		});
+
+		before('update rates and take snapshot if needed', async () => {
+			await updateExchangeRatesIfNeeded({ ctx });
 		});
 
 		before('record total system debt', async () => {
