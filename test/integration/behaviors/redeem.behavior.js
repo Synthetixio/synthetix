@@ -12,11 +12,18 @@ function itCanRedeem({ ctx }) {
 	describe('redemption of deprecated synths', () => {
 		let owner;
 		let someUser;
-		let Synthetix, Issuer, SynthsETH, SynthsUSD, ProxysETH, SynthRedeemer;
+		let Synthetix, Issuer, SynthsREDEEMER, SynthsUSD, ProxysREDEEMER, SynthRedeemer;
 		let totalDebtBeforeRemoval;
 
 		before('target contracts and users', () => {
-			({ Synthetix, Issuer, SynthsETH, SynthsUSD, ProxysETH, SynthRedeemer } = ctx.contracts);
+			({
+				Synthetix,
+				Issuer,
+				SynthsREDEEMER,
+				SynthsUSD,
+				ProxysREDEEMER,
+				SynthRedeemer,
+			} = ctx.contracts);
 
 			({ owner, someUser } = ctx.users);
 		});
@@ -30,12 +37,12 @@ function itCanRedeem({ ctx }) {
 			});
 		});
 
-		before('ensure the user has some sETH', async () => {
+		before('ensure the user has some sREDEEMER', async () => {
 			Synthetix = Synthetix.connect(someUser);
 			const tx = await Synthetix.exchange(
 				toBytes32('sUSD'),
 				ethers.utils.parseEther('50'),
-				toBytes32('sETH')
+				toBytes32('sREDEEMER')
 			);
 			await tx.wait();
 		});
@@ -49,35 +56,26 @@ function itCanRedeem({ ctx }) {
 		});
 
 		before('record total system debt', async () => {
-			totalDebtBeforeRemoval = await Synthetix.totalIssuedSynthsExcludeOtherCollateral(
-				toBytes32('sUSD')
-			);
+			totalDebtBeforeRemoval = await Issuer.totalIssuedSynths(toBytes32('sUSD'), true);
 		});
 
-		describe('deprecating sETH', () => {
-			before('when the owner removes sETH', async () => {
+		describe('deprecating sREDEEMER', () => {
+			before('when the owner removes sREDEEMER', async () => {
 				Issuer = Issuer.connect(owner);
-				// note: this sets sETH as redeemed and cannot be undone without
+				// note: this sets sREDEEMER as redeemed and cannot be undone without
 				// redeploying locally or restarting a fork
-				const tx = await Issuer.removeSynth(toBytes32('sETH'));
+				const tx = await Issuer.removeSynth(toBytes32('sREDEEMER'));
 				await tx.wait();
 			});
 
-			it('then the total system debt is unchanged', async function() {
-				if (ctx.fork) {
-					// Note: removing sETH from the system is a major shift and
-					// the calculation is off due to the skew, so let's not test this in a fork
-					// It would be better to create a new synth in a fork and test that here,
-					// but it's out of scope for these tests right now to add a new synth.
-					this.skip();
-				}
+			it('then the total system debt is unchanged', async () => {
 				assert.bnEqual(
-					await Synthetix.totalIssuedSynthsExcludeOtherCollateral(toBytes32('sUSD')),
+					await Issuer.totalIssuedSynths(toBytes32('sUSD'), true),
 					totalDebtBeforeRemoval
 				);
 			});
-			it('and sETH is removed from the system', async () => {
-				assert.equal(await Synthetix.synths(toBytes32('sETH')), ZERO_ADDRESS);
+			it('and sREDEEMER is removed from the system', async () => {
+				assert.equal(await Synthetix.synths(toBytes32('sREDEEMER')), ZERO_ADDRESS);
 			});
 			describe('user redemption', () => {
 				let sUSDBeforeRedemption;
@@ -85,24 +83,19 @@ function itCanRedeem({ ctx }) {
 					sUSDBeforeRedemption = await SynthsUSD.balanceOf(someUser.address);
 				});
 
-				before('when the user redeems their sETH', async () => {
+				before('when the user redeems their sREDEEMER', async () => {
 					SynthRedeemer = SynthRedeemer.connect(someUser);
-					const tx = await SynthRedeemer.redeem(ProxysETH.address);
+					const tx = await SynthRedeemer.redeem(ProxysREDEEMER.address);
 					await tx.wait();
 				});
 
-				it('then the user has no more sETH', async () => {
-					assert.equal(await SynthsETH.balanceOf(someUser.address), '0');
+				it('then the user has no more sREDEEMER', async () => {
+					assert.equal(await SynthsREDEEMER.balanceOf(someUser.address), '0');
 				});
 
 				it('and they have more sUSD again', async () => {
 					assert.bnGt(await SynthsUSD.balanceOf(someUser.address), sUSDBeforeRedemption);
 				});
-			});
-			after(async () => {
-				// put sETH back in to prevent issues for the rest of the tests
-				const tx = await Issuer.addSynth(SynthsETH.address);
-				await tx.wait();
 			});
 		});
 	});

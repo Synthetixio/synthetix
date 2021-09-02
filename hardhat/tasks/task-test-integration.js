@@ -40,19 +40,36 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 		}
 
 		if (taskArguments.deploy) {
+			// add a new synth during deployment, it will be used for testing
+			// redemptions
+			const synthsToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
 			if (taskArguments.useFork) {
-				await prepareDeploy({ network: 'mainnet', useSips: taskArguments.useSips });
-				await deployInstance({
-					useFork: true,
+				await prepareDeploy({
 					network: 'mainnet',
+					synthsToAdd,
 					useOvm,
-					freshDeploy: false,
-					providerUrl,
-					providerPort,
+					useSips: taskArguments.useSips,
+				});
+				await deployInstance({
+					addNewSynths: true,
 					buildPath,
+					freshDeploy: false,
+					network: 'mainnet',
+					providerPort,
+					providerUrl,
+					useFork: true,
+					useOvm,
 				});
 			} else {
-				await deployInstance({ useOvm, providerUrl, providerPort, buildPath });
+				const network = 'local';
+				await prepareDeploy({ network, synthsToAdd, useOvm });
+				await deployInstance({
+					addNewSynths: true,
+					buildPath,
+					providerPort,
+					providerUrl,
+					useOvm,
+				});
 			}
 		}
 
