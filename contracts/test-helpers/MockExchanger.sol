@@ -76,6 +76,17 @@ contract MockExchanger {
         return false;
     }
 
+    function lockedBalance(address account, bytes32 currencyKey) external view returns (uint locked) {
+        (uint reclaimAmount, uint rebateAmount, ) = settlementOwing(account, currencyKey);
+
+        if (rebateAmount >= reclaimAmount) {
+            return 0;
+        }
+
+        // ignore lack of safemath for mock contract
+        return reclaimAmount - rebateAmount;
+    }
+
     function setReclaim(uint256 _reclaimAmount) external {
         _mockReclaimAmount = _reclaimAmount;
     }

@@ -209,23 +209,19 @@ contract Synth is Owned, IERC20, ExternStateToken, MixinResolver, ISynth {
     }
 
     function _ensureCanTransfer(address from, uint value) internal view {
-        require(tokenState.balanceOf(from).sub(exchanger().lockedBalance(from, currencyKey)) > value, "Cannot transfer during waiting period");
         require(transferableSynths(from) >= value, "Insufficient balance after any settlement owing");
         systemStatus().requireSynthActive(currencyKey);
     }
 
     function transferableSynths(address account) public view returns (uint) {
-        (uint reclaimAmount, , ) = exchanger().settlementOwing(account, currencyKey);
-
-        // Note: ignoring rebate amount here because a settle() is required in order to
-        // allow the transfer to actually work
+        uint lockedBalance = exchanger().lockedBalance(account, currencyKey);
 
         uint balance = tokenState.balanceOf(account);
 
-        if (reclaimAmount > balance) {
+        if (lockedBalance >= balance) {
             return 0;
         } else {
-            return balance.sub(reclaimAmount);
+            return balance.sub(lockedBalance);
         }
     }
 

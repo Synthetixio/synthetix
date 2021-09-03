@@ -160,6 +160,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function lockedBalance(address account, bytes32 currencyKey) external view returns (uint locked) {
         (uint reclaimAmount, uint rebateAmount, , ) = _settlementOwing(account, currencyKey, true);
+
         if (rebateAmount >= reclaimAmount) {
             return 0;
         }
