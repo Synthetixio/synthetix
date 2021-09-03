@@ -346,6 +346,11 @@
 		{
 			"sip": 170,
 			"layer": "base"
+		},
+		{
+			"sip": 174,
+			"layer": "both",
+			"sources": ["Issuer", "SynthRedeemer"]
 		}
 	],
 	"releases": [

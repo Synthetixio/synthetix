@@ -269,6 +269,7 @@ const setupContract = async ({
 			toUnit(100),
 		],
 		WETH: [],
+		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
 	};
 
 	let instance;
@@ -667,6 +668,11 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'EtherWrapper', 'WETH', 'SynthsETH'],
 		},
 		{
+			contract: 'SynthRedeemer',
+			mocks: ['Issuer'],
+			deps: ['AddressResolver'],
+		},
+		{
 			contract: 'DebtCache',
 			mocks: ['Issuer', 'Exchanger', 'CollateralManager', 'EtherWrapper'],
 			deps: ['ExchangeRates', 'SystemStatus'],
@@ -682,6 +688,7 @@ const setupAllContracts = async ({
 				'DelegateApprovals',
 				'FlexibleStorage',
 				'EtherWrapper',
+				'SynthRedeemer',
 			],
 			deps: ['AddressResolver', 'SystemStatus', 'FlexibleStorage', 'DebtCache'],
 		},

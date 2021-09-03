@@ -12,6 +12,10 @@ const {
 	connectInstances,
 } = require('../../test/integration/utils/deploy');
 
+// add a new synth during deployment, it will be used for testing
+// redemptions
+const synthsToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
+
 task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addFlag('compile', 'Compile an l1 instance before running the tests')
 	.addFlag('deploy', 'Deploy an l1 instance before running the tests')
@@ -41,18 +45,32 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 
 		if (taskArguments.deploy) {
 			if (taskArguments.useFork) {
-				await prepareDeploy({ network: 'mainnet', useSips: taskArguments.useSips });
-				await deployInstance({
-					useFork: true,
+				await prepareDeploy({
 					network: 'mainnet',
+					synthsToAdd,
 					useOvm,
-					freshDeploy: false,
-					providerUrl,
-					providerPort,
+					useSips: taskArguments.useSips,
+				});
+				await deployInstance({
+					addNewSynths: true,
 					buildPath,
+					freshDeploy: false,
+					network: 'mainnet',
+					providerPort,
+					providerUrl,
+					useFork: true,
+					useOvm,
 				});
 			} else {
-				await deployInstance({ useOvm, providerUrl, providerPort, buildPath });
+				const network = 'local';
+				await prepareDeploy({ network, synthsToAdd, useOvm });
+				await deployInstance({
+					addNewSynths: true,
+					buildPath,
+					providerPort,
+					providerUrl,
+					useOvm,
+				});
 			}
 		}
 
@@ -80,11 +98,15 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 		}
 
 		if (taskArguments.deploy) {
+			const network = 'local';
+			await prepareDeploy({ network, synthsToAdd, useOvm });
 			await deployInstance({
-				useOvm,
-				providerUrl,
-				providerPort: providerPortL2,
+				addNewSynths: true,
 				buildPath,
+				network,
+				providerPort: providerPortL2,
+				providerUrl,
+				useOvm,
 			});
 		}
 
