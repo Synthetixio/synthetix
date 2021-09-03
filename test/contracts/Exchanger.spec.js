@@ -3729,6 +3729,10 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
+	const itCalculatesLockedBalance = () => {
+		xdescribe('can calculate lockedBalance for various scenarios', () => {});
+	};
+
 	describe('When using Synthetix', () => {
 		before(async () => {
 			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
@@ -3834,6 +3838,8 @@ contract('Exchanger (spec tests)', async accounts => {
 		itPricesSpikeDeviation();
 
 		itSetsExchangeFeeRateForSynths();
+
+		itCalculatesLockedBalance();
 	});
 
 	describe('When using MintableSynthetix', () => {
@@ -3933,5 +3939,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		itPricesSpikeDeviation();
 
 		itSetsExchangeFeeRateForSynths();
+
+		itCalculatesLockedBalance();
 	});
 });

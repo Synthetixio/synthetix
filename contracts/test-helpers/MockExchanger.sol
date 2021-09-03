@@ -7,6 +7,7 @@ contract MockExchanger {
     uint256 private _mockRefundAmount;
     uint256 private _mockNumEntries;
     uint256 private _mockMaxSecsLeft;
+    uint256 private _mockLockedBalance;
 
     ISynthetix public synthetix;
 
@@ -76,15 +77,8 @@ contract MockExchanger {
         return false;
     }
 
-    function lockedBalance(address account, bytes32 currencyKey) external view returns (uint locked) {
-        (uint reclaimAmount, uint rebateAmount, ) = settlementOwing(account, currencyKey);
-
-        if (rebateAmount >= reclaimAmount) {
-            return 0;
-        }
-
-        // ignore lack of safemath for mock contract
-        return reclaimAmount - rebateAmount;
+    function lockedBalance(address, bytes32) external view returns (uint locked) {
+        return _mockLockedBalance;
     }
 
     function setReclaim(uint256 _reclaimAmount) external {
@@ -101,5 +95,9 @@ contract MockExchanger {
 
     function setMaxSecsLeft(uint _maxSecsLeft) external {
         _mockMaxSecsLeft = _maxSecsLeft;
+    }
+
+    function setLockedBalance(uint _lockedBalance) external {
+        _mockLockedBalance = _lockedBalance;
     }
 }

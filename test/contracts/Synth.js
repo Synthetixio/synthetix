@@ -504,6 +504,15 @@ contract('Synth', async accounts => {
 				assert.bnEqual(await sUSDContract.transferableSynths(owner), toUnit('1000'));
 			});
 
+			xdescribe('when locked balance is showing XXX', () => {
+				beforeEach(async () => {
+					// await exchanger.setLockedBalance(...)
+				});
+				it('then transferable synths shows the amount left over', async () => {});
+				it('then cannot transfer anything over their remaining amount', async () => {});
+				it('but can transfer anything at or under their remaining amount', async () => {});
+			});
+
 			describe('when max seconds in waiting period is non-zero', () => {
 				beforeEach(async () => {
 					await exchanger.setMaxSecsLeft('1');
