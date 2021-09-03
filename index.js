@@ -212,7 +212,7 @@ const defaults = {
 	 * TODO (SIP-120): spec atomic configuration *
 	 ***********************************/
 	DEX_PRICE_AGGREGATOR: {
-		mainnet: '0x925fc225dD238A4637E4aaD343332Ea580a43bb8',
+		mainnet: '0x074Fe031AD93e6a2f6037EB1fAa0BDc424DCe79d',
 	},
 	ATOMIC_MAX_VOLUME_PER_BLOCK: w3utils.toWei(`${1e6}`), // 1 million
 	ATOMIC_TWAP_WINDOW: '3600', // 1 hour
