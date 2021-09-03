@@ -736,8 +736,27 @@ contract('Issuer (via Synthetix)', async accounts => {
 									it('then settling works as expected', async () => {
 										await synthetix.settle(currencyKey);
 
-										const { numEntries } = await exchanger.settlementOwing(owner, sETH);
+										const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
 										assert.equal(numEntries, '0');
+									});
+								});
+								describe('when the same user exchanges out of the synth', () => {
+									beforeEach(async () => {
+										await setExchangeWaitingPeriod({ owner, systemSettings, secs: 60 });
+										// pass through the waiting period so we can exchange again
+										await fastForward(90);
+										await synthetix.exchange(currencyKey, toUnit('1'), sUSD, { from: account2 });
+									});
+									describe('when the synth is removed', () => {
+										beforeEach(async () => {
+											await issuer.removeSynth(currencyKey, { from: owner });
+										});
+										it('then settling works as expected', async () => {
+											await synthetix.settle(sUSD);
+
+											const { numEntries } = await exchanger.settlementOwing(owner, sUSD);
+											assert.equal(numEntries, '0');
+										});
 									});
 								});
 							});
