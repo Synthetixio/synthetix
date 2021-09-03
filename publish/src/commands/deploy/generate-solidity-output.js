@@ -71,7 +71,7 @@ module.exports = async ({
 				Array.isArray(input)
 					? input.map(useVariableForContractNameIfRequired)
 					: input in newContractsBeingAdded
-					? newContractVariableFunctor(newContractsBeingAdded[input])
+					? newContractVariableFunctor(newContractsBeingAdded[input].name)
 					: input;
 			const transformValueIfRequired = input =>
 				useVariableForContractNameIfRequired(decodeBytes32IfRequired(input));
@@ -164,7 +164,7 @@ contract Migration_${releaseName} is BaseMigration {
 		// NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
 		${Object.entries(newContractsBeingAdded)
 			.map(
-				([address, name]) =>
+				([address, { name }]) =>
 					`${generateExplorerComment({
 						address,
 					})}\n\t\taddress ${newContractVariableFunctor(name)} = ${address};`
@@ -173,10 +173,10 @@ contract Migration_${releaseName} is BaseMigration {
 
 		${Object.entries(newContractsBeingAdded)
 			.map(
-				([address, name]) =>
+				([address, { name, source }]) =>
 					`require(ISynthetixNamedContract(${newContractVariableFunctor(
 						name
-					)}).CONTRACT_NAME() == "${name}", "Invalid contract supplied for ${name}");`
+					)}).CONTRACT_NAME() == "${source}", "Invalid contract supplied for ${name}");`
 			)
 			.join('\n\t\t')}
 

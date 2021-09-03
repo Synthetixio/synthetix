@@ -133,7 +133,7 @@ module.exports = async ({
 		// when running in solidity generation mode, we cannot expect
 		// the address resolver to have been updated. Thus we have to compile a list
 		// of all possible contracts to update rather than relying on "isResolverCached"
-		for (const newContract of Object.values(newContractsBeingAdded)) {
+		for (const { name: newContract } of Object.values(newContractsBeingAdded)) {
 			if (Array.isArray(contractToDepMap[newContract])) {
 				// when the new contract is required by others, add them
 				contractToDepMap[newContract].forEach(entry => contractsToRebuildCacheSet.add(entry));
