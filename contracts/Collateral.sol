@@ -353,11 +353,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _payFees(loan.accruedInterest, loan.currency);
 
         // 7. Record loan as closed.
-        loan.amount = 0;
-        loan.collateral = 0;
-        loan.accruedInterest = 0;
-        loan.interestIndex = 0;
-        loan.lastInteraction = block.timestamp;
+        _recordLoanAsClosed(loan);
     }
 
     function _deposit(
@@ -488,9 +484,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 8. Record as closed if paid in full.
         if (loan.amount == 0) {
-            loan.collateral = 0;
-            loan.accruedInterest = 0;
-            loan.interestIndex = 0;
+            _recordLoanAsClosed(loan);
         }
 
         // 9. Emit the event the repayment.
@@ -538,9 +532,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 9. Record as closed if paid in full.
         if (loan.amount == 0) {
-            loan.collateral = 0;
-            loan.accruedInterest = 0;
-            loan.interestIndex = 0;
+            _recordLoanAsClosed(loan);
         }
 
         // 10. Emit the event for the collateral repayment.
@@ -644,6 +636,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
             _synthsUSD().issue(_feePool().FEE_ADDRESS(), amount);
             _feePool().recordFeePaid(amount);
         }
+    }
+
+    function _recordLoanAsClosed(Loan storage loan) internal {
+        loan.amount = 0;
+        loan.collateral = 0;
+        loan.accruedInterest = 0;
+        loan.interestIndex = 0;
+        loan.lastInteraction = block.timestamp;
     }
 
     function _getLoanAndAccrueInterest(uint id, address owner) internal returns (Loan storage loan) {
