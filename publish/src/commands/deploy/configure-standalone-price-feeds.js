@@ -28,16 +28,15 @@ module.exports = async ({ deployer, runStep, standaloneFeeds, useOvm }) => {
 	}
 
 	if (!useOvm && ExchangeRates) {
-		/*
-			TODO (SIP-120): set up DEX price oracle for exchange rates
-			await runStep({
-				contract: `ExchangeRates`,
-				target: ExchangeRates,
-				read: 'dexPriceAggregator',
-				expected: input => input === dexPriceAggregator,
-				write: 'setDexPriceAggregator',
-				writeArg: [dexPriceAggregator],
-			});
-			*/
+		/* TODO (SIP-120): set up DEX price oracle for exchange rates
+		await runStep({
+			contract: `ExchangeRates`,
+			target: ExchangeRates,
+			read: 'dexPriceAggregator',
+			expected: input => input === dexPriceAggregator,
+			write: 'setDexPriceAggregator',
+			writeArg: [dexPriceAggregator],
+		});
+		*/
 	}
 };
