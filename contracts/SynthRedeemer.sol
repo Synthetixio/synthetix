@@ -14,6 +14,8 @@ import "./interfaces/IIssuer.sol";
 contract SynthRedeemer is ISynthRedeemer, MixinResolver {
     using SafeDecimalMath for uint;
 
+    bytes32 public constant CONTRACT_NAME = "SynthRedeemer";
+
     mapping(address => uint) public redemptions;
 
     bytes32 private constant CONTRACT_ISSUER = "Issuer";

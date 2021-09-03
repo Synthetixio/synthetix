@@ -58,6 +58,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
+    bytes32 public constant CONTRACT_NAME = "Issuer";
+
     // Available Synths which can be used with the system
     ISynth[] public availableSynths;
     mapping(bytes32 => ISynth) public synths;
@@ -71,7 +73,6 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     // Flexible storage names
 
-    bytes32 public constant CONTRACT_NAME = "Issuer";
     bytes32 internal constant LAST_ISSUE_EVENT = "lastIssueEvent";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
