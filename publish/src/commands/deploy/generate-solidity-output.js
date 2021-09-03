@@ -10,7 +10,7 @@ const {
 } = require('ethers');
 const {
 	getUsers,
-	releases,
+	releases: { releases },
 	constants: { CONTRACTS_FOLDER, MIGRATIONS_FOLDER },
 } = require('../../../..');
 
@@ -107,7 +107,7 @@ module.exports = async ({
 
 	const contractsAddedToSolidity = Array.from(contractsAddedToSoliditySet);
 
-	const release = releases.reverse().find(release => (useOvm ? release.ovm : !release.ovm));
+	const release = releases.find(({ released, ovm }) => !released && (useOvm ? ovm : !ovm));
 
 	const releaseName = release.name.replace(/[^\w]/g, '');
 
