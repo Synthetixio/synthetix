@@ -739,6 +739,17 @@ contract('Issuer (via Synthetix)', async accounts => {
 										const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
 										assert.equal(numEntries, '0');
 									});
+									describe('when the rate is also removed', () => {
+										beforeEach(async () => {
+											await exchangeRates.deleteRate(currencyKey, { from: oracle });
+										});
+										it('then settling works as expected', async () => {
+											await synthetix.settle(currencyKey);
+
+											const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+											assert.equal(numEntries, '0');
+										});
+									});
 								});
 								describe('when the same user exchanges out of the synth', () => {
 									beforeEach(async () => {
@@ -761,6 +772,22 @@ contract('Issuer (via Synthetix)', async accounts => {
 											await synthetix.settle(currencyKey);
 											const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
 											assert.equal(numEntries, '0');
+										});
+										describe('when the rate is also removed', () => {
+											beforeEach(async () => {
+												await exchangeRates.deleteRate(currencyKey, { from: oracle });
+											});
+											it('then settling works as expected', async () => {
+												await synthetix.settle(currencyKey);
+
+												const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+												assert.equal(numEntries, '0');
+											});
+											it('then settling from the original currency works too', async () => {
+												await synthetix.settle(currencyKey);
+												const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+												assert.equal(numEntries, '0');
+											});
 										});
 									});
 								});
