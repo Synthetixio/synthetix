@@ -757,6 +757,11 @@ contract('Issuer (via Synthetix)', async accounts => {
 											const { numEntries } = await exchanger.settlementOwing(owner, sUSD);
 											assert.equal(numEntries, '0');
 										});
+										it('then settling from the original currency works too', async () => {
+											await synthetix.settle(currencyKey);
+											const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+											assert.equal(numEntries, '0');
+										});
 									});
 								});
 							});
