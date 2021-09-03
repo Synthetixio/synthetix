@@ -61,7 +61,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		issuer,
 		synths,
 		addressResolver,
-		synthRedeemer;
+		synthRedeemer,
+		exchanger;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -82,6 +83,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			SynthsETH: sETHContract,
 			SynthsAUD: sAUDContract,
 			SynthsEUR: sEURContract,
+			Exchanger: exchanger,
 			FeePool: feePool,
 			DebtCache: debtCache,
 			Issuer: issuer,
@@ -719,6 +721,24 @@ contract('Issuer (via Synthetix)', async accounts => {
 							beforeEach(async () => {
 								await exchangeRates.updateRates([currencyKey], [toUnit('2')], timestamp, {
 									from: oracle,
+								});
+							});
+
+							describe('when another user exchanges into the synth', () => {
+								beforeEach(async () => {
+									await sUSDContract.issue(account2, toUnit('1000'));
+									await synthetix.exchange(sUSD, toUnit('100'), currencyKey, { from: account2 });
+								});
+								describe('when the synth is removed', () => {
+									beforeEach(async () => {
+										await issuer.removeSynth(currencyKey, { from: owner });
+									});
+									it('then settling works as expected', async () => {
+										await synthetix.settle(currencyKey);
+
+										const { numEntries } = await exchanger.settlementOwing(owner, sETH);
+										assert.equal(numEntries, '0');
+									});
 								});
 							});
 
