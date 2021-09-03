@@ -1,29 +1,16 @@
 [
 	{
-		"asset": "USD",
-		"category": "forex",
-		"sign": "$",
-		"description": "US Dollars",
-		"name": "sUSD"
-	},
-	{
-		"asset": "BTC",
-		"category": "crypto",
-		"sign": "₿",
-		"description": "Bitcoin",
-		"name": "sBTC",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"asset": "ETH",
-		"category": "crypto",
-		"sign": "Ξ",
-		"description": "Ether",
-		"name": "sETH",
-		"subclass": "MultiCollateralSynth"
-	},
-	{
-		"name": "sREDEEMER",
+		"name": "sUSD",
 		"asset": "USD"
+	},
+	{
+		"name": "sBTC",
+		"asset": "BTC",
+		"subclass": "MultiCollateralSynth"
+	},
+	{
+		"name": "sETH",
+		"asset": "ETH",
+		"subclass": "MultiCollateralSynth"
 	}
 ]
