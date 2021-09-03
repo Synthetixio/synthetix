@@ -16,8 +16,10 @@ module.exports = async ({
 	config,
 	deployer,
 	freshDeploy,
+	generateSolidity,
 	network,
 	synths,
+	systemSuspended,
 	yes,
 }) => {
 	// ----------------
@@ -84,19 +86,29 @@ module.exports = async ({
 		}
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
-		if (synthConfig.deploy && !yes && originalTotalSupply > 0) {
-			try {
-				await confirmAction(
-					yellow(
-						`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
-							`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n`
-					) +
-						gray('-'.repeat(50)) +
-						'\nDo you want to continue? (y/n) '
+		if (synthConfig.deploy && originalTotalSupply > 0) {
+			if (!systemSuspended && !generateSolidity) {
+				throw Error(
+					'Cannot override an existing synth when the system is not suspended.\n' +
+						'This is because the totalSupply from the existing synth will be copied to the ' +
+						'new one and then these numbers may go out of sync.\n'
 				);
-			} catch (err) {
-				console.log(gray('Operation cancelled'));
-				return;
+			}
+			if (!yes) {
+				try {
+					await confirmAction(
+						yellow(
+							`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+								`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n` +
+								'NOTE: Deploying with this amount is dangerous if the system is not already suspended'
+						) +
+							gray('-'.repeat(50)) +
+							'\nDo you want to continue? (y/n) '
+					);
+				} catch (err) {
+					console.log(gray('Operation cancelled'));
+					return;
+				}
 			}
 		}
 
