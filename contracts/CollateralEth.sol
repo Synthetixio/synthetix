@@ -46,10 +46,6 @@ contract CollateralEth is Collateral, ICollateralEth, ReentrancyGuard {
         uint amount
     ) external returns (uint principal, uint collateral) {
         (principal, collateral) = _repay(borrower, msg.sender, id, amount);
-
-        if (principal == 0) {
-            pendingWithdrawals[borrower] = pendingWithdrawals[borrower].add(collateral);
-        }
     }
 
     function draw(uint id, uint amount) external returns (uint principal, uint collateral) {

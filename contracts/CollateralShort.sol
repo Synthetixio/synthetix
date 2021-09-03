@@ -56,10 +56,6 @@ contract CollateralShort is Collateral {
         uint amount
     ) external returns (uint principal, uint collateral) {
         (principal, collateral) = _repay(borrower, msg.sender, id, amount);
-
-        if (principal == 0) {
-            IERC20(address(_synthsUSD())).transfer(borrower, collateral);
-        }
     }
 
     function repayWithCollateral(
@@ -68,10 +64,6 @@ contract CollateralShort is Collateral {
         bool payInterest
     ) external returns (uint principal, uint collateral) {
         (principal, collateral) = _repayWithCollateral(msg.sender, id, amount, payInterest);
-
-        if (principal == 0) {
-            IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
-        }
     }
 
     function draw(uint id, uint amount) external returns (uint principal, uint collateral) {

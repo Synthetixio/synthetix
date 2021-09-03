@@ -379,7 +379,7 @@ contract('CollateralShort', async accounts => {
 			});
 
 			assert.equal(loan.amount, toUnit(0).toString());
-			assert.equal(loan.collateral, toUnit(0).toString());
+			assert.bnClose(loan.collateral, toUnit(900).toString(), toUnit(0.3));
 		});
 
 		it('should only let the borrower repay with collateral', async () => {
