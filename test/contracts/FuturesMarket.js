@@ -1517,6 +1517,133 @@ contract('FuturesMarket', accounts => {
 				});
 			});
 
+			it('opening a new position gets a new id', async () => {
+				await setPrice(baseAsset, toUnit('100'));
+
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
+
+				// No position ids at first.
+				let { id: positionId } = await futuresMarket.positions(trader);
+				assert.bnEqual(positionId, toBN('0'));
+				positionId = (await futuresMarket.positions(trader2)).id;
+				assert.bnEqual(positionId, toBN('0'));
+
+				// Trader 1 gets position id 1.
+				let tx = await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+				let decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
+				});
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+
+				// trader2 gets the subsequent id
+				tx = await futuresMarket.modifyPosition(toUnit('10'), { from: trader2 });
+				decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
+				});
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
+
+				// And the ids have been modified
+				positionId = (await futuresMarket.positions(trader)).id;
+				assert.bnEqual(positionId, toBN('1'));
+				positionId = (await futuresMarket.positions(trader2)).id;
+				assert.bnEqual(positionId, toBN('2'));
+			});
+
+			it('modifying a position retains the same id', async () => {
+				await setPrice(baseAsset, toUnit('100'));
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+
+				// Trader gets position id 1.
+				let tx = await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+				let decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
+				});
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+
+				let positionId = (await futuresMarket.positions(trader)).id;
+				assert.bnEqual(positionId, toBN('1'));
+
+				// Modification (but not closure) does not alter the id
+				tx = await futuresMarket.modifyPosition(toUnit('-5'), { from: trader });
+				decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
+				});
+				assert.equal(decodedLogs[1].name, 'PositionModified');
+				assert.equal(decodedLogs[1].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[1].events[0].value, toBN('1'));
+
+				// And the ids have been modified
+				positionId = (await futuresMarket.positions(trader)).id;
+				assert.bnEqual(positionId, toBN('1'));
+			});
+
+			it('closing a position deletes the id but emits in in the event', async () => {
+				await setPrice(baseAsset, toUnit('100'));
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
+				await futuresMarket.transferMargin(toUnit('1000'), { from: trader2 });
+
+				// Close by closePosition
+				let tx = await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+				let decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
+				});
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('1'));
+
+				let positionId = (await futuresMarket.positions(trader)).id;
+				assert.bnEqual(positionId, toBN('1'));
+
+				tx = await futuresMarket.closePosition({ from: trader });
+				decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
+				});
+				assert.equal(decodedLogs[1].name, 'PositionModified');
+				assert.equal(decodedLogs[1].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[1].events[0].value, toBN('1'));
+
+				positionId = (await futuresMarket.positions(trader)).id;
+				assert.bnEqual(positionId, toBN('0'));
+
+				// Close by modifyPosition
+				tx = await futuresMarket.modifyPosition(toUnit('10'), { from: trader2 });
+				decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
+				});
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
+
+				positionId = (await futuresMarket.positions(trader2)).id;
+				assert.bnEqual(positionId, toBN('2'));
+
+				tx = await futuresMarket.modifyPosition(toUnit('-10'), { from: trader2 });
+				decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
+				});
+				assert.equal(decodedLogs[1].name, 'PositionModified');
+				assert.equal(decodedLogs[1].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[1].events[0].value, toBN('2'));
+
+				positionId = (await futuresMarket.positions(trader)).id;
+				assert.bnEqual(positionId, toBN('0'));
+			});
+
 			it('closing a position and opening one after should increment the position id', async () => {
 				await transferMarginAndModifyPosition({
 					market: futuresMarket,
@@ -1530,15 +1657,28 @@ contract('FuturesMarket', accounts => {
 				assert.bnEqual(oldPositionId, toBN('1'));
 
 				await setPrice(baseAsset, toUnit('200'));
-				await futuresMarket.closePosition({ from: trader });
+				let tx = await futuresMarket.closePosition({ from: trader });
 
-				await transferMarginAndModifyPosition({
-					market: futuresMarket,
-					account: trader,
-					fillPrice: toUnit('100'),
-					marginDelta: toUnit('1000'),
-					sizeDelta: toUnit('10'),
+				let decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
 				});
+
+				// No fee => no fee minting log, so decodedLogs index == 1
+				assert.equal(decodedLogs[1].name, 'PositionModified');
+				assert.equal(decodedLogs[1].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[1].events[0].value, toBN('1'));
+
+				tx = await futuresMarket.modifyPosition(toUnit('10'), { from: trader });
+
+				decodedLogs = await getDecodedLogs({
+					hash: tx.tx,
+					contracts: [futuresMarket],
+				});
+
+				assert.equal(decodedLogs[2].name, 'PositionModified');
+				assert.equal(decodedLogs[2].events[0].name, 'id');
+				assert.bnEqual(decodedLogs[2].events[0].value, toBN('2'));
 
 				const { id: newPositionId } = await futuresMarket.positions(trader);
 				assert.bnEqual(newPositionId, toBN('2'));
