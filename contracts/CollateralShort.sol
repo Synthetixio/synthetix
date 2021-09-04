@@ -58,12 +58,23 @@ contract CollateralShort is Collateral {
         (principal, collateral) = _repay(borrower, msg.sender, id, amount);
     }
 
+    // Needed for Lyra.
+    function repayWithCollateral(uint id, uint amount) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _repayWithCollateral(msg.sender, id, amount, true);
+    }
+
     function repayWithCollateral(
         uint id,
         uint amount,
         bool payInterest
     ) external returns (uint principal, uint collateral) {
         (principal, collateral) = _repayWithCollateral(msg.sender, id, amount, payInterest);
+    }
+
+    // Needed for Lyra.
+    function getShortAndCollateral(address borrower, uint id) external view returns (uint principal, uint collateral) {
+        Loan memory loan = loans[id];
+        return (loan.amount, loan.collateral);
     }
 
     function draw(uint id, uint amount) external returns (uint principal, uint collateral) {
