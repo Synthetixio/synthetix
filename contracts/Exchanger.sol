@@ -660,7 +660,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             refund(from, currencyKey, refunded);
         }
 
-        if (updateCache) {
+        // by checking a reclaim or refund we also check that the currency key is still a valid synth,
+        // as the deviation check will return 0 if the synth has been removed.
+        if (updateCache && (reclaimed > 0 || refunded > 0)) {
             bytes32[] memory key = new bytes32[](1);
             key[0] = currencyKey;
             debtCache().updateCachedSynthDebts(key);
