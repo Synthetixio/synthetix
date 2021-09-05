@@ -30,8 +30,8 @@ module.exports = async ({
 	console.log(gray(`\n------ IMPORT FEE PERIODS ------\n`));
 
 	const { FeePool } = deployer.deployedContracts;
-	// local network will not have any fee periods to import across (unless we pre-seeded them)
-	if (freshDeploy || !FeePool.justDeployed || network === 'local') {
+	// fresh deploys or no new fee pool mean this should be skipped
+	if (freshDeploy || !FeePool.justDeployed) {
 		console.log(gray(`No fee periods required for import. Skipping.`));
 		return;
 	}
@@ -40,7 +40,7 @@ module.exports = async ({
 
 	const feePeriods = [];
 
-	if (ExistingFeePool.address === FeePool.address && network !== 'local') {
+	if (ExistingFeePool.address === FeePool.address) {
 		throw Error(
 			'import-fee-periods: The FeePool in the versions.json is the same as the current ' +
 				'- this step assumes a new FeePool has been deployed yet not released - ' +

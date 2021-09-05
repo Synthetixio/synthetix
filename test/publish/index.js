@@ -633,7 +633,7 @@ describe('publish scripts', () => {
 					beforeEach(async () => {
 						periodsAdded = [];
 						const addPeriod = (feePeriodId, startTime) => {
-							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '0', '0', '0', '0']);
+							periodsAdded.push([`${feePeriodId}`, '0', `${startTime}`, '3', '4', '5', '6']);
 						};
 						for (let i = 0; i < feePeriodLength; i++) {
 							const startTime = daysAgo((i + 1) * 6);
@@ -644,40 +644,54 @@ describe('publish scripts', () => {
 								i + 1,
 								0,
 								startTime,
-								0,
-								0,
-								0,
-								0,
+								3,
+								4,
+								5,
+								6,
 								overrides
 							);
 							await tx.wait();
 						}
 					});
-
 					describe('when FeePool alone is redeployed', () => {
-						beforeEach(redeployFeePeriodOnly);
-						describe('using the FeePoolNew', () => {
-							let FeePoolNew;
-							beforeEach(async () => {
-								targets = getTarget();
-								FeePoolNew = getContract({ target: 'FeePool' });
+						it('it reverts as the system is not suspended', done => {
+							redeployFeePeriodOnly()
+								.then(() => done('Should not succeed.'))
+								.catch(() => done());
+						});
+					});
+
+					describe('when the system is suspended', () => {
+						beforeEach(async () => {
+							await getContract({ target: 'SystemStatus' }).suspendSystem('1', {
+								from: accounts.deployer.address,
 							});
+						});
+						describe('when FeePool alone is redeployed', () => {
+							beforeEach(redeployFeePeriodOnly);
+							describe('using the FeePoolNew', () => {
+								let FeePoolNew;
+								beforeEach(async () => {
+									targets = getTarget();
+									FeePoolNew = getContract({ target: 'FeePool' });
+								});
 
-							it('then the periods are added correctly', async () => {
-								let periods = await Promise.all(
-									[0, 1].map(i => callMethodWithRetry(FeePoolNew.recentFeePeriods(i)))
-								);
-								// strip index props off the returned object
-								periods.forEach(period =>
-									Object.keys(period)
-										.filter(key => /^[0-9]+$/.test(key))
-										.forEach(key => delete period[key])
-								);
+								it('then the periods are added correctly', async () => {
+									let periods = await Promise.all(
+										[0, 1].map(i => callMethodWithRetry(FeePoolNew.recentFeePeriods(i)))
+									);
+									// strip index props off the returned object
+									periods.forEach(period =>
+										Object.keys(period)
+											.filter(key => /^[0-9]+$/.test(key))
+											.forEach(key => delete period[key])
+									);
 
-								periods = periods.map(period => period.map(bn => bn.toString()));
+									periods = periods.map(period => period.map(bn => bn.toString()));
 
-								assert.strictEqual(JSON.stringify(periods[0]), JSON.stringify(periodsAdded[0]));
-								assert.strictEqual(JSON.stringify(periods[1]), JSON.stringify(periodsAdded[1]));
+									assert.strictEqual(JSON.stringify(periods[0]), JSON.stringify(periodsAdded[0]));
+									assert.strictEqual(JSON.stringify(periods[1]), JSON.stringify(periodsAdded[1]));
+								});
 							});
 						});
 					});
