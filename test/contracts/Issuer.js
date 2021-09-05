@@ -61,7 +61,8 @@ contract('Issuer (via Synthetix)', async accounts => {
 		issuer,
 		synths,
 		addressResolver,
-		synthRedeemer;
+		synthRedeemer,
+		exchanger;
 
 	const getRemainingIssuableSynths = async account =>
 		(await synthetix.remainingIssuableSynths(account))[0];
@@ -82,6 +83,7 @@ contract('Issuer (via Synthetix)', async accounts => {
 			SynthsETH: sETHContract,
 			SynthsAUD: sAUDContract,
 			SynthsEUR: sEURContract,
+			Exchanger: exchanger,
 			FeePool: feePool,
 			DebtCache: debtCache,
 			Issuer: issuer,
@@ -719,6 +721,75 @@ contract('Issuer (via Synthetix)', async accounts => {
 							beforeEach(async () => {
 								await exchangeRates.updateRates([currencyKey], [toUnit('2')], timestamp, {
 									from: oracle,
+								});
+							});
+
+							describe('when another user exchanges into the synth', () => {
+								beforeEach(async () => {
+									await sUSDContract.issue(account2, toUnit('1000'));
+									await synthetix.exchange(sUSD, toUnit('100'), currencyKey, { from: account2 });
+								});
+								describe('when the synth is removed', () => {
+									beforeEach(async () => {
+										await issuer.removeSynth(currencyKey, { from: owner });
+									});
+									it('then settling works as expected', async () => {
+										await synthetix.settle(currencyKey);
+
+										const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+										assert.equal(numEntries, '0');
+									});
+									describe('when the rate is also removed', () => {
+										beforeEach(async () => {
+											await exchangeRates.deleteRate(currencyKey, { from: oracle });
+										});
+										it('then settling works as expected', async () => {
+											await synthetix.settle(currencyKey);
+
+											const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+											assert.equal(numEntries, '0');
+										});
+									});
+								});
+								describe('when the same user exchanges out of the synth', () => {
+									beforeEach(async () => {
+										await setExchangeWaitingPeriod({ owner, systemSettings, secs: 60 });
+										// pass through the waiting period so we can exchange again
+										await fastForward(90);
+										await synthetix.exchange(currencyKey, toUnit('1'), sUSD, { from: account2 });
+									});
+									describe('when the synth is removed', () => {
+										beforeEach(async () => {
+											await issuer.removeSynth(currencyKey, { from: owner });
+										});
+										it('then settling works as expected', async () => {
+											await synthetix.settle(sUSD);
+
+											const { numEntries } = await exchanger.settlementOwing(owner, sUSD);
+											assert.equal(numEntries, '0');
+										});
+										it('then settling from the original currency works too', async () => {
+											await synthetix.settle(currencyKey);
+											const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+											assert.equal(numEntries, '0');
+										});
+										describe('when the rate is also removed', () => {
+											beforeEach(async () => {
+												await exchangeRates.deleteRate(currencyKey, { from: oracle });
+											});
+											it('then settling works as expected', async () => {
+												await synthetix.settle(currencyKey);
+
+												const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+												assert.equal(numEntries, '0');
+											});
+											it('then settling from the original currency works too', async () => {
+												await synthetix.settle(currencyKey);
+												const { numEntries } = await exchanger.settlementOwing(owner, currencyKey);
+												assert.equal(numEntries, '0');
+											});
+										});
+									});
 								});
 							});
 
