@@ -143,6 +143,29 @@ jobs:
           root: .
           paths:
             - node_modules
+  job-simulate-release:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-node:14.16-focal
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          command: npm run fork:mainnet
+          background: true
+      - cmd-wait-for-port:
+          port: 8545
+      - run:
+          name: Simulate release on L1 fork
+          command: |
+            UPCOMING_RELEASE=$(node bin.js releases --layer=base --unreleased --with-sources --name-only)
+            if [ -z "$UPCOMING_RELEASE" ]; then
+              npx hardhat simulate:migration --release "$UPCOMING_RELEASE" --generate --test
+            fi;
   job-static-analysis:
     working_directory: ~/repo
     docker:
@@ -347,6 +370,9 @@ workflows:
           requires:
             - job-prepare
       - job-fork-tests:
+          requires:
+            - job-prepare
+      - job-simulate-release:
           requires:
             - job-prepare
       - job-integration-tests:
