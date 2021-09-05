@@ -187,10 +187,18 @@ program
 	.description('Get the list of releases')
 	.option('--unreleased', 'Only retrieve the unreleased ones.')
 	.option('--with-sources', 'Only retrieve ones with files.')
-	.action(async ({ unreleased, withSources }) => {
+	.addOption(
+		new commander.Option('-l, --layer <value>', `The layer(s) corresponding to the release`)
+			.choices(['base', 'ovm', 'both'])
+			.default('both')
+	)
+	.action(async ({ unreleased, withSources, layer }) => {
 		const getSip = sipNumber => releases.sips.find(({ sip }) => sip === sipNumber);
 
 		const result = releases.releases
+			.filter(({ ovm }) =>
+				layer === 'both' ? true : (ovm && layer === 'ovm') || (!ovm && layer === 'base')
+			)
 			.filter(release => release.released === !unreleased)
 			.filter(release => {
 				if (!withSources) return true;
