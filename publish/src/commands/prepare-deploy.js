@@ -14,7 +14,7 @@ const DEFAULTS = {
 const { stringify, loadAndCheckRequiredSources } = require('../util');
 
 // Get unreleased releases
-const getReleases = (useOvm = false) =>
+const getReleasesNotYetReleased = (useOvm = false) =>
 	releases.releases.filter(
 		release => !release.released && !!release.ovm === useOvm && release.sips.length > 0
 	);
@@ -33,10 +33,17 @@ const getSipSources = (sip, useOvm = false) => {
 	if (Array.isArray(sip.sources)) return sip.sources;
 	const baseSources = sip.sources.base || [];
 	const layerSources = sip.sources[useOvm ? 'ovm' : 'base'] || [];
+	console.log([...baseSources, ...layerSources]);
 	return [...baseSources, ...layerSources];
 };
 
-const prepareDeploy = async ({ network = DEFAULTS.network, synthsToAdd = [], useOvm, useSips }) => {
+const prepareDeploy = async ({
+	network = DEFAULTS.network,
+	synthsToAdd = [],
+	useOvm,
+	useSips,
+	useReleases = true,
+}) => {
 	ensureNetwork(network);
 
 	const deploymentPath = getDeploymentPathForNetwork({ network, useOvm });
@@ -69,19 +76,19 @@ const prepareDeploy = async ({ network = DEFAULTS.network, synthsToAdd = [], use
 		if (sources.length > 0) {
 			console.log(gray(`Preparing SIPs: ${sips.map(({ sip }) => sip).join(', ')}`));
 		}
-	} else {
+	} else if (useReleases) {
 		// Get all the sources coming from the SIPs from the release on the required layer
-		const releases = getReleases();
-		sources = releases
+		const unreleased = getReleasesNotYetReleased();
+		sources = unreleased
 			.flatMap(({ sips }) => sips)
 			.flatMap(sipNumber => {
 				const sip = releases.sips.find(sip => sip.sip === sipNumber);
 				if (!sip) throw new Error(`Invalid SIP number "${sipNumber}"`);
-				return getSipSources(sipNumber, useOvm);
+				return getSipSources(sip, useOvm);
 			});
 
 		if (sources.length > 0) {
-			console.log(gray(`Preparing releases: ${releases.map(({ name }) => name).join(', ')}`));
+			console.log(gray(`Preparing releases: ${unreleased.map(({ name }) => name).join(', ')}`));
 		}
 	}
 

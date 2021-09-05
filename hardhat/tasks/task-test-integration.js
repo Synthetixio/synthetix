@@ -63,7 +63,8 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 				});
 			} else {
 				const network = 'local';
-				await prepareDeploy({ network, synthsToAdd, useOvm });
+				// prepare the synths but skip preparing releases (as this isn't a fork)
+				await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
 				await deployInstance({
 					addNewSynths: true,
 					buildPath,
