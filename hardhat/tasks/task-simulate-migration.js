@@ -16,18 +16,34 @@ const { owner } = require('../../publish/src/commands/owner');
 
 const synthsToAdd = require('../util/synthsToAdd');
 
-task('simulate:migration', 'Simulate a migration on a fork')
-	.addFlag('compile', 'Compile the instance to for the latest to generate the migration')
-	.addFlag('deploy', 'Deploy the instance with generateSolidity to generate the migration')
+task(
+	'simulate:migration',
+	'Simulate a migration on a fork by compiling, deploying and executing it.'
+)
+	.addFlag(
+		'generate',
+		'Generate the migration by compiling, preparing and deploying with generateSolidity enabled'
+	)
+	.addFlag('test', 'Run the integration tests after the migration is executed')
 	.addParam('release', 'Name of the release')
 	.setAction(async (taskArguments, hre) => {
-		// create the migration contract by compiling and deploying on a fork
-		if (taskArguments.compile) {
-			await compileInstance({});
-		}
 		const network = 'mainnet';
 
-		if (taskArguments.deploy) {
+		console.log(
+			gray(`Starting migration forked simulation for release ${yellow(taskArguments.release)}`)
+		);
+
+		// create the migration contract by compiling and deploying on a fork
+		if (taskArguments.generate) {
+			console.log(
+				gray(
+					`Generate enabled. Compiling, preparing and deploying to generate the migration for ${yellow(
+						taskArguments.release
+					)}`
+				)
+			);
+			await compileInstance({});
+
 			await prepareDeploy({
 				network,
 				synthsToAdd,
@@ -44,6 +60,8 @@ task('simulate:migration', 'Simulate a migration on a fork')
 				useFork: true,
 			});
 		}
+
+		console.log(gray('Now running hardhat compile to flatten and compile the migration contracts'));
 
 		// now compile the contract that was invariably created
 		await hre.run('compile', { everything: true, optimizer: true });
@@ -95,17 +113,19 @@ task('simulate:migration', 'Simulate a migration on a fork')
 			yes: true,
 		});
 
-		// run integration tests on the fork
-		const timeout = 600000; // 10m
+		if (taskArguments.test) {
+			// run integration tests on the fork
+			const timeout = 600000; // 10m
 
-		hre.config.mocha.timeout = timeout;
-		// stop on first error unless we're on CI
-		hre.config.mocha.bail = !isCI;
-		hre.config.networks.localhost.timeout = timeout;
+			hre.config.mocha.timeout = timeout;
+			// stop on first error unless we're on CI
+			hre.config.mocha.bail = !isCI;
+			hre.config.networks.localhost.timeout = timeout;
 
-		taskArguments.maxMemory = true;
+			taskArguments.maxMemory = true;
 
-		hre.config.paths.tests = './test/integration/l1/';
-		hre.config.fork = true;
-		await hre.run('test', taskArguments);
+			hre.config.paths.tests = './test/integration/l1/';
+			hre.config.fork = true;
+			await hre.run('test', taskArguments);
+		}
 	});
