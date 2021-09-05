@@ -45,6 +45,7 @@ const owner = async ({
 	useOvm,
 	useFork,
 	providerUrl,
+	throwOnNotNominatedOwner = false,
 	isContract,
 }) => {
 	ensureNetwork(network);
@@ -349,11 +350,12 @@ const owner = async ({
 				return;
 			}
 		} else {
-			console.log(
-				cyan(
-					`Cannot acceptOwnership on ${contract} as nominatedOwner: ${nominatedOwner} isn't the newOwner ${newOwner} you specified. Have you run the nominate command yet?`
-				)
-			);
+			const msg = `Cannot acceptOwnership on ${contract} as nominatedOwner: ${nominatedOwner} isn't the newOwner ${newOwner} you specified. Have you run the nominate command yet?`;
+			if (throwOnNotNominatedOwner) {
+				throw Error(msg);
+			} else {
+				console.log(cyan(msg));
+			}
 		}
 	}
 	if (warnings.length) {

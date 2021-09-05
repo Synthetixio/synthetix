@@ -90,6 +90,7 @@ task('simulate:migration', 'Simulate a migration on a fork')
 		await owner({
 			gasPrice: '0',
 			network,
+			throwOnNotNominatedOwner: true,
 			useFork: true,
 			yes: true,
 		});
