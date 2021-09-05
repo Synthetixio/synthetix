@@ -372,6 +372,7 @@ const deploy = async ({
 		network,
 		runStep,
 		systemSuspended,
+		useFork,
 		yes,
 	});
 

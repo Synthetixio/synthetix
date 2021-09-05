@@ -25,6 +25,7 @@ module.exports = async ({
 	runStep,
 	skipTimeCheck = false,
 	systemSuspended,
+	useFork,
 	yes,
 }) => {
 	console.log(gray(`\n------ IMPORT FEE PERIODS ------\n`));
@@ -51,7 +52,7 @@ module.exports = async ({
 		console.log(gray(`Importing into new FeePool at: ${yellow(FeePool.address)}`));
 	}
 
-	if (!systemSuspended && !generateSolidity) {
+	if (!systemSuspended && !generateSolidity && !useFork) {
 		throw Error(
 			'import-fee-periods: Cannot import fee periods while the system is not suspended as this could mean data loss'
 		);
