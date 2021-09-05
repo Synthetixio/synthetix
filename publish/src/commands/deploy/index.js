@@ -307,6 +307,7 @@ const deploy = async ({
 		network,
 		synths,
 		systemSuspended,
+		useFork,
 		yes,
 	});
 

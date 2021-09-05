@@ -20,6 +20,7 @@ module.exports = async ({
 	network,
 	synths,
 	systemSuspended,
+	useFork,
 	yes,
 }) => {
 	// ----------------
@@ -87,7 +88,7 @@ module.exports = async ({
 
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
 		if (synthConfig.deploy && originalTotalSupply > 0) {
-			if (!systemSuspended && !generateSolidity) {
+			if (!systemSuspended && !generateSolidity && !useFork) {
 				throw Error(
 					'Cannot override an existing synth when the system is not suspended.\n' +
 						'This is because the totalSupply from the existing synth will be copied to the ' +
