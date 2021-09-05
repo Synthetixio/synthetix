@@ -5,26 +5,47 @@ const ethers = require('ethers');
 const { getUsers, getTarget } = require('../..');
 const { task } = require('hardhat/config');
 
+const {
+	compileInstance,
+	prepareDeploy,
+	deployInstance,
+} = require('../../test/integration/utils/deploy');
+
 const { nominate } = require('../../publish/src/commands/nominate');
 const { owner } = require('../../publish/src/commands/owner');
 
+const synthsToAdd = require('../util/synthsToAdd');
+
 task('simulate:migration', 'Simulate a migration on a fork')
-	.addParam('release', 'name of the release')
+	.addFlag('compile', 'Compile the instance to for the latest to generate the migration')
+	.addFlag('deploy', 'Deploy the instance with generateSolidity to generate the migration')
+	.addParam('release', 'Name of the release')
 	.setAction(async (taskArguments, hre) => {
-		const timeout = 600000; // 10m
-
-		hre.config.mocha.timeout = timeout;
-		// stop on first error unless we're on CI
-		hre.config.mocha.bail = !isCI;
-		hre.config.networks.localhost.timeout = timeout;
-
-		taskArguments.maxMemory = true;
-
-		hre.config.paths.tests = './test/integration/l1/';
-		hre.config.fork = true;
-
+		// create the migration contract by compiling and deploying on a fork
+		if (taskArguments.compile) {
+			await compileInstance({});
+		}
 		const network = 'mainnet';
 
+		if (taskArguments.deploy) {
+			await prepareDeploy({
+				network,
+				synthsToAdd,
+				useReleases: true,
+			});
+
+			await deployInstance({
+				addNewSynths: true,
+				freshDeploy: false,
+				generateSolidity: true,
+				providerPort: '8545',
+				providerUrl: 'http://localhost',
+				network,
+				useFork: true,
+			});
+		}
+
+		// now compile the contract that was invariably created
 		await hre.run('compile', { everything: true, optimizer: true });
 
 		// get artifacts via hardhat/ethers
@@ -33,7 +54,7 @@ task('simulate:migration', 'Simulate a migration on a fork')
 		const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
 		const ownerAddress = getUsers({ network: 'mainnet', user: 'owner' }).address;
 
-		// but deploy using regular ethers onto the fork (using Migration.deploy won't deploy to the fork as needed)
+		// but deploy this new migration contract using regular ethers onto the fork (using Migration.deploy won't deploy to the fork as needed)
 		const Factory = new ethers.ContractFactory(
 			Migration.interface,
 			Migration.bytecode,
@@ -74,5 +95,16 @@ task('simulate:migration', 'Simulate a migration on a fork')
 		});
 
 		// run integration tests on the fork
-		// await hre.run('test', taskArguments);
+		const timeout = 600000; // 10m
+
+		hre.config.mocha.timeout = timeout;
+		// stop on first error unless we're on CI
+		hre.config.mocha.bail = !isCI;
+		hre.config.networks.localhost.timeout = timeout;
+
+		taskArguments.maxMemory = true;
+
+		hre.config.paths.tests = './test/integration/l1/';
+		hre.config.fork = true;
+		await hre.run('test', taskArguments);
 	});

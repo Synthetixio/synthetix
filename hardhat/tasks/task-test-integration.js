@@ -12,9 +12,7 @@ const {
 	connectInstances,
 } = require('../../test/integration/utils/deploy');
 
-// add a new synth during deployment, it will be used for testing
-// redemptions
-const synthsToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
+const synthsToAdd = require('../util/synthsToAdd');
 
 task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addFlag('compile', 'Compile an l1 instance before running the tests')
