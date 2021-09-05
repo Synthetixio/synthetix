@@ -200,6 +200,7 @@ contract('CollateralShort', async accounts => {
 				'deposit',
 				'repay',
 				'repayWithCollateral',
+				'repayWithCollateral',
 				'withdraw',
 				'liquidate',
 				'draw',
