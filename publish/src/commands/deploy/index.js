@@ -34,7 +34,6 @@ const deployCore = require('./deploy-core');
 const deploySynths = require('./deploy-synths');
 const deployLoans = require('./deploy-loans');
 const deployDappUtils = require('./deploy-dapp-utils.js');
-const deployBinaryOptions = require('./deploy-binary-options');
 const importAddresses = require('./import-addresses');
 const rebuildResolverCaches = require('./rebuild-resolver-caches');
 const configureLegacySettings = require('./configure-legacy-settings');
@@ -313,12 +312,6 @@ const deploy = async ({
 		getDeployParameter,
 		network,
 		useOvm,
-	});
-
-	await deployBinaryOptions({
-		account,
-		addressOf,
-		deployer,
 	});
 
 	await deployDappUtils({
