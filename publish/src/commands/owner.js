@@ -84,7 +84,8 @@ const owner = async ({
 		providerUrl = envProviderUrl;
 	}
 
-	if (!privateKey) {
+	// if not specified, or in a local network, override the private key passed as a CLI option, with the one specified in .env
+	if (network !== 'local' && !privateKey && !useFork) {
 		privateKey = envPrivateKey;
 	}
 
@@ -103,8 +104,18 @@ const owner = async ({
 		}
 	}
 
-	const wallet = new ethers.Wallet(privateKey, provider);
-	console.log(gray(`Using account with public key ${wallet.address}`));
+	let wallet;
+	if (!privateKey) {
+		const account = getUsers({ network, user: 'owner' }).address; // protocolDAO
+		wallet = provider.getSigner(account);
+		wallet.address = await wallet.getAddress();
+	} else {
+		wallet = new ethers.Wallet(privateKey, provider);
+	}
+
+	const signerAddress = wallet.address;
+
+	console.log(gray(`Using account with public key ${signerAddress}`));
 
 	if (!isContract && wallet.address.toLowerCase() !== newOwner.toLowerCase()) {
 		throw new Error(

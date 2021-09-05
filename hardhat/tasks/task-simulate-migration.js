@@ -24,9 +24,6 @@ task('simulate:migration', 'Simulate a migration on a fork')
 		hre.config.fork = true;
 
 		const network = 'mainnet';
-		// hre.config.providerUrl = 'http://localhost:8545';
-		// const useOvm = false;
-		// const buildPath = path.join(__dirname, '..', '..', BUILD_FOLDER);
 
 		await hre.run('compile', { everything: true, optimizer: true });
 
@@ -71,11 +68,11 @@ task('simulate:migration', 'Simulate a migration on a fork')
 
 		await owner({
 			gasPrice: '0',
+			network,
 			useFork: true,
 			yes: true,
 		});
 
 		// run integration tests on the fork
-
 		// await hre.run('test', taskArguments);
 	});
