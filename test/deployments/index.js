@@ -214,8 +214,6 @@ describe('deployments', () => {
 								// that would omit the deps from Depot which were not
 								// redeployed in Hadar (v2.21)
 								[
-									'BinaryOptionMarketFactory',
-									'BinaryOptionMarketManager',
 									'DebtCache',
 									'DelegateApprovals',
 									'Depot',
