@@ -357,8 +357,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     }
 
     function _closeLoanByRepayment(address borrower, uint id) internal returns (uint amount, uint collateral) {
-        // 0. Get the loan and accrue interest.
-        Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
+        // 0. Get the loan.
+        Loan storage loan = loans[id];
 
         // 1. Repay the loan with its collateral.
         (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
