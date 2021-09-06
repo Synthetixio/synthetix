@@ -1075,29 +1075,27 @@ contract FuturesMarket is Owned, Proxyable, MixinFuturesMarketSettings, IFutures
         // Record the trade
         if (newPosition.size == 0) {
             // If the position is being closed, we no longer need to track these details.
+            delete position.id;
             delete position.size;
             delete position.lastPrice;
             delete position.fundingIndex;
-            emitPositionModified(newPosition.id, sender, newPosition.margin, 0, sizeDelta, 0, 0, fee);
+            // Note we still emit the old position id in the event to indicate that it's closing.
+            emitPositionModified(oldPosition.id, sender, newPosition.margin, 0, sizeDelta, 0, 0, fee);
         } else {
-            // New positions get new id's
+            uint id;
             if (oldPosition.size == 0) {
-                position.id = _nextPositionId;
+                // New positions get new ids.
+                id = _nextPositionId;
                 _nextPositionId += 1;
+                position.id = id;
+            } else {
+                // If an existing position is just being modified, reuse the existing id.
+                id = newPosition.id;
             }
             position.size = newPosition.size;
             position.lastPrice = price;
             position.fundingIndex = fundingIndex;
-            emitPositionModified(
-                newPosition.id,
-                sender,
-                newPosition.margin,
-                newPosition.size,
-                sizeDelta,
-                price,
-                fundingIndex,
-                fee
-            );
+            emitPositionModified(id, sender, newPosition.margin, newPosition.size, sizeDelta, price, fundingIndex, fee);
         }
     }
 
