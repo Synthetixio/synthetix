@@ -6,8 +6,6 @@ const abiDecoder = require('abi-decoder');
 // load the data in explicitly (not programmatically) so webpack knows what to bundle
 const data = {
 	kovan: require('./publish/deployed/kovan'),
-	rinkeby: require('./publish/deployed/rinkeby'),
-	ropsten: require('./publish/deployed/ropsten'),
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
@@ -20,17 +18,11 @@ const ovmIgnored = require('./publish/ovm-ignore.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'kovan', 'rinkeby', 'ropsten', 'mainnet', 'goerli'];
+const networks = ['local', 'kovan', 'mainnet', 'goerli'];
 
 const chainIdMapping = Object.entries({
 	1: {
 		network: 'mainnet',
-	},
-	3: {
-		network: 'ropsten',
-	},
-	4: {
-		network: 'rinkeby',
 	},
 	5: {
 		network: 'goerli',
@@ -38,7 +30,6 @@ const chainIdMapping = Object.entries({
 	42: {
 		network: 'kovan',
 	},
-
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
 		network: 'mainnet',
@@ -119,8 +110,6 @@ const knownAccounts = {
 			address: '0x62f7A1F94aba23eD2dD108F8D23Aa3e7d452565B',
 		},
 	],
-	rinkeby: [],
-	kovan: [],
 };
 
 // The solidity defaults are managed here in the same format they will be stored, hence all
@@ -156,13 +145,10 @@ const defaults = {
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		kovan: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
-		rinkeby: '0xEDC0C23864B041607D624E2d9a67916B6cf40F7a',
 	},
 	WETH_ERC20_ADDRESSES: {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
 		kovan: '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
-		rinkeby: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
-		ropsten: '0xc778417E063141139Fce010982780140Aa0cD5Ab',
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'kovan-ovm': '0x4200000000000000000000000000000000000006',
