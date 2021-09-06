@@ -2,15 +2,6 @@
 	"AddressResolver": {
 		"deploy": false
 	},
-	"BinaryOptionMarketFactory": {
-		"deploy": false
-	},
-	"BinaryOptionMarketManager": {
-		"deploy": false
-	},
-	"BinaryOptionMarketData": {
-		"deploy": false
-	},
 	"ReadProxyAddressResolver": {
 		"deploy": false
 	},

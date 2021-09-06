@@ -34,7 +34,6 @@ const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureSynths = require('./configure-synths');
 const configureSystemSettings = require('./configure-system-settings');
-const deployBinaryOptions = require('./deploy-binary-options');
 const deployCore = require('./deploy-core');
 const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
@@ -318,12 +317,6 @@ const deploy = async ({
 		getDeployParameter,
 		network,
 		useOvm,
-	});
-
-	await deployBinaryOptions({
-		account,
-		addressOf,
-		deployer,
 	});
 
 	await deployDappUtils({
