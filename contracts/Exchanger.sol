@@ -11,6 +11,7 @@ import "./SafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeState.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/ISynthetix.sol";
@@ -20,10 +21,6 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
 import "./Proxyable.sol";
-
-// Note: use OZ's IERC20 here as using ours will complain about conflicting names
-// during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
-import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
