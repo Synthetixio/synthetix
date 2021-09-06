@@ -39,7 +39,6 @@ contract('DebtCache', async accounts => {
 
 	const oneETH = toUnit('1.0');
 	const twoETH = toUnit('2.0');
-	const threeETH = toUnit('3.0');
 
 	let synthetix,
 		systemStatus,
@@ -828,32 +827,41 @@ contract('DebtCache', async accounts => {
 					from: owner,
 				});
 				await sAUDContract.issue(account1, toUnit(100));
+
 				await debtCache.takeDebtSnapshot();
 
+				const cachedDebt = await debtCache.cachedDebt();
+
 				await synthetix.exchange(sAUD, toUnit(50), sEUR, { from: account1 });
+				// so there's now 100 - 25 sUSD left (25 of it was exchanged)
+				// and now there's 100 + (25 / 2 ) of sEUR = 112.5
+
+				await systemSettings.setWaitingPeriodSecs(60, { from: owner });
+				// set a high price deviation threshold factor to be sure it doesn't trigger here
+				await systemSettings.setPriceDeviationThresholdFactor(toUnit('99'), { from: owner });
 
 				await exchangeRates.updateRates([sAUD, sEUR], ['2', '1'].map(toUnit), await currentTime(), {
 					from: oracle,
 				});
 
-				const tx = await exchanger.settle(account1, sAUD);
+				await fastForward(100);
+
+				const tx = await exchanger.settle(account1, sEUR);
 				const logs = await getDecodedLogs({
 					hash: tx.tx,
 					contracts: [debtCache],
 				});
 
-				// AU$150 worth $75 became worth $300
-				// But the EUR debt does not change due to settlement,
-				// and remains at $200 + $25 from the exchange
-
+				// The A$75 does not change as we settled sEUR
+				// But the EUR changes from 112.5 + 87.5 rebate = 200
 				const results = await debtCache.cachedSynthDebts([sAUD, sEUR]);
-				assert.bnEqual(results[0], toUnit(300));
-				assert.bnEqual(results[1], toUnit(225));
+				assert.bnEqual(results[0], toUnit(75));
+				assert.bnEqual(results[1], toUnit(200));
 
 				decodedEventEqual({
 					event: 'DebtCacheUpdated',
 					emittedFrom: debtCache.address,
-					args: [toUnit(825)],
+					args: [cachedDebt.sub(toUnit('25'))], // deduct the 25 units of sAUD
 					log: logs.find(({ name } = {}) => name === 'DebtCacheUpdated'),
 				});
 			});
@@ -1164,24 +1172,6 @@ contract('DebtCache', async accounts => {
 					value: twoETH,
 					from: account1,
 				});
-			});
-
-			it('issuing sUSD updates the debt total when non-snx excluded debt exceeds the sUSD total supply', async () => {
-				// create 200 sUSD worth of excluded-debt sETH, so that it will exceed the sUSD supply
-				await ceth.open(twoETH, sETH, {
-					value: threeETH,
-					from: account1,
-				});
-
-				assert.bnGt((await debtCache.totalNonSnxBackedDebt())[0], await sUSDContract.totalSupply());
-
-				// Issue some sUSD and ensure that it is properly accounted for.
-				await debtCache.takeDebtSnapshot();
-				const issued = (await debtCache.cacheInfo())[0];
-				await synthetix.transfer(account2, toUnit('5000'), { from: owner });
-				const toIssue = toUnit('10');
-				await synthetix.issueSynths(toIssue, { from: account2 });
-				assert.bnEqual((await debtCache.cacheInfo())[0], issued.add(toIssue));
 			});
 
 			it('increases non-SNX debt', async () => {

@@ -100,7 +100,7 @@
 		"eslint-plugin-prettier": "^2.6.2",
 		"eslint-plugin-promise": "^4.0.1",
 		"eslint-plugin-standard": "^4.0.0",
-		"ethers": "5.1.4",
+		"ethers": "5.4.4",
 		"execa": "^4.1.0",
 		"fs-extra": "9.0.1",
 		"hardhat": "2.5.0",
@@ -131,7 +131,7 @@
 	},
 	"dependencies": {
 		"abi-decoder": "2.3.0",
-		"commander": "5.1.0",
+		"commander": "8.1.0",
 		"inquirer": "^6.5.2",
 		"inquirer-list-search-prompt": "^1.0.2",
 		"js-levenshtein": "^1.1.6",

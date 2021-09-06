@@ -1,50 +1,104 @@
 'use strict';
 
-const path = require('path');
 const fs = require('fs');
+const uniq = require('lodash.uniq');
 const { ensureDeploymentPath, getDeploymentPathForNetwork, ensureNetwork } = require('../util');
 const { red, gray, yellow } = require('chalk');
 
-const {
-	constants: { CONFIG_FILENAME },
-	releases,
-} = require('../../../.');
+const { releases } = require('../../../.');
 
 const DEFAULTS = {
 	network: 'kovan',
 };
 
-const { stringify } = require('../util');
+const { stringify, loadAndCheckRequiredSources } = require('../util');
 
-const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
+// Get unreleased releases
+const getReleases = (useOvm = false) =>
+	releases.releases.filter(
+		release => !release.released && !!release.ovm === useOvm && release.sips.length > 0
+	);
+
+// Get unreleased sips
+const getSips = (useOvm = false) => {
+	const layers = ['both', useOvm ? 'ovm' : 'base'];
+	return releases.sips.filter(
+		({ layer, released }) => layers.includes(layer) && !layers.includes(released)
+	);
+};
+
+// Get defined source files from the given sip, or an empty Array
+const getSipSources = (sip, useOvm = false) => {
+	if (!sip.sources) return [];
+	if (Array.isArray(sip.sources)) return sip.sources;
+	const baseSources = sip.sources.base || [];
+	const layerSources = sip.sources[useOvm ? 'ovm' : 'base'] || [];
+	return [...baseSources, ...layerSources];
+};
+
+const prepareDeploy = async ({ network = DEFAULTS.network, synthsToAdd = [], useOvm, useSips }) => {
 	ensureNetwork(network);
 
 	const deploymentPath = getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
-	// Pick required ovm releases that need to be prepared
-	const unreleased = releases.filter(
-		release => (useOvm ? release.ovm : !release.ovm) && release.released !== true
-	);
+	// Get config and synths
+	const { config, configFile, synths, synthsFile } = loadAndCheckRequiredSources({
+		deploymentPath,
+		network,
+	});
 
-	if (unreleased.length === 0) {
-		console.log(gray('There are no releases that need to be prepared'));
+	// now prepare synths, if any
+	if (synthsToAdd.length) {
+		fs.writeFileSync(synthsFile, stringify(synths.concat(synthsToAdd)));
+		console.log(
+			yellow(synthsFile),
+			gray(
+				`updated for ${yellow(network)} with synths ${yellow(synthsToAdd.map(({ name }) => name))}.`
+			)
+		);
+	}
+
+	// Get unreleased source files
+	let sources;
+	if (useSips) {
+		// Pick unreleased sips that have sources that need to be prepared
+		const sips = getSips();
+		sources = sips.flatMap(sip => getSipSources(sip, useOvm));
+
+		if (sources.length > 0) {
+			console.log(gray(`Preparing SIPs: ${sips.map(({ sip }) => sip).join(', ')}`));
+		}
+	} else {
+		// Get all the sources coming from the SIPs from the release on the required layer
+		const releases = getReleases();
+		sources = releases
+			.flatMap(({ sips }) => sips)
+			.flatMap(sipNumber => {
+				const sip = releases.sips.find(sip => sip.sip === sipNumber);
+				if (!sip) throw new Error(`Invalid SIP number "${sipNumber}"`);
+				return getSipSources(sipNumber, useOvm);
+			});
+
+		if (sources.length > 0) {
+			console.log(gray(`Preparing releases: ${releases.map(({ name }) => name).join(', ')}`));
+		}
+	}
+
+	sources = uniq(sources);
+
+	if (sources.length === 0) {
+		console.log(gray('There are no source files that need to be prepared'));
 		return;
 	}
 
-	// Pick the oldest one to prepare
-	const [release] = unreleased;
+	console.log(gray(`Preparing sources on ${network}:`));
+	console.log(gray(sources.map(source => `  - ${source}`).join('\n')));
 
-	console.log(gray(`Preparing release for ${release.name} on network ${network}...`));
-
-	// Get config.js
-	const configFile = path.join(deploymentPath, CONFIG_FILENAME);
-	const config = JSON.parse(fs.readFileSync(configFile));
-
-	// Sweep releases.sources and,
+	// Sweep sources and,
 	// (1) make sure they have an entry in config.json and,
 	// (2) its deploy value is set to true.
-	release.sources.map(source => {
+	sources.forEach(source => {
 		// If any non alpha characters in the name, assume regex and match existing names
 		if (/[^\w]/.test(source)) {
 			Object.keys(config)
@@ -58,7 +112,7 @@ const prepareDeploy = async ({ network = DEFAULTS.network, useOvm }) => {
 
 	// Update config file
 	fs.writeFileSync(configFile, stringify(config));
-	console.log(yellow(`${configFile} updated for ${release.name} release.`));
+	console.log(yellow(`${configFile} updated for ${network}.`));
 };
 
 module.exports = {
@@ -70,6 +124,7 @@ module.exports = {
 				'Reads releases.json and switches all entries to true in config.json for the target network.'
 			)
 			.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
+			.option('-s, --use-sips', 'Use sources from SIPs directly, instead of releases.')
 			.option(
 				'-n, --network <value>',
 				'The network to run off.',
