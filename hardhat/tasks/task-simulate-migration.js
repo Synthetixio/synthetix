@@ -14,7 +14,7 @@ const {
 const { nominate } = require('../../publish/src/commands/nominate');
 const { owner } = require('../../publish/src/commands/owner');
 
-const synthsToAdd = require('../util/synthsToAdd');
+// const synthsToAdd = require('../util/synthsToAdd');
 
 task(
 	'simulate:migration',
@@ -46,7 +46,7 @@ task(
 
 			await prepareDeploy({
 				network,
-				synthsToAdd,
+				// synthsToAdd,
 				useReleases: true,
 			});
 
