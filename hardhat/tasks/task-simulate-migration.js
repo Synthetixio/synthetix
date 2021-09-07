@@ -129,6 +129,8 @@ task(
 			// run integration tests on the fork
 			const timeout = 600000; // 10m
 
+			hre.config.providerUrl = 'http://localhost';
+			hre.config.providerPort = '8545';
 			hre.config.mocha.timeout = timeout;
 			// stop on first error unless we're on CI
 			hre.config.mocha.bail = !isCI;
