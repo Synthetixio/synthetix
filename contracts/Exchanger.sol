@@ -8,6 +8,7 @@ import "./interfaces/IExchanger.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
+import "./Math.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
@@ -19,6 +20,7 @@ import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ITradingRewards.sol";
 import "./interfaces/IVirtualSynth.sol";
+import "./interfaces/ILiquidityOracle.sol";
 import "./Proxyable.sol";
 
 // Note: use OZ's IERC20 here as using ours will complain about conflicting names
@@ -98,6 +100,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
+    bytes32 private constant CONTRACT_LIQUIDITY_ORACLE = "LiquidityOracle";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
@@ -105,7 +108,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](9);
+        bytes32[] memory newAddresses = new bytes32[](10);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXCHANGESTATE;
         newAddresses[2] = CONTRACT_EXRATES;
@@ -115,6 +118,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[7] = CONTRACT_ISSUER;
         newAddresses[8] = CONTRACT_DEBTCACHE;
+        newAddresses[9] = CONTRACT_LIQUIDITY_ORACLE;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -152,6 +156,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     function debtCache() internal view returns (IExchangerInternalDebtCache) {
         return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
+    }
+    
+    function liquidityOracle() public view returns (ILiquidityOracle) {
+        return ILiquidityOracle(requireAndGetAddress(CONTRACT_LIQUIDITY_ORACLE));
     }
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) public view returns (uint) {
@@ -485,6 +493,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // in these currencies
         _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
 
+        // Update open interest for asset.
+        liquidityOracle().updateOpenInterest(destinationCurrencyKey, amountReceived);
+
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
             from,
@@ -789,9 +800,52 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             sourceAmount,
             destinationCurrencyKey
         );
+        // destinationAmount is the theoretical max the user could buy, if there were no
+        // fees for slippage or exchanges.
+        
+
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
+    }
+
+    function premium_integral(int n, uint delta, uint lambda) internal view returns (uint) {
+        uint num = Math.max(int(delta) - n, Math.ln(uint(Math.abs(n))));
+        uint denom = Math.max(int(delta) + n, Math.ln(uint(Math.abs(n))));
+
+        return (lambda * (int(delta) - n) * Math.ln(num/denom) + (2 * delta * lambda) * Math.ln(delta + n) );
+    }
+
+    function calculateQuotePrice(int s, int n, uint O, uint lambda, uint delta) internal view returns (uint) {
+        if (s == 0) {
+            return O;
+        }
+
+        return O + (O / s) * (premium_integral(n + s, delta, lambda) - premium_integral(n, delta, lambda));
+    }
+
+    function getSimulatedPrice(
+        bytes32 destinationCurrencyKey,
+        uint destinationRate,
+        uint amount
+    )
+        internal
+        view
+        returns (uint quotePrice, uint quoteAmount)
+    {
+        uint openInterest = liquidityOracle().openInterest(destinationCurrencyKey);
+        uint lambda = liquidityOracle().priceImpactFactor(destinationCurrencyKey);
+        uint delta = liquidityOracle().maxOpenInterestDelta(destinationCurrencyKey);
+
+        // premium_ = premium(open_interest + amount, delta, lambda_)
+        // mark_price = rate * (1 + premium_)
+        quotePrice = calculateQuotePrice(amount, openInterest, destinationRate, lambda, delta);
+        quoteAmount = amount * quotePrice;
+        return (quotePrice, quoteAmount);
+
+        // print("exchange {} amount={:,.3f} rate={} premium={:.5f} mark_price={:,.3f} quote_price={:,.3f} take_amount={:,.3f}".format(
+        //     asset, amount, rate, premium_, mark_price, price, take_amount
+        // ))
     }
 
     function _getAmountReceivedForExchange(uint destinationAmount, uint exchangeFeeRate)

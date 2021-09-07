@@ -15,6 +15,7 @@ import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.
 // FlagsInterface from Chainlink addresses SIP-76
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/FlagsInterface.sol";
 import "./interfaces/IExchanger.sol";
+import "./interfaces/ILiquidityOracle.sol";
 
 // https://docs.synthetix.io/contracts/source/contracts/exchangerates
 contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
@@ -48,6 +49,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
+    bytes32 private constant CONTRACT_LIQUIDITY_ORACLE = "LiquidityOracle";
 
     //
     // ========== CONSTRUCTOR ==========
@@ -67,6 +69,12 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         _setRate("sUSD", SafeDecimalMath.unit(), now);
 
         internalUpdateRates(_currencyKeys, _newRates, now);
+    }
+
+    /* ========== VIEWS ========== */
+
+    function liquidityOracle() public view returns (ILiquidityOracle) {
+        return ILiquidityOracle(requireAndGetAddress(CONTRACT_LIQUIDITY_ORACLE));
     }
 
     /* ========== SETTERS ========== */
@@ -213,8 +221,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](1);
+        bytes32[] memory newAddresses = new bytes32[](2);
         newAddresses[0] = CONTRACT_EXCHANGER;
+        newAddresses[1] = CONTRACT_LIQUIDITY_ORACLE;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -489,6 +498,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
+        ILiquidityOracle _liquidityOracle = liquidityOracle();
+
         // Loop through each key and perform update.
         for (uint i = 0; i < currencyKeys.length; i++) {
             bytes32 currencyKey = currencyKeys[i];
@@ -506,6 +517,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
             // Ok, go ahead with the update.
             _setRate(currencyKey, newRates[i], timeSent);
+
+            _liquidityOracle.resetOpenInterest(currencyKey);
         }
 
         emit RatesUpdated(currencyKeys, newRates);
