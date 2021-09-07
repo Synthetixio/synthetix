@@ -5,9 +5,9 @@ const { itCanRedeem } = require('../behaviors/redeem.behavior');
 describe('Redemption integration tests (L2)', () => {
 	const ctx = this;
 
-	addSynths({ ctx, synths: ['sREDEEMER'], useOvm: true });
-
 	bootstrapL2({ ctx });
 
-	itCanRedeem({ ctx });
+	addSynths({ ctx, synths: ['sREDEEMER'], useOvm: true });
+
+	itCanRedeem({ ctx, synth: 'sREDEEMER' });
 });

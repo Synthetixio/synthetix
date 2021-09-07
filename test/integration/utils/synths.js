@@ -1,9 +1,11 @@
 const hre = require('hardhat');
 
+const { connectContracts } = require('./contracts');
 const { prepareDeploy, deployInstance } = require('./deploy');
+const { updateExchangeRatesIfNeeded } = require('./rates');
 
 function addSynths({ ctx, synths, useOvm }) {
-	before('add synths used for testing to system', async () => {
+	before(`add synths "${synths}" used for testing to system`, async () => {
 		const network = hre.config.fork ? 'mainnet' : 'local';
 
 		const { providerUrl, providerPort } = hre.config;
@@ -23,6 +25,10 @@ function addSynths({ ctx, synths, useOvm }) {
 			useFork: hre.config.fork,
 			useOvm,
 		});
+
+		connectContracts({ ctx });
+
+		await updateExchangeRatesIfNeeded({ ctx });
 	});
 }
 
