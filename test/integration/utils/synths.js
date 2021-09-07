@@ -15,8 +15,6 @@ function addSynths({ ctx, synths, useOvm }) {
 	before(`add synths "${synths}" used for testing to system`, async () => {
 		const network = hre.config.fork ? 'mainnet' : 'local';
 
-		const { providerUrl, providerPort } = hre.config;
-
 		const synthsFile = getPathToNetwork({ network, useOvm, file: SYNTHS_FILENAME, path });
 		const synthsContent = fs.readFileSync(synthsFile);
 
@@ -31,8 +29,8 @@ function addSynths({ ctx, synths, useOvm }) {
 			addNewSynths: true,
 			freshDeploy: false,
 			network,
-			providerPort,
-			providerUrl,
+			providerPort: useOvm ? hre.config.providerPortL2 : hre.config.providerPort,
+			providerUrl: hre.config.providerUrl,
 			useFork: hre.config.fork,
 			useOvm,
 		});
