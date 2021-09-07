@@ -4,7 +4,7 @@ const { prepareDeploy, deployInstance } = require('./deploy');
 
 function addSynths({ ctx, synths, useOvm }) {
 	before('add synths used for testing to system', async () => {
-		const network = ctx.fork ? 'mainnet' : 'local';
+		const network = hre.config.fork ? 'mainnet' : 'local';
 
 		const { providerUrl, providerPort } = hre.config;
 
