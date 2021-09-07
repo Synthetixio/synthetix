@@ -17,7 +17,7 @@ function addSynths({ ctx, synths, useOvm }) {
 
 		const { providerUrl, providerPort } = hre.config;
 
-		const synthsFile = getPathToNetwork({ network, file: SYNTHS_FILENAME, path });
+		const synthsFile = getPathToNetwork({ network, useOvm, file: SYNTHS_FILENAME, path });
 		const synthsContent = fs.readFileSync(synthsFile);
 
 		// this mutates the synths.json for the network
