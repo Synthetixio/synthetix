@@ -12,7 +12,7 @@ const { exchangeSynths } = require('../utils/exchanging');
 const { skipWaitingPeriod } = require('../utils/skip');
 
 function itCanOpenAndCloseShort({ ctx }) {
-	describe.only('shorting', () => {
+	describe('shorting', () => {
 		const amountToDeposit = parseEther('10000'); // sUSD
 		const amountToBorrow = parseEther('1'); // sETH
 
