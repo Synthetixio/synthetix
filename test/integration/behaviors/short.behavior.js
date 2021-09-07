@@ -6,7 +6,7 @@ const {
 const { approveIfNeeded } = require('../utils/approve');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
-const { getLoan } = require('../utils/loans');
+const { getLoan, getShortInteractionDelay, setShortInteractionDelay } = require('../utils/loans');
 const { ensureBalance } = require('../utils/balances');
 const { exchangeSynths } = require('../utils/exchanging');
 const { skipWaitingPeriod } = require('../utils/skip');
@@ -45,13 +45,13 @@ function itCanOpenAndCloseShort({ ctx }) {
 		});
 
 		before('skip waiting period by setting interaction delay to zero', async () => {
-			interactionDelay = await SystemSettings.interactionDelay(CollateralShort.address);
+			interactionDelay = await getShortInteractionDelay({ ctx });
 
-			await SystemSettings.setInteractionDelay(CollateralShort.address, 0);
+			await setShortInteractionDelay({ ctx, delay: 0 });
 		});
 
 		after('restore waiting period', async () => {
-			await SystemSettings.setInteractionDelay(CollateralShort.address, interactionDelay);
+			await setShortInteractionDelay({ ctx, delay: interactionDelay });
 		});
 
 		describe('open, close, deposit, withdraw, and draw a short', async () => {
