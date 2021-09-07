@@ -351,7 +351,7 @@ const owner = async ({
 			}
 		} else {
 			const msg = `Cannot acceptOwnership on ${contract} as nominatedOwner: ${nominatedOwner} isn't the newOwner ${newOwner} you specified. Have you run the nominate command yet?`;
-			if (throwOnNotNominatedOwner) {
+			if (throwOnNotNominatedOwner && contract !== 'DappMaintenance') {
 				throw Error(msg);
 			} else {
 				console.log(cyan(msg));
