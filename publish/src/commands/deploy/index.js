@@ -158,7 +158,7 @@ const deploy = async ({
 		return !config[name].deploy && (!deployment.targets[name] || !deployment.targets[name].address);
 	});
 
-	if (missingDeployments.length) {
+	if (!freshDeploy && missingDeployments.length) {
 		throw Error(
 			`Cannot use existing contracts for deployment as addresses not found for the following contracts on ${network}:\n` +
 				missingDeployments.join('\n') +

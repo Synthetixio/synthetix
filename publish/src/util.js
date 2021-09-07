@@ -106,6 +106,10 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 	if (freshDeploy) {
 		deployment.targets = {};
 		deployment.sources = {};
+		// turn on all config flags
+		for (const entry of Object.values(config)) {
+			entry.deploy = true;
+		}
 	}
 
 	const ownerActionsFile = path.join(deploymentPath, OWNER_ACTIONS_FILENAME);
