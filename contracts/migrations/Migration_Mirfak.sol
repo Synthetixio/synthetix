@@ -26,6 +26,7 @@ interface ISynthetixNamedContract {
     function CONTRACT_NAME() external view returns (bytes32);
 }
 
+/* solhit-disable no-unused-vars */
 // solhint-disable contract-name-camelcase
 contract Migration_Mirfak is BaseMigration {
     // https://etherscan.io/address/0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
@@ -174,8 +175,17 @@ contract Migration_Mirfak is BaseMigration {
 
         // MIGRATION
         // Import all new contracts into the address resolver;
-        _handleResolver();
-
+        addressresolver_importAddresses_0();
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 1;
+        addressresolver_rebuildCaches_1();
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 2;
+        addressresolver_rebuildCaches_2();
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 3;
+        addressresolver_rebuildCaches_3();
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 4;
+        addressresolver_rebuildCaches_4();
+        // Rebuild the resolver caches in all MixinResolver contracts - batch 5;
+        addressresolver_rebuildCaches_5();
         // Ensure the ProxyFeePool contract has the correct FeePool target set;
         proxyfeepool_i.setTarget(Proxyable(new_FeePool_contract));
         // Ensure the FeePool contract can write to its EternalStorage;
@@ -209,9 +219,9 @@ contract Migration_Mirfak is BaseMigration {
             176179,
             1629873154,
             429405170183945982453004,
-            282032806354422650910678,
+            282064253766511043012355,
             547139062871602886555198,
-            359360287398738528864100
+            359400357031743667863105
         );
         // Ensure the sUSD synth can write to its TokenState;
         tokenstatesusd_i.setAssociatedContract(new_SynthsUSD_contract);
@@ -224,86 +234,15 @@ contract Migration_Mirfak is BaseMigration {
         // Ensure the sETH synth Proxy is correctly connected to the Synth;
         proxyseth_i.setTarget(Proxyable(new_SynthsETH_contract));
         // Add synths to the Issuer contract - batch 1;
-        ISynth[] memory issuer_addSynths_synthsToAdd_33_0 = new ISynth[](15);
-        issuer_addSynths_synthsToAdd_33_0[0] = ISynth(new_SynthsUSD_contract);
-        issuer_addSynths_synthsToAdd_33_0[1] = ISynth(0xC61b352fCc311Ae6B0301459A970150005e74b3E);
-        issuer_addSynths_synthsToAdd_33_0[2] = ISynth(0x388fD1A8a7d36e03eFA1ab100a1c5159a3A3d427);
-        issuer_addSynths_synthsToAdd_33_0[3] = ISynth(0x37B648a07476F4941D3D647f81118AFd55fa8a04);
-        issuer_addSynths_synthsToAdd_33_0[4] = ISynth(0xEF285D339c91aDf1dD7DE0aEAa6250805FD68258);
-        issuer_addSynths_synthsToAdd_33_0[5] = ISynth(0xcf9bB94b5d65589039607BA66e3DAC686d3eFf01);
-        issuer_addSynths_synthsToAdd_33_0[6] = ISynth(0xCeC4e038371d32212C6Dcdf36Fdbcb6F8a34C6d8);
-        issuer_addSynths_synthsToAdd_33_0[7] = ISynth(0x5eDf7dd83fE2889D264fa9D3b93d0a6e6A45D6C6);
-        issuer_addSynths_synthsToAdd_33_0[8] = ISynth(0x9745606DA6e162866DAD7bF80f2AbF145EDD7571);
-        issuer_addSynths_synthsToAdd_33_0[9] = ISynth(0x2962EA4E749e54b10CFA557770D597027BA67cB3);
-        issuer_addSynths_synthsToAdd_33_0[10] = ISynth(0xDB91E4B3b6E19bF22E810C43273eae48C9037e74);
-        issuer_addSynths_synthsToAdd_33_0[11] = ISynth(new_SynthsETH_contract);
-        issuer_addSynths_synthsToAdd_33_0[12] = ISynth(0xda3c83750b1FA31Fda838136ef3f853b41cb7a5a);
-        issuer_addSynths_synthsToAdd_33_0[13] = ISynth(0x47bD14817d7684082E04934878EE2Dd3576Ae19d);
-        issuer_addSynths_synthsToAdd_33_0[14] = ISynth(0x6F927644d55E32318629198081923894FbFe5c07);
-        issuer_i.addSynths(issuer_addSynths_synthsToAdd_33_0);
+        issuer_addSynths_33();
         // Add synths to the Issuer contract - batch 2;
-        ISynth[] memory issuer_addSynths_synthsToAdd_34_0 = new ISynth[](15);
-        issuer_addSynths_synthsToAdd_34_0[0] = ISynth(0xe3D5E1c1bA874C0fF3BA31b999967F24d5ca04e5);
-        issuer_addSynths_synthsToAdd_34_0[1] = ISynth(0xA962208CDC8588F9238fae169d0F63306c353F4F);
-        issuer_addSynths_synthsToAdd_34_0[2] = ISynth(0xcd980Fc5CcdAe62B18A52b83eC64200121A929db);
-        issuer_addSynths_synthsToAdd_34_0[3] = ISynth(0xAf090d6E583C082f2011908cf95c2518BE7A53ac);
-        issuer_addSynths_synthsToAdd_34_0[4] = ISynth(0x21ee4afBd6c151fD9A69c1389598170B1d45E0e3);
-        issuer_addSynths_synthsToAdd_34_0[5] = ISynth(0xcb6Cb218D558ae7fF6415f95BDA6616FCFF669Cb);
-        issuer_addSynths_synthsToAdd_34_0[6] = ISynth(0x7B29C9e188De18563B19d162374ce6836F31415a);
-        issuer_addSynths_synthsToAdd_34_0[7] = ISynth(0xC22e51FA362654ea453B4018B616ef6f6ab3b779);
-        issuer_addSynths_synthsToAdd_34_0[8] = ISynth(0xaB38249f4f56Ef868F6b5E01D9cFa26B952c1270);
-        issuer_addSynths_synthsToAdd_34_0[9] = ISynth(0xAa1b12E3e5F70aBCcd1714F4260A74ca21e7B17b);
-        issuer_addSynths_synthsToAdd_34_0[10] = ISynth(0x0F393ce493d8FB0b83915248a21a3104932ed97c);
-        issuer_addSynths_synthsToAdd_34_0[11] = ISynth(0xfD0435A588BF5c5a6974BA19Fa627b772833d4eb);
-        issuer_addSynths_synthsToAdd_34_0[12] = ISynth(0x4287dac1cC7434991119Eba7413189A66fFE65cF);
-        issuer_addSynths_synthsToAdd_34_0[13] = ISynth(0x34c76BC146b759E58886e821D62548AC1e0BA7Bc);
-        issuer_addSynths_synthsToAdd_34_0[14] = ISynth(0x0E8Fa2339314AB7E164818F26207897bBe29C3af);
-        issuer_i.addSynths(issuer_addSynths_synthsToAdd_34_0);
+        issuer_addSynths_34();
         // Add synths to the Issuer contract - batch 3;
-        ISynth[] memory issuer_addSynths_synthsToAdd_35_0 = new ISynth[](15);
-        issuer_addSynths_synthsToAdd_35_0[0] = ISynth(0xe615Df79AC987193561f37E77465bEC2aEfe9aDb);
-        issuer_addSynths_synthsToAdd_35_0[1] = ISynth(0x3E2dA260B4A85782A629320EB027A3B7c28eA9f1);
-        issuer_addSynths_synthsToAdd_35_0[2] = ISynth(0xc02DD182Ce029E6d7f78F37492DFd39E4FEB1f8b);
-        issuer_addSynths_synthsToAdd_35_0[3] = ISynth(0x0d1c4e5C07B071aa4E6A14A604D4F6478cAAC7B4);
-        issuer_addSynths_synthsToAdd_35_0[4] = ISynth(0x13D0F5B8630520eA04f694F17A001fb95eaFD30E);
-        issuer_addSynths_synthsToAdd_35_0[5] = ISynth(0x815CeF3b7773f35428B4353073B086ecB658f73C);
-        issuer_addSynths_synthsToAdd_35_0[6] = ISynth(0xb0e0BA880775B7F2ba813b3800b3979d719F0379);
-        issuer_addSynths_synthsToAdd_35_0[7] = ISynth(0x8e082925e78538955bC0e2F363FC5d1Ab3be739b);
-        issuer_addSynths_synthsToAdd_35_0[8] = ISynth(0x399BA516a6d68d6Ad4D5f3999902D0DeAcaACDdd);
-        issuer_addSynths_synthsToAdd_35_0[9] = ISynth(0x9530FA32a3059114AC20A5812870Da12D97d1174);
-        issuer_addSynths_synthsToAdd_35_0[10] = ISynth(0x249612F641111022f2f48769f3Df5D85cb3E26a2);
-        issuer_addSynths_synthsToAdd_35_0[11] = ISynth(0x04720DbBD4599aD26811545595d97fB813E84964);
-        issuer_addSynths_synthsToAdd_35_0[12] = ISynth(0x2acfe6265D358d982cB1c3B521199973CD443C71);
-        issuer_addSynths_synthsToAdd_35_0[13] = ISynth(0x46A7Af405093B27DA6DeF193C508Bd9240A255FA);
-        issuer_addSynths_synthsToAdd_35_0[14] = ISynth(0x8350d1b2d6EF5289179fe49E5b0F208165B4e32e);
-        issuer_i.addSynths(issuer_addSynths_synthsToAdd_35_0);
+        issuer_addSynths_35();
         // Add synths to the Issuer contract - batch 4;
-        ISynth[] memory issuer_addSynths_synthsToAdd_36_0 = new ISynth[](15);
-        issuer_addSynths_synthsToAdd_36_0[0] = ISynth(0x29DD4A59F4D339226867e77aF211724eaBb45c02);
-        issuer_addSynths_synthsToAdd_36_0[1] = ISynth(0xf7B8dF8b16dA302d85603B8e7F95111a768458Cc);
-        issuer_addSynths_synthsToAdd_36_0[2] = ISynth(0x0517A56da8A517e3b2D484Cc5F1Da4BDCfE68ec3);
-        issuer_addSynths_synthsToAdd_36_0[3] = ISynth(0x099CfAd1640fc7EA686ab1D83F0A285Ba0470882);
-        issuer_addSynths_synthsToAdd_36_0[4] = ISynth(0x19cC1f63e344D74A87D955E3F3E95B28DDDc61d8);
-        issuer_addSynths_synthsToAdd_36_0[5] = ISynth(0x4D50A0e5f068ACdC80A1da2dd1f0Ad48845df2F8);
-        issuer_addSynths_synthsToAdd_36_0[6] = ISynth(0xb73c665825dAa926D6ef09417FbE5654473c1b49);
-        issuer_addSynths_synthsToAdd_36_0[7] = ISynth(0x806A599d60B2FdBda379D5890287D2fba1026cC0);
-        issuer_addSynths_synthsToAdd_36_0[8] = ISynth(0xCea42504874586a718954746A564B72bc7eba3E3);
-        issuer_addSynths_synthsToAdd_36_0[9] = ISynth(0x947d5656725fB9A8f9c826A91b6082b07E2745B7);
-        issuer_addSynths_synthsToAdd_36_0[10] = ISynth(0x186E56A62E7caCE1308f1A1B0dbb27f33F80f16f);
-        issuer_addSynths_synthsToAdd_36_0[11] = ISynth(0x931c5516EE121a177bD2B60e0122Da5B27630ABc);
-        issuer_addSynths_synthsToAdd_36_0[12] = ISynth(0x6Dc6a64724399524184C2c44a526A2cff1BaA507);
-        issuer_addSynths_synthsToAdd_36_0[13] = ISynth(0x87eb6e935e3C7E3E3A0E31a5658498bC87dE646E);
-        issuer_addSynths_synthsToAdd_36_0[14] = ISynth(0x53869BDa4b8d85aEDCC9C6cAcf015AF9447Cade7);
-        issuer_i.addSynths(issuer_addSynths_synthsToAdd_36_0);
+        issuer_addSynths_36();
         // Add synths to the Issuer contract - batch 5;
-        ISynth[] memory issuer_addSynths_synthsToAdd_37_0 = new ISynth[](6);
-        issuer_addSynths_synthsToAdd_37_0[0] = ISynth(0x1cB27Ac646afAE192dF9928A2808C0f7f586Af7d);
-        issuer_addSynths_synthsToAdd_37_0[1] = ISynth(0x3dD7b893c25025CabFBd290A5E06BaFF3DE335b8);
-        issuer_addSynths_synthsToAdd_37_0[2] = ISynth(0x1A4505543C92084bE57ED80113eaB7241171e7a8);
-        issuer_addSynths_synthsToAdd_37_0[3] = ISynth(0xF6ce55E09De0F9F97210aAf6DB88Ed6b6792Ca1f);
-        issuer_addSynths_synthsToAdd_37_0[4] = ISynth(0xacAAB69C2BA65A2DB415605F309007e18D4F5E8C);
-        issuer_addSynths_synthsToAdd_37_0[5] = ISynth(0x9A5Ea0D8786B8d17a70410A905Aed1443fae5A38);
-        issuer_i.addSynths(issuer_addSynths_synthsToAdd_37_0);
+        issuer_addSynths_37();
 
         // NOMINATE OWNERSHIP back to owner for aforementioned contracts
         addressresolver_i.nominateNewOwner(owner);
@@ -327,7 +266,7 @@ contract Migration_Mirfak is BaseMigration {
         issuer_i.nominateNewOwner(owner);
     }
 
-    function _handleResolver() internal {
+    function addressresolver_importAddresses_0() internal {
         // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
         // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
         address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
@@ -368,7 +307,27 @@ contract Migration_Mirfak is BaseMigration {
             addressresolver_importAddresses_names_0_0,
             addressresolver_importAddresses_destinations_0_1
         );
-        // Rebuild the resolver caches in all MixinResolver contracts - batch 1;
+    }
+
+    function addressresolver_rebuildCaches_1() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_1_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_1_0[0] = MixinResolver(0xDA4eF8520b1A57D7d63f1E249606D1A459698876);
         addressresolver_rebuildCaches_destinations_1_0[1] = MixinResolver(new_Exchanger_contract);
@@ -391,7 +350,27 @@ contract Migration_Mirfak is BaseMigration {
         addressresolver_rebuildCaches_destinations_1_0[18] = MixinResolver(0xe3D5E1c1bA874C0fF3BA31b999967F24d5ca04e5);
         addressresolver_rebuildCaches_destinations_1_0[19] = MixinResolver(0xA962208CDC8588F9238fae169d0F63306c353F4F);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_1_0);
-        // Rebuild the resolver caches in all MixinResolver contracts - batch 2;
+    }
+
+    function addressresolver_rebuildCaches_2() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0xcd980Fc5CcdAe62B18A52b83eC64200121A929db);
         addressresolver_rebuildCaches_destinations_2_0[1] = MixinResolver(0xAf090d6E583C082f2011908cf95c2518BE7A53ac);
@@ -414,7 +393,27 @@ contract Migration_Mirfak is BaseMigration {
         addressresolver_rebuildCaches_destinations_2_0[18] = MixinResolver(0x815CeF3b7773f35428B4353073B086ecB658f73C);
         addressresolver_rebuildCaches_destinations_2_0[19] = MixinResolver(0xb0e0BA880775B7F2ba813b3800b3979d719F0379);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_2_0);
-        // Rebuild the resolver caches in all MixinResolver contracts - batch 3;
+    }
+
+    function addressresolver_rebuildCaches_3() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_3_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_3_0[0] = MixinResolver(0x8e082925e78538955bC0e2F363FC5d1Ab3be739b);
         addressresolver_rebuildCaches_destinations_3_0[1] = MixinResolver(0x399BA516a6d68d6Ad4D5f3999902D0DeAcaACDdd);
@@ -437,7 +436,27 @@ contract Migration_Mirfak is BaseMigration {
         addressresolver_rebuildCaches_destinations_3_0[18] = MixinResolver(0x186E56A62E7caCE1308f1A1B0dbb27f33F80f16f);
         addressresolver_rebuildCaches_destinations_3_0[19] = MixinResolver(0x931c5516EE121a177bD2B60e0122Da5B27630ABc);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_3_0);
-        // Rebuild the resolver caches in all MixinResolver contracts - batch 4;
+    }
+
+    function addressresolver_rebuildCaches_4() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_4_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_4_0[0] = MixinResolver(0x6Dc6a64724399524184C2c44a526A2cff1BaA507);
         addressresolver_rebuildCaches_destinations_4_0[1] = MixinResolver(0x87eb6e935e3C7E3E3A0E31a5658498bC87dE646E);
@@ -460,11 +479,213 @@ contract Migration_Mirfak is BaseMigration {
         addressresolver_rebuildCaches_destinations_4_0[18] = MixinResolver(new_Synthetix_contract);
         addressresolver_rebuildCaches_destinations_4_0[19] = MixinResolver(new_DebtCache_contract);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_4_0);
-        // Rebuild the resolver caches in all MixinResolver contracts - batch 5;
+    }
+
+    function addressresolver_rebuildCaches_5() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_5_0 = new MixinResolver[](3);
         addressresolver_rebuildCaches_destinations_5_0[0] = MixinResolver(new_SynthRedeemer_contract);
         addressresolver_rebuildCaches_destinations_5_0[1] = MixinResolver(0x067e398605E84F2D0aEEC1806e62768C5110DCc6);
         addressresolver_rebuildCaches_destinations_5_0[2] = MixinResolver(0x7A3d898b717e50a96fd8b232E9d15F0A547A7eeb);
         addressresolver_i.rebuildCaches(addressresolver_rebuildCaches_destinations_5_0);
     }
+
+    function issuer_addSynths_33() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
+        ISynth[] memory issuer_addSynths_synthsToAdd_33_0 = new ISynth[](15);
+        issuer_addSynths_synthsToAdd_33_0[0] = ISynth(new_SynthsUSD_contract);
+        issuer_addSynths_synthsToAdd_33_0[1] = ISynth(0xC61b352fCc311Ae6B0301459A970150005e74b3E);
+        issuer_addSynths_synthsToAdd_33_0[2] = ISynth(0x388fD1A8a7d36e03eFA1ab100a1c5159a3A3d427);
+        issuer_addSynths_synthsToAdd_33_0[3] = ISynth(0x37B648a07476F4941D3D647f81118AFd55fa8a04);
+        issuer_addSynths_synthsToAdd_33_0[4] = ISynth(0xEF285D339c91aDf1dD7DE0aEAa6250805FD68258);
+        issuer_addSynths_synthsToAdd_33_0[5] = ISynth(0xcf9bB94b5d65589039607BA66e3DAC686d3eFf01);
+        issuer_addSynths_synthsToAdd_33_0[6] = ISynth(0xCeC4e038371d32212C6Dcdf36Fdbcb6F8a34C6d8);
+        issuer_addSynths_synthsToAdd_33_0[7] = ISynth(0x5eDf7dd83fE2889D264fa9D3b93d0a6e6A45D6C6);
+        issuer_addSynths_synthsToAdd_33_0[8] = ISynth(0x9745606DA6e162866DAD7bF80f2AbF145EDD7571);
+        issuer_addSynths_synthsToAdd_33_0[9] = ISynth(0x2962EA4E749e54b10CFA557770D597027BA67cB3);
+        issuer_addSynths_synthsToAdd_33_0[10] = ISynth(0xDB91E4B3b6E19bF22E810C43273eae48C9037e74);
+        issuer_addSynths_synthsToAdd_33_0[11] = ISynth(new_SynthsETH_contract);
+        issuer_addSynths_synthsToAdd_33_0[12] = ISynth(0xda3c83750b1FA31Fda838136ef3f853b41cb7a5a);
+        issuer_addSynths_synthsToAdd_33_0[13] = ISynth(0x47bD14817d7684082E04934878EE2Dd3576Ae19d);
+        issuer_addSynths_synthsToAdd_33_0[14] = ISynth(0x6F927644d55E32318629198081923894FbFe5c07);
+        issuer_i.addSynths(issuer_addSynths_synthsToAdd_33_0);
+    }
+
+    function issuer_addSynths_34() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
+        ISynth[] memory issuer_addSynths_synthsToAdd_34_0 = new ISynth[](15);
+        issuer_addSynths_synthsToAdd_34_0[0] = ISynth(0xe3D5E1c1bA874C0fF3BA31b999967F24d5ca04e5);
+        issuer_addSynths_synthsToAdd_34_0[1] = ISynth(0xA962208CDC8588F9238fae169d0F63306c353F4F);
+        issuer_addSynths_synthsToAdd_34_0[2] = ISynth(0xcd980Fc5CcdAe62B18A52b83eC64200121A929db);
+        issuer_addSynths_synthsToAdd_34_0[3] = ISynth(0xAf090d6E583C082f2011908cf95c2518BE7A53ac);
+        issuer_addSynths_synthsToAdd_34_0[4] = ISynth(0x21ee4afBd6c151fD9A69c1389598170B1d45E0e3);
+        issuer_addSynths_synthsToAdd_34_0[5] = ISynth(0xcb6Cb218D558ae7fF6415f95BDA6616FCFF669Cb);
+        issuer_addSynths_synthsToAdd_34_0[6] = ISynth(0x7B29C9e188De18563B19d162374ce6836F31415a);
+        issuer_addSynths_synthsToAdd_34_0[7] = ISynth(0xC22e51FA362654ea453B4018B616ef6f6ab3b779);
+        issuer_addSynths_synthsToAdd_34_0[8] = ISynth(0xaB38249f4f56Ef868F6b5E01D9cFa26B952c1270);
+        issuer_addSynths_synthsToAdd_34_0[9] = ISynth(0xAa1b12E3e5F70aBCcd1714F4260A74ca21e7B17b);
+        issuer_addSynths_synthsToAdd_34_0[10] = ISynth(0x0F393ce493d8FB0b83915248a21a3104932ed97c);
+        issuer_addSynths_synthsToAdd_34_0[11] = ISynth(0xfD0435A588BF5c5a6974BA19Fa627b772833d4eb);
+        issuer_addSynths_synthsToAdd_34_0[12] = ISynth(0x4287dac1cC7434991119Eba7413189A66fFE65cF);
+        issuer_addSynths_synthsToAdd_34_0[13] = ISynth(0x34c76BC146b759E58886e821D62548AC1e0BA7Bc);
+        issuer_addSynths_synthsToAdd_34_0[14] = ISynth(0x0E8Fa2339314AB7E164818F26207897bBe29C3af);
+        issuer_i.addSynths(issuer_addSynths_synthsToAdd_34_0);
+    }
+
+    function issuer_addSynths_35() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
+        ISynth[] memory issuer_addSynths_synthsToAdd_35_0 = new ISynth[](15);
+        issuer_addSynths_synthsToAdd_35_0[0] = ISynth(0xe615Df79AC987193561f37E77465bEC2aEfe9aDb);
+        issuer_addSynths_synthsToAdd_35_0[1] = ISynth(0x3E2dA260B4A85782A629320EB027A3B7c28eA9f1);
+        issuer_addSynths_synthsToAdd_35_0[2] = ISynth(0xc02DD182Ce029E6d7f78F37492DFd39E4FEB1f8b);
+        issuer_addSynths_synthsToAdd_35_0[3] = ISynth(0x0d1c4e5C07B071aa4E6A14A604D4F6478cAAC7B4);
+        issuer_addSynths_synthsToAdd_35_0[4] = ISynth(0x13D0F5B8630520eA04f694F17A001fb95eaFD30E);
+        issuer_addSynths_synthsToAdd_35_0[5] = ISynth(0x815CeF3b7773f35428B4353073B086ecB658f73C);
+        issuer_addSynths_synthsToAdd_35_0[6] = ISynth(0xb0e0BA880775B7F2ba813b3800b3979d719F0379);
+        issuer_addSynths_synthsToAdd_35_0[7] = ISynth(0x8e082925e78538955bC0e2F363FC5d1Ab3be739b);
+        issuer_addSynths_synthsToAdd_35_0[8] = ISynth(0x399BA516a6d68d6Ad4D5f3999902D0DeAcaACDdd);
+        issuer_addSynths_synthsToAdd_35_0[9] = ISynth(0x9530FA32a3059114AC20A5812870Da12D97d1174);
+        issuer_addSynths_synthsToAdd_35_0[10] = ISynth(0x249612F641111022f2f48769f3Df5D85cb3E26a2);
+        issuer_addSynths_synthsToAdd_35_0[11] = ISynth(0x04720DbBD4599aD26811545595d97fB813E84964);
+        issuer_addSynths_synthsToAdd_35_0[12] = ISynth(0x2acfe6265D358d982cB1c3B521199973CD443C71);
+        issuer_addSynths_synthsToAdd_35_0[13] = ISynth(0x46A7Af405093B27DA6DeF193C508Bd9240A255FA);
+        issuer_addSynths_synthsToAdd_35_0[14] = ISynth(0x8350d1b2d6EF5289179fe49E5b0F208165B4e32e);
+        issuer_i.addSynths(issuer_addSynths_synthsToAdd_35_0);
+    }
+
+    function issuer_addSynths_36() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
+        ISynth[] memory issuer_addSynths_synthsToAdd_36_0 = new ISynth[](15);
+        issuer_addSynths_synthsToAdd_36_0[0] = ISynth(0x29DD4A59F4D339226867e77aF211724eaBb45c02);
+        issuer_addSynths_synthsToAdd_36_0[1] = ISynth(0xf7B8dF8b16dA302d85603B8e7F95111a768458Cc);
+        issuer_addSynths_synthsToAdd_36_0[2] = ISynth(0x0517A56da8A517e3b2D484Cc5F1Da4BDCfE68ec3);
+        issuer_addSynths_synthsToAdd_36_0[3] = ISynth(0x099CfAd1640fc7EA686ab1D83F0A285Ba0470882);
+        issuer_addSynths_synthsToAdd_36_0[4] = ISynth(0x19cC1f63e344D74A87D955E3F3E95B28DDDc61d8);
+        issuer_addSynths_synthsToAdd_36_0[5] = ISynth(0x4D50A0e5f068ACdC80A1da2dd1f0Ad48845df2F8);
+        issuer_addSynths_synthsToAdd_36_0[6] = ISynth(0xb73c665825dAa926D6ef09417FbE5654473c1b49);
+        issuer_addSynths_synthsToAdd_36_0[7] = ISynth(0x806A599d60B2FdBda379D5890287D2fba1026cC0);
+        issuer_addSynths_synthsToAdd_36_0[8] = ISynth(0xCea42504874586a718954746A564B72bc7eba3E3);
+        issuer_addSynths_synthsToAdd_36_0[9] = ISynth(0x947d5656725fB9A8f9c826A91b6082b07E2745B7);
+        issuer_addSynths_synthsToAdd_36_0[10] = ISynth(0x186E56A62E7caCE1308f1A1B0dbb27f33F80f16f);
+        issuer_addSynths_synthsToAdd_36_0[11] = ISynth(0x931c5516EE121a177bD2B60e0122Da5B27630ABc);
+        issuer_addSynths_synthsToAdd_36_0[12] = ISynth(0x6Dc6a64724399524184C2c44a526A2cff1BaA507);
+        issuer_addSynths_synthsToAdd_36_0[13] = ISynth(0x87eb6e935e3C7E3E3A0E31a5658498bC87dE646E);
+        issuer_addSynths_synthsToAdd_36_0[14] = ISynth(0x53869BDa4b8d85aEDCC9C6cAcf015AF9447Cade7);
+        issuer_i.addSynths(issuer_addSynths_synthsToAdd_36_0);
+    }
+
+    function issuer_addSynths_37() internal {
+        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+        // https://etherscan.io/address/0xb01850a6c664FEfF9945c6f74ff86572794A2a1f
+        address new_FeePool_contract = 0xb01850a6c664FEfF9945c6f74ff86572794A2a1f;
+        // https://etherscan.io/address/0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914
+        address new_Synthetix_contract = 0xDe30B2fb380fCfdAe32A818b1a668d3DeC98b914;
+        // https://etherscan.io/address/0xeBcEF32db69A7014db98286e338Fc97241E39456
+        address new_DebtCache_contract = 0xeBcEF32db69A7014db98286e338Fc97241E39456;
+        // https://etherscan.io/address/0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF
+        address new_Exchanger_contract = 0xD00977a4A18fa7Ee73561d615Ed2fA83ee1A4FeF;
+        // https://etherscan.io/address/0x401C886b2a3be767c179B411d9905673dD2881fc
+        address new_Issuer_contract = 0x401C886b2a3be767c179B411d9905673dD2881fc;
+        // https://etherscan.io/address/0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA
+        address new_SynthRedeemer_contract = 0x22091A09CA3bd9A22Ad1C671c72791E4796dcEaA;
+        // https://etherscan.io/address/0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2
+        address new_SynthsUSD_contract = 0xcc20889535f1b3F597b4c799F2b1Ad0142dDeAE2;
+        // https://etherscan.io/address/0x5618eA065908919b63C5F0666e751D80364C6453
+        address new_SynthsETH_contract = 0x5618eA065908919b63C5F0666e751D80364C6453;
+
+        ISynth[] memory issuer_addSynths_synthsToAdd_37_0 = new ISynth[](6);
+        issuer_addSynths_synthsToAdd_37_0[0] = ISynth(0x1cB27Ac646afAE192dF9928A2808C0f7f586Af7d);
+        issuer_addSynths_synthsToAdd_37_0[1] = ISynth(0x3dD7b893c25025CabFBd290A5E06BaFF3DE335b8);
+        issuer_addSynths_synthsToAdd_37_0[2] = ISynth(0x1A4505543C92084bE57ED80113eaB7241171e7a8);
+        issuer_addSynths_synthsToAdd_37_0[3] = ISynth(0xF6ce55E09De0F9F97210aAf6DB88Ed6b6792Ca1f);
+        issuer_addSynths_synthsToAdd_37_0[4] = ISynth(0xacAAB69C2BA65A2DB415605F309007e18D4F5E8C);
+        issuer_addSynths_synthsToAdd_37_0[5] = ISynth(0x9A5Ea0D8786B8d17a70410A905Aed1443fae5A38);
+        issuer_i.addSynths(issuer_addSynths_synthsToAdd_37_0);
+    }
 }
+/* solhit-enable no-unused-vars */
