@@ -82,6 +82,7 @@ module.exports = async ({
 			currentWeekOfInflation = 0;
 			currentLastMintEvent = 0;
 		} else {
+			console.error(err);
 			console.error(
 				red(
 					'Cannot connect to existing Synthetix contract. Please double check the deploymentPath is correct for the network allocated'
