@@ -26,7 +26,7 @@ interface ISynthetixNamedContract {
     function CONTRACT_NAME() external view returns (bytes32);
 }
 
-/* solhit-disable no-unused-vars */
+/* solhint-disable no-unused-vars */
 // solhint-disable contract-name-camelcase
 contract Migration_Mirfak is BaseMigration {
     // https://etherscan.io/address/0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
@@ -688,4 +688,4 @@ contract Migration_Mirfak is BaseMigration {
         issuer_i.addSynths(issuer_addSynths_synthsToAdd_37_0);
     }
 }
-/* solhit-enable no-unused-vars */
+/* solhint-enable no-unused-vars */

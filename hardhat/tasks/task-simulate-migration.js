@@ -96,6 +96,8 @@ task(
 			return Object.values(targets).find(({ address }) => address === contractAddress).name;
 		});
 
+		console.log(gray(`Nominating contracts required for the migration`));
+
 		await nominate({
 			contracts,
 			gasPrice: '0',
@@ -105,7 +107,13 @@ task(
 			yes: true,
 		});
 
+		console.log(gray(`Beginning the migration`));
+
 		await migration.migrate(ownerAddress, { gasPrice: '0' });
+
+		console.log(gray(`Migration complete.`));
+
+		console.log(gray(`Running ownership actions to ensure migration relinquished all ownerships.`));
 
 		await owner({
 			gasPrice: '0',
@@ -116,6 +124,8 @@ task(
 		});
 
 		if (taskArguments.test) {
+			console.log(gray(`Running integration tests on the newly migrated fork.`));
+
 			// run integration tests on the fork
 			const timeout = 600000; // 10m
 

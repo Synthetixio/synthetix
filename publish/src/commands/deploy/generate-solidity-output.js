@@ -21,15 +21,15 @@ const {
 // 3. 	Large upgrades will cause Solidity "Stack Too Deep" errors.
 
 module.exports = async ({
+	addressOf,
 	deployer,
 	deployment,
 	explorerLinkPrefix,
 	network,
 	newContractsBeingAdded,
-	useOvm,
 	runSteps,
 	sourceOf,
-	addressOf,
+	useOvm,
 }) => {
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
@@ -231,8 +231,12 @@ contract Migration_${releaseName} is BaseMigration {
 		.map(
 			({ name, instructions }) => `
 	function ${name}() internal {
+		/* solhint-disable no-unused-vars */
+
 		${outputNewContractsAsVariables}
 		${instructions.join(';\n\t\t')};
+
+		/* solhint-enable no-unused-vars */
 	}`
 		)
 		.join('\n\n\t')}
@@ -252,4 +256,6 @@ contract Migration_${releaseName} is BaseMigration {
 	fs.writeFileSync(migrationContractPath, solidity);
 
 	console.log(gray('Wrote Solidity output to', yellow(migrationContractPath)));
+
+	console.log(`\n\n\n${solidity}\n\n\n`);
 };
