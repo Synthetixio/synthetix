@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const isCI = require('is-ci');
 const { gray, yellow } = require('chalk');
 
@@ -87,8 +89,8 @@ task(
 
 		const contractsRequiringOwnership = await migration.contractsRequiringOwnership();
 
-		// now lookup labels of these contracts
-		const targets = getTarget({ network });
+		// now lookup labels of these contracts (using latest versions so hence pass in the path, not using the cache)
+		const targets = getTarget({ network, fs, path });
 
 		const contracts = contractsRequiringOwnership.map(contractAddress => {
 			return Object.values(targets).find(({ address }) => address === contractAddress).name;
