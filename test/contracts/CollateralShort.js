@@ -199,8 +199,8 @@ contract('CollateralShort', async accounts => {
 				'close',
 				'deposit',
 				'repay',
-				'repayAndClose',
 				'repayWithCollateral',
+				'closeWithCollateral',
 				'withdraw',
 				'liquidate',
 				'draw',
@@ -382,10 +382,10 @@ contract('CollateralShort', async accounts => {
 			assert.bnClose(loan.collateral, toUnit(900).toString(), tolerance);
 		});
 
-		it('should repay and close the loan', async () => {
+		it('should repay with collateral and close the loan', async () => {
 			assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100));
 
-			await short.repayAndClose(id, { from: account1 });
+			await short.closeWithCollateral(id, { from: account1 });
 
 			loan = await short.loans(id);
 
