@@ -16,8 +16,6 @@ const {
 const { nominate } = require('../../publish/src/commands/nominate');
 const { owner } = require('../../publish/src/commands/owner');
 
-// const synthsToAdd = require('../util/synthsToAdd');
-
 task(
 	'simulate:migration',
 	'Simulate a migration on a fork by compiling, deploying and executing it.'
@@ -48,7 +46,6 @@ task(
 
 			await prepareDeploy({
 				network,
-				// synthsToAdd,
 				useReleases: true,
 			});
 
@@ -140,6 +137,7 @@ task(
 
 			hre.config.paths.tests = './test/integration/l1/';
 			hre.config.fork = true;
+			hre.config.simulation = true;
 			await hre.run('test', taskArguments);
 		}
 	});

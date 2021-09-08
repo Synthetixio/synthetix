@@ -12,7 +12,7 @@ const {
 	connectInstances,
 } = require('../../test/integration/utils/deploy');
 
-const synthsToAdd = require('../util/synthsToAdd');
+const synthsToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
 
 task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addFlag('compile', 'Compile an l1 instance before running the tests')
@@ -71,6 +71,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					useOvm,
 				});
 			}
+			hre.config.addedSynths = synthsToAdd;
 		}
 
 		await hre.run('test', taskArguments);
