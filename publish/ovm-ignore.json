@@ -1,5 +1,4 @@
 [
-	"Collateral",
 	"CollateralErc20",
 	"CollateralEth",
 	"ExchangerWithVirtualSynth",
