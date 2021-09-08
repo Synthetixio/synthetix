@@ -49,7 +49,8 @@ module.exports = async ({ addressOf, deployer, dryRun, limitPromise, runStep, us
 							addressArgs[0].push(toBytes32(name));
 							addressArgs[1].push(contract.address);
 
-							newContractsBeingAdded[contract.address] = name;
+							const { source, address } = contract;
+							newContractsBeingAdded[contract.address] = { name, source, address };
 						}
 					});
 				})

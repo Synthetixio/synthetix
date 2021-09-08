@@ -27,24 +27,25 @@ const {
 	},
 } = require('../../../..');
 
-const performSafetyChecks = require('./perform-safety-checks');
-const getDeployParameterFactory = require('./get-deploy-parameter-factory');
-const systemAndParameterCheck = require('./system-and-parameter-check');
-const deployCore = require('./deploy-core');
-const deploySynths = require('./deploy-synths');
-const deployLoans = require('./deploy-loans');
-const deployDappUtils = require('./deploy-dapp-utils.js');
-const importAddresses = require('./import-addresses');
-const rebuildResolverCaches = require('./rebuild-resolver-caches');
-const configureLegacySettings = require('./configure-legacy-settings');
-const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
-const configureSynths = require('./configure-synths');
 const addSynthsToProtocol = require('./add-synths-to-protocol');
 const configureInverseSynths = require('./configure-inverse-synths');
-const configureSystemSettings = require('./configure-system-settings');
+const configureLegacySettings = require('./configure-legacy-settings');
 const configureLoans = require('./configure-loans');
-const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
+const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
+const configureSynths = require('./configure-synths');
+const configureSystemSettings = require('./configure-system-settings');
+const deployCore = require('./deploy-core');
+const deployDappUtils = require('./deploy-dapp-utils.js');
+const deployLoans = require('./deploy-loans');
+const deploySynths = require('./deploy-synths');
 const generateSolidityOutput = require('./generate-solidity-output');
+const getDeployParameterFactory = require('./get-deploy-parameter-factory');
+const importAddresses = require('./import-addresses');
+const importFeePeriods = require('./import-fee-periods');
+const performSafetyChecks = require('./perform-safety-checks');
+const rebuildResolverCaches = require('./rebuild-resolver-caches');
+const systemAndParameterCheck = require('./system-and-parameter-check');
+const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
 
 const DEFAULTS = {
 	gasPrice: '1',
@@ -226,6 +227,7 @@ const deploy = async ({
 		currentWeekOfInflation,
 		oldExrates,
 		oracleAddress,
+		systemSuspended,
 	} = await systemAndParameterCheck({
 		account,
 		buildPath,
@@ -300,8 +302,11 @@ const deploy = async ({
 		config,
 		deployer,
 		freshDeploy,
+		generateSolidity,
 		network,
 		synths,
+		systemSuspended,
+		useFork,
 		yes,
 	});
 
@@ -352,6 +357,18 @@ const deploy = async ({
 		useOvm,
 	});
 
+	await importFeePeriods({
+		deployer,
+		explorerLinkPrefix,
+		freshDeploy,
+		generateSolidity,
+		network,
+		runStep,
+		systemSuspended,
+		useFork,
+		yes,
+	});
+
 	await configureStandalonePriceFeeds({
 		deployer,
 		runStep,
@@ -360,6 +377,7 @@ const deploy = async ({
 
 	await configureSynths({
 		addressOf,
+		generateSolidity,
 		synths,
 		feeds,
 		deployer,

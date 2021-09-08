@@ -6,7 +6,7 @@ const {
 } = require('ethers');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ addressOf, synths, feeds, deployer, runStep }) => {
+module.exports = async ({ addressOf, generateSolidity, synths, feeds, deployer, runStep }) => {
 	// now configure synths
 	console.log(gray(`\n------ CONFIGURE SYNTHS ------\n`));
 
@@ -22,6 +22,27 @@ module.exports = async ({ addressOf, synths, feeds, deployer, runStep }) => {
 		const proxyForSynth = deployer.deployedContracts[`Proxy${currencyKey}`];
 		const proxyERC20ForSynth =
 			currencyKey === 'sUSD' ? deployer.deployedContracts[`ProxyERC20sUSD`] : undefined;
+
+		// when generating solidity only, ensure that this is run to copy across synth supply
+		if (synth && synth.justDeployed && generateSolidity) {
+			const ExistingSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
+
+			await runStep({
+				contract: `Synth${currencyKey}`,
+				target: synth,
+				write: 'setTotalSupply',
+				writeArg: addressOf(synth),
+				comment: `Ensure the new synth has the totalSupply from the previous one`,
+				customSolidity: {
+					name: `copyTotalSupplyFrom_${currencyKey}`,
+					instructions: [
+						`Synth existingSynth = Synth(${ExistingSynth.address})`,
+						`Synth newSynth = Synth(${synth.address})`,
+						`newSynth.setTotalSupply(existingSynth.totalSupply())`,
+					],
+				},
+			});
+		}
 
 		if (tokenStateForSynth && synth) {
 			await runStep({

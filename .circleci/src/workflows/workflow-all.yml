@@ -31,6 +31,12 @@ jobs:
       {{> require-prepare.yml}}
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Simulate release on fork & test
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  - job-simulate-release:
+      {{> require-prepare.yml}}
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Integration tests
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   - job-integration-tests:

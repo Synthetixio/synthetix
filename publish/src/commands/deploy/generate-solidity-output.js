@@ -10,7 +10,7 @@ const {
 } = require('ethers');
 const {
 	getUsers,
-	releases,
+	releases: { releases },
 	constants: { CONTRACTS_FOLDER, MIGRATIONS_FOLDER },
 } = require('../../../..');
 
@@ -21,25 +21,27 @@ const {
 // 3. 	Large upgrades will cause Solidity "Stack Too Deep" errors.
 
 module.exports = async ({
+	addressOf,
 	deployer,
 	deployment,
 	explorerLinkPrefix,
 	network,
 	newContractsBeingAdded,
-	useOvm,
 	runSteps,
 	sourceOf,
-	addressOf,
+	useOvm,
 }) => {
 	const contractsAddedToSoliditySet = new Set();
 	const instructions = [];
+
+	const internalFunctions = [];
 
 	// function to derive a unique name for each new contract
 	const newContractVariableFunctor = name => `new_${name}_contract`;
 
 	for (const [
 		runIndex,
-		{ skipSolidity, contract, target, writeArg, write, comment },
+		{ skipSolidity, contract, target, writeArg, write, comment, customSolidity },
 	] of Object.entries(runSteps)) {
 		if (skipSolidity) {
 			continue;
@@ -56,6 +58,7 @@ module.exports = async ({
 
 		// now generate the write action as solidity
 		const argsForWriteFnc = [];
+		const internalInstructions = [];
 		for (const [index, argument] of Object.entries(argumentsForWriteFunction)) {
 			const abiEntry = abi.find(({ name }) => name === write);
 
@@ -71,7 +74,7 @@ module.exports = async ({
 				Array.isArray(input)
 					? input.map(useVariableForContractNameIfRequired)
 					: input in newContractsBeingAdded
-					? newContractVariableFunctor(newContractsBeingAdded[input])
+					? newContractVariableFunctor(newContractsBeingAdded[input].name)
 					: input;
 			const transformValueIfRequired = input =>
 				useVariableForContractNameIfRequired(decodeBytes32IfRequired(input));
@@ -83,11 +86,11 @@ module.exports = async ({
 				const variableName = `${contract.toLowerCase()}_${write}_${
 					inputArgumentName ? inputArgumentName + '_' : ''
 				}${runIndex}_${index}`;
-				instructions.push(
+				internalInstructions.push(
 					`${typeOfArrayElement}[] memory ${variableName} = new ${typeOfArrayElement}[](${argument.length})`
 				);
 				for (const [i, arg] of Object.entries(argument)) {
-					instructions.push(
+					internalInstructions.push(
 						`${variableName}[${i}] = ${typeOfArrayElement}(${transformValueIfRequired(arg)})`
 					);
 				}
@@ -102,18 +105,59 @@ module.exports = async ({
 				argsForWriteFnc.push(transformValueIfRequired(argument));
 			}
 		}
-		instructions.push(`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc.join(', ')})`);
+		// to prevent stack too deep issues, turn these into internal functions
+		if (internalInstructions.length) {
+			// add the actual command in the last step
+			internalInstructions.push(
+				`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc.join(', ')})`
+			);
+			const internalFunctionName = `${contract.toLowerCase()}_${write}_${runIndex}`;
+
+			// track this new internal function
+			internalFunctions.push({
+				name: internalFunctionName,
+				instructions: internalInstructions,
+				copyLocalVars: true,
+			});
+
+			// and add the invocation of it as the next instruction
+			instructions.push(`${internalFunctionName}()`);
+		} else if (customSolidity) {
+			// custom solidity allows for a bit more complex solidity cases
+			const { name, instructions: internalInstructions } = customSolidity;
+
+			internalFunctions.push({
+				name,
+				instructions: internalInstructions,
+			});
+
+			instructions.push(`${name}()`);
+		} else {
+			instructions.push(`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc.join(', ')})`);
+		}
 	}
 
 	const contractsAddedToSolidity = Array.from(contractsAddedToSoliditySet);
 
-	const release = releases.reverse().find(release => (useOvm ? release.ovm : !release.ovm));
+	const release = releases.find(({ released, ovm }) => !released && (useOvm ? ovm : !ovm));
 
 	const releaseName = release.name.replace(/[^\w]/g, '');
 
 	const generateExplorerComment = ({ address }) => `// ${explorerLinkPrefix}/address/${address}`;
 
 	const ownerAddress = getUsers({ network, useOvm, user: 'owner' }).address;
+
+	const outputNewContractsAsVariables = `
+			// NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+			${Object.entries(newContractsBeingAdded)
+				.map(
+					([address, { name }]) =>
+						`${generateExplorerComment({
+							address,
+						})}\n\t\taddress ${newContractVariableFunctor(name)} = ${address};`
+				)
+				.join('\n\t\t')}
+		`;
 
 	const solidity = `
 pragma solidity ^0.5.16;
@@ -161,22 +205,14 @@ contract Migration_${releaseName} is BaseMigration {
 	function migrate(address currentOwner) external onlyDeployer {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
 
-		// NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-		${Object.entries(newContractsBeingAdded)
-			.map(
-				([address, name]) =>
-					`${generateExplorerComment({
-						address,
-					})}\n\t\taddress ${newContractVariableFunctor(name)} = ${address};`
-			)
-			.join('\n\t\t')}
+		${outputNewContractsAsVariables}
 
 		${Object.entries(newContractsBeingAdded)
 			.map(
-				([address, name]) =>
+				([address, { name, source }]) =>
 					`require(ISynthetixNamedContract(${newContractVariableFunctor(
 						name
-					)}).CONTRACT_NAME() == "${name}", "Invalid contract supplied for ${name}");`
+					)}).CONTRACT_NAME() == "${source}", "Invalid contract supplied for ${name}");`
 			)
 			.join('\n\t\t')}
 
@@ -201,6 +237,18 @@ contract Migration_${releaseName} is BaseMigration {
 			})
 			.join('\n\t\t')}
 	}
+
+	${internalFunctions
+		.map(
+			({ name, instructions, copyLocalVars }) => `
+	function ${name}() internal {
+		/* solhint-disable no-unused-vars */
+		${copyLocalVars ? outputNewContractsAsVariables : ''}
+		${instructions.join(';\n\t\t')};
+		/* solhint-enable no-unused-vars */
+	}`
+		)
+		.join('\n\n\t')}
 }
 `.replace(/\t/g, ' '.repeat(4)); // switch tabs to spaces for Solidity
 

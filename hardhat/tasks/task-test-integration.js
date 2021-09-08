@@ -12,8 +12,6 @@ const {
 	connectInstances,
 } = require('../../test/integration/utils/deploy');
 
-// add a new synth during deployment, it will be used for testing
-// redemptions
 const synthsToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
 
 task('test:integration:l1', 'run isolated layer 1 production tests')
@@ -63,7 +61,8 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 				});
 			} else {
 				const network = 'local';
-				await prepareDeploy({ network, synthsToAdd, useOvm });
+				// prepare the synths but skip preparing releases (as this isn't a fork)
+				await prepareDeploy({ network, synthsToAdd, useOvm, useReleases: false, useSips: false });
 				await deployInstance({
 					addNewSynths: true,
 					buildPath,
@@ -72,6 +71,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 					useOvm,
 				});
 			}
+			hre.config.addedSynths = synthsToAdd;
 		}
 
 		await hre.run('test', taskArguments);
@@ -108,6 +108,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 				providerUrl,
 				useOvm,
 			});
+			hre.config.addedSynths = synthsToAdd;
 		}
 
 		await hre.run('test', taskArguments);
