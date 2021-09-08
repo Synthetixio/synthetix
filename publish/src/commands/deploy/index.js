@@ -377,6 +377,7 @@ const deploy = async ({
 
 	await configureSynths({
 		addressOf,
+		generateSolidity,
 		synths,
 		feeds,
 		deployer,

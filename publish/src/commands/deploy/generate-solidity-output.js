@@ -117,6 +117,7 @@ module.exports = async ({
 			internalFunctions.push({
 				name: internalFunctionName,
 				instructions: internalInstructions,
+				copyLocalVars: true,
 			});
 
 			// and add the invocation of it as the next instruction
@@ -239,13 +240,11 @@ contract Migration_${releaseName} is BaseMigration {
 
 	${internalFunctions
 		.map(
-			({ name, instructions }) => `
+			({ name, instructions, copyLocalVars }) => `
 	function ${name}() internal {
 		/* solhint-disable no-unused-vars */
-
-		${outputNewContractsAsVariables}
+		${copyLocalVars ? outputNewContractsAsVariables : ''}
 		${instructions.join(';\n\t\t')};
-
 		/* solhint-enable no-unused-vars */
 	}`
 		)
