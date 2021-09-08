@@ -317,6 +317,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit WrapperBurnFeeRateUpdated(_currencyKey, _rate);
     }
 
+    // Convenience function for setting all wrapper settings at once
     function setWrapperSettings(
         bytes32 _currencyKey,
         uint _maxTokenAmount,
