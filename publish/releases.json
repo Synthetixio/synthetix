@@ -550,17 +550,7 @@
 				"major": 2,
 				"minor": 48
 			},
-			"sips": []
-		},
-		{
-			"name": "Mirfak (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 48
-			},
-			"sips": []
+			"sips": [142, 145, 170, 174]
 		},
 		{
 			"name": "Wezen",
