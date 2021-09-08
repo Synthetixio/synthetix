@@ -238,7 +238,7 @@ const catchMissingResolverWhenGeneratingSolidity = ({
 }) => {
 	if (
 		(generateSolidity || dryRun) &&
-		/VM Exception while processing transaction: revert Missing address/.test(err.message)
+		/VM Exception while processing transaction: [\w\s']*Missing address/.test(err.message)
 	) {
 		console.log(
 			gray(

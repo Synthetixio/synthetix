@@ -12,16 +12,21 @@ function itCanRedeem({ ctx }) {
 	describe('redemption of deprecated synths', () => {
 		let owner;
 		let someUser;
-		let Synthetix, Issuer, SynthsREDEEMER, SynthsUSD, ProxysREDEEMER, SynthRedeemer;
+		let Synthetix, Issuer, SynthToRedeem, SynthsUSD, SynthToRedeemProxy, SynthRedeemer;
 		let totalDebtBeforeRemoval;
+		let synth;
 
 		before('target contracts and users', () => {
+			const { addedSynths } = ctx;
+			// when no added synths, then just use sDEFI for testing (useful for the simulation)
+			synth = addedSynths.length ? addedSynths[0].name : 'sDEFI';
+
 			({
 				Synthetix,
 				Issuer,
-				SynthsREDEEMER,
+				[`Synth${synth}`]: SynthToRedeem,
+				[`Proxy${synth}`]: SynthToRedeemProxy,
 				SynthsUSD,
-				ProxysREDEEMER,
 				SynthRedeemer,
 			} = ctx.contracts);
 
@@ -37,12 +42,12 @@ function itCanRedeem({ ctx }) {
 			});
 		});
 
-		before('ensure the user has some sREDEEMER', async () => {
+		before(`ensure the user has some ${synth}`, async () => {
 			Synthetix = Synthetix.connect(someUser);
 			const tx = await Synthetix.exchange(
 				toBytes32('sUSD'),
 				ethers.utils.parseEther('50'),
-				toBytes32('sREDEEMER')
+				toBytes32(synth)
 			);
 			await tx.wait();
 		});
@@ -59,12 +64,12 @@ function itCanRedeem({ ctx }) {
 			totalDebtBeforeRemoval = await Issuer.totalIssuedSynths(toBytes32('sUSD'), true);
 		});
 
-		describe('deprecating sREDEEMER', () => {
-			before('when the owner removes sREDEEMER', async () => {
+		describe(`deprecating ${synth}`, () => {
+			before(`when the owner removes ${synth}`, async () => {
 				Issuer = Issuer.connect(owner);
-				// note: this sets sREDEEMER as redeemed and cannot be undone without
+				// note: this sets the synth as redeemed and cannot be undone without
 				// redeploying locally or restarting a fork
-				const tx = await Issuer.removeSynth(toBytes32('sREDEEMER'));
+				const tx = await Issuer.removeSynth(toBytes32(synth));
 				await tx.wait();
 			});
 
@@ -74,8 +79,8 @@ function itCanRedeem({ ctx }) {
 					totalDebtBeforeRemoval
 				);
 			});
-			it('and sREDEEMER is removed from the system', async () => {
-				assert.equal(await Synthetix.synths(toBytes32('sREDEEMER')), ZERO_ADDRESS);
+			it(`and ${synth} is removed from the system`, async () => {
+				assert.equal(await Synthetix.synths(toBytes32(synth)), ZERO_ADDRESS);
 			});
 			describe('user redemption', () => {
 				let sUSDBeforeRedemption;
@@ -83,14 +88,14 @@ function itCanRedeem({ ctx }) {
 					sUSDBeforeRedemption = await SynthsUSD.balanceOf(someUser.address);
 				});
 
-				before('when the user redeems their sREDEEMER', async () => {
+				before(`when the user redeems their ${synth}`, async () => {
 					SynthRedeemer = SynthRedeemer.connect(someUser);
-					const tx = await SynthRedeemer.redeem(ProxysREDEEMER.address);
+					const tx = await SynthRedeemer.redeem(SynthToRedeemProxy.address);
 					await tx.wait();
 				});
 
-				it('then the user has no more sREDEEMER', async () => {
-					assert.equal(await SynthsREDEEMER.balanceOf(someUser.address), '0');
+				it(`then the user has no more ${synth}`, async () => {
+					assert.equal(await SynthToRedeem.balanceOf(someUser.address), '0');
 				});
 
 				it('and they have more sUSD again', async () => {
