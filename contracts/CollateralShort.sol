@@ -58,17 +58,14 @@ contract CollateralShort is Collateral {
         (principal, collateral) = _repay(borrower, msg.sender, id, amount);
     }
 
-    // Needed for Lyra.
-    function repayWithCollateral(uint id, uint amount) external returns (uint principal, uint collateral) {
-        (principal, collateral) = _repayWithCollateral(msg.sender, id, amount, true);
+    function closeWithCollateral(uint id) external returns (uint amount, uint collateral) {
+        (amount, collateral) = _closeLoanByRepayment(msg.sender, id);
+
+        IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
     }
 
-    function repayWithCollateral(
-        uint id,
-        uint amount,
-        bool payInterest
-    ) external returns (uint principal, uint collateral) {
-        (principal, collateral) = _repayWithCollateral(msg.sender, id, amount, payInterest);
+    function repayWithCollateral(uint id, uint amount) external returns (uint principal, uint collateral) {
+        (principal, collateral) = _repayWithCollateral(msg.sender, id, amount);
     }
 
     // Needed for Lyra.

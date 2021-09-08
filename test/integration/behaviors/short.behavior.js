@@ -6,7 +6,7 @@ const {
 const { approveIfNeeded } = require('../utils/approve');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
-const { getLoan } = require('../utils/loans');
+const { getLoan, getShortInteractionDelay, setShortInteractionDelay } = require('../utils/loans');
 const { ensureBalance } = require('../utils/balances');
 const { exchangeSynths } = require('../utils/exchanging');
 const { skipWaitingPeriod } = require('../utils/skip');
@@ -17,20 +17,21 @@ function itCanOpenAndCloseShort({ ctx }) {
 		const amountToBorrow = parseEther('1'); // sETH
 
 		let user, owner;
-		let CollateralShort, SynthsUSD, SystemSettings, interactionDelay;
+		let CollateralShort, Synthetix, SynthsUSD, SystemSettings, interactionDelay;
 
 		before('target contracts and users', () => {
-			({ CollateralShort, SynthsUSD, SystemSettings } = ctx.contracts);
+			({ CollateralShort, Synthetix, SynthsUSD, SystemSettings } = ctx.contracts);
 
 			user = ctx.users.someUser;
 			owner = ctx.users.owner;
 
 			CollateralShort = CollateralShort.connect(user);
 			SystemSettings = SystemSettings.connect(owner);
+			Synthetix = Synthetix.connect(user);
 		});
 
 		before('ensure user should have sUSD', async () => {
-			await ensureBalance({ ctx, symbol: 'sUSD', user, balance: parseEther('100000') });
+			await ensureBalance({ ctx, symbol: 'sUSD', user, balance: parseEther('20000') });
 		});
 
 		before('ensure sETH supply exists', async () => {
@@ -45,13 +46,13 @@ function itCanOpenAndCloseShort({ ctx }) {
 		});
 
 		before('skip waiting period by setting interaction delay to zero', async () => {
-			interactionDelay = await SystemSettings.interactionDelay(CollateralShort.address);
+			interactionDelay = await getShortInteractionDelay({ ctx });
 
-			await SystemSettings.setInteractionDelay(CollateralShort.address, 0);
+			await setShortInteractionDelay({ ctx, delay: 0 });
 		});
 
 		after('restore waiting period', async () => {
-			await SystemSettings.setInteractionDelay(CollateralShort.address, interactionDelay);
+			await setShortInteractionDelay({ ctx, delay: interactionDelay });
 		});
 
 		describe('open, close, deposit, withdraw, and draw a short', async () => {
@@ -80,7 +81,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 						token: SynthsUSD,
 						owner: user,
 						beneficiary: CollateralShort,
-						amount: parseEther('100000'), // sUSD
+						amount: parseEther('20000'), // sUSD
 					});
 				});
 
@@ -149,6 +150,16 @@ function itCanOpenAndCloseShort({ ctx }) {
 						});
 					});
 
+					before('skip waiting period', async () => {
+						// Ignore settlement period for sUSD --> sETH closing the loan
+						await skipWaitingPeriod({ ctx });
+					});
+
+					before('settle', async () => {
+						const tx = await Synthetix.settle(toBytes32('sETH'));
+						await tx.wait();
+					});
+
 					before('close the loan', async () => {
 						tx = await CollateralShort.close(loanId);
 
@@ -158,11 +169,6 @@ function itCanOpenAndCloseShort({ ctx }) {
 						loanId = event.args.id;
 
 						loan = await getLoan({ ctx, id: loanId, user });
-					});
-
-					before('skip waiting period', async () => {
-						// Ignore settlement period for sUSD --> sETH closing the loan
-						await skipWaitingPeriod({ ctx });
 					});
 
 					it('shows the loan amount is zero when closed', async () => {

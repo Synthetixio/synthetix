@@ -356,6 +356,20 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         _recordLoanAsClosed(loan);
     }
 
+    function _closeLoanByRepayment(address borrower, uint id) internal returns (uint amount, uint collateral) {
+        // 0. Get the loan.
+        Loan storage loan = loans[id];
+
+        // 1. Repay the loan with its collateral.
+        (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
+
+        // 2. Record loan as closed.
+        _recordLoanAsClosed(loan);
+
+        // 3. Emit the event for the loan closed by repayment.
+        emit LoanClosedByRepayment(borrower, id, amount, collateral);
+    }
+
     function _deposit(
         address account,
         uint id,
@@ -489,19 +503,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     function _repayWithCollateral(
         address borrower,
         uint id,
-        uint payment,
-        bool payInterest
-    ) internal rateIsValid issuanceIsActive returns (uint, uint) {
+        uint payment
+    ) internal rateIsValid issuanceIsActive returns (uint amount, uint collateral) {
         // 0. Get the loan to repay and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 1. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
 
-        // 2. Repay the accruedInterest if payInterest == true.
-        if (payInterest) {
-            payment = payment.add(loan.accruedInterest);
-        }
+        // 2. Repay the accrued interest.
+        payment = payment.add(loan.accruedInterest);
 
         // 3. Make sure they are not overpaying.
         require(payment <= loan.amount.add(loan.accruedInterest), "Payment too high");
@@ -522,8 +533,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 8. Emit the event for the collateral repayment.
         emit LoanRepaymentMade(borrower, borrower, id, payment, loan.amount);
 
-        // 9. Return the loan amount and collateral after repaying.
-        return (loan.amount, loan.collateral);
+        // 9. Return the amount repaid and the remaining collateral.
+        return (payment, loan.collateral);
     }
 
     function _draw(uint id, uint amount) internal rateIsValid issuanceIsActive returns (uint, uint) {
@@ -691,4 +702,5 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         uint amountLiquidated,
         uint collateralLiquidated
     );
+    event LoanClosedByRepayment(address indexed account, uint id, uint amountRepaid, uint collateralAfter);
 }

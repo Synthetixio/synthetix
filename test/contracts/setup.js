@@ -220,20 +220,6 @@ const setupContract = async ({
 		FeePoolEternalStorage: [owner, tryGetAddressOf('FeePool')],
 		DelegateApprovals: [owner, tryGetAddressOf('EternalStorageDelegateApprovals')],
 		Liquidations: [owner, tryGetAddressOf('AddressResolver')],
-		BinaryOptionMarketFactory: [owner, tryGetAddressOf('AddressResolver')],
-		BinaryOptionMarketManager: [
-			owner,
-			tryGetAddressOf('AddressResolver'),
-			61 * 60, // max oracle price age: 61 minutes
-			26 * 7 * 24 * 60 * 60, // expiry duration: 26 weeks (~ 6 months)
-			365 * 24 * 60 * 60, // Max time to maturity: ~ 1 year
-			toWei('2'), // Capital requirement
-			toWei('0.05'), // Skew Limit
-			toWei('0.008'), // pool fee
-			toWei('0.002'), // creator fee
-			toWei('0.02'), // refund fee
-		],
-		BinaryOptionMarketData: [],
 		CollateralManagerState: [owner, tryGetAddressOf('CollateralManager')],
 		CollateralManager: [
 			tryGetAddressOf('CollateralManagerState'),
@@ -815,23 +801,8 @@ const setupAllContracts = async ({
 			deps: ['SystemStatus', 'FeePoolState', 'AddressResolver'],
 		},
 		{
-			contract: 'BinaryOptionMarketFactory',
-			deps: ['AddressResolver'],
-		},
-		{
-			contract: 'BinaryOptionMarketManager',
-			deps: [
-				'SystemStatus',
-				'AddressResolver',
-				'ExchangeRates',
-				'FeePool',
-				'Synthetix',
-				'BinaryOptionMarketFactory',
-			],
-		},
-		{
-			contract: 'BinaryOptionMarketData',
-			deps: ['BinaryOptionMarketManager', 'BinaryOptionMarket', 'BinaryOption'],
+			contract: 'CollateralState',
+			deps: [],
 		},
 		{
 			contract: 'CollateralManagerState',

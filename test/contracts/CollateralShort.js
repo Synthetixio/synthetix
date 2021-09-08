@@ -200,7 +200,7 @@ contract('CollateralShort', async accounts => {
 				'deposit',
 				'repay',
 				'repayWithCollateral',
-				'repayWithCollateral',
+				'closeWithCollateral',
 				'withdraw',
 				'liquidate',
 				'draw',
@@ -313,8 +313,7 @@ contract('CollateralShort', async accounts => {
 	describe('Repaying shorts', async () => {
 		const oneETH = toUnit(1);
 		const susdCollateral = toUnit(1000);
-		const tolerance = toUnit(0.15);
-		const payInterest = true;
+		const tolerance = toUnit(0.3);
 
 		let beforeFeePoolBalance, beforeInteractionTime;
 
@@ -334,7 +333,7 @@ contract('CollateralShort', async accounts => {
 		});
 
 		it('should repay with collateral and update the loan', async () => {
-			tx = await short.repayWithCollateral(id, toUnit(0.5), !payInterest, {
+			tx = await short.repayWithCollateral(id, toUnit(0.5), {
 				from: account1,
 			});
 
@@ -362,8 +361,8 @@ contract('CollateralShort', async accounts => {
 			assert.bnClose(loan.collateral, toUnit(950).toString(), tolerance);
 		});
 
-		it('should repay the entire loan amount and report the loan as closed', async () => {
-			tx = await short.repayWithCollateral(id, toUnit(1), payInterest, {
+		it('should repay the entire loan amount', async () => {
+			tx = await short.repayWithCollateral(id, toUnit(1), {
 				from: account1,
 			});
 
@@ -380,19 +379,35 @@ contract('CollateralShort', async accounts => {
 			});
 
 			assert.equal(loan.amount, toUnit(0).toString());
-			assert.bnClose(loan.collateral, toUnit(900).toString(), toUnit(0.3));
+			assert.bnClose(loan.collateral, toUnit(900).toString(), tolerance);
+		});
+
+		it('should repay with collateral and close the loan', async () => {
+			assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100));
+
+			await short.closeWithCollateral(id, { from: account1 });
+
+			loan = await short.loans(id);
+
+			assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
+
+			assert.equal(loan.interestIndex, toUnit(0).toString());
+			assert.equal(loan.amount, toUnit(0).toString());
+			assert.equal(loan.collateral, toUnit(0).toString());
+
+			assert.bnClose(await sUSDSynth.balanceOf(account1), toUnit(1000), tolerance);
 		});
 
 		it('should only let the borrower repay with collateral', async () => {
 			await assert.revert(
-				short.repayWithCollateral(id, toUnit(0.1), payInterest, { from: account2 }),
+				short.repayWithCollateral(id, toUnit(0.1), { from: account2 }),
 				'Must be borrower'
 			);
 		});
 
 		it('should not let them repay too much', async () => {
 			await assert.revert(
-				short.repayWithCollateral(id, toUnit(2000), payInterest, { from: account1 }),
+				short.repayWithCollateral(id, toUnit(2000), { from: account1 }),
 				'Payment too high'
 			);
 		});
