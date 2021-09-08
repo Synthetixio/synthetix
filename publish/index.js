@@ -13,7 +13,6 @@ require('./src/commands/deploy').cmd(program);
 require('./src/commands/extract-staking-balances').cmd(program);
 require('./src/commands/finalize-release').cmd(program);
 require('./src/commands/import-fee-periods').cmd(program);
-require('./src/commands/migrate-binary-option-markets').cmd(program);
 require('./src/commands/nominate').cmd(program);
 require('./src/commands/owner').cmd(program);
 require('./src/commands/persist-tokens').cmd(program);
