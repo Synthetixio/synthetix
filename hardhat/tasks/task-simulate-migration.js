@@ -4,7 +4,11 @@ const isCI = require('is-ci');
 const { gray, yellow } = require('chalk');
 
 const ethers = require('ethers');
-const { getUsers, getTarget } = require('../..');
+const {
+	getUsers,
+	getTarget,
+	constants: { CONTRACTS_FOLDER, MIGRATIONS_FOLDER },
+} = require('../..');
 const { task } = require('hardhat/config');
 
 const {
@@ -58,6 +62,20 @@ task(
 				network,
 				useFork: true,
 			});
+
+			// output created solidity
+			const solidity = fs.readFileSync(
+				path.join(
+					__dirname,
+					'..',
+					'..',
+					CONTRACTS_FOLDER,
+					MIGRATIONS_FOLDER,
+					`Migration_${taskArguments.release}.sol`
+				)
+			);
+
+			console.log(`\n\n\n ${solidity}\n\n\n`);
 		}
 
 		console.log(gray('Now running hardhat compile to flatten and compile the migration contracts'));

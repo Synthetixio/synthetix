@@ -265,6 +265,4 @@ contract Migration_${releaseName} is BaseMigration {
 	fs.writeFileSync(migrationContractPath, solidity);
 
 	console.log(gray('Wrote Solidity output to', yellow(migrationContractPath)));
-
-	console.log(`\n\n\n${solidity}\n\n\n`);
 };
