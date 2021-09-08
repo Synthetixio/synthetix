@@ -41,7 +41,7 @@ module.exports = async ({
 
 	for (const [
 		runIndex,
-		{ skipSolidity, contract, target, writeArg, write, comment },
+		{ skipSolidity, contract, target, writeArg, write, comment, customSolidity },
 	] of Object.entries(runSteps)) {
 		if (skipSolidity) {
 			continue;
@@ -121,6 +121,16 @@ module.exports = async ({
 
 			// and add the invocation of it as the next instruction
 			instructions.push(`${internalFunctionName}()`);
+		} else if (customSolidity) {
+			// custom solidity allows for a bit more complex solidity cases
+			const { name, instructions: internalInstructions } = customSolidity;
+
+			internalFunctions.push({
+				name,
+				instructions: internalInstructions,
+			});
+
+			instructions.push(`${name}()`);
 		} else {
 			instructions.push(`${contract.toLowerCase()}_i.${write}(${argsForWriteFnc.join(', ')})`);
 		}

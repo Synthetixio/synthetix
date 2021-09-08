@@ -63,7 +63,7 @@ module.exports = async ({
 	// Check sources
 	for (let i = 0; i <= feePeriodLength - 1; i++) {
 		const period = await ExistingFeePool.recentFeePeriods(i);
-		if (!skipTimeCheck) {
+		if (!skipTimeCheck && !generateSolidity) {
 			if (period.feePeriodId === '0') {
 				throw Error(
 					`Fee period at index ${i} has NOT been set. Are you sure this is the right FeePool source? ${explorerLinkPrefix}/address/${ExistingFeePool.address} `
@@ -152,6 +152,32 @@ module.exports = async ({
 			write: 'importFeePeriod',
 			writeArg: importArgs,
 			comment: `Import fee period from existing fee pool at index ${index}`,
+			customSolidity: {
+				name: `importFeePeriod_${index}`,
+				instructions: [
+					`FeePool existingFeePool = FeePool(${ExistingFeePool.address})`,
+					`FeePool newFeePool = FeePool(${FeePool.address})`,
+					`(
+						uint64 feePeriodId_${index},
+						uint64 startingDebtIndex_${index},
+						uint64 startTime_${index},
+						uint feesToDistribute_${index},
+						uint feesClaimed_${index},
+						uint rewardsToDistribute_${index},
+						uint rewardsClaimed_${index}
+					) = existingFeePool.recentFeePeriods(${index})`,
+					`newFeePool.importFeePeriod(
+						${index},
+						feePeriodId_${index},
+						startingDebtIndex_${index},
+						startTime_${index},
+						feesToDistribute_${index},
+						feesClaimed_${index},
+						rewardsToDistribute_${index},
+						rewardsClaimed_${index}
+					)`,
+				],
+			},
 		});
 
 		index++;
