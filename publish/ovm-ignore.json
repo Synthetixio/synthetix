@@ -5,7 +5,5 @@
 	"FakeTradingRewards",
 	"Synthetix",
 	"NativeEtherWrapper",
-	"Synthetix",
-	"TestableBinaryOptionMarket",
 	"WETH"
 ]
