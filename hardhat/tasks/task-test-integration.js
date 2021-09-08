@@ -108,6 +108,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 				providerUrl,
 				useOvm,
 			});
+			hre.config.addedSynths = synthsToAdd;
 		}
 
 		await hre.run('test', taskArguments);
