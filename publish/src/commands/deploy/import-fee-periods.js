@@ -32,8 +32,8 @@ module.exports = async ({
 
 	const { FeePool } = deployer.deployedContracts;
 	// fresh deploys or no new fee pool mean this should be skipped
-	if (freshDeploy || !FeePool.justDeployed) {
-		console.log(gray(`No fee periods required for import. Skipping.`));
+	if (freshDeploy) {
+		console.log(gray(`freshDeploy - no fee periods required for import. Skipping.`));
 		return;
 	}
 
@@ -42,20 +42,29 @@ module.exports = async ({
 	const feePeriods = [];
 
 	if (ExistingFeePool.address === FeePool.address) {
-		throw Error(
-			'import-fee-periods: The FeePool in the versions.json is the same as the current ' +
-				'- this step assumes a new FeePool has been deployed yet not released - ' +
-				'have you already released before importing the fee period?'
-		);
+		console.log(gray(`No fee periods required for import. Skipping.`));
+		return;
 	} else {
 		console.log(gray(`Reading from existing FeePool at: ${white(ExistingFeePool.address)}`));
 		console.log(gray(`Importing into new FeePool at: ${yellow(FeePool.address)}`));
 	}
 
 	if (!systemSuspended && !generateSolidity && !useFork) {
-		throw Error(
-			'import-fee-periods: Cannot import fee periods while the system is not suspended as this could mean data loss'
+		console.log(
+			yellow(
+				`⚠⚠⚠ WARNING import-fee-periods: Cannot import fee periods while the system is not suspended as this could mean data loss`
+			),
+			gray('-'.repeat(50)) + '\n'
 		);
+
+		if (!yes) {
+			try {
+				await confirmAction(gray('Do you want to continue? (y/n) '));
+			} catch (err) {
+				console.log(gray('Operation cancelled'));
+				process.exit();
+			}
+		}
 	}
 
 	const feePeriodLength = await ExistingFeePool.FEE_PERIOD_LENGTH();
@@ -122,7 +131,7 @@ module.exports = async ({
 		console.log('Fee period to import is as follows:');
 		console.log(stringify(feePeriod));
 
-		if (!yes) {
+		if (!generateSolidity && !yes) {
 			try {
 				await confirmAction(
 					yellow(
