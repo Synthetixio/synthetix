@@ -47,6 +47,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     mapping(bytes32 => uint) public roundFrozen;
 
+    bool private initializing = true;
+
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_LIQUIDITY_ORACLE = "LiquidityOracle";
@@ -69,6 +71,8 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         _setRate("sUSD", SafeDecimalMath.unit(), now);
 
         internalUpdateRates(_currencyKeys, _newRates, now);
+
+        initializing = false;
     }
 
     /* ========== VIEWS ========== */
@@ -498,7 +502,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         require(currencyKeys.length == newRates.length, "Currency key array length must match rates array length.");
         require(timeSent < (now + ORACLE_FUTURE_LIMIT), "Time is too far into the future");
 
-        ILiquidityOracle _liquidityOracle = liquidityOracle();
+        ILiquidityOracle _liquidityOracle;
+        if (!initializing) {
+            _liquidityOracle = liquidityOracle();
+        }
 
         // Loop through each key and perform update.
         for (uint i = 0; i < currencyKeys.length; i++) {
@@ -518,7 +525,9 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
             // Ok, go ahead with the update.
             _setRate(currencyKey, newRates[i], timeSent);
 
-            _liquidityOracle.resetOpenInterest(currencyKey);
+            if (!initializing) {
+                _liquidityOracle.resetOpenInterest(currencyKey);
+            }
         }
 
         emit RatesUpdated(currencyKeys, newRates);
