@@ -603,33 +603,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"TokenStateiXTZ": {
-			"name": "TokenStateiXTZ",
-			"address": "0xc81CaC605D14d3eDF6BbC8ABcc3bb04B7bD96a7D",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xc81CaC605D14d3eDF6BbC8ABcc3bb04B7bD96a7D",
-			"timestamp": "2019-06-24T06:22:17.736Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxyiXTZ": {
-			"name": "ProxyiXTZ",
-			"address": "0x022E3dFfDeE42eE5C9d3335c1fbC1100b29Ab9ab",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0x022E3dFfDeE42eE5C9d3335c1fbC1100b29Ab9ab",
-			"timestamp": "2019-09-17T05:28:29.561Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthiXTZ": {
-			"name": "SynthiXTZ",
-			"address": "0x75bA0dB0934665E37f57fD0FF2b677cc433696d4",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0x75bA0dB0934665E37f57fD0FF2b677cc433696d4",
-			"timestamp": "2020-12-22T13:48:41.094Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"ProxyERC20": {
 			"name": "ProxyERC20",
 			"address": "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F",
