@@ -157,7 +157,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     function debtCache() internal view returns (IExchangerInternalDebtCache) {
         return IExchangerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
     }
-    
+
     function liquidityOracle() public view returns (ILiquidityOracle) {
         return ILiquidityOracle(requireAndGetAddress(CONTRACT_LIQUIDITY_ORACLE));
     }
@@ -802,38 +802,56 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         );
         // destinationAmount is the theoretical max the user could buy, if there were no
         // fees for slippage or exchanges.
-        
 
         exchangeFeeRate = _feeRateForExchange(sourceCurrencyKey, destinationCurrencyKey);
         amountReceived = _getAmountReceivedForExchange(destinationAmount, exchangeFeeRate);
         fee = destinationAmount.sub(amountReceived);
     }
 
-    function premium_integral(int n, uint delta, uint lambda) internal view returns (uint) {
-        uint num = Math.max(int(delta) - n, Math.ln(uint(Math.abs(n))));
-        uint denom = Math.max(int(delta) + n, Math.ln(uint(Math.abs(n))));
+    function _calculatePricePremiumIntegral(
+        int n,
+        uint delta,
+        uint lambda
+    ) internal view returns (int) {
+        int num = int(delta) - n;
+        int denom = int(delta) + n;
 
-        return (lambda * (int(delta) - n) * Math.ln(num/denom) + (2 * delta * lambda) * Math.ln(delta + n) );
-    }
-
-    function calculateQuotePrice(int s, int n, uint O, uint lambda, uint delta) internal view returns (uint) {
-        if (s == 0) {
-            return O;
+        if (denom <= 0) {
+            return -int(SafeDecimalMath.unit()) / 5; // 0.2
+        } else if (num <= 0) {
+            return int(SafeDecimalMath.unit()) / 5; // 0.2
         }
 
-        return O + (O / s) * (premium_integral(n + s, delta, lambda) - premium_integral(n, delta, lambda));
+        return (int(lambda) *
+            (int(delta) - n) *
+            Math.ln(uint(num / denom)) +
+            (2 * int(delta) * int(lambda)) *
+            Math.ln(uint(delta + uint(n))));
+    }
+
+    function calculateQuotePrice(
+        int s,
+        int n,
+        uint _O,
+        uint lambda,
+        uint delta
+    ) internal view returns (int) {
+        if (s == 0) {
+            return int(_O);
+        }
+
+        return
+            int(_O) +
+            (int(_O) / s) *
+            (_calculatePricePremiumIntegral(n + s, delta, lambda) - _calculatePricePremiumIntegral(n, delta, lambda));
     }
 
     function getSimulatedPrice(
         bytes32 destinationCurrencyKey,
         uint destinationRate,
-        uint amount
-    )
-        internal
-        view
-        returns (uint quotePrice, uint quoteAmount)
-    {
-        uint openInterest = liquidityOracle().openInterest(destinationCurrencyKey);
+        int amount
+    ) internal view returns (int quotePrice, int quoteAmount) {
+        int openInterest = liquidityOracle().openInterest(destinationCurrencyKey);
         uint lambda = liquidityOracle().priceImpactFactor(destinationCurrencyKey);
         uint delta = liquidityOracle().maxOpenInterestDelta(destinationCurrencyKey);
 
