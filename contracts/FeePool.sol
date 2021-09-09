@@ -722,7 +722,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         bool isExchanger = msg.sender == address(exchanger());
         bool isSynth = issuer().synthsByAddress(msg.sender) != bytes32(0);
         bool isCollateral = collateralManager().hasCollateral(msg.sender);
-        bool isWrapper = wrapperFactory().isWrapper(msg.sender);
+        bool isWrapper = msg.sender == address(wrapperFactory());
 
         require(isExchanger || isSynth || isCollateral || isWrapper, "Only Internal Contracts");
         _;

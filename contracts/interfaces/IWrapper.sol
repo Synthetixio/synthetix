@@ -8,8 +8,6 @@ interface IWrapper {
 
     function burn(uint amount) external;
 
-    function distributeFees() external;
-
     function capacity() external view returns (uint);
 
     function getReserves() external view returns (uint);

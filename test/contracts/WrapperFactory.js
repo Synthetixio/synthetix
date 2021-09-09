@@ -1,13 +1,14 @@
 'use strict';
 
-const { contract } = require('hardhat');
+const { contract, artifacts } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-const { currentTime, toUnit, multiplyDecimal } = require('../utils')();
+const { currentTime, toUnit } = require('../utils')();
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
+	onlyGivenAddressCanInvoke,
 	getDecodedLogs,
 	decodedEventEqual,
 } = require('./helpers');
@@ -23,25 +24,27 @@ contract('WrapperFactory', async accounts => {
 
 	const [, owner, oracle, , account1] = accounts;
 
-	let systemSettings,
+	let addressResolver,
+		flexibleStorage,
+		systemSettings,
 		feePool,
 		exchangeRates,
 		FEE_ADDRESS,
 		sUSDSynth,
-		sETHSynth,
-		etherWrapper,
+		wrapperFactory,
 		weth,
 		timestamp;
 
 	before(async () => {
 		({
+			AddressResolver: addressResolver,
 			SystemSettings: systemSettings,
 			FeePool: feePool,
 			ExchangeRates: exchangeRates,
-			EtherWrapper: etherWrapper,
+			WrapperFactory: wrapperFactory,
 			SynthsUSD: sUSDSynth,
-			SynthsETH: sETHSynth,
 			WETH: weth,
+			FlexibleStorage: flexibleStorage,
 		} = await setupAllContracts({
 			accounts,
 			synths,
@@ -56,15 +59,11 @@ contract('WrapperFactory', async accounts => {
 				'FeePoolEternalStorage',
 				'DebtCache',
 				'Exchanger',
-				'WrapperFactory',
 				'WETH',
 				'CollateralManager',
+				'WrapperFactory',
 			],
 		}));
-
-		// set defaults for test - 50bps mint and burn fees
-		await systemSettings.setEtherWrapperMintFeeRate(toUnit('0.005'), { from: owner });
-		await systemSettings.setEtherWrapperBurnFeeRate(toUnit('0.005'), { from: owner });
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 		timestamp = await currentTime();
@@ -79,70 +78,120 @@ contract('WrapperFactory', async accounts => {
 
 	it('ensure only expected functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: etherWrapper.abi,
+			abi: wrapperFactory.abi,
 			hasFallback: true,
 			ignoreParents: ['Owned', 'Pausable', 'MixinResolver', 'MixinSystemSettings'],
-			expected: ['mint', 'burn', 'distributeFees'],
+			expected: ['createWrapper', 'distributeFees'],
 		});
 	});
 
-	describe('On deployment of Contract', async () => {});
+	describe('On deployment of Contract', async () => {
+		let instance;
+		beforeEach(async () => {
+			instance = wrapperFactory;
+		});
 
-	describe('createWrapper', async () => {});
+		it('should set constructor params on deployment', async () => {
+			assert.equal(await instance.resolver(), addressResolver.address);
+			assert.equal(await instance.owner(), owner);
+		});
+
+		it('should access its dependencies via the address resolver', async () => {
+			assert.equal(
+				await addressResolver.getAddress(toBytes32('FlexibleStorage')),
+				flexibleStorage.address
+			);
+		});
+	});
+
+	describe('createWrapper', async () => {
+		it('only owner can invoke', async () => {
+			await onlyGivenAddressCanInvoke({
+				fnc: systemSettings.setCrossDomainMessageGasLimit,
+				args: [0, 4e6],
+				accounts,
+				address: owner,
+				reason: 'Only the contract owner may perform this action',
+			});
+		});
+
+		describe('when successfully invoked', () => {
+			let createdWrapperAddress;
+			let txn;
+
+			before(async () => {
+				txn = await wrapperFactory.createWrapper(weth.address, sETH, toBytes32('SynthsETH'), {
+					from: owner,
+				});
+			});
+
+			it('emits new wrapper contract address', async () => {
+				// extract address from events
+				createdWrapperAddress = txn.logs.find(l => l.event === 'WrapperCreated').args
+					.wrapperAddress;
+
+				assert.isOk(createdWrapperAddress);
+			});
+
+			it('created wrapper has rebuilt cache', async () => {
+				const etherWrapper = await artifacts.require('Wrapper').at(createdWrapperAddress);
+
+				// call totalIssuedSynths because it depends on address for ExchangeRates
+				await etherWrapper.totalIssuedSynths();
+			});
+
+			it('registers to isWrapper', async () => {
+				assert.isOk(await wrapperFactory.isWrapper(createdWrapperAddress));
+			});
+		});
+	});
 
 	describe('totalIssuedSynths', async () => {});
 
 	describe('distributeFees', async () => {
 		let tx;
 		let feesEscrowed;
-		let sETHIssued;
+		let etherWrapper;
 
 		before(async () => {
+			// deploy a wrapper
+			const txn = await wrapperFactory.createWrapper(weth.address, sETH, toBytes32('SynthsETH'), {
+				from: owner,
+			});
+
+			const createdWrapperAddress = txn.logs.find(l => l.event === 'WrapperCreated').args
+				.wrapperAddress;
+
+			etherWrapper = await artifacts.require('Wrapper').at(createdWrapperAddress);
+
 			const amount = toUnit('10');
+			await systemSettings.setWrapperMaxTokenAmount(sETH, amount, { from: owner });
 			await weth.deposit({ from: account1, value: amount });
 			await weth.approve(etherWrapper.address, amount, { from: account1 });
 			await etherWrapper.mint(amount, { from: account1 });
 
-			feesEscrowed = await etherWrapper.feesEscrowed();
-			sETHIssued = await etherWrapper.sETHIssued();
-			tx = await etherWrapper.distributeFees();
-		});
-
-		it('burns `feesEscrowed` sETH', async () => {
-			const logs = await getDecodedLogs({
-				hash: tx.tx,
-				contracts: [sETHSynth],
-			});
-
-			decodedEventEqual({
-				event: 'Burned',
-				emittedFrom: sETHSynth.address,
-				args: [etherWrapper.address, feesEscrowed],
-				log: logs.filter(l => !!l).find(({ name }) => name === 'Burned'),
-			});
+			feesEscrowed = await wrapperFactory.feesEscrowed();
+			tx = await wrapperFactory.distributeFees();
 		});
 		it('issues sUSD to the feepool', async () => {
 			const logs = await getDecodedLogs({
 				hash: tx.tx,
 				contracts: [sUSDSynth],
 			});
-			const rate = await exchangeRates.rateForCurrency(sETH);
 
 			decodedEventEqual({
-				event: 'Issued',
-				emittedFrom: sUSDSynth.address,
-				args: [FEE_ADDRESS, multiplyDecimal(feesEscrowed, rate)],
+				event: 'Transfer',
+				emittedFrom: await sUSDSynth.proxy(),
+				args: [wrapperFactory.address, FEE_ADDRESS, feesEscrowed],
 				log: logs
 					.reverse()
 					.filter(l => !!l)
-					.find(({ name }) => name === 'Issued'),
+					.find(({ name }) => name === 'Transfer'),
 			});
 		});
-		it('sETHIssued is reduced by `feesEscrowed`', async () => {
-			assert.bnEqual(await etherWrapper.sETHIssued(), sETHIssued.sub(feesEscrowed));
-		});
+
 		it('feesEscrowed = 0', async () => {
-			assert.bnEqual(await etherWrapper.feesEscrowed(), toBN(0));
+			assert.bnEqual(await wrapperFactory.feesEscrowed(), toBN(0));
 		});
 	});
 });

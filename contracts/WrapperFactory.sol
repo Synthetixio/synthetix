@@ -14,6 +14,8 @@ import "./interfaces/IWrapperFactory.sol";
 // https://docs.synthetix.io/contracts/source/contracts/wrapperfactory
 contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
+    bytes32 internal constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
+    bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
 
     bytes32 internal constant WRAPPER_FACTORY_CONTRACT_NAME = "WrapperFactory";
     uint internal constant WRAPPER_VERSION = 1;
@@ -22,12 +24,23 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses = new bytes32[](1);
-        addresses[0] = CONTRACT_FLEXIBLESTORAGE;
+        addresses = new bytes32[](3);
+        addresses[0] = CONTRACT_SYNTH_SUSD;
+        addresses[1] = CONTRACT_FLEXIBLESTORAGE;
+        addresses[2] = CONTRACT_FEEPOOL;
+    }
+
+    /* ========== INTERNAL VIEWS ========== */
+    function synthsUSD() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_SYNTH_SUSD));
     }
 
     function flexibleStorage() internal view returns (IFlexibleStorage) {
         return IFlexibleStorage(requireAndGetAddress(CONTRACT_FLEXIBLESTORAGE));
+    }
+
+    function feePool() internal view returns (IFeePool) {
+        return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
     // ========== VIEWS ==========
@@ -40,6 +53,19 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
     // Returns sum of totalIssuedSynths for all wrappers deployed by this contract
     function totalIssuedSynths() external view returns (uint) {
         return 0; // stub
+    }
+
+    function feesEscrowed() public view returns (uint) {
+        return synthsUSD().balanceOf(address(this));
+    }
+
+    // ========== RESTRICTED ==========
+
+    /**
+     * @notice Fallback function
+     */
+    function() external payable {
+        revert("Contract is not payable");
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -62,7 +88,13 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
         return address(wrapper);
     }
 
-    function distributeFees() external {}
+    function distributeFees() external {
+        // Normalize fee to sUSD
+        uint amountSUSD = feesEscrowed();
+
+        // Transfer sUSD to the fee pool
+        synthsUSD().transfer(feePool().FEE_ADDRESS(), amountSUSD);
+    }
 
     event WrapperCreated(address indexed token, bytes32 indexed currencyKey, address wrapperAddress);
 }
