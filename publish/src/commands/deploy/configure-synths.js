@@ -23,9 +23,14 @@ module.exports = async ({ addressOf, generateSolidity, synths, feeds, deployer, 
 		const proxyERC20ForSynth =
 			currencyKey === 'sUSD' ? deployer.deployedContracts[`ProxyERC20sUSD`] : undefined;
 
+		let ExistingSynth;
+		try {
+			ExistingSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
+		} catch (err) {
+			// ignore error as there is no existing synth to copy from
+		}
 		// when generating solidity only, ensure that this is run to copy across synth supply
-		const ExistingSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
-		if (synth && generateSolidity && ExistingSynth.address !== synth.address) {
+		if (synth && generateSolidity && ExistingSynth && ExistingSynth.address !== synth.address) {
 			await runStep({
 				contract: `Synth${currencyKey}`,
 				target: synth,
