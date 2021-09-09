@@ -46,8 +46,6 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     bytes32 public currencyKey;
     bytes32 public synthContractName;
 
-    uint public targetSynthIssued = 0;
-
     constructor(
         address _owner,
         address _resolver,
@@ -100,25 +98,20 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
     function capacity() public view returns (uint _capacity) {
         // capacity = max(maxETH - balance, 0)
-        uint balance = getReserves();
+        uint balance = targetSynthIssued();
         if (balance >= maxTokenAmount()) {
             return 0;
         }
         return maxTokenAmount().sub(balance);
     }
 
-    function getReserves() public view returns (uint) {
+    function targetSynthIssued() public view returns (uint) {
         return token.balanceOf(address(this));
     }
 
     function totalIssuedSynths() public view returns (uint) {
-        // This contract issues two different synths:
-        // 1. currencyKey
-        // 2. sUSD
-        //
-        // The currencyKey is always backed 1:1 with token.
-        // The sUSD fees are backed by token amount that is withheld during minting and burning.
-        return exchangeRates().effectiveValue(currencyKey, targetSynthIssued, sUSD);
+        // synths issued by this contract is always exactly equal to the balance of reserves
+        return exchangeRates().effectiveValue(currencyKey, token.balanceOf(address(this)), sUSD);
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
@@ -163,11 +156,16 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     // Burns `amountIn` synth for `amountIn - fees` amount of token.
     // `amountIn` is inclusive of fees, calculable via `calculateBurnFee`.
     function burn(uint amountIn) external notPaused {
-        uint reserves = getReserves();
-        require(reserves > 0, "Contract cannot burn for token, token balance is zero");
+        require(totalIssuedSynths() > 0, "Contract cannot burn for token, token balance is zero");
         require(!exchangeRates().rateIsInvalid(currencyKey), "Currency rate is invalid");
 
-        _burn(amountIn);
+        uint amountOut = amountIn.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
+        uint reserves = targetSynthIssued();
+        if (amountOut > reserves) {
+            _burn(reserves);
+        } else {
+            _burn(amountOut);
+        }
     }
 
     // ========== RESTRICTED ==========
@@ -196,22 +194,17 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         // Escrow fee.
         synthsUSD().issue(address(wrapperFactory()), feeAmountUsd);
 
-        // Add debt for currencyKey.
-        targetSynthIssued = targetSynthIssued.add(amountIn);
-
         emit Minted(msg.sender, principal, feeAmountTarget, amountIn);
     }
 
-    function _burn(uint amountIn) internal {
+    function _burn(uint amountOut) internal {
         // for burn, amount is inclusive of the fee.
-        uint feeAmountTarget = calculateBurnFee(amountIn);
+        uint feeAmountTarget = calculateBurnFee(amountOut);
         uint feeAmountUsd = exchangeRates().effectiveValue(currencyKey, feeAmountTarget, sUSD);
-        uint principal = amountIn - feeAmountTarget;
+        uint principal = amountOut + feeAmountTarget;
 
         // Burn `amountIn` of currencyKey from user.
-        synth().burn(msg.sender, amountIn);
-        // debt is repaid by burning.
-        targetSynthIssued = targetSynthIssued < principal ? 0 : targetSynthIssued.sub(principal);
+        synth().burn(msg.sender, principal);
 
         // We use burn/issue instead of burning the principal and transferring the fee.
         // This saves an approval and is cheaper.
@@ -219,9 +212,9 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         synthsUSD().issue(address(wrapperFactory()), feeAmountUsd);
 
         // Transfer `amount - fees` token to user.
-        token.transfer(msg.sender, principal);
+        token.transfer(msg.sender, amountOut);
 
-        emit Burned(msg.sender, principal, feeAmountTarget, amountIn);
+        emit Burned(msg.sender, amountOut, feeAmountTarget, principal);
     }
 
     /* ========== EVENTS ========== */

@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const { setupAllContracts, mockToken } = require('./setup');
 
-const MockEtherWrapper = artifacts.require('MockEtherWrapper');
+const MockWrapperFactory = artifacts.require('MockWrapperFactory');
 
 const {
 	currentTime,
@@ -2531,21 +2531,21 @@ contract('Issuer (via Synthetix)', async accounts => {
 				});
 			});
 
-			describe('when EtherWrapper is set', async () => {
+			describe('when Wrapper is set', async () => {
 				it('should have zero totalIssuedSynths', async () => {
 					assert.bnEqual(
 						await synthetix.totalIssuedSynths(sUSD),
 						await synthetix.totalIssuedSynthsExcludeOtherCollateral(sUSD)
 					);
 				});
-				describe('depositing WETH on the EtherWrapper to issue sETH', async () => {
-					let etherWrapper;
+				describe('depositing WETH on the Wrapper to issue sETH', async () => {
+					let wrapperFactory;
 					beforeEach(async () => {
 						// mock etherWrapper
-						etherWrapper = await MockEtherWrapper.new({ from: owner });
+						wrapperFactory = await MockWrapperFactory.new({ from: owner });
 						await addressResolver.importAddresses(
-							[toBytes32('EtherWrapper')],
-							[etherWrapper.address],
+							[toBytes32('WrapperFactory')],
+							[wrapperFactory.address],
 							{ from: owner }
 						);
 
@@ -2558,9 +2558,9 @@ contract('Issuer (via Synthetix)', async accounts => {
 
 						const amount = toUnit('10');
 
-						await etherWrapper.setTotalIssuedSynths(amount, { from: account1 });
+						await wrapperFactory.setTotalIssuedSynths(amount, { from: account1 });
 
-						// totalSupply of synths should exclude EtherWrapper issued sETH
+						// totalSupply of synths should exclude Wrapper issued sETH
 						assert.bnEqual(
 							totalSupplyBefore,
 							await synthetix.totalIssuedSynthsExcludeOtherCollateral(sETH)
