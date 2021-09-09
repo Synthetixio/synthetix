@@ -653,13 +653,6 @@ describe('publish scripts', () => {
 							await tx.wait();
 						}
 					});
-					describe('when FeePool alone is redeployed', () => {
-						it('it reverts as the system is not suspended', done => {
-							redeployFeePeriodOnly()
-								.then(() => done('Should not succeed.'))
-								.catch(() => done());
-						});
-					});
 
 					describe('when the system is suspended', () => {
 						beforeEach(async () => {
