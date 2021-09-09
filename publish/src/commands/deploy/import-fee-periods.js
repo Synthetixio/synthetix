@@ -59,11 +59,18 @@ module.exports = async ({
 
 		if (!yes) {
 			try {
-				await confirmAction(gray('Do you want to continue? (y/n) '));
+				await confirmAction(
+					gray(
+						'Do you want to continue importing fee periods? (y/n) ("n" will cease this but continue deploying) '
+					)
+				);
 			} catch (err) {
-				console.log(gray('Operation cancelled'));
-				process.exit();
+				console.log(gray('Operation cancelled. Continuing the rest of the deploy.'));
+				return;
 			}
+		} else {
+			console.log(gray('Skipping as --yes is enabled.'));
+			return;
 		}
 	}
 
