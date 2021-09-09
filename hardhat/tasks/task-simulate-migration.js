@@ -124,7 +124,7 @@ task(
 
 		console.log(gray(`Beginning the migration`));
 
-		await migration.migrate(ownerAddress, { gasPrice: '0' });
+		await migration.migrate(ownerAddress, { gasPrice: '0', gasLimit: ethers.BigNumber.from(12e6) });
 
 		console.log(gray(`Migration complete.`));
 
