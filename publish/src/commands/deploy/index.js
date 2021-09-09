@@ -329,9 +329,9 @@ const deploy = async ({
 		addressOf,
 		deployer,
 		dryRun,
+		continueEvenIfUnsuccessful: generateSolidity,
 		limitPromise,
 		runStep,
-		useOvm,
 	});
 
 	await rebuildResolverCaches({
