@@ -10,10 +10,10 @@ function itCanExchange({ ctx }) {
 
 		let owner;
 		let balancesETH, originialPendingSettlements;
-		let Synthetix, Exchanger, SynthsETH;
+		let Synthetix, Exchanger, SynthsETH, SystemSettings;
 
 		before('target contracts and users', () => {
-			({ Synthetix, Exchanger, SynthsETH } = ctx.contracts);
+			({ Synthetix, Exchanger, SynthsETH, SystemSettings } = ctx.contracts);
 
 			owner = ctx.users.owner;
 		});
@@ -57,6 +57,19 @@ function itCanExchange({ ctx }) {
 			});
 
 			describe('when settle is called', () => {
+				let initialWaitingPeriod;
+
+				before(async () => {
+					SystemSettings = SystemSettings.connect(owner);
+
+					initialWaitingPeriod = await SystemSettings.waitingPeriodSecs();
+					await SystemSettings.setWaitingPeriodSecs('0');
+				});
+
+				after(async () => {
+					await SystemSettings.setWaitingPeriodSecs(initialWaitingPeriod);
+				});
+
 				before('skip waiting period', async () => {
 					await skipWaitingPeriod({ ctx });
 				});
