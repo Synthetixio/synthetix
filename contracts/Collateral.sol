@@ -555,7 +555,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 5. Calculate the minting fee and subtract it from the draw amount
         uint amountMinusFee = amount.sub(issueFee);
 
-        // 6. If its short, let the child handle it, otherwise issue the synths.
+        // 6. If its short, issue the synths.
         if (loan.short) {
             manager.incrementShorts(loan.currency, amount);
             _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
@@ -584,7 +584,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     function _accrueInterest(Loan storage loan) internal {
         (uint differential, uint newIndex) = manager.accrueInterest(loan.interestIndex, loan.currency, loan.short);
 
-        // If the loan was just opened, don't record any interest. Otherwise multiple by the amount outstanding.
+        // If the loan was just opened, don't record any interest. Otherwise multiply by the amount outstanding.
         uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(differential);
 
         // Update the loan.
