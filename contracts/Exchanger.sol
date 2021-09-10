@@ -9,6 +9,7 @@ import "./interfaces/IExchanger.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 import "./Math.sol";
+import "./SignedSafeDecimalMath.sol";
 
 // Internal references
 import "./interfaces/ISystemStatus.sol";
@@ -26,6 +27,8 @@ import "./Proxyable.sol";
 // Note: use OZ's IERC20 here as using ours will complain about conflicting names
 // during the build (VirtualSynth has IERC20 from the OZ ERC20 implementation)
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/IERC20.sol";
+
+import "hardhat/console.sol";
 
 // Used to have strongly-typed access to internal mutative functions in Synthetix
 interface ISynthetixInternal {
@@ -494,7 +497,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         _updateSNXIssuedDebtOnExchange([sourceCurrencyKey, destinationCurrencyKey], [sourceRate, destinationRate]);
 
         // Update open interest for asset.
-        liquidityOracle().updateOpenInterest(destinationCurrencyKey, amountReceived);
+        liquidityOracle().updateOpenInterest(destinationCurrencyKey, int(amountReceived));
 
         // Let the DApps know there was a Synth exchange
         ISynthetixInternal(address(synthetix())).emitSynthExchange(
@@ -812,21 +815,37 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         int n,
         uint delta,
         uint lambda
-    ) internal view returns (int) {
+    ) public view returns (int) {
         int num = int(delta) - n;
         int denom = int(delta) + n;
 
         if (denom <= 0) {
-            return -int(SafeDecimalMath.unit()) / 5; // 0.2
+            return -int(SafeDecimalMath.unit()) / 5; // -0.2
         } else if (num <= 0) {
             return int(SafeDecimalMath.unit()) / 5; // 0.2
         }
 
+        // console.logInt(num);
+        // console.logInt(denom);
+        // console.logInt(n);
+
+        uint lnParam = (uint(num) * 10**18) / uint(denom);
+        // console.logUint(lnParam);
+
+        // console.logUint(Math.exp(int(10**18)));
+        // console.logUint( Math.log2(50 * (10**18)) );
+        // console.logInt( Math.ln(100 * (10**18)) / 10**(27-18) );
+        // console.logInt( Math.ln(100) );
+        // console.logInt( Math.ln(100 * 10**9) );
+        console.logInt(Math.ln(100 * 10**18));
+        console.logUint(uint(Math.ln(100 * 10**18)));
+        // console.logInt( Math.ln(lnParam) / 10**(27-18));
+
         return (int(lambda) *
             (int(delta) - n) *
             Math.ln(uint(num / denom)) +
-            (2 * int(delta) * int(lambda)) *
-            Math.ln(uint(delta + uint(n))));
+            (2 * int(SafeDecimalMath.unit()) * int(delta) * int(lambda)) *
+            Math.ln(delta + uint(n)));
     }
 
     function calculateQuotePrice(
@@ -850,7 +869,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         uint destinationRate,
         int amount
-    ) internal view returns (int quotePrice, int quoteAmount) {
+    ) public view returns (int quotePrice, int quoteAmount) {
         int openInterest = liquidityOracle().openInterest(destinationCurrencyKey);
         uint lambda = liquidityOracle().priceImpactFactor(destinationCurrencyKey);
         uint delta = liquidityOracle().maxOpenInterestDelta(destinationCurrencyKey);

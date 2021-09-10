@@ -145,6 +145,7 @@ const setupContract = async ({
 		AddressResolver: [owner],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
+		LiquidityOracle: [owner, tryGetAddressOf('AddressResolver')],
 		ExchangeRates: [
 			owner,
 			oracle,
@@ -592,8 +593,12 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'FlexibleStorage'],
 		},
 		{
+			contract: 'LiquidityOracle',
+			deps: ['AddressResolver'],
+		},
+		{
 			contract: 'ExchangeRates',
-			deps: ['AddressResolver', 'SystemSettings'],
+			deps: ['AddressResolver', 'SystemSettings', 'LiquidityOracle'],
 			mocks: ['Exchanger'],
 		},
 		{ contract: 'SynthetixState' },
@@ -682,6 +687,7 @@ const setupAllContracts = async ({
 				'ExchangeState',
 				'FlexibleStorage',
 				'DebtCache',
+				'LiquidityOracle',
 			],
 		},
 		{
@@ -1026,6 +1032,12 @@ const setupAllContracts = async ({
 				from: owner,
 			}),
 			returnObj['SystemSettings'].setEtherWrapperBurnFeeRate(ETHER_WRAPPER_BURN_FEE_RATE, {
+				from: owner,
+			}),
+			returnObj['LiquidityOracle'].setMaxOpenInterestDelta(toBytes32('sETH'), toUnit('150000'), {
+				from: owner,
+			}),
+			returnObj['LiquidityOracle'].setPriceImpactFactor(toBytes32('sETH'), toUnit('0.02'), {
 				from: owner,
 			}),
 		]);

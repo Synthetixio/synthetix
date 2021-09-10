@@ -69,7 +69,8 @@ contract('Exchanger (spec tests)', async accounts => {
 		resolver,
 		debtCache,
 		issuer,
-		flexibleStorage;
+		flexibleStorage,
+		liquidityOracle;
 
 	const itReadsTheWaitingPeriod = () => {
 		describe('waitingPeriodSecs', () => {
@@ -3857,6 +3858,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				DebtCache: debtCache,
 				Issuer: issuer,
 				FlexibleStorage: flexibleStorage,
+				LiquidityOracle: liquidityOracle,
 			} = await setupAllContracts({
 				accounts,
 				synths: ['sUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'],
@@ -3874,6 +3876,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					'DelegateApprovals',
 					'FlexibleStorage',
 					'CollateralManager',
+					'LiquidityOracle',
 				],
 			}));
 
@@ -3933,5 +3936,19 @@ contract('Exchanger (spec tests)', async accounts => {
 		itPricesSpikeDeviation();
 
 		itSetsExchangeFeeRateForSynths();
+
+		describe.only('simulated slippage', async () => {
+			it('getSimulatedPrice', async () => {
+				const { quotePrice, quoteAmount } = await exchanger.getSimulatedPrice(
+					sETH,
+					toUnit('2000'),
+					toUnit('20000')
+				);
+				console.log([quotePrice, quoteAmount].map(x => x.toString()));
+
+				// exchange ETH amount=20,000.000 rate=2000 premium=0.00537 mark_price=2,010.731 quote_price=2,005.349 take_amount=40,106,984.985
+				// exchange ETH amount = -20, 000.000 rate = 2000 premium = -0.00000 mark_price = 2, 000.000 quote_price = 2, 005.349 take_amount = -40, 106, 984.985
+			});
+		});
 	});
 });

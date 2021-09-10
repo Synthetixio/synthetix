@@ -9,5 +9,5 @@ interface ILiquidityOracle {
 
     function resetOpenInterest(bytes32 asset) external;
 
-    function updateOpenInterest(bytes32 asset, uint amount) external;
+    function updateOpenInterest(bytes32 asset, int amount) external;
 }
