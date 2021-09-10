@@ -425,45 +425,42 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 0. Get the loan and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
-        // 1. Check loan is open.
-        _isLoanOpen(loan.interestIndex);
-
-        // 2. Check they have enough balance to make the payment.
+        // 1. Check they have enough balance to make the payment.
         _checkSynthBalance(msg.sender, loan.currency, payment);
 
-        // 3. Check they are eligible for liquidation.
+        // 2. Check they are eligible for liquidation.
         // Note: this will revert if collateral is 0, however that should only be possible if the loan amount is 0.
         require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio, "Cratio above liq ratio");
 
-        // 4. Determine how much needs to be liquidated to fix their c ratio.
+        // 3. Determine how much needs to be liquidated to fix their c ratio.
         uint liqAmount = _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
 
-        // 5. Only allow them to liquidate enough to fix the c ratio.
+        // 4. Only allow them to liquidate enough to fix the c ratio.
         uint amountToLiquidate = liqAmount < payment ? liqAmount : payment;
 
-        // 6. Work out the total amount owing on the loan.
+        // 5. Work out the total amount owing on the loan.
         uint amountOwing = loan.amount.add(loan.accruedInterest);
 
-        // 7. If its greater than the amount owing, we need to close the loan.
+        // 6. If its greater than the amount owing, we need to close the loan.
         if (amountToLiquidate >= amountOwing) {
             (, collateralLiquidated) = _closeByLiquidation(borrower, msg.sender, loan);
             return collateralLiquidated;
         }
 
-        // 8. Check they have enough balance to liquidate the loan.
+        // 7. Check they have enough balance to liquidate the loan.
         _checkSynthBalance(msg.sender, loan.currency, amountToLiquidate);
 
-        // 9. Process the payment to workout interest/principal split.
+        // 8. Process the payment to workout interest/principal split.
         _processPayment(loan, amountToLiquidate);
 
-        // 10. Work out how much collateral to redeem.
+        // 9. Work out how much collateral to redeem.
         collateralLiquidated = _collateralUtil().collateralRedeemed(loan.currency, amountToLiquidate, collateralKey);
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
-        // 11. Burn the synths from the liquidator.
+        // 10. Burn the synths from the liquidator.
         _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
 
-        // 12. Emit the event for the partial liquidation.
+        // 11. Emit the event for the partial liquidation.
         emit LoanPartiallyLiquidated(borrower, id, msg.sender, amountToLiquidate, collateralLiquidated);
     }
 
