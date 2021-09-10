@@ -61,7 +61,9 @@ contract CollateralShort is Collateral {
     function closeWithCollateral(uint id) external returns (uint amount, uint collateral) {
         (amount, collateral) = _closeLoanByRepayment(msg.sender, id);
 
-        IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
+        if (collateral > 0) {
+            IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
+        }
     }
 
     function repayWithCollateral(uint id, uint amount) external returns (uint principal, uint collateral) {
