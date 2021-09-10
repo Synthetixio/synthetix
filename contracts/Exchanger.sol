@@ -71,6 +71,7 @@ interface IExchangerInternalDebtCache {
 contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
+    using SignedSafeDecimalMath for int;
 
     struct ExchangeEntrySettlement {
         bytes32 src;
@@ -825,27 +826,18 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             return int(SafeDecimalMath.unit()) / 5; // 0.2
         }
 
-        // console.logInt(num);
-        // console.logInt(denom);
-        // console.logInt(n);
+        // Math.ln accepts integers encoded with 27dp.
+        // This scales from the default UNIT of 18dp.
+        uint LN_SCALE_FACTOR = 10**9;
+        uint UNIT = SafeDecimalMath.unit();
 
-        uint lnParam = (uint(num) * 10**18) / uint(denom);
-        // console.logUint(lnParam);
-
-        // console.logUint(Math.exp(int(10**18)));
-        // console.logUint( Math.log2(50 * (10**18)) );
-        // console.logInt( Math.ln(100 * (10**18)) / 10**(27-18) );
-        // console.logInt( Math.ln(100) );
-        // console.logInt( Math.ln(100 * 10**9) );
-        console.logInt(Math.ln(100 * 10**18));
-        console.logUint(uint(Math.ln(100 * 10**18)));
-        // console.logInt( Math.ln(lnParam) / 10**(27-18));
-
-        return (int(lambda) *
-            (int(delta) - n) *
-            Math.ln(uint(num / denom)) +
-            (2 * int(SafeDecimalMath.unit()) * int(delta) * int(lambda)) *
-            Math.ln(delta + uint(n)));
+        return
+            int(lambda).multiplyDecimal(int(delta) - n).multiplyDecimal(
+                Math.ln(uint(num).divideDecimal(uint(denom)) * LN_SCALE_FACTOR) / int(LN_SCALE_FACTOR)
+            ) +
+            int(2 * UNIT).multiplyDecimal(int(delta)).multiplyDecimal(int(lambda)).multiplyDecimal(
+                Math.ln((delta + uint(n)) * LN_SCALE_FACTOR) / int(LN_SCALE_FACTOR)
+            );
     }
 
     function calculateQuotePrice(
@@ -861,8 +853,9 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         return
             int(_O) +
-            (int(_O) / s) *
-            (_calculatePricePremiumIntegral(n + s, delta, lambda) - _calculatePricePremiumIntegral(n, delta, lambda));
+            int(_O).divideDecimal(s).multiplyDecimal(
+                _calculatePricePremiumIntegral(n + s, delta, lambda) - _calculatePricePremiumIntegral(n, delta, lambda)
+            );
     }
 
     function getSimulatedPrice(
@@ -877,12 +870,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // premium_ = premium(open_interest + amount, delta, lambda_)
         // mark_price = rate * (1 + premium_)
         quotePrice = calculateQuotePrice(amount, openInterest, destinationRate, lambda, delta);
-        quoteAmount = amount * quotePrice;
+        quoteAmount = amount.multiplyDecimal(quotePrice);
         return (quotePrice, quoteAmount);
-
-        // print("exchange {} amount={:,.3f} rate={} premium={:.5f} mark_price={:,.3f} quote_price={:,.3f} take_amount={:,.3f}".format(
-        //     asset, amount, rate, premium_, mark_price, price, take_amount
-        // ))
     }
 
     function _getAmountReceivedForExchange(uint destinationAmount, uint exchangeFeeRate)
