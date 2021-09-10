@@ -99,7 +99,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         staticAddresses[0] = CONTRACT_ISSUER;
         staticAddresses[1] = CONTRACT_EXRATES;
 
-        // we want to cache the name of the synth and the name of its corresponding iSynth
+        // we want to cache the name of the synth and the name of its corresponding ISynth
         bytes32[] memory shortAddresses;
         uint length = _shortableSynths.elements.length;
 
@@ -289,6 +289,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     function setUtilisationMultiplier(uint _utilisationMultiplier) public onlyOwner {
         require(_utilisationMultiplier > 0, "Must be greater than 0");
         utilisationMultiplier = _utilisationMultiplier;
+        emit UtilisationMultiplierUpdated(utilisationMultiplier);
     }
 
     function setMaxDebt(uint _maxDebt) public onlyOwner {
@@ -486,7 +487,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         // 2. Get the instantaneous rate.
         (uint rate, bool invalid) = isShort ? getShortRate(currency) : getBorrowRate();
 
-        require(!invalid);
+        require(!invalid, "Invalid rate");
 
         // 3. Get the time since we last updated the rate.
         // TODO: consider this in the context of l2 time.
@@ -517,6 +518,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     event LiquidationPenaltyUpdated(uint liquidationPenalty);
     event BaseBorrowRateUpdated(uint baseBorrowRate);
     event BaseShortRateUpdated(uint baseShortRate);
+    event UtilisationMultiplierUpdated(uint utilisationMultiplier);
 
     event CollateralAdded(address collateral);
     event CollateralRemoved(address collateral);
