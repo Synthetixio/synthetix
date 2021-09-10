@@ -2234,7 +2234,7 @@
 			},
 			"BinaryOptionMarketData": {
 				"address": "0xe523184876c97945da45998582526cDb6a3dA260",
-				"status": "current"
+				"status": "deleted"
 			},
 			"SynthUtil": {
 				"address": "0x81Aee4EA48f678E172640fB5813cf7A96AFaF6C3",
@@ -2791,12 +2791,12 @@
 			},
 			"BinaryOptionMarketFactory": {
 				"address": "0x211bA925B35b82246a3CCfa3A991a39A840f025C",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x19c02d5083547f83f7498763553980d79e887fc93fa434da292b66a456443759"
 			},
 			"BinaryOptionMarketManager": {
 				"address": "0x915D1c9dF12142B535F6a7437F0196D80bCCC1BD",
-				"status": "current",
+				"status": "deleted",
 				"keccak256": "0x2e5c533119e027ff1083ea3845643d65379a51ac6c22e4dca1399f32938f024d"
 			},
 			"SystemSettings": {
