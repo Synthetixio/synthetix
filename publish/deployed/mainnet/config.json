@@ -778,5 +778,8 @@
 	},
 	"NativeEtherWrapper": {
 		"deploy": false
+	},
+	"SynthRedeemer": {
+		"deploy": false
 	}
 }
