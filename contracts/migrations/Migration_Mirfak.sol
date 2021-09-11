@@ -1,21 +1,30 @@
 pragma solidity ^0.5.16;
 
-import "../AddressResolver.sol";
 import "../BaseMigration.sol";
-import "../ExchangeState.sol";
-import "../FeePool.sol";
+import "../AddressResolver.sol";
+import "../Proxy.sol";
 import "../FeePoolEternalStorage.sol";
 import "../FeePoolState.sol";
-import "../Issuer.sol";
-import "../legacy/LegacyTokenState.sol";
-import "../MultiCollateralSynth.sol";
-import "../Proxy.sol";
 import "../ProxyERC20.sol";
+import "../Proxy.sol";
+import "../ExchangeState.sol";
+import "../SystemStatus.sol";
+import "../legacy/LegacyTokenState.sol";
+import "../SynthetixState.sol";
 import "../RewardEscrow.sol";
 import "../RewardsDistribution.sol";
-import "../SynthetixState.sol";
-import "../SystemStatus.sol";
+import "../FeePool.sol";
+import "../MultiCollateralSynth.sol";
 import "../TokenState.sol";
+import "../Proxy.sol";
+import "../ProxyERC20.sol";
+import "../MultiCollateralSynth.sol";
+import "../TokenState.sol";
+import "../ProxyERC20.sol";
+import "../MultiCollateralSynth.sol";
+import "../TokenState.sol";
+import "../ProxyERC20.sol";
+import "../Issuer.sol";
 
 interface ISynthetixNamedContract {
     // solhint-disable func-name-mixedcase
@@ -26,6 +35,10 @@ interface ISynthetixNamedContract {
 contract Migration_Mirfak is BaseMigration {
     // https://etherscan.io/address/0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
     address public constant OWNER = 0xEb3107117FEAd7de89Cd14D463D340A2E6917769;
+
+    // ----------------------------
+    // EXISTING SYNTHETIX CONTRACTS
+    // ----------------------------
 
     // https://etherscan.io/address/0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83
     AddressResolver public constant addressresolver_i = AddressResolver(0x823bE81bbF96BEc0e25CA13170F5AaCb5B79ba83);
@@ -78,7 +91,10 @@ contract Migration_Mirfak is BaseMigration {
     // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
     Issuer public constant issuer_i = Issuer(0x922C84B3894298296C34842D866BfC0d36C54778);
 
-    // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
+    // ----------------------------------
+    // NEW CONTRACTS DEPLOYED TO BE ADDED
+    // ----------------------------------
+
     // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
     address public constant new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
     // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
@@ -89,10 +105,10 @@ contract Migration_Mirfak is BaseMigration {
     address public constant new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
     // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
     address public constant new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-    // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
-    address public constant new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
     // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
     address public constant new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
+    // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
+    address public constant new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
     // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
     address public constant new_SynthsBTC_contract = 0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9;
     // https://etherscan.io/address/0xCFA46B4923c0E75B7b84E9FBde70ED26feFefBf6
@@ -152,12 +168,12 @@ contract Migration_Mirfak is BaseMigration {
             "Invalid contract supplied for Issuer"
         );
         require(
-            ISynthetixNamedContract(new_SynthsUSD_contract).CONTRACT_NAME() == "MultiCollateralSynth",
-            "Invalid contract supplied for SynthsUSD"
-        );
-        require(
             ISynthetixNamedContract(new_SynthRedeemer_contract).CONTRACT_NAME() == "SynthRedeemer",
             "Invalid contract supplied for SynthRedeemer"
+        );
+        require(
+            ISynthetixNamedContract(new_SynthsUSD_contract).CONTRACT_NAME() == "MultiCollateralSynth",
+            "Invalid contract supplied for SynthsUSD"
         );
         require(
             ISynthetixNamedContract(new_SynthsBTC_contract).CONTRACT_NAME() == "MultiCollateralSynth",
@@ -268,8 +284,8 @@ contract Migration_Mirfak is BaseMigration {
         addressresolver_importAddresses_names_0_0[2] = bytes32("Exchanger");
         addressresolver_importAddresses_names_0_0[3] = bytes32("DebtCache");
         addressresolver_importAddresses_names_0_0[4] = bytes32("Issuer");
-        addressresolver_importAddresses_names_0_0[5] = bytes32("SynthsUSD");
-        addressresolver_importAddresses_names_0_0[6] = bytes32("SynthRedeemer");
+        addressresolver_importAddresses_names_0_0[5] = bytes32("SynthRedeemer");
+        addressresolver_importAddresses_names_0_0[6] = bytes32("SynthsUSD");
         addressresolver_importAddresses_names_0_0[7] = bytes32("SynthsBTC");
         addressresolver_importAddresses_names_0_0[8] = bytes32("SynthsETH");
         address[] memory addressresolver_importAddresses_destinations_0_1 = new address[](9);
@@ -278,8 +294,8 @@ contract Migration_Mirfak is BaseMigration {
         addressresolver_importAddresses_destinations_0_1[2] = address(new_Exchanger_contract);
         addressresolver_importAddresses_destinations_0_1[3] = address(new_DebtCache_contract);
         addressresolver_importAddresses_destinations_0_1[4] = address(new_Issuer_contract);
-        addressresolver_importAddresses_destinations_0_1[5] = address(new_SynthsUSD_contract);
-        addressresolver_importAddresses_destinations_0_1[6] = address(new_SynthRedeemer_contract);
+        addressresolver_importAddresses_destinations_0_1[5] = address(new_SynthRedeemer_contract);
+        addressresolver_importAddresses_destinations_0_1[6] = address(new_SynthsUSD_contract);
         addressresolver_importAddresses_destinations_0_1[7] = address(new_SynthsBTC_contract);
         addressresolver_importAddresses_destinations_0_1[8] = address(new_SynthsETH_contract);
         addressresolver_i.importAddresses(
@@ -470,7 +486,6 @@ contract Migration_Mirfak is BaseMigration {
         // https://etherscan.io/address/0xCFA46B4923c0E75B7b84E9FBde70ED26feFefBf6;
         Synth newSynth = Synth(0xCFA46B4923c0E75B7b84E9FBde70ED26feFefBf6);
         newSynth.setTotalSupply(existingSynth.totalSupply());
-        /* solhint-enable no-unused-vars */
     }
 
     function issuer_addSynths_39() internal {
