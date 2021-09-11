@@ -340,10 +340,10 @@
 		},
 		"SynthsETH": {
 			"name": "SynthsETH",
-			"address": "0xab4e760fEEe20C5c2509061b995e06b542D3112B",
+			"address": "0xCFA46B4923c0E75B7b84E9FBde70ED26feFefBf6",
 			"source": "MultiCollateralSynth",
-			"link": "https://etherscan.io/address/0xab4e760fEEe20C5c2509061b995e06b542D3112B",
-			"timestamp": "2021-05-13T11:05:42.621Z",
+			"link": "https://etherscan.io/address/0xCFA46B4923c0E75B7b84E9FBde70ED26feFefBf6",
+			"timestamp": "2021-09-11T10:01:35.241Z",
 			"txn": "",
 			"network": "mainnet"
 		},
