@@ -162,6 +162,8 @@ module.exports = async ({
 			feePeriod.rewardsClaimed,
 		];
 
+		const generateExplorerComment = ({ address }) => `// ${explorerLinkPrefix}/address/${address}`;
+
 		await runStep({
 			contract: 'FeePool',
 			target: FeePool,
@@ -171,7 +173,9 @@ module.exports = async ({
 			customSolidity: {
 				name: `importFeePeriod_${index}`,
 				instructions: [
+					generateExplorerComment({ address: ExistingFeePool.address }),
 					`FeePool existingFeePool = FeePool(${ExistingFeePool.address})`,
+					generateExplorerComment({ address: FeePool.address }),
 					`FeePool newFeePool = FeePool(${FeePool.address})`,
 					`(
 						uint64 feePeriodId_${index},
