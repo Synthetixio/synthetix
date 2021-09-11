@@ -1,27 +1,21 @@
 pragma solidity ^0.5.16;
 
-import "../BaseMigration.sol";
 import "../AddressResolver.sol";
-import "../Proxy.sol";
+import "../BaseMigration.sol";
+import "../ExchangeState.sol";
+import "../FeePool.sol";
 import "../FeePoolEternalStorage.sol";
 import "../FeePoolState.sol";
-import "../ProxyERC20.sol";
-import "../Proxy.sol";
-import "../ExchangeState.sol";
-import "../SystemStatus.sol";
+import "../Issuer.sol";
 import "../legacy/LegacyTokenState.sol";
-import "../SynthetixState.sol";
+import "../MultiCollateralSynth.sol";
+import "../Proxy.sol";
+import "../ProxyERC20.sol";
 import "../RewardEscrow.sol";
 import "../RewardsDistribution.sol";
-import "../FeePool.sol";
-import "../MultiCollateralSynth.sol";
+import "../SynthetixState.sol";
+import "../SystemStatus.sol";
 import "../TokenState.sol";
-import "../Proxy.sol";
-import "../ProxyERC20.sol";
-import "../MultiCollateralSynth.sol";
-import "../TokenState.sol";
-import "../ProxyERC20.sol";
-import "../Issuer.sol";
 
 interface ISynthetixNamedContract {
     // solhint-disable func-name-mixedcase
@@ -322,18 +316,10 @@ contract Migration_Mirfak is BaseMigration {
         /* solhint-disable no-unused-vars */
 
         // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
-        address new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
-        // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
-        address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
-        // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
-        address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
         // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
         address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
         // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
         address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-        // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
-        address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
         // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
         address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
         // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
@@ -367,24 +353,6 @@ contract Migration_Mirfak is BaseMigration {
     function addressresolver_rebuildCaches_2() internal {
         /* solhint-disable no-unused-vars */
 
-        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
-        address new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
-        // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
-        address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
-        // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
-        address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
-        // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
-        address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
-        // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
-        address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-        // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
-        address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
-        // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
-        address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
-        // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
-        address new_SynthsBTC_contract = 0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9;
-
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_2_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_2_0[0] = MixinResolver(0xcd980Fc5CcdAe62B18A52b83eC64200121A929db);
         addressresolver_rebuildCaches_destinations_2_0[1] = MixinResolver(0xAf090d6E583C082f2011908cf95c2518BE7A53ac);
@@ -412,24 +380,6 @@ contract Migration_Mirfak is BaseMigration {
 
     function addressresolver_rebuildCaches_3() internal {
         /* solhint-disable no-unused-vars */
-
-        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
-        address new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
-        // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
-        address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
-        // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
-        address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
-        // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
-        address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
-        // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
-        address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-        // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
-        address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
-        // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
-        address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
-        // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
-        address new_SynthsBTC_contract = 0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9;
 
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_3_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_3_0[0] = MixinResolver(0x8e082925e78538955bC0e2F363FC5d1Ab3be739b);
@@ -466,16 +416,6 @@ contract Migration_Mirfak is BaseMigration {
         address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
         // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
         address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
-        // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
-        address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
-        // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
-        address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-        // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
-        address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
-        // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
-        address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
-        // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
-        address new_SynthsBTC_contract = 0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9;
 
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_4_0 = new MixinResolver[](20);
         addressresolver_rebuildCaches_destinations_4_0[0] = MixinResolver(0x6Dc6a64724399524184C2c44a526A2cff1BaA507);
@@ -505,23 +445,8 @@ contract Migration_Mirfak is BaseMigration {
     function addressresolver_rebuildCaches_5() internal {
         /* solhint-disable no-unused-vars */
 
-        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
-        address new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
-        // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
-        address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
-        // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
-        address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
-        // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
-        address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
-        // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
-        address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
         // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
         address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
-        // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
-        address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
-        // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
-        address new_SynthsBTC_contract = 0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9;
 
         MixinResolver[] memory addressresolver_rebuildCaches_destinations_5_0 = new MixinResolver[](2);
         addressresolver_rebuildCaches_destinations_5_0[0] = MixinResolver(new_SynthRedeemer_contract);
@@ -606,18 +531,6 @@ contract Migration_Mirfak is BaseMigration {
         /* solhint-disable no-unused-vars */
 
         // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
-        address new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
-        // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
-        address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
-        // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
-        address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
-        // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
-        address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
-        // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
-        address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-        // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
-        address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
         // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
         address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
         // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
@@ -647,22 +560,6 @@ contract Migration_Mirfak is BaseMigration {
         /* solhint-disable no-unused-vars */
 
         // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
-        address new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
-        // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
-        address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
-        // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
-        address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
-        // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
-        address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
-        // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
-        address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-        // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
-        address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
-        // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
-        address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
-        // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
-        address new_SynthsBTC_contract = 0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9;
 
         ISynth[] memory issuer_addSynths_synthsToAdd_36_0 = new ISynth[](15);
         issuer_addSynths_synthsToAdd_36_0[0] = ISynth(0xe3D5E1c1bA874C0fF3BA31b999967F24d5ca04e5);
@@ -687,24 +584,6 @@ contract Migration_Mirfak is BaseMigration {
     function issuer_addSynths_37() internal {
         /* solhint-disable no-unused-vars */
 
-        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
-        address new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
-        // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
-        address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
-        // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
-        address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
-        // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
-        address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
-        // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
-        address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-        // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
-        address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
-        // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
-        address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
-        // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
-        address new_SynthsBTC_contract = 0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9;
-
         ISynth[] memory issuer_addSynths_synthsToAdd_37_0 = new ISynth[](15);
         issuer_addSynths_synthsToAdd_37_0[0] = ISynth(0xe615Df79AC987193561f37E77465bEC2aEfe9aDb);
         issuer_addSynths_synthsToAdd_37_0[1] = ISynth(0x3E2dA260B4A85782A629320EB027A3B7c28eA9f1);
@@ -727,24 +606,6 @@ contract Migration_Mirfak is BaseMigration {
 
     function issuer_addSynths_38() internal {
         /* solhint-disable no-unused-vars */
-
-        // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
-        address new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
-        // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
-        address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
-        // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
-        address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
-        // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
-        address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
-        // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
-        address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-        // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
-        address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
-        // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
-        address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
-        // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
-        address new_SynthsBTC_contract = 0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9;
 
         ISynth[] memory issuer_addSynths_synthsToAdd_38_0 = new ISynth[](15);
         issuer_addSynths_synthsToAdd_38_0[0] = ISynth(0x29DD4A59F4D339226867e77aF211724eaBb45c02);
@@ -770,22 +631,6 @@ contract Migration_Mirfak is BaseMigration {
         /* solhint-disable no-unused-vars */
 
         // NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-        // https://etherscan.io/address/0x510adfDF6E7554C571b7Cd9305Ce91473610015e
-        address new_FeePool_contract = 0x510adfDF6E7554C571b7Cd9305Ce91473610015e;
-        // https://etherscan.io/address/0x54f25546260C7539088982bcF4b7dC8EDEF19f21
-        address new_Synthetix_contract = 0x54f25546260C7539088982bcF4b7dC8EDEF19f21;
-        // https://etherscan.io/address/0xe92B4c7428152052B0930c81F4c687a5F1A12292
-        address new_DebtCache_contract = 0xe92B4c7428152052B0930c81F4c687a5F1A12292;
-        // https://etherscan.io/address/0x7634F2A1741a683ccda37Dce864c187F990D7B4b
-        address new_Exchanger_contract = 0x7634F2A1741a683ccda37Dce864c187F990D7B4b;
-        // https://etherscan.io/address/0x922C84B3894298296C34842D866BfC0d36C54778
-        address new_Issuer_contract = 0x922C84B3894298296C34842D866BfC0d36C54778;
-        // https://etherscan.io/address/0xe533139Af961c9747356D947838c98451015e234
-        address new_SynthRedeemer_contract = 0xe533139Af961c9747356D947838c98451015e234;
-        // https://etherscan.io/address/0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b
-        address new_SynthsUSD_contract = 0x967968963517AFDC9b8Ccc9AD6649bC507E83a7b;
-        // https://etherscan.io/address/0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9
-        address new_SynthsBTC_contract = 0xC8a5f06858a1B49A7F703EacD433A1444a5e5bd9;
 
         ISynth[] memory issuer_addSynths_synthsToAdd_39_0 = new ISynth[](6);
         issuer_addSynths_synthsToAdd_39_0[0] = ISynth(0x1cB27Ac646afAE192dF9928A2808C0f7f586Af7d);
