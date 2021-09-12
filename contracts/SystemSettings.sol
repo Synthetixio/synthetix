@@ -135,20 +135,20 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP 112: Wrappr
     // The maximum amount of token held by the Wrapper.
-    function wrapperMaxTokenAmount(bytes32 currencyKey) external view returns (uint) {
-        return getWrapperMaxTokenAmount(currencyKey);
+    function wrapperMaxTokenAmount(address wrapper) external view returns (uint) {
+        return getWrapperMaxTokenAmount(wrapper);
     }
 
     // SIP 112: Wrappr
     // The fee for depositing token into the Wrapper.
-    function wrapperMintFeeRate(bytes32 currencyKey) external view returns (uint) {
-        return getWrapperMintFeeRate(currencyKey);
+    function wrapperMintFeeRate(address wrapper) external view returns (uint) {
+        return getWrapperMintFeeRate(wrapper);
     }
 
     // SIP 112: Wrappr
     // The fee for burning synth and releasing token from the Wrapper.
-    function wrapperBurnFeeRate(bytes32 currencyKey) external view returns (uint) {
-        return getWrapperBurnFeeRate(currencyKey);
+    function wrapperBurnFeeRate(address wrapper) external view returns (uint) {
+        return getWrapperBurnFeeRate(wrapper);
     }
 
     // ========== RESTRICTED ==========
@@ -288,45 +288,45 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit AggregatorWarningFlagsUpdated(_flags);
     }
 
-    function setWrapperMaxTokenAmount(bytes32 _currencyKey, uint _maxTokenAmount) external onlyOwnerOrSelf {
+    function setWrapperMaxTokenAmount(address _wrapper, uint _maxTokenAmount) external onlyOwnerOrSelf {
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _currencyKey)),
+            keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, _wrapper)),
             _maxTokenAmount
         );
-        emit WrapperMaxTokenAmountUpdated(_currencyKey, _maxTokenAmount);
+        emit WrapperMaxTokenAmountUpdated(_wrapper, _maxTokenAmount);
     }
 
-    function setWrapperMintFeeRate(bytes32 _currencyKey, uint _rate) external onlyOwnerOrSelf {
+    function setWrapperMintFeeRate(address _wrapper, uint _rate) external onlyOwnerOrSelf {
         require(_rate <= MAX_WRAPPER_MINT_FEE_RATE, "rate > MAX_WRAPPER_MINT_FEE_RATE");
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, _currencyKey)),
+            keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, _wrapper)),
             _rate
         );
-        emit WrapperMintFeeRateUpdated(_currencyKey, _rate);
+        emit WrapperMintFeeRateUpdated(_wrapper, _rate);
     }
 
-    function setWrapperBurnFeeRate(bytes32 _currencyKey, uint _rate) external onlyOwnerOrSelf {
+    function setWrapperBurnFeeRate(address _wrapper, uint _rate) external onlyOwnerOrSelf {
         require(_rate <= MAX_WRAPPER_BURN_FEE_RATE, "rate > MAX_WRAPPER_BURN_FEE_RATE");
         flexibleStorage().setUIntValue(
             SETTING_CONTRACT_NAME,
-            keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _currencyKey)),
+            keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, _wrapper)),
             _rate
         );
-        emit WrapperBurnFeeRateUpdated(_currencyKey, _rate);
+        emit WrapperBurnFeeRateUpdated(_wrapper, _rate);
     }
 
     // Convenience function for setting all wrapper settings at once
     function setWrapperSettings(
-        bytes32 _currencyKey,
+        address _wrapper,
         uint _maxTokenAmount,
         uint _mintFeeRate,
         uint _burnFeeRate
     ) external onlyOwner {
-        this.setWrapperMaxTokenAmount(_currencyKey, _maxTokenAmount);
-        this.setWrapperMintFeeRate(_currencyKey, _mintFeeRate);
-        this.setWrapperBurnFeeRate(_currencyKey, _burnFeeRate);
+        this.setWrapperMaxTokenAmount(_wrapper, _maxTokenAmount);
+        this.setWrapperMintFeeRate(_wrapper, _mintFeeRate);
+        this.setWrapperBurnFeeRate(_wrapper, _burnFeeRate);
     }
 
     modifier onlyOwnerOrSelf {
@@ -350,7 +350,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event MinimumStakeTimeUpdated(uint minimumStakeTime);
     event DebtSnapshotStaleTimeUpdated(uint debtSnapshotStaleTime);
     event AggregatorWarningFlagsUpdated(address flags);
-    event WrapperMaxTokenAmountUpdated(bytes32 currencyKey, uint maxTokenAmount);
-    event WrapperMintFeeRateUpdated(bytes32 currencyKey, uint rate);
-    event WrapperBurnFeeRateUpdated(bytes32 currencyKey, uint rate);
+    event WrapperMaxTokenAmountUpdated(address wrapper, uint maxTokenAmount);
+    event WrapperMintFeeRateUpdated(address wrapper, uint rate);
+    event WrapperBurnFeeRateUpdated(address wrapper, uint rate);
 }

@@ -127,27 +127,27 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_DEBT_SNAPSHOT_STALE_TIME);
     }
 
-    function getWrapperMaxTokenAmount(bytes32 currencyKey) internal view returns (uint) {
+    function getWrapperMaxTokenAmount(address wrapper) internal view returns (uint) {
         return
             flexibleStorage().getUIntValue(
                 SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, currencyKey))
+                keccak256(abi.encodePacked(SETTING_WRAPPER_MAX_TOKEN_AMOUNT, wrapper))
             );
     }
 
-    function getWrapperMintFeeRate(bytes32 currencyKey) internal view returns (uint) {
+    function getWrapperMintFeeRate(address wrapper) internal view returns (uint) {
         return
             flexibleStorage().getUIntValue(
                 SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, currencyKey))
+                keccak256(abi.encodePacked(SETTING_WRAPPER_MINT_FEE_RATE, wrapper))
             );
     }
 
-    function getWrapperBurnFeeRate(bytes32 currencyKey) internal view returns (uint) {
+    function getWrapperBurnFeeRate(address wrapper) internal view returns (uint) {
         return
             flexibleStorage().getUIntValue(
                 SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, currencyKey))
+                keccak256(abi.encodePacked(SETTING_WRAPPER_BURN_FEE_RATE, wrapper))
             );
     }
 }

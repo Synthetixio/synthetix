@@ -11,7 +11,7 @@ import "./interfaces/IERC20.sol";
 import "./Pausable.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
-import "./interfaces/IFeePool.sol";
+import "./interfaces/IDebtCache.sol";
 import "./interfaces/IWrapperFactory.sol";
 import "./MixinResolver.sol";
 import "./MixinSystemSettings.sol";
@@ -25,8 +25,6 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    /* ========== CONSTANTS ============== */
-
     /* ========== ENCODED NAMES ========== */
 
     bytes32 internal constant sUSD = "sUSD";
@@ -37,6 +35,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     bytes32 private constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
+    bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_WRAPPERFACTORY = "WrapperFactory";
 
     // ========== STATE VARIABLES ==========
@@ -45,6 +44,8 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     IERC20 public token;
     bytes32 public currencyKey;
     bytes32 public synthContractName;
+
+    uint public targetSynthIssued;
 
     constructor(
         address _owner,
@@ -56,17 +57,19 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         token = _token;
         currencyKey = _currencyKey;
         synthContractName = _synthContractName;
+        targetSynthIssued = 0;
     }
 
     /* ========== VIEWS ========== */
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
-        bytes32[] memory newAddresses = new bytes32[](5);
+        bytes32[] memory newAddresses = new bytes32[](6);
         newAddresses[0] = CONTRACT_SYNTH_SUSD;
         newAddresses[1] = synthContractName;
         newAddresses[2] = CONTRACT_EXRATES;
         newAddresses[3] = CONTRACT_ISSUER;
-        newAddresses[4] = CONTRACT_WRAPPERFACTORY;
+        newAddresses[4] = CONTRACT_DEBTCACHE;
+        newAddresses[5] = CONTRACT_WRAPPERFACTORY;
         addresses = combineArrays(existingAddresses, newAddresses);
         return addresses;
     }
@@ -88,6 +91,10 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         return IIssuer(requireAndGetAddress(CONTRACT_ISSUER));
     }
 
+    function debtCache() internal view returns (IDebtCache) {
+        return IDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
+    }
+
     function wrapperFactory() internal view returns (IWrapperFactory) {
         return IWrapperFactory(requireAndGetAddress(CONTRACT_WRAPPERFACTORY));
     }
@@ -98,20 +105,20 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
     function capacity() public view returns (uint _capacity) {
         // capacity = max(maxETH - balance, 0)
-        uint balance = targetSynthIssued();
+        uint balance = getReserves();
         if (balance >= maxTokenAmount()) {
             return 0;
         }
         return maxTokenAmount().sub(balance);
     }
 
-    function targetSynthIssued() public view returns (uint) {
-        return token.balanceOf(address(this));
-    }
-
     function totalIssuedSynths() public view returns (uint) {
         // synths issued by this contract is always exactly equal to the balance of reserves
-        return exchangeRates().effectiveValue(currencyKey, token.balanceOf(address(this)), sUSD);
+        return exchangeRates().effectiveValue(currencyKey, targetSynthIssued, sUSD);
+    }
+
+    function getReserves() public view returns (uint) {
+        return token.balanceOf(address(this));
     }
 
     function calculateMintFee(uint amount) public view returns (uint) {
@@ -123,15 +130,15 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     }
 
     function maxTokenAmount() public view returns (uint256) {
-        return getWrapperMaxTokenAmount(currencyKey);
+        return getWrapperMaxTokenAmount(address(this));
     }
 
     function mintFeeRate() public view returns (uint256) {
-        return getWrapperMintFeeRate(currencyKey);
+        return getWrapperMintFeeRate(address(this));
     }
 
     function burnFeeRate() public view returns (uint256) {
-        return getWrapperBurnFeeRate(currencyKey);
+        return getWrapperBurnFeeRate(address(this));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -146,26 +153,38 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         uint currentCapacity = capacity();
         require(currentCapacity > 0, "Contract has no spare capacity to mint");
 
-        if (amountIn < currentCapacity) {
-            _mint(amountIn);
-        } else {
-            _mint(currentCapacity);
-        }
+        uint actualAmountIn = currentCapacity < amountIn ? currentCapacity : amountIn;
+
+        uint feeAmountTarget = calculateMintFee(actualAmountIn);
+        uint mintAmount = actualAmountIn - feeAmountTarget;
+
+        // Transfer token from user.
+        token.transferFrom(msg.sender, address(this), actualAmountIn);
+
+        // Mint tokens to user
+        _mint(mintAmount);
+
+        emit Minted(msg.sender, mintAmount, feeAmountTarget, actualAmountIn);
     }
 
     // Burns `amountIn` synth for `amountIn - fees` amount of token.
     // `amountIn` is inclusive of fees, calculable via `calculateBurnFee`.
     function burn(uint amountIn) external notPaused {
-        require(totalIssuedSynths() > 0, "Contract cannot burn for token, token balance is zero");
+        require(amountIn <= IERC20(address(synth())).balanceOf(msg.sender), "Balance is too low");
         require(!exchangeRates().rateIsInvalid(currencyKey), "Currency rate is invalid");
+        require(totalIssuedSynths() > 0, "Contract cannot burn for token, token balance is zero");
 
-        uint amountOut = amountIn.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
-        uint reserves = targetSynthIssued();
-        if (amountOut > reserves) {
-            _burn(reserves);
-        } else {
-            _burn(amountOut);
-        }
+        uint burnAmount = targetSynthIssued < amountIn ? targetSynthIssued + calculateBurnFee(targetSynthIssued) : amountIn;
+        uint amountOut = burnAmount.divideDecimalRound(SafeDecimalMath.unit().add(burnFeeRate()));
+        uint feeAmountTarget = burnAmount - amountOut;
+
+        // Transfer token to user.
+        token.transfer(msg.sender, amountOut);
+
+        // Burn
+        _burn(burnAmount);
+
+        emit Burned(msg.sender, amountOut, feeAmountTarget, burnAmount);
     }
 
     // ========== RESTRICTED ==========
@@ -179,42 +198,38 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _mint(uint amountIn) internal {
-        // Calculate minting fee.
-        uint feeAmountTarget = calculateMintFee(amountIn);
-        uint feeAmountUsd = exchangeRates().effectiveValue(currencyKey, feeAmountTarget, sUSD);
-        uint principal = amountIn - feeAmountTarget;
+    function _mint(uint amount) internal {
+        uint excessAmount = getReserves() - (targetSynthIssued + amount);
+        uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, sUSD);
 
-        // Transfer token from user.
-        token.transferFrom(msg.sender, address(this), amountIn);
-
-        // Mint `amountIn - fees` to user.
-        synth().issue(msg.sender, principal);
+        // Mint `amount` to user.
+        synth().issue(msg.sender, amount);
 
         // Escrow fee.
-        synthsUSD().issue(address(wrapperFactory()), feeAmountUsd);
+        synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
 
-        emit Minted(msg.sender, principal, feeAmountTarget, amountIn);
+        _setTargetSynthIssued(targetSynthIssued + excessAmount + amount);
     }
 
-    function _burn(uint amountOut) internal {
-        // for burn, amount is inclusive of the fee.
-        uint feeAmountTarget = calculateBurnFee(amountOut);
-        uint feeAmountUsd = exchangeRates().effectiveValue(currencyKey, feeAmountTarget, sUSD);
-        uint principal = amountOut + feeAmountTarget;
+    function _burn(uint amount) internal {
+        uint excessAmount = getReserves() - (targetSynthIssued - amount);
+        uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, sUSD);
 
-        // Burn `amountIn` of currencyKey from user.
-        synth().burn(msg.sender, principal);
+        // Burn `amount` of currencyKey from user.
+        synth().burn(msg.sender, amount);
 
         // We use burn/issue instead of burning the principal and transferring the fee.
         // This saves an approval and is cheaper.
         // Escrow fee.
-        synthsUSD().issue(address(wrapperFactory()), feeAmountUsd);
+        synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
 
-        // Transfer `amount - fees` token to user.
-        token.transfer(msg.sender, amountOut);
+        _setTargetSynthIssued(targetSynthIssued + excessAmount - amount);
+    }
 
-        emit Burned(msg.sender, amountOut, feeAmountTarget, principal);
+    function _setTargetSynthIssued(uint _targetSynthIssued) internal {
+        debtCache().recordExcludedDebtChange(currencyKey, int256(_targetSynthIssued) - int256(targetSynthIssued));
+
+        targetSynthIssued = _targetSynthIssued;
     }
 
     /* ========== EVENTS ========== */

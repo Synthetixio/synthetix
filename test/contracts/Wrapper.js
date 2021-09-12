@@ -102,9 +102,15 @@ contract('Wrapper', async accounts => {
 		etherWrapper = await artifacts.require('Wrapper').at(etherWrapperAddress);
 
 		// set defaults for test - 50bps mint and burn fees
-		await systemSettings.setWrapperMaxTokenAmount(sETH, toUnit('5000'), { from: owner });
-		await systemSettings.setWrapperMintFeeRate(sETH, toUnit('0.005'), { from: owner });
-		await systemSettings.setWrapperBurnFeeRate(sETH, toUnit('0.005'), { from: owner });
+		await systemSettings.setWrapperMaxTokenAmount(etherWrapperAddress, toUnit('5000'), {
+			from: owner,
+		});
+		await systemSettings.setWrapperMintFeeRate(etherWrapperAddress, toUnit('0.005'), {
+			from: owner,
+		});
+		await systemSettings.setWrapperBurnFeeRate(etherWrapperAddress, toUnit('0.005'), {
+			from: owner,
+		});
 
 		timestamp = await currentTime();
 
@@ -272,6 +278,12 @@ contract('Wrapper', async accounts => {
 			it('has a capacity of (capacity - amount) after', async () => {
 				assert.bnEqual(await etherWrapper.capacity(), initialCapacity.sub(amount));
 			});
+			it('targetSynthIssued = sETH balance', async () => {
+				assert.bnEqual(
+					await etherWrapper.targetSynthIssued(),
+					await weth.balanceOf(etherWrapper.address)
+				);
+			});
 			it('emits Minted event', async () => {
 				const logs = await getDecodedLogs({
 					hash: mintTx.tx,
@@ -332,11 +344,17 @@ contract('Wrapper', async accounts => {
 			it('has a capacity of 0 after', async () => {
 				assert.bnEqual(await etherWrapper.capacity(), toBN('0'));
 			});
+			it('targetSynthIssued = sETH balance', async () => {
+				assert.bnEqual(
+					await etherWrapper.targetSynthIssued(),
+					await weth.balanceOf(etherWrapper.address)
+				);
+			});
 		});
 
 		describe('when capacity = 0', () => {
 			beforeEach(async () => {
-				await systemSettings.setWrapperMaxTokenAmount(sETH, '0', { from: owner });
+				await systemSettings.setWrapperMaxTokenAmount(etherWrapper.address, '0', { from: owner });
 			});
 
 			it('reverts', async () => {
@@ -355,10 +373,7 @@ contract('Wrapper', async accounts => {
 	describe('burn', async () => {
 		describe('when the contract has 0 WETH', async () => {
 			it('reverts', async () => {
-				await assert.revert(
-					etherWrapper.burn('1', { from: account1 }),
-					'Contract cannot burn for token, token balance is zero'
-				);
+				await assert.revert(etherWrapper.burn('1', { from: account1 }), 'Balance is too low');
 			});
 		});
 
@@ -366,7 +381,7 @@ contract('Wrapper', async accounts => {
 			let burnTx;
 
 			beforeEach(async () => {
-				const amount = toUnit('1');
+				const amount = toUnit('2');
 				await weth.deposit({ from: account1, value: amount });
 				await weth.approve(etherWrapper.address, amount, { from: account1 });
 				await etherWrapper.mint(amount, { from: account1 });
@@ -426,6 +441,12 @@ contract('Wrapper', async accounts => {
 				});
 				it('increases capacity by `amount - fees` WETH', async () => {
 					assert.bnEqual(await etherWrapper.capacity(), initialCapacity.add(amount.sub(burnFee)));
+				});
+				it('targetSynthIssued = sETH balance', async () => {
+					assert.bnEqual(
+						await etherWrapper.targetSynthIssued(),
+						await weth.balanceOf(etherWrapper.address)
+					);
 				});
 				it('emits Burned event', async () => {
 					const logs = await getDecodedLogs({
@@ -534,6 +555,76 @@ contract('Wrapper', async accounts => {
 						bnCloseVariance: 0,
 					});
 				});
+			});
+		});
+	});
+
+	describe('transfer without mint', () => {
+		let preTargetIssuedSynths;
+
+		const extraTransferred = toUnit('2');
+
+		before(async () => {
+			const amount = toUnit('1');
+			await weth.deposit({ from: account1, value: amount.add(extraTransferred) });
+			await weth.approve(etherWrapper.address, amount, { from: account1 });
+			await etherWrapper.mint(amount, { from: account1 });
+
+			// wipe fees
+			await wrapperFactory.distributeFees();
+
+			preTargetIssuedSynths = await etherWrapper.targetSynthIssued();
+
+			await weth.transfer(etherWrapper.address, extraTransferred, { from: account1 });
+		});
+
+		addSnapshotBeforeRestoreAfterEach();
+
+		describe('before mint or burn', () => {
+			it('totalIssuedSynths is unaffected', async () => {
+				assert.bnEqual(await etherWrapper.targetSynthIssued(), preTargetIssuedSynths);
+			});
+
+			it('does not escrow extra', async () => {
+				assert.bnEqual(await wrapperFactory.feesEscrowed(), toUnit(0));
+			});
+		});
+
+		describe('mint after transfer without mint', () => {
+			before(async () => {
+				const amount = toUnit('1');
+				await weth.deposit({ from: account1, value: amount });
+				await weth.approve(etherWrapper.address, amount, { from: account1 });
+				await etherWrapper.mint(amount, { from: account1 });
+			});
+
+			it('issues excess for fee pool', async () => {
+				assert.bnGt(await wrapperFactory.feesEscrowed(), extraTransferred);
+			});
+			it('targetSynthIssued = sETH balance', async () => {
+				assert.bnEqual(
+					await etherWrapper.targetSynthIssued(),
+					await weth.balanceOf(etherWrapper.address)
+				);
+			});
+		});
+
+		describe('burn after transfer without mint', () => {
+			before(async () => {
+				const amount = toUnit('1');
+				await weth.deposit({ from: account1, value: amount });
+				await weth.approve(etherWrapper.address, amount, { from: account1 });
+				await etherWrapper.mint(amount, { from: account1 });
+			});
+
+			it('issues excess for fee pool', async () => {
+				assert.bnGt(await wrapperFactory.feesEscrowed(), extraTransferred);
+			});
+			it('targetSynthIssued = sETH balance', async () => {
+				assert.bnEqual(
+					await etherWrapper.targetSynthIssued(),
+					await weth.balanceOf(etherWrapper.address)
+				);
 			});
 		});
 	});

@@ -8,6 +8,7 @@ import "./MixinResolver.sol";
 import "./Pausable.sol";
 import "./Wrapper.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/IFeePool.sol";
 import "./interfaces/IFlexibleStorage.sol";
 import "./interfaces/IWrapperFactory.sol";
 
@@ -92,8 +93,13 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
         // Normalize fee to sUSD
         uint amountSUSD = feesEscrowed();
 
-        // Transfer sUSD to the fee pool
-        synthsUSD().transfer(feePool().FEE_ADDRESS(), amountSUSD);
+        if (amountSUSD > 0) {
+            // Transfer sUSD to the fee pool
+            synthsUSD().transfer(feePool().FEE_ADDRESS(), amountSUSD);
+
+            // this is supposed to be done automatically by `transfer` but for some reason that doesn't happen
+            feePool().recordFeePaid(amountSUSD);
+        }
     }
 
     event WrapperCreated(address indexed token, bytes32 indexed currencyKey, address wrapperAddress);

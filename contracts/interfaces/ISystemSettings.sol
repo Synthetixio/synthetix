@@ -25,9 +25,9 @@ interface ISystemSettings {
 
     function minimumStakeTime() external view returns (uint);
 
-    function wrapperMaxTokenAmount(bytes32 currencyKey) external view returns (uint);
+    function wrapperMaxTokenAmount(address wrapper) external view returns (uint);
 
-    function wrapperBurnFeeRate(bytes32 currencyKey) external view returns (uint);
+    function wrapperBurnFeeRate(address wrapper) external view returns (uint);
 
-    function wrapperMintFeeRate(bytes32 currencyKey) external view returns (uint);
+    function wrapperMintFeeRate(address wrapper) external view returns (uint);
 }

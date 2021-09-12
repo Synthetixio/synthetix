@@ -48,7 +48,7 @@ contract DebtCache is BaseDebtCache {
 
     function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        _updateCachedSynthDebtsWithRates(currencyKeys, rates, anyRateInvalid, false);
+        _updateCachedSynthDebtsWithRates(currencyKeys, rates, anyRateInvalid);
     }
 
     function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
@@ -56,18 +56,26 @@ contract DebtCache is BaseDebtCache {
         synthKeyArray[0] = currencyKey;
         uint[] memory synthRateArray = new uint[](1);
         synthRateArray[0] = currencyRate;
-        _updateCachedSynthDebtsWithRates(synthKeyArray, synthRateArray, false, false);
+        _updateCachedSynthDebtsWithRates(synthKeyArray, synthRateArray, false);
     }
 
     function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
         external
         onlyIssuerOrExchanger
     {
-        _updateCachedSynthDebtsWithRates(currencyKeys, currencyRates, false, false);
+        _updateCachedSynthDebtsWithRates(currencyKeys, currencyRates, false);
     }
 
     function updateDebtCacheValidity(bool currentlyInvalid) external onlyIssuer {
         _updateDebtCacheValidity(currentlyInvalid);
+    }
+
+    function recordExcludedDebtChange(bytes32 currencyKey, int256 delta) external onlyDebtIssuer {
+        int256 newExcludedDebt = int256(_excludedIssuedDebt[currencyKey]) + delta;
+
+        require(newExcludedDebt >= 0, "Excluded debt cannot become negative");
+
+        _excludedIssuedDebt[currencyKey] = uint(newExcludedDebt);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -82,8 +90,7 @@ contract DebtCache is BaseDebtCache {
     function _updateCachedSynthDebtsWithRates(
         bytes32[] memory currencyKeys,
         uint[] memory currentRates,
-        bool anyRateIsInvalid,
-        bool recomputeExcludedDebt
+        bool anyRateIsInvalid
     ) internal {
         uint numKeys = currencyKeys.length;
         require(numKeys == currentRates.length, "Input array lengths differ");
@@ -102,16 +109,8 @@ contract DebtCache is BaseDebtCache {
             _cachedSynthDebt[key] = currentSynthDebt;
         }
 
-        // Always update the cached value of the excluded debt -- it's computed anyway.
-        if (recomputeExcludedDebt) {
-            (uint excludedDebt, bool anyNonSnxDebtRateIsInvalid) = _totalNonSnxBackedDebt();
-            anyRateIsInvalid = anyRateIsInvalid || anyNonSnxDebtRateIsInvalid;
-            excludedDebtSum = excludedDebt;
-        }
-
         cachedSum = cachedSum.floorsub(_cachedSynthDebt[EXCLUDED_DEBT_KEY]);
         currentSum = currentSum.floorsub(excludedDebtSum);
-        _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebtSum;
 
         // Compute the difference and apply it to the snapshot
         if (cachedSum != currentSum) {

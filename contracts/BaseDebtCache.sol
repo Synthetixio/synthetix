@@ -25,6 +25,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     uint internal _cachedDebt;
     mapping(bytes32 => uint) internal _cachedSynthDebt;
+    mapping(bytes32 => uint) internal _excludedIssuedDebt;
     uint internal _cacheTimestamp;
     bool internal _cacheInvalid = true;
 
@@ -144,6 +145,11 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
         uint[] memory values = _issuedSynthValues(currencyKeys, rates);
         (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt();
+
+        for (uint i = 0; i < currencyKeys.length; i++) {
+            excludedDebt = excludedDebt.add(_excludedIssuedDebt[currencyKeys[i]].multiplyDecimalRound(rates[i]));
+        }
+
         return (values, excludedDebt, isInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
@@ -172,7 +178,20 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cachedSynthDebts(currencyKeys);
     }
 
-    // Returns the total sUSD debt backed by non-SNX collateral.
+    function _excludedIssuedDebts(bytes32[] memory currencyKeys) internal view returns (uint[] memory) {
+        uint numKeys = currencyKeys.length;
+        uint[] memory debts = new uint[](numKeys);
+        for (uint i = 0; i < numKeys; i++) {
+            debts[i] = _excludedIssuedDebt[currencyKeys[i]];
+        }
+        return debts;
+    }
+
+    function excludedIssuedDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory excludedDebts) {
+        return _excludedIssuedDebts(currencyKeys);
+    }
+
+    // Returns the total sUSD debt backed by non-SNX collateral, excluding debts recorded with _excludedIssuedDebt
     function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid) {
         return _totalNonSnxBackedDebt();
     }
@@ -204,6 +223,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         uint total;
         for (uint i; i < numValues; i++) {
             total = total.add(values[i]);
+            excludedDebt = excludedDebt.add(_excludedIssuedDebt[currencyKeys[i]].multiplyDecimalRound(rates[i]));
         }
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
@@ -245,6 +265,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     function takeDebtSnapshot() external {}
 
+    function recordExcludedDebtChange(bytes32 currencyKey, int256 delta) external {}
+
     /* ========== MODIFIERS ========== */
 
     function _requireSystemActiveIfNotOwner() internal view {
@@ -273,6 +295,20 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
 
     modifier onlyIssuerOrExchanger() {
         _onlyIssuerOrExchanger();
+        _;
+    }
+
+    function _onlyDebtIssuer() internal view {
+        bool isWrapper = wrapperFactory().isWrapper(msg.sender);
+
+        // owner included for debugging and fixing in emergency situation
+        bool isOwner = msg.sender == owner;
+
+        require(isOwner || isWrapper, "Only debt issuers may call this");
+    }
+
+    modifier onlyDebtIssuer() {
+        _onlyDebtIssuer();
         _;
     }
 }

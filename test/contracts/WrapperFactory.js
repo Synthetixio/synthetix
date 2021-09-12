@@ -165,7 +165,10 @@ contract('WrapperFactory', async accounts => {
 			etherWrapper = await artifacts.require('Wrapper').at(createdWrapperAddress);
 
 			const amount = toUnit('10');
-			await systemSettings.setWrapperMaxTokenAmount(sETH, amount, { from: owner });
+			await systemSettings.setWrapperMaxTokenAmount(createdWrapperAddress, amount, { from: owner });
+			await systemSettings.setWrapperMintFeeRate(createdWrapperAddress, toUnit('0.005'), {
+				from: owner,
+			});
 			await weth.deposit({ from: account1, value: amount });
 			await weth.approve(etherWrapper.address, amount, { from: account1 });
 			await etherWrapper.mint(amount, { from: account1 });
@@ -178,6 +181,9 @@ contract('WrapperFactory', async accounts => {
 				hash: tx.tx,
 				contracts: [sUSDSynth],
 			});
+
+			// sanity
+			assert.bnGt(feesEscrowed, toUnit('0'));
 
 			decodedEventEqual({
 				event: 'Transfer',
