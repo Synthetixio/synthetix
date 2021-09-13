@@ -20,7 +20,7 @@ const performTransactionalStep = async ({
 	write,
 	writeArg, // none, 1 or an array of args, array will be spread into params
 	gasLimit,
-	gasPrice,
+	deployer,
 	generateSolidity,
 	explorerLinkPrefix,
 	ownerActions,
@@ -78,8 +78,9 @@ const performTransactionalStep = async ({
 		} else {
 			const overrides = {
 				gasLimit,
-				gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
 			};
+
+			deployer.addGasOptions(overrides);
 
 			if (nonceManager) {
 				overrides.nonce = await nonceManager.getNonce();

@@ -48,7 +48,7 @@ const systemAndParameterCheck = require('./system-and-parameter-check');
 const takeDebtSnapshotWhenRequired = require('./take-debt-snapshot-when-required');
 
 const DEFAULTS = {
-	gasPrice: '1',
+	priorityGasPrice: '1',
 	methodCallGasLimit: 250e3, // 250k
 	contractDeploymentGasLimit: 6.9e6, // TODO split out into separate limits for different contracts, Proxys, Synths, Synthetix
 	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
@@ -65,7 +65,8 @@ const deploy = async ({
 	dryRun = false,
 	forceUpdateInverseSynthsOnTestnet = false,
 	freshDeploy,
-	gasPrice = DEFAULTS.gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	generateSolidity = false,
 	ignoreCustomParameters,
 	ignoreSafetyChecks,
@@ -84,6 +85,8 @@ const deploy = async ({
 	ensureNetwork(network);
 	deploymentPath = deploymentPath || getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
+
+	let gasPrice = null;
 
 	// Gas price needs to be set to 0.015 gwei in Optimism,
 	// and gas limits need to be dynamically set by the provider.
@@ -205,6 +208,8 @@ const deploy = async ({
 		deployment,
 		deploymentFile,
 		gasPrice,
+		maxFeePerGas,
+		maxPriorityFeePerGas,
 		methodCallGasLimit,
 		network,
 		privateKey,
@@ -241,6 +246,8 @@ const deploy = async ({
 		earliestCompiledTimestamp,
 		freshDeploy,
 		gasPrice,
+		maxFeePerGas,
+		maxPriorityFeePerGas,
 		getDeployParameter,
 		methodCallGasLimit,
 		network,
@@ -269,7 +276,7 @@ const deploy = async ({
 			signer,
 			dryRun,
 			explorerLinkPrefix,
-			gasPrice,
+			deployer,
 			generateSolidity,
 			nonceManager: manageNonces ? nonceManager : undefined,
 			ownerActions,
@@ -484,7 +491,12 @@ module.exports = {
 				'-f, --fee-auth <value>',
 				'The address of the fee authority for this network (default is to use existing)'
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option(
+				'--max-priority-fee-per-gas <value>',
+				'Priority gas fee price in GWEI',
+				DEFAULTS.priorityGasPrice
+			)
 			.option('--generate-solidity', 'Whether or not to output the migration as a Solidity file')
 			.option(
 				'-h, --fresh-deploy',

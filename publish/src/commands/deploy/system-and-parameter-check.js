@@ -31,6 +31,8 @@ module.exports = async ({
 	earliestCompiledTimestamp,
 	freshDeploy,
 	gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas,
 	getDeployParameter,
 	methodCallGasLimit,
 	network,
@@ -185,7 +187,9 @@ module.exports = async ({
 				? red('⚠ No -ovm folder suffix!')
 				: green('true')
 			: 'false',
-		'Gas price to use': `${gasPrice} GWEI`,
+		'Gas Options': gasPrice
+			? `non eip-1559 gasPrice = ${gasPrice} GWEI`
+			: `eip-1559 base fee max = ${maxFeePerGas} GWEI, miner tip = ${maxPriorityFeePerGas} GWEI`,
 		'Method call gas limit': `${methodCallGasLimit} gas`,
 		'Contract deployment gas limit': `${contractDeploymentGasLimit} gas`,
 		'Build Path': buildPath,

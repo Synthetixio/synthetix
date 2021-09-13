@@ -23,6 +23,8 @@ class Deployer {
 		deploymentFile,
 		dryRun,
 		gasPrice,
+		maxFeePerGas,
+		maxPriorityFeePerGas,
 		methodCallGasLimit,
 		network,
 		providerUrl,
@@ -39,6 +41,8 @@ class Deployer {
 		this.deploymentFile = deploymentFile;
 		this.dryRun = dryRun;
 		this.gasPrice = gasPrice;
+		this.maxFeePerGas = maxFeePerGas;
+		this.maxPriorityFeePerGas = maxPriorityFeePerGas;
 		this.methodCallGasLimit = methodCallGasLimit;
 		this.network = network;
 		this.contractDeploymentGasLimit = contractDeploymentGasLimit;
@@ -110,13 +114,28 @@ class Deployer {
 		return ethers.utils.defaultAbiCoder.encode(types, params);
 	}
 
+	async addGasOptions(tx) {
+		if (this.gasPrice) {
+			tx.gasPrice = ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei');
+		} else if ((await this.provider.getFeeData()).maxFeePerGas) {
+			if (this.maxFeePerGas)
+				tx.maxFeePerGas = ethers.utils.parseUnits(this.maxFeePerGas.toString(), 'gwei');
+			if (this.maxPriorityFeePerGas)
+				tx.maxPriorityFeePerGas = ethers.utils.parseUnits(
+					this.maxPriorityFeePerGas.toString(),
+					'gwei'
+				);
+		}
+	}
+
 	async sendDummyTx() {
 		const tx = {
 			to: '0x0000000000000000000000000000000000000001',
 			data: '0x0000000000000000000000000000000000000000000000000000000000000000',
 			value: 0,
-			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
 		};
+
+		this.addGasOptions(tx);
 
 		const response = await this.signer.sendTransaction(tx);
 		await response.wait();
@@ -133,10 +152,9 @@ class Deployer {
 			? this.methodCallGasLimit
 			: this.contractDeploymentGasLimit;
 
-		const params = {
-			gasLimit,
-			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
-		};
+		const params = { gasLimit };
+
+		this.addGasOptions(params);
 
 		if (this.nonceManager) {
 			params.nonce = await this.nonceManager.getNonce();
