@@ -332,6 +332,13 @@ contract('CollateralShort', async accounts => {
 			await fastForwardAndUpdateRates(3600);
 		});
 
+		it('should get the short amount and collateral', async () => {
+			const { principal, collateral } = await short.getShortAndCollateral(account1, id);
+
+			assert.bnEqual(principal, oneETH);
+			assert.bnEqual(collateral, susdCollateral);
+		});
+
 		it('should repay with collateral and update the loan', async () => {
 			tx = await short.repayWithCollateral(id, toUnit(0.5), {
 				from: account1,
@@ -441,6 +448,40 @@ contract('CollateralShort', async accounts => {
 		it('should not let them draw too much', async () => {
 			await fastForwardAndUpdateRates(3600);
 			await assert.revert(short.draw(id, toUnit(8), { from: account1 }), 'Cratio too low');
+		});
+	});
+
+	describe('Withdrawing shorts', async () => {
+		const oneETH = toUnit(1);
+		const susdCollateral = toUnit(1000);
+		let previousBalance;
+
+		beforeEach(async () => {
+			await issue(sUSDSynth, susdCollateral, account1);
+
+			tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
+
+			id = getid(tx);
+
+			previousBalance = await sUSDSynth.balanceOf(account1);
+
+			await fastForwardAndUpdateRates(3600);
+
+			await short.withdraw(id, toUnit(100), { from: account1 });
+		});
+
+		it('should update the loan', async () => {
+			loan = await short.loans(id);
+			assert.equal(loan.collateral, toUnit(900).toString());
+		});
+
+		it('should transfer the withdrawn collateral to the user', async () => {
+			assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100).add(previousBalance));
+		});
+
+		it('should not let them withdraw too much', async () => {
+			await fastForwardAndUpdateRates(3600);
+			await assert.revert(short.withdraw(id, toUnit(900), { from: account1 }), 'Cratio too low');
 		});
 	});
 
