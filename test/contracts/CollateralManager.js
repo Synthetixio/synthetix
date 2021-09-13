@@ -207,11 +207,18 @@ contract('CollateralManager', async accounts => {
 			}
 		);
 
-		// check synths are set and currencyKeys set
+		// check synths, currencies, and shortable synths are set
 		assert.isTrue(
 			await manager.areSynthsAndCurrenciesSet(
 				['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
 				['sUSD', 'sBTC', 'sETH'].map(toBytes32)
+			)
+		);
+
+		assert.isTrue(
+			await manager.areShortableSynthsSet(
+				['SynthsBTC', 'SynthsETH'].map(toBytes32),
+				['sBTC', 'sETH'].map(toBytes32)
 			)
 		);
 
@@ -445,9 +452,54 @@ contract('CollateralManager', async accounts => {
 				it('should update the base interest rate', async () => {
 					assert.bnEqual(await manager.baseBorrowRate(), toUnit(2));
 				});
-				it('should allow the base interest rate to be  0', async () => {
+				it('should allow the base interest rate to be 0', async () => {
 					await manager.setBaseBorrowRate(toUnit(0), { from: owner });
 					assert.bnEqual(await manager.baseBorrowRate(), toUnit(0));
+				});
+			});
+		});
+
+		describe('setBaseShortRate', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						manager.setBaseShortRate(toUnit(1), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await manager.setBaseShortRate(toUnit(2), { from: owner });
+				});
+				it('should update the base short rate', async () => {
+					assert.bnEqual(await manager.baseShortRate(), toUnit(2));
+				});
+				it('should allow the base short rate to be 0', async () => {
+					await manager.setBaseShortRate(toUnit(0), { from: owner });
+					assert.bnEqual(await manager.baseShortRate(), toUnit(0));
+				});
+			});
+		});
+
+		describe('updateBorrowRatesCollateral', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the collateral contract', async () => {
+					await assert.revert(
+						manager.updateBorrowRatesCollateral(toUnit(1), { from: owner }),
+						'Only collateral contracts'
+					);
+				});
+			});
+		});
+
+		describe('updateShortRatesCollateral', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the collateral contract', async () => {
+					await assert.revert(
+						manager.updateShortRatesCollateral(sETH, toUnit(1), { from: owner }),
+						'Only collateral contracts'
+					);
 				});
 			});
 		});
