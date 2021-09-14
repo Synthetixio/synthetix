@@ -5,7 +5,10 @@ const fs = require('fs');
 const readline = require('readline');
 const { gray, cyan, yellow, redBright, green } = require('chalk');
 const { table } = require('table');
-const { BigNumber } = require('ethers');
+const {
+	BigNumber,
+	utils: { parseUnits },
+} = require('ethers');
 
 const {
 	constants: {
@@ -252,6 +255,18 @@ const catchMissingResolverWhenGeneratingSolidity = ({
 	}
 };
 
+const mixinGasOptions = async (tx, provider, maxFeePerGas, maxPriorityFeePerGas) => {
+	// only add EIP-1559 options if the network supports EIP-1559
+	const feeData = await provider.getFeeData();
+	if (feeData.maxFeePerGas) {
+		if (maxFeePerGas) tx.maxFeePerGas = parseUnits(maxFeePerGas.toString(), 'gwei');
+		if (maxPriorityFeePerGas)
+			tx.maxPriorityFeePerGas = parseUnits(maxPriorityFeePerGas.toString(), 'gwei');
+	}
+
+	return tx;
+};
+
 module.exports = {
 	ensureNetwork,
 	ensureDeploymentPath,
@@ -265,4 +280,5 @@ module.exports = {
 	parameterNotice,
 	reportDeployedContracts,
 	catchMissingResolverWhenGeneratingSolidity,
+	mixinGasOptions,
 };

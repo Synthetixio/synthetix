@@ -20,11 +20,9 @@ const {
 } = require('../util');
 
 const { performTransactionalStep } = require('../command-utils/transact');
-const Deployer = require('../Deployer');
 
 const DEFAULTS = {
 	network: 'kovan',
-	gasLimit: 3e6,
 	priorityGasPrice: '1',
 	batchSize: 15,
 };
@@ -34,7 +32,6 @@ const purgeSynths = async ({
 	deploymentPath,
 	maxFeePerGas,
 	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
-	gasLimit = DEFAULTS.gasLimit,
 	synthsToPurge = [],
 	dryRun = false,
 	yes,
@@ -101,9 +98,7 @@ const purgeSynths = async ({
 
 	console.log(gray(`Using account with public key ${wallet.address}`));
 	console.log(
-		gray(
-			`Using max base fee of ${maxFeePerGas} GWEI miner tip ${maxPriorityFeePerGas} GWEI with a max of ${gasLimit}`
-		)
+		gray(`Using max base fee of ${maxFeePerGas} GWEI miner tip ${maxPriorityFeePerGas} GWEI`)
 	);
 
 	console.log(gray('Dry-run:'), dryRun ? green('yes') : yellow('no'));
@@ -166,15 +161,6 @@ const purgeSynths = async ({
 			return;
 		}
 
-		const deployer = new Deployer({
-			config: {},
-			provider,
-			privateKey,
-			maxFeePerGas,
-			maxPriorityFeePerGas,
-			dryRun: false,
-		});
-
 		// step 1. fetch all holders via ethplorer api
 		if (network === 'mainnet') {
 			const topTokenHoldersUrl = `http://api.ethplorer.io/getTopTokenHolders/${proxyAddress}`;
@@ -224,8 +210,8 @@ const purgeSynths = async ({
 					target: Synth,
 					write: 'purge',
 					writeArg: [entries], // explicitly pass array of args so array not splat as params
-					gasLimit,
-					deployer,
+					maxFeePerGas,
+					maxPriorityFeePerGas,
 					explorerLinkPrefix,
 					encodeABI: network === 'mainnet',
 				});
@@ -272,7 +258,6 @@ module.exports = {
 				'Priority gas fee price in GWEI',
 				DEFAULTS.priorityGasPrice
 			)
-			.option('-l, --gas-limit <value>', 'Gas limit', DEFAULTS.gasLimit)
 			.option(
 				'-n, --network [value]',
 				'The network to run off.',

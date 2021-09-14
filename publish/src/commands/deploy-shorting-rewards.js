@@ -252,7 +252,8 @@ const deployShortingRewards = async ({
 				gasLimit: methodCallGasLimit, // allow overriding of gasLimit
 				...opts,
 				signer,
-				deployer,
+				maxFeePerGas,
+				maxPriorityFeePerGas,
 				explorerLinkPrefix,
 				ownerActions,
 				ownerActionsFile,

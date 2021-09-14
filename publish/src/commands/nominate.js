@@ -15,11 +15,11 @@ const {
 	loadAndCheckRequiredSources,
 	loadConnections,
 	confirmAction,
+	mixinGasOptions,
 } = require('../util');
 
 const DEFAULTS = {
-	maxPriorityFeePerGas: '1',
-	gasLimit: 2e5, // 200,000
+	priorityGasPrice: '1',
 };
 
 const nominate = async ({
@@ -29,8 +29,7 @@ const nominate = async ({
 	useFork = false,
 	deploymentPath,
 	maxFeePerGas,
-	maxPriorityFeePerGas = '1',
-	gasLimit = DEFAULTS.gasLimit,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	useOvm,
 	privateKey,
 	providerUrl,
@@ -148,17 +147,8 @@ const nominate = async ({
 			const nominationFnc =
 				'nominateOwner' in deployedContract ? 'nominateOwner' : 'nominateNewOwner';
 
-			const feeData = await provider.getFeeData();
-
 			console.log(yellow(`Invoking ${contract}.${nominationFnc}(${newOwner})`));
-			const overrides = {
-				gasLimit,
-			};
-
-			if (feeData.maxFeePerGas) {
-				overrides.maxFeePerGas = ethers.utils.parseUnits(maxFeePerGas, 'gwei');
-				overrides.maxPriorityFeePerGas = ethers.utils.parseUnits(maxPriorityFeePerGas, 'gwei');
-			}
+			const overrides = await mixinGasOptions({}, provider, maxFeePerGas, maxPriorityFeePerGas);
 
 			const tx = await deployedContract[nominationFnc](newOwner, overrides);
 			await tx.wait();
@@ -185,13 +175,16 @@ module.exports = {
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
-			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
+			.option(
+				'--max-priority-fee-per-gas <value>',
+				'Priority gas fee price in GWEI',
+				DEFAULTS.priorityGasPrice
+			)
 			.option(
 				'-k, --use-fork',
 				'Perform the deployment on a forked chain running on localhost (see fork command).',
 				false
 			)
-			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, 15e4)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(
 				'-o, --new-owner <value>',

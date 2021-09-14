@@ -22,13 +22,12 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
+	mixinGasOptions,
 } = require('../util');
 const { performTransactionalStep } = require('../command-utils/transact');
 
 const DEFAULTS = {
 	buildPath: path.join(__dirname, '..', '..', '..', BUILD_FOLDER),
-	contractDeploymentGasLimit: 7e6,
-	methodCallGasLimit: 22e4,
 	priorityGasPrice: '1',
 };
 
@@ -38,8 +37,6 @@ const replaceSynths = async ({
 	deploymentPath,
 	maxFeePerGas,
 	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
-	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
-	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
 	subclass,
 	synthsToReplace,
 	privateKey,
@@ -113,14 +110,12 @@ const replaceSynths = async ({
 
 	const deployer = new Deployer({
 		compiled,
-		contractDeploymentGasLimit,
 		config: {},
 		configFile,
 		deployment,
 		deploymentFile,
 		maxFeePerGas,
 		maxPriorityFeePerGas,
-		methodCallGasLimit,
 		network,
 		privateKey,
 		providerUrl,
@@ -136,11 +131,7 @@ const replaceSynths = async ({
 	const provider = deployer.provider;
 
 	console.log(gray(`Using account with public key ${account}`));
-	console.log(
-		gray(
-			`Using max gas of ${maxFeePerGas} GWEI with a limit of ${methodCallGasLimit} (methods), ${contractDeploymentGasLimit} (deployment)`
-		)
-	);
+	console.log(gray(`Using max base fee of ${maxFeePerGas} GWEI`));
 
 	const currentGasPrice = await provider.getGasPrice();
 	console.log(
@@ -225,7 +216,6 @@ const replaceSynths = async ({
 			...opts,
 			deployer,
 			signer,
-			gasLimit: methodCallGasLimit,
 			explorerLinkPrefix,
 		});
 
@@ -273,11 +263,12 @@ const replaceSynths = async ({
 		});
 
 		// Ensure this new synth has its resolver cache set
-		const overrides = {
-			gasLimit: Number(methodCallGasLimit),
-		};
-
-		deployer.addGasOptions(overrides);
+		const overrides = await mixinGasOptions(
+			{},
+			provider,
+			this.maxFeePerGas,
+			this.maxPriorityFeePerGas
+		);
 
 		const tx = await replacementSynth.rebuildCache(overrides);
 		await tx.wait();
@@ -332,12 +323,6 @@ module.exports = {
 				DEFAULTS.buildPath
 			)
 			.option(
-				'-c, --contract-deployment-gas-limit <value>',
-				'Contract deployment gas limit',
-				x => parseInt(x, 10),
-				DEFAULTS.contractDeploymentGasLimit
-			)
-			.option(
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
@@ -346,17 +331,6 @@ module.exports = {
 				'--max-priority-fee-per-gas <value>',
 				'Priority gas fee price in GWEI',
 				DEFAULTS.priorityGasPrice
-			)
-			// Bug with parseInt
-			// https://github.com/tj/commander.js/issues/523
-			// Commander by default accepts 2 parameters,
-			// so does parseInt, so parseInt(x, undefined) will
-			// yield a NaN
-			.option(
-				'-m, --method-call-gas-limit <value>',
-				'Method call gas limit',
-				x => parseInt(x, 10),
-				DEFAULTS.methodCallGasLimit
 			)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option(

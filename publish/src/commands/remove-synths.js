@@ -21,7 +21,6 @@ const {
 } = require('../util');
 
 const { performTransactionalStep } = require('../command-utils/transact');
-const Deployer = require('../Deployer');
 
 const DEFAULTS = {
 	network: 'kovan',
@@ -175,15 +174,6 @@ const removeSynths = async ({
 			return;
 		}
 
-		const deployer = new Deployer({
-			config: {},
-			provider,
-			privateKey,
-			maxFeePerGas,
-			maxPriorityFeePerGas,
-			dryRun: false,
-		});
-
 		// perform transaction if owner of Synthetix or append to owner actions list
 		if (dryRun) {
 			console.log(green('Would attempt to remove the synth:', currencyKey));
@@ -195,7 +185,8 @@ const removeSynths = async ({
 				write: 'removeSynth',
 				writeArg: toBytes32(currencyKey),
 				gasLimit,
-				deployer,
+				maxFeePerGas,
+				maxPriorityFeePerGas,
 				explorerLinkPrefix,
 				ownerActions,
 				ownerActionsFile,
