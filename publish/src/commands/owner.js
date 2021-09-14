@@ -30,7 +30,7 @@ const {
 } = require('../safe-utils');
 
 const DEFAULTS = {
-	gasPrice: '15',
+	priorityGasPrice: '1',
 	gasLimit: 2e5, // 200,000
 };
 
@@ -38,7 +38,8 @@ const owner = async ({
 	network,
 	newOwner,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 	privateKey,
 	yes,
@@ -124,7 +125,7 @@ const owner = async ({
 		);
 	}
 
-	console.log(gray(`Gas Price: ${gasPrice} gwei`));
+	console.log(gray(`Gas: base fee${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`));
 
 	let lastNonce;
 	let protocolDaoContract;
@@ -176,6 +177,9 @@ const owner = async ({
 	console.log(
 		gray('Running through operations during deployment that couldnt complete as not owner.')
 	);
+
+	const feeData = await provider.getFeeData();
+
 	// Read owner-actions.json + encoded data to stage tx's
 	for (const [key, entry] of Object.entries(ownerActions)) {
 		const { target, data, complete } = entry;
@@ -230,9 +234,14 @@ const owner = async ({
 			} else {
 				const params = {
 					to: target,
-					gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 					data,
 				};
+
+				if (feeData.maxFeePerGas) {
+					params.maxFeePerGas = ethers.utils.parseUnits(maxFeePerGas, 'gwei');
+					params.maxPriorityFeePerGas = ethers.utils.parseUnits(maxPriorityFeePerGas, 'gwei');
+				}
+
 				if (gasLimit) {
 					params.gasLimit = ethers.BigNumber.from(gasLimit);
 				}
@@ -331,9 +340,14 @@ const owner = async ({
 				} else {
 					const params = {
 						to: address,
-						gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 						data: encodedData,
 					};
+
+					if (feeData.maxFeePerGas) {
+						params.maxFeePerGas = ethers.utils.parseUnits(maxFeePerGas, 'gwei');
+						params.maxPriorityFeePerGas = ethers.utils.parseUnits(maxPriorityFeePerGas, 'gwei');
+					}
+
 					if (gasLimit) {
 						params.gasLimit = ethers.BigNumber.from(gasLimit);
 					}
@@ -392,7 +406,8 @@ module.exports = {
 			)
 			.option('--is-contract', 'Wether the new owner is a contract wallet or an EOA', false)
 			.option('-v, --private-key [value]', 'The private key of wallet to stage with.')
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
 			.option('-l, --gas-limit <value>', 'Gas limit', parseInt, DEFAULTS.gasLimit)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-y, --yes', 'Dont prompt, just reply yes.')

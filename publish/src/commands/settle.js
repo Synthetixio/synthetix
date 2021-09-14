@@ -45,7 +45,8 @@ const settle = async ({
 	fromBlock = fromBlockMap[network],
 	dryRun,
 	latest,
-	gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = '1',
 	gasLimit,
 	privateKey,
 	ethToSeed,
@@ -68,8 +69,8 @@ const settle = async ({
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	console.log(gray('gasPrice'), yellow(gasPrice));
-	gasPrice = ethers.utils.parseUnits(gasPrice, 'gwei');
+	console.log(gray('maxFeePerGas'), yellow(maxFeePerGas));
+	console.log(gray('maxPriorityFeePerGas'), yellow(maxPriorityFeePerGas));
 
 	let wallet;
 	if (!privateKey) {
@@ -99,12 +100,20 @@ const settle = async ({
 				green(`Sending ${yellow(ethToSeed)} ETH to address from`),
 				yellow(wallet.address)
 			);
-			const { transactionHash } = await wallet.sendTransaction({
+
+			const params = {
 				to: user.address,
 				value: ethers.utils.parseUnits(ethToSeed),
 				gasLimit,
-				gasPrice,
-			});
+			};
+
+			const feeData = await provider.getFeeData();
+			if (feeData.maxFeePerGas) {
+				params.maxFeePerGas = ethers.utils.parseUnits(maxFeePerGas, 'gwei');
+				params.maxPriorityFeePerGas = ethers.utils.parseUnits(maxPriorityFeePerGas, 'gwei');
+			}
+
+			const { transactionHash } = await wallet.sendTransaction(params);
 			console.log(gray(`${explorerLinkPrefix}/tx/${transactionHash}`));
 		}
 	}
@@ -323,7 +332,6 @@ const settle = async ({
 				try {
 					const tx = await Exchanger.settle(account, toCurrencyKey, {
 						gasLimit: Math.max(gasLimit * numEntries, 650e3),
-						gasPrice,
 						nonce: nonce++,
 					});
 					const { transactionHash } = await tx.wait();
@@ -359,7 +367,8 @@ module.exports = {
 			.option('-d, --show-debt', 'Whether or not to show debt pool impact (requires archive node)')
 			.option('-e, --eth-to-seed <value>', 'Amount of ETH to seed', '1')
 			.option('-f, --from-block <value>', 'Starting block number to listen to events from')
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
 			.option(
 				'-k, --use-fork',
 				'Perform the deployment on a forked chain running on localhost (see fork command).',

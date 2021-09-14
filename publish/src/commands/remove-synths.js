@@ -21,17 +21,19 @@ const {
 } = require('../util');
 
 const { performTransactionalStep } = require('../command-utils/transact');
+const Deployer = require('../Deployer');
 
 const DEFAULTS = {
 	network: 'kovan',
 	gasLimit: 3e5,
-	gasPrice: '1',
+	priorityGasPrice: '1',
 };
 
 const removeSynths = async ({
 	network = DEFAULTS.network,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	gasLimit = DEFAULTS.gasLimit,
 	synthsToRemove = [],
 	yes,
@@ -96,7 +98,11 @@ const removeSynths = async ({
 	}
 
 	console.log(gray(`Using account with public key ${wallet.address}`));
-	console.log(gray(`Using gas of ${gasPrice} GWEI with a max of ${gasLimit}`));
+	console.log(
+		gray(
+			`Using max base gas of ${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI with a gas limit of ${gasLimit}`
+		)
+	);
 
 	console.log(gray('Dry-run:'), dryRun ? green('yes') : yellow('no'));
 
@@ -169,6 +175,15 @@ const removeSynths = async ({
 			return;
 		}
 
+		const deployer = new Deployer({
+			config: {},
+			provider,
+			privateKey,
+			maxFeePerGas,
+			maxPriorityFeePerGas,
+			dryRun: false,
+		});
+
 		// perform transaction if owner of Synthetix or append to owner actions list
 		if (dryRun) {
 			console.log(green('Would attempt to remove the synth:', currencyKey));
@@ -180,7 +195,7 @@ const removeSynths = async ({
 				write: 'removeSynth',
 				writeArg: toBytes32(currencyKey),
 				gasLimit,
-				gasPrice,
+				deployer,
 				explorerLinkPrefix,
 				ownerActions,
 				ownerActionsFile,
@@ -213,7 +228,12 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', 1)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option(
+				'--max-priority-fee-per-gas <value>',
+				'Priority gas fee price in GWEI',
+				DEFAULTS.priorityGasPrice
+			)
 			.option('-l, --gas-limit <value>', 'Gas limit', 1e6)
 			.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'kovan')
 			.option('-r, --dry-run', 'Dry run - no changes transacted')

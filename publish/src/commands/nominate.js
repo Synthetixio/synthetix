@@ -18,7 +18,7 @@ const {
 } = require('../util');
 
 const DEFAULTS = {
-	gasPrice: '15',
+	maxPriorityFeePerGas: '1',
 	gasLimit: 2e5, // 200,000
 };
 
@@ -28,7 +28,8 @@ const nominate = async ({
 	contracts,
 	useFork = false,
 	deploymentPath,
-	gasPrice = DEFAULTS.gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = '1',
 	gasLimit = DEFAULTS.gasLimit,
 	useOvm,
 	privateKey,
@@ -147,11 +148,17 @@ const nominate = async ({
 			const nominationFnc =
 				'nominateOwner' in deployedContract ? 'nominateOwner' : 'nominateNewOwner';
 
+			const feeData = await provider.getFeeData();
+
 			console.log(yellow(`Invoking ${contract}.${nominationFnc}(${newOwner})`));
 			const overrides = {
 				gasLimit,
-				gasPrice: ethers.utils.parseUnits(gasPrice, 'gwei'),
 			};
+
+			if (feeData.maxFeePerGas) {
+				overrides.maxFeePerGas = ethers.utils.parseUnits(maxFeePerGas, 'gwei');
+				overrides.maxPriorityFeePerGas = ethers.utils.parseUnits(maxPriorityFeePerGas, 'gwei');
+			}
 
 			const tx = await deployedContract[nominationFnc](newOwner, overrides);
 			await tx.wait();
@@ -177,7 +184,8 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has your input configuration file ${CONFIG_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', '1')
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option('--max-priority-fee-per-gas <value>', 'Priority gas fee price in GWEI', '1')
 			.option(
 				'-k, --use-fork',
 				'Perform the deployment on a forked chain running on localhost (see fork command).',

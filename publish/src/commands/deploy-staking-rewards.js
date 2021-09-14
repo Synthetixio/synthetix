@@ -28,7 +28,7 @@ const {
 } = require('../../../.');
 
 const DEFAULTS = {
-	gasPrice: '1',
+	priorityGasPrice: '1',
 	methodCallGasLimit: 250e3, // 250k
 	contractDeploymentGasLimit: 6.9e6, // TODO split out into seperate limits for different contracts, Proxys, Synths, Synthetix
 	network: 'kovan',
@@ -38,7 +38,8 @@ const DEFAULTS = {
 
 const deployStakingRewards = async ({
 	rewardsToDeploy = DEFAULTS.rewardsToDeploy,
-	gasPrice = DEFAULTS.gasPrice,
+	maxFeePerGas,
+	maxPriorityFeePerGas = DEFAULTS.priorityGasPrice,
 	methodCallGasLimit = DEFAULTS.methodCallGasLimit,
 	contractDeploymentGasLimit = DEFAULTS.contractDeploymentGasLimit,
 	network = DEFAULTS.network,
@@ -137,7 +138,8 @@ const deployStakingRewards = async ({
 		configFile: null, // null configFile so it doesn't overwrite config.json
 		deployment,
 		deploymentFile,
-		gasPrice,
+		maxFeePerGas,
+		maxPriorityFeePerGas,
 		methodCallGasLimit,
 		network,
 		privateKey,
@@ -150,7 +152,7 @@ const deployStakingRewards = async ({
 	parameterNotice({
 		'Dry Run': dryRun ? green('true') : yellow('⚠ NO'),
 		Network: network,
-		'Gas price to use': `${gasPrice} GWEI`,
+		Gas: `Base fee ${maxFeePerGas} GWEI, miner tip ${maxPriorityFeePerGas} GWEI`,
 		'Deployment Path': new RegExp(network, 'gi').test(deploymentPath)
 			? deploymentPath
 			: yellow('⚠⚠⚠ cant find network name in path. Please double check this! ') + deploymentPath,
@@ -298,7 +300,12 @@ module.exports = {
 				'-d, --deployment-path <value>',
 				`Path to a folder that has the rewards file ${STAKING_REWARDS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
-			.option('-g, --gas-price <value>', 'Gas price in GWEI', DEFAULTS.gasPrice)
+			.option('-g, --max-fee-per-gas <value>', 'Maximum base gas fee price in GWEI')
+			.option(
+				'--max-priority-fee-per-gas <value>',
+				'Priority gas fee price in GWEI',
+				DEFAULTS.priorityGasPrice
+			)
 			.option(
 				'-m, --method-call-gas-limit <value>',
 				'Method call gas limit',
