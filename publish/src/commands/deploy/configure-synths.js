@@ -6,7 +6,15 @@ const {
 } = require('ethers');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ addressOf, generateSolidity, synths, feeds, deployer, runStep }) => {
+module.exports = async ({
+	addressOf,
+	explorerLinkPrefix,
+	generateSolidity,
+	synths,
+	feeds,
+	deployer,
+	runStep,
+}) => {
 	// now configure synths
 	console.log(gray(`\n------ CONFIGURE SYNTHS ------\n`));
 
@@ -31,6 +39,9 @@ module.exports = async ({ addressOf, generateSolidity, synths, feeds, deployer, 
 		}
 		// when generating solidity only, ensure that this is run to copy across synth supply
 		if (synth && generateSolidity && ExistingSynth && ExistingSynth.address !== synth.address) {
+			const generateExplorerComment = ({ address }) =>
+				`// ${explorerLinkPrefix}/address/${address}`;
+
 			await runStep({
 				contract: `Synth${currencyKey}`,
 				target: synth,
@@ -40,7 +51,9 @@ module.exports = async ({ addressOf, generateSolidity, synths, feeds, deployer, 
 				customSolidity: {
 					name: `copyTotalSupplyFrom_${currencyKey}`,
 					instructions: [
+						generateExplorerComment({ address: ExistingSynth.address }),
 						`Synth existingSynth = Synth(${ExistingSynth.address})`,
+						generateExplorerComment({ address: synth.address }),
 						`Synth newSynth = Synth(${synth.address})`,
 						`newSynth.setTotalSupply(existingSynth.totalSupply())`,
 					],

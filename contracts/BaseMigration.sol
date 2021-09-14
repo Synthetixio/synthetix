@@ -10,7 +10,7 @@ contract BaseMigration is Owned {
     }
 
     // safety value to return ownership (anyone can invoke)
-    function returnOwnership(address forContract) external {
+    function returnOwnership(address forContract) public {
         bytes memory payload = abi.encodeWithSignature("nominateNewOwner(address)", owner);
 
         // solhint-disable avoid-low-level-calls

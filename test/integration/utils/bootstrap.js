@@ -78,7 +78,7 @@ function bootstrapL2({ ctx }) {
 }
 
 function bootstrapDual({ ctx }) {
-	before('bootstrap layer 1 and layer 2 intances', async () => {
+	before('bootstrap layer 1 and layer 2 instances', async () => {
 		ctx.l1 = { useOvm: false };
 		ctx.l2 = { useOvm: true };
 
