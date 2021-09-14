@@ -546,7 +546,7 @@
 		},
 		{
 			"name": "Mirfak",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 48
