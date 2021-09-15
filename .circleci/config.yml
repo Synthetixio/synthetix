@@ -12,6 +12,23 @@ commands:
             wget --retry-connrefused --waitretry=1 --read-timeout=120 --timeout=120 -t 100 http://localhost:<<parameters.port>>
             :
 jobs:
+  job-audit:
+    working_directory: ~/repo
+    docker:
+      - image: synthetixio/docker-sec-tools:14.17-ubuntu
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_TOKEN
+    steps:
+      - checkout
+      - run:
+          name: Audit dependencies
+          command: |
+            npm audit --audit-level=critical
+      - run:
+          name: Lint lockfile
+          command: |
+            lockfile-lint -p package-lock.json --type npm --allowed-hosts npm github.com --allowed-schemes "https:" "git+ssh:"
   job-compile:
     working_directory: ~/repo
     docker:
@@ -131,13 +148,17 @@ jobs:
           password: $DOCKERHUB_TOKEN
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - restore_cache:
           keys:
             - v4-dependencies-{{ checksum "package-lock.json" }}
       - run:
-          name: set npm cache dir
+          name: Set custom npm cache directory
           command: npm config set cache .npm-cache --global
-      - run: npm install --prefer-offline
+      - run:
+          name: Install dependencies
+          command: npm install --prefer-offline --no-audit
       - save_cache:
           key: v4-dependencies-{{ checksum "package-lock.json" }}
           paths:
@@ -347,7 +368,10 @@ jobs:
 workflows:
   workflow-all:
     jobs:
-      - job-prepare
+      - job-audit
+      - job-prepare:
+          requires:
+            - job-audit
       - job-lint:
           requires:
             - job-prepare
