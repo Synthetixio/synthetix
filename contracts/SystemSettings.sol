@@ -171,6 +171,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         return getInteractionDelay(collateral);
     }
 
+    function collapseFeeRate(address collateral) external view returns (uint) {
+        return getCollapseFeeRate(collateral);
+    }
+
     // ========== RESTRICTED ==========
 
     function setCrossDomainMessageGasLimit(CrossDomainMessageGasLimits _gasLimitType, uint _crossDomainMessageGasLimit)
@@ -372,6 +376,15 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit InteractionDelayUpdated(_interactionDelay);
     }
 
+    function setCollapseFeeRate(address _collateral, uint _collapseFeeRate) external onlyOwner {
+        flexibleStorage().setUIntValue(
+            SETTING_CONTRACT_NAME,
+            keccak256(abi.encodePacked(SETTING_COLLAPSE_FEE_RATE, _collateral)),
+            _collapseFeeRate
+        );
+        emit CollapseFeeRateUpdated(_collapseFeeRate);
+    }
+
     // ========== EVENTS ==========
     event CrossDomainMessageGasLimitChanged(CrossDomainMessageGasLimits gasLimitType, uint newLimit);
     event TradingRewardsEnabled(bool enabled);
@@ -396,4 +409,5 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event CollateralManagerUpdated(address newCollateralManager);
     event CanOpenLoansUpdated(bool canOpenLoans);
     event InteractionDelayUpdated(uint interactionDelay);
+    event CollapseFeeRateUpdated(uint collapseFeeRate);
 }

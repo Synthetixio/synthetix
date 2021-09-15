@@ -365,10 +365,15 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 1. Repay the loan with its collateral.
         (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
 
-        // 2. Record loan as closed.
+        // 2. Pay the service fee for collapsing the loan.
+        uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
+        _payFees(serviceFee, sUSD);
+        collateral = collateral.sub(serviceFee);
+
+        // 3. Record loan as closed.
         _recordLoanAsClosed(loan);
 
-        // 3. Emit the event for the loan closed by repayment.
+        // 4. Emit the event for the loan closed by repayment.
         emit LoanClosedByRepayment(borrower, id, amount, collateral);
     }
 
