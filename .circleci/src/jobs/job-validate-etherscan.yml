@@ -1,5 +1,5 @@
 # Validates that sources have been verified in etherscan
-{{> job-header.yml}}
+{{> job-header-node.yml}}
 parameters:
   network:
     type: string
