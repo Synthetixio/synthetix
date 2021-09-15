@@ -7,12 +7,17 @@ steps:
   - restore_cache:
       keys:
         - v4-dependencies-{{ checksum "package-lock.json" }}
-  - run: npm install
+  - run:
+      name: set npm cache dir
+      command: npm config set cache .npm-cache --global
+  - run: npm install --prefer-offline
   - save_cache:
       key: v4-dependencies-{{ checksum "package-lock.json" }}
       paths:
         - node_modules
+        - .npm-cache
   - persist_to_workspace:
       root: .
       paths:
         - node_modules
+        - .npm-cache
