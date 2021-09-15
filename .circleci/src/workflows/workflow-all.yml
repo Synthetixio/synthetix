@@ -2,7 +2,9 @@ jobs:
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Basic
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  - job-prepare
+  - job-audit
+  - job-prepare:
+      {{> require-audit.yml}}
   - job-lint:
       {{> require-prepare.yml}}
   - job-compile:
