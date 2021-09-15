@@ -250,7 +250,7 @@ jobs:
           name: Upload coverage
           command: |
             cp -R /tmp/coverage/coverage-*.json .
-            codecov -t $CODECOV_TOKEN -f coverage-*.json
+            codecov -t $CODECOV_TOKEN
   job-unit-tests-coverage:
     working_directory: ~/repo
     docker:
