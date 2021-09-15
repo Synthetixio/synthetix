@@ -254,9 +254,12 @@ const catchMissingResolverWhenGeneratingSolidity = ({
 
 const mixinGasOptions = async (tx, provider, maxFeePerGas, maxPriorityFeePerGas) => {
 	// only add EIP-1559 options if the network supports EIP-1559
-	const feeData = await provider.getFeeData();
+	let feeData = {};
+	try {
+		feeData = await provider.getFeeData();
+	} catch {} // network does not support the `getFeeData` rpc call
 	if (feeData.maxFeePerGas) {
-		if (maxFeePerGas) tx.maxFeePerGas = parseUnits(maxFeePerGas.toString(), 'gwei');
+		if (maxFeePerGas) tx.maxFeePerGas = parseUnits(maxFeePerGas.toString() || '100', 'gwei');
 		if (maxPriorityFeePerGas)
 			tx.maxPriorityFeePerGas = parseUnits(maxPriorityFeePerGas.toString(), 'gwei');
 	}
