@@ -17,6 +17,7 @@ const {
 	loadConnections,
 	confirmAction,
 	stringify,
+	mixinGasOptions,
 } = require('../util');
 
 const {
@@ -178,8 +179,6 @@ const owner = async ({
 		gray('Running through operations during deployment that couldnt complete as not owner.')
 	);
 
-	const feeData = await provider.getFeeData();
-
 	// Read owner-actions.json + encoded data to stage tx's
 	for (const [key, entry] of Object.entries(ownerActions)) {
 		const { target, data, complete } = entry;
@@ -237,10 +236,7 @@ const owner = async ({
 					data,
 				};
 
-				if (feeData.maxFeePerGas) {
-					params.maxFeePerGas = ethers.utils.parseUnits(maxFeePerGas, 'gwei');
-					params.maxPriorityFeePerGas = ethers.utils.parseUnits(maxPriorityFeePerGas, 'gwei');
-				}
+				mixinGasOptions(params);
 
 				if (gasLimit) {
 					params.gasLimit = ethers.BigNumber.from(gasLimit);
@@ -343,10 +339,7 @@ const owner = async ({
 						data: encodedData,
 					};
 
-					if (feeData.maxFeePerGas) {
-						params.maxFeePerGas = ethers.utils.parseUnits(maxFeePerGas, 'gwei');
-						params.maxPriorityFeePerGas = ethers.utils.parseUnits(maxPriorityFeePerGas, 'gwei');
-					}
+					mixinGasOptions(params);
 
 					if (gasLimit) {
 						params.gasLimit = ethers.BigNumber.from(gasLimit);
