@@ -314,6 +314,7 @@
 		{
 			"sip": 142,
 			"layer": "base",
+			"released": "base",
 			"sources": [
 				"DebtCache",
 				"FeePool",
@@ -327,15 +328,18 @@
 		{
 			"sip": 145,
 			"layer": "base",
+			"released": "base",
 			"sources": ["DebtCache"]
 		},
 		{
 			"sip": 170,
-			"layer": "base"
+			"layer": "base",
+			"released": "base"
 		},
 		{
 			"sip": 174,
 			"layer": "both",
+			"released": "base",
 			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
 		}
 	],
