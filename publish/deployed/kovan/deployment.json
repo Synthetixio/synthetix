@@ -945,33 +945,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"TokenStatesDASH": {
-			"name": "TokenStatesDASH",
-			"address": "0x2fe02b9445F20d2Aa49Bef93Ca201f81FD8A7461",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x2fe02b9445F20d2Aa49Bef93Ca201f81FD8A7461",
-			"timestamp": "2020-04-02T03:37:09.148Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysDASH": {
-			"name": "ProxysDASH",
-			"address": "0xE4bC13C29513e5D0BdD68258325f2D01a4B641A0",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0xE4bC13C29513e5D0BdD68258325f2D01a4B641A0",
-			"timestamp": "2020-04-02T03:37:13.296Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthsDASH": {
-			"name": "SynthsDASH",
-			"address": "0xCC200785cea662a7fA66E033AA1a4a054022a197",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xCC200785cea662a7fA66E033AA1a4a054022a197",
-			"timestamp": "2020-12-22T13:43:32.833Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"TokenStatesXMR": {
 			"name": "TokenStatesXMR",
 			"address": "0x195721A55507bd3dfA65Ad1A8026A51Ad5aAD33D",

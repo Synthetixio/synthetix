@@ -368,15 +368,6 @@
 	"SynthsETC": {
 		"deploy": false
 	},
-	"TokenStatesDASH": {
-		"deploy": false
-	},
-	"ProxysDASH": {
-		"deploy": false
-	},
-	"SynthsDASH": {
-		"deploy": false
-	},
 	"TokenStatesXMR": {
 		"deploy": false
 	},
