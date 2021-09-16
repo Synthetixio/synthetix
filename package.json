@@ -72,7 +72,6 @@
 	},
 	"devDependencies": {
 		"@chainlink/contracts-0.0.10": "npm:@chainlink/contracts@0.0.10",
-		"@codechecks/client": "0.1.11",
 		"@eth-optimism/contracts": "0.3.4",
 		"@eth-optimism/core-utils": "~0.4.5",
 		"@eth-optimism/hardhat-ovm": "0.2.2",

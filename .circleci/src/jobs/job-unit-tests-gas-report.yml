@@ -1,5 +1,5 @@
 # Measures deployment and transaction gas usage in unit tests
-{{> job-header-node.yml}}
+{{> job-header-sec-tools.yml}}
 steps:
   - checkout
   - attach_workspace:
@@ -8,6 +8,6 @@ steps:
       name: Upload gas reports
       command: |
         npx hardhat test:merge-gas-reports gasReporterOutput-*.json
-        npx codechecks codechecks.unit.yml
+        codechecks codechecks.unit.yml
   - store_artifacts:
       path: gasReporterOutput.json
