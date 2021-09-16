@@ -8,6 +8,8 @@ steps:
       name: Upload gas reports
       command: |
         npx hardhat test:merge-gas-reports gasReporterOutput-*.json
+        # required for codechecks
+        git branch -f master origin/master
         codechecks codechecks.unit.yml
   - store_artifacts:
       path: gasReporterOutput.json
