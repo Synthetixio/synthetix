@@ -369,33 +369,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"TokenStatesBNB": {
-			"name": "TokenStatesBNB",
-			"address": "0x6289fd70d3Dce8DE61896959cdEfcFF3cE46A108",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x6289fd70d3Dce8DE61896959cdEfcFF3cE46A108",
-			"timestamp": "2019-05-01T13:14:21.213Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysBNB": {
-			"name": "ProxysBNB",
-			"address": "0x4D5C55a1046725a80B20296D0A98DcE02d8eAAc3",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0x4D5C55a1046725a80B20296D0A98DcE02d8eAAc3",
-			"timestamp": "2019-09-17T05:24:38.111Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthsBNB": {
-			"name": "SynthsBNB",
-			"address": "0xD6f913019bc26ab98911046FFE202141D9d7f2e6",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xD6f913019bc26ab98911046FFE202141D9d7f2e6",
-			"timestamp": "2020-12-22T13:38:21.704Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"TokenStateiBTC": {
 			"name": "TokenStateiBTC",
 			"address": "0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D",
@@ -447,33 +420,6 @@
 			"source": "PurgeableSynth",
 			"link": "https://kovan.etherscan.io/address/0x6F4a1312a48D9887Aa8a05c282C387663528Fe05",
 			"timestamp": "2020-12-22T13:46:41.423Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStateiBNB": {
-			"name": "TokenStateiBNB",
-			"address": "0x7fefB90141c56fBE2D55f36181b26B3Dc514d256",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x7fefB90141c56fBE2D55f36181b26B3Dc514d256",
-			"timestamp": "2019-05-01T13:18:17.675Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxyiBNB": {
-			"name": "ProxyiBNB",
-			"address": "0xdbB1D3B58D7e101588a44E642F8c442165730289",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0xdbB1D3B58D7e101588a44E642F8c442165730289",
-			"timestamp": "2019-09-17T05:27:06.453Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthiBNB": {
-			"name": "SynthiBNB",
-			"address": "0xe9a2A90241f0474c460A1e6106b66F8DcB42c851",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xe9a2A90241f0474c460A1e6106b66F8DcB42c851",
-			"timestamp": "2020-12-22T13:47:21.582Z",
 			"txn": "",
 			"network": "kovan"
 		},

@@ -212,15 +212,6 @@
 	"SynthsETH": {
 		"deploy": false
 	},
-	"TokenStatesBNB": {
-		"deploy": false
-	},
-	"ProxysBNB": {
-		"deploy": false
-	},
-	"SynthsBNB": {
-		"deploy": false
-	},
 	"TokenStatesTRX": {
 		"deploy": false
 	},
@@ -246,15 +237,6 @@
 		"deploy": false
 	},
 	"SynthiETH": {
-		"deploy": false
-	},
-	"TokenStateiBNB": {
-		"deploy": false
-	},
-	"ProxyiBNB": {
-		"deploy": false
-	},
-	"SynthiBNB": {
 		"deploy": false
 	},
 	"TokenStateiTRX": {

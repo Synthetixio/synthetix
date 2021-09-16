@@ -47,11 +47,6 @@
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sBNB",
-		"asset": "BNB",
-		"subclass": "PurgeableSynth"
-	},
-	{
 		"name": "sTRX",
 		"asset": "TRX"
 	},
@@ -178,16 +173,6 @@
 			"entryPoint": 314.54,
 			"upperLimit": 550.445,
 			"lowerLimit": 78.635
-		}
-	},
-	{
-		"name": "iBNB",
-		"asset": "BNB",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 22.88,
-			"upperLimit": 34.32,
-			"lowerLimit": 11.44
 		}
 	},
 	{
