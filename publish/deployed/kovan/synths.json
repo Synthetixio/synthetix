@@ -56,11 +56,6 @@
 		"asset": "TRX"
 	},
 	{
-		"name": "sXTZ",
-		"asset": "XTZ",
-		"subclass": "PurgeableSynth"
-	},
-	{
 		"name": "sXRP",
 		"asset": "XRP"
 	},

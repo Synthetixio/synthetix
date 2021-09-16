@@ -549,33 +549,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"TokenStatesXTZ": {
-			"name": "TokenStatesXTZ",
-			"address": "0x76870433F648ad4FDa62111381ACe0A9FAC6F413",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x76870433F648ad4FDa62111381ACe0A9FAC6F413",
-			"timestamp": "2019-06-24T06:20:37.367Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysXTZ": {
-			"name": "ProxysXTZ",
-			"address": "0xd39bBa8F8049674152B5439A631eEd691436b92a",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0xd39bBa8F8049674152B5439A631eEd691436b92a",
-			"timestamp": "2019-09-17T05:25:36.928Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthsXTZ": {
-			"name": "SynthsXTZ",
-			"address": "0x75408bdC4647Ac7EC3ec5B94a86bA65a91519Bb2",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0x75408bdC4647Ac7EC3ec5B94a86bA65a91519Bb2",
-			"timestamp": "2020-12-22T13:39:41.569Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"TokenStateiTRX": {
 			"name": "TokenStateiTRX",
 			"address": "0x20bf23be496fA039F5a11358DE93F9417189659b",

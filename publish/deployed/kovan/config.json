@@ -230,15 +230,6 @@
 	"SynthsTRX": {
 		"deploy": false
 	},
-	"TokenStatesXTZ": {
-		"deploy": false
-	},
-	"ProxysXTZ": {
-		"deploy": false
-	},
-	"SynthsXTZ": {
-		"deploy": false
-	},
 	"TokenStateiBTC": {
 		"deploy": false
 	},
