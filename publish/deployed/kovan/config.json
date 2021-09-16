@@ -122,12 +122,6 @@
 	"SynthsCHF": {
 		"deploy": false
 	},
-	"SynthsXAU": {
-		"deploy": false
-	},
-	"SynthsXAG": {
-		"deploy": false
-	},
 	"SynthsBTC": {
 		"deploy": false
 	},
@@ -158,12 +152,6 @@
 	"ProxysCHF": {
 		"deploy": false
 	},
-	"ProxysXAU": {
-		"deploy": false
-	},
-	"ProxysXAG": {
-		"deploy": false
-	},
 	"ProxysBTC": {
 		"deploy": false
 	},
@@ -192,12 +180,6 @@
 		"deploy": false
 	},
 	"TokenStatesCHF": {
-		"deploy": false
-	},
-	"TokenStatesXAU": {
-		"deploy": false
-	},
-	"TokenStatesXAG": {
 		"deploy": false
 	},
 	"TokenStatesBTC": {
@@ -242,15 +224,6 @@
 	"ProxyERC20sUSD": {
 		"deploy": false
 	},
-	"TokenStatesXRP": {
-		"deploy": false
-	},
-	"ProxysXRP": {
-		"deploy": false
-	},
-	"SynthsXRP": {
-		"deploy": false
-	},
 	"TokenStatesLINK": {
 		"deploy": false
 	},
@@ -267,15 +240,6 @@
 		"deploy": false
 	},
 	"SynthsDEFI": {
-		"deploy": false
-	},
-	"TokenStateiXRP": {
-		"deploy": false
-	},
-	"ProxyiXRP": {
-		"deploy": false
-	},
-	"SynthiXRP": {
 		"deploy": false
 	},
 	"TokenStateiLINK": {
@@ -296,15 +260,6 @@
 	"SynthiDEFI": {
 		"deploy": false
 	},
-	"TokenStatesXMR": {
-		"deploy": false
-	},
-	"ProxysXMR": {
-		"deploy": false
-	},
-	"SynthsXMR": {
-		"deploy": false
-	},
 	"TokenStatesADA": {
 		"deploy": false
 	},
@@ -312,15 +267,6 @@
 		"deploy": false
 	},
 	"SynthsADA": {
-		"deploy": false
-	},
-	"TokenStateiXMR": {
-		"deploy": false
-	},
-	"ProxyiXMR": {
-		"deploy": false
-	},
-	"SynthiXMR": {
 		"deploy": false
 	},
 	"TokenStateiADA": {
