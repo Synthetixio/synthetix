@@ -8,6 +8,10 @@
 		"value": "0"
 	},
 	{
+		"name": "COLLAPSE_FEE_RATE",
+		"value": "0"
+	},
+	{
 		"name": "RATE_STALE_PERIOD",
 		"value": "4200"
 	}
