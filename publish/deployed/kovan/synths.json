@@ -93,48 +93,6 @@
 		"asset": "TSLA"
 	},
 	{
-		"name": "sCEX",
-		"asset": "CEX",
-		"index": [
-			{
-				"asset": "BNB",
-				"units": 12.98,
-				"weight": 29.15
-			},
-			{
-				"asset": "CRO",
-				"units": 1344.11,
-				"weight": 24.3
-			},
-			{
-				"asset": "LEO",
-				"units": 95.02,
-				"weight": 13.42
-			},
-			{
-				"asset": "HT",
-				"units": 23.76,
-				"weight": 11.73
-			},
-			{
-				"asset": "FTT",
-				"units": 9.43,
-				"weight": 3.56
-			},
-			{
-				"asset": "OKB",
-				"units": 25.41,
-				"weight": 16.97
-			},
-			{
-				"asset": "KCS",
-				"units": 8.66,
-				"weight": 0.87
-			}
-		],
-		"subclass": "PurgeableSynth"
-	},
-	{
 		"name": "sDEFI",
 		"asset": "DEFI",
 		"index": [
@@ -302,16 +260,6 @@
 		}
 	},
 	{
-		"name": "iDASH",
-		"asset": "DASH",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 64.44,
-			"upperLimit": 96.66,
-			"lowerLimit": 32.22
-		}
-	},
-	{
 		"name": "iXMR",
 		"asset": "XMR",
 		"subclass": "PurgeableSynth",
@@ -329,17 +277,6 @@
 			"entryPoint": 0.133,
 			"upperLimit": 0.1995,
 			"lowerLimit": 0.0665
-		}
-	},
-	{
-		"name": "iCEX",
-		"asset": "CEX",
-		"index": "sCEX",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 988.56,
-			"upperLimit": 1482.84,
-			"lowerLimit": 494.28
 		}
 	},
 	{

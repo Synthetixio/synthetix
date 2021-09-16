@@ -275,24 +275,6 @@
 	"SynthiXTZ": {
 		"deploy": false
 	},
-	"TokenStatesCEX": {
-		"deploy": false
-	},
-	"ProxysCEX": {
-		"deploy": false
-	},
-	"SynthsCEX": {
-		"deploy": false
-	},
-	"TokenStateiCEX": {
-		"deploy": false
-	},
-	"ProxyiCEX": {
-		"deploy": false
-	},
-	"SynthiCEX": {
-		"deploy": false
-	},
 	"ProxyERC20sUSD": {
 		"deploy": false
 	},
@@ -429,15 +411,6 @@
 		"deploy": false
 	},
 	"SynthiETC": {
-		"deploy": false
-	},
-	"TokenStateiDASH": {
-		"deploy": false
-	},
-	"ProxyiDASH": {
-		"deploy": false
-	},
-	"SynthiDASH": {
 		"deploy": false
 	},
 	"TokenStateiXMR": {
