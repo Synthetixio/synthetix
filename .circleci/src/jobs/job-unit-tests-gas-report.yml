@@ -9,7 +9,7 @@ steps:
       command: |
         npx hardhat test:merge-gas-reports gasReporterOutput-*.json
         # required for codechecks
-        if [ "${CIRCLE_BRANCH}" != "master" ];
+        if [ "${CIRCLE_BRANCH}" != "master" ]; then
           git branch -f master origin/master
         fi
         npx codechecks codechecks.unit.yml
