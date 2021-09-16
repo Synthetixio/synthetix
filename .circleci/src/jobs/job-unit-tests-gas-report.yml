@@ -1,10 +1,5 @@
 # Measures deployment and transaction gas usage in unit tests
-working_directory: ~/repo
-docker:
-  - image: synthetixio/docker-node:14.16-focal
-    auth:
-      username: $DOCKERHUB_USERNAME
-      password: $DOCKERHUB_TOKEN
+{{> job-header-node.yml}}
 steps:
   - checkout
   - attach_workspace:
@@ -12,7 +7,6 @@ steps:
   - run:
       name: Upload gas reports
       command: |
-        npm --version
         npx hardhat test:merge-gas-reports gasReporterOutput-*.json
         npx codechecks codechecks.unit.yml
   - store_artifacts:
