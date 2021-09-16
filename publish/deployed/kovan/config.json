@@ -287,15 +287,6 @@
 	"SynthsXRP": {
 		"deploy": false
 	},
-	"TokenStatesLTC": {
-		"deploy": false
-	},
-	"ProxysLTC": {
-		"deploy": false
-	},
-	"SynthsLTC": {
-		"deploy": false
-	},
 	"TokenStatesLINK": {
 		"deploy": false
 	},
@@ -330,15 +321,6 @@
 		"deploy": false
 	},
 	"SynthiLINK": {
-		"deploy": false
-	},
-	"TokenStateiLTC": {
-		"deploy": false
-	},
-	"ProxyiLTC": {
-		"deploy": false
-	},
-	"SynthiLTC": {
 		"deploy": false
 	},
 	"TokenStateiDEFI": {

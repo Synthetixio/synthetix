@@ -60,11 +60,6 @@
 		"asset": "XRP"
 	},
 	{
-		"name": "sLTC",
-		"asset": "LTC",
-		"subclass": "PurgeableSynth"
-	},
-	{
 		"name": "sLINK",
 		"asset": "LINK"
 	},
@@ -223,16 +218,6 @@
 			"entryPoint": 12.73,
 			"upperLimit": 19.095,
 			"lowerLimit": 6.365
-		}
-	},
-	{
-		"name": "iLTC",
-		"asset": "LTC",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 48.12,
-			"upperLimit": 72.18,
-			"lowerLimit": 24.06
 		}
 	},
 	{
