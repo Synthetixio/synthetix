@@ -315,60 +315,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"TokenStateiBTC": {
-			"name": "TokenStateiBTC",
-			"address": "0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0x04CFbc89F161EE33f4984490B1B73A2D1548fA3D",
-			"timestamp": "2019-05-01T13:15:33.632Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxyiBTC": {
-			"name": "ProxyiBTC",
-			"address": "0xF418D59792E4bd9ab8cC4b733Ea60edC01abc77c",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0xF418D59792E4bd9ab8cC4b733Ea60edC01abc77c",
-			"timestamp": "2019-09-17T05:26:17.432Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthiBTC": {
-			"name": "SynthiBTC",
-			"address": "0xEbCdeFe5F392eb16c71a4905fB2720f580e09B88",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xEbCdeFe5F392eb16c71a4905fB2720f580e09B88",
-			"timestamp": "2020-12-22T13:46:01.874Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStateiETH": {
-			"name": "TokenStateiETH",
-			"address": "0xe95134Cc50EADFE2C9dd950C8a86c0766a3C829F",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xe95134Cc50EADFE2C9dd950C8a86c0766a3C829F",
-			"timestamp": "2019-05-01T13:16:49.565Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxyiETH": {
-			"name": "ProxyiETH",
-			"address": "0x498df32429693fE31685Da7fb9B4b65696a5508d",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0x498df32429693fE31685Da7fb9B4b65696a5508d",
-			"timestamp": "2019-09-17T05:26:40.975Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthiETH": {
-			"name": "SynthiETH",
-			"address": "0x6F4a1312a48D9887Aa8a05c282C387663528Fe05",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0x6F4a1312a48D9887Aa8a05c282C387663528Fe05",
-			"timestamp": "2020-12-22T13:46:41.423Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"RewardEscrow": {
 			"name": "RewardEscrow",
 			"address": "0x8c6680412e914932A9abC02B6c7cbf690e583aFA",
@@ -495,60 +441,6 @@
 			"txn": "",
 			"network": "kovan"
 		},
-		"TokenStateiLINK": {
-			"name": "TokenStateiLINK",
-			"address": "0xC33D4644B5c6F73F34B48ABBC566BF0b62e7D647",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xC33D4644B5c6F73F34B48ABBC566BF0b62e7D647",
-			"timestamp": "2019-11-19T04:29:25.292Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxyiLINK": {
-			"name": "ProxyiLINK",
-			"address": "0x21dc51Dd8BFfeCe537eFf6FbAB3D1C82340b0A40",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0x21dc51Dd8BFfeCe537eFf6FbAB3D1C82340b0A40",
-			"timestamp": "2019-11-19T04:29:29.605Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthiLINK": {
-			"name": "SynthiLINK",
-			"address": "0x07d1503D736B5a5Ef7b19686f34dF6Ca360ce917",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0x07d1503D736B5a5Ef7b19686f34dF6Ca360ce917",
-			"timestamp": "2020-12-22T13:49:53.423Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStateiDEFI": {
-			"name": "TokenStateiDEFI",
-			"address": "0xfB4B52980FbdA970fcb414CF70d412F618656d71",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xfB4B52980FbdA970fcb414CF70d412F618656d71",
-			"timestamp": "2019-11-19T04:30:37.138Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxyiDEFI": {
-			"name": "ProxyiDEFI",
-			"address": "0x23Db12CF9Ad1fBBdE25650D4AAA6B46AC17EAA80",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0x23Db12CF9Ad1fBBdE25650D4AAA6B46AC17EAA80",
-			"timestamp": "2019-11-19T04:30:41.441Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthiDEFI": {
-			"name": "SynthiDEFI",
-			"address": "0xd748Fcbb98F1F1943C7d7b5D04e530d2040611FA",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0xd748Fcbb98F1F1943C7d7b5D04e530d2040611FA",
-			"timestamp": "2020-12-22T13:54:21.791Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"Math": {
 			"name": "Math",
 			"address": "0x2cAaB90c2D4328E32baB3e2fAdf84cEd1DD229F6",
@@ -645,33 +537,6 @@
 			"source": "Synth",
 			"link": "https://kovan.etherscan.io/address/0xEca41030226Ace8F54D0AF5DbD37C276E100055A",
 			"timestamp": "2020-12-22T13:44:32.992Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"TokenStateiADA": {
-			"name": "TokenStateiADA",
-			"address": "0xce53Cd0C8A8f1C0E658E524DA3fdd11ea3097965",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xce53Cd0C8A8f1C0E658E524DA3fdd11ea3097965",
-			"timestamp": "2020-04-02T03:46:21.593Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxyiADA": {
-			"name": "ProxyiADA",
-			"address": "0x15697a9dc703FfB6dc6AC40f7A144284D3a73bEB",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0x15697a9dc703FfB6dc6AC40f7A144284D3a73bEB",
-			"timestamp": "2020-04-02T03:46:29.268Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthiADA": {
-			"name": "SynthiADA",
-			"address": "0x75928A56B81876eEfE2cE762E06B939648D775Ec",
-			"source": "PurgeableSynth",
-			"link": "https://kovan.etherscan.io/address/0x75928A56B81876eEfE2cE762E06B939648D775Ec",
-			"timestamp": "2020-12-22T13:53:12.748Z",
 			"txn": "",
 			"network": "kovan"
 		},

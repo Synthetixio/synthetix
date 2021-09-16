@@ -194,24 +194,6 @@
 	"SynthsETH": {
 		"deploy": false
 	},
-	"TokenStateiBTC": {
-		"deploy": false
-	},
-	"ProxyiBTC": {
-		"deploy": false
-	},
-	"SynthiBTC": {
-		"deploy": false
-	},
-	"TokenStateiETH": {
-		"deploy": false
-	},
-	"ProxyiETH": {
-		"deploy": false
-	},
-	"SynthiETH": {
-		"deploy": false
-	},
 	"TokenStateiXTZ": {
 		"deploy": false
 	},
@@ -242,24 +224,6 @@
 	"SynthsDEFI": {
 		"deploy": false
 	},
-	"TokenStateiLINK": {
-		"deploy": false
-	},
-	"ProxyiLINK": {
-		"deploy": false
-	},
-	"SynthiLINK": {
-		"deploy": false
-	},
-	"TokenStateiDEFI": {
-		"deploy": false
-	},
-	"ProxyiDEFI": {
-		"deploy": false
-	},
-	"SynthiDEFI": {
-		"deploy": false
-	},
 	"TokenStatesADA": {
 		"deploy": false
 	},
@@ -267,15 +231,6 @@
 		"deploy": false
 	},
 	"SynthsADA": {
-		"deploy": false
-	},
-	"TokenStateiADA": {
-		"deploy": false
-	},
-	"ProxyiADA": {
-		"deploy": false
-	},
-	"SynthiADA": {
 		"deploy": false
 	},
 	"TradingRewards": {

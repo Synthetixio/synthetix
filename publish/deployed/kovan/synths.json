@@ -122,56 +122,5 @@
 			}
 		],
 		"subclass": "PurgeableSynth"
-	},
-	{
-		"name": "iBTC",
-		"asset": "BTC",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 15699,
-			"upperLimit": 27473.25,
-			"lowerLimit": 3924.75
-		}
-	},
-	{
-		"name": "iETH",
-		"asset": "ETH",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 314.54,
-			"upperLimit": 550.445,
-			"lowerLimit": 78.635
-		}
-	},
-	{
-		"name": "iLINK",
-		"asset": "LINK",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 12.73,
-			"upperLimit": 19.095,
-			"lowerLimit": 6.365
-		}
-	},
-	{
-		"name": "iADA",
-		"asset": "ADA",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 0.133,
-			"upperLimit": 0.1995,
-			"lowerLimit": 0.0665
-		}
-	},
-	{
-		"name": "iDEFI",
-		"asset": "DEFI",
-		"index": "sDEFI",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 2714.42,
-			"upperLimit": 4071.63,
-			"lowerLimit": 1357.21
-		}
 	}
 ]
