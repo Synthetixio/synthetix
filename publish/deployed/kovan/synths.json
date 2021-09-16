@@ -47,10 +47,6 @@
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sTRX",
-		"asset": "TRX"
-	},
-	{
 		"name": "sXRP",
 		"asset": "XRP"
 	},
@@ -59,24 +55,12 @@
 		"asset": "LINK"
 	},
 	{
-		"name": "sEOS",
-		"asset": "EOS"
-	},
-	{
-		"name": "sETC",
-		"asset": "ETC"
-	},
-	{
 		"name": "sXMR",
 		"asset": "XMR"
 	},
 	{
 		"name": "sADA",
 		"asset": "ADA"
-	},
-	{
-		"name": "sTSLA",
-		"asset": "TSLA"
 	},
 	{
 		"name": "sDEFI",
@@ -176,16 +160,6 @@
 		}
 	},
 	{
-		"name": "iTRX",
-		"asset": "TRX",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 0.0267,
-			"upperLimit": 0.04,
-			"lowerLimit": 0.0133
-		}
-	},
-	{
 		"name": "iXRP",
 		"asset": "XRP",
 		"subclass": "PurgeableSynth",
@@ -203,26 +177,6 @@
 			"entryPoint": 12.73,
 			"upperLimit": 19.095,
 			"lowerLimit": 6.365
-		}
-	},
-	{
-		"name": "iEOS",
-		"asset": "EOS",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 2.22,
-			"upperLimit": 3.33,
-			"lowerLimit": 1.11
-		}
-	},
-	{
-		"name": "iETC",
-		"asset": "ETC",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 6.16,
-			"upperLimit": 9.24,
-			"lowerLimit": 3.08
 		}
 	},
 	{

@@ -212,15 +212,6 @@
 	"SynthsETH": {
 		"deploy": false
 	},
-	"TokenStatesTRX": {
-		"deploy": false
-	},
-	"ProxysTRX": {
-		"deploy": false
-	},
-	"SynthsTRX": {
-		"deploy": false
-	},
 	"TokenStateiBTC": {
 		"deploy": false
 	},
@@ -237,15 +228,6 @@
 		"deploy": false
 	},
 	"SynthiETH": {
-		"deploy": false
-	},
-	"TokenStateiTRX": {
-		"deploy": false
-	},
-	"ProxyiTRX": {
-		"deploy": false
-	},
-	"SynthiTRX": {
 		"deploy": false
 	},
 	"TokenStateiXTZ": {
@@ -314,24 +296,6 @@
 	"SynthiDEFI": {
 		"deploy": false
 	},
-	"TokenStatesEOS": {
-		"deploy": false
-	},
-	"ProxysEOS": {
-		"deploy": false
-	},
-	"SynthsEOS": {
-		"deploy": false
-	},
-	"TokenStatesETC": {
-		"deploy": false
-	},
-	"ProxysETC": {
-		"deploy": false
-	},
-	"SynthsETC": {
-		"deploy": false
-	},
 	"TokenStatesXMR": {
 		"deploy": false
 	},
@@ -348,24 +312,6 @@
 		"deploy": false
 	},
 	"SynthsADA": {
-		"deploy": false
-	},
-	"TokenStateiEOS": {
-		"deploy": false
-	},
-	"ProxyiEOS": {
-		"deploy": false
-	},
-	"SynthiEOS": {
-		"deploy": false
-	},
-	"TokenStateiETC": {
-		"deploy": false
-	},
-	"ProxyiETC": {
-		"deploy": false
-	},
-	"SynthiETC": {
 		"deploy": false
 	},
 	"TokenStateiXMR": {
@@ -399,15 +345,6 @@
 		"deploy": false
 	},
 	"ShortingRewardssBTC": {
-		"deploy": false
-	},
-	"TokenStatesTSLA": {
-		"deploy": false
-	},
-	"ProxysTSLA": {
-		"deploy": false
-	},
-	"SynthsTSLA": {
 		"deploy": false
 	},
 	"TokenStatesKRW": {
