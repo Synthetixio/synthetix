@@ -43,10 +43,6 @@
 		"asset": "LINK"
 	},
 	{
-		"name": "sADA",
-		"asset": "ADA"
-	},
-	{
 		"name": "sDEFI",
 		"asset": "DEFI",
 		"index": [

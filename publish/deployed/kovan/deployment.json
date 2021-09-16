@@ -513,33 +513,6 @@
 			"txn": "https://kovan.etherscan.io/tx/0xe7ea55ab50c717bcb3031cbf98825de245cb48520e5e0bf440fdc109e6b6f832",
 			"network": "kovan"
 		},
-		"TokenStatesADA": {
-			"name": "TokenStatesADA",
-			"address": "0xb645c8c6ebfc1EE3B178998b780cEde91ca2f8Bf",
-			"source": "TokenState",
-			"link": "https://kovan.etherscan.io/address/0xb645c8c6ebfc1EE3B178998b780cEde91ca2f8Bf",
-			"timestamp": "2020-04-02T03:38:13.312Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"ProxysADA": {
-			"name": "ProxysADA",
-			"address": "0xBA939808928b7a823D6F1Fc6522FC57A8000694b",
-			"source": "ProxyERC20",
-			"link": "https://kovan.etherscan.io/address/0xBA939808928b7a823D6F1Fc6522FC57A8000694b",
-			"timestamp": "2020-04-02T03:38:17.192Z",
-			"txn": "",
-			"network": "kovan"
-		},
-		"SynthsADA": {
-			"name": "SynthsADA",
-			"address": "0xEca41030226Ace8F54D0AF5DbD37C276E100055A",
-			"source": "Synth",
-			"link": "https://kovan.etherscan.io/address/0xEca41030226Ace8F54D0AF5DbD37C276E100055A",
-			"timestamp": "2020-12-22T13:44:32.992Z",
-			"txn": "",
-			"network": "kovan"
-		},
 		"ReadProxyAddressResolver": {
 			"name": "ReadProxyAddressResolver",
 			"address": "0x242a3DF52c375bEe81b1c668741D7c63aF68FDD2",

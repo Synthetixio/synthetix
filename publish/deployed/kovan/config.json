@@ -224,15 +224,6 @@
 	"SynthsDEFI": {
 		"deploy": false
 	},
-	"TokenStatesADA": {
-		"deploy": false
-	},
-	"ProxysADA": {
-		"deploy": false
-	},
-	"SynthsADA": {
-		"deploy": false
-	},
 	"TradingRewards": {
 		"deploy": false
 	},
