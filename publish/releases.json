@@ -295,18 +295,15 @@
 		},
 		{
 			"sip": 135,
-			"layer": "both",
-			"sources": {
-				"base": ["SystemSettings"],
-				"ovm": [
-					"CollateralManager",
-					"CollateralShort",
-					"CollateralUtil",
-					"MixinSystemSettings",
-					"ShortingRewards",
-					"SystemSettings"
-				]
-			}
+			"layer": "ovm",
+			"sources": [
+				"CollateralManager",
+				"CollateralShort",
+				"CollateralUtil",
+				"MixinSystemSettings",
+				"ShortingRewards",
+				"SystemSettings"
+			]
 		},
 		{
 			"sip": 136,
