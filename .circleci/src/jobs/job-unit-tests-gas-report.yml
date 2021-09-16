@@ -9,7 +9,9 @@ steps:
       command: |
         npx hardhat test:merge-gas-reports gasReporterOutput-*.json
         # required for codechecks
-        git branch -f master origin/master
+        if [ "${CIRCLE_BRANCH}" != "master" ];
+          git branch -f master origin/master
+        fi
         npx codechecks codechecks.unit.yml
   - store_artifacts:
       path: gasReporterOutput.json

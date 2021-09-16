@@ -296,7 +296,9 @@ jobs:
           name: Upload gas reports
           command: |
             npx hardhat test:merge-gas-reports gasReporterOutput-*.json
-            git branch -f master origin/master
+            if [ "${CIRCLE_BRANCH}" != "master" ];
+              git branch -f master origin/master
+            fi
             npx codechecks codechecks.unit.yml
       - store_artifacts:
           path: gasReporterOutput.json
