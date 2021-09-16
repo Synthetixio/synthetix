@@ -2,6 +2,8 @@ pragma solidity ^0.5.16;
 
 pragma experimental ABIEncoderV2;
 
+import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
+
 // Inheritance
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
@@ -17,7 +19,6 @@ import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/ISynth.sol";
-import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IShortingRewards.sol";
@@ -26,6 +27,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     /* ========== LIBRARIES ========== */
     using SafeMath for uint;
     using SafeDecimalMath for uint;
+    using SafeERC20 for IERC20;
 
     /* ========== CONSTANTS ========== */
 
@@ -363,10 +365,15 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 1. Repay the loan with its collateral.
         (amount, collateral) = _repayWithCollateral(borrower, id, loan.amount);
 
-        // 2. Record loan as closed.
+        // 2. Pay the service fee for collapsing the loan.
+        uint serviceFee = amount.multiplyDecimalRound(getCollapseFeeRate(address(this)));
+        _payFees(serviceFee, sUSD);
+        collateral = collateral.sub(serviceFee);
+
+        // 3. Record loan as closed.
         _recordLoanAsClosed(loan);
 
-        // 3. Emit the event for the loan closed by repayment.
+        // 4. Emit the event for the loan closed by repayment.
         emit LoanClosedByRepayment(borrower, id, amount, collateral);
     }
 
@@ -423,45 +430,42 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 0. Get the loan and accrue interest.
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
-        // 1. Check loan is open.
-        _isLoanOpen(loan.interestIndex);
-
-        // 2. Check they have enough balance to make the payment.
+        // 1. Check they have enough balance to make the payment.
         _checkSynthBalance(msg.sender, loan.currency, payment);
 
-        // 3. Check they are eligible for liquidation.
+        // 2. Check they are eligible for liquidation.
         // Note: this will revert if collateral is 0, however that should only be possible if the loan amount is 0.
         require(_collateralUtil().getCollateralRatio(loan, collateralKey) < minCratio, "Cratio above liq ratio");
 
-        // 4. Determine how much needs to be liquidated to fix their c ratio.
+        // 3. Determine how much needs to be liquidated to fix their c ratio.
         uint liqAmount = _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
 
-        // 5. Only allow them to liquidate enough to fix the c ratio.
+        // 4. Only allow them to liquidate enough to fix the c ratio.
         uint amountToLiquidate = liqAmount < payment ? liqAmount : payment;
 
-        // 6. Work out the total amount owing on the loan.
+        // 5. Work out the total amount owing on the loan.
         uint amountOwing = loan.amount.add(loan.accruedInterest);
 
-        // 7. If its greater than the amount owing, we need to close the loan.
+        // 6. If its greater than the amount owing, we need to close the loan.
         if (amountToLiquidate >= amountOwing) {
             (, collateralLiquidated) = _closeByLiquidation(borrower, msg.sender, loan);
             return collateralLiquidated;
         }
 
-        // 8. Check they have enough balance to liquidate the loan.
+        // 7. Check they have enough balance to liquidate the loan.
         _checkSynthBalance(msg.sender, loan.currency, amountToLiquidate);
 
-        // 9. Process the payment to workout interest/principal split.
+        // 8. Process the payment to workout interest/principal split.
         _processPayment(loan, amountToLiquidate);
 
-        // 10. Work out how much collateral to redeem.
+        // 9. Work out how much collateral to redeem.
         collateralLiquidated = _collateralUtil().collateralRedeemed(loan.currency, amountToLiquidate, collateralKey);
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
-        // 11. Burn the synths from the liquidator.
+        // 10. Burn the synths from the liquidator.
         _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
 
-        // 12. Emit the event for the partial liquidation.
+        // 11. Emit the event for the partial liquidation.
         emit LoanPartiallyLiquidated(borrower, id, msg.sender, amountToLiquidate, collateralLiquidated);
     }
 
@@ -556,7 +560,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 5. Calculate the minting fee and subtract it from the draw amount
         uint amountMinusFee = amount.sub(issueFee);
 
-        // 6. If its short, let the child handle it, otherwise issue the synths.
+        // 6. If its short, issue the synths.
         if (loan.short) {
             manager.incrementShorts(loan.currency, amount);
             _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, sUSD));
@@ -585,7 +589,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     function _accrueInterest(Loan storage loan) internal {
         (uint differential, uint newIndex) = manager.accrueInterest(loan.interestIndex, loan.currency, loan.short);
 
-        // If the loan was just opened, don't record any interest. Otherwise multiple by the amount outstanding.
+        // If the loan was just opened, don't record any interest. Otherwise multiply by the amount outstanding.
         uint interest = loan.interestIndex == 0 ? 0 : loan.amount.multiplyDecimal(differential);
 
         // Update the loan.

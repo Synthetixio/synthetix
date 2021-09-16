@@ -1,4 +1,5 @@
 const ethers = require('ethers');
+const chalk = require('chalk');
 const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { ensureBalance } = require('../utils/balances');
@@ -10,10 +11,10 @@ function itCanExchange({ ctx }) {
 
 		let owner;
 		let balancesETH, originialPendingSettlements;
-		let Synthetix, Exchanger, SynthsETH, SystemSettings;
+		let Synthetix, Exchanger, SynthsETH;
 
 		before('target contracts and users', () => {
-			({ Synthetix, Exchanger, SynthsETH, SystemSettings } = ctx.contracts);
+			({ Synthetix, Exchanger, SynthsETH } = ctx.contracts);
 
 			owner = ctx.users.owner;
 		});
@@ -50,6 +51,16 @@ function itCanExchange({ ctx }) {
 				assert.bnEqual(await SynthsETH.balanceOf(owner.address), balancesETH.add(expectedAmount));
 			});
 
+			before('skip if waiting period is zero', async function() {
+				const waitingPeriodSecs = await Exchanger.waitingPeriodSecs();
+				if (waitingPeriodSecs.toString() === '0') {
+					console.log(
+						chalk.yellow('> Skipping pending settlement checks because waiting period is zero.')
+					);
+					this.skip();
+				}
+			});
+
 			it('shows that the user now has pending settlements', async () => {
 				const { numEntries } = await Exchanger.settlementOwing(owner.address, toBytes32('sETH'));
 
@@ -57,19 +68,6 @@ function itCanExchange({ ctx }) {
 			});
 
 			describe('when settle is called', () => {
-				let initialWaitingPeriod;
-
-				before(async () => {
-					SystemSettings = SystemSettings.connect(owner);
-
-					initialWaitingPeriod = await SystemSettings.waitingPeriodSecs();
-					await SystemSettings.setWaitingPeriodSecs('0');
-				});
-
-				after(async () => {
-					await SystemSettings.setWaitingPeriodSecs(initialWaitingPeriod);
-				});
-
 				before('skip waiting period', async () => {
 					await skipWaitingPeriod({ ctx });
 				});

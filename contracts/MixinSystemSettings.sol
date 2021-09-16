@@ -35,6 +35,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_NEW_COLLATERAL_MANAGER = "newCollateralManager";
     bytes32 internal constant SETTING_CAN_OPEN_LOANS = "canOpenLoans";
     bytes32 internal constant SETTING_INTERACTION_DELAY = "interactionDelay";
+    bytes32 internal constant SETTING_COLLAPSE_FEE_RATE = "collapseFeeRate";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -181,6 +182,14 @@ contract MixinSystemSettings is MixinResolver {
             flexibleStorage().getUIntValue(
                 SETTING_CONTRACT_NAME,
                 keccak256(abi.encodePacked(SETTING_INTERACTION_DELAY, collateral))
+            );
+    }
+
+    function getCollapseFeeRate(address collateral) internal view returns (uint) {
+        return
+            flexibleStorage().getUIntValue(
+                SETTING_CONTRACT_NAME,
+                keccak256(abi.encodePacked(SETTING_COLLAPSE_FEE_RATE, collateral))
             );
     }
 }

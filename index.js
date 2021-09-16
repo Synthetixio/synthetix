@@ -184,6 +184,7 @@ const defaults = {
 		MIN_COLLATERAL: w3utils.toWei('1000'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
 		INTERACTION_DELAY: '3600', // 1 hour in secs
+		COLLAPSE_FEE_RATE: '0',
 	},
 
 	ETHER_WRAPPER_MAX_ETH: w3utils.toWei('5000'),
