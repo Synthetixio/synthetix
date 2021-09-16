@@ -7,7 +7,7 @@ const ethers = require('ethers');
 const {
 	toBytes32,
 	getUsers,
-	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME },
+	constants: { CONFIG_FILENAME, DEPLOYMENT_FILENAME, ZERO_ADDRESS },
 } = require('../../..');
 
 const { getContract } = require('../command-utils/contract');
@@ -238,7 +238,7 @@ const removeSynths = async ({
 				target: ExchangeRates,
 				read: 'aggregators',
 				readArg: toBytes32(currencyKey),
-				expected: input => !input,
+				expected: input => input === ZERO_ADDRESS,
 				write: 'removeAggregator',
 				writeArg: toBytes32(currencyKey),
 				gasLimit,
