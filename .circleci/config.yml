@@ -284,7 +284,7 @@ jobs:
   job-unit-tests-gas-report:
     working_directory: ~/repo
     docker:
-      - image: synthetixio/docker-sec-tools:14.17-ubuntu
+      - image: synthetixio/docker-node:14.17-ubuntu
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_TOKEN
@@ -297,7 +297,7 @@ jobs:
           command: |
             npx hardhat test:merge-gas-reports gasReporterOutput-*.json
             git branch -f master origin/master
-            codechecks codechecks.unit.yml
+            npx codechecks codechecks.unit.yml
       - store_artifacts:
           path: gasReporterOutput.json
   job-unit-tests:
