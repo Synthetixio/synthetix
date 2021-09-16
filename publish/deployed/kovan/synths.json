@@ -257,16 +257,6 @@
 		}
 	},
 	{
-		"name": "iXTZ",
-		"asset": "XTZ",
-		"subclass": "PurgeableSynth",
-		"inverted": {
-			"entryPoint": 2.542,
-			"upperLimit": 3.813,
-			"lowerLimit": 1.271
-		}
-	},
-	{
 		"name": "iXRP",
 		"asset": "XRP",
 		"subclass": "PurgeableSynth",

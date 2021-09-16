@@ -124,9 +124,14 @@ task(
 
 		console.log(gray(`Beginning the migration`));
 
-		await migration.migrate(ownerAddress, { gasPrice: '0' });
+		const txn = await migration.migrate(ownerAddress, {
+			gasPrice: '0',
+			gasLimit: ethers.BigNumber.from(12e6),
+		});
 
-		console.log(gray(`Migration complete.`));
+		const { gasUsed } = await txn.wait();
+
+		console.log(gray(`Migration complete. Gas used:`), yellow(gasUsed.toString()));
 
 		console.log(gray(`Running ownership actions to ensure migration relinquished all ownerships.`));
 

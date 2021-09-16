@@ -12,13 +12,14 @@ const commands = {
 	connectBridge: require('../../../publish/src/commands/connect-bridge').connectBridge,
 };
 
-async function compileInstance({ useOvm, buildPath }) {
+async function compileInstance({ useOvm, buildPath, migrations }) {
 	await commands.build({
 		useOvm,
 		cleanBuild: true,
 		optimizerRuns: useOvm ? 1 : 200,
 		testHelpers: true,
 		buildPath,
+		migrations,
 	});
 }
 

@@ -22,6 +22,7 @@ const performTransactionalStep = async ({
 	gasLimit,
 	gasPrice,
 	generateSolidity,
+	skipSolidity,
 	explorerLinkPrefix,
 	ownerActions,
 	ownerActionsFile,
@@ -58,11 +59,13 @@ const performTransactionalStep = async ({
 
 	// now if generate solidity mode, simply doing anything, a bit like a dry-run
 	if (generateSolidity) {
-		console.log(
-			green(
-				`[GENERATE_SOLIDITY_SIMULATION] Successfully completed ${action} number ${++_dryRunCounter}.`
-			)
-		);
+		if (!skipSolidity) {
+			console.log(
+				green(
+					`[GENERATE_SOLIDITY_SIMULATION] Successfully completed ${action} number ${++_dryRunCounter}.`
+				)
+			);
+		}
 		return {};
 	}
 

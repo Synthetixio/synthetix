@@ -117,7 +117,6 @@ module.exports = async ({
 			internalFunctions.push({
 				name: internalFunctionName,
 				instructions: internalInstructions,
-				copyLocalVars: true,
 			});
 
 			// and add the invocation of it as the next instruction
@@ -147,18 +146,6 @@ module.exports = async ({
 
 	const ownerAddress = getUsers({ network, useOvm, user: 'owner' }).address;
 
-	const outputNewContractsAsVariables = `
-			// NEW CONTRACTS DEPLOYED TO BE ADDED TO PROTOCOL
-			${Object.entries(newContractsBeingAdded)
-				.map(
-					([address, { name }]) =>
-						`${generateExplorerComment({
-							address,
-						})}\n\t\taddress ${newContractVariableFunctor(name)} = ${address};`
-				)
-				.join('\n\t\t')}
-		`;
-
 	const solidity = `
 pragma solidity ^0.5.16;
 
@@ -183,6 +170,10 @@ contract Migration_${releaseName} is BaseMigration {
 	${generateExplorerComment({ address: ownerAddress })};
 	address public constant OWNER = ${ownerAddress};
 
+	// ----------------------------
+	// EXISTING SYNTHETIX CONTRACTS
+	// ----------------------------
+
 	${contractsAddedToSolidity
 		.map(contract => {
 			const sourceContract = sourceOf(deployer.deployedContracts[contract]);
@@ -193,9 +184,22 @@ contract Migration_${releaseName} is BaseMigration {
 		})
 		.join('\n\t')}
 
+	// ----------------------------------
+	// NEW CONTRACTS DEPLOYED TO BE ADDED
+	// ----------------------------------
+
+	${Object.entries(newContractsBeingAdded)
+		.map(
+			([address, { name }]) =>
+				`${generateExplorerComment({
+					address,
+				})}\n\t\taddress public constant ${newContractVariableFunctor(name)} = ${address};`
+		)
+		.join('\n\t\t')}
+
 	constructor() public BaseMigration(OWNER) {}
 
-	function contractsRequiringOwnership() external pure returns (address[] memory contracts) {
+	function contractsRequiringOwnership() public pure returns (address[] memory contracts) {
 		contracts = new address[](${contractsAddedToSolidity.length});
 		${contractsAddedToSolidity
 			.map((contract, i) => `contracts[${i}]= address(${contract.toLowerCase()}_i);`)
@@ -204,8 +208,6 @@ contract Migration_${releaseName} is BaseMigration {
 
 	function migrate(address currentOwner) external onlyDeployer {
 		require(owner == currentOwner, "Only the assigned owner can be re-assigned when complete");
-
-		${outputNewContractsAsVariables}
 
 		${Object.entries(newContractsBeingAdded)
 			.map(
@@ -217,35 +219,34 @@ contract Migration_${releaseName} is BaseMigration {
 			.join('\n\t\t')}
 
 		// ACCEPT OWNERSHIP for all contracts that require ownership to make changes
-		${contractsAddedToSolidity
-			.map(contract => `${contract.toLowerCase()}_i.acceptOwnership();`)
-			.join('\n\t\t')}
+		acceptAll();
 
 		// MIGRATION
 		${instructions.length ? `${instructions.join(';\n\t\t')};` : ''}
 
 		// NOMINATE OWNERSHIP back to owner for aforementioned contracts
-		${contractsAddedToSolidity
-			.map(contract => {
-				// support LegacyOwned
-				const nominateFnc = deployment.sources[
-					sourceOf(deployer.deployedContracts[contract])
-				].abi.find(({ name }) => name === 'nominateNewOwner')
-					? 'nominateNewOwner'
-					: 'nominateOwner';
-				return `${contract.toLowerCase()}_i.${nominateFnc}(owner);`;
-			})
-			.join('\n\t\t')}
+		nominateAll();
 	}
+
+	function acceptAll() internal {
+        address[] memory contracts = contractsRequiringOwnership();
+        for (uint i = 0; i < contracts.length; i++) {
+            Owned(contracts[i]).acceptOwnership();
+        }
+    }
+
+    function nominateAll() internal {
+        address[] memory contracts = contractsRequiringOwnership();
+        for (uint i = 0; i < contracts.length; i++) {
+            returnOwnership(contracts[i]);
+        }
+    }
 
 	${internalFunctions
 		.map(
-			({ name, instructions, copyLocalVars }) => `
+			({ name, instructions }) => `
 	function ${name}() internal {
-		/* solhint-disable no-unused-vars */
-		${copyLocalVars ? outputNewContractsAsVariables : ''}
 		${instructions.join(';\n\t\t')};
-		/* solhint-enable no-unused-vars */
 	}`
 		)
 		.join('\n\n\t')}

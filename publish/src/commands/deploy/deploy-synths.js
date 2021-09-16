@@ -89,26 +89,25 @@ module.exports = async ({
 		// user confirm totalSupply is correct for oldSynth before deploy new Synth
 		if (synthConfig.deploy && originalTotalSupply > 0) {
 			if (!systemSuspended && !generateSolidity && !useFork) {
-				throw Error(
-					'Cannot override an existing synth when the system is not suspended.\n' +
-						'This is because the totalSupply from the existing synth will be copied to the ' +
-						'new one and then these numbers may go out of sync.\n'
-				);
-			}
-			if (!yes) {
-				try {
-					await confirmAction(
+				console.log(
+					yellow(
+						'⚠⚠⚠ WARNING: The system is not suspended! Adding a synth here without using a migration contract is potentially problematic.'
+					) +
 						yellow(
-							`⚠⚠⚠ WARNING: Please confirm - ${network}:\n` +
+							`⚠⚠⚠ Please confirm - ${network}:\n` +
 								`Synth${currencyKey} totalSupply is ${originalTotalSupply} \n` +
-								'NOTE: Deploying with this amount is dangerous if the system is not already suspended'
-						) +
-							gray('-'.repeat(50)) +
-							'\nDo you want to continue? (y/n) '
-					);
-				} catch (err) {
-					console.log(gray('Operation cancelled'));
-					return;
+								'NOTE: Deploying with this amount is dangerous when the system is not already suspended'
+						),
+					gray('-'.repeat(50)) + '\n'
+				);
+
+				if (!yes) {
+					try {
+						await confirmAction(gray('Do you want to continue? (y/n) '));
+					} catch (err) {
+						console.log(gray('Operation cancelled'));
+						process.exit();
+					}
 				}
 			}
 		}

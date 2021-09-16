@@ -329,9 +329,9 @@ const deploy = async ({
 		addressOf,
 		deployer,
 		dryRun,
+		continueEvenIfUnsuccessful: generateSolidity,
 		limitPromise,
 		runStep,
-		useOvm,
 	});
 
 	await rebuildResolverCaches({
@@ -377,6 +377,7 @@ const deploy = async ({
 
 	await configureSynths({
 		addressOf,
+		explorerLinkPrefix,
 		generateSolidity,
 		synths,
 		feeds,

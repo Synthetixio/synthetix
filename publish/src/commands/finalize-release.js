@@ -14,7 +14,7 @@ const {
 	releases,
 } = require('../../../.');
 
-const finalizeRelease = async ({ layer, release, versionTag, yes }) => {
+const finalizeRelease = async ({ layer, release, versionTag }) => {
 	const isBase = layer === 'base' || layer === 'both';
 	const isOvm = layer === 'ovm' || layer === 'both';
 
@@ -24,6 +24,16 @@ const finalizeRelease = async ({ layer, release, versionTag, yes }) => {
 	}
 	if (isOvm) {
 		await versionsUpdate({ release, useOvm: true, versionTag });
+	}
+
+	const prerelease = semver.prerelease(versionTag) && semver.prerelease(versionTag) !== 'ovm';
+
+	if (prerelease) {
+		console.log(
+			'Not updating the releases.json as this is a prerelease of',
+			semver.prerelease(versionTag)
+		);
+		return;
 	}
 
 	// Now modify releases.json locally for the released version
