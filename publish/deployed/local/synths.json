@@ -620,16 +620,5 @@
 		"exchange": "TSE",
 		"description": "Nikkei 225 Index",
 		"name": "sNIKKEI"
-	},
-	{
-		"asset": "USD",
-		"category": "forex",
-		"sign": "$",
-		"description": "US Dollars",
-		"name": "sREDEEMER"
-	},
-	{
-		"name": "sREDEEMER",
-		"asset": "USD"
 	}
 ]

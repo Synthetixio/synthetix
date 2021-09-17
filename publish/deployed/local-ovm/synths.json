@@ -12,9 +12,5 @@
 		"sign": "Ξ",
 		"description": "Ether",
 		"name": "sETH"
-	},
-	{
-		"name": "sREDEEMER",
-		"asset": "USD"
 	}
 ]
