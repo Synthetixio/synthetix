@@ -1,214 +1,416 @@
 [
 	{
-		"name": "sUSD",
 		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sUSD",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sEUR",
-		"asset": "EUR"
+		"feed": "0xb49f677943BC038e9857d61E7d053CaA2C1734C1",
+		"asset": "EUR",
+		"category": "forex",
+		"sign": "€",
+		"description": "Euros",
+		"name": "sEUR"
 	},
 	{
-		"name": "sJPY",
-		"asset": "JPY"
+		"feed": "0xBcE206caE7f0ec07b545EddE332A47C2F75bbeb3",
+		"asset": "JPY",
+		"category": "forex",
+		"sign": "¥",
+		"description": "Japanese Yen",
+		"name": "sJPY"
 	},
 	{
-		"name": "sAUD",
-		"asset": "AUD"
+		"feed": "0x77F9710E7d0A19669A13c055F62cd80d313dF022",
+		"asset": "AUD",
+		"category": "forex",
+		"sign": "$",
+		"description": "Australian Dollars",
+		"name": "sAUD"
 	},
 	{
-		"name": "sGBP",
-		"asset": "GBP"
+		"feed": "0x5c0Ab2d9b5a7ed9f470386e82BB36A3613cDd4b5",
+		"asset": "GBP",
+		"category": "forex",
+		"sign": "£",
+		"description": "Pound Sterling",
+		"name": "sGBP"
 	},
 	{
-		"name": "sCHF",
-		"asset": "CHF"
+		"feed": "0x449d117117838fFA61263B61dA6301AA2a88B13A",
+		"asset": "CHF",
+		"category": "forex",
+		"sign": "Fr",
+		"description": "Swiss Franc",
+		"name": "sCHF"
 	},
 	{
-		"name": "sKRW",
-		"asset": "KRW"
+		"feed": "0x01435677FB11763550905594A16B645847C1d0F3",
+		"asset": "KRW",
+		"category": "forex",
+		"sign": "₩",
+		"description": "South Korean Won",
+		"name": "sKRW"
 	},
 	{
-		"name": "sXAU",
-		"asset": "XAU"
+		"feed": "0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6",
+		"asset": "XAU",
+		"category": "commodity",
+		"sign": "oz",
+		"description": "Gold Ounce",
+		"name": "sXAU"
 	},
 	{
-		"name": "sXAG",
-		"asset": "XAG"
+		"feed": "0x379589227b15F1a12195D3f2d90bBc9F31f95235",
+		"asset": "XAG",
+		"category": "commodity",
+		"sign": "oz",
+		"description": "Silver Ounce",
+		"name": "sXAG"
 	},
 	{
-		"name": "sOIL",
-		"asset": "OIL"
+		"feed": "0xf3584F4dd3b467e73C2339EfD008665a70A4185c",
+		"asset": "OIL",
+		"category": "commodity",
+		"sign": "$",
+		"description": "Perpetual Oil Futures",
+		"name": "sOIL"
 	},
 	{
-		"name": "sBTC",
+		"feed": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
 		"asset": "BTC",
+		"category": "crypto",
+		"sign": "₿",
+		"description": "Bitcoin",
+		"name": "sBTC",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sETH",
+		"feed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
 		"asset": "ETH",
+		"category": "crypto",
+		"sign": "Ξ",
+		"description": "Ether",
+		"name": "sETH",
 		"subclass": "MultiCollateralSynth"
 	},
 	{
-		"name": "sBNB",
+		"feed": "0x14e613AC84a31f709eadbdF89C6CC390fDc9540A",
 		"asset": "BNB",
+		"category": "crypto",
+		"sign": "",
+		"description": "Binance Coin",
+		"name": "sBNB",
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sTRX",
-		"asset": "TRX"
+		"feed": "0xacD0D1A29759CC01E8D925371B72cb2b5610EA25",
+		"asset": "TRX",
+		"category": "crypto",
+		"sign": "",
+		"description": "TRON",
+		"name": "sTRX"
 	},
 	{
-		"name": "sXTZ",
+		"feed": "0x5239a625dEb44bF3EeAc2CD5366ba24b8e9DB63F",
 		"asset": "XTZ",
+		"category": "crypto",
+		"sign": "",
+		"description": "Tezos",
+		"name": "sXTZ",
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sXRP",
-		"asset": "XRP"
+		"feed": "0xCed2660c6Dd1Ffd856A5A82C67f3482d88C50b12",
+		"asset": "XRP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Ripple",
+		"name": "sXRP"
 	},
 	{
-		"name": "sLTC",
+		"feed": "0x6AF09DF7563C363B5763b9102712EbeD3b9e859B",
 		"asset": "LTC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Litecoin",
+		"name": "sLTC",
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sLINK",
-		"asset": "LINK"
+		"feed": "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c",
+		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"description": "Chainlink",
+		"name": "sLINK"
 	},
 	{
-		"name": "sEOS",
-		"asset": "EOS"
+		"feed": "0x10a43289895eAff840E8d45995BBa89f9115ECEe",
+		"asset": "EOS",
+		"category": "crypto",
+		"sign": "",
+		"description": "EOS",
+		"name": "sEOS"
 	},
 	{
-		"name": "sETC",
-		"asset": "ETC"
+		"feed": "0xaEA2808407B7319A31A383B6F8B60f04BCa23cE2",
+		"asset": "ETC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Ethereum Classic",
+		"name": "sETC"
 	},
 	{
-		"name": "sDASH",
-		"asset": "DASH"
+		"feed": "0xFb0cADFEa136E9E343cfb55B863a6Df8348ab912",
+		"asset": "DASH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Dash",
+		"name": "sDASH"
 	},
 	{
-		"name": "sXMR",
-		"asset": "XMR"
+		"feed": "0xFA66458Cce7Dd15D8650015c4fce4D278271618F",
+		"asset": "XMR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Monero",
+		"name": "sXMR"
 	},
 	{
-		"name": "sADA",
-		"asset": "ADA"
+		"feed": "0xAE48c91dF1fE419994FFDa27da09D5aC69c30f55",
+		"asset": "ADA",
+		"category": "crypto",
+		"sign": "",
+		"description": "Cardano",
+		"name": "sADA"
 	},
 	{
-		"name": "sAAVE",
-		"asset": "AAVE"
+		"feed": "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9",
+		"asset": "AAVE",
+		"category": "crypto",
+		"sign": "",
+		"description": "Aave",
+		"name": "sAAVE"
 	},
 	{
-		"name": "sUNI",
-		"asset": "UNI"
+		"feed": "0x553303d460EE0afB37EdFf9bE42922D8FF63220e",
+		"asset": "UNI",
+		"category": "crypto",
+		"sign": "",
+		"description": "Uniswap",
+		"name": "sUNI"
 	},
 	{
-		"name": "sYFI",
-		"asset": "YFI"
+		"feed": "0xA027702dbb89fbd58938e4324ac03B58d812b0E1",
+		"asset": "YFI",
+		"category": "crypto",
+		"sign": "",
+		"description": "yearn.finance",
+		"name": "sYFI"
 	},
 	{
-		"name": "sDOT",
-		"asset": "DOT"
+		"feed": "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734",
+		"asset": "DOT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Polkadot",
+		"name": "sDOT"
 	},
 	{
-		"name": "sREN",
-		"asset": "REN"
+		"feed": "0x0f59666EDE214281e956cb3b2D0d69415AfF4A01",
+		"asset": "REN",
+		"category": "crypto",
+		"sign": "",
+		"description": "Ren",
+		"name": "sREN"
 	},
 	{
-		"name": "sCOMP",
-		"asset": "COMP"
+		"feed": "0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5",
+		"asset": "COMP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Compound",
+		"name": "sCOMP"
 	},
 	{
-		"name": "s1INCH",
-		"asset": "1INCH"
+		"feed": "0xc929ad75B72593967DE83E7F7Cda0493458261D9",
+		"asset": "1INCH",
+		"category": "crypto",
+		"sign": "",
+		"description": "1inch",
+		"name": "s1INCH"
 	},
 	{
-		"name": "sRUNE",
-		"asset": "RUNE"
+		"feed": "0x48731cF7e84dc94C5f84577882c14Be11a5B7456",
+		"asset": "RUNE",
+		"category": "crypto",
+		"sign": "",
+		"description": "THORChain",
+		"name": "sRUNE"
 	},
 	{
-		"name": "sFTSE",
-		"asset": "FTSE100"
+		"feed": "0xE23FA0e8dd05D6f66a6e8c98cab2d9AE82A7550c",
+		"asset": "FTSE100",
+		"category": "equities",
+		"sign": "",
+		"exchange": "LSE",
+		"description": "FTSE 100 Index",
+		"name": "sFTSE"
 	},
 	{
-		"name": "sNIKKEI",
-		"asset": "NIKKEI225"
+		"feed": "0x5c4939a2ab3A2a9f93A518d81d4f8D0Bc6a68980",
+		"asset": "NIKKEI225",
+		"category": "equities",
+		"sign": "",
+		"exchange": "TSE",
+		"description": "Nikkei 225 Index",
+		"name": "sNIKKEI"
 	},
 	{
-		"name": "sTSLA",
-		"asset": "TSLA"
+		"feed": "0x1ceDaaB50936881B3e449e47e40A2cDAF5576A4a",
+		"asset": "TSLA",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Tesla",
+		"name": "sTSLA"
 	},
 	{
-		"name": "sCRV",
-		"asset": "CRV"
+		"feed": "0xCd627aA160A6fA45Eb793D19Ef54f5062F20f33f",
+		"asset": "CRV",
+		"category": "crypto",
+		"sign": "",
+		"description": "Curve DAO Token",
+		"name": "sCRV"
 	},
 	{
-		"name": "sAAPL",
-		"asset": "AAPL"
+		"feed": "0x139C8512Cde1778e9b9a8e721ce1aEbd4dD43587",
+		"asset": "AAPL",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Apple",
+		"name": "sAAPL"
 	},
 	{
-		"name": "sFB",
-		"asset": "FB"
+		"feed": "0xCe1051646393087e706288C1B57Fd26446657A7f",
+		"asset": "FB",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Facebook",
+		"name": "sFB"
 	},
 	{
-		"name": "sGOOG",
-		"asset": "GOOG"
+		"feed": "0x36D39936BeA501755921beB5A382a88179070219",
+		"asset": "GOOG",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Alphabet",
+		"name": "sGOOG"
 	},
 	{
-		"name": "sNFLX",
-		"asset": "NFLX"
+		"feed": "0x67C2e69c5272B94AF3C90683a9947C39Dc605ddE",
+		"asset": "NFLX",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Netflix",
+		"name": "sNFLX"
 	},
 	{
-		"name": "sAMZN",
-		"asset": "AMZN"
+		"feed": "0x8994115d287207144236c13Be5E2bDbf6357D9Fd",
+		"asset": "AMZN",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Amazon",
+		"name": "sAMZN"
 	},
 	{
-		"name": "sCOIN",
-		"asset": "COIN"
+		"feed": "0xb10a047f8db80d781D006F1401BEB7d70Eb4da1a",
+		"asset": "COIN",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Coinbase",
+		"name": "sCOIN"
 	},
 	{
-		"name": "sMSFT",
-		"asset": "MSFT"
+		"feed": "0x021Fb44bfeafA0999C7b07C4791cf4B859C3b431",
+		"asset": "MSFT",
+		"category": "equities",
+		"sign": "",
+		"exchange": "NASDAQ",
+		"description": "Microsoft",
+		"name": "sMSFT"
 	},
 	{
-		"name": "sCEX",
+		"feed": "0x283D433435cFCAbf00263beEF6A362b7cc5ed9f2",
 		"asset": "CEX",
+		"category": "index",
+		"sign": "",
+		"description": "Centralised Exchange Index",
+		"name": "sCEX",
 		"index": [
 			{
 				"asset": "BNB",
+				"category": "crypto",
+				"sign": "",
+				"description": "Binance Coin",
 				"units": 12.88,
 				"weight": 29.15
 			},
 			{
 				"asset": "CRO",
+				"category": "crypto",
+				"sign": "",
+				"description": "Crypto com",
 				"units": 1303.31,
 				"weight": 24.3
 			},
 			{
 				"asset": "LEO",
+				"category": "crypto",
+				"sign": "",
+				"description": "UNUS SED LEO",
 				"units": 94.54,
 				"weight": 13.42
 			},
 			{
 				"asset": "HT",
+				"category": "crypto",
+				"sign": "",
+				"description": "Huobi Token",
 				"units": 23.06,
 				"weight": 11.73
 			},
 			{
 				"asset": "FTT",
+				"category": "crypto",
+				"sign": "",
+				"description": "FTX",
 				"units": 9.36,
 				"weight": 3.56
 			},
 			{
 				"asset": "OKB",
+				"category": "crypto",
+				"sign": "",
+				"description": "OKB",
 				"units": 25.72,
 				"weight": 16.97
 			},
 			{
 				"asset": "KCS",
+				"category": "crypto",
+				"sign": "",
+				"description": "KuCoin Shares",
 				"units": 9.18,
 				"weight": 0.87
 			}
@@ -216,106 +418,170 @@
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "sDEFI",
+		"feed": "0xa8E875F94138B0C5b51d1e1d5dE35bbDdd28EA87",
 		"asset": "DEFI",
+		"category": "index",
+		"sign": "",
+		"description": "DeFi Index",
+		"name": "sDEFI",
 		"index": [
 			{
 				"asset": "UNI",
+				"category": "crypto",
+				"sign": "",
+				"description": "Uniswap",
 				"units": 66.3052,
 				"weight": 15
 			},
 			{
 				"asset": "AAVE",
+				"category": "crypto",
+				"sign": "",
+				"description": "Aave",
 				"units": 4.1634,
 				"weight": 11
 			},
 			{
 				"asset": "LUNA",
+				"category": "crypto",
+				"sign": "",
+				"description": "Terra Luna",
 				"units": 143.0753,
 				"weight": 10
 			},
 			{
 				"asset": "MKR",
+				"category": "crypto",
+				"sign": "",
+				"description": "Maker",
 				"units": 0.3116,
 				"weight": 9
 			},
 			{
 				"asset": "SNX",
+				"category": "crypto",
+				"sign": "",
+				"description": "Synthetix Network Token",
 				"units": 92.2672,
 				"weight": 8
 			},
 			{
 				"asset": "RUNE",
+				"category": "crypto",
+				"sign": "",
+				"description": "THORChain",
 				"units": 105.8407,
 				"weight": 8
 			},
 			{
 				"asset": "SUSHI",
+				"category": "crypto",
+				"sign": "",
+				"description": "SushiSwap",
 				"units": 78.2258,
 				"weight": 7
 			},
 			{
 				"asset": "COMP",
+				"category": "crypto",
+				"sign": "",
+				"description": "Compound",
 				"units": 2.2499,
 				"weight": 7
 			},
 			{
 				"asset": "YFI",
+				"category": "crypto",
+				"sign": "",
+				"description": "yearn.finance",
 				"units": 0.01503,
 				"weight": 6
 			},
 			{
 				"asset": "BNT",
+				"category": "crypto",
+				"sign": "",
+				"description": "Bancor",
 				"units": 74.5498,
 				"weight": 3
 			},
 			{
 				"asset": "UMA",
+				"category": "crypto",
+				"sign": "",
+				"description": "UMA",
 				"units": 25.608,
 				"weight": 3
 			},
 			{
 				"asset": "ZRX",
+				"category": "crypto",
+				"sign": "",
+				"description": "0x",
 				"units": 294.7857,
 				"weight": 2.5
 			},
 			{
 				"asset": "CRV",
+				"category": "crypto",
+				"sign": "",
+				"description": "Curve DAO Token",
 				"units": 124.2496,
 				"weight": 2.5
 			},
 			{
 				"asset": "1INCH",
+				"category": "crypto",
+				"sign": "",
+				"description": "1inch",
 				"units": 59.0185,
 				"weight": 2
 			},
 			{
 				"asset": "REN",
+				"category": "crypto",
+				"sign": "",
+				"description": "Ren",
 				"units": 440.8356,
 				"weight": 2
 			},
 			{
 				"asset": "BAL",
+				"category": "crypto",
+				"sign": "",
+				"description": "Balancer",
 				"units": 4.4333,
 				"weight": 1
 			},
 			{
 				"asset": "KNC",
+				"category": "crypto",
+				"sign": "",
+				"description": "Kyber Network",
 				"units": 57.667,
 				"weight": 1
 			},
 			{
 				"asset": "BOND",
+				"category": "crypto",
+				"sign": "",
+				"description": "Barnbridge",
 				"units": 2.274,
 				"weight": 1
 			},
 			{
 				"asset": "CREAM",
+				"category": "crypto",
+				"sign": "",
+				"description": "Cream Finance",
 				"units": 0.2667,
 				"weight": 0.5
 			},
 			{
 				"asset": "ALPHA",
+				"category": "crypto",
+				"sign": "",
+				"description": "Alpha Finance",
 				"units": 102.3121,
 				"weight": 0.5
 			}
@@ -323,8 +589,12 @@
 		"subclass": "PurgeableSynth"
 	},
 	{
-		"name": "iBTC",
+		"feed": "0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c",
 		"asset": "BTC",
+		"category": "crypto",
+		"sign": "₿",
+		"description": "Inverse Inverse Inverse Inverse Bitcoin",
+		"name": "iBTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 58785,
@@ -333,8 +603,12 @@
 		}
 	},
 	{
-		"name": "iETH",
+		"feed": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
 		"asset": "ETH",
+		"category": "crypto",
+		"sign": "Ξ",
+		"description": "Inverse Inverse Inverse Inverse Ether",
+		"name": "iETH",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1548,
@@ -343,8 +617,12 @@
 		}
 	},
 	{
-		"name": "iBNB",
+		"feed": "0x14e613AC84a31f709eadbdF89C6CC390fDc9540A",
 		"asset": "BNB",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Binance Coin",
+		"name": "iBNB",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 253,
@@ -353,8 +631,12 @@
 		}
 	},
 	{
-		"name": "iTRX",
+		"feed": "0xacD0D1A29759CC01E8D925371B72cb2b5610EA25",
 		"asset": "TRX",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse TRON",
+		"name": "iTRX",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 0.0454,
@@ -363,8 +645,12 @@
 		}
 	},
 	{
-		"name": "iXTZ",
+		"feed": "0x5239a625dEb44bF3EeAc2CD5366ba24b8e9DB63F",
 		"asset": "XTZ",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Tezos",
+		"name": "iXTZ",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 3.73,
@@ -373,8 +659,12 @@
 		}
 	},
 	{
-		"name": "iXRP",
+		"feed": "0xCed2660c6Dd1Ffd856A5A82C67f3482d88C50b12",
 		"asset": "XRP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Ripple",
+		"name": "iXRP",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 0.4824,
@@ -383,8 +673,12 @@
 		}
 	},
 	{
-		"name": "iLINK",
+		"feed": "0x2c1d072e956AFFC0D435Cb7AC38EF18d24d9127c",
 		"asset": "LINK",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Chainlink",
+		"name": "iLINK",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 28.15,
@@ -393,8 +687,12 @@
 		}
 	},
 	{
-		"name": "iLTC",
+		"feed": "0x6AF09DF7563C363B5763b9102712EbeD3b9e859B",
 		"asset": "LTC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Litecoin",
+		"name": "iLTC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 179.5,
@@ -403,8 +701,12 @@
 		}
 	},
 	{
-		"name": "iEOS",
+		"feed": "0x10a43289895eAff840E8d45995BBa89f9115ECEe",
 		"asset": "EOS",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse EOS",
+		"name": "iEOS",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 4.06,
@@ -413,8 +715,12 @@
 		}
 	},
 	{
-		"name": "iETC",
+		"feed": "0xaEA2808407B7319A31A383B6F8B60f04BCa23cE2",
 		"asset": "ETC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Ethereum Classic",
+		"name": "iETC",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 11.46,
@@ -423,8 +729,12 @@
 		}
 	},
 	{
-		"name": "iDASH",
+		"feed": "0xFb0cADFEa136E9E343cfb55B863a6Df8348ab912",
 		"asset": "DASH",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Dash",
+		"name": "iDASH",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 241.5,
@@ -433,8 +743,12 @@
 		}
 	},
 	{
-		"name": "iXMR",
+		"feed": "0xFA66458Cce7Dd15D8650015c4fce4D278271618F",
 		"asset": "XMR",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Monero",
+		"name": "iXMR",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 222.906,
@@ -443,8 +757,12 @@
 		}
 	},
 	{
-		"name": "iADA",
+		"feed": "0xAE48c91dF1fE419994FFDa27da09D5aC69c30f55",
 		"asset": "ADA",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Cardano",
+		"name": "iADA",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 0.977,
@@ -453,9 +771,70 @@
 		}
 	},
 	{
-		"name": "iCEX",
+		"feed": "0x283D433435cFCAbf00263beEF6A362b7cc5ed9f2",
 		"asset": "CEX",
-		"index": "sCEX",
+		"category": "index",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Centralised Exchange Index",
+		"name": "iCEX",
+		"index": [
+			{
+				"asset": "BNB",
+				"category": "crypto",
+				"sign": "",
+				"description": "Binance Coin",
+				"units": 12.88,
+				"weight": 29.15
+			},
+			{
+				"asset": "CRO",
+				"category": "crypto",
+				"sign": "",
+				"description": "Crypto com",
+				"units": 1303.31,
+				"weight": 24.3
+			},
+			{
+				"asset": "LEO",
+				"category": "crypto",
+				"sign": "",
+				"description": "UNUS SED LEO",
+				"units": 94.54,
+				"weight": 13.42
+			},
+			{
+				"asset": "HT",
+				"category": "crypto",
+				"sign": "",
+				"description": "Huobi Token",
+				"units": 23.06,
+				"weight": 11.73
+			},
+			{
+				"asset": "FTT",
+				"category": "crypto",
+				"sign": "",
+				"description": "FTX",
+				"units": 9.36,
+				"weight": 3.56
+			},
+			{
+				"asset": "OKB",
+				"category": "crypto",
+				"sign": "",
+				"description": "OKB",
+				"units": 25.72,
+				"weight": 16.97
+			},
+			{
+				"asset": "KCS",
+				"category": "crypto",
+				"sign": "",
+				"description": "KuCoin Shares",
+				"units": 9.18,
+				"weight": 0.87
+			}
+		],
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 4946,
@@ -464,9 +843,174 @@
 		}
 	},
 	{
-		"name": "iDEFI",
+		"feed": "0xa8E875F94138B0C5b51d1e1d5dE35bbDdd28EA87",
 		"asset": "DEFI",
-		"index": "sDEFI",
+		"category": "index",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse DeFi Index",
+		"name": "iDEFI",
+		"index": [
+			{
+				"asset": "UNI",
+				"category": "crypto",
+				"sign": "",
+				"description": "Uniswap",
+				"units": 66.3052,
+				"weight": 15
+			},
+			{
+				"asset": "AAVE",
+				"category": "crypto",
+				"sign": "",
+				"description": "Aave",
+				"units": 4.1634,
+				"weight": 11
+			},
+			{
+				"asset": "LUNA",
+				"category": "crypto",
+				"sign": "",
+				"description": "Terra Luna",
+				"units": 143.0753,
+				"weight": 10
+			},
+			{
+				"asset": "MKR",
+				"category": "crypto",
+				"sign": "",
+				"description": "Maker",
+				"units": 0.3116,
+				"weight": 9
+			},
+			{
+				"asset": "SNX",
+				"category": "crypto",
+				"sign": "",
+				"description": "Synthetix Network Token",
+				"units": 92.2672,
+				"weight": 8
+			},
+			{
+				"asset": "RUNE",
+				"category": "crypto",
+				"sign": "",
+				"description": "THORChain",
+				"units": 105.8407,
+				"weight": 8
+			},
+			{
+				"asset": "SUSHI",
+				"category": "crypto",
+				"sign": "",
+				"description": "SushiSwap",
+				"units": 78.2258,
+				"weight": 7
+			},
+			{
+				"asset": "COMP",
+				"category": "crypto",
+				"sign": "",
+				"description": "Compound",
+				"units": 2.2499,
+				"weight": 7
+			},
+			{
+				"asset": "YFI",
+				"category": "crypto",
+				"sign": "",
+				"description": "yearn.finance",
+				"units": 0.01503,
+				"weight": 6
+			},
+			{
+				"asset": "BNT",
+				"category": "crypto",
+				"sign": "",
+				"description": "Bancor",
+				"units": 74.5498,
+				"weight": 3
+			},
+			{
+				"asset": "UMA",
+				"category": "crypto",
+				"sign": "",
+				"description": "UMA",
+				"units": 25.608,
+				"weight": 3
+			},
+			{
+				"asset": "ZRX",
+				"category": "crypto",
+				"sign": "",
+				"description": "0x",
+				"units": 294.7857,
+				"weight": 2.5
+			},
+			{
+				"asset": "CRV",
+				"category": "crypto",
+				"sign": "",
+				"description": "Curve DAO Token",
+				"units": 124.2496,
+				"weight": 2.5
+			},
+			{
+				"asset": "1INCH",
+				"category": "crypto",
+				"sign": "",
+				"description": "1inch",
+				"units": 59.0185,
+				"weight": 2
+			},
+			{
+				"asset": "REN",
+				"category": "crypto",
+				"sign": "",
+				"description": "Ren",
+				"units": 440.8356,
+				"weight": 2
+			},
+			{
+				"asset": "BAL",
+				"category": "crypto",
+				"sign": "",
+				"description": "Balancer",
+				"units": 4.4333,
+				"weight": 1
+			},
+			{
+				"asset": "KNC",
+				"category": "crypto",
+				"sign": "",
+				"description": "Kyber Network",
+				"units": 57.667,
+				"weight": 1
+			},
+			{
+				"asset": "BOND",
+				"category": "crypto",
+				"sign": "",
+				"description": "Barnbridge",
+				"units": 2.274,
+				"weight": 1
+			},
+			{
+				"asset": "CREAM",
+				"category": "crypto",
+				"sign": "",
+				"description": "Cream Finance",
+				"units": 0.2667,
+				"weight": 0.5
+			},
+			{
+				"asset": "ALPHA",
+				"category": "crypto",
+				"sign": "",
+				"description": "Alpha Finance",
+				"units": 102.3121,
+				"weight": 0.5
+			}
+		],
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 13382,
@@ -475,8 +1019,12 @@
 		}
 	},
 	{
-		"name": "iOIL",
+		"feed": "0xf3584F4dd3b467e73C2339EfD008665a70A4185c",
 		"asset": "OIL",
+		"category": "commodity",
+		"sign": "$",
+		"description": "Inverse Inverse Inverse Inverse Perpetual Oil Futures",
+		"name": "iOIL",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 45.087,
@@ -485,18 +1033,26 @@
 		}
 	},
 	{
-		"name": "iAAVE",
+		"feed": "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9",
 		"asset": "AAVE",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Aave",
+		"name": "iAAVE",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 406.0,
-			"upperLimit": 609.0,
-			"lowerLimit": 203.0
+			"entryPoint": 406,
+			"upperLimit": 609,
+			"lowerLimit": 203
 		}
 	},
 	{
-		"name": "iUNI",
+		"feed": "0x553303d460EE0afB37EdFf9bE42922D8FF63220e",
 		"asset": "UNI",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Uniswap",
+		"name": "iUNI",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 25.382,
@@ -505,18 +1061,26 @@
 		}
 	},
 	{
-		"name": "iYFI",
+		"feed": "0xA027702dbb89fbd58938e4324ac03B58d812b0E1",
 		"asset": "YFI",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse yearn.finance",
+		"name": "iYFI",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 35368.0,
-			"upperLimit": 53052.0,
-			"lowerLimit": 17684.0
+			"entryPoint": 35368,
+			"upperLimit": 53052,
+			"lowerLimit": 17684
 		}
 	},
 	{
-		"name": "iDOT",
+		"feed": "0x1C07AFb8E2B827c5A4739C6d59Ae3A5035f28734",
 		"asset": "DOT",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Polkadot",
+		"name": "iDOT",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 34.618,
@@ -525,8 +1089,12 @@
 		}
 	},
 	{
-		"name": "iREN",
+		"feed": "0x0f59666EDE214281e956cb3b2D0d69415AfF4A01",
 		"asset": "REN",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Ren",
+		"name": "iREN",
 		"subclass": "PurgeableSynth",
 		"inverted": {
 			"entryPoint": 1.26,
@@ -535,13 +1103,42 @@
 		}
 	},
 	{
-		"name": "iCOMP",
+		"feed": "0xdbd020CAeF83eFd542f4De03e3cF0C28A4428bd5",
 		"asset": "COMP",
+		"category": "crypto",
+		"sign": "",
+		"description": "Inverse Inverse Inverse Inverse Compound",
+		"name": "iCOMP",
 		"subclass": "PurgeableSynth",
 		"inverted": {
-			"entryPoint": 393.0,
+			"entryPoint": 393,
 			"upperLimit": 589.5,
 			"lowerLimit": 196.5
 		}
+	},
+	{
+		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sREDEEMER"
+	},
+	{
+		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sREDEEMER"
+	},
+	{
+		"asset": "USD",
+		"category": "forex",
+		"sign": "$",
+		"description": "US Dollars",
+		"name": "sREDEEMER"
+	},
+	{
+		"name": "sREDEEMER",
+		"asset": "USD"
 	}
 ]

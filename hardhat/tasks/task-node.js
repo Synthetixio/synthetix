@@ -27,6 +27,8 @@ task('node', 'Run a node')
 			console.log(yellow(`Forking ${network}...`));
 		}
 
+		console.log(taskArguments);
+
 		subtask(TASK_NODE_SERVER_READY).setAction(async ({ provider }, hre, runSuper) => {
 			await runSuper();
 

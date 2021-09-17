@@ -48,7 +48,6 @@ async function deployInstance({
 		concurrency: 1,
 		contractDeploymentGasLimit: useOvm ? undefined : 9500000,
 		freshDeploy,
-		gasPrice: useOvm ? OVM_GAS_PRICE : 1,
 		generateSolidity,
 		ignoreCustomParameters,
 		methodCallGasLimit: useOvm ? undefined : 3500000,

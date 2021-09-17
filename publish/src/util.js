@@ -259,9 +259,12 @@ const mixinGasOptions = async (tx, provider, maxFeePerGas, maxPriorityFeePerGas)
 		feeData = await provider.getFeeData();
 	} catch (_) {} // network does not support the `getFeeData` rpc call
 	if (feeData.maxFeePerGas) {
+		tx.type = 2;
 		if (maxFeePerGas) tx.maxFeePerGas = parseUnits(maxFeePerGas.toString() || '100', 'gwei');
 		if (maxPriorityFeePerGas)
 			tx.maxPriorityFeePerGas = parseUnits(maxPriorityFeePerGas.toString(), 'gwei');
+	} else {
+		tx.type = 1;
 	}
 
 	return tx;
