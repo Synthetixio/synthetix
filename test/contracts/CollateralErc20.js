@@ -161,6 +161,7 @@ contract('CollateralErc20', async accounts => {
 			maxDebt,
 			0,
 			0,
+			0,
 			{
 				from: deployerAccount,
 			}
