@@ -224,6 +224,16 @@ module.exports = async ({
 	await runStep({
 		contract: 'CollateralManager',
 		target: CollateralManager,
+		read: 'maxSkewRate',
+		expected: input => input !== '0', // only change if zero
+		write: 'setMaxSkewRate',
+		writeArg: [collateralManagerDefaults['MAX_SKEW_RATE']],
+		comment: 'Set the max skew rate in the CollateralManager',
+	});
+
+	await runStep({
+		contract: 'CollateralManager',
+		target: CollateralManager,
 		read: 'baseBorrowRate',
 		expected: input => input !== '0', // only change if zero
 		write: 'setBaseBorrowRate',

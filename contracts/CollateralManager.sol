@@ -60,6 +60,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     // The maximum amount of debt in sUSD that can be issued by non snx collateral.
     uint public maxDebt;
 
+    // The rate that determines the skew limit maximum.
+    uint public maxSkewRate;
+
     // The base interest rate applied to all borrows.
     uint public baseBorrowRate;
 
@@ -79,6 +82,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         address _owner,
         address _resolver,
         uint _maxDebt,
+        uint _maxSkewRate,
         uint _baseBorrowRate,
         uint _baseShortRate
     ) public Owned(_owner) Pausable() MixinResolver(_resolver) {
@@ -86,6 +90,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         state = _state;
 
         setMaxDebt(_maxDebt);
+        setMaxSkewRate(_maxSkewRate);
         setBaseBorrowRate(_baseBorrowRate);
         setBaseShortRate(_baseShortRate);
 
@@ -99,7 +104,6 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         staticAddresses[0] = CONTRACT_ISSUER;
         staticAddresses[1] = CONTRACT_EXRATES;
 
-        // we want to cache the name of the synth and the name of its corresponding ISynth
         bytes32[] memory shortAddresses;
         uint length = _shortableSynths.elements.length;
 
@@ -238,11 +242,13 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         uint skew = shortSupply.sub(longSupply);
 
         // Divide through by the size of the market.
-        // TODO: Enforce a maximum here?
         uint proportionalSkew = skew.divideDecimal(longSupply.add(shortSupply)).divideDecimal(SECONDS_IN_A_YEAR);
 
+        // Enforce a skew limit maximum.
+        uint maxSkewLimit = proportionalSkew.multiplyDecimal(maxSkewRate);
+
         // Finally, add the base short rate.
-        shortRate = proportionalSkew.add(baseShortRate);
+        shortRate = maxSkewLimit.add(baseShortRate);
     }
 
     function getRatesAndTime(uint index)
@@ -271,6 +277,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         (entryRate, lastRate, lastUpdated, newIndex) = state.getShortRatesAndTime(currency, index);
     }
 
+    // This function might run into gas issues on L2 if there are too many synths
+    // since it iterates through both long and short synth arrays.
     function exceedsDebtLimit(uint amount, bytes32 currency) external view returns (bool canIssue, bool anyRateIsInvalid) {
         uint usdAmount = _exchangeRates().effectiveValue(currency, amount, sUSD);
 
@@ -296,6 +304,11 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         require(_maxDebt > 0, "Must be greater than 0");
         maxDebt = _maxDebt;
         emit MaxDebtUpdated(maxDebt);
+    }
+
+    function setMaxSkewRate(uint _maxSkewRate) public onlyOwner {
+        maxSkewRate = _maxSkewRate;
+        emit MaxSkewRateUpdated(maxSkewRate);
     }
 
     function setBaseBorrowRate(uint _baseBorrowRate) public onlyOwner {
@@ -515,6 +528,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     // ========== EVENTS ==========
     event MaxDebtUpdated(uint maxDebt);
+    event MaxSkewRateUpdated(uint maxSkewRate);
     event LiquidationPenaltyUpdated(uint liquidationPenalty);
     event BaseBorrowRateUpdated(uint baseBorrowRate);
     event BaseShortRateUpdated(uint baseShortRate);

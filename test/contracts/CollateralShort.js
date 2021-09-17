@@ -737,6 +737,8 @@ contract('CollateralShort', async accounts => {
 
 	describe('Determining the skew and interest rate', async () => {
 		beforeEach(async () => {
+			await manager.setMaxSkewRate(toUnit(0.2), { from: owner });
+
 			// Open a short to make the long/short supply balanced.
 			const oneBTC = toUnit(1);
 			const susdCollateral = toUnit(15000);
@@ -755,7 +757,7 @@ contract('CollateralShort', async accounts => {
 			tx = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
 			id = getid(tx);
 
-			// after a year we should have accrued 33%.
+			// after a year we should have accrued 6.67%.
 
 			await fastForwardAndUpdateRates(YEAR);
 
@@ -767,13 +769,13 @@ contract('CollateralShort', async accounts => {
 
 			let interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 0.3333);
+			assert.equal(interest, 0.0667);
 
 			await fastForwardAndUpdateRates(3600);
 
 			tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
 
-			// after two years we should have accrued about 66%, give or take the 5 minutes we skipped.
+			// after two years we should have accrued about 13.33%, give or take the 5 minutes we skipped.
 
 			await fastForwardAndUpdateRates(YEAR);
 
@@ -785,7 +787,7 @@ contract('CollateralShort', async accounts => {
 
 			interest = Math.round(parseFloat(fromUnit(loan.accruedInterest)) * 10000) / 10000;
 
-			assert.equal(interest, 0.6667);
+			assert.equal(interest, 0.1333);
 		});
 	});
 });

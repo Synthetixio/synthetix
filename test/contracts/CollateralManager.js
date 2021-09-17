@@ -255,6 +255,7 @@ contract('CollateralManager', async accounts => {
 			expected: [
 				'setUtilisationMultiplier',
 				'setMaxDebt',
+				'setMaxSkewRate',
 				'setBaseBorrowRate',
 				'setBaseShortRate',
 				'getNewLoanId',
@@ -432,6 +433,29 @@ contract('CollateralManager', async accounts => {
 				});
 				it('should update the utilisation multiplier', async () => {
 					assert.bnEqual(await manager.utilisationMultiplier(), toUnit(2));
+				});
+			});
+		});
+
+		describe('setMaxSkewRate', async () => {
+			describe('revert condtions', async () => {
+				it('should fail if not called by the owner', async () => {
+					await assert.revert(
+						manager.setMaxSkewRate(toUnit(0.2), { from: account1 }),
+						'Only the contract owner may perform this action'
+					);
+				});
+			});
+			describe('when it succeeds', async () => {
+				beforeEach(async () => {
+					await manager.setMaxSkewRate(toUnit(0.2), { from: owner });
+				});
+				it('should update the max skew rate', async () => {
+					assert.bnEqual(await manager.maxSkewRate(), toUnit(0.2));
+				});
+				it('should allow the max skew rate to be 0', async () => {
+					await manager.setMaxSkewRate(toUnit(0), { from: owner });
+					assert.bnEqual(await manager.maxSkewRate(), toUnit(0));
 				});
 			});
 		});
