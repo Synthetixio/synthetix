@@ -313,14 +313,5 @@
 	},
 	"SynthRedeemer": {
 		"deploy": false
-	},
-	"TokenStatesREDEEMER": {
-		"deploy": false
-	},
-	"ProxysREDEEMER": {
-		"deploy": false
-	},
-	"SynthsREDEEMER": {
-		"deploy": false
 	}
 }

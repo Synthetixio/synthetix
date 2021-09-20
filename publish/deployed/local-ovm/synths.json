@@ -1,16 +1,10 @@
 [
 	{
-		"asset": "USD",
-		"category": "forex",
-		"sign": "$",
-		"description": "US Dollars",
-		"name": "sUSD"
+		"name": "sUSD",
+		"asset": "USD"
 	},
 	{
-		"asset": "ETH",
-		"category": "crypto",
-		"sign": "Ξ",
-		"description": "Ether",
-		"name": "sETH"
+		"name": "sETH",
+		"asset": "ETH"
 	}
 ]
