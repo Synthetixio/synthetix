@@ -567,7 +567,7 @@
 		},
 		{
 			"name": "Wezen",
-			"released": false,
+			"released": true,
 			"version": {
 				"major": 2,
 				"minor": 49
