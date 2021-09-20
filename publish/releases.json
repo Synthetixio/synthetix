@@ -302,6 +302,10 @@
 				"CollateralUtil",
 				"MixinSystemSettings",
 				"ShortingRewards",
+				"SynthsBTC",
+				"SynthsETH",
+				"SynthsLINK",
+				"SynthsUSD",
 				"SystemSettings"
 			]
 		},
