@@ -82,6 +82,7 @@ const performTransactionalStep = async ({
 			const overrides = {
 				gasLimit,
 				gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
+				type: 1,
 			};
 
 			if (nonceManager) {
