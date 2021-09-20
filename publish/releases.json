@@ -332,6 +332,14 @@
 			"sources": ["DebtCache"]
 		},
 		{
+			"sip": 158,
+			"layer": "base"
+		},
+		{
+			"sip": 169,
+			"layer": "base"
+		},
+		{
 			"sip": 170,
 			"layer": "base",
 			"released": "base"
@@ -564,17 +572,7 @@
 				"major": 2,
 				"minor": 49
 			},
-			"sips": []
-		},
-		{
-			"name": "Wezen (Optimism)",
-			"ovm": true,
-			"released": false,
-			"version": {
-				"major": 2,
-				"minor": 49
-			},
-			"sips": []
+			"sips": [158, 169]
 		},
 		{
 			"name": "Sargas",
