@@ -82,8 +82,14 @@ const performTransactionalStep = async ({
 			const overrides = {
 				gasLimit,
 				gasPrice: ethers.utils.parseUnits(gasPrice.toString(), 'gwei'),
-				type: 1,
 			};
+
+			if (
+				signer.provider.getNetwork().chainId == 42 ||
+				signer.provider.getNetwork().chainId == 420
+			) {
+				overrides.type = 1;
+			}
 
 			if (nonceManager) {
 				overrides.nonce = await nonceManager.getNonce();

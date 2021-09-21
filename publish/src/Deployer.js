@@ -136,8 +136,11 @@ class Deployer {
 		const params = {
 			gasLimit,
 			gasPrice: ethers.utils.parseUnits(this.gasPrice.toString(), 'gwei'),
-			type: 1,
 		};
+
+		if (!this.useOvm) {
+			params.type = 1;
+		}
 
 		if (this.nonceManager) {
 			params.nonce = await this.nonceManager.getNonce();
