@@ -21,7 +21,8 @@
 		"describe": "hardhat describe",
 		"test:deployments": "mocha test/deployments -- --timeout 60000",
 		"test:etherscan": "node test/etherscan",
-		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --bail --timeout 240000\""
+		"test:publish": "concurrently --kill-others --success first \"npx hardhat node > /dev/null\" \"wait-port 8545 && mocha test/publish --bail --timeout 240000\"",
+		"setup": "npm install && patch-package && allow-scripts"
 	},
 	"husky": {
 		"hooks": {
