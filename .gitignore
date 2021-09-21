@@ -42,3 +42,6 @@ process.yml
 .db
 
 optimism
+
+# python venv
+.venv/
