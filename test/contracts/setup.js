@@ -228,6 +228,7 @@ const setupContract = async ({
 			toUnit(50000000),
 			0,
 			0,
+			0,
 		],
 		CollateralUtil: [tryGetAddressOf('AddressResolver')],
 		Collateral: [

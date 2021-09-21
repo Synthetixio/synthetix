@@ -89,6 +89,7 @@ contract('DebtCache', async accounts => {
 			maxDebt,
 			0,
 			0,
+			0,
 			{
 				from: deployerAccount,
 			}
@@ -168,6 +169,7 @@ contract('DebtCache', async accounts => {
 			owner,
 			addressResolver.address,
 			maxDebt,
+			0,
 			// 5% / 31536000 (seconds in common year)
 			1585489599,
 			0,

@@ -73,6 +73,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 			account,
 			addressOf(ReadProxyAddressResolver),
 			collateralManagerDefaults['MAX_DEBT'],
+			collateralManagerDefaults['MAX_SKEW_RATE'],
 			collateralManagerDefaults['BASE_BORROW_RATE'],
 			collateralManagerDefaults['BASE_SHORT_RATE'],
 		],
